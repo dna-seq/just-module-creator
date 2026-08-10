@@ -1,10 +1,10 @@
 {
   "mcpServers": {
-    "cake": {
+    "just-module-creator": {
       "command": "uv",
-      "args": ["run", "mcp-template", "stdio"],
+      "args": ["run", "just-module-creator", "stdio"],
       "env": {
-        "CAKE_MODE": "essentials"
+        "JMC_MODE": "extended"
       }
     }
   }

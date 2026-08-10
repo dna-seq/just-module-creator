@@ -8,7 +8,7 @@ default:
 install:
     uv sync
 
-# Run the test suite.
+# Run the test suite (in-memory, offline — no network).
 test:
     uv run pytest
 
@@ -27,15 +27,19 @@ types:
 
 # Run the server over stdio (default transport for local MCP clients).
 run mode="essentials":
-    CAKE_MODE={{mode}} uv run mcp-template stdio
+    JMC_MODE={{mode}} uv run just-module-creator stdio
 
 # Run over HTTP.
 serve mode="essentials" port="3011":
-    CAKE_MODE={{mode}} uv run mcp-template http --port {{port}}
+    JMC_MODE={{mode}} uv run just-module-creator http --port {{port}}
 
 # Open the MCP Inspector (interactive dev UI).
 dev:
     uv run fastmcp dev fastmcp.json
+
+# Load this repo as a Claude Code plugin for one session.
+plugin:
+    claude --plugin-dir .
 
 # Everything CI would run.
 ci: lint types test

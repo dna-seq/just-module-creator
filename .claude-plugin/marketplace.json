@@ -1,0 +1,13 @@
+{
+  "name": "just-dna",
+  "owner": {
+    "name": "just-dna-seq"
+  },
+  "plugins": [
+    {
+      "name": "just-module-creator",
+      "source": "./",
+      "description": "Author, validate, compile and publish just-dna annotation modules."
+    }
+  ]
+}
