@@ -1,40 +1,35 @@
 [project]
-name = "mcp-template"
+name = "just-module-creator"
 version = "0.1.0"
-description = "A uv + FastMCP server template (skeleton, patterns, and glue) — cake-themed demo tools"
+description = "MCP server + Claude Code skill for authoring and publishing just-dna annotation modules"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 license = { file = "LICENSE" }
 authors = [{ name = "Your Name", email = "you@example.com" }]
-keywords = ["mcp", "fastmcp", "template", "agent", "llm"]
+keywords = ["mcp", "fastmcp", "just-dna", "genomics", "annotation", "agent", "llm"]
 
 dependencies = [
     # `tasks` extra enables real MCP background tasks (@mcp.tool(task=True)).
     # Default backend is in-memory (memory://) — zero config, no Redis needed.
     # Set FASTMCP_DOCKET_URL=redis://... only for distributed/persistent tasks.
-    "fastmcp[tasks]>=3.4.2",
+    "fastmcp[tasks]>=3.4.7",
     "pydantic>=2",
     "pydantic-settings>=2",
     "typer>=0.16",
     "anyio>=4",
+    "just-dna-compiler>=0.5.2",
+    "just-dna-format>=0.5.0",
+    "just-dna-enricher>=0.5.2",
+    "just-dna-registry>=0.9.1",
 ]
 
-[project.optional-dependencies]
-# Optional cloud deployment glue. `uv sync --extra smithery` to enable.
-smithery = ["smithery>=0.4.2"]
-
 [project.scripts]
-# Primary entrypoint. Subcommands: main | stdio | http | sse  (run `mcp-template --help`).
-mcp-template = "mcp_template.server:cli_app"
+# Primary entrypoint. Subcommands: main | stdio | http | sse
+just-module-creator = "just_module_creator.server:cli_app"
 
 [build-system]
 requires = ["uv_build>=0.8.15,<0.9.0"]
 build-backend = "uv_build"
-
-[tool.smithery]
-# Optional: Smithery cloud deployment. Function returns a fresh FastMCP server.
-server = "mcp_template.server:start_mcp_smithery"
-log_level = "warning"
 
 [dependency-groups]
 dev = [
@@ -56,12 +51,12 @@ filterwarnings = [
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.pyright]
 include = ["src", "tests"]
-pythonVersion = "3.11"
+pythonVersion = "3.13"
 typeCheckingMode = "basic"

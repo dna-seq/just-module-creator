@@ -2,12 +2,14 @@
 
 The hybrid registration pattern lives in ``build_server``:
 
-* ``register_essentials`` — always (the tools present in every mode).
-* ``register_auth``       — always (the per-session ``authenticate`` tool).
-* ``register_bakery_cloud`` — always listed, auth enforced per call.
+* ``register_essentials`` — always. The offline authoring loop.
+* ``register_research``   — always. Read-only lookups; no token, network-tier.
+* ``register_auth``       — always. The per-session ``authenticate`` tool.
+* ``register_registry``   — always listed, token enforced per call.
 * ``register_extended``   — ONLY when mode == "extended" (registered on start).
 
-The server NEVER raises at startup for a missing key (see auth.py).
+The server NEVER raises at startup for a missing token (see auth.py): authoring
+a module needs no registry account at all.
 """
 
 from __future__ import annotations
@@ -18,21 +20,51 @@ import sys
 import typer
 from fastmcp import FastMCP
 
-from mcp_template import __version__
-from mcp_template.auth import SessionKeyStore, register_auth
-from mcp_template.logging_setup import get_logger, setup_logging
-from mcp_template.settings import Mode, Settings
-from mcp_template.tools.bakery_cloud import register_bakery_cloud
-from mcp_template.tools.extended import register_extended
-from mcp_template.tools.recipes import register_essentials
+from just_module_creator import __version__
+from just_module_creator.auth import SessionKeyStore, register_auth
+from just_module_creator.logging_setup import get_logger, setup_logging
+from just_module_creator.settings import Mode, Settings
+from just_module_creator.tools.advanced import register_extended
+from just_module_creator.tools.authoring import register_essentials
+from just_module_creator.tools.registry import register_registry
+from just_module_creator.tools.research import register_research
 
 log = get_logger()
+
+INSTRUCTIONS = """\
+Authoring surface for just-dna annotation modules (format 0.5).
+
+A module is a directory of authored CSVs plus module_spec.yaml, compiled into a
+parquet artifact with a content-addressed manifest. Work in this order:
+
+  list_tables -> scaffold_module -> author rows -> lint_rows
+    -> validate_module(strict) -> enrich_module -> compile_module(strict)
+
+Three rules this server enforces rather than merely documents:
+
+1. Ask the tool, never memory. Every column list, vocabulary and requirement is
+   generated from the live pydantic models, so describe_table /
+   table_requirements cannot drift from what the compiler accepts.
+2. Report, never repair. Lookups show you a value and refuse to write it into an
+   authored cell — a later check compares your independent value against that
+   same source, so filling it from the source makes the check vacuous. Those
+   refusals are the feature.
+3. A check that could not run is not a check that passed. `null` and `unknown`
+   never collapse into a pass, and warnings on a green run are the interesting
+   output.
+
+`start` is always the 1-based VCF position: paste it, never subtract one.
+
+Extended mode (JMC_MODE=extended) adds enrichment, integrity, round-trip and
+registry reads. Publishing needs a registry token via `authenticate`; nothing
+else does.
+"""
 
 
 def build_server(mode: Mode | None = None, settings: Settings | None = None) -> FastMCP:
     """Construct a fresh, fully-wired FastMCP server.
 
-    A factory (not a singleton) so each Smithery session / test gets an isolated
+    A factory (not a singleton) so each test / deployment gets an isolated
     instance. Pass ``mode`` to override ``settings.mode``.
     """
     settings = settings or Settings()
@@ -40,32 +72,34 @@ def build_server(mode: Mode | None = None, settings: Settings | None = None) -> 
     setup_logging(settings)
 
     mcp = FastMCP(
-        name=f"Cake MCP Template v{__version__}",
-        instructions=(
-            "A cake-themed FastMCP template. Essentials (recipes + baking) are "
-            "always available; run in 'extended' mode for more tools. Bakery "
-            "Cloud tools require an API key via the `authenticate` tool."
-        ),
+        name=f"just-module-creator v{__version__}",
+        instructions=INSTRUCTIONS,
     )
 
     store = SessionKeyStore()
     register_essentials(mcp, settings)
+    register_research(mcp, settings)
     register_auth(mcp, settings, store)
-    register_bakery_cloud(mcp, settings, store)
+    register_registry(mcp, settings, store)
     if resolved_mode == "extended":
         register_extended(mcp, settings)
 
-    log.info("Server built (mode=%s)", resolved_mode)
+    log.info(
+        "Server built (mode=%s, offline=%s, registry=%s)",
+        resolved_mode,
+        settings.offline,
+        settings.registry_url,
+    )
     return mcp
 
 
-# Module-level instance for `fastmcp run` / `fastmcp dev` / Smithery discovery.
-# Safe to import: no key required, no network calls.
+# Module-level instance for `fastmcp run` / `fastmcp dev` discovery.
+# Safe to import: no token required, no network calls.
 mcp = build_server()
 
 
 # --------------------------------------------------------------------------- #
-# Graceful shutdown (ported pattern: clean SIGINT/SIGTERM handling)
+# Graceful shutdown
 # --------------------------------------------------------------------------- #
 class GracefulShutdownHandler:
     """Handle SIGINT/SIGTERM so the server stops cleanly; double-signal forces."""
@@ -113,9 +147,9 @@ def run_with_graceful_shutdown(server: FastMCP, **run_kwargs) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# Typer CLI — `mcp-template [main|stdio|http|sse] --mode ...`
+# Typer CLI — `just-module-creator [main|stdio|http|sse] --mode ...`
 # --------------------------------------------------------------------------- #
-app = typer.Typer(add_completion=False, help="Cake MCP Template server.")
+app = typer.Typer(add_completion=False, help="just-dna module authoring MCP server.")
 
 _MODE_OPT = typer.Option(None, "--mode", help="essentials | extended")
 
@@ -137,7 +171,7 @@ def main(
     host: str = typer.Option(None, help="Host to bind (network transports)."),
     port: int = typer.Option(None, help="Port to bind (network transports)."),
 ) -> None:
-    """Run the server (transport from --transport or CAKE_TRANSPORT)."""
+    """Run the server (transport from --transport or JMC_TRANSPORT)."""
     settings = Settings()
     _run(transport or settings.transport, mode, host, port)
 
@@ -171,35 +205,6 @@ def sse(
 def cli_app() -> None:
     """Console-script entrypoint (see [project.scripts])."""
     app()
-
-
-# --------------------------------------------------------------------------- #
-# Optional Smithery cloud deployment (guarded; needs the `smithery` extra).
-# Note: NO boot-time key requirement. The Smithery-injected per-request config
-# key is consumed by resolve_api_key at call time, not stored globally here.
-# --------------------------------------------------------------------------- #
-def _smithery_unavailable(ctx):  # pragma: no cover - only when extra missing
-    raise RuntimeError(
-        "Smithery support requires the 'smithery' extra: uv sync --extra smithery"
-    )
-
-
-try:
-    from pydantic import BaseModel, Field
-    from smithery.decorators import smithery  # type: ignore[import-not-found]
-
-    class SmitheryConfigSchema(BaseModel):
-        api_key: str | None = Field(
-            default=None, description="Optional Bakery Cloud API key."
-        )
-
-    @smithery.server(config_schema=SmitheryConfigSchema)
-    def start_mcp_smithery(ctx):  # pragma: no cover - run by Smithery runtime
-        """Smithery entrypoint: return a fresh server (key resolved per request)."""
-        return build_server()
-
-except ImportError:  # pragma: no cover - smithery extra not installed
-    start_mcp_smithery = _smithery_unavailable
 
 
 if __name__ == "__main__":
