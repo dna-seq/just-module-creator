@@ -11,7 +11,7 @@ default tool list means less context pollution for an agent.
 
 from __future__ import annotations
 
-import anyio
+from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
@@ -140,10 +140,17 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         """
         name = known_kind(csv_name, draft.DRAFTABLE)
         described = hints.describe_table(name)
+        # REDUNDANCY_BEARING is global across kinds; narrow it to this table's
+        # columns so an agent is not told to hand-author a column it has not got.
+        present = {
+            str(c["name"])
+            for c in described.get("columns", [])
+            if isinstance(c, dict) and c.get("name")
+        }
         redundancy = {
-            col: why
+            str(col): str(why)
             for col, why in getattr(hints, "REDUNDANCY_BEARING", {}).items()
-            if col in {c.get("name") for c in described.get("columns", []) if isinstance(c, dict)}
+            if str(col) in present
         }
         return TableDescription(
             csv=described.get("csv", name),
@@ -318,9 +325,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         coordinates name the variant you meant. Read `warnings` even on a pass.
         """
         target = resolve_dir(spec_dir, settings)
-        result = await anyio.to_thread.run_sync(
-            lambda: compiler.validate_spec(target, strict=strict)
-        )
+        result = await run_sync(lambda: compiler.validate_spec(target, strict=strict))
         return ValidationReport(
             valid=result.valid,
             strict=strict,
@@ -363,7 +368,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         # resolve_with_ensembl stays True with no cache: despite the name it is
         # the master switch for ALL resolution, injected resolution.csv included.
         # Turning it off compiles every row with chrom=None and still succeeds.
-        result = await anyio.to_thread.run_sync(
+        result = await run_sync(
             lambda: compiler.compile_module(
                 source,
                 out,

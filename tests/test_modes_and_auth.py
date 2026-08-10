@@ -93,7 +93,7 @@ async def test_registry_token_falls_back_to_the_toolchain_variable(monkeypatch):
     """An author already logged in with REGISTRY_TOKEN should not re-declare it."""
     monkeypatch.delenv("JMC_API_KEY", raising=False)
     monkeypatch.setenv("REGISTRY_TOKEN", "tok_toolchain")
-    assert Settings(_env_file=None).registry_token() == "tok_toolchain"
+    assert Settings(_env_file=None).registry_token() == "tok_toolchain"  # type: ignore[call-arg]
 
 
 # --------------------------------------------------------------------------- #
@@ -110,7 +110,7 @@ async def test_a_call_argument_cannot_override_the_offline_ceiling():
 
     strict = offline_settings()
     assert offline_for(strict, requested=False) is True  # ceiling wins
-    lenient = Settings(offline=False, _env_file=None)
+    lenient = Settings(offline=False, _env_file=None)  # type: ignore[call-arg]
     assert offline_for(lenient, requested=True) is True  # per-call still works
     assert offline_for(lenient, requested=False) is False
 

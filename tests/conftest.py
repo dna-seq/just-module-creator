@@ -53,7 +53,9 @@ def offline_settings(**overrides) -> Settings:
     must not change what the tests assert.
     """
     overrides.setdefault("api_key", None)
-    return Settings(offline=True, _env_file=None, **overrides)
+    # _env_file is a pydantic-settings init kwarg, absent from the generated
+    # __init__ signature, so pyright cannot see it.
+    return Settings(offline=True, _env_file=None, **overrides)  # type: ignore[call-arg]
 
 
 @pytest.fixture

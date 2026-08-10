@@ -16,7 +16,7 @@ No tool in this module writes to a spec directory.
 
 from __future__ import annotations
 
-import anyio
+from anyio.to_thread import run_sync
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
@@ -111,7 +111,7 @@ def register_research(mcp: FastMCP, settings: Settings) -> None:
         from just_dna_enricher import lookup as L
 
         eff_offline = offline_for(settings, offline)
-        hint = await anyio.to_thread.run_sync(
+        hint = await run_sync(
             lambda: L.lookup_variant(
                 rsid=rsid,
                 chrom=chrom,
@@ -162,9 +162,7 @@ def register_research(mcp: FastMCP, settings: Settings) -> None:
         from just_dna_enricher import lookup as L
 
         eff_offline = offline_for(settings, offline)
-        hint = await anyio.to_thread.run_sync(
-            lambda: L.lookup_citation(pmid=pmid, doi=doi, offline=eff_offline)
-        )
+        hint = await run_sync(lambda: L.lookup_citation(pmid=pmid, doi=doi, offline=eff_offline))
         return CitationLookup(
             pmid=getattr(hint, "pmid", None) or pmid,
             doi=getattr(hint, "doi", None) or doi,
@@ -216,7 +214,7 @@ def register_research(mcp: FastMCP, settings: Settings) -> None:
             return client.list_modules(**params)
 
         try:
-            payload = await anyio.to_thread.run_sync(_search)
+            payload = await run_sync(_search)
         except RegistryError as exc:
             raise ToolError(f"Registry error: {exc}") from exc
 

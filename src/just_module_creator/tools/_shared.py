@@ -8,7 +8,6 @@ across the MCP boundary field-for-field instead of flattening it.
 
 from __future__ import annotations
 
-import dataclasses
 from pathlib import Path
 from typing import Any
 
@@ -16,12 +15,6 @@ from fastmcp.exceptions import ToolError
 
 from just_module_creator.models import LintAlteration, LintFinding
 from just_module_creator.settings import Settings
-
-# The one table kind whose absence changes what the other means.
-COMPANION_HINT = (
-    "variants.csv and studies.csv travel together: grounding evidence is mandatory "
-    "whenever variants are present."
-)
 
 
 def resolve_dir(raw: str, settings: Settings, *, must_exist: bool = True) -> Path:
@@ -97,19 +90,6 @@ def to_alterations(items: Any) -> list[LintAlteration]:
             )
         )
     return out
-
-
-def asdict(obj: Any) -> dict:
-    """Best-effort dict view of a dataclass / pydantic model / mapping."""
-    if obj is None:
-        return {}
-    if isinstance(obj, dict):
-        return obj
-    if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
-        return dataclasses.asdict(obj)
-    if hasattr(obj, "model_dump"):
-        return obj.model_dump(mode="json")
-    return {"value": str(obj)}
 
 
 def jsonable(value: Any) -> Any:

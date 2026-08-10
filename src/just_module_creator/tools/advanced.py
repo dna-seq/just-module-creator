@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import json
 
-import anyio
+from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
@@ -119,7 +119,7 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
         from just_dna_enricher.enrich import EnrichmentError, enrich
 
         try:
-            result = await anyio.to_thread.run_sync(
+            result = await run_sync(
                 lambda: enrich(target, mode=mode, offline=eff_offline, write=True)
             )
         except EnrichmentError as exc:
@@ -188,7 +188,7 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
             )
         from just_dna_enricher.identifiers import check_identifiers as _check
 
-        report = await anyio.to_thread.run_sync(lambda: _check(spec_dir=target))
+        report = await run_sync(lambda: _check(spec_dir=target))
 
         genes = [
             IdentifierStatus(
@@ -240,7 +240,7 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
         from just_dna_enricher import lookup as L
 
         if kind == "gene":
-            status = await anyio.to_thread.run_sync(lambda: L.lookup_gene(identifier))
+            status = await run_sync(lambda: L.lookup_gene(identifier))
             return IdentifierStatus(
                 identifier=status.symbol,
                 kind="gene",
@@ -248,7 +248,7 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
                 current=status.current,
                 label=status.hgnc_id,
             )
-        status = await anyio.to_thread.run_sync(lambda: L.lookup_trait(identifier))
+        status = await run_sync(lambda: L.lookup_trait(identifier))
         return IdentifierStatus(
             identifier=status.curie,
             kind="trait",
@@ -275,7 +275,7 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
         same value repeated on every row are one content.
         """
         target = resolve_dir(spec_dir, settings)
-        sig = await anyio.to_thread.run_sync(lambda: compiler.content_signature(target))
+        sig = await run_sync(lambda: compiler.content_signature(target))
         return SignatureResult(
             spec_dir=str(target),
             content_signature=sig,
@@ -309,12 +309,12 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
         from just_dna_format.integrity import IntegrityError, verify_manifest
         from just_dna_format.manifest import read_manifest
 
-        manifest = await anyio.to_thread.run_sync(lambda: read_manifest(manifest_path))
+        manifest = await run_sync(lambda: read_manifest(manifest_path))
         identity = getattr(manifest, "identity", None)
         artifact = getattr(manifest, "artifact", None)
 
         try:
-            await anyio.to_thread.run_sync(
+            await run_sync(
                 lambda: verify_manifest(
                     target,
                     manifest,
@@ -363,7 +363,7 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
         """
         source = resolve_dir(parquet_dir, settings)
         out = resolve_dir(output_dir, settings, must_exist=False)
-        written = await anyio.to_thread.run_sync(lambda: compiler.reverse_module(source, out))
+        written = await run_sync(lambda: compiler.reverse_module(source, out))
         return OpResult(
             success=True,
             message=f"Spec written to {written}.",
@@ -400,7 +400,7 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
             return client.get_module(namespace, name)
 
         try:
-            payload = await anyio.to_thread.run_sync(_get)
+            payload = await run_sync(_get)
         except RegistryError as exc:
             return OpResult(success=False, message=f"Registry error: {exc}")
         return OpResult(success=True, message=f"{namespace}/{name}", data=dict(payload))
@@ -430,7 +430,7 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
             return client.download(namespace, name, version, target)
 
         try:
-            manifest = await anyio.to_thread.run_sync(_download)
+            manifest = await run_sync(_download)
         except RegistryError as exc:
             return OpResult(success=False, message=f"Registry error: {exc}")
         identity = getattr(manifest, "identity", None)

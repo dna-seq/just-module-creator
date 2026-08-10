@@ -108,12 +108,12 @@ from just_dna_format.base import derive_variant_key
 from just_dna_format.integrity import verify_manifest
 from just_dna_format.manifest import read_manifest
 
-reference.authoring_reference()             # what `reference` prints, as a dict
+reference.authoring_reference()  # what `reference` prints, as a dict
 manifest = read_manifest(module_dir / "manifest.json")
-verify_manifest(module_dir, manifest, require_marketplace=False)   # raises IntegrityError
-alleles.parsimony_reduce({"CAG", "C"})      # the indel reduction
+verify_manifest(module_dir, manifest, require_marketplace=False)  # raises IntegrityError
+alleles.parsimony_reduce({"CAG", "C"})  # the indel reduction
 derive_variant_key(rsid, chrom, start, ref, alts=None, build="GRCh38")
-vocab.VALID_STATES                          # every closed vocabulary, as a frozenset
+vocab.VALID_STATES  # every closed vocabulary, as a frozenset
 ```
 
 Pass a row's own `build` to `derive_variant_key` whenever the module is not GRCh38 — the default

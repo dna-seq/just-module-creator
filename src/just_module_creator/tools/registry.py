@@ -10,7 +10,7 @@ Authoring, validating and compiling a module need no token. Only these do.
 
 from __future__ import annotations
 
-import anyio
+from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
@@ -61,7 +61,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         from just_dna_registry import RegistryError
 
         try:
-            payload = await anyio.to_thread.run_sync(lambda: _client(token).whoami())
+            payload = await run_sync(lambda: _client(token).whoami())
         except RegistryError as exc:
             return OpResult(success=False, message=f"Registry rejected the token: {exc}")
         return OpResult(success=True, message="Token accepted.", data=dict(payload))
@@ -97,9 +97,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
             raise ToolError(f"Invalid namespace {namespace!r}: {exc}") from exc
 
         try:
-            payload = await anyio.to_thread.run_sync(
-                lambda: _client(token).claim_namespace(namespace)
-            )
+            payload = await run_sync(lambda: _client(token).claim_namespace(namespace))
         except RegistryError as exc:
             return OpResult(success=False, message=f"Registry error: {exc}")
         return OpResult(success=True, message=f"Claimed {namespace}.", data=dict(payload))
@@ -155,7 +153,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         # Refuse locally rather than shipping a spec the server will reject.
         from just_dna_compiler import compiler
 
-        pre = await anyio.to_thread.run_sync(lambda: compiler.validate_spec(target, strict=True))
+        pre = await run_sync(lambda: compiler.validate_spec(target, strict=True))
         if not pre.valid:
             return OpResult(
                 success=False,
@@ -170,7 +168,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
             await ctx.info(f"Publishing {namespace}/{name}@{version}")
 
         try:
-            manifest = await anyio.to_thread.run_sync(
+            manifest = await run_sync(
                 lambda: _client(token).publish(
                     namespace, name, version, target, changelog=changelog
                 )

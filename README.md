@@ -1,133 +1,176 @@
-# mcp-template
+# just-module-creator
 
-A **uv + [FastMCP](https://gofastmcp.com)** server template — a clean skeleton
-with the patterns, scripts, and glue you actually need, optimized for use with
-agentic coding tools (Claude Code, Cursor, Codex, Antigravity).
+A **Claude Code plugin** for authoring [just-dna](https://module-registry.just-dna.life)
+annotation modules. It ships two halves that work together:
 
-The demo domain is **cake/baking** (recipes, a simulated long-running bake, and a
-fake "Bakery Cloud" API for the auth demo). Replace the cake tools with your own;
-keep the structure.
+- an **MCP server** wrapping the just-dna toolchain with structured, agent-shaped tools, and
+- a **skill** that teaches the workflow those tools serve.
 
-> Agents: start with [AGENTS.md](./AGENTS.md).
+A module is a directory of authored CSVs plus `module_spec.yaml`, compiled into a parquet artifact
+with a content-addressed `manifest.json`. It carries annotation only — lookup tables mapping a
+genotype or a measured quantity to a phenotype.
 
-## Highlights
+> Agents: start with [CLAUDE.md](./CLAUDE.md) (the domain), then [AGENTS.md](./AGENTS.md) (the code).
 
-- **uv** packaging with the `uv_build` backend.
-- **Hybrid tool registration with modes** — an `essentials` surface that's always
-  on, plus `extended` tools registered on start. Keeps the default tool list
-  small to avoid polluting an agent's context.
-- **Boot-safe runtime auth** — the server never requires a key to start. Key-gated
-  tools resolve credentials **per request / per session** (multi-user safe), via
-  an `authenticate` tool, an HTTP header, Smithery config, or env.
-- **Real background tasks** out of the box — `@mcp.tool(task=True)` with FastMCP's
-  in-memory backend (no Redis); `FASTMCP_DOCKET_URL` switches to Redis for scale.
-- **Structured I/O** via Pydantic models + tool annotations.
-- **In-memory test harness** (`Client(transport=server)`) — fast, deterministic,
-  no network.
-- **Pre-wired client configs** for Claude Code, Cursor, and VS Code.
-- Optional **Docker** and **Smithery** deployment.
+## Why a server and not just a skill
 
-## Quickstart
+Prose can ask an agent to behave; a tool can make it. Three rules from real module-creation
+experience are enforced here rather than merely documented:
+
+- **Ask the tool, never memory.** Every column list, vocabulary and requirement is generated from
+  the live pydantic models in `just-dna-format`, so `describe_table` and `table_requirements`
+  cannot drift from what the compiler accepts.
+- **Report, never repair.** `lookup_variant` shows you a value and *refuses* to write it into an
+  authored cell. Those cells are redundancy-bearing: a later check compares your independent value
+  against the same source, so filling it from that source deletes a whole validation class. The
+  refusal survives the MCP boundary with its reason attached.
+- **A check that could not run is not a check that passed.** `null` and `unknown` never collapse
+  into a boolean pass, and an offline `enrich_module` says outright that the ref check did not run.
+
+`compile_module` also pins `resolve_with_ensembl=True`, so the wrapper cannot reach the flag that —
+despite reading as "don't use Ensembl" — switches off *all* resolution and compiles every row with
+no coordinate, successfully.
+
+## Install as a plugin
+
+```bash
+# One session, straight from a checkout
+claude --plugin-dir /path/to/just-module-creator
+
+# Or via the bundled marketplace
+/plugin marketplace add /path/to/just-module-creator
+/plugin install just-module-creator@just-dna
+```
+
+Requires [`uv`](https://docs.astral.sh/uv/) on PATH and Python ≥ 3.13. The plugin launches the
+server with `uv run --project ${CLAUDE_PLUGIN_ROOT}`, so dependencies install on first use.
+
+## Quickstart (standalone)
 
 ```bash
 uv sync
-uv run pytest                      # 14 tests, all in-memory
-uv run mcp-template stdio          # run over stdio
-uv run mcp-template http           # run over HTTP (default :3011)
-uv run mcp-template stdio --mode extended   # expose the full tool surface
-uv run fastmcp dev fastmcp.json    # MCP Inspector
+uv run pytest                                  # 40 tests, in-memory and offline
+uv run just-module-creator stdio               # run over stdio
+uv run just-module-creator stdio --mode extended
+uv run fastmcp dev fastmcp.json                # MCP Inspector
 ```
 
-The server **boots with no environment configured.**
+The server **boots with no environment configured** — authoring a module needs no registry account.
 
-## Tools (cake demo)
+## The tools
 
-| Tool | Tier | Key? | Notes |
-|------|------|------|-------|
-| `list_recipes` | essentials | no | read-only |
-| `get_recipe` | essentials | no | read-only |
-| `bake_cake` | essentials | no | real background task (`task=True`), streams progress |
-| `authenticate` | always | — | unlocks gated tools for *this session* |
-| `scale_recipe` | extended | no | `--mode extended` |
-| `suggest_pairings` | extended | no | `--mode extended` |
-| `continue_bake` | extended | no | `--mode extended` |
-| `order_custom_cake` | gated | yes | needs an API key (demo: `cake_*`) |
-| `delivery_status` | gated | yes | needs an API key |
+| Tool | Tier | Token? | Notes |
+|---|---|---|---|
+| `list_tables` | essentials | no | which table kind a finding belongs in |
+| `describe_table` | essentials | no | columns, vocabularies, pick-lists, redundancy-bearing cells |
+| `table_requirements` | essentials | no | required / **defaulted** / optional + the one-of rules |
+| `get_template` | essentials | no | header-only or stubbed CSV |
+| `scaffold_module` | essentials | no | never overwrites; re-run to add a table |
+| `lint_rows` | essentials | no | lints CSV *text*; writes nothing, anywhere |
+| `validate_module` | essentials | no | pre-flight; pass the mode you will compile with |
+| `compile_module` | essentials | no | parquet + `manifest.json` |
+| `lookup_variant` | essentials | no | loci, alleles, ClinVar, rsID currency — and what it withholds |
+| `lookup_citation` | essentials | no | does this PMID/DOI exist |
+| `registry_search` | essentials | no | has someone already built this |
+| `authenticate` | always | — | stores a registry token for *this session* |
+| `enrich_module` | extended | no | **background task**; the only thing that catches a shifted `start` |
+| `check_identifiers`, `lookup_identifier` | extended | no | HGNC / OLS4 currency |
+| `authoring_reference` | extended | no | the whole generated DSL |
+| `module_signature`, `verify_artifact`, `reverse_module` | extended | no | integrity and round-trip |
+| `registry_get_module`, `registry_download` | extended | no | read the catalog |
+| `registry_whoami`, `registry_claim_namespace`, `registry_publish` | gated | **yes** | registry writes |
 
-Plus a resource (`resource://cakes/pantry`) and a prompt (`bake_a_cake`).
+Plus a resource (`resource://just-dna/tables`) and a prompt (`create_module`).
+
+Not wrapped, and deliberately so — use the CLIs (`references/CLI.md` has the full surface):
+drafting from a source (`draft-panel`, `draft`, `draft-clinpgx`), the fact passes (`frequencies`,
+`gene-metrics`, `dosage`, `literature`), signing, and the PGx cross-checks.
+
+## The workflow
+
+```
+list_tables ─▶ scaffold_module ─▶ author rows ─▶ lint_rows
+   ─▶ validate_module(strict) ─▶ enrich_module ─▶ compile_module(strict) ─▶ registry_publish
+```
+
+Curate before you enrich: a `<<REPLACE>>` placeholder makes every loader refuse the file, `enrich`
+included, because forward resolution is allele-aware and a placeholder genotype would skip the
+allele filter on exactly the rsIDs that need it.
 
 ## Modes
 
-`CAKE_MODE` (env) or `--mode` (CLI), default `essentials`:
+`JMC_MODE` (env) or `--mode` (CLI), default `essentials`:
 
-- `essentials` — minimal, casual surface (low context cost).
-- `extended` — everything.
+- `essentials` — the authoring loop you cannot work without, plus the read-only lookups curation
+  depends on. Small on purpose: fewer tools is less context pollution.
+- `extended` — adds enrichment, integrity, round-trip and registry reads.
 
-## Auth model (read this)
+## Auth
 
-The server **never** raises at startup for a missing key. Key-gated tools resolve
-a key **per request**, in this order:
+The server **never** raises at startup for a missing token. Gated tools resolve one **per request**:
 
-1. `X-Cake-Api-Key` HTTP header (multi-user safe)
-2. Smithery-injected session config
-3. per-session key set via the `authenticate` tool
-4. `CAKE_API_KEY` env (single-tenant / local default)
+1. `X-Registry-Token` HTTP header (multi-user safe)
+2. per-session token set via the `authenticate` tool
+3. `JMC_API_KEY`, else `REGISTRY_TOKEN` (what `registry-client` already reads)
 
-If none resolve, gated tools return a friendly message (no exception). A key set
-via `authenticate` is scoped to the caller's own session, so it never leaks
-between HTTP clients. See [AGENTS.md](./AGENTS.md) for the multi-tenant caveat
-about `mcp.enable()`.
+If none resolve, gated tools return a friendly message rather than raising. A token set via
+`authenticate` is scoped to the caller's own session and never leaks between HTTP clients. See
+[AGENTS.md](./AGENTS.md) for the multi-tenant caveat about `mcp.enable()`.
 
-## Using with coding agents
+## Safety switches
 
-Pre-wired configs are included:
-
-- Claude Code → `.mcp.json`
-- Cursor → `.cursor/mcp.json`
-- VS Code → `.vscode/mcp.json`
-
-They launch `uv run mcp-template stdio`. For **Codex** (`~/.codex/config.toml`):
-
-```toml
-[mcp_servers.cake]
-command = "uv"
-args = ["run", "mcp-template", "stdio"]
-```
+| Variable | Effect |
+|---|---|
+| `JMC_OFFLINE=true` | Hard network ceiling. Every tool that could fetch runs cache-only, and a per-call `offline=false` cannot override it. |
+| `JMC_WORKSPACE=/path` | Refuse to read or write outside this directory. Unset = no restriction (right for stdio; set it for HTTP). |
 
 ## Configuration
 
-All `CAKE_*` env vars are optional (see `.env.example` and `settings.py`):
-`CAKE_API_KEY`, `CAKE_MODE`, `CAKE_TRANSPORT`, `CAKE_HOST`, `CAKE_PORT`,
-`CAKE_LOG_LEVEL`, `CAKE_API_KEY_HEADER`, `CAKE_OVEN_MAX_TEMP_C`.
+All `JMC_*` variables are optional — see `.env.example` and `settings.py`. The just-dna toolchain's
+own variables (`JUST_DNA_*_CACHE`, `NCBI_API_KEY`, `PHARMVAR_API_KEY`, `REGISTRY_TOKEN`) are read by
+the enricher straight from the process environment; `.env.example` documents them so everything is
+configured in one place.
+
+`PHARMVAR_API_KEY` is personal under PharmVar's ToS §2 — never bake it into a module or a snapshot.
 
 ## Deployment
 
-- **Docker**: `docker build -t cake-mcp . && docker run -p 3011:3011 cake-mcp`
-  (defaults to HTTP).
-- **Smithery**: `uv sync --extra smithery`; entrypoint in `pyproject.toml`
-  `[tool.smithery]` + `smithery.yaml`.
+- **Docker**: `docker build -t just-module-creator . && docker run -p 3011:3011 just-module-creator`
+  (defaults to HTTP). Set `JMC_WORKSPACE` for multi-user deployments.
 - **Declarative**: `fastmcp.json` drives `fastmcp run` / `fastmcp dev`.
 
 ## Project layout
 
 ```
-src/mcp_template/
-  server.py        build_server(), CLI, graceful shutdown, Smithery entrypoint
-  settings.py      pydantic-settings (CAKE_*), safe defaults
-  auth.py          per-session/per-request key resolution + authenticate tool
-  models.py        Pydantic tool I/O models
-  logging_setup.py stdlib logging -> stderr
+.claude-plugin/
+  plugin.json          manifest; declares the MCP server via ${CLAUDE_PLUGIN_ROOT}
+  marketplace.json     so `/plugin marketplace add ./` works
+skills/create-module/
+  SKILL.md             the workflow, MCP-first
+  references/
+    TABLES.md          which table kind a finding belongs in
+    SYMPTOMS.md        message text -> cause -> action
+    CLI.md             the full CLI surface, and what is not wrapped
+src/just_module_creator/
+  server.py            build_server(), CLI, graceful shutdown
+  settings.py          pydantic-settings (JMC_*), safe defaults
+  auth.py              per-session/per-request token resolution
+  models.py            trimmed Pydantic tool I/O
+  logging_setup.py     stdlib logging -> stderr
   tools/
-    recipes.py       essentials (always)
-    extended.py      extended-only (mode=extended)
-    bakery_cloud.py  key-gated (tag: bakery_cloud)
-    data.py          in-memory recipe fixtures
-tests/             in-memory client tests
+    authoring.py       essentials — the offline authoring loop
+    research.py        essentials — read-only network lookups
+    advanced.py        extended — enrichment, integrity, round-trip
+    registry.py        token-gated registry writes
+    _shared.py         path containment, offline ceiling, converters
+tests/                 in-memory, offline
 ```
 
-## Make it yours
+## Upstream
 
-See the "Renaming the template" section in [AGENTS.md](./AGENTS.md).
+`just-dna-format` (schema) ← `just-dna-compiler` (spec → parquet) ← `just-dna-enricher` (the only
+tier that fetches), plus `just-dna-registry` (catalog client). The dependency arrow points inward;
+only the enricher touches the network.
 
 ## License
 
