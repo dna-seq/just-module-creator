@@ -46,7 +46,7 @@ said so!*").
 | **Every row is a claim with a receipt.** `conclusion` is the claim, `pmid` is the receipt | why `studies.csv` is required whenever `variants.csv` exists |
 | **A blank cell means "we don't know", never "no"** | the three-valued algebra, and why you must not write `false` to tidy a warning |
 | **Those two quote columns mean "somebody read this paper and found the sentence"** — and a checker later looks for it | why you must not lift one from the fulltext that same checker will use |
-| **I write the first version; a specialist reviews it later and that becomes version 2** | who does what, and why you are not being asked to check the genetics |
+| **I write it; if you want a specialist to check it, that becomes a later version with their name on it** | who does what, and why you are not being asked to check the genetics |
 | **On a dial, a shared endpoint is a boundary; on a counter, it is two bins claiming the same number** | why dense bins must touch and integer bins must not |
 
 **Correct the DNA-reading misconception early and unprompted.** Do not wait to be asked. A beginner's
@@ -206,29 +206,45 @@ podcast. Everything after that is yours: the triage, the rows, the conclusions, 
 tell you whether your `state` is right, and asking sends them away to find someone who can, which is a
 later step performed by a different person.
 
-### The pyramid
+### Trust is accumulated, and it is read off the module — not scheduled
 
-| Layer | Where | Version | Who | What it is |
-|---|---|---|---|---|
-| draft | polygon (`target="test"`) | any | agent | a rehearsal; deletable, nobody installs it |
-| **primer** | **production** | **1.0.0** | **agent** | the first real entry. AI-authored, honest, declared |
-| curated | production | 2.0.0 | a human expert reviews the primer | the review the author went and asked for |
-| matured | production | 3.0.0+ | several reviewers, ai and human | many iterations |
-| featured | production, cherry-picked | — | the catalog operator | curated work promoted by hand |
+**There is exactly one hard boundary, and it is the instance**: the polygon is a rehearsal nobody
+installs from, production is the catalog people install. That one is mechanical.
 
-**A production `1.0.0` is the primer layer, not a monument.** The bar is *honest, checked, and
-declared* — not "a geneticist would sign this", because signing it is literally the next layer's job
-and a different person's. Publishing an AI-authored primer to production is the designed path.
+Everything above it is a **signal a reader weighs**, not a contract:
 
-What still holds, and for its own reason: a production version is immutable and its content claim
-survives a `yank`, so get an explicit yes before `registry_claim_namespace(target="prod")` and
-`registry_publish(target="prod")`. That is about irreversibility, not about worthiness. See §7.
+- **A high version number suggests iteration.** A module at `v25` has been worked on; that is mildly
+  more trustworthy than a `v1`, because somebody kept coming back.
+- **A non-AI curator costs human labour**, and that cost is the signal. A module carrying a real
+  human reviewer is worth more than one that does not, for that reason alone.
+- **Depth multiplies.** Many iterations *and* two or more medical geneticists in `authorship` is
+  about as good as it gets.
+
+**Do not turn that into a ladder.** There is **no contract on versioning and no required order of
+curation**. `2.0.0` does not mean "reviewed", `1.0.0` does not mean "unreviewed", a human may curate
+from the very first version, an agent may revise after a human, and a module may sit at `v1` forever
+and be fine. Any rule of the form "version N means stage X" is invented, and inventing one would
+make an agent withhold a publish or a version bump waiting for a milestone that does not exist.
+
+What follows for you, writing the first version:
+
+- **An AI-authored module published to production is normal**, not a shortcut. The bar is *honest,
+  checked, and declared* — not "a specialist would sign this", because the specialist is a different
+  person the author has to go and find, and they cannot review something that was never published.
+- **Record what is true and let the signal accumulate on its own.** You cannot make a module
+  trustworthy by hedging its prose or by holding it back; you make it *readable* by declaring the
+  authorship honestly, which is the next section.
+
+What still holds, for its own separate reason: a production version is immutable and its content
+claim survives a `yank`, so get an explicit yes before `registry_claim_namespace(target="prod")` and
+`registry_publish(target="prod")`. That is about irreversibility, never about worthiness. See §7.
 
 ### Declare the kind — this is the load-bearing part
 
-`module_spec.yaml`'s `authorship:` is what makes the pyramid work. `Contribution`'s own contract says
-a consumer "routes its scrutiny by `kind`", so a reviewer, a review queue and the catalog all decide
-how hard to look from this block. Getting it right matters more than hedging your prose.
+`module_spec.yaml`'s `authorship:` is where the trust signal above actually lives. `Contribution`'s
+own contract says a consumer "routes its scrutiny by `kind`", so a reviewer, a review queue and the
+catalog all decide how hard to look from this block. **It is the only place a human curator's effort
+is recorded at all** — get it right and hedged prose becomes unnecessary.
 
 Two axes, and there is **no `ai-writer` / `ai-curator` value** — it is the cross-product:
 
@@ -239,24 +255,24 @@ Two axes, and there is **no `ai-writer` / `ai-curator` value** — it is the cro
 
 ```yaml
 authorship:
-  - who: ai-module-creator      # the primer
+  - who: ai-module-creator
     role: created
     kind: [ai, agent]
     at: '2026-08-12'
-  - who: some-geneticist        # added at 2.0.0 — a second ENTRY, never an edit of the first
+  - who: some-geneticist      # a later pass appends an ENTRY; it never edits the one above
     role: reviewed
     kind: [human_expert]
     at: '2026-09-01'
 ```
 
 **A joint contribution is two entries, each with its own `kind`** — the format refuses a lossy
-`hybrid` tag on purpose. A curation pass *appends*; it never rewrites the primer's line, because the
-record of who wrote it is the thing a reviewer is routing on.
+`hybrid` tag on purpose. A later pass *appends*; it never rewrites an earlier line, because who wrote
+what is exactly what a reviewer is routing on. Nothing constrains the order: the human entry may be
+first, or may never come.
 
-`authorship` is module metadata and sits **outside `artifact.digest`**, so adding a reviewer does not
-move the content identity — two versions with identical rows and different authorship share a
-`content_signature`. That is what lets a curation pass be a real version bump without pretending the
-data changed.
+**`authorship` sits outside `artifact.digest`**, so adding a reviewer moves no content identity — two
+versions with identical rows and different authorship share a `content_signature`. That is what lets
+a pure review be a real version bump without pretending the data changed.
 
 ## Before you start — ask about the email
 
@@ -841,11 +857,12 @@ Read the verdicts as three-valued, because they are:
 `registry_health(target="test")` confirms you are pointed where you think you are: it reports the
 instance's own mode, so a rehearsal is verified rather than assumed.
 
-### Rehearse on the polygon, then publish the primer to production
+### Rehearse on the polygon, then publish to production
 
 **The polygon is where you rehearse, not where the work stops.** A draft that never leaves it helps
-nobody, and production `1.0.0` is the primer layer — see the pyramid at the top of this file. So the
-sequence for a finished first module is: rehearse, read it back, then ask about production.
+nobody, and an honest AI-authored first version belongs in the catalog — see *Trust is accumulated*
+at the top of this file. The sequence for a finished module is: rehearse, read it back, then ask
+about production.
 
 **What needs an explicit yes is the irreversibility, not the worthiness.** Both
 `registry_claim_namespace(target="prod")` and `registry_publish(target="prod")` are permanent: a
@@ -855,9 +872,10 @@ that data under any other name. There is no overwrite, no cleanup and no admin t
 cost *in* the question, name which of the two calls you are asking about, and get the yes.
 
 **Do not turn "are you sure?" into "are you worthy?".** An agent that keeps withholding production
-because the module feels thin is enforcing a bar the pyramid does not have, and it is usually
-enforcing it against a person who cannot argue back on the genetics. If it is honest, checked and
-declares its `kind`, the primer belongs in the catalog.
+because the module feels thin is enforcing a bar that does not exist, and it is usually enforcing it
+against a person who cannot argue back on the genetics. If it is honest, checked and declares its
+`kind`, it belongs in the catalog — trust accrues afterwards, from use and from later contributors,
+and none of that can start before it is published.
 
 **"Publish it" from someone who has not been told there are two registries still means: say so.**
 Explain the polygon in one sentence, rehearse there, and then ask about production as its own
@@ -892,14 +910,14 @@ publishing a near-duplicate.
 - **No row's `state` or `direction` was settled by guessing.** Having *dropped* rows for that reason is
   evidence in favour, not against.
 - A polygon rehearsal was published and **read back**, and what came back was what you meant.
-- `authorship` declares the kind honestly — `[ai, agent]` for a primer, with a real `role` and `at`.
+- `authorship` declares the kind honestly — `[ai, agent]` when an agent wrote it, with `role` and `at`.
 
-**Note what is NOT on that list: whether a specialist would endorse it.** That is the curated layer's
-question, answered at `2.0.0` by a human expert the author goes and finds. A primer that waits for it
-waits forever, because the reviewer arrives *after* something exists to review.
+**Note what is NOT on that list: whether a specialist would endorse it.** That is a question a human
+reviewer answers later, in their own entry, if the author goes and finds one. A module that waits for
+that waits forever, because a reviewer arrives *after* there is something to review.
 
 **The bar that does apply is honesty, and here is what failing it looks like.** Not "too small" —
-`assets/fto_bmi` is one locus and that is a fine primer. Failing means: a `state` or `direction`
+`assets/fto_bmi` is one locus and that is a perfectly good module. Failing means: a `state` or `direction`
 settled by guessing, a PMID recalled rather than searched, a licence flag written `false` where the
 terms were merely unknown, a coordinate authored beside the `resolution.csv` that verifies it, or an
 `authorship` block that does not say an agent wrote it. Each of those ships a module that *looks*
