@@ -5,6 +5,20 @@ on our side, so agents in sibling repos are not surprised.
 
 ## 0.3.0 — registry onboarding (2026-08-11)
 
+### A version bump touches two files, and the suite now knows it
+
+`.claude-plugin/plugin.json` is JSON and cannot read `importlib.metadata`, so it is the one place
+`CLAUDE.md` §2's "never hardcode a version string" cannot be obeyed — and it shipped this release
+still declaring 0.2.0, caught in review rather than by anything automated. The drift is silent:
+plugin loading is unaffected, so the only symptom is an installed plugin misreporting itself.
+
+Fixed, and `tests/test_plugin_manifest.py` now fails on the mismatch, verified by reverting the
+manifest and watching it fail rather than assuming it would. The same file pins the other
+hand-maintained claims in the manifest: that its `mcpServers` command is still the console script
+`[project.scripts]` installs and stays `${CLAUDE_PLUGIN_ROOT}`-relative, that the declared skills
+directory holds the two skills the description promises, and that `marketplace.json` carries no
+version of its own — one hand-maintained version string is the ceiling.
+
 ### You can get a registry account from inside the tool surface
 
 Dogfooding hit the wall at step zero: every registry tool needed a token, and the only route to one

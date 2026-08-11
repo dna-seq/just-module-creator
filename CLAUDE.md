@@ -88,6 +88,16 @@ rule without its reason gets rationalised away at 2 a.m.
 - **Never hardcode a version string.** It comes from `pyproject.toml` via
   `importlib.metadata.version("just-module-creator")`. Two sources of truth drift,
   and the one you read is the wrong one.
+
+  **The single unavoidable exception is `.claude-plugin/plugin.json`**, which is JSON
+  and cannot read `importlib.metadata`. So its `version` **must be bumped by hand in
+  the same commit as the `pyproject.toml` bump** — a version bump touches two files
+  here, always. The drift is silent: loading is unaffected, so the only symptom is an
+  installed plugin misreporting itself, and 0.3.0 shipped with a manifest still
+  saying 0.2.0 because of exactly that. `tests/test_plugin_manifest.py` now fails on
+  the mismatch, which is the guard — do not rely on remembering. Keep it at one
+  hand-maintained version string: `marketplace.json` deliberately carries none, and a
+  test pins that too.
 - **Never rename a user-facing command to dodge a stale `uv run` wrapper.** Bump
   the version and re-run `uv sync` so uv rebuilds the entry points.
 - **Never use a placeholder path or a fabricated example value** in committed
