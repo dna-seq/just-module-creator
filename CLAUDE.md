@@ -281,8 +281,28 @@ comparison against ISO values.
   variable the enricher also reads is right, not a leak: `JUST_DNA_CONTACT_EMAIL`
   and `NCBI_API_KEY` reach our clients through `EutilsSettings`, so one `.env`
   configures both surfaces and upstream's precedence is inherited rather than
-  copied. Never fabricate a contact address — an invented one misattributes the
-  traffic to someone.
+  copied.
+- **The polite-pool contact is a three-step chain, and step 2 stays *inherited*.**
+  `JMC_USER_EMAIL` → `JUST_DNA_CONTACT_EMAIL` → `settings.DEFAULT_CONTACT_EMAIL`.
+  Ours goes first because the address says *whose* rate-limit budget is being
+  spent — NCBI and Unpaywall both meter and contact per address. The middle step
+  is not re-implemented: `build_services` passes `email=None` when ours is unset
+  and lets `EutilsSettings.__post_init__` do that read, so a change to upstream's
+  precedence is followed rather than copied. **Never build the chain by reading
+  `JUST_DNA_CONTACT_EMAIL` yourself.**
+- **Never fabricate a contact address** — an invented one misattributes the
+  traffic to a stranger. `DEFAULT_CONTACT_EMAIL` is not an exception to that: it
+  is the project's own address, supplied by its owner, who accepts the traffic.
+  What it does cost is *attribution*, and the cost is real — an install that sets
+  nothing pools its budget with every other unconfigured install and sends any
+  abuse report to the project's inbox rather than the user's. So the default
+  exists to stop a source sitting out a call for want of a contact, **not** to
+  make configuring one optional: `.env.template` asks for `JMC_USER_EMAIL` in its
+  own section, and `build_services` logs which of the three steps answered so
+  "project default" is visible rather than silent. Since the default is always
+  present, `contact_email()` returns `str`, and any `if not email:` branch is dead
+  code — Unpaywall used to be the one source that reported itself unavailable on
+  a fresh checkout, and that branch is gone rather than left to rot.
 - **Typer for the CLI. Pydantic 2 at every boundary** — every tool returns a
   model from `models.py`, never a bare dict, because an agent reads the field
   descriptions.

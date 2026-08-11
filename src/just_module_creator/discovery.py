@@ -470,9 +470,8 @@ class Discovery:
         return self._built[name]
 
     def _user_agent(self) -> str:
-        """Descriptive, with a contact when one is configured. Never invented."""
-        email = self.services.contact_email()
-        return f"just-module-creator (mailto:{email})" if email else "just-module-creator"
+        """Descriptive, with a contact. Never invented — see ``contact_email``."""
+        return f"just-module-creator (mailto:{self.services.contact_email()})"
 
     # -- PubMed ---------------------------------------------------------- #
     def pubmed(self, term: str, limit: int) -> list[LiteratureCandidate]:
@@ -607,14 +606,12 @@ class Discovery:
         module you intend to publish, and it is per-article — which is why no
         static table on our side could answer it.
         """
-        email = self.services.contact_email()
-        if not email:
-            raise ServiceUnavailable(
-                UNPAYWALL,
-                "Unpaywall requires a contact address; set JUST_DNA_CONTACT_EMAIL. "
-                "An invented one would misattribute the traffic to someone.",
-            )
-        return self.service(UNPAYWALL).get(doi, {"email": email}).json()
+        # No "contact is unset" branch any more: `contact_email` resolves to the
+        # project default when nothing is configured, so Unpaywall is always
+        # askable. That removed the one source that used to sit out every call on a
+        # fresh checkout — and it is why setting JMC_USER_EMAIL matters, since the
+        # address is now always somebody's.
+        return self.service(UNPAYWALL).get(doi, {"email": self.services.contact_email()}).json()
 
 
 def resolve_sources(

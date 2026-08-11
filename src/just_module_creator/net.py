@@ -31,7 +31,7 @@ from just_dna_enricher.lookup import LookupClients
 from just_dna_enricher.net import PacingGate, attempt_floor
 from tenacity import RetryCallState, retry, retry_if_exception_type, wait_exponential_jitter
 
-from just_module_creator.settings import Settings
+from just_module_creator.settings import DEFAULT_CONTACT_EMAIL, Settings
 
 log = logging.getLogger(__name__)
 
@@ -215,15 +215,22 @@ class NetworkServices:
         self._extra.append(service)
         return service
 
-    def contact_email(self) -> str | None:
-        """The polite-pool contact, or ``None`` when genuinely unset.
+    def contact_email(self) -> str:
+        """The polite-pool contact. Always set — see ``build_services``.
 
-        Read through ``EutilsSettings`` rather than ``os.environ`` so upstream's
-        precedence is inherited. **Never invent one**: an address we made up
-        misattributes our traffic to a real person, and a source that needs one
-        must report itself unavailable instead.
+        Resolved once at build time as ``JMC_USER_EMAIL`` → the enricher's
+        ``JUST_DNA_CONTACT_EMAIL`` → :data:`~just_module_creator.settings.\
+DEFAULT_CONTACT_EMAIL`, so a source needing a contact can no longer report itself
+        unavailable for want of one.
+
+        **Still never an invented address.** The rule was never "prefer None" — it
+        is that an address we made up misattributes our traffic to a real person.
+        The default is the project's own, supplied by its owner. What it costs is
+        attribution: unset means everyone shares one identity, and both the rate
+        limit and any abuse report land there, which is why ``JMC_USER_EMAIL`` goes
+        first and ``.env.template`` asks for it.
         """
-        return self.eutils_settings.email
+        return self.eutils_settings.email or DEFAULT_CONTACT_EMAIL
 
     def close(self) -> None:
         for service in self._extra:
@@ -238,7 +245,13 @@ def build_services(settings: Settings) -> NetworkServices:
     Safe to call at server build time: every client here is lazy, so importing or
     constructing the server still touches no network.
     """
-    eutils_settings = EutilsSettings()
+    # Ours first, then upstream's, then the project default. Passing `None` when
+    # JMC_USER_EMAIL is unset is the load-bearing part: `__post_init__` only reads
+    # JUST_DNA_CONTACT_EMAIL when `email is None`, so upstream's precedence is
+    # inherited rather than restated here, and the default lands last.
+    eutils_settings = EutilsSettings(email=(settings.user_email or "").strip() or None)
+    if not eutils_settings.email:
+        eutils_settings.email = DEFAULT_CONTACT_EMAIL
     # `min_request_interval` is derived in EutilsSettings.__post_init__ from
     # whether NCBI_API_KEY is present (1/3 s unkeyed, 1/10 s keyed). Read it
     # rather than restating the numbers, so upstream owns the policy.
@@ -250,10 +263,20 @@ def build_services(settings: Settings) -> NetworkServices:
         europepmc=EuropePmcClient(),
         crossref=CrossrefClient(),
     )
+    # Log which step supplied the contact, not merely that one exists: "default"
+    # is the state an operator wants to notice, because it means their traffic is
+    # pooled with everyone else's.
+    contact_origin = (
+        "JMC_USER_EMAIL"
+        if (settings.user_email or "").strip()
+        else "project default"
+        if eutils_settings.email == DEFAULT_CONTACT_EMAIL
+        else "JUST_DNA_CONTACT_EMAIL"
+    )
     log.debug(
-        "Network services built (ncbi interval=%.3fs, contact=%s, s2 key=%s)",
+        "Network services built (ncbi interval=%.3fs, contact from %s, s2 key=%s)",
         interval,
-        "set" if eutils_settings.email else "unset",
+        contact_origin,
         "set" if settings.semantic_scholar_key() else "unset",
     )
     return NetworkServices(

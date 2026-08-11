@@ -128,6 +128,17 @@ irreversible on production. `authenticate` is for a token you already hold.
 Account and namespace names are lowercase-with-hyphens and reject underscores;
 module names are the opposite and take underscores. Both rules are enforced, not
 normalised.
+
+Ask the author, once, near the start: do they want to READ papers (fulltext work
+is what makes provenance_quote honest, since it records a human having read the
+paper), and may their email be used for lookups? NCBI's polite pool and Unpaywall
+meter and contact PER ADDRESS, so unconfigured means their usage shares one budget
+with every other unconfigured install and a problem reaches the project rather
+than them. Ask only when neither JMC_USER_EMAIL nor JUST_DNA_CONTACT_EMAIL is set,
+write an agreed address to `.env` as JMC_USER_EMAIL so it outlives the session, and
+take no for an answer — a default is configured, so nothing breaks. NEVER invent or
+INFER an address (not from git config, a commit, or the registry account): one the
+author did not offer is personal data volunteered on their behalf.
 """
 
 

@@ -813,15 +813,15 @@ wheels = [
 
 [[package]]
 name = "just-dna-format"
-version = "0.5.0"
+version = "0.5.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7a/c4/650f210ec4f120ce54c5abfeaec57691ab8e53089794562a3f8c681ca750/just_dna_format-0.5.0.tar.gz", hash = "sha256:90f24dd2b9ed67732e6ba397576f1a7ca215df1fbbdde7c55117a4f874c68a72", size = 100620, upload-time = "2026-08-07T01:50:20.238Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d3/1b/9d28104a67157c9ba8a0c108c4c27bf990d1cb55600efbafb9445713b631/just_dna_format-0.5.4.tar.gz", hash = "sha256:2bab66e272fda5cab97ee4cefffd8082ad0df00b51b3a6a483fac5198352fb86", size = 102824, upload-time = "2026-08-11T19:23:13.654Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/39/72/efbf310d50b82fcba5c8171e3560942d2304213ce4e605bc80964a9ce83b/just_dna_format-0.5.0-py3-none-any.whl", hash = "sha256:31e5c2551c1fac674a52ba410494eff81763991984cdd7a80435967e71c2d8c9", size = 117711, upload-time = "2026-08-07T01:50:14.541Z" },
+    { url = "https://files.pythonhosted.org/packages/6e/8f/17d15a0269b98512659aebf4b1364284511384a0529d3b885b93b69ae10b/just_dna_format-0.5.4-py3-none-any.whl", hash = "sha256:2c0a4cb67d3fb19a85bead190bc0628921a25824fec95da9020f994c69f3c098", size = 120020, upload-time = "2026-08-11T19:23:07.622Z" },
 ]
 
 [[package]]
@@ -841,7 +841,7 @@ wheels = [
 
 [[package]]
 name = "just-module-creator"
-version = "0.5.3"
+version = "0.6.0"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },

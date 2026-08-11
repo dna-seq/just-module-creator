@@ -244,15 +244,84 @@ def test_building_services_opens_no_connection() -> None:
 
 
 def test_a_contact_address_is_never_invented(monkeypatch) -> None:
-    """An address we made up misattributes our traffic to a real person.
+    """The rule that survived gaining a default.
+
+    This used to assert `contact_email() is None` with nothing configured. A
+    project default now fills that slot, so the invariant is narrower and still
+    worth pinning: the resolved contact is either something an operator configured
+    or the *documented constant* — never a value synthesised from anything else.
+    That is what forbids a future "helpful" default built from a hostname, a git
+    `user.email` or a registry account name, which is the thing that would really
+    misattribute traffic to a real person.
 
     `setenv(..., "")` rather than `delenv`: `load_dotenv(override=False)` skips a
     key that is merely present, so a deleted var can be refilled from a developer's
     `.env` and the test would stop meaning "no contact address".
     """
     monkeypatch.setenv("JUST_DNA_CONTACT_EMAIL", "")
-    services = build_services(Settings(_env_file=None))  # type: ignore[call-arg]
+    monkeypatch.setenv("NCBI_API_KEY", "")
+    services = build_services(Settings(_env_file=None, user_email=None))  # type: ignore[call-arg]
     try:
-        assert services.contact_email() is None
+        assert services.contact_email() == net.DEFAULT_CONTACT_EMAIL
+        # Pinned as a literal on purpose: a derived default would pass an
+        # equality-against-the-constant check while still being synthesised.
+        assert net.DEFAULT_CONTACT_EMAIL == "just.dna.seq@gmail.com"
     finally:
         services.close()
+
+
+# --------------------------------------------------------------------------- #
+# The polite-pool contact chain: JMC_USER_EMAIL -> JUST_DNA_CONTACT_EMAIL ->
+# DEFAULT_CONTACT_EMAIL. Every "unset" below is `setenv(VAR, "")` rather than
+# `delenv`, because a key that is merely *present* is skipped by
+# `load_dotenv(override=False)` — so an empty value is what "no value" has to
+# mean here, and `delenv` would leave a developer's real environment showing
+# through.
+# --------------------------------------------------------------------------- #
+
+
+def _blank_contact_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("JUST_DNA_CONTACT_EMAIL", "")
+    monkeypatch.setenv("NCBI_API_KEY", "")
+
+
+def test_our_variable_wins_over_the_enrichers(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("JUST_DNA_CONTACT_EMAIL", "upstream@example.org")
+    services = build_services(offline_settings(user_email="mine@example.org"))
+    assert services.contact_email() == "mine@example.org"
+
+
+def test_the_enrichers_variable_is_inherited_not_reimplemented(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Step 2 must come from `EutilsSettings.__post_init__`, not from our own read.
+
+    Proven by construction: we pass `email=None` when ours is unset, so the only
+    thing that can supply this value is upstream's own resolution.
+    """
+    monkeypatch.setenv("JUST_DNA_CONTACT_EMAIL", "upstream@example.org")
+    services = build_services(offline_settings(user_email=None))
+    assert services.contact_email() == "upstream@example.org"
+    assert services.eutils_settings.email == "upstream@example.org"
+
+
+def test_an_empty_user_email_is_unset_not_a_contact(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`JMC_USER_EMAIL=""` means "I set nothing", and must not become the contact."""
+    _blank_contact_env(monkeypatch)
+    services = build_services(offline_settings(user_email="   "))
+    assert services.contact_email() == net.DEFAULT_CONTACT_EMAIL
+
+
+def test_the_contact_is_never_none_so_unpaywall_is_always_askable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The reason the `if not email:` guard could be deleted rather than left dead.
+
+    Unpaywall was the one source that reported itself unavailable on a fresh
+    checkout; with a default it can always be asked, which is exactly why setting
+    JMC_USER_EMAIL matters — the address is now always somebody's.
+    """
+    _blank_contact_env(monkeypatch)
+    services = build_services(offline_settings(user_email=None))
+    email = services.contact_email()
+    assert email and "@" in email

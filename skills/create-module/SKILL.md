@@ -192,6 +192,42 @@ You do not need to: **the draft report prints the allele pair for each stubbed r
 Steps 4 and 6 are the only ones that use the network. Once `resolution.csv` and `literature.csv`
 exist they *are* the pin: every later compile is offline and reproducible.
 
+## Before you start — ask about reading papers, and about the email
+
+Two questions, once, at the top. Both change what the rest of the session can honestly do, and one of
+them is about somebody's personal data, so neither is yours to assume.
+
+**1. "Do you want to *read* the papers, or only cite them?"** Full-text work — `lookup_open_access`,
+`fetch_fulltext` — is what makes `provenance_quote` / `provenance_regex` honest, because those columns
+record that **a human read the paper and located the claim in it**. An author who does not intend to read
+anything should leave both empty and *know that at the start*, rather than discovering at step 6 why a
+column they expected to fill must stay blank. It is a perfectly good module either way.
+
+**2. "May I use your email address for the lookups?"** NCBI's polite pool and Unpaywall both **meter and
+contact per address**, so this is not decoration:
+
+| | their traffic | their rate limit | a problem reaches |
+|---|---|---|---|
+| configured | theirs | theirs | them |
+| not configured | pooled with every other unconfigured install | shared | the project's inbox |
+
+Unconfigured falls back to `settings.DEFAULT_CONTACT_EMAIL`, the project's own address. Nothing breaks
+without an answer — which is exactly why you ask *once*, take no for an answer, and never raise it again.
+
+**Only ask when nothing is configured.** Check `JMC_USER_EMAIL` first, then the enricher's
+`JUST_DNA_CONTACT_EMAIL`. **No tool reports the resolved contact or which step supplied it** (`F25`), so
+read `.env` directly for now. If either is set, say nothing at all: an author who configured it once
+should not be asked twice.
+
+**If they agree, write it into `.env` as `JMC_USER_EMAIL`.** A value that lives only in the session dies
+with it. Never overwrite an address already there, and never put one anywhere else — `.env` is gitignored
+and every other file in the tree is not.
+
+**Never invent an address, and never *infer* one.** Not from `git config user.email`, not off a commit,
+not from the registry account, not from the author's messages elsewhere. An address the author did not
+offer is personal data volunteered on their behalf, and a wrong guess misattributes traffic to a real
+stranger. "I'd rather not" is a complete answer and the default handles it.
+
 ## 0 — Where a module comes from
 
 Authors arrive with an idea, or with nothing, or with something somebody told them. Four honest

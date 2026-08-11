@@ -389,3 +389,58 @@ until somebody disabled it.
 
 **Closes when** an enricher check reports a chromosome disagreement between `gene` and the resolved
 locus, in a release `uv sync` installs — at which point the manual step comes out of §0.
+
+## F24 — the suite's hermeticity is a convention with no guard, and a bare `Settings()` reads the real `.env`
+
+**Found:** 2026-08-11, while adding tests for the contact-email chain · **Severity:** medium ·
+**Status:** open
+
+`CLAUDE.md` §6 says "the suite is hermetic: every fixture forces `offline=True` and `_env_file=None`, so
+no test can reach the network or read a developer's `.env`." The first half is a mechanism; the second is
+discipline. Demonstrated from inside the suite, under the real `tests/conftest.py`:
+
+```
+JMC_TEST_API_KEY in os.environ           : False      # .env never reaches the process env
+Settings(_env_file=None).test_api_key    : None       # hermetic, as documented
+Settings().test_api_key                  : 'mk_live_…'   # the developer's REAL polygon token
+```
+
+So the property holds only for as long as every construction remembers the kwarg. `conftest.offline_settings`
+does; a test that constructs `Settings(...)` directly may not, and several already do (this file's own
+`test_a_contact_address_is_never_invented` among them, correctly). Nothing fails when the kwarg is
+forgotten — the test simply starts reading whatever the developer happens to have configured, which is
+the worst failure shape available: it passes locally, passes in CI where `.env` is absent, and quietly
+means something different on each machine.
+
+Worth noting what is *not* wrong: `_load_env()` is called inside the CLI's `_run()` rather than at import,
+which is why `.env` stays out of `os.environ` entirely. That part is right and is why the leak is narrow.
+
+**Candidate fix:** an autouse fixture in `conftest.py` that points the dotenv source at a path that cannot
+exist, so a forgotten kwarg is harmless rather than silently live. That converts the convention into a
+mechanism without touching any test. A second, cheaper option is a test that asserts
+`Settings.model_config["env_file"]` is unreadable during the run — but it guards the config rather than the
+call sites, so it would still pass while an individual test read real values.
+
+**A candidate that is wrong:** removing `env_file=".env"` from `model_config`. The server genuinely needs
+it — that is how one `.env` serves both this surface and the enricher — and deleting it to make tests
+safer would break the product to protect the suite.
+
+## F25 — nothing reports the resolved contact address or which step supplied it
+
+**Found:** 2026-08-11 · **Severity:** low · **Status:** open
+
+The polite-pool contact resolves `JMC_USER_EMAIL` → `JUST_DNA_CONTACT_EMAIL` →
+`settings.DEFAULT_CONTACT_EMAIL`, and no tool answers which one won — or whether the author is on the
+shared project default at all. `build_services` logs the origin at `debug`, which no MCP client sees.
+
+That matters because `skills/create-module/SKILL.md` now instructs an agent to ask the author for an email
+**only when nothing is configured**, and the only way to establish that is to read `.env` off disk — a step
+outside the tool surface, in a file that also holds tokens. It is the `F23` shape again: a documented
+procedure whose precondition the product cannot report.
+
+**Candidate fix:** surface it read-only on an existing result rather than adding a tool — the origin string
+`build_services` already computes (`"JMC_USER_EMAIL"` / `"JUST_DNA_CONTACT_EMAIL"` / `"project default"`)
+on `literature_search`'s `sources` block or alongside `lookup_open_access`'s findings, where an agent is
+already looking when it matters. **Never the address itself** on a tool result: the origin answers the
+question, and echoing a configured address writes personal data into a transcript for no gain — the same
+argument as the `registry_register` install-id echo already noted in `UX_TESTER.md`.

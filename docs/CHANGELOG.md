@@ -3,6 +3,66 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.6.0 — a contact address that is somebody's, and asking before assuming (2026-08-11)
+
+A minor rather than a patch: it adds a configuration variable and changes default network
+behaviour. Unpaywall used to sit out every call on a fresh checkout for want of a contact
+address; it now always participates.
+
+### `JMC_USER_EMAIL`, and a default behind it
+
+The polite-pool contact resolves in three steps, first hit wins:
+
+1. **`JMC_USER_EMAIL`** — new, and ours. Named for the *user* because that is what the address
+   means to the services reading it: NCBI's polite pool and Unpaywall both **meter and contact
+   per address**, so it says whose rate-limit budget is being spent.
+2. **`JUST_DNA_CONTACT_EMAIL`** — the enricher's own variable, so one `.env` still configures
+   both surfaces. **Still inherited, not reimplemented**: `build_services` passes `email=None`
+   when ours is unset and lets `EutilsSettings.__post_init__` do that read, because it only
+   consults the environment when `email is None`. A change to upstream's precedence is followed
+   rather than copied.
+3. **`settings.DEFAULT_CONTACT_EMAIL`** — the project's own address, supplied by its owner.
+
+**The default is not the "never fabricate a contact address" rule being bent.** An invented
+address misattributes traffic to a stranger; this one attributes it to the people who ship the
+tool, who accept that. What it costs is *attribution*, and the cost is real: an install that sets
+nothing pools its budget with every other unconfigured install and sends any abuse report to the
+project's inbox rather than the author's. So the default exists to stop a source sitting out a
+call, **not** to make configuring one optional — `.env.template` asks for `JMC_USER_EMAIL` in its
+own section, and `build_services` logs *which of the three steps answered*, because "project
+default" is the state an operator wants to notice.
+
+Since a contact is now always present, `contact_email()` returns `str`, and the two `if not
+email:` branches went with it rather than being left to rot — including the one that made
+Unpaywall report itself unavailable.
+
+### The skill now asks, at the top, instead of assuming
+
+Two questions once, before any authoring: **do you want to read the papers or only cite them**
+(fulltext work is what makes `provenance_quote` honest, since those columns record a human having
+read the paper — an author who will not read anything should learn that at step 0, not step 6),
+and **may your email be used for lookups**. Asked **only when neither variable is set**, written
+to `.env` as `JMC_USER_EMAIL` so it outlives the session, never asked twice, and "I would rather
+not" is a complete answer because the default handles it.
+
+**And never *inferred*** — not from `git config user.email`, not off a commit, not from the
+registry account. An address the author did not offer is personal data volunteered on their
+behalf, and a wrong guess misattributes traffic to a real stranger.
+
+### Found while testing this
+
+- **`F24`** — the suite's hermeticity is a convention with no guard. `Settings(_env_file=None)` is
+  hermetic as documented, but a bare `Settings()` returns the developer's **real** polygon token,
+  and nothing fails when a test forgets the kwarg — it just starts meaning something different on
+  every machine. (`_load_env()` living inside the CLI's `_run()` rather than at import is what
+  keeps the leak narrow, and is right.)
+- **`F25`** — nothing reports the resolved contact or which step supplied it, so the skill's new
+  "ask only when nothing is configured" precondition can only be established by reading `.env` off
+  disk. The `F23` shape again.
+- `test_a_contact_address_is_never_invented` changed rather than being deleted: the invariant is
+  now that the contact is either operator-configured or the *documented constant*, never
+  synthesised — which is what forbids a future default derived from a hostname or a git config.
+
 ## 0.5.3 — metaphors that survive a beginner, and triage for a source you were handed (2026-08-11)
 
 Two skill additions, both drawn from an assisted session with a genuine non-specialist rather

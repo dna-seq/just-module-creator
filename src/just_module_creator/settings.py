@@ -15,6 +15,14 @@ variables the enricher reads — ``JUST_DNA_CONTACT_EMAIL`` for the polite-pool
 contact, ``NCBI_API_KEY`` for PubMed pacing — through ``EutilsSettings`` rather
 than ``os.environ``, so upstream's precedence is inherited rather than copied.
 One ``.env`` configures both surfaces.
+
+The polite-pool contact resolves in three steps, and only the first is ours:
+``JMC_USER_EMAIL`` → the enricher's own ``JUST_DNA_CONTACT_EMAIL`` →
+:data:`DEFAULT_CONTACT_EMAIL`. Ours goes first because the address identifies
+*whose* rate-limit budget is being spent, and the middle step is still inherited
+rather than copied — ``build_services`` passes ``None`` when ours is unset and
+lets ``EutilsSettings.__post_init__`` do that read, so a change to upstream's
+precedence is followed rather than reimplemented.
 """
 
 from __future__ import annotations
@@ -37,6 +45,18 @@ RegistryTarget = Literal["prod", "test"]
 
 DEFAULT_REGISTRY_URL = "https://module-registry.just-dna.life"
 DEFAULT_POLYGON_URL = "https://module-polygon.just-dna.life"
+
+#: Last-resort polite-pool contact: the **project's own** address, supplied by its
+#: owner. This is not the "never invent a contact address" rule being bent — an
+#: invented address misattributes traffic to a stranger, and this one attributes it
+#: to the people who ship this tool, who accept that.
+#:
+#: It does mean an author who sets nothing has their traffic pooled under one
+#: identity, which is precisely what ``JMC_USER_EMAIL`` exists to undo: NCBI and
+#: Unpaywall meter and contact *per address*, so a shared default concentrates both
+#: the budget and any abuse report. ``.env.template`` says so where an author will
+#: read it. Setting your own is the polite thing and costs one line.
+DEFAULT_CONTACT_EMAIL = "just.dna.seq@gmail.com"
 
 
 class Settings(BaseSettings):
@@ -72,6 +92,16 @@ class Settings(BaseSettings):
     # it from the environment is what lets `registry_register` be re-run in a
     # later session without minting a second, unreachable account.
     install_id: str | None = None
+
+    # The polite-pool contact, ours-first in a three-step chain resolved in
+    # `net.build_services`: this → JUST_DNA_CONTACT_EMAIL → DEFAULT_CONTACT_EMAIL.
+    #
+    # Named for the *user* rather than for the project because that is what the
+    # address means to the services reading it: NCBI's polite pool and Unpaywall
+    # both meter and contact per address, so it identifies whose quota is being
+    # spent. Left as `None` here rather than defaulted, so `build_services` can
+    # tell "unset" from "set", and pass None on to let upstream do its own read.
+    user_email: str | None = None
 
     # The two registry endpoints. `registry_url` is production — the catalog
     # everyone installs from — and `registry_test_url` is the polygon, where a
