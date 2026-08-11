@@ -42,7 +42,8 @@ Authoring surface for just-dna annotation modules (format 0.5).
 A module is a directory of authored CSVs plus module_spec.yaml, compiled into a
 parquet artifact with a content-addressed manifest. Work in this order:
 
-  list_tables -> scaffold_module -> author rows -> lint_rows
+  list_tables -> scaffold_module -> draft_from_clinvar (if a source publishes
+    the table) -> literature_search -> author rows -> lint_rows
     -> validate_module(strict) -> enrich_module -> compile_module(strict)
 
 Three rules this server enforces rather than merely documents:
@@ -58,11 +59,17 @@ Three rules this server enforces rather than merely documents:
    never collapse into a pass, and warnings on a green run are the interesting
    output.
 
+4. Take every PMID from a literature_search result, never from memory.
+   lookup_citation proves a PMID *exists*, and PMIDs are dense enough that a
+   recalled one is usually a real record for a different paper. Only a title
+   settles identity.
+
 `start` is always the 1-based VCF position: paste it, never subtract one.
 
-Extended mode (JMC_MODE=extended) adds enrichment, integrity, round-trip and
-registry reads. Publishing needs a registry token via `authenticate`; nothing
-else does.
+The tiers split on what a tool DOES, not on how useful it is: essentials is
+everything that only reads, plus the ClinVar draft; extended (JMC_MODE=extended)
+is everything that writes into a spec directory or fetches at scale. Publishing
+needs a registry token via `authenticate`; nothing else does.
 """
 
 

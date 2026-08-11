@@ -4,7 +4,8 @@ A **Claude Code plugin** for authoring [just-dna](https://module-registry.just-d
 annotation modules. It ships two halves that work together:
 
 - an **MCP server** wrapping the just-dna toolchain with structured, agent-shaped tools, and
-- a **skill** that teaches the workflow those tools serve.
+- two **skills** — one teaching the authoring workflow, one teaching how to find and read the
+  evidence behind a row.
 
 A module is a directory of authored CSVs plus `module_spec.yaml`, compiled into a parquet artifact
 with a content-addressed `manifest.json`. It carries annotation only — lookup tables mapping a
@@ -50,7 +51,7 @@ server with `uv run --project ${CLAUDE_PLUGIN_ROOT}`, so dependencies install on
 
 ```bash
 uv sync
-uv run pytest                                  # 40 tests, in-memory and offline
+uv run pytest                                  # 81 tests, in-memory and offline
 uv run just-module-creator stdio               # run over stdio
 uv run just-module-creator stdio --mode extended
 uv run fastmcp dev fastmcp.json                # MCP Inspector
@@ -71,9 +72,15 @@ The server **boots with no environment configured** — authoring a module needs
 | `validate_module` | essentials | no | pre-flight; pass the mode you will compile with |
 | `compile_module` | essentials | no | parquet + `manifest.json` |
 | `lookup_variant` | essentials | no | loci, alleles, ClinVar, rsID currency — and what it withholds |
-| `lookup_citation` | essentials | no | does this PMID/DOI exist |
+| `literature_search` | essentials | no | **the papers behind a row** — and the only way to check a PMID's *identity* |
+| `lookup_citation` | essentials | no | does this PMID/DOI *exist* (not: is it the right paper) |
 | `registry_search` | essentials | no | has someone already built this |
+| `draft_from_clinvar` | essentials | no | ClinVar → `variants.csv` + `studies.csv`; `use` required |
 | `authenticate` | always | — | stores a registry token for *this session* |
+| `lookup_open_access`, `fetch_fulltext` | extended | no | where may I read it and on what terms; the document, never a passage |
+| `paper_citations` | extended | no | has this finding been replicated |
+| `draft_from_cpic`, `draft_from_clinpgx` | extended | no | the PGx tables |
+| `enrich_facts`, `enrich_literature_pass` | extended | no | the sidecars the compile gate reads |
 | `enrich_module` | extended | no | **background task**; the only thing that catches a shifted `start` |
 | `check_identifiers`, `lookup_identifier` | extended | no | HGNC / OLS4 currency |
 | `authoring_reference` | extended | no | the whole generated DSL |
@@ -83,15 +90,15 @@ The server **boots with no environment configured** — authoring a module needs
 
 Plus a resource (`resource://just-dna/tables`) and a prompt (`create_module`).
 
-Not wrapped, and deliberately so — use the CLIs (`references/CLI.md` has the full surface):
-drafting from a source (`draft-panel`, `draft`, `draft-clinpgx`), the fact passes (`frequencies`,
-`gene-metrics`, `dosage`, `literature`), signing, and the PGx cross-checks.
+Not wrapped, and deliberately so — use the CLIs (`references/CLI.md` has the full surface): signing,
+the PGx cross-checks, and snapshot building.
 
 ## The workflow
 
 ```
-list_tables ─▶ scaffold_module ─▶ author rows ─▶ lint_rows
-   ─▶ validate_module(strict) ─▶ enrich_module ─▶ compile_module(strict) ─▶ registry_publish
+list_tables ─▶ scaffold_module ─▶ draft_from_clinvar ─▶ literature_search ─▶ author rows
+   ─▶ lint_rows ─▶ validate_module(strict) ─▶ enrich_module ─▶ compile_module(strict)
+   ─▶ registry_publish
 ```
 
 Curate before you enrich: a `<<REPLACE>>` placeholder makes every loader refuse the file, `enrich`
@@ -124,6 +131,7 @@ If none resolve, gated tools return a friendly message rather than raising. A to
 |---|---|
 | `JMC_OFFLINE=true` | Hard network ceiling. Every tool that could fetch runs cache-only, and a per-call `offline=false` cannot override it. |
 | `JMC_WORKSPACE=/path` | Refuse to read or write outside this directory. Unset = no restriction (right for stdio; set it for HTTP). |
+| `JMC_LITERATURE_SOURCES=a,b` | Which literature services this deployment may talk to. A per-call `sources` narrows it and can never widen it. Unset = all; `""` = none. |
 
 ## Configuration
 
@@ -158,15 +166,20 @@ skills/create-module/
     TABLES.md          which table kind a finding belongs in
     SYMPTOMS.md        message text -> cause -> action
     CLI.md             the full CLI surface, and what is not wrapped
+skills/find-evidence/
+  SKILL.md             search, appraise, and what a paper's licence lets you reuse
 src/just_module_creator/
   server.py            build_server(), CLI, graceful shutdown
   settings.py          pydantic-settings (JMC_*), safe defaults
   auth.py              per-session/per-request token resolution
   models.py            trimmed Pydantic tool I/O
   logging_setup.py     stdlib logging -> stderr
+  net.py               the ONLY module that opens a socket: pacing, retries
+  discovery.py         literature sources, parsers, and the refusals
   tools/
     authoring.py       essentials — the offline authoring loop
-    research.py        essentials — read-only network lookups
+    research.py        essentials — read-only network lookups + literature search
+    passes.py          drafting from a source; the sidecar fact passes
     advanced.py        extended — enrichment, integrity, round-trip
     registry.py        token-gated registry writes
     _shared.py         path containment, offline ceiling, converters
