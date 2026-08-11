@@ -57,8 +57,9 @@ and the experiment is the argument for fixing it.
 
 ### Two upstream intakes, not one
 
-The registry repo was renamed to `just-dna-marketplace` and has its own
-`docs/CONSUMER_SUGGESTIONS.md` (created 2026-08-11, its own `S<n>` series). Our
+The registry keeps its own `docs/CONSUMER_SUGGESTIONS.md` (created 2026-08-11, its own
+`S<n>` series) at `../just-dna-marketplace/` — a stale directory name; the project and
+package are `just-dna-registry`. Our
 intake rule said one file served all four packages, which had stopped being true. The
 `would_publish` note was written into the format tree by mistake and moved; a note in
 the wrong file may as well not be filed.

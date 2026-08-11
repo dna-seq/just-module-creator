@@ -98,11 +98,18 @@ rule without its reason gets rationalised away at 2 a.m.
   ~5 MB that must travel goes through Git LFS. A blob committed *before*
   `git lfs track` stays in every past commit even after the pointer replaces it at
   HEAD, so the pack still ships it — surface it, and hand the remediation to the user.
-- **Never run tree operations.** No `git push`, tags, releases, branch management
-  or history rewriting — the user's domain. **Never `git stash drop` /
+- **Never run tree operations.** No tags, releases, branch management or history
+  rewriting except where §10 grants it. **Never `git stash drop` /
   `git stash clear`**, even on explicit request. **Never `git add -A` or
   `git add .`** — it sweeps in `.env` files and editor swap files; stage explicit
-  paths. Commit only when asked.
+  paths.
+- **Every git permission is bounded to THIS repository.** A commit, push or tag
+  grant covers `/data/sources/just-module-creator` and nothing else — never a
+  sibling, a parent or a downstream repo, whatever the state of its tree. Writing a
+  file into `../just-dna-format` or `../just-dna-marketplace` is how an upstream
+  note gets filed; committing it there is not ours to do, and the note is complete
+  the moment it is written. Leaving their working tree dirty is the expected
+  outcome, not an unfinished job.
 
 ### Code
 
@@ -397,10 +404,14 @@ land:**
 | format, compiler, enricher (one repo) | `../just-dna-format/docs/CONSUMER_SUGGESTIONS.md` |
 | the registry service, its client, or a `just-dna-pipelines` command calling it | `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md` |
 
-`../just-dna-marketplace` is the registry repo after its rename — the *package* is
-still `just-dna-registry`. Its numbering is a separate series from the format
-tree's; both start at `S1`. If a note is in the wrong file it may as well not be
-filed, so decide by asking who would change code, not who you noticed it through.
+**`../just-dna-marketplace` is a stale *directory* name and nothing more.** The
+project, the package and the service are all `just-dna-registry`; only the path on
+disk kept the old word. Do not call it "the marketplace" in prose — say the
+registry, and refer to the path only when a path is what you mean.
+
+Its `S<n>` numbering is a separate series from the format tree's; both start at
+`S1`. If a note is in the wrong file it may as well not be filed, so decide by
+asking who would change code, not which surface you noticed it through.
 
 - **A gap in the docs is a finding too.** If you had to *probe* to learn something —
   run an experiment, read their source, test a guess — that is a doc bug, and it
@@ -464,6 +475,9 @@ preference: it goes into §10, in their words, with the reason.
   without asking. Meaningfully sized commits rather than atomized ones, explicit
   paths — never `git add -A` — and tags at a version bump, matching the
   `pyproject.toml` version.
+- **"Your commit permit is bounded by this repo only, no commits to
+  siblings/parents/downstream."** Granted 2026-08-11. Writing an upstream note is
+  the whole job; committing it there never is.
 - **Pushing is never persistent.** "push — in this session only." A push grant
   covers the session it was given in and nothing after it, so a later session
   starts from *ask first* again no matter what the tree looks like. Releases and
@@ -496,12 +510,15 @@ preference: it goes into §10, in their words, with the reason.
 
 - Sibling repos live beside this one under `/data/sources/`:
   `../just-dna-format` (hosts format, compiler and enricher, and their
-  `CONSUMER_SUGGESTIONS.md` intake), `../just-dna-lite`, and
-  **`../just-dna-marketplace`** — the registry repo after its rename, whose package
-  is still `just-dna-registry` and which has its own
-  `docs/CONSUMER_SUGGESTIONS.md`. `../just-dna-registry` no longer exists.
-- As of 2026-08-11 the marketplace repo declares `just-dna-registry` **0.11.3**,
-  which is **not on PyPI** (published: 0.9.1). Adopting it would need a local path
+  `CONSUMER_SUGGESTIONS.md` intake), `../just-dna-lite`, and the registry at
+  **`../just-dna-marketplace`** — a **stale directory name only**. The project,
+  package and service are `just-dna-registry`; "marketplace" is the old word,
+  retained on the path and nowhere else. There is no `../just-dna-registry`
+  directory, which is a path quirk and not a rename.
+- The registry keeps its own intake at
+  `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`, created 2026-08-11.
+- As of 2026-08-11 that repo declares `just-dna-registry` **0.11.3**, which is
+  **not on PyPI** (published: 0.9.1). Adopting it would need a local path
   dependency, which breaks the plugin's one-command install for anyone else, so we
   stay on the published version until it ships.
 - The published registry is `https://module-registry.just-dna.life`; as of

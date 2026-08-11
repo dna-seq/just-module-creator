@@ -10,7 +10,8 @@ when we have mitigated it but upstream still owes the fix.
 **Intake — two files, and a note belongs where the fix would land.** Format,
 compiler and enricher findings go to `../just-dna-format/docs/CONSUMER_SUGGESTIONS.md`;
 registry and pipelines findings go to `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`
-(the registry repo after its rename). Each keeps its own `S<n>` series. Check there before filing — a second consumer hitting a known
+(a stale directory name — the project and package are `just-dna-registry`). Each
+keeps its own `S<n>` series. Check there before filing — a second consumer hitting a known
 one appends a corroboration rather than opening a new number. Write the note and
 stop; never commit in that repo.
 
