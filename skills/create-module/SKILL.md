@@ -45,7 +45,8 @@ said so!*").
 | **The module is the knowledge; whoever runs it brings the measurement** | why nothing here opens a VCF |
 | **Every row is a claim with a receipt.** `conclusion` is the claim, `pmid` is the receipt | why `studies.csv` is required whenever `variants.csv` exists |
 | **A blank cell means "we don't know", never "no"** | the three-valued algebra, and why you must not write `false` to tidy a warning |
-| **Those two quote columns mean "a human read this and found the sentence"** — not "here is a relevant quote" | why nothing may fill them from a fetched fulltext |
+| **Those two quote columns mean "somebody read this paper and found the sentence"** — and a checker later looks for it | why you must not lift one from the fulltext that same checker will use |
+| **I write the first version; a specialist reviews it later and that becomes version 2** | who does what, and why you are not being asked to check the genetics |
 | **On a dial, a shared endpoint is a boundary; on a counter, it is two bins claiming the same number** | why dense bins must touch and integer bins must not |
 
 **Correct the DNA-reading misconception early and unprompted.** Do not wait to be asked. A beginner's
@@ -192,18 +193,73 @@ You do not need to: **the draft report prints the allele pair for each stubbed r
 Steps 4 and 6 are the only ones that use the network. Once `resolution.csv` and `literature.csv`
 exist they *are* the pin: every later compile is offline and reproducible.
 
-## Before you start — ask about reading papers, and about the email
+## You are the author. The layers below say who checks you
 
-Two questions, once, at the top. Both change what the rest of the session can honestly do, and one of
-them is about somebody's personal data, so neither is yours to assume.
+**This plugin is an AI co-author, and a module written entirely by an agent is the normal first
+artifact, not a compromise.** The person you are working with may be a gardener who has never seen a
+VCF. They bring the *theme* and the *sources* — a trait they care about, three PDFs, a video, a
+podcast. Everything after that is yours: the triage, the rows, the conclusions, the located passages.
+**Do not ask them to do the parts they cannot do.** An author who cannot read a genetics paper cannot
+tell you whether your `state` is right, and asking sends them away to find someone who can, which is a
+later step performed by a different person.
 
-**1. "Do you want to *read* the papers, or only cite them?"** Full-text work — `lookup_open_access`,
-`fetch_fulltext` — is what makes `provenance_quote` / `provenance_regex` honest, because those columns
-record that **a human read the paper and located the claim in it**. An author who does not intend to read
-anything should leave both empty and *know that at the start*, rather than discovering at step 6 why a
-column they expected to fill must stay blank. It is a perfectly good module either way.
+### The pyramid
 
-**2. "May I use your email address for the lookups?"** NCBI's polite pool and Unpaywall both **meter and
+| Layer | Where | Version | Who | What it is |
+|---|---|---|---|---|
+| draft | polygon (`target="test"`) | any | agent | a rehearsal; deletable, nobody installs it |
+| **primer** | **production** | **1.0.0** | **agent** | the first real entry. AI-authored, honest, declared |
+| curated | production | 2.0.0 | a human expert reviews the primer | the review the author went and asked for |
+| matured | production | 3.0.0+ | several reviewers, ai and human | many iterations |
+| featured | production, cherry-picked | — | the catalog operator | curated work promoted by hand |
+
+**A production `1.0.0` is the primer layer, not a monument.** The bar is *honest, checked, and
+declared* — not "a geneticist would sign this", because signing it is literally the next layer's job
+and a different person's. Publishing an AI-authored primer to production is the designed path.
+
+What still holds, and for its own reason: a production version is immutable and its content claim
+survives a `yank`, so get an explicit yes before `registry_claim_namespace(target="prod")` and
+`registry_publish(target="prod")`. That is about irreversibility, not about worthiness. See §7.
+
+### Declare the kind — this is the load-bearing part
+
+`module_spec.yaml`'s `authorship:` is what makes the pyramid work. `Contribution`'s own contract says
+a consumer "routes its scrutiny by `kind`", so a reviewer, a review queue and the catalog all decide
+how hard to look from this block. Getting it right matters more than hedging your prose.
+
+Two axes, and there is **no `ai-writer` / `ai-curator` value** — it is the cross-product:
+
+- `role` — **closed**: `created` | `edited` | `audited` | `reviewed`.
+- `kind` — **open, seeded**: the human ladder `human` → `human_expert` → `human_certified`, or `ai`
+  plus a scale tag `agent` / `team` / `swarm`.
+- `at` — ISO-8601, optional and worth writing.
+
+```yaml
+authorship:
+  - who: ai-module-creator      # the primer
+    role: created
+    kind: [ai, agent]
+    at: '2026-08-12'
+  - who: some-geneticist        # added at 2.0.0 — a second ENTRY, never an edit of the first
+    role: reviewed
+    kind: [human_expert]
+    at: '2026-09-01'
+```
+
+**A joint contribution is two entries, each with its own `kind`** — the format refuses a lossy
+`hybrid` tag on purpose. A curation pass *appends*; it never rewrites the primer's line, because the
+record of who wrote it is the thing a reviewer is routing on.
+
+`authorship` is module metadata and sits **outside `artifact.digest`**, so adding a reviewer does not
+move the content identity — two versions with identical rows and different authorship share a
+`content_signature`. That is what lets a curation pass be a real version bump without pretending the
+data changed.
+
+## Before you start — ask about the email
+
+One question, once, at the top, and it is about somebody's personal data, so it is not yours to assume.
+
+**"May I use your email address for the lookups?"** NCBI's polite pool and Unpaywall both **meter and
 contact per address**, so this is not decoration:
 
 | | their traffic | their rate limit | a problem reaches |
@@ -243,6 +299,40 @@ starting points, cheapest first:
 If an author has no idea at all, the catalog gap is the best prompt: search a gene or trait they care
 about, and either nothing exists (a module to write) or something does (a module to read, which teaches
 more than any template).
+
+### First: is the copy you were handed still the current one?
+
+**Do this before authoring a single row from a PDF, and before any of the triage below.** A file on
+disk has a version and a date; the literature does not stop moving because somebody saved it. Two
+drifts, and both change what you should cite:
+
+- **A preprint may since have been peer reviewed.** Cite the journal version: it is the better trust
+  level, and review changes things — numbers get corrected, panels get dropped, conclusions get
+  softened or reversed. A module grounded on the preprint's figures can disagree with the published
+  paper while looking perfectly checked.
+- **A preprint server version is not the paper, it is *a* paper.** You may be holding arXiv `v1` while
+  `v5` is current, or a bioRxiv posting that has been revised twice. Same trap, one server earlier.
+
+How to check, and how to read the answer:
+
+```
+literature_search(query="<the exact title>", year_from=<the PDF's year>)
+literature_search(pmids=["<the id you have>"])          # read the venue and the title back
+```
+
+**A preprint result and a journal result for one paper are two records with two ids**, so the check is
+"does a second record exist for this title", not "is my id valid". If one does, re-read the claims you
+took from the old copy against the new one before switching the `pmid` — the point is not to relabel
+the citation, it is that the content may have moved under it.
+
+**Read `sources` before concluding it is current.** Semantic Scholar is the source that best links a
+preprint to its published version, and it rate-limits often; a run where it reports `results: null` has
+not answered the question. Two of four sources 429'ing means **unchecked**, and "no journal version
+found" is then a statement about your search, not about the world. Say which you mean.
+
+**A module built on a preprint carries this as a standing obligation**, not a one-off check: when the
+journal version lands, the citation and possibly the rows change, and that is a version bump with a
+changelog line — exactly the kind of drift the layered versions exist to absorb.
 
 ### Triaging a source you were handed
 
@@ -517,6 +607,36 @@ Required: `pmid`. Identity: `rsid` **or** `chrom` (+`start`, `ref`).
   guard against fabrication — only a **title** settles it. Both `lookup_citation` and
   `literature_search(pmids=[...])` report one; read it and compare. See the `find-evidence` skill.
 
+#### provenance_quote / provenance_regex — write them, from what you read
+
+**You may author these, and you should.** They locate the row's claim in the cited article, and
+`quotes_found` checks the passage against Europe PMC's fulltext — so a quote you wrote is a *testable*
+claim, and one of the few places a module can be checked against the outside world at all.
+
+**The one thing that is forbidden is quoting a fulltext the checker will use as its own answer key.**
+Extract a passage from what `fetch_fulltext` just handed you and `quotes_found` compares Europe PMC
+against Europe PMC: it passes by construction and proves nothing. That is the rule — *not* a rule
+about who did the reading.
+
+| you read | may you quote it | what `quotes_found` then proves |
+|---|---|---|
+| a PDF or copy the author supplied | **yes** | the passage is in the paper that PMID names — a real check |
+| a paper you obtained yourself, outside this session's `fetch_fulltext` | **yes** | same |
+| the output of `fetch_fulltext` on that same PMID | **no** | nothing; the check is vacuous |
+
+Then run the literature pass and **read the two counters, which are three-valued**: `quotes_found`
+comes back `null` when no fulltext could be retrieved and `0` when one was read and the passage was
+not in it. A preprint with no OA fulltext yields `null` for every quote — unchecked, not refuted, and
+not a reason to delete the quotes.
+
+> **Upstream disagrees with this section, deliberately noted.** `just_dna_compiler.hints`
+> lists both columns in `ATTESTATION_BEARING`, glossed as "the cell asserts that a **HUMAN** read
+> something". That gloss is right about *providers* — no lookup tool may write these cells, and none
+> does — and wrong as a claim about authorship in a product whose `Contribution` model ships an `ai`
+> author kind, whose `curator` field routinely holds an agent id, and whose whole first layer is
+> AI-written. Filed upstream; until it is answered, the provider refusal stands and the authorship
+> claim does not.
+
 ### pharm_variants.csv (drug response)
 
 Required: `drug`, `conclusion`. Identity: `rsid` **or** `chrom`+`start`.
@@ -689,25 +809,27 @@ a name-independent content hash that `yank` never releases — so one botched pu
 version number **and** the right to publish that data under any other name, permanently. That is why
 the write tools default to the polygon: a forgotten `target` there costs nothing.
 
-### The polygon is the default *answer*, not just the default argument
+### Rehearse on the polygon, then publish the primer to production
 
-**Publish to the polygon, name it out loud, and stop there — unless the author has asked for the real
-catalog in their own words.** "Publish it", "put it online", "share it with my friends", "send it to
-your site" is **not** that ask: it is somebody who does not yet know there are two registries. Say
-plainly that the polygon is a rehearsal instance nobody installs from, and leave promoting as a
-separate decision the author makes *after* seeing a clean run. Someone who meant production will say so
-at once, and someone who did not has lost nothing.
+**The polygon is where you rehearse, not where the work stops.** A draft that never leaves it helps
+nobody, and production `1.0.0` is the primer layer — see the pyramid at the top of this file. So the
+sequence for a finished first module is: rehearse, read it back, then ask about production.
 
-This is a rule about the **conversation**, not about the argument. `target` already defaults to `test`,
-so the mechanism is safe; the whole risk is an agent volunteering `target="prod"` to seem helpful.
-Production is immutable *and* its content claim survives a `yank`, so a half-finished first module does
-not merely look untidy in the catalog — it permanently spends that version number **and** the right to
-publish that data under any other name. There is no overwrite, no cleanup and no admin to appeal to.
-A rehearsal costs one extra call; the alternative cannot be undone by anyone.
+**What needs an explicit yes is the irreversibility, not the worthiness.** Both
+`registry_claim_namespace(target="prod")` and `registry_publish(target="prod")` are permanent: a
+version is immutable *and* its authored rows are claimed by a name-independent content hash that
+`yank` never releases, so a botched publish spends that version number **and** the right to publish
+that data under any other name. There is no overwrite, no cleanup and no admin to appeal to. Put that
+cost *in* the question, name which of the two calls you are asking about, and get the yes.
 
-**Get an explicit yes before either irreversible call** — `registry_claim_namespace(target="prod")` and
-`registry_publish(target="prod")` — and make sure the author knows which of the two they are agreeing
-to. Put the cost *in* the question rather than after the answer.
+**Do not turn "are you sure?" into "are you worthy?".** An agent that keeps withholding production
+because the module feels thin is enforcing a bar the pyramid does not have, and it is usually
+enforcing it against a person who cannot argue back on the genetics. If it is honest, checked and
+declares its `kind`, the primer belongs in the catalog.
+
+**"Publish it" from someone who has not been told there are two registries still means: say so.**
+Explain the polygon in one sentence, rehearse there, and then ask about production as its own
+decision. That is a rule about being clear, not about stalling.
 
 **For a first module, prefix the module name as well as the namespace**: `test_my_module` under
 `test-my-ns`, not `my_module`. `purge-test-data` matches by prefix on **both** halves, so an unprefixed
@@ -738,16 +860,18 @@ publishing a near-duplicate.
 - **No row's `state` or `direction` was settled by guessing.** Having *dropped* rows for that reason is
   evidence in favour, not against.
 - A polygon rehearsal was published and **read back**, and what came back was what you meant.
-- It is *enough module to be worth an immutable version* — breadth a consumer would install it for.
+- `authorship` declares the kind honestly — `[ai, agent]` for a primer, with a real `role` and `at`.
 
-**That last bar is the one that fails most often, and here is the worked case.** `assets/fto_bmi` passed
-every other item on this list — strict, fully resolved, VRS minted, one impeccable citation, honest
-blanks throughout — and `registry_search(gene="FTO")` returned **`total: 0`**, so the catalog genuinely
-had nothing. It was still right *not* to promote it: one locus, no declared licence, no readme, unsigned.
-**Underrepresented is necessary and nowhere near sufficient.** An honest module and a module worth
-spending an immutable `1.0.0` on are different standards, and conflating them is how a thin catalog
-becomes a catalog of stubs — which is worse, because a stub occupies the search result a real module
-would have had.
+**Note what is NOT on that list: whether a specialist would endorse it.** That is the curated layer's
+question, answered at `2.0.0` by a human expert the author goes and finds. A primer that waits for it
+waits forever, because the reviewer arrives *after* something exists to review.
+
+**The bar that does apply is honesty, and here is what failing it looks like.** Not "too small" —
+`assets/fto_bmi` is one locus and that is a fine primer. Failing means: a `state` or `direction`
+settled by guessing, a PMID recalled rather than searched, a licence flag written `false` where the
+terms were merely unknown, a coordinate authored beside the `resolution.csv` that verifies it, or an
+`authorship` block that does not say an agent wrote it. Each of those ships a module that *looks*
+checked and is not, and no later reviewer can tell from the artifact which cells to distrust.
 
 When you do raise it, raise it as a recommendation with its evidence — the search result, the checks
 that passed, and what is still missing — and keep the explicit yes: this permission is to *advocate*,

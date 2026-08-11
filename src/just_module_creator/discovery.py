@@ -862,17 +862,31 @@ def _search_findings(
                 ),
             )
         )
-    if any(p.preprint for p in papers):
-        findings.append(
-            LintFinding(
-                level="warning",
-                message=(
-                    "Some results are preprints: not peer-reviewed, and they carry no PMID, so "
-                    "they cannot ground a studies.csv row (pmid is required). They may still "
-                    "inform a hedged conclusion."
-                ),
+    preprints = [p for p in papers if p.preprint]
+    if preprints:
+        # "Preprints carry no PMID" was false and cost a real citation (F28). bioRxiv and
+        # medRxiv postings are indexed in PubMed under the NIH preprint pilot, so they carry a
+        # PMID and often a PMCID; arXiv-index results typically carry neither. Asserting the
+        # arXiv shape for both talked an author out of a row the schema accepts, while burying
+        # the part that is always true and always matters — that none of them has been peer
+        # reviewed. Count, never assume.
+        with_pmid = [p for p in preprints if p.pmid]
+        without_pmid = len(preprints) - len(with_pmid)
+        parts = [
+            f"{len(preprints)} result(s) are preprints: NOT peer-reviewed. A row grounded on "
+            "one is legitimate and must say so in its conclusion, because a PMID alone does "
+            "not show it."
+        ]
+        if with_pmid:
+            parts.append(
+                f"{len(with_pmid)} of them DO carry a PMID and can ground a studies.csv row."
             )
-        )
+        if without_pmid:
+            parts.append(
+                f"{without_pmid} carry no PMID and cannot ground one (pmid is required), though "
+                "they may still inform a hedged conclusion."
+            )
+        findings.append(LintFinding(level="warning", message=" ".join(parts)))
     if papers:
         findings.append(
             LintFinding(

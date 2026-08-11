@@ -142,18 +142,35 @@ quote, or a search within the text — and it never will.
 
 `enrich_literature_pass` checks `provenance_quote` against the *same* Europe PMC full text a tool
 would have taken it from. So a quote lifted from the tool's output makes `quotes_found` confirm
-itself. But the sharper problem is what `provenance_quote` means: it records that **a curator read
-the paper and located the claim in it**. A passage a machine pulled out of a document the machine
-fetched asserts a reading that never happened. That is a false claim of provenance, not merely a
-vacuous check.
+itself — it passes by construction and proves nothing.
 
-**And the honest cost, which you should weigh before using `fetch_fulltext` at all:** once you have
-read the full text through this tool, `quotes_found` on that row is no longer independent evidence.
-It has become a citation-pairing check. Still useful — it catches a quote written against the wrong
-PMID — but it no longer tells anyone the claim is in the paper.
+**The axis is where the text came from relative to the checker — not who did the reading.** You are
+an author here, and an agent reading a paper is a reading that happened. What must not happen is
+sourcing the quote and its answer key from the same retrieval.
 
-If you want `quotes_found` to mean the stronger thing, read the paper somewhere else and write the
-quote from that reading.
+| you read | quote it? | what `quotes_found` then proves |
+|---|---|---|
+| a PDF or copy the author supplied | **yes** | the passage is in the paper that PMID names |
+| a copy you obtained outside this session's `fetch_fulltext` | **yes** | same |
+| `fetch_fulltext` output for that same PMID | **no** | nothing |
+
+**The honest cost, worth weighing before calling `fetch_fulltext` at all:** once you have read the
+full text through this tool, `quotes_found` on that row is no longer independent evidence. It has
+degraded to a citation-pairing check — still useful, since it catches a quote written against the
+wrong PMID, but it no longer tells anyone the claim is in the paper. If you want the stronger thing,
+read the paper somewhere else and write the quote from that reading.
+
+**Then read the counters as three-valued.** `quotes_found` is `null` when no full text could be
+retrieved and `0` when one was read and the passage was not in it. A preprint with no OA full text
+returns `null` for every quote on it: **unchecked, not refuted**, and not a reason to delete them.
+`quote_source` says how far the search reached — a phrase found in an abstract is in the paper, while
+a phrase absent from a 200-word abstract says nothing about the body.
+
+> **Upstream calls these columns `ATTESTATION_BEARING` and glosses them "the cell asserts that a
+> HUMAN read something".** That is correct as a *provider* rule — no lookup tool may write these
+> cells, and none does — and it is not the authorship rule, in a product whose `Contribution` model
+> ships an `ai` author kind and whose `curator` field routinely holds an agent id. Filed upstream.
+> Until it is answered: never fill these from a lookup, and do write what you read.
 
 ### `quotes_unchecked` is not a failure
 
@@ -208,11 +225,27 @@ row is yours to write and the terms are yours to read.
 
 ## Preprints
 
-A preprint has **no PMID**, and `pmid` is required on every `studies.csv` row. So a preprint cannot
-ground a study row on its own, full stop — that is a schema fact, not a policy preference.
+**Some preprints have a PMID, and the tooling currently says otherwise.** bioRxiv and medRxiv
+postings are indexed in PubMed under the NIH preprint pilot, so they get a real PMID and often a
+PMCID: `41427385` is a bioRxiv posting with both. A preprint from the arXiv index typically has
+neither, and that is where the old rule came from.
 
-It can still inform a hedged `conclusion`, and it is worth knowing about. If the preprint has since
-been published, the published version has a PMID and that is the one to cite.
+So the honest statement is: **check the record, do not assume the class.** A preprint result carrying
+a PMID *can* ground a `studies.csv` row — the schema requires a PubMed token and it has one.
+
+> `literature_search` emits a warning reading *"Some results are preprints: not peer-reviewed, and
+> they carry no PMID, so they cannot ground a studies.csv row"* — and it fires on results that do
+> carry one. Read the `pmid` field, not the warning. Filed as `F28`.
+
+What remains true, and is the part that matters: **a preprint is not peer reviewed.** Grounding a row
+on one is legitimate and must be said out loud in the `conclusion`, because a reader cannot tell from
+a PMID alone. And two further consequences worth planning for:
+
+- **Check for a published version before you author from it** — see the create-module skill's "is the
+  copy you were handed still the current one?". Review changes numbers and sometimes conclusions.
+- **Expect `quotes_found: null`.** A preprint frequently has no retrievable OA full text even when it
+  has a PMCID, so quotes on it come back unchecked rather than confirmed. That is not a failure and
+  not a reason to drop the quote — it is the check honestly reporting it could not run.
 
 ---
 
