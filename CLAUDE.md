@@ -393,14 +393,28 @@ none of them. **Every upstream question, quirk or bug goes into
 `../just-dna-format/docs/CONSUMER_SUGGESTIONS.md`** — that file is the intake for
 all four, since they share a repo.
 
+- **File it the moment you find it. Do not batch.** Found it → write the `S<n>`
+  entry → carry on with what you were doing. Not after the guard is built, not
+  after the task closes, not as a tidy set of "field notes" at the end of a work
+  item. Upstream ships fast, and a note that arrives after the release window has
+  closed buys nothing: `S14` (the `resolve_with_ensembl=False` footgun) was found
+  while building the wrapper, guarded against, written up in our README as a
+  *feature*, and filed days later — **0.5.3 shipped in between, and the fix could
+  have been in it.** The delay is the whole cost. A rough note filed today beats a
+  polished one filed next week.
+- **A guard is not a substitute for the note, and never a selling point.** Pinning
+  a flag protects our callers and nobody else's; the defect is still there for the
+  next consumer. If you catch yourself describing a workaround in `README.md` as
+  something this plugin does *for* you, the note was skipped. See §8's prose rule.
 - **Check whether it is already filed first.** Entries are `S<n>`; a second
   consumer hitting a known one appends a corroboration to that entry rather than
   opening a new number. Two independent reproductions is itself the signal that
   raises its priority.
 - **Write the note, and stop there.** **Never commit in that repo**, and never
   open a PR against it. Writing the note is the whole job.
-- **Record our side in `docs/CHANGELOG.md`** if we shipped a mitigation, so nobody
-  re-investigates a finding that looks fixed.
+- **Track our side too**: `docs/just-dna-format-pending-fixes.md` as an `F<n>` while
+  it is open upstream, and `docs/CHANGELOG.md` if we shipped a mitigation, so
+  nobody re-investigates a finding that looks fixed.
 - **Never work around it silently in the data.** A workaround that leaves a module
   dishonest is worse than the gap. Say what the limitation is, leave the data
   truthful, file the note.
@@ -409,7 +423,11 @@ all four, since they share a repo.
 
 Natural, human prose. Avoid AI tells — em-dash pile-ups, filler transitions,
 marketing voice. Never hallucinate documentation or overpromise an unimplemented
-feature. **This project must never be described as interpreting a genome, calling
+feature. **`README.md` says what this plugin does, and never doubles as a
+catalogue of upstream defects we guard against** — that belongs in the upstream
+note, in §2's prohibitions, and in `docs/just-dna-format-pending-fixes.md`.
+Telling an *author* "never pass this flag" in the skill or `references/CLI.md` is
+different and correct: they may drive the CLI directly and need to know. **This project must never be described as interpreting a genome, calling
 a genotype, or giving medical advice**: it helps author annotation tables, and the
 consumer supplies the measurement.
 
@@ -437,6 +455,13 @@ preference: it goes into §10, in their words, with the reason.
   branch management stay the user's throughout.
 - **"I need to have mvp, then pace declines."** Get a working end-to-end thing
   first and refine after; do not gold-plate the early steps of a long build.
+- **"the fix could have been in 0.5.3 already if it were in the right place.
+  Update your memory to fill in these immediately upon finding, without delaying
+  and writing field notes like this."** Upstream notes are filed at the moment of
+  discovery, never batched. See §8.
+- **"Why is this in our readme instead of upstream's consumer_suggestions? Cleanout
+  readme from parent lib issues, wtf really."** The README describes what this
+  plugin does; a guard against an upstream defect is not a feature to sell.
 - **Never destroy stashes**, even on explicit request. Data loss is the user's to
   enact.
 - **Never blind-stage** (`git add -A` / `git add .`) — it once committed a `.env`

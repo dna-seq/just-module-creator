@@ -72,3 +72,33 @@ derive, which is the redundancy-bearing mistake the rest of this repo exists to
 prevent.
 
 **Closes when** RM43 lands.
+
+---
+
+## F10 — `resolve_with_ensembl=False` is the master switch for all resolution, and its name says otherwise
+
+**Filed upstream:** `CONSUMER_SUGGESTIONS.md` **S14** (2026-08-11) · **Status:** open upstream
+
+`compile_module(resolve_with_ensembl=False)` / `--no-resolve` reads as "do not go
+out to Ensembl", which is a reasonable thing to want and the obvious flag to
+reach for when building offline from a committed `resolution.csv`. It actually
+disables resolution **entirely**, injected table included: every row compiles
+with `chrom`/`start` null, and the compile **succeeds**.
+
+**How this was mishandled on our side, which is the part worth remembering.** We
+found it while building the wrapper, guarded against it, and then described the
+guard in `README.md` as a feature — *"the wrapper cannot reach the flag that…"* —
+without ever filing it. That is the intake rule backwards. The guard protects our
+callers and nobody else's; the flag is still there for the next consumer, who gets
+a green build and an empty module. Filed as S14 on 2026-08-11 and removed from the
+README, which should describe what this plugin does rather than enumerate what
+upstream gets wrong.
+
+**Our mitigation, which stays:** `compile_module` pins `resolve_with_ensembl=True`
+with `ensembl_cache=None`, so no agent driving our surface can reach the branch.
+`CLAUDE.md` §2 forbids exposing a path to it, and the authoring docs say never to
+pass it — that guidance is legitimately ours to give, because an author reading
+`references/CLI.md` may well use the CLI directly.
+
+**Closes when** upstream warns that a present `resolution.csv` went unread, or
+splits the flag so the name matches the action.

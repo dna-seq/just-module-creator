@@ -16,22 +16,23 @@ genotype or a measured quantity to a phenotype.
 
 ## Why a server and not just a skill
 
-Prose can ask an agent to behave; a tool can make it. Three rules from real module-creation
-experience are enforced here rather than merely documented:
+Prose can ask an agent to behave; a tool can make it. Three rules are enforced here rather than
+merely documented:
 
 - **Ask the tool, never memory.** Every column list, vocabulary and requirement is generated from
   the live pydantic models in `just-dna-format`, so `describe_table` and `table_requirements`
   cannot drift from what the compiler accepts.
-- **Report, never repair.** `lookup_variant` shows you a value and *refuses* to write it into an
-  authored cell. Those cells are redundancy-bearing: a later check compares your independent value
-  against the same source, so filling it from that source deletes a whole validation class. The
-  refusal survives the MCP boundary with its reason attached.
-- **A check that could not run is not a check that passed.** `null` and `unknown` never collapse
-  into a boolean pass, and an offline `enrich_module` says outright that the ref check did not run.
+- **Report, never repair.** `lookup_variant` and `literature_search` show you a value and *refuse* to
+  write it into an authored cell, with the reason attached. Those cells are redundancy-bearing: a
+  later check compares your independent value against the same source, so filling it from that source
+  deletes a whole validation class.
+- **A check that could not run is not a check that passed.** `null` and `unknown` never collapse into
+  a boolean pass. A literature source that timed out reports `results: null`, never `0`.
 
-`compile_module` also pins `resolve_with_ensembl=True`, so the wrapper cannot reach the flag that —
-despite reading as "don't use Ensembl" — switches off *all* resolution and compiles every row with
-no coordinate, successfully.
+The one thing the toolchain has nowhere else is **literature discovery**. The enricher verifies
+citations you already have; nothing upstream searches. So `literature_search` is the only way to
+answer *"does this PMID name the paper I meant"* — existence alone cannot, because PMIDs are dense
+enough that a recalled one is usually a real record for a different paper.
 
 ## Install as a plugin
 
@@ -107,11 +108,13 @@ allele filter on exactly the rsIDs that need it.
 
 ## Modes
 
-`JMC_MODE` (env) or `--mode` (CLI), default `essentials`:
+`JMC_MODE` (env) or `--mode` (CLI), default `essentials`. The line is **what a tool does, not how
+useful it is**:
 
-- `essentials` — the authoring loop you cannot work without, plus the read-only lookups curation
-  depends on. Small on purpose: fewer tools is less context pollution.
-- `extended` — adds enrichment, integrity, round-trip and registry reads.
+- `essentials` — everything that only *reads*, plus the ClinVar draft. Small on purpose: fewer tools
+  is less context pollution, and this tier can still take a variants module from nothing to compiled.
+- `extended` — everything that writes into a spec directory or fetches at scale: the PGx drafters,
+  enrichment, the fact passes, integrity, round-trip and registry reads.
 
 ## Auth
 

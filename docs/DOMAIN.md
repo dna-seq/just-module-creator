@@ -346,6 +346,7 @@ never `False`.
   re-enriching is also the only way to ask whether an injected table still agrees
   with the sources. Any tool we expose that re-runs a pass must say this.
 - **`compile_module(resolve_with_ensembl=False)` disables `resolution.csv` too.**
+  Filed upstream as `S14`; tracked here as **F10**.
   The name reads as "don't use Ensembl"; it is the master switch for *all*
   resolution. Set it False and every row compiles with `chrom=None` — and the
   compile **succeeds**. The correct call is `resolve_with_ensembl=True,
