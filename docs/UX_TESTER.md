@@ -149,9 +149,14 @@ remain open on it:**
 1. **The production decision is the user's and has not been made.** They chose "polygon first, then
    decide". Do not promote without asking again — a production publish burns the version number *and*
    the right to publish that data under any other name.
-2. **The polygon copy needs cleaning up eventually.** It was published under the real module name
-   (`fto_bmi`, not `test_fto_bmi`), so the operator's `purge-test-data` sweep will not collect it — the
-   namespace `test-sheep` is prefixed but the module name is not. `registry_delete_version` when done.
+2. ~~The polygon copy needs cleaning up.~~ **Done** — `registry_delete_module` removed it after the
+   read-back, verified by a `404 module_not_found`. It mattered because the module name is not
+   `test_`prefixed (only the namespace is), so `purge-test-data` would never have collected it. The
+   committed `assets/fto_bmi/published.json` is therefore a *historical* receipt; its README says so, so
+   nobody reads the 404 as a regression.
+
+The namespace `test-sheep` is left claimed — it *is* `test-`prefixed, so the operator's sweep collects
+it, and there is no unclaim operation anyway.
 
 `assets/htt_cag_repeats/` — scaffolded, **not yet authored**. `module_spec.yaml` still
 carries `<<REPLACE>>` in title/description/report_title, and `repeat_alleles.csv` holds

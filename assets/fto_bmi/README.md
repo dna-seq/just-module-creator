@@ -4,6 +4,14 @@ A reference example from a dogfooding session on 2026-08-11, run as an assisted 
 non-specialist user brought an LLM-written summary of two YouTube genetics lectures and asked for it to
 be turned into a module. Published as a rehearsal to `test-sheep/fto_bmi@1.0.0` on the polygon.
 
+**`published.json` is a historical receipt, not a live pointer.** The rehearsal was deleted from the
+polygon with `registry_delete_module` once it had been read back — the module name is not `test_`prefixed,
+so the operator's `purge-test-data` sweep would never have collected it. Fetching
+`test-sheep/fto_bmi` now returns `404 module_not_found`, which is the cleanup working and not a
+regression. **This module has never been published to production**, and the decision not to was the
+user's: one row, no declared licence, no readme and no signature is honest but not worth spending an
+immutable `1.0.0` on.
+
 It is deliberately small. The interesting part is not the module — it is the ratio, and what refused.
 
 ## What the source offered, and what survived
