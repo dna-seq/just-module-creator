@@ -75,6 +75,71 @@ prevent.
 
 ---
 
+## F8 — no literature source has recordable `sources.csv` terms
+
+**Filed upstream:** `CONSUMER_SUGGESTIONS.md` **S10** (2026-08-11) ·
+**Status:** open upstream
+
+`enrich_literature` writes `source="pubmed"` into every `literature.csv` row.
+`_source_checks` builds `used_sources` from the `source` column of every fact
+table. `TERMS_BY_SOURCE` has no `pubmed`. So **every literature-enriched module
+warns** that a source's terms are unrecorded — a source the enricher introduced
+itself, not one the author chose — and it is a warning, never an error, so it
+ships unnoticed. Our literature tools widen the same gap to `europepmc`,
+`crossref`, `unpaywall`, `semanticscholar` and `preprints`.
+
+**The substantive point, and why a constant would be the wrong fix:** a literature
+source's terms are **per article, not per source**. PubMed's metadata is a
+US-government work; the article belongs to its publisher, and Europe PMC's OA
+subset spans CC-BY, CC-BY-NC and bronze. One `pubmed` row would be right for a
+module that only cites PMIDs and wrong for any module carrying a
+`provenance_quote` from a CC-BY-NC article — where `taints_commercial_use`
+actually bites. So it is a question about `SourceRow` granularity.
+
+**Our mitigation is reporting, and deliberately nothing more.** Every literature
+result carries a `SourceLicenseNote` with the source, the layer, a `terms_url` and
+`stateable_upstream` read from `licensing.TERMS_BY_SOURCE` rather than hardcoded.
+We do not write the row and never guess `declared_use`: `licensing.py` states the
+enricher is the only tier permitted to hold a source convention, and a fabricated
+licence string is worse than a missing warning. `lookup_open_access` returning the
+*article's* licence is the closest thing to an answer we can give, because that
+fact is retrievable per DOI.
+
+**This was briefly a roadmap item (`RM7`)**, which was a mistake — there is no
+work here for us. Removed 2026-08-11.
+
+**Closes when** upstream decides the granularity question.
+
+---
+
+## F9 — `lookup_citation` cannot detect a fabricated PMID, because nothing returns a title
+
+**Filed upstream:** `CONSUMER_SUGGESTIONS.md` **S12** (2026-08-11) ·
+**Status:** mitigated here, open upstream
+
+`CitationHint` carries `pmid_exists`, `doi`, `registry_doi`, `pmcid`,
+`open_access`, `abstract_available` — and no **title**, journal or year. PMIDs are
+densely allocated across roughly 1–40,000,000, so a recalled or hallucinated
+8-digit number is almost always a real record *for a different paper*, and
+`lookup_citation` answers `pmid_exists=true` for it. Fabrication is a failure of
+*identity*; existence is the only question that surface can put.
+
+`esummary` already returns `title`, `fulljournalname` and `pubdate` in the payload
+`_check_pmid` parses — `literature._identifiers` reads that same record for the DOI
+and PMCID and drops the rest — so this is surfacing fields upstream already has.
+
+**Our mitigation, which is why this is not blocking:** `literature_search`
+(essentials) returns titles, and `literature_search(pmids=[...])` reads them back
+for ids the caller already holds. Both our docs now say to take every PMID from a
+search result rather than from memory, and `lookup_citation`'s own docstring says
+outright that it answers existence and not identity. Recorded as **F9** in
+[dogfooding.md](dogfooding.md) as well, because the mitigation is ours and the fix
+is not.
+
+**Closes when** `CitationHint` carries a title.
+
+---
+
 ## F10 — `resolve_with_ensembl=False` is the master switch for all resolution, and its name says otherwise
 
 **Filed upstream:** `CONSUMER_SUGGESTIONS.md` **S14** (2026-08-11) · **Status:** open upstream
@@ -102,3 +167,31 @@ pass it — that guidance is legitimately ours to give, because an author readin
 
 **Closes when** upstream warns that a present `resolution.csv` went unread, or
 splits the flag so the name matches the action.
+
+---
+
+## F11 — `would_publish`'s variant ceiling withholds the check on the modules that need it
+
+**Filed upstream:** `CONSUMER_SUGGESTIONS.md` **S15** (2026-08-11) ·
+**Status:** open upstream
+
+`marketplace check` is the only surface that adds the network tier on top of
+`validate_spec` and reduces it to one branchable field. On a large module it
+answers `422 too_many_variants` — the check declining to run rather than a verdict
+— so the automated pre-publish signal is missing exactly where a failed publish is
+most expensive.
+
+**How this was mishandled here, which is the reason it is written down.** The
+ceiling sat in our authoring skill as advice for two weeks and in our roadmap as
+the justification for building a `check_publishable` tool of our own — "the useful
+half of the upstream `would_publish` field, without the variant ceiling". Nobody
+had filed it. Building a parallel publishability check in a consumer to route
+around a bound in the producer is how two answers to one question start drifting;
+the idea-book entry is withdrawn and the ask is upstream.
+
+**What stays ours, correctly:** the skill tells an author that a 422 here is the
+check declining rather than a verdict, and that `validate_module` is what decides
+publishability. That is true, and an author driving the CLI needs it.
+
+**Closes when** the module-level half answers regardless of variant count, or the
+error names the limit and the local substitute.

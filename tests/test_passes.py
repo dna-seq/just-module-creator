@@ -8,6 +8,8 @@ and that upstream's per-row distinctions survive the MCP boundary.
 
 from __future__ import annotations
 
+import json
+
 import pytest
 from conftest import offline_settings
 from fastmcp.exceptions import ToolError
@@ -20,6 +22,7 @@ from just_module_creator.tools.passes import (
     _tables,
     _translate,
 )
+from just_module_creator.tools.registry import RECEIPTS_FILE, _record_receipt
 
 
 class FakeOutcome:
@@ -225,3 +228,92 @@ async def test_an_unknown_fact_pass_names_the_valid_ones(make_client, tmp_path) 
         assert "frequences" in message
         for name in ("frequencies", "gene_metrics", "dosage"):
             assert name in message
+
+
+# --------------------------------------------------------------------------- #
+# The registry owns module identity, so a receipt has to survive the session
+# --------------------------------------------------------------------------- #
+class FakeIdentity:
+    canonical_id = "eric-mods/lactose_tolerance@1.0.0"
+    namespace = "eric-mods"
+    name = "lactose_tolerance"
+    version = "1.0.0"
+    owner = "eric"
+
+
+class FakeArtifact:
+    digest = "sha256:8173dab7"
+
+
+class FakeManifest:
+    content_signature = "sha256:fb91ffa2"
+
+
+def test_a_publish_receipt_is_written_beside_the_spec(tmp_path) -> None:
+    """The registry stamps identity and overrides anything authored, so it must be kept.
+
+    It cannot go into module_spec.yaml — `module:` is extra="forbid" and these
+    exact keys are rejected there because the registry owns them (upstream S1).
+    """
+    receipt, note = _record_receipt(
+        tmp_path,
+        registry_url="https://module-registry.just-dna.life",
+        identity=FakeIdentity(),
+        artifact=FakeArtifact(),
+        manifest=FakeManifest(),
+        fallback=("eric-mods", "lactose_tolerance", "1.0.0"),
+    )
+
+    path = tmp_path / RECEIPTS_FILE
+    assert path.is_file(), "a receipt that does not survive the session is not a record"
+    stored = json.loads(path.read_text())
+    assert stored == [receipt]
+    assert receipt["canonical_id"] == "eric-mods/lactose_tolerance@1.0.0"
+    assert receipt["owner"] == "eric"
+    assert receipt["artifact_digest"] == "sha256:8173dab7"
+    # ISO-8601 UTC, never a naive local timestamp.
+    assert receipt["published_at"].endswith("+00:00")
+    assert "commit it" in note
+
+
+def test_a_second_version_appends_rather_than_replacing(tmp_path) -> None:
+    for version in ("1.0.0", "1.1.0"):
+        _record_receipt(
+            tmp_path,
+            registry_url="https://module-registry.just-dna.life",
+            identity=None,
+            artifact=None,
+            manifest=None,
+            fallback=("eric-mods", "lactose_tolerance", version),
+        )
+    stored = json.loads((tmp_path / RECEIPTS_FILE).read_text())
+    assert [r["version"] for r in stored] == ["1.0.0", "1.1.0"]
+
+
+def test_a_republished_version_keeps_the_original_and_reports_the_difference(tmp_path) -> None:
+    """A published version is immutable, so a changed digest is a fact, not an update."""
+    first, _ = _record_receipt(
+        tmp_path,
+        registry_url="https://module-registry.just-dna.life",
+        identity=FakeIdentity(),
+        artifact=FakeArtifact(),
+        manifest=FakeManifest(),
+        fallback=("eric-mods", "lactose_tolerance", "1.0.0"),
+    )
+
+    class Moved:
+        digest = "sha256:deadbeef"
+
+    kept, note = _record_receipt(
+        tmp_path,
+        registry_url="https://module-registry.just-dna.life",
+        identity=FakeIdentity(),
+        artifact=Moved(),
+        manifest=FakeManifest(),
+        fallback=("eric-mods", "lactose_tolerance", "1.0.0"),
+    )
+
+    assert kept == first, "the original receipt must not be overwritten"
+    assert "artifact_digest" in note and "immutable" in note
+    stored = json.loads((tmp_path / RECEIPTS_FILE).read_text())
+    assert len(stored) == 1

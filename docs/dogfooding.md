@@ -59,17 +59,17 @@ the same guard.
 
 ## F8 — the literature sources have no recordable licence terms
 
-**Status:** open here, blocked upstream. Filed as `S10` in
-`../just-dna-format/docs/CONSUMER_SUGGESTIONS.md`. Tracked as
-[RM7](ROADMAP.md#rm7--the-literature-sources-have-no-sourcescsv-terms-upstream-or-here).
+**Status:** mitigated here, open upstream. Full entry in
+[just-dna-format-pending-fixes.md](just-dna-format-pending-fixes.md); filed as
+`S10`.
 
-Every literature-enriched module already warns that `pubmed`'s terms are
-unrecorded — a source the enricher introduced itself — and it is a warning, so it
-ships unnoticed. Our tools widen the gap to five more services.
+Listed here too because the mitigation is reporting only: each literature result
+carries a `SourceLicenseNote` naming the row the author owes, and a module still
+compiles green with the terms unrecorded because it is a warning.
 
-Mitigation is reporting only: each literature result carries a
-`SourceLicenseNote` naming the row the author owes, with `stateable_upstream:
-false`. We deliberately do not write it.
+It briefly had a roadmap item (`RM7`), which was wrong — there is no work here for
+us to do. Removed on 2026-08-11 during a sweep for upstream gaps this repo had
+absorbed as its own.
 
 ## F9 — `lookup_citation` cannot detect a fabricated PMID, and our docs said it could
 
@@ -106,6 +106,13 @@ Recorded so the gaps in *this* file are visible too, per the completeness rule.
   kinds with opposite endpoint conventions — and nothing has tested whether the
   tools make them followable. Per "pick the probe where the design generalized
   from one case", the case to use is one with two bins sharing an endpoint.
+- **`enrich_module` and `registry_publish`, end to end against the live services.**
+  Was tracked as a roadmap item until 2026-08-11; it is a probe, not a
+  deliverable. The offline ceiling keeps the suite hermetic, so neither can be a
+  normal test — what fits is a marked, opt-in integration run alongside authoring
+  a small real module all the way through. `registry_publish` needs a token, a
+  namespace and a module we are willing to publish immutably; the new
+  `published.json` receipt is what makes the result inspectable afterwards.
 - **A module with two of something the examples show one of.** The worked example
   throughout is a single-gene, single-rsID module. A paralogous rsID mapping to
   several loci, or one gene carrying two variants with different thresholds, is

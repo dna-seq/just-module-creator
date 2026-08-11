@@ -1,7 +1,52 @@
 # Roadmap history
 
-Shipped items, moved here from [ROADMAP.md](ROADMAP.md) with their rationale.
-Nothing is deleted; it is relocated. Newest first.
+Items no longer on [ROADMAP.md](ROADMAP.md) — **shipped**, or **deferred with a
+reason**. Nothing is deleted; it is relocated. Newest first.
+
+An item that left the roadmap because the work turned out not to be ours is not
+here: it is filed upstream as an `S<n>` and tracked in
+[just-dna-format-pending-fixes.md](just-dna-format-pending-fixes.md).
+
+---
+
+## RM3 — signing is unwrapped
+
+**Deferred:** 2026-08-11 · *"signing thing is a prototype rather than a real
+thing. Currently the registry is the authority and gives out identity keys."*
+
+`keygen` / `sign` stay CLI-only, and not for the key-hygiene reason this item
+originally gave. The reason is that **module identity is the registry's**: it
+stamps `namespace`, `owner`, `version` and `canonical_id` on publish and
+overrides anything authored (upstream `S1` documents this). Ed25519 signing sits
+beside that as a prototype of a second, author-held identity scheme, and wrapping
+a prototype would give it a durability its design has not earned.
+
+`keygen` writing an unencrypted PKCS#8 key remains true and remains a reason not
+to have an agent generate one on its own initiative, but it is now the second
+argument rather than the first.
+
+**What came out of this instead**, because it is the half that mattered: the
+registry hands back the authoritative identity on publish and `registry_publish`
+was returning it in a message and dropping it. It now writes a `published.json`
+receipt beside the spec — the identity keys, the digest, the content signature and
+an ISO-8601 UTC timestamp — because a receipt that does not survive the session is
+not a record, and it cannot live in `module_spec.yaml` where `extra="forbid"`
+rejects those exact keys.
+
+**Reopens if** author-held signing stops being a prototype.
+
+## RM4 — nothing verifies `enrich_module` or `registry_publish` end to end
+
+**Reclassified:** 2026-08-11 · *"RM4 is a dogfooding run."*
+
+Correct, and it was mis-filed. This was never a thing to build — it is a probe to
+run, and a probe belongs in [dogfooding.md](dogfooding.md) under "Probes not yet
+run", where it now is. Keeping it on the roadmap implied a deliverable and made
+the roadmap look longer than the work.
+
+The substance is unchanged: the offline ceiling keeps the suite hermetic, so
+neither tool can be a normal test. What fits is a marked, opt-in integration run
+plus authoring a small real module all the way through.
 
 ---
 

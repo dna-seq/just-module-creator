@@ -20,6 +20,36 @@ on our side, so agents in sibling repos are not surprised.
   renamed `just-dna-marketplace` repo, so taking it would mean a local path dependency and the
   plugin's one-command install would stop working for anyone else.
 
+### `registry_publish` now keeps the identity it is given
+
+The registry is the authority on module identity — it stamps `namespace`, `owner`, `version` and
+`canonical_id` on publish and overrides anything authored. We were returning that in a message and
+dropping it, so nothing on disk recorded that a spec had ever been published, under what identity, or
+against which digest. It now lands in a `published.json` receipt beside the spec, with the artifact
+digest, the content signature and an ISO-8601 UTC timestamp. Not a cache and not a temp dir: a receipt
+that does not survive the session is not a record. It cannot go into `module_spec.yaml` either —
+`module:` is `extra="forbid"` and those exact keys are rejected there because the registry owns them
+(upstream S1). An already-recorded version is never overwritten; a published version is immutable, so
+a changed digest is reported for investigation rather than applied.
+
+### Docs swept for upstream gaps we had absorbed as our own
+
+Three items were sitting in our roadmap or our skill as though the work were ours:
+
+- **`would_publish`'s variant ceiling** (`422 too_many_variants` on a large module) had never been
+  filed, and the idea book proposed building our own `check_publishable` to route around it. Filed as
+  **S15**, tracked as **F11**, idea-book entry withdrawn — a parallel publishability check in a
+  consumer is how two answers to one question start drifting.
+- **RM7** (no `sources.csv` terms for any literature source) is upstream's granularity question. There
+  was never work here for us: we report it and refuse to fill it. Removed from the roadmap, now **F8**
+  in `just-dna-format-pending-fixes.md`.
+- **F9** (`lookup_citation` cannot check identity) gained its upstream-blocked entry alongside the
+  dogfooding one, since the mitigation is ours and the fix is not.
+
+`docs/ROADMAP.md` now states the rule at the top: an item belongs there only if the work is ours.
+**RM3** (signing) is deferred with its reason, and **RM4** was reclassified — it is a dogfooding probe,
+not a deliverable, and now lives in `dogfooding.md`.
+
 ### New tools
 
 - **`literature_search`** (essentials) — PubMed, Europe PMC, Semantic Scholar and the preprint

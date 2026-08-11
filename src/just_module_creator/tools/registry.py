@@ -10,6 +10,10 @@ Authoring, validating and compiling a module need no token. Only these do.
 
 from __future__ import annotations
 
+import json
+from datetime import UTC, datetime
+from pathlib import Path
+
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
@@ -30,6 +34,80 @@ from just_module_creator.settings import Settings
 from just_module_creator.tools._shared import resolve_dir
 
 log = get_logger()
+
+#: Where a publish receipt lands, beside the spec it describes.
+#:
+#: **The registry is the authority on module identity** — it stamps `namespace`,
+#: `owner`, `version` and `canonical_id` on publish and overrides anything
+#: authored. Those keys must therefore be *received* and kept, and until now this
+#: tool returned them in a message and dropped them: nothing on disk recorded that
+#: a spec had ever been published, under what identity, or against which digest.
+#:
+#: It cannot go into `module_spec.yaml`: `module:` is `extra="forbid"` and those
+#: exact keys are rejected there precisely because the registry owns them
+#: (upstream `S1`). So it is a sibling file, committed with the spec, in the spec
+#: directory rather than a cache or a temp dir — a receipt that does not survive
+#: the session is not a record.
+RECEIPTS_FILE = "published.json"
+
+
+def _record_receipt(
+    spec_dir: Path,
+    *,
+    registry_url: str,
+    identity: object,
+    artifact: object,
+    manifest: object,
+    fallback: tuple[str, str, str],
+) -> tuple[dict, str]:
+    """Append the registry-stamped identity to ``published.json``. Never overwrites.
+
+    A published version is **immutable**, so a second receipt for a version we
+    already recorded is a fact worth surfacing rather than quietly replacing: the
+    existing entry is kept and the difference is reported.
+    """
+    ns, name, version = fallback
+    receipt = {
+        "canonical_id": getattr(identity, "canonical_id", None) or f"{ns}/{name}@{version}",
+        "namespace": getattr(identity, "namespace", None) or ns,
+        "name": getattr(identity, "name", None) or name,
+        "version": getattr(identity, "version", None) or version,
+        "owner": getattr(identity, "owner", None),
+        "artifact_digest": getattr(artifact, "digest", None),
+        "content_signature": getattr(manifest, "content_signature", None),
+        "registry_url": registry_url,
+        # ISO-8601 UTC. Never a naive local timestamp — it is misparsed as local
+        # time and breaks string comparison against every other ISO value here.
+        "published_at": datetime.now(UTC).isoformat(timespec="seconds"),
+    }
+
+    path = spec_dir / RECEIPTS_FILE
+    existing: list[dict] = []
+    if path.is_file():
+        loaded = json.loads(path.read_text() or "[]")
+        existing = loaded if isinstance(loaded, list) else [loaded]
+
+    prior = next((r for r in existing if r.get("version") == receipt["version"]), None)
+    if prior is not None:
+        changed = [
+            k
+            for k in ("canonical_id", "artifact_digest", "content_signature")
+            if prior.get(k) != receipt[k]
+        ]
+        note = (
+            f"{RECEIPTS_FILE} already records {receipt['version']}; kept the original receipt. "
+            + (
+                f"The registry now reports a different {', '.join(changed)} — a published version "
+                "is immutable, so investigate rather than assume the new value is right."
+                if changed
+                else "It matches."
+            )
+        )
+        return prior, note
+
+    existing.append(receipt)
+    path.write_text(json.dumps(existing, indent=2) + "\n")
+    return receipt, f"Identity recorded in {RECEIPTS_FILE}; commit it with the spec."
 
 
 def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> None:
@@ -169,12 +247,17 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         identity = getattr(manifest, "identity", None)
         artifact = getattr(manifest, "artifact", None)
         canonical = getattr(identity, "canonical_id", None) or f"{namespace}/{name}@{version}"
+
+        receipt, note = _record_receipt(
+            target,
+            registry_url=settings.registry_url,
+            identity=identity,
+            artifact=artifact,
+            manifest=manifest,
+            fallback=(namespace, name, version),
+        )
         return OpResult(
             success=True,
-            message=f"Published {canonical}.",
-            data={
-                "canonical_id": getattr(identity, "canonical_id", None),
-                "artifact_digest": getattr(artifact, "digest", None),
-                "content_signature": getattr(manifest, "content_signature", None),
-            },
+            message=f"Published {canonical}. {note}",
+            data={**receipt, "receipt_file": str(target / RECEIPTS_FILE)},
         )

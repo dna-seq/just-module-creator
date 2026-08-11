@@ -87,12 +87,21 @@ The server **boots with no environment configured** — authoring a module needs
 | `authoring_reference` | extended | no | the whole generated DSL |
 | `module_signature`, `verify_artifact`, `reverse_module` | extended | no | integrity and round-trip |
 | `registry_get_module`, `registry_download` | extended | no | read the catalog |
-| `registry_whoami`, `registry_claim_namespace`, `registry_publish` | gated | **yes** | registry writes |
+| `registry_whoami`, `registry_claim_namespace`, `registry_publish` | gated | **yes** | registry writes; publish records the stamped identity in `published.json` |
 
 Plus a resource (`resource://just-dna/tables`) and a prompt (`create_module`).
 
-Not wrapped, and deliberately so — use the CLIs (`references/CLI.md` has the full surface): signing,
-the PGx cross-checks, and snapshot building.
+Not wrapped, and deliberately so — use the CLIs (`references/CLI.md` has the full surface): the PGx
+cross-checks, snapshot building, and signing. Signing stays out because **module identity belongs to
+the registry**, which stamps `namespace`, `owner`, `version` and `canonical_id` on publish; author-held
+Ed25519 signing sits beside that as a prototype, and wrapping a prototype would lend it a durability
+its design has not earned.
+
+`registry_publish` writes the identity it receives into a `published.json` receipt beside the spec —
+canonical id, owner, digest, content signature, ISO-8601 UTC timestamp — because those keys are the
+registry's answer and cannot live in `module_spec.yaml`, where they are rejected as registry-owned.
+Commit it with the spec. A version already recorded is never overwritten: a published version is
+immutable, so a changed digest is reported rather than applied.
 
 ## The workflow
 
