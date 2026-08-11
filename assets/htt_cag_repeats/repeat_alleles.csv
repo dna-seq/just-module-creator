@@ -1,0 +1,3 @@
+measure_kind,measure_min,measure_max,direction,clin_sig,phenotype,trait_efo_id,conclusion,unresolved,source_field,gene,repeat_unit
+repeat_count,,,,,,,<<REPLACE>>,false,,<<REPLACE>>,<<REPLACE>>
+repeat_count,,,,,,,<<REPLACE>>,true,,<<REPLACE>>,<<REPLACE>>
