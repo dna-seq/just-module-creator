@@ -296,3 +296,51 @@ on `literature_search`'s `sources` block or alongside `lookup_open_access`'s fin
 already looking when it matters. **Never the address itself** on a tool result: the origin answers the
 question, and echoing a configured address writes personal data into a transcript for no gain — the same
 argument as the `registry_register` install-id echo already noted in `UX_TESTER.md`.
+
+## F26 — a stale plugin build serves an old tool surface, and no result says which build answered
+
+**Found:** 2026-08-12, authoring a longevity module · **Severity:** high · **Status:** open
+
+**Confirmed 2026-08-12 by `/reload-plugins`.** All three symptoms below cleared at once on 0.7.0:
+`sources.csv` moved from `sidecars` into `tables` with `SourceRow` and `(source, layer)`,
+`check_identifiers` returned `gene_locus_conflicts: []` **and** `gene_locus_check_skipped: null`
+explicitly, and the `S23` orphan warning stopped firing. The `artifact_digest` was identical before
+and after, so nothing built on the stale surface was wrong — only everything concluded *about* the
+surface was.
+
+`/plugin` reported *"Updated just-dna Module Creator. Run `/reload-plugins` to apply."* The reload
+did not happen, so **every tool call in that session was answered by the 0.2.0 build** while the
+repo, the skill and `docs/` were all 0.7.0. Nothing in any tool result said so, and the mismatch is
+invisible: the tools are all still there, they all still answer, and the answers are internally
+consistent — with a surface that shipped months ago.
+
+**Four conclusions were drawn and had to be retracted.** Each looked like a defect in 0.7.0:
+
+| Observed | Actually |
+|---|---|
+| `describe_table("sources.csv")` / `get_template(…)` reject it, `list_tables` files it under `sidecars` | exactly `F20`, closed in 0.5.4. 0.2.0's sidecar literal still contains `sources.csv` and its `_SUBJECTS` does not |
+| `check_identifiers` omits `gene_locus_conflicts` / `gene_locus_check_skipped` | 0.2.0's `models.py` contains **zero** `gene_locus` references — the fields do not exist there. Read as "empty, therefore clean", which is the exact inversion the fields exist to prevent |
+| the `S23` literature exemption never fires | 0.2.0 pins `just-dna-compiler>=0.5.3`; its resolved compiler predates the exemption |
+| the skill's advice was wrong on all three | the skill was right; the server was old |
+
+Three of those were written into `SKILL.md` as corrections before the cause was found, which would
+have enshrined 0.2.0's bugs as 0.7.0's documented behaviour — including restating `SourceRow`'s
+columns in the skill, **the exact fix `F20` explicitly rejected**. Reverted.
+
+**The trap is that a stale build is indistinguishable from a regression**, and the natural response
+to an apparent regression is to document it. A version skew that presents as a defect will therefore
+tend to get written down as one. The give-away was cheap and was found late: our own source already
+had the fix, so the code and the running behaviour disagreed — but that check only happens if you
+think to make it.
+
+**Candidate fix:** report the build on something every session already reads. `server.INSTRUCTIONS`
+is the natural home — it is in front of an agent before the first call, costs nothing, and a version
+line there would have ended this in seconds. A `version` field on `authoring_reference()` is the
+weaker second choice, since nothing forces an agent to call it.
+
+**A candidate that is wrong:** having tools detect their own staleness by comparing against the
+checkout. There is no reliable link from a running server back to "the" repo — the cached copy *is*
+a legitimate install — and a wrong answer here is worse than none. Report the build, and let the
+reader compare.
+
+**Not an upstream note.** Every symptom is our build being old; the format tree is not involved.

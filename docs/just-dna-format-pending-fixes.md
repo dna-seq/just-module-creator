@@ -570,3 +570,33 @@ re-run on the warning, instead of telling an author to infer unchecked-ness from
 `checked` element.
 
 **Closed.** Verified on the installed 0.5.4.
+
+## F27 — a module card cannot carry a readme; the registry reads the column but never writes it
+
+**Found:** 2026-08-12, rehearsing a longevity module on the polygon ·
+**Upstream:** registry `S5`, filed 2026-08-12 in
+`../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md` · **Status:** open upstream, unreleased,
+and **no mitigation is possible on our side**
+
+`ModuleDetail.readme` is declared, stored with a `''` default, and returned by
+`services/catalog.py` — and `grep -rn 'readme=' --include=*.py` over `just_dna_registry/` finds
+exactly one hit, which is that read. There is no writer. Every card is blank, including
+production's `eric-mods/lactose_tolerance@1.0.0`.
+
+**Why we cannot mitigate it.** `client.gather_spec_files` already uploads `.md` (it skips only
+`*.parquet` and `manifest.json`), so `README.md` reaches the server and lands nowhere. There is no
+`amend_readme` to call — the logo has `amend_logo`, out-of-digest and version-bump-free, and the
+readme has no equivalent. Nothing on our side can put prose on a card, so this is a note and a
+`README.md` that travels with the spec, not a guard.
+
+**Two publish cycles were spent on it**, and that is the part worth remembering: a field that is
+always `""` reads as *this module has no readme*, not as *this registry cannot store one*. We
+guessed `MODULE.md` from the lone comment at `services/upgrade.py:198`, republished, and got `""`
+again. **Do not repeat the experiment** — the answer is in the absence of a writer, not in the
+filename.
+
+**What it costs this project specifically.** A module whose honest content is "these are candidates,
+most from a preprint, one association was not significant" has nowhere on the catalog to say so.
+`description` is one sentence. The card otherwise shows a title, a gene list and a green
+`compile_success: true`, which reads as more confidence than the rows support — the precise
+inversion §2's three-valued rule exists to prevent, arriving through presentation rather than data.
