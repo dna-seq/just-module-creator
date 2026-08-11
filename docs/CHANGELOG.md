@@ -3,6 +3,85 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.8.0 — ask whether it would publish, and hermeticity stops being a promise (2026-08-12)
+
+Two things: `RM8` — the registry client surface is wrapped — and `F24`, where the suite's
+hermeticity was a convention that had quietly stopped holding.
+
+### Ask whether it would publish, without spending a version number (RM8)
+
+Four registry releases of `RegistryClient` had gone unwrapped since we adopted 0.12.0 for the
+test/prod split. Registry 0.13.0 landing on PyPI yesterday was the precondition, because it
+made `would_publish_module_level` a field to *wrap* rather than one to feature-detect.
+
+Two gated pre-flights and two ungated reads:
+
+- **`registry_check`** — the full dry run, and the reason this item mattered. It runs the
+  server's own publish gates and **spends no version number**, which on production is the
+  difference between a rehearsal and something irreversible.
+- **`registry_validate`** — the same without the network tier. It still answers two things a
+  local `validate_module` cannot: whether `module.name` matches the path, and whether identical
+  authored data is already published under someone else's name.
+- **`registry_is_published`** — ungated, uploads nothing. The content signature is computed
+  locally, so an author can ask "is this data already out there, under any name" before they
+  have a token at all.
+- **`registry_health`** — reports the instance's own mode, so a rehearsal is *confirmed* rather
+  than assumed. `expect_mode` already refuses a mismatch; this is how you see it beforehand.
+
+**Where the work actually was: not letting a skip look like a verdict.** One
+`PublishPreflight` carries *two*, deliberately.
+
+`module_level_clear` is upstream's `would_publish_module_level`, renamed so nothing reads it as
+a green light — it composes exactly three gates and excludes the network tier. `verdict` is the
+whole dry run and is **null whenever that tier did not run**: on a bare validate, on
+`skipped_reason`, and when no token was resolvable. Defaulting it to `false` would let "we could
+not ask" arrive shaped like "would not publish", which is the same error as a skip producing a
+pass with the sign flipped.
+
+`rerun_rather_than_fix` carries `S20` all the way to the author's next action. A false verdict
+beside unreachable rsIDs means **re-run**, not go and fix the spec: a strict publish against an
+unreachable Ensembl really does refuse, while the variants may be perfectly findable. Telling an
+author to fix that is how real rows get deleted. `unchecked` and `non_blocking` keep upstream's
+other careful distinctions — a `clin_sig` check the operator has no snapshot for never blocks
+and is never dropped either, and identifier findings never move the verdict because a publish
+does not run that pass.
+
+**Verified live against the polygon, not only in the suite.** A clean `assets/fto_bmi` returned
+`verdict: true` in 1.3s; the same spec with one invalid `state` returned `verdict: null` with
+`verdict_unavailable: "invalid_spec"` — null rather than false, which is the entire point.
+
+**One RM8 bullet was already done and one is deliberately skipped.** `content_signature` was
+listed, but `module_signature` has always called the same `just_dna_compiler` function the client
+method wraps, so wrapping the client's would have been a second path to one answer.
+`issue_jwt_token` returns 501 unless the deployment configures a signing secret and nothing here
+consumes a JWT — a tool that is usually a 501 is worse than no tool.
+
+### The suite's hermeticity was a promise, not a mechanism (F24)
+
+`CLAUDE.md` §6 claimed no test could read a developer's `.env`. That held only for as long as
+every construction remembered `_env_file=None`, and by today `.env` carried a live polygon token:
+
+```
+Settings(_env_file=None).test_api_key    : None         # hermetic, as documented
+Settings().test_api_key                  : 'mk_live_…'  # the developer's REAL token
+Settings().offline                       : False        # ← worse than the finding said
+```
+
+That last line is what the original note missed. A forgotten kwarg lost **both** properties, so a
+test could reach the network *while holding a live credential* — passing locally, passing in CI
+where `.env` is absent, and meaning something different on each machine.
+
+Now an autouse fixture points `env_file` at a path that cannot exist and clears the ecosystem's
+variables from `os.environ`, so forgetting the kwarg is harmless. `env_file` stays in
+`model_config`: the product needs it, and breaking the product to protect the suite is the wrong
+trade.
+
+**The clear-list is derived from `Settings.model_fields`, not written** — and that mattered inside
+the same change. The hand-written first draft covered the credentials and missed seven variables,
+`JMC_API_KEY_HEADER`, `JMC_TRANSPORT` and `JMC_PORT` among them; an exported `JMC_API_KEY_HEADER`
+changes what a test asserts as effectively as a token does and far less visibly. Only the four
+upstream names stay hand-maintained, because no field of ours can name them.
+
 ## 0.7.0 — six mitigations come out, and a target that verifies itself (2026-08-11)
 
 Upstream shipped. `uv sync` now installs format/compiler/enricher **0.5.4** and

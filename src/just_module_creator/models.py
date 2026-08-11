@@ -704,6 +704,168 @@ class RegistrySearchResult(BaseModel):
     registry_url: str = Field(description="Which registry answered.")
 
 
+class PublishedVersion(BaseModel):
+    """One published version built from the same authored data."""
+
+    canonical_id: str = Field(description="namespace/name@version.")
+    namespace: str = Field(description="Namespace.")
+    name: str = Field(description="Module name.")
+    version: str = Field(description="Version.")
+    yanked: bool = Field(description="Whether it has been yanked. A yank does NOT free the data.")
+
+
+class DuplicateCheck(BaseModel):
+    """Whether this spec's authored data is already published, under any name."""
+
+    content_signature: str = Field(
+        description=(
+            "The signature of the authored rows — computed locally, no upload. This names the "
+            "*data*, not a compiled artifact, so it catches a rename or a rebrand that a digest "
+            "would miss."
+        )
+    )
+    published_as: list[PublishedVersion] = Field(
+        default_factory=list,
+        description=(
+            "Versions already built from identical data. **Non-empty means a publish would 409 "
+            "duplicate_content.** On production that is permanent: the claim is not released by "
+            "yanking the version that made it."
+        ),
+    )
+    free_to_publish: bool = Field(
+        description=(
+            "True only when nothing matched. This is a *duplicate* verdict and nothing more — it "
+            "says the data is unclaimed, never that the spec is valid or publishable."
+        )
+    )
+    target: str = Field(description="Which instance answered: 'prod' or 'test' (the polygon).")
+    registry_url: str = Field(description="Which registry answered.")
+
+
+class InstanceHealth(BaseModel):
+    """What one registry instance says about itself."""
+
+    reachable: bool = Field(description="Whether it answered at all.")
+    target: str = Field(description="The target you asked for: 'prod' or 'test'.")
+    registry_url: str = Field(description="The URL that was called.")
+    status: str | None = Field(default=None, description="Its own status string, e.g. 'ok'.")
+    version: str | None = Field(default=None, description="The registry version it runs.")
+    mode: str | None = Field(
+        default=None,
+        description=(
+            "The deployment's own answer to 'am I production or the polygon?' — 'prod' | 'test'. "
+            "**null means it did not say**, which is not a pass: an instance too old to report "
+            "its mode cannot have the target verified against it, and every write tool refuses "
+            "rather than guessing."
+        ),
+    )
+    mode_matches_target: bool | None = Field(
+        default=None,
+        description=(
+            "Whether the instance's own mode agrees with the target you named. null when it "
+            "reported no mode — never False, because unreported is not disagreement."
+        ),
+    )
+    catalog: dict = Field(default_factory=dict, description="Its module/version counts, if given.")
+    message: str = Field(description="What this means, in one line.")
+
+
+class PublishPreflight(BaseModel):
+    """A server-side dry run: would this spec publish, and what stops it.
+
+    Two verdicts, deliberately separate, and **neither is named "will publish"**.
+    ``module_level_clear`` covers the gates that do not scale with variant count;
+    ``verdict`` is the whole dry run including the network tier, and is null when
+    that tier did not run.
+    """
+
+    spec_dir: str = Field(description="The spec directory that was sent.")
+    namespace: str = Field(description="Namespace it was checked against.")
+    name: str = Field(description="Module name it was checked against.")
+    strict: bool = Field(description="The mode the findings were graded under.")
+
+    valid: bool = Field(description="Whether the spec validates under `strict`.")
+    errors: list[str] = Field(default_factory=list, description="Blocking findings.")
+    warnings: list[str] = Field(default_factory=list, description="Non-blocking findings.")
+    info: list[str] = Field(
+        default_factory=list,
+        description="Accepted but noteworthy — keys the server dropped, a version it coerced.",
+    )
+
+    module_level_clear: bool = Field(
+        description=(
+            "**Read this as 'nothing module-level blocks this', never as 'this will publish'.** "
+            "It composes exactly three gates: the spec validates under strict, `module.name` "
+            "matches the path, and no version is already built from identical data. It says "
+            "nothing about the network tier, so a clear answer here is not a green light."
+        )
+    )
+    name_matches_path: bool = Field(
+        description="Whether the spec's `module.name` matches `name`. A publish 422s if not."
+    )
+    published_as: list[PublishedVersion] = Field(
+        default_factory=list,
+        description="Versions already built from identical data — a publish would 409.",
+    )
+    content_signature: str | None = Field(
+        default=None,
+        description="Content identity of the authored rows; null when a data CSV will not parse.",
+    )
+
+    verdict: bool | None = Field(
+        default=None,
+        description=(
+            "The full dry run's answer, including the network tier. **null means the dry run did "
+            "not reach a verdict** — the enrichment tier was skipped (see `verdict_unavailable`) "
+            "— and null is never a pass. Only `registry_check` sets this; `registry_validate` "
+            "leaves it null because it never runs that tier at all."
+        ),
+    )
+    verdict_unavailable: str | None = Field(
+        default=None,
+        description=(
+            "Why `verdict` is null. e.g. `invalid_spec` — nothing to enrich yet, so the errors "
+            "above are already the answer."
+        ),
+    )
+    rerun_rather_than_fix: list[str] = Field(
+        default_factory=list,
+        description=(
+            "rsIDs live Ensembl could not be *asked* about, so their absence is unchecked rather "
+            "than established. **A false `verdict` alongside these means 're-run', not 'go fix "
+            "your spec'** — a strict publish against an unreachable Ensembl really does refuse, "
+            "but the variant may be perfectly findable."
+        ),
+    )
+    unchecked: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Checks that did not run, each with the reason. A check the operator disabled or has "
+            "no snapshot for is not a defect in your module and never blocks a publish — but it "
+            "is not a passed check either, which is why it is listed rather than dropped."
+        ),
+    )
+    blocking: list[str] = Field(
+        default_factory=list,
+        description="What actually stands between this spec and a publish, in one list.",
+    )
+    non_blocking: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Findings worth reading that do NOT move the verdict — identifier currency among "
+            "them, because a publish does not run that pass, so a finding predicts nothing "
+            "about one."
+        ),
+    )
+    stats: dict = Field(default_factory=dict, description="What the server counted in the spec.")
+    elapsed_seconds: float | None = Field(
+        default=None, description="How long the dry run took server-side."
+    )
+    target: str = Field(description="Which instance answered: 'prod' or 'test' (the polygon).")
+    registry_url: str = Field(description="Which registry answered.")
+    next_step: str = Field(description="What to do with this result.")
+
+
 # --------------------------------------------------------------------------- #
 # Drafting and the fact passes
 # --------------------------------------------------------------------------- #

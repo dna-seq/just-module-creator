@@ -25,6 +25,7 @@ from __future__ import annotations
 from anyio.to_thread import run_sync
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
+from just_dna_compiler import compiler
 from just_dna_enricher import lookup as enricher_lookup
 from just_dna_enricher.identifiers import check_identifiers as _check_identifiers
 from just_dna_registry import RegistryError
@@ -34,9 +35,11 @@ from just_module_creator.discovery import fulltext, open_access, search_literatu
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
     CitationLookup,
+    DuplicateCheck,
     FullTextResult,
     IdentifierReport,
     IdentifierStatus,
+    InstanceHealth,
     LiteratureSearchResult,
     NamespaceAvailability,
     OpenAccessResult,
@@ -51,6 +54,7 @@ from just_module_creator.targets import (
     DEFAULT_CATALOG_TARGET,
     DEFAULT_WRITE_TARGET,
     client_for,
+    describe,
 )
 from just_module_creator.tools._shared import (
     jsonable,
@@ -58,6 +62,7 @@ from just_module_creator.tools._shared import (
     resolve_dir,
     to_alterations,
     to_findings,
+    to_published_versions,
 )
 
 log = get_logger()
@@ -468,6 +473,151 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             )
         return OpResult(
             success=True, message=f"{namespace}/{name}", data={**dict(payload), "target": target}
+        )
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Registry: is this data already published",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def registry_is_published(
+        spec_dir: str | None = None,
+        signature: str | None = None,
+        target: RegistryTarget = DEFAULT_CATALOG_TARGET,
+    ) -> DuplicateCheck:
+        """Has this authored data already been published — **under any name**?
+
+        The question an author has well before they are ready to publish, and the
+        one a name check cannot answer. It matches on the *content signature* of
+        the authored rows, so it catches a rename or a rebrand that a digest
+        lookup would miss: the same data under a different module name is still a
+        duplicate as far as the registry is concerned.
+
+        Pass a `spec_dir` and the signature is computed locally — **nothing is
+        uploaded and no token is needed**. Pass a `signature` instead to ask about
+        one you already hold.
+
+        Why it matters more here than a duplicate check usually would: on
+        production a `409 duplicate_content` is permanent. The claim belongs to the
+        data, and **yanking the version that made it does not release it** — so a
+        match that is already `yanked: true` still blocks. Rehearse on the
+        polygon, where `registry_delete_version` frees it.
+
+        `free_to_publish` is a duplicate verdict and nothing else. It says the data
+        is unclaimed, never that the spec is valid — that is `validate_module`, and
+        `registry_check` for the full dry run.
+        """
+        if not spec_dir and not signature:
+            raise ToolError("Provide either spec_dir or signature.")
+        if spec_dir and signature:
+            raise ToolError(
+                "Provide spec_dir or signature, not both — two answers to one question, and "
+                "nothing here can tell you which one you meant."
+            )
+        if settings.offline:
+            raise ToolError(
+                "The server is configured offline (JMC_OFFLINE), so the registry cannot be asked. "
+                "`module_signature` computes the signature locally if that is what you need."
+            )
+
+        if spec_dir:
+            spec = resolve_dir(spec_dir, settings)
+            sig = await run_sync(lambda: compiler.content_signature(spec))
+        else:
+            sig = str(signature)
+
+        def _lookup() -> list:
+            with client_for(target, settings) as client:
+                return client.lookup_by_signature(sig)
+
+        try:
+            matches = await run_sync(_lookup)
+        except RegistryError as exc:
+            raise ToolError(f"Registry error: {exc}") from exc
+
+        published = to_published_versions(matches)
+        return DuplicateCheck(
+            content_signature=sig,
+            published_as=published,
+            free_to_publish=not published,
+            target=target,
+            registry_url=settings.registry_url_for(target),
+        )
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Registry: instance health and mode",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def registry_health(target: RegistryTarget = DEFAULT_WRITE_TARGET) -> InstanceHealth:
+        """Is this registry instance up, and **which instance does it say it is**?
+
+        The write tools already refuse when the instance's mode disagrees with the
+        target you named. This is how you *see* that before it matters — it
+        reports the deployment's own answer to "am I production or the polygon?",
+        so a rehearsal can be confirmed rather than assumed.
+
+        **`mode: null` is not a pass.** An instance too old to report its mode
+        cannot have the target verified against it, and the write tools refuse
+        rather than guess, so a null here predicts a refused publish. That is the
+        cheap direction: the remedy is a server upgrade, where the other
+        direction's remedy is nothing, because the publish already happened.
+
+        `mode_matches_target` is null in exactly that case — never false, because
+        an instance that did not answer is not an instance that disagreed.
+        """
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        url = settings.registry_url_for(target)
+
+        def _health() -> dict:
+            with client_for(target, settings) as client:
+                return client.health()
+
+        try:
+            payload = await run_sync(_health)
+        except RegistryError as exc:
+            return InstanceHealth(
+                reachable=False,
+                target=target,
+                registry_url=url,
+                message=f"{describe(target, settings)} did not answer: {exc}",
+            )
+
+        mode = payload.get("mode")
+        matches = None if mode is None else (str(mode) == target)
+        if mode is None:
+            note = (
+                "It reports no mode, so the target cannot be verified against it. Every write "
+                "tool will refuse rather than guess — that needs a server upgrade, not a retry."
+            )
+        elif matches:
+            note = f"Confirmed: this really is {describe(target, settings)}."
+        else:
+            note = (
+                f"MISMATCH: you asked for {target!r} and it reports {str(mode)!r}. Writes will "
+                "refuse before spending anything; fix the configured URL."
+            )
+        return InstanceHealth(
+            reachable=True,
+            target=target,
+            registry_url=url,
+            status=payload.get("status"),
+            version=payload.get("version"),
+            mode=str(mode) if mode is not None else None,
+            mode_matches_target=matches,
+            catalog=dict(payload.get("catalog") or {}),
+            message=(
+                f"{payload.get('status', 'unknown')}, registry "
+                f"{payload.get('version')}. {note}"
+            ),
         )
 
     # ----------------------------------------------------------------- #

@@ -47,9 +47,22 @@ REGISTRY_TOOL_DEFAULTS = {
     "registry_publish": "test",
     "registry_delete_version": "test",
     "registry_delete_module": "test",
+    # The pre-flights follow the publish they precede: rehearse against the polygon,
+    # because a dry run aimed at the wrong instance answers about the wrong catalog —
+    # `published_as` is per-instance, so a production duplicate is invisible from the
+    # polygon and vice versa.
+    "registry_validate": "test",
+    "registry_check": "test",
+    # And this one asks about the published world, like every other catalog read: the
+    # question is "has anyone published this data", and production is where that
+    # matters — a polygon duplicate is deletable.
+    "registry_is_published": "prod",
     "registry_search": "prod",
     "registry_get_module": "prod",
     "registry_download": "prod",
+    # Health follows the write default so the common case — "confirm I am pointed at
+    # the polygon before I rehearse" — needs no argument.
+    "registry_health": "test",
 }
 
 
@@ -309,3 +322,181 @@ def test_a_token_reaches_the_client_and_absence_of_one_does_not_invent_a_header(
     assert with_token._http.headers["Authorization"] == "Bearer abc"
     # No token means no header at all, not an empty bearer.
     assert "Authorization" not in client_for("test", settings)._http.headers
+
+
+# --------------------------------------------------------------------------- #
+# The server-side pre-flights (RM8): a verdict, and what is not one
+# --------------------------------------------------------------------------- #
+class _Stats:
+    def model_dump(self):
+        return {"variant_count": 2, "study_count": 1}
+
+
+class _Validation:
+    """Shaped like upstream's ValidationReport. Only the fields we project."""
+
+    def __init__(self, **kw):
+        self.valid = kw.get("valid", True)
+        self.strict = kw.get("strict", True)
+        self.errors = kw.get("errors", [])
+        self.warnings = kw.get("warnings", [])
+        self.info = kw.get("info", [])
+        self.stats = _Stats()
+        self.content_signature = kw.get("content_signature", "sig-abc")
+        self.name_matches_path = kw.get("name_matches_path", True)
+        self.published_as = kw.get("published_as", [])
+        self.would_publish_module_level = kw.get("would_publish_module_level", True)
+
+
+class _Check:
+    def __init__(self, validation, **kw):
+        self.validation = validation
+        self.enrichment = kw.get("enrichment")
+        self.skipped_reason = kw.get("skipped_reason")
+        self.would_publish = kw.get("would_publish", False)
+        self.elapsed_seconds = 1.5
+
+
+class _Enrichment:
+    def __init__(self, **kw):
+        self.unresolved = kw.get("unresolved", [])
+        self.unreachable_rsids = kw.get("unreachable_rsids", [])
+        self.ref_mismatches = kw.get("ref_mismatches", [])
+        self.clin_sig_conflicts = kw.get("clin_sig_conflicts", [])
+        self.clin_sig_not_checked = kw.get("clin_sig_not_checked")
+        self.stale_rsids = kw.get("stale_rsids", [])
+        self.notes = kw.get("notes", [])
+        self.identifiers = kw.get("identifiers")
+
+
+def _project(report):
+    from just_module_creator.tools.registry import _preflight
+
+    return _preflight(
+        report,
+        spec_dir="/tmp/spec",
+        namespace="test-ns",
+        name="m",
+        target="test",
+        registry_url="https://polygon",
+    )
+
+
+def test_a_validate_has_no_verdict_and_that_is_the_honest_value() -> None:
+    """`/validate` never runs the network tier, so it has nothing to report.
+
+    Defaulting `verdict` to False would read as "would not publish" — a skip
+    producing a negative verdict, which is the same error as a skip producing a
+    positive one.
+    """
+    out = _project(_Validation())
+
+    assert out.verdict is None
+    assert out.module_level_clear is True
+    # And the next step says what the clear answer does NOT mean.
+    assert "not" in out.next_step.lower() and "publish" in out.next_step.lower()
+
+
+def test_module_level_clear_is_never_worded_as_will_publish() -> None:
+    """Upstream named the field carefully; the wrapper must not undo that.
+
+    The phrase may appear, but only inside its own negation — so this checks the
+    disclaimer is there, rather than banning a substring that a correct sentence
+    legitimately contains.
+    """
+    out = _project(_Validation())
+
+    assert "NOT" in out.next_step, "a clear module-level answer must disclaim being a green light"
+    assert "registry_check" in out.next_step, "and must point at the call that does decide"
+
+
+def test_a_skipped_tier_leaves_the_verdict_null_rather_than_false() -> None:
+    """`skipped_reason` means the dry run never reached a verdict."""
+    invalid = _Validation(
+        valid=False, errors=["variants.csv: bad row"], would_publish_module_level=False
+    )
+    out = _project(_Check(invalid, skipped_reason="invalid_spec", would_publish=False))
+
+    assert out.verdict is None, "a skipped tier must not report a boolean verdict"
+    assert out.verdict_unavailable == "invalid_spec"
+    assert any("validation error" in b for b in out.blocking)
+
+
+def test_unreachable_rsids_turn_a_false_verdict_into_rerun_not_fix() -> None:
+    """The S20 distinction, carried all the way to the author's next action.
+
+    A strict publish against an unreachable Ensembl really does refuse, so the
+    verdict is honestly False — but the variant may be perfectly findable, and
+    telling the author to fix their spec would have them delete real rows.
+    """
+    enrichment = _Enrichment(unresolved=["rs6567160"], unreachable_rsids=["rs6567160"])
+    out = _project(_Check(_Validation(), enrichment=enrichment, would_publish=False))
+
+    assert out.verdict is False
+    assert out.rerun_rather_than_fix == ["rs6567160"]
+    # The action, not the wording: re-run comes first, and the author is not sent
+    # to change the spec — which would have them delete rows that are perfectly real.
+    assert "re-run" in out.next_step.lower()
+    assert "before changing the spec" in out.next_step.lower()
+    # And it is listed as unchecked, not as a defect in the module.
+    assert any("could not be ASKED" in u for u in out.unchecked)
+
+
+def test_a_check_that_could_not_run_is_listed_not_dropped() -> None:
+    """`clin_sig_not_checked` never blocks, and must never vanish either."""
+    enrichment = _Enrichment(clin_sig_not_checked="no ClinVar snapshot on this deployment")
+    out = _project(_Check(_Validation(), enrichment=enrichment, would_publish=True))
+
+    assert out.verdict is True
+    assert any("clin_sig" in u for u in out.unchecked)
+    # It is not a reason a publish would fail.
+    assert not any("clin_sig" in b for b in out.blocking)
+
+
+def test_identifier_findings_are_reported_as_never_moving_the_verdict() -> None:
+    """A publish does not run that pass, so a finding predicts nothing about one."""
+
+    class _Ident:
+        stale_traits = ["EFO_0004340 is obsolete"]
+        stale_genes = []
+        gene_loci = ["rs2252481 is on chromosome 6, but HGNC puts NEGR1 on chromosome 1"]
+        gene_loci_not_checked = None
+
+    out = _project(
+        _Check(_Validation(), enrichment=_Enrichment(identifiers=_Ident()), would_publish=True)
+    )
+
+    assert out.verdict is True
+    joined = " ".join(out.non_blocking)
+    assert "NEVER moves the verdict" in joined
+    assert "different chromosome" in joined
+    assert not out.blocking
+
+
+def test_a_duplicate_is_blocking_and_says_a_yank_does_not_free_it() -> None:
+    """The trap: a yanked match still 409s, so "yanked" must not read as "gone"."""
+
+    class _Ref:
+        namespace, name, version, yanked = "someone", "same_data", "1.0.0", True
+
+    out = _project(_Validation(published_as=[_Ref()], would_publish_module_level=False))
+
+    assert out.published_as[0].canonical_id == "someone/same_data@1.0.0"
+    assert out.published_as[0].yanked is True
+    blocking = " ".join(out.blocking)
+    assert "409" in blocking
+    assert "yank" in blocking.lower()
+
+
+def test_no_token_is_not_a_negative_verdict() -> None:
+    """The failure shape this whole model exists to avoid."""
+    from just_module_creator.tools.registry import _unauthenticated_preflight
+
+    out = _unauthenticated_preflight(
+        spec_dir="/tmp/spec", namespace="ns", name="m", target="test"
+    )
+
+    assert out.verdict is None
+    assert out.verdict_unavailable == "no_registry_token"
+    assert not out.blocking, "nothing was checked, so nothing can be reported as blocking"
+    assert "validate_module" in out.next_step

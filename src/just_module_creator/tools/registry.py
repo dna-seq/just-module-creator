@@ -1,11 +1,17 @@
-"""KEY-GATED — registry writes that need a token.
+"""KEY-GATED — the registry calls that need a token.
 
 These are ALWAYS listed (so the multi-user HTTP path is safe and discoverable)
 and enforce auth PER CALL via ``require_key``. If no token is resolvable for the
 current request they return a friendly ``OpResult`` instead of raising — never a
 global state flip, so one client can never ride another client's credential.
 
-Authoring, validating and compiling a module need no token. Only these do.
+Authoring, validating and compiling *locally* need no token. Only these do.
+
+**Not all of them write.** ``registry_whoami`` never did, and the server-side
+pre-flights (``registry_validate`` / ``registry_check``) do not either — the
+registry requires the PUBLISH capability on the namespace to run them, because
+they upload the spec, so they need a credential whatever their effect. The tag is
+``registry_write`` for history; read it as "needs a token".
 """
 
 from __future__ import annotations
@@ -29,7 +35,7 @@ from just_module_creator.auth import (
     unauthenticated_result,
 )
 from just_module_creator.logging_setup import get_logger
-from just_module_creator.models import OpResult
+from just_module_creator.models import OpResult, PublishPreflight
 from just_module_creator.settings import RegistryTarget, Settings
 from just_module_creator.targets import (
     DEFAULT_WRITE_TARGET,
@@ -38,7 +44,11 @@ from just_module_creator.targets import (
     polygon_naming_note,
     prod_refusal,
 )
-from just_module_creator.tools._shared import resolve_dir
+from just_module_creator.tools._shared import (
+    jsonable,
+    resolve_dir,
+    to_published_versions,
+)
 
 log = get_logger()
 
@@ -135,11 +145,374 @@ def _record_receipt(
     return receipt, f"Identity recorded in {RECEIPTS_FILE}; commit it with the spec."
 
 
+def _unauthenticated_preflight(
+    *, spec_dir: str, namespace: str, name: str, target: RegistryTarget
+) -> PublishPreflight:
+    """"No token" as a pre-flight, not as a verdict.
+
+    The other gated tools return ``OpResult(success=False)``, which is honest there
+    because they either did the thing or did not. A pre-flight returns a *verdict*,
+    and the one thing this must never do is let "we could not ask" arrive shaped like
+    "would not publish". So ``verdict`` stays null and ``module_level_clear`` is
+    false-because-unknown, with ``verdict_unavailable`` naming the reason.
+    """
+    return PublishPreflight(
+        spec_dir=spec_dir,
+        namespace=namespace,
+        name=name,
+        strict=True,
+        valid=False,
+        module_level_clear=False,
+        name_matches_path=False,
+        verdict=None,
+        verdict_unavailable="no_registry_token",
+        blocking=[],
+        unchecked=["nothing was checked: no registry token is available for this instance."],
+        target=target,
+        registry_url="",
+        next_step=(
+            "Not a verdict — nothing ran. Get a token with `registry_register`, store it with "
+            "`authenticate`, then call this again. Meanwhile `validate_module(strict=true)` is the "
+            "local pre-flight and needs no credential."
+        ),
+    )
+
+
+def _preflight(
+    report: object,
+    *,
+    spec_dir: str,
+    namespace: str,
+    name: str,
+    target: RegistryTarget,
+    registry_url: str,
+) -> PublishPreflight:
+    """Project a ``ValidationReport`` or a ``CheckReport`` onto one model.
+
+    One model for both because they answer one question at two depths, and a caller
+    should not have to reshape its branching to add the network tier. ``verdict``
+    stays ``None`` for a bare validate — **that is the honest value**, not a
+    placeholder: `/validate` never runs the enrichment tier, so it has no verdict to
+    report, and defaulting it to `False` would read as "would not publish".
+
+    The two verdicts are kept apart on purpose. ``would_publish_module_level`` is
+    upstream's name and upstream's meaning — the gates that do not scale with variant
+    count — and it is surfaced as ``module_level_clear`` so nothing reads it as a
+    green light. A skip must never produce a positive verdict.
+    """
+    # A CheckReport wraps the ValidationReport; a ValidationReport is one.
+    validation = getattr(report, "validation", None) or report
+    enrichment = getattr(report, "enrichment", None)
+
+    published = to_published_versions(getattr(validation, "published_as", []))
+    module_clear = bool(getattr(validation, "would_publish_module_level", False))
+    name_ok = bool(getattr(validation, "name_matches_path", False))
+    errors = [str(e) for e in getattr(validation, "errors", []) or []]
+
+    # `verdict` exists only on a CheckReport, and only once the tier ran.
+    skipped = getattr(report, "skipped_reason", None)
+    is_check = hasattr(report, "would_publish")
+    verdict: bool | None = None
+    if is_check and not skipped:
+        verdict = bool(getattr(report, "would_publish", False))
+
+    blocking: list[str] = []
+    non_blocking: list[str] = []
+    unchecked: list[str] = []
+    rerun: list[str] = []
+
+    if errors:
+        blocking.append(f"{len(errors)} validation error(s) under strict — see `errors`.")
+    if not name_ok:
+        blocking.append(
+            "`module.name` does not match the name you published under: a publish 422s."
+        )
+    if published:
+        ids = ", ".join(v.canonical_id for v in published)
+        blocking.append(
+            f"identical authored data is already published as {ids} — a publish would 409 "
+            "duplicate_content, and on production that claim is permanent (a yank does not "
+            "release it)."
+        )
+
+    if enrichment is not None:
+        rerun = [str(r) for r in getattr(enrichment, "unreachable_rsids", []) or []]
+        if getattr(enrichment, "ref_mismatches", None):
+            blocking.append(
+                f"{len(enrichment.ref_mismatches)} authored reference allele(s) disagree with the "
+                "genome — this blocks in both modes."
+            )
+        fatal = [s for s in getattr(enrichment, "stale_rsids", []) or [] if getattr(s, "fatal", 0)]
+        if fatal:
+            blocking.append(
+                f"{len(fatal)} rsID(s) have been withdrawn — this blocks in both modes."
+            )
+        unresolved = [str(u) for u in getattr(enrichment, "unresolved", []) or []]
+        if unresolved and getattr(validation, "strict", False):
+            blocking.append(
+                f"{len(unresolved)} position(s) did not resolve, which blocks under strict."
+            )
+        elif unresolved:
+            non_blocking.append(
+                f"{len(unresolved)} position(s) did not resolve — not blocking here, but the "
+                "registry compiles with strict, so it will block a real publish."
+            )
+        if rerun:
+            unchecked.append(
+                f"{len(rerun)} rsID(s) could not be ASKED about — live Ensembl did not answer, so "
+                "their absence is unchecked rather than established. Re-run before treating a "
+                "false verdict as something to fix in the spec."
+            )
+        not_checked = getattr(enrichment, "clin_sig_not_checked", None)
+        if not_checked:
+            unchecked.append(f"the ClinVar clin_sig cross-check did not run: {not_checked}")
+        if getattr(enrichment, "clin_sig_conflicts", None):
+            non_blocking.append(
+                f"{len(enrichment.clin_sig_conflicts)} clin_sig call(s) disagree with ClinVar — "
+                "never blocking, and worth reading: the compiler leaves your row alone."
+            )
+        identifiers = getattr(enrichment, "identifiers", None)
+        if identifiers is not None:
+            stale = list(getattr(identifiers, "stale_traits", []) or []) + list(
+                getattr(identifiers, "stale_genes", []) or []
+            )
+            gene_loci = list(getattr(identifiers, "gene_loci", []) or [])
+            if stale:
+                non_blocking.append(
+                    f"{len(stale)} identifier(s) are stale. This NEVER moves the verdict — a "
+                    "publish does not run this pass, so a finding predicts nothing about one."
+                )
+            if gene_loci:
+                non_blocking.append(
+                    f"{len(gene_loci)} row(s) name a gene on a different chromosome than their "
+                    "own variant. Not a publish gate, and the most likely sign of a fabricated "
+                    "row: read these."
+                )
+            skipped_loci = getattr(identifiers, "gene_loci_not_checked", None)
+            if skipped_loci:
+                unchecked.append(f"the gene/chromosome comparison did not run: {skipped_loci}")
+        for note in getattr(enrichment, "notes", []) or []:
+            unchecked.append(str(note))
+
+    if skipped:
+        next_step = (
+            f"No verdict: the network tier was skipped ({skipped}). The validation findings above "
+            "are already the answer — fix those and check again."
+        )
+    elif verdict is True:
+        next_step = (
+            "The dry run found nothing blocking. Read `non_blocking` and `unchecked` before "
+            "publishing anyway — a clean verdict is not a claim that the module is good."
+        )
+    elif verdict is False and rerun:
+        next_step = (
+            "Would not publish — but some rsIDs could not be reached, so RE-RUN this before "
+            "changing the spec. A strict publish against an unreachable Ensembl really does "
+            "refuse; that says nothing about whether the variants exist."
+        )
+    elif verdict is False:
+        next_step = "Would not publish. `blocking` lists what stands in the way."
+    elif module_clear:
+        next_step = (
+            "Nothing module-level blocks this. That is NOT 'it will publish' — the network tier "
+            "was not run. Use `registry_check` for the full dry run."
+        )
+    else:
+        next_step = "Module-level gates are not clear yet. `blocking` lists what stands in the way."
+
+    stats = getattr(validation, "stats", None)
+    return PublishPreflight(
+        spec_dir=spec_dir,
+        namespace=namespace,
+        name=name,
+        strict=bool(getattr(validation, "strict", False)),
+        valid=bool(getattr(validation, "valid", False)),
+        errors=errors,
+        warnings=[str(w) for w in getattr(validation, "warnings", []) or []],
+        info=[str(i) for i in getattr(validation, "info", []) or []],
+        module_level_clear=module_clear,
+        name_matches_path=name_ok,
+        published_as=published,
+        content_signature=getattr(validation, "content_signature", None),
+        verdict=verdict,
+        verdict_unavailable=str(skipped) if skipped else None,
+        rerun_rather_than_fix=rerun,
+        unchecked=unchecked,
+        blocking=blocking,
+        non_blocking=non_blocking,
+        stats=jsonable(stats.model_dump()) if stats is not None else {},
+        elapsed_seconds=getattr(report, "elapsed_seconds", None),
+        target=target,
+        registry_url=registry_url,
+        next_step=next_step,
+    )
+
+
 def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> None:
     """Register the token-gated registry tools (tag: registry_write)."""
 
     def _client(token: str, target: RegistryTarget):
         return client_for(target, settings, token=token)
+
+    @mcp.tool(
+        tags={GATED_TAG},
+        annotations=ToolAnnotations(
+            title="Registry: would this spec publish (module-level)",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def registry_validate(
+        namespace: str,
+        name: str,
+        spec_dir: str,
+        ctx: Context,
+        strict: bool = True,
+        target: RegistryTarget = DEFAULT_WRITE_TARGET,
+    ) -> PublishPreflight:
+        """Validate a spec **on the registry**, without publishing it or spending a version.
+
+        This is not the same question as `validate_module`. That one asks whether
+        the compiler accepts your spec; this one asks the *server* the gates a
+        publish would apply — including two your machine cannot know: whether
+        `module.name` matches the path, and whether identical authored data is
+        already published under some other name.
+
+        **`module_level_clear` means "nothing module-level blocks this", never
+        "this will publish".** It composes exactly three gates and deliberately
+        leaves out the network tier, so a clear answer is not a green light — use
+        `registry_check` for the full dry run. `verdict` stays null here for the
+        same reason: this endpoint never runs that tier, and null is not a pass.
+
+        Writes nothing, and the module need not exist yet. Needs a token because
+        the registry requires the publish capability on the namespace to accept a
+        spec upload at all.
+        """
+        token = require_key(ctx, settings, store, target)
+        if token is None:
+            return _unauthenticated_preflight(
+                spec_dir=spec_dir, namespace=namespace, name=name, target=target
+            )
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        spec = resolve_dir(spec_dir, settings)
+        try:
+            report = await run_sync(
+                lambda: _client(token, target).validate(namespace, name, spec, strict=strict)
+            )
+        except RegistryError as exc:
+            raise ToolError(
+                f"{describe(target, settings)} could not validate the spec: {exc}"
+            ) from exc
+
+        return _preflight(
+            report,
+            spec_dir=str(spec),
+            namespace=namespace,
+            name=name,
+            target=target,
+            registry_url=settings.registry_url_for(target),
+        )
+
+    @mcp.tool(
+        tags={GATED_TAG},
+        annotations=ToolAnnotations(
+            title="Registry: full publish dry run",
+            readOnlyHint=True,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def registry_check(
+        namespace: str,
+        name: str,
+        spec_dir: str,
+        ctx: Context,
+        strict: bool = True,
+        offline: bool = False,
+        frequencies: bool = False,
+        literature: bool = False,
+        identifiers: bool = False,
+        acmg: bool = False,
+        pgx: bool = False,
+        declared_use: str | None = None,
+        target: RegistryTarget = DEFAULT_WRITE_TARGET,
+    ) -> PublishPreflight:
+        """The full publish dry run: validation plus everything the network tier finds.
+
+        The call that turns "rehearse the publish" into "ask whether it would
+        publish" **without spending a version number**. It checks what nothing
+        offline can: an authored reference allele against the actual genome, a
+        `clin_sig` against ClinVar, an rsID dbSNP has merged away.
+
+        **Read `verdict` with `rerun_rather_than_fix` beside it.** A false verdict
+        alongside unreachable rsIDs means *re-run*, not *go fix your spec* — a
+        strict publish against an unreachable Ensembl really does refuse, and that
+        says nothing about whether the variants exist. And `verdict: null` means
+        the tier did not run at all, which is never a pass.
+
+        **Expensive, and the cost is the operator's.** gnomAD is paced at roughly
+        six seconds per twenty variants, so this can take minutes and is capped
+        process-wide on the server. Use `offline=true` for a large panel: it has
+        **no variant ceiling**, because it issues no request for one to bound.
+        Online above the ceiling comes back as a refusal that still carries the
+        module-level half.
+
+        The optional passes are off by default and each costs egress.
+        `identifiers=true` never moves the verdict — a publish does not run that
+        pass — but it is where a fabricated row shows up. `pgx=true` needs
+        `declared_use="non_commercial"` to actually run: every PGx upstream
+        forbids sale, so on `unstated` each source is skipped with a reason rather
+        than queried, and `"commercial"` is refused outright.
+        """
+        token = require_key(ctx, settings, store, target)
+        if token is None:
+            return _unauthenticated_preflight(
+                spec_dir=spec_dir, namespace=namespace, name=name, target=target
+            )
+        # `offline` here is the REGISTRY's egress, not ours — two different ceilings,
+        # and conflating them is the trap. Our ceiling still refuses the whole tool,
+        # because reaching the registry at all is a network call whatever the server
+        # then does. So `offline=true` never buys a way past `JMC_OFFLINE`.
+        if settings.offline:
+            raise ToolError(
+                "The server is configured offline (JMC_OFFLINE). `offline=true` here clamps the "
+                "REGISTRY's own egress, not ours — reaching it is still a network call, so this "
+                "tool cannot run. `validate_module` is the local pre-flight."
+            )
+
+        spec = resolve_dir(spec_dir, settings)
+        try:
+            report = await run_sync(
+                lambda: _client(token, target).check(
+                    namespace,
+                    name,
+                    spec,
+                    strict=strict,
+                    offline=offline,
+                    frequencies=frequencies,
+                    literature=literature,
+                    identifiers=identifiers,
+                    acmg=acmg,
+                    pgx=pgx,
+                    declared_use=declared_use,
+                )
+            )
+        except RegistryError as exc:
+            raise ToolError(
+                f"{describe(target, settings)} could not complete the dry run: {exc}"
+            ) from exc
+
+        return _preflight(
+            report,
+            spec_dir=str(spec),
+            namespace=namespace,
+            name=name,
+            target=target,
+            registry_url=settings.registry_url_for(target),
+        )
 
     @mcp.tool(
         tags={GATED_TAG},

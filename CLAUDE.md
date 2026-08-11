@@ -386,12 +386,30 @@ comparison against ISO values.
 - **Meaningful assertions** — relationships and set equality over `len(df) > 0`.
 - **Never mock the transformation under test.** We test our wrapper against the
   real upstream packages; only the *network* is excluded, by the offline ceiling.
-- **The suite is hermetic**: every fixture forces `offline=True` and
-  `_env_file=None`, so no test can reach the network or read a developer's `.env`.
+- **The suite is hermetic by mechanism, not by discipline.** `conftest`'s autouse
+  `_hermetic_configuration` points `env_file` at a path that cannot exist and clears
+  the ecosystem's variables from `os.environ`, so **forgetting `_env_file=None` is
+  harmless** rather than silently live. `offline_settings()` still forces
+  `offline=True` and is what fixtures use. Do not undo this by removing
+  `env_file=".env"` from `model_config` — the product needs it, and breaking the
+  product to protect the suite is the wrong trade.
+
+  It was a convention until 2026-08-12 and that failed exactly as predicted (`F24`):
+  a bare `Settings()` returned the developer's real polygon token **and**
+  `offline=False`, so a test could reach the network holding a live credential, while
+  passing locally and in CI. **The clear-list is derived from `Settings.model_fields`,
+  never written** — the hand-written first draft missed seven variables inside the same
+  change, `JMC_API_KEY_HEADER` and `JMC_TRANSPORT` among them, and an exported one of
+  those changes what a test asserts as effectively as a token does. Only the four
+  upstream names are hand-maintained, because no field of ours can name them.
 - **A test that means "no credential" must say so.** `api_key=None` is
   indistinguishable from "not passed" when the reader does
   `api_key or os.environ.get(...)`. Neutralize with `setenv(VAR, "")`, **not**
-  `delenv` — `load_dotenv(override=False)` skips a key that is merely present.
+  `delenv` — `load_dotenv(override=False)` skips a key that is merely present. (The
+  autouse fixture above uses `delenv`, which is not an exception: nothing in the suite
+  calls `load_dotenv`, and with the dotenv source neutralized pydantic reads
+  `os.environ` directly, where absent means unset. Inside a *test*, prefer
+  `setenv(VAR, "")` — it runs after the fixture and wins.)
 - **Suspect ordering whenever a test passes alone and fails in the suite.**
 - **Never claim a test "would have caught" a bug** without running it against the
   buggy code and watching it fail.

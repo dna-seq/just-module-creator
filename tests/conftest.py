@@ -6,6 +6,10 @@ transport — fast, deterministic, and ideal for agent-driven TDD loops.
 Every fixture here forces ``offline=True``. The offline ceiling in
 ``Settings`` means no test can reach the network by accident, so the suite
 stays deterministic even though half the tool surface is network-capable.
+
+**Hermeticity is a mechanism here, not a convention** (``F24``). See
+``_hermetic_configuration`` below: it is autouse, so a construction that forgets
+``_env_file=None`` reads nothing rather than reading the developer's real tokens.
 """
 
 from __future__ import annotations
@@ -17,6 +21,73 @@ from fastmcp.client import Client
 
 from just_module_creator.server import build_server
 from just_module_creator.settings import Mode, Settings
+
+#: Variables read by code we do **not** control, so no field on our model names them
+#: and nothing can derive them. Hand-maintained by necessity; a test asserts the three
+#: load-bearing ones are here.
+_UPSTREAM_VARS = (
+    "REGISTRY_TOKEN",
+    "REGISTRY_TEST_TOKEN",
+    "JUST_DNA_CONTACT_EMAIL",
+    "NCBI_API_KEY",
+)
+
+#: Every environment variable that could change what a test asserts, cleared for the
+#: whole suite by ``_hermetic_configuration``.
+#:
+#: **Ours are derived, never listed.** Every field on ``Settings`` is readable as
+#: ``JMC_<FIELD>``, so a hand-written list drifts the first time a setting is added —
+#: and it did: the first draft of this covered the credentials and missed
+#: ``JMC_API_KEY_HEADER``, ``JMC_TRANSPORT``, ``JMC_PORT`` and four more, every one of
+#: which an exported value would silently change an assertion with. Deriving removes
+#: the failure mode instead of testing for it.
+#: ``.get`` because ``env_prefix`` is not a required key on ``SettingsConfigDict``. No
+#: literal fallback: hardcoding ``"JMC_"`` here would be the second source of truth this
+#: derivation exists to avoid, and a missing prefix is caught by a test rather than
+#: papered over into a list of unprefixed names that clear nothing.
+_ENV_PREFIX = Settings.model_config.get("env_prefix") or ""
+
+_ECOSYSTEM_VARS = tuple(
+    f"{_ENV_PREFIX}{name}".upper() for name in Settings.model_fields
+) + _UPSTREAM_VARS
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make a forgotten ``_env_file=None`` harmless instead of silently live.
+
+    ``F24``: ``CLAUDE.md`` §6 claimed the suite could not read a developer's
+    ``.env``, but that held only for as long as every construction remembered the
+    kwarg. A bare ``Settings()`` read the real file — and the leak was worse than
+    one credential, because it also lost ``offline=True``, so a test could reach the
+    network *with* a live token. Reproduced against a real `.env`: a bare
+    ``Settings().test_api_key`` returned an ``mk_live_…`` polygon token.
+
+    That is the worst failure shape available — it passes locally, passes in CI where
+    ``.env`` is absent, and quietly means something different on each machine. So it
+    is closed with a mechanism rather than a rule.
+
+    Two halves, because the file is not the only route:
+
+    1. ``env_file`` is pointed at a path that cannot exist. Not removed from
+       ``model_config`` — the product genuinely needs it, and breaking the product to
+       protect the suite would be the wrong trade.
+    2. The ecosystem's variables are cleared from ``os.environ``, so an *exported*
+       shell variable cannot do what the file no longer can.
+
+    ``delenv`` rather than ``setenv(VAR, "")`` here, deliberately, and it does not
+    contradict §6's rule: that rule is about ``load_dotenv(override=False)``, which
+    skips a key that is merely present, and nothing in the suite calls it. With the
+    dotenv source neutralized, pydantic reads ``os.environ`` directly, where absent
+    genuinely means unset. A test that wants to say "no credential" to a reader doing
+    ``x or os.environ.get(...)`` should still use ``setenv(VAR, "")`` — running after
+    this fixture, it wins.
+    """
+    monkeypatch.setitem(
+        Settings.model_config, "env_file", str(Path(__file__).parent / ".env.nonexistent")
+    )
+    for var in _ECOSYSTEM_VARS:
+        monkeypatch.delenv(var, raising=False)
 
 MODULE_SPEC = """\
 schema_version: '1.0'

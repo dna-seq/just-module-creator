@@ -22,6 +22,9 @@ Install: `pip install just-dna-enricher` pulls the compiler and the format tier.
 | **open access + full text** | `lookup_open_access`, `fetch_fulltext` | — |
 | **citation graph** | `paper_citations` | — |
 | registry search / read / publish | `registry_search`, `registry_get_module`, `registry_download`, `registry_publish` | `registry-client list / download / publish` |
+| **would this publish** (dry run, no version spent) | `registry_check`, `registry_validate` | `registry-client check`, `registry-client validate` |
+| already published under any name | `registry_is_published` | `registry-client signature` + `find-by-hash` |
+| instance up, and which mode is it | `registry_health` | `registry-client version` (or `curl /health`) |
 | drafting from a source | `draft_from_clinvar`, `draft_from_cpic`, `draft_from_clinpgx` | `draft-panel`, `draft`, `draft-clinpgx` |
 | fact passes | `enrich_facts`, `enrich_literature_pass` | `frequencies`, `gene-metrics`, `dosage`, `literature` |
 | **signing** | — | `keygen`, `sign` |
@@ -92,10 +95,11 @@ Reads `REGISTRY_URL`, `REGISTRY_TOKEN`, `REGISTRY_TIMEOUT`. The MCP server reads
 author already logged in does not have to re-declare either.
 
 **The client has one URL, so which instance it drives is whatever `REGISTRY_URL` points at.** The
-CLI cannot tell you which one that is — no endpoint reports the server's `REGISTRY_MODE` — so
-exporting the production URL and running a rehearsal is a mistake nothing catches. The MCP tools
-take `target="test" | "prod"` instead of an URL and default writes to the polygon; prefer them for
-anything that publishes.
+CLI cannot tell you which one that is from the URL alone, so exporting the production URL and
+running a rehearsal used to be a mistake nothing caught. **Registry 0.13 closed that**: `mode` is on
+`/health` and `/api/v1/version`, and the MCP tools take `target="test" | "prod"` rather than a URL,
+pin `expect_mode` to it, and refuse before spending anything when the instance disagrees.
+`registry_health` shows you the same answer up front. Prefer the tools for anything that publishes.
 
 **What the CLI still owns:** `yank` / `unyank` (production's delisting, which does **not** free the
 content claim), and the operator commands `registry serve --mode`, `registry backup`,

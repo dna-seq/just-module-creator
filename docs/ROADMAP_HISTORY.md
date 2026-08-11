@@ -9,6 +9,68 @@ here: it is filed upstream as an `S<n>` and tracked in
 
 ---
 
+## RM8 — the registry client surface is wrapped
+
+**Shipped:** 2026-08-12 in 0.8.0
+
+Four releases of `RegistryClient` had gone unwrapped since we adopted 0.12.0 for the
+test/prod split. The precondition was registry 0.13.0 on PyPI, so
+`would_publish_module_level` could be *wrapped* rather than feature-detected; it landed
+2026-08-11 and this followed.
+
+**What shipped, and the shape it took.** Two gated pre-flights and two ungated reads:
+
+- **`registry_validate`** — the server's own module-level gates, including the two a
+  local `validate_module` cannot know: whether `module.name` matches the path, and
+  whether identical authored data is already published under some other name.
+- **`registry_check`** — the full dry run, `F11`'s other half. This is what turns
+  "rehearse the publish" into "ask whether it would publish" **without spending a
+  version number**, which on production is irreversible.
+- **`registry_is_published`** — ungated and needs no upload: the content signature is
+  computed locally, so an author can ask "is this data already out there, under any
+  name" before they have a token.
+- **`registry_health`** — reports the instance's own mode, so a rehearsal can be
+  *confirmed* rather than assumed. `expect_mode` (shipped in 0.7.0) already refuses a
+  mismatch; this is how you see it before it matters.
+
+**One bullet turned out to be already done.** RM8 listed `content_signature`, but
+`module_signature` has always called `just_dna_compiler.compiler.content_signature` —
+the same function the client method wraps. Wrapping the client's would have been a
+second path to one answer, so `registry_is_published` calls the compiler directly and
+sends only the resulting signature.
+
+**One bullet is deliberately not done.** `issue_jwt_token` returns 501 unless the
+deployment configures a signing secret, and nothing in this surface consumes a JWT —
+every call authenticates with the registry token. A tool that is usually a 501 and
+useful to nobody here is worse than no tool.
+
+**Where the design work actually was: not letting a skip look like a verdict.** Both
+pre-flights return one `PublishPreflight`, and it carries *two* verdicts on purpose:
+
+- `module_level_clear` is upstream's `would_publish_module_level`, renamed so nothing
+  reads it as a green light — it composes exactly three gates and excludes the network
+  tier entirely.
+- `verdict` is the whole dry run, and it is **`None` whenever the tier did not run** —
+  on a bare validate, on `skipped_reason`, and when no token was resolvable. Defaulting
+  it to `False` would let "we could not ask" arrive shaped like "would not publish",
+  which is the same error as a skip producing a pass, one sign flipped.
+
+`rerun_rather_than_fix` carries the `S20` distinction all the way to the author's next
+action: a false verdict beside unreachable rsIDs means *re-run*, not *go fix your
+spec*, because a strict publish against an unreachable Ensembl really does refuse while
+the variants may be perfectly findable. Telling an author to fix that is how real rows
+get deleted.
+
+`unchecked` and `non_blocking` keep the distinctions upstream is careful about — a
+`clin_sig` check the operator has no snapshot for never blocks and is never dropped
+either, and identifier findings never move the verdict because a publish does not run
+that pass, so a finding predicts nothing about one.
+
+**Verified live against the polygon**, not just in the suite: a clean `assets/fto_bmi`
+returned `verdict: true` in 1.3s, and the same spec with one invalid `state` returned
+`verdict: null` with `verdict_unavailable: "invalid_spec"` — null rather than false,
+which is the whole point.
+
 ## The essentials tier was defined by the wrong axis
 
 **Shipped:** 2026-08-11 in 0.4.0 · *"If you find essentials surface lacking

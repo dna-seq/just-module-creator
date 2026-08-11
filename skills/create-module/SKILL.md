@@ -111,6 +111,9 @@ reach the one compiler flag that silently produces a module no VCF can match.
 | fill `literature.csv` | `enrich_literature_pass` | extended |
 | fill the frequency / constraint / dosage sidecars | `enrich_facts` | extended |
 | turn an artifact back into a spec, or download one | `reverse_module`, `registry_download` | extended |
+| **ask whether it would publish, cost-free** | `registry_check` (full dry run), `registry_validate` (module-level half) | gated |
+| is this data already published, under any name | `registry_is_published` | essentials |
+| is this instance up, and is it the one I named | `registry_health` | essentials |
 | publish, or rehearse a publish | `authenticate` → `registry_whoami` → `registry_claim_namespace` → `registry_publish` | gated |
 | undo a rehearsal (polygon only) | `registry_delete_version`, `registry_delete_module` | gated |
 
@@ -809,6 +812,35 @@ a name-independent content hash that `yank` never releases — so one botched pu
 version number **and** the right to publish that data under any other name, permanently. That is why
 the write tools default to the polygon: a forgotten `target` there costs nothing.
 
+### First, ask whether it would publish — it costs nothing
+
+```
+registry_is_published(spec_dir="spec")                    # already out there, under ANY name?
+registry_check(namespace="test-ns", name="m", spec_dir="spec", target="test")
+```
+
+`registry_check` is the full dry run: the server's own publish gates, **without spending a version
+number**. It answers two things your machine cannot — whether `module.name` matches the path, and
+whether identical authored data is already published under someone else's name — plus everything the
+network tier finds. `registry_validate` is the same call without that tier.
+
+Read the verdicts as three-valued, because they are:
+
+- **`verdict: null` is not a pass.** It means the dry run never reached one — an invalid spec, or no
+  token. The errors beside it are already the answer.
+- **`module_level_clear` means "nothing module-level blocks this", never "it will publish".** It
+  covers three gates and excludes the network tier entirely.
+- **`verdict: false` beside `rerun_rather_than_fix` means RE-RUN.** A strict publish against an
+  unreachable Ensembl really does refuse — and the variants may be perfectly findable. Changing the
+  spec here is how real rows get deleted.
+- **`unchecked` is worth reading on a green run.** A `clin_sig` check the operator has no snapshot
+  for never blocks a publish and is not a passed check either.
+- **`non_blocking` too.** Identifier findings never move the verdict, because a publish does not run
+  that pass — but `gene_locus_conflicts` living in there is the clearest sign of a fabricated row.
+
+`registry_health(target="test")` confirms you are pointed where you think you are: it reports the
+instance's own mode, so a rehearsal is verified rather than assumed.
+
 ### Rehearse on the polygon, then publish the primer to production
 
 **The polygon is where you rehearse, not where the work stops.** A draft that never leaves it helps
@@ -975,6 +1007,7 @@ content. Write the changelog as a continuation of the previous one, not a fresh 
 - [ ] `module.version` is a quoted SemVer string
 - [ ] a second **compile** of the untouched spec reproduces the same `artifact_digest` (a
       re-**draft** will not — see below)
+- [ ] `registry_check` run, `verdict` **true** (not null), and `unchecked` / `non_blocking` read
 - [ ] published to the polygon (`target="test"`) at least once, and what came back was read
 
 ---

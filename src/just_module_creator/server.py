@@ -92,9 +92,22 @@ publish burns the version number and the right to publish that data under any
 other name, permanently. On the polygon, `registry_delete_version` frees both.
 
 So the write tools — register, authenticate, whoami, namespace_available,
-claim_namespace, publish — default to `test`, and going live is an explicit
-`target="prod"`. The catalog reads — registry_search, registry_get_module,
-registry_download — default to `prod`, because that is the world they ask about.
+claim_namespace, publish, and the pre-flights validate/check — default to `test`,
+and going live is an explicit `target="prod"`. The catalog reads — registry_search,
+registry_get_module, registry_download, registry_is_published — default to `prod`,
+because that is the world they ask about.
+
+BEFORE a publish, ask whether it would publish. registry_check is the full dry run
+and spends no version number; registry_validate is its module-level half. Read
+`verdict` with care: `null` means the dry run did not reach one and is NEVER a
+pass, and `module_level_clear` means "nothing module-level blocks this", never
+"this will publish". A false verdict beside `rerun_rather_than_fix` means RE-RUN,
+not go and change the spec — a strict publish against an unreachable Ensembl
+really does refuse while the variants may be perfectly findable.
+
+registry_health reports an instance's own mode, so a rehearsal can be confirmed
+rather than assumed. registry_is_published needs no token and uploads nothing: it
+answers "is this data already published, under any name" from a local signature.
 The instances share no database: an account, a token and a namespace exist on one
 of them only, so register on each and promote by publishing again.
 

@@ -275,3 +275,65 @@ the value was entirely in the comparison.
 
 Pointer: `models.IdentifierReport`, `tools/research.py::check_identifiers`;
 `tests/test_discovery.py::test_the_gene_locus_conflict_check_reaches_our_model_three_valued`.
+
+## F24 — the suite's hermeticity was a convention with no guard, and a bare `Settings()` read the real `.env`
+
+**Found:** 2026-08-11, while adding tests for the contact-email chain · **Resolved:** 2026-08-12 ·
+**No upstream half** — ours entirely
+
+`CLAUDE.md` §6 claimed "the suite is hermetic: every fixture forces `offline=True` and
+`_env_file=None`, so no test can reach the network or read a developer's `.env`." The first
+half was a mechanism; the second was discipline, and it held only for as long as every
+construction remembered the kwarg.
+
+**Re-confirmed live on 2026-08-12 before fixing, and it had got worse.** `.env` by then held a
+real polygon token, so from inside the suite under the real `conftest.py`:
+
+```
+JMC_TEST_API_KEY in os.environ           : False        # .env never reaches the process env
+Settings(_env_file=None).test_api_key    : None         # hermetic, as documented
+Settings().test_api_key                  : 'mk_live_…'  # the developer's REAL polygon token
+Settings().offline                       : False        # ← worse than the finding said
+```
+
+That last line is the part the original note missed: a forgotten kwarg lost **both**
+hermeticity properties, so a test could reach the network *while holding a live credential*.
+Nothing failed when the kwarg was forgotten — the test simply started reading whatever the
+developer happened to have configured, which is the worst failure shape available: it passes
+locally, passes in CI where `.env` is absent, and quietly means something different on each
+machine.
+
+**Fixed with the mechanism the note proposed**, as an autouse fixture in `tests/conftest.py`
+(`_hermetic_configuration`), in two halves because the file is not the only route:
+
+1. `env_file` is pointed at a path that cannot exist. **Not** removed from `model_config` —
+   the rejected candidate — because the product genuinely needs it: that is how one `.env`
+   serves both this surface and the enricher, and breaking the product to protect the suite is
+   the wrong trade.
+2. The ecosystem's variables are cleared from `os.environ`, so an *exported* shell variable
+   cannot do what the file no longer can.
+
+`delenv` rather than `setenv(VAR, "")` there, which does not contradict §6's rule: that rule is
+about `load_dotenv(override=False)` skipping a key that is merely present, and nothing in the
+suite calls it. With the dotenv source neutralized, pydantic reads `os.environ` directly, where
+absent genuinely means unset. A test that means "no credential" to a reader doing
+`x or os.environ.get(...)` still uses `setenv(VAR, "")`, and running after the autouse fixture
+it wins.
+
+**The clear-list is derived, not written, and that mattered immediately.** Every field on
+`Settings` is readable as `JMC_<FIELD>`, so a hand-written list drifts the first time a setting
+is added — and it did, within the same change: the first draft covered the credentials and
+missed `JMC_API_KEY_HEADER`, `JMC_TRANSPORT`, `JMC_PORT`, `JMC_HOST`, `JMC_LOG_LEVEL`,
+`JMC_REGISTRY_TIMEOUT` and `JMC_TEST_API_KEY_HEADER`. An exported `JMC_API_KEY_HEADER` changes
+what `test_the_two_instances_read_different_http_headers` asserts just as effectively as a
+token does and far less visibly. Deriving removes the failure mode rather than testing for it;
+only the four upstream names — read by code we do not control, so no field of ours can name
+them — stay hand-maintained.
+
+Pointer: `tests/conftest.py::_hermetic_configuration`;
+`tests/test_modes_and_auth.py::test_a_bare_settings_reads_no_developer_configuration` fails on
+the old behaviour by exposing the real token (verified by flipping the fixture to
+`autouse=False` and watching it fail), and
+`test_the_clear_list_covers_every_variable_settings_reads` pins that the list stays derived.
+A companion test records whether this checkout even has a `.env`, so a green suite cannot be
+mistaken for proof the leak is closed when there was nothing to leak.

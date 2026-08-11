@@ -316,3 +316,72 @@ async def test_resource_and_prompt_are_registered(essentials_client):
     assert "resource://just-dna/tables" in resources
     prompts = {p.name for p in await essentials_client.list_prompts()}
     assert "create_module" in prompts
+
+
+# --------------------------------------------------------------------------- #
+# Hermeticity is a mechanism, not a convention (F24)
+# --------------------------------------------------------------------------- #
+def test_a_bare_settings_reads_no_developer_configuration() -> None:
+    """The guard `F24` asked for: forgetting `_env_file=None` must be harmless.
+
+    A real `.env` sits in this repo root and holds a live polygon token. Before the
+    autouse fixture in `conftest.py`, `Settings()` here returned it — and lost
+    `offline=True` with it, so a test could reach the network holding a real
+    credential. Asserted on the bare constructor on purpose: `offline_settings()`
+    was never the problem, the constructions that bypass it were.
+    """
+    from just_module_creator.settings import Settings
+
+    bare = Settings()
+
+    assert bare.api_key is None
+    assert bare.test_api_key is None
+    assert bare.install_id is None
+    assert bare.user_email is None
+
+
+def test_the_repo_really_does_hold_a_dotenv_for_that_test_to_be_meaningful() -> None:
+    """Otherwise the assertion above passes for the wrong reason, on every machine.
+
+    Not an assertion that `.env` exists — it legitimately may not, in CI or a fresh
+    clone. It records which case ran, so a green suite cannot be mistaken for proof
+    that the leak is closed when there was nothing to leak.
+    """
+    from pathlib import Path
+
+    dotenv = Path(__file__).resolve().parent.parent / ".env"
+    if not dotenv.exists():
+        pytest.skip("no .env in this checkout: the leak has nothing to expose here")
+    # It exists, so the test above was a real probe rather than a tautology.
+    assert dotenv.read_text().strip(), ".env exists but is empty"
+
+
+def test_the_clear_list_covers_every_variable_settings_reads() -> None:
+    """The drift guard, and the half that cannot be derived.
+
+    Asserting "these vars are absent" would pass trivially on a machine where nobody
+    exported them, which proves nothing. Coverage is what is checkable. Our own half is
+    *derived* from `Settings.model_fields` rather than listed, so it cannot drift — this
+    pins that it stays derived, because a hand-written list is exactly what leaked
+    seven variables (`JMC_API_KEY_HEADER`, `JMC_TRANSPORT`, `JMC_PORT` among them) on
+    the first attempt at this fixture.
+
+    The upstream names are the part no field can derive, so those are asserted
+    explicitly: they are read by code we do not control, which is the side where a
+    missing entry is invisible.
+    """
+    from conftest import _ECOSYSTEM_VARS, _ENV_PREFIX
+
+    from just_module_creator.settings import Settings
+
+    # An empty prefix would make the derivation produce bare names that clear nothing,
+    # silently. Fail here instead.
+    assert _ENV_PREFIX, "Settings lost its env_prefix; the derived clear-list is now wrong"
+    readable = {f"{_ENV_PREFIX}{name}".upper() for name in Settings.model_fields}
+
+    missing = readable - set(_ECOSYSTEM_VARS)
+    assert not missing, f"_ECOSYSTEM_VARS stopped being derived from the model: {sorted(missing)}"
+    # More than the credentials: an exported JMC_TRANSPORT or JMC_PORT changes what a
+    # test asserts just as effectively as a token does, and far less visibly.
+    assert {"JMC_API_KEY_HEADER", "JMC_TRANSPORT", "JMC_PORT"} <= set(_ECOSYSTEM_VARS)
+    assert {"JUST_DNA_CONTACT_EMAIL", "NCBI_API_KEY", "REGISTRY_TOKEN"} <= set(_ECOSYSTEM_VARS)

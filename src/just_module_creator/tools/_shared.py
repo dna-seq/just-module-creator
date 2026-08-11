@@ -13,7 +13,7 @@ from typing import Any
 
 from fastmcp.exceptions import ToolError
 
-from just_module_creator.models import LintAlteration, LintFinding
+from just_module_creator.models import LintAlteration, LintFinding, PublishedVersion
 from just_module_creator.settings import Settings
 
 
@@ -94,6 +94,35 @@ def to_alterations(items: Any) -> list[LintAlteration]:
                 source=getattr(a, "source", ""),
                 refusal=getattr(a, "refusal", None),
                 note=getattr(a, "note", "") or "",
+            )
+        )
+    return out
+
+
+def to_published_versions(refs: Any) -> list[PublishedVersion]:
+    """Project upstream ``VersionRef``s. ``yanked`` is kept because it is a trap.
+
+    A yank hides a version from resolution; it does **not** release the content
+    claim, so a duplicate match that is already yanked still 409s a publish. An
+    author who reads "yanked" as "gone" concludes the name is free.
+
+    Lives here rather than beside either caller because two tools answer the
+    duplicate question from different tiers — `registry_is_published` (essentials,
+    no token) and the pre-flights (gated) — and two projections of one payload is
+    how the two start disagreeing about what a match means.
+    """
+    out: list[PublishedVersion] = []
+    for ref in refs or []:
+        ns = str(getattr(ref, "namespace", ""))
+        name = str(getattr(ref, "name", ""))
+        version = str(getattr(ref, "version", ""))
+        out.append(
+            PublishedVersion(
+                canonical_id=f"{ns}/{name}@{version}",
+                namespace=ns,
+                name=name,
+                version=version,
+                yanked=bool(getattr(ref, "yanked", False)),
             )
         )
     return out

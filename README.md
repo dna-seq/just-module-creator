@@ -84,12 +84,15 @@ The server **boots with no environment configured** — authoring a module needs
 | `authoring_reference` | essentials | no | the whole generated DSL |
 | `module_signature`, `verify_artifact` | essentials | no | did the content change; is the artifact intact |
 | `registry_get_module` | essentials | no | one module's full record — the best worked example there is |
+| `registry_is_published` | essentials | no | is this data already published **under any name** — local signature, nothing uploaded |
+| `registry_health` | essentials | no | is the instance up, and does it agree it is the one you named |
 | `registry_register` | always | — | **mints** an account and token, so it cannot be gated by one |
 | `authenticate` | always | — | stores a registry token you already hold, for *this session* |
 | `paper_citations` | extended | no | has this finding been replicated — traverses a graph the corpus sizes |
 | `draft_from_cpic`, `draft_from_clinpgx` | extended | no | the PGx tables |
 | `enrich_facts`, `enrich_literature_pass` | extended | no | the sidecars the compile gate reads; rewrite many rows at once |
 | `reverse_module`, `registry_download` | extended | no | read back somebody else's compiled artifact |
+| `registry_validate`, `registry_check` | gated | **yes** | would this publish — server-side, spending no version number. `check` is the full dry run |
 | `registry_whoami`, `registry_claim_namespace`, `registry_publish` | gated | **yes** | registry writes; publish records the stamped identity in `published.json` |
 | `registry_delete_version`, `registry_delete_module` | gated | **yes** | undo a rehearsal on the polygon; refused for production, which offers `yank` instead |
 
@@ -112,8 +115,15 @@ immutable, so a changed digest is reported rather than applied.
 ```
 list_tables ─▶ scaffold_module ─▶ draft_from_clinvar ─▶ literature_search ─▶ author rows
    ─▶ lint_rows ─▶ validate_module(strict) ─▶ enrich_module ─▶ compile_module(strict)
-   ─▶ registry_publish(target="test")  ─▶ registry_publish(target="prod")
+   ─▶ registry_check(target="test")     ─▶ ask whether it would publish, cost-free
+   ─▶ registry_publish(target="test")   ─▶ registry_publish(target="prod")
 ```
+
+`registry_check` is worth the extra step because a publish is not: it runs the server's own
+gates — including the two your machine cannot know, whether `module.name` matches the path and
+whether identical data is already published under someone else's name — and spends no version
+number doing it. Read `verdict` as three-valued: `null` means the dry run never reached one,
+which is not a pass.
 
 Publishing for the first time needs an account, and that is self-service from here — no admin, no
 email, no approval:

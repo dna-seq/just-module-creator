@@ -240,41 +240,6 @@ reports `sources: ["clinvar"]` with a signature, while `versions[0].resolution` 
 and `signature: null` for the same version. Ours is the read side only; noting it here so the next
 reader of that payload does not treat the nested copy as authoritative.
 
-## F24 — the suite's hermeticity is a convention with no guard, and a bare `Settings()` reads the real `.env`
-
-**Found:** 2026-08-11, while adding tests for the contact-email chain · **Severity:** medium ·
-**Status:** open
-
-`CLAUDE.md` §6 says "the suite is hermetic: every fixture forces `offline=True` and `_env_file=None`, so
-no test can reach the network or read a developer's `.env`." The first half is a mechanism; the second is
-discipline. Demonstrated from inside the suite, under the real `tests/conftest.py`:
-
-```
-JMC_TEST_API_KEY in os.environ           : False      # .env never reaches the process env
-Settings(_env_file=None).test_api_key    : None       # hermetic, as documented
-Settings().test_api_key                  : 'mk_live_…'   # the developer's REAL polygon token
-```
-
-So the property holds only for as long as every construction remembers the kwarg. `conftest.offline_settings`
-does; a test that constructs `Settings(...)` directly may not, and several already do (this file's own
-`test_a_contact_address_is_never_invented` among them, correctly). Nothing fails when the kwarg is
-forgotten — the test simply starts reading whatever the developer happens to have configured, which is
-the worst failure shape available: it passes locally, passes in CI where `.env` is absent, and quietly
-means something different on each machine.
-
-Worth noting what is *not* wrong: `_load_env()` is called inside the CLI's `_run()` rather than at import,
-which is why `.env` stays out of `os.environ` entirely. That part is right and is why the leak is narrow.
-
-**Candidate fix:** an autouse fixture in `conftest.py` that points the dotenv source at a path that cannot
-exist, so a forgotten kwarg is harmless rather than silently live. That converts the convention into a
-mechanism without touching any test. A second, cheaper option is a test that asserts
-`Settings.model_config["env_file"]` is unreadable during the run — but it guards the config rather than the
-call sites, so it would still pass while an individual test read real values.
-
-**A candidate that is wrong:** removing `env_file=".env"` from `model_config`. The server genuinely needs
-it — that is how one `.env` serves both this surface and the enricher — and deleting it to make tests
-safer would break the product to protect the suite.
-
 ## F25 — nothing reports the resolved contact address or which step supplied it
 
 **Found:** 2026-08-11 · **Severity:** low · **Status:** open
@@ -344,3 +309,31 @@ a legitimate install — and a wrong answer here is worse than none. Report the 
 reader compare.
 
 **Not an upstream note.** Every symptom is our build being old; the format tree is not involved.
+
+## F28 — `literature_search` tells you a preprint has no PMID while handing you one that does
+
+**Found:** 2026-08-12, authoring a module from three PDFs · **Severity:** medium ·
+**Status:** fixed in this change
+
+`discovery.py` fired this on `any(p.preprint for p in papers)`:
+
+> *"Some results are preprints: not peer-reviewed, and they carry no PMID, so they cannot ground a
+> studies.csv row (pmid is required)."*
+
+It fired on a result whose `pmid` was **`41427385`** — a bioRxiv posting with a PMID *and* a PMCID
+(`PMC12713140`), because bioRxiv and medRxiv are indexed in PubMed under the NIH preprint pilot. The
+warning contradicted the payload in the same response.
+
+**The cost is a citation not made.** An agent reading the warning rather than the field concludes the
+paper cannot ground a row, and either drops the finding or hunts for a journal version that may not
+exist yet. Here it was the *centrepiece* — the cGAS variant with the functional work — and only
+re-reading the raw `pmid` recovered it.
+
+**Fixed by counting instead of assuming**: the finding now reports how many preprints carry a PMID and
+how many do not, and leads with the part that is always true and got buried — none of them is peer
+reviewed, so a row grounded on one must say so in its `conclusion`. `skills/find-evidence/SKILL.md`
+carried the same false claim ("A preprint has **no PMID** … full stop") and is corrected.
+
+**The generalisable bug is a class claim standing in for a field read.** "Preprints have no PMID" was
+true of the arXiv index and got written as a property of the category; the fix is that the record
+answers, never the class.

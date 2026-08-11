@@ -56,6 +56,11 @@ log = get_logger()
 GATED_TAG = "registry_write"
 GATED_TOOLS = [
     "registry_whoami",
+    # The server-side pre-flights. They write nothing, but the registry requires the
+    # PUBLISH capability on the namespace to accept a spec upload at all, so a token
+    # is not optional. See `tools/registry.py`'s module docstring on the tag's name.
+    "registry_validate",
+    "registry_check",
     "registry_publish",
     "registry_claim_namespace",
     "registry_delete_version",
