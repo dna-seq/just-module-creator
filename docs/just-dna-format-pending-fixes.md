@@ -199,3 +199,39 @@ publishability. That is true, and an author driving the CLI needs it.
 
 **Closes when** the module-level half answers regardless of variant count, or the
 error names the limit and the local substitute.
+
+## F14 — a ragged CSV row is misdiagnosed by `lint_rows`, on the wrong column and the wrong line
+
+**Found:** 2026-08-11, first binning probe (HTT CAG repeat bins) ·
+**Filed upstream as `S18`** · **Status:** open upstream, unmitigated here
+
+`hints.inspect_rows` positionally zips header names against parsed values
+(`hints.py:268`) without comparing the two lengths. An unquoted comma in a
+free-text column — `conclusion` and `phenotype` invite one — shifts every later
+column left by one and drops the surplus. The reported error then names a column
+the author wrote correctly:
+
+```
+row 1, unresolved, error: Input should be a valid boolean, unable to interpret input
+```
+
+with `unresolved` reading `false` on that row. Separately, `Finding.row` is a
+0-based index into the data rows, so the row reported as `1` is line 3 of the file,
+and the compiler's own errors use 1-based header-inclusive `line N` for the same
+CSV. Both confirmed by moving the malformed row between positions.
+
+**Why unmitigated.** `lint_rows` is a deliberate pass-through — `to_findings`
+carries upstream's level, row and column across the boundary field-for-field, and
+that fidelity is the point. Re-parsing the CSV on our side to second-guess the row
+count would put a second parser in front of upstream's, which is the "two answers to
+one question" mistake `F11` was withdrawn for. Renumbering rows in the wrapper would
+be worse: our `+1` would silently become `+2` the day upstream switches to line
+numbers, and nothing would fail.
+
+**What is ours, correctly:** nothing yet in the surface, but the trap is worth a line
+in the authoring skill — quote every free-text cell, because the linter will not tell
+you that a comma split it. Recorded in [dogfooding.md](dogfooding.md) as the probe
+that found it.
+
+**Closes when** `_parse` reports a field-count mismatch, and `Finding.row` either
+documents its convention or is renamed to a 1-based `line` matching the compiler.
