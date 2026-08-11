@@ -7,9 +7,10 @@ have already cost someone a day. Read it before touching a tool signature, a
 docstring or the skill: every tool in this server is a promise about one of the
 rules below, and a wrapper that quietly breaks one is worse than no wrapper.
 
-Distilled from two independent write-ups of real module-creation experience
-(`.claude/skills/create-module/`, `.claude/skills/module-authoring/`), which are
-the source material for `skills/create-module/`.
+Distilled from two independent write-ups of real module-creation experience,
+made against different surfaces so that each reached traps the other missed.
+Both have been unified into `skills/create-module/` — that skill and this file
+are now the only copies; there is no separate source material to consult.
 
 ---
 

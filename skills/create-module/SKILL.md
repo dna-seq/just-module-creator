@@ -18,12 +18,33 @@ artifact with a content-addressed `manifest.json`. It carries **annotation only*
 mapping a genotype or a measured quantity to a phenotype. It never holds a sample, a genotype under
 test, or a measured value: the consumer supplies the measurement at query time.
 
-Two companions ship beside this file:
+You never write parquet by hand, and you never commit coordinates you looked up yourself — a
+separate resolution step fills those and records where they came from.
+
+Three companions ship beside this file:
 
 | Read | When |
 |---|---|
 | `references/TABLES.md` | Choosing which table kind a finding belongs in, or which axes must go in a key. |
 | `references/SYMPTOMS.md` | Anything reports a message you do not recognise. Match on the quoted phrase. |
+| `references/CLI.md` | The full CLI surface, what is *not* wrapped by a tool, and the environment. |
+
+## The four packages, and which one you need
+
+The dependency arrow points inward — **enricher → compiler → format** — and only the enricher
+touches the network. Most confusion comes from mixing them up.
+
+| Package | CLI | Does | Never does |
+|---|---|---|---|
+| `just-dna-format` | — | the schema: models, vocabularies, identity and integrity rules | touch the network |
+| `just-dna-compiler` | `just-dna-compiler` | spec directory → parquet + `manifest.json` | touch the network |
+| `just-dna-enricher` | `just-dna-enricher` | resolve rsIDs→coordinates, mint VRS ids, draft from sources, cross-check | decide what a variant *means* |
+| `just-dna-registry` | `registry-client` | catalog: search, download, publish | — |
+
+`pip install just-dna-enricher` pulls the compiler and the format tier. Python ≥ 3.13.
+
+The compiler is **inject-only**: it reads a `resolution.csv` the enricher produced. It will not go
+and look a coordinate up for you.
 
 ## Use the MCP tools
 
@@ -54,13 +75,30 @@ Extended tools need `JMC_MODE=extended`. Publishing needs a registry token; noth
 
 **Never ask a schema question from memory — ask the tool.** Column lists, vocabularies and
 requirements are generated from the live pydantic models, so `describe_table` /
-`table_requirements` / `authoring_reference` cannot drift from what the compiler accepts. Nothing in
-this file restates them.
+`table_requirements` / `authoring_reference` cannot drift from what the compiler accepts. This file
+therefore does not reproduce them — the per-table section below carries only the rules a schema dump
+*cannot* express.
 
-The CLIs (`just-dna-compiler`, `just-dna-enricher`, `registry-client`) remain available and are the
-fallback for anything the server does not wrap — chiefly **drafting from a source** (`draft`,
-`draft-panel`, `draft-clinpgx`), the **fact passes** (`frequencies`, `gene-metrics`, `dosage`,
-`literature`), **signing** (`keygen`, `sign`), and the PGx cross-checks. See `references/CLI.md`.
+The CLIs remain the fallback for anything the server does not wrap — chiefly **drafting from a
+source** (`draft`, `draft-panel`, `draft-clinpgx`), the **fact passes** (`frequencies`,
+`gene-metrics`, `dosage`, `literature`), **signing** (`keygen`, `sign`), and the PGx cross-checks.
+See `references/CLI.md`.
+
+## Directory layout
+
+```
+my_module/
+  module_spec.yaml     # required: identity + display. The ONLY always-present file.
+  variants.csv         # a lead table — or pharm_variants.csv, diplotypes.csv, pgs.csv …
+  studies.csv          # required IFF variants.csv is present: the grounding
+  resolution.csv       # produced by enrich — coordinates + VRS ids. Commit it.
+  literature.csv       # produced by `literature` — PMID/DOI existence. Commit it.
+  sources.csv          # required when data came from a licence-bearing source
+  logo.png             # optional
+```
+
+One CSV = one concern. A module leads with **exactly one** primary table. A drug-response module
+carries `pharm_variants.csv` and **no** `variants.csv`.
 
 ## Answer three questions first — each one closes off wrong turns later
 
@@ -70,7 +108,8 @@ fallback for anything the server does not wrap — chiefly **drafting from a sou
 2. **Are the coordinates GRCh38, and are they VCF positions?** Two separate questions, and the
    second has bitten harder. `start` is the **1-based VCF position** — the number Ensembl, dbSNP,
    ClinVar and gnomAD all show you. Paste it; never convert it. On build: anything but GRCh38 falls
-   back to a **build-relative** key that will not join against gnomAD, ClinVar or ClinGen.
+   back to a **build-relative** key that will not join against gnomAD, ClinVar or ClinGen. The
+   compiler warns; heed it.
 3. **What is the source, and may you use it this way?** Every PGx upstream (ClinPGx, CPIC,
    PharmVar) is CC BY-SA **plus a no-sale clause**, so none is sellable — do not read a bare
    "CC BY-SA" as permission. Pass `--use unstated | non-commercial | commercial` to every command
@@ -95,6 +134,9 @@ the alleles".
 You do not need to: **the draft report prints the allele pair for each stubbed row**, and
 `lookup_variant` gives you the same thing for a row you are writing by hand.
 
+Steps 4 and 6 are the only ones that use the network. Once `resolution.csv` and `literature.csv`
+exist they *are* the pin: every later compile is offline and reproducible.
+
 ## 1 — Start the spec
 
 Check first whether the module already exists:
@@ -110,29 +152,32 @@ scaffold_module(spec_dir="spec", name="my_module", kinds=["variants.csv", "studi
 ```
 
 `name` is lowercase alphanumeric with underscores; `my-module` is rejected. Then replace every
-`<<REPLACE>>` in `module_spec.yaml`:
+`<<REPLACE>>` in `module_spec.yaml` — **step 2 is not optional**, the placeholder fails validation:
 
 ```yaml
 schema_version: '1.0'
 module:
   title: <<REPLACE>>          # required
-  description: <<REPLACE>>    # required
-  report_title: <<REPLACE>>   # required
+  description: <<REPLACE>>    # required — one sentence a non-specialist can read
+  report_title: <<REPLACE>>   # required — what the report section is called
   name: my_module             # required — lowercase, underscores, no spaces
   icon: database              # icon within icon_set
   icon_set: fomantic          # 'fomantic' or 'awesome'
   color: '#6435c9'
-  # version: "1.0.0"          # advisory. A SemVer STRING — unquoted 1 parses as int and is rejected
+  # version: "1.0.0"          # advisory. A SemVer STRING — unquoted 1 parses as an int and is rejected
 defaults:                     # optional; folded into every row before hashing
   curator: ai-module-creator
   method: literature-review
 genome_build: GRCh38
+# license: CC0-1.0            # SPDX id; must not contradict sources.csv
+# authorship:
+#   - who: your-name
+#     role: created           # audited | created | edited | reviewed
+#     kind: [human]
 # panel:                      # optional provenance for a module derived from a gene panel
 #   source: clinvar
 #   reference: '2026-06-27'
 #   reference_sha256: 'sha256:…'
-# authorship: [{who: your-name, role: created, kind: [human]}]
-# license: CC-BY-SA-4.0       # advisory; must not contradict sources.csv
 ```
 
 `module:` is `extra="forbid"` — a typo like `colour:` is a hard error, not a silent drop. Do not
@@ -149,8 +194,9 @@ get_template("heteroplasmy.csv", stub=True, rows=3)
 
 **`required` is not the whole story — there are three categories, and the middle one is invisible to
 a schema dump.** A **defaulted** column (`measure_kind`, `unresolved`) is not required *and* must not
-be left empty: an empty cell arrives as `None` rather than as the field's default, and fails on type.
-`table_requirements` reports it under `defaulted`. It also reports the one-of rules — the "rsid
+be left empty: an empty cell arrives as `None` rather than as the field's default, and fails on type
+with `Input should be a valid string [input_value=None]` on a column nobody told you to fill.
+`table_requirements` reports those under `defaulted`. It also reports the one-of rules — the "rsid
 **or** chrom+start" kind — which no per-field flag can express.
 
 **A generated stub cannot compile until you replace it.** `<<REPLACE>>` is rejected before type
@@ -168,19 +214,35 @@ just-dna-enricher draft spec/ --gene CYP2C19 --drug clopidogrel --use non-commer
 just-dna-enricher draft-clinpgx spec/ --snapshot cp/ --drug simvastatin --use non-commercial
 ```
 
+`draft-panel` downloads the published ClinVar snapshot when you have no local one; add
+`--snapshot cv/ --offline` to use one you built. Its `--min-review-stars` defaults to 2 (multiple
+submitters, no conflicts) and `--max-citations 3` drafts study rows from ClinVar's literature links —
+which is what makes the panel compilable, since a variant row needs grounding evidence.
+
+`draft-clinpgx` is inject-only and downloads nothing: build the snapshot first with
+`just-dna-enricher clinpgx build --out cp/ --use non-commercial`.
+
 **Drafting appends and never rewrites a cell.** A row whose key already exists is reported
-(`already_present` / `differs`), never overwritten. Re-run per gene as the module grows; `--dry-run`
-first.
+(`already_present` / `differs`), never overwritten — drift on existing rows is `pgx` /
+`clinpgx check`'s job to report, not drafting's to fix. Re-run per gene as the module grows;
+`--dry-run` first.
 
 **Read the warnings. They are the interesting output**: skipped rows, aggregated counts, and the
 allele pairs you need for step 3. Two you will see on a real ClinVar panel and should not chase:
 *"N row(s) on non-diploid contigs were written with a single-allele genotype"* is the provider filling
 a cell where nothing was open to decide, and *"N ClinVar citation(s) skipped: the id ClinVar filed
-under PubMed is not a PMID"* is a defect in the source.
+under PubMed is not a PMID"* is a defect in the source — a few hundred of ClinVar's citation ids are
+nine digits where a PMID is eight. Both are counted rather than listed.
+
+**A drafted panel does not need a zygosity decision on every row.** `draft-panel` writes the sole
+expressible genotype where the contig leaves nothing open — MT, and chrY outside the pseudoautosomal
+regions, decided **per locus**. If you expand placeholders into both zygosities, expand *only* what
+is still a placeholder; do not key that off the contig yourself.
 
 **Pin the release you drafted from** with a `panel:` block, and `enrich` will recognise that its
 ClinVar cross-check would be comparing your `clin_sig` against the file it came out of, skip it, and
-say so — rather than reporting a zero it could not have avoided.
+say so — rather than reporting a zero it could not have avoided. Leave the block out and the check
+runs as usual, which is what you want the moment a human has touched those calls.
 
 ## 3 — Curate what only a human can decide
 
@@ -188,11 +250,11 @@ Nothing automated fills these, on purpose:
 
 | Cell | Why it is yours |
 |---|---|
-| `genotype` | Sources publish **alleles, not genotypes**. Whether one copy is informative follows from the condition's inheritance mode. **Except on a non-diploid contig**, where only one genotype is expressible and `draft-panel` writes it for you: MT always, chrY outside the pseudoautosomal regions. |
+| `genotype` | Sources publish **alleles, not genotypes**. Whether one copy is informative follows from the condition's inheritance mode. **Except on a non-diploid contig**, where only one genotype is expressible and `draft-panel` writes it for you. |
 | `state` (when stubbed) | The record is `uncertain_significance` and no vocabulary member means "undecided" — `neutral` says benign, `risk` says a direction. If you can justify neither, **drop the row** rather than pick one to make the compile pass. |
 | `weight`, `direction`, `effect_size` | Your model of the finding. ClinVar publishes no effect statistic. |
 | `trait_efo_id` | A source's condition is free text / MedGen. Mapping it to an ontology is inference. |
-| `conclusion` | What the module *says*. Keep it hedged where the biology is. |
+| `conclusion` | What the module *says*. Keep it hedged where the biology is (penetrance, tissue, co-factors). |
 
 To write a genotype you need the alleles. Ask, without writing anything:
 
@@ -237,13 +299,15 @@ to 0-based — from BED, or from VRS's own interbase model — is the single mos
 available here, because here is what does *not* happen: `validate_module` passes, `compile_module`
 with `strict` passes, the manifest says `fully_resolved: true`, and every `ga4gh:VA.…` id is minted
 and then reported **verified**. A content-addressed id is a correct digest of whatever it is handed,
-so it certifies the wrong locus without hesitating.
+so it certifies the wrong locus without hesitating. The module is internally consistent,
+reproducible, signed — and about the wrong bases.
 
 Two things conspire, and knowing them tells you what to do:
 
 - **Never author both sides of a redundancy check.** Hand-writing `resolution.csv` *and* the
   coordinates in `variants.csv` makes the coordinate cross-check compare your convention against
-  itself, and it agrees perfectly. Let `enrich_module` produce the sidecar.
+  itself, and it agrees perfectly. Validate-by-redundancy only works because two *independently*
+  produced values must agree. Let `enrich_module` produce the sidecar.
 - **`strict` means reproducible, not correct.** It refuses when resolution left something it could
   not reproduce. It has no opinion on whether your coordinates name the variant you meant, and cannot
   have one: the compiler never fetches, so it has no reference sequence to ask.
@@ -255,8 +319,77 @@ neighbouring base differs from your `ref`, roughly three in four.
 
 **Prefer the rsID and let enrichment find the coordinate.** An rsid-only row cannot carry a
 coordinate mistake, and the resolution table it produces is the independent second value the
-cross-check needs. Author coordinates when you have a reason to — no rsID, or a non-GRCh38 module —
-not by default.
+cross-check needs. Author coordinates when you have a reason to — no rsID (roughly 10% of ClinVar
+pathogenic variants), one rsID naming several alleles where the row must say which, or a non-GRCh38
+module — not by default.
+
+If you already have a `resolution.csv` you did not generate and want to know whether it is right,
+move it aside and re-enrich; comparing the two is the check, and no command does it for you.
+
+## Per-table contracts
+
+Ask `describe_table` for the columns. These are the rules it *cannot* tell you.
+
+### variants.csv
+
+Required on every row: `genotype`, `state`, `conclusion`. Identity: `rsid` **or** `chrom` + `start`.
+
+```csv
+rsid,genotype,weight,state,conclusion,gene,clin_sig
+rs1801133,A/A,-0.5,risk,Reduced MTHFR activity; homozygous,MTHFR,
+rs1801133,A/G,-0.25,risk,Reduced MTHFR activity; heterozygous,MTHFR,
+rs1801133,G/G,0.0,neutral,Normal MTHFR activity,MTHFR,
+```
+
+- Do **not** author `variant_key` or `authored_ident` — the compiler derives them, and `variant_key`
+  is frozen at load, so an authored one is not overwritten.
+- `ref`/`alts` may only appear **with** `chrom`+`start`. You cannot attach alleles to a bare rsID.
+- Genotype alleles must be drawn from `{ref} ∪ alts` at that locus. A genotype whose alleles are not
+  at the locus can never match a VCF — a **warning** normally, an **error** under strict.
+
+### studies.csv
+
+Required: `pmid`. Identity: `rsid` **or** `chrom` (+`start`, `ref`).
+
+- **A study must carry the same identity its variant row got.** If the variant is keyed by
+  coordinate, the study must be too, or it is an orphan.
+- **`pmid` is 1–8 digits.** Nine-digit ids are not PubMed ids and are rejected.
+- Never invent a PMID. Verify each one with `lookup_citation` before writing it.
+
+### pharm_variants.csv (drug response)
+
+Required: `drug`, `conclusion`. Identity: `rsid` **or** `chrom`+`start`.
+
+The duplicate key is `(variant, drug, genotype, phenotype_category, annotation_id)` — one variant and
+drug legitimately carry separate efficacy, toxicity and pharmacokinetic rows, and they can disagree.
+This module type carries **no** `variants.csv` and needs **no** `studies.csv`.
+
+### resolution.csv — produced, committed, never hand-edited
+
+`enrich` writes one row per resolved locus: `variant_key, rsid, chrom, start, ref, alts,
+genome_build, vrs_id, source, status, …`. It is what makes a compile offline and reproducible, and it
+travels with the module.
+
+- **Existing rows are authoritative and merged, never overwritten.** To re-resolve after changing the
+  authored table, **delete `resolution.csv` first** — otherwise stale rows survive silently.
+- A locus whose authored genotype it cannot host is **left out** and reported. That is deliberate:
+  recording it would hand the compiler a locus it must drop.
+- `offline=true` restricts to local caches. Substitution VRS ids mint offline; **indels and MNVs need
+  the reference sequence**, so an offline run leaves them unminted — expect ~50% coverage on an
+  indel-heavy module, ~99% online.
+
+### sources.csv and licensing
+
+Any module built from a licence-bearing source needs a row recording the terms. Passes that read such
+a source write it for you; a source you read by hand is invisible, so write the row yourself.
+
+- The compiler **refuses to build** content from a no-sale source unless `declared_use` is recorded.
+  Delete the cell and the compile fails — that is the gate working.
+- `license:` in the YAML must not contradict `sources.csv`. A ClinVar module declaring `CC0-1.0`
+  warns, because the source row says `public-domain`; they are the same grant, but the check compares
+  **spellings**. Match the source's spelling.
+- It must cover **every** source your fact tables cite, including PubMed if you carry studies. A
+  missing row is a warning, not an error, so it is easy to ship without noticing.
 
 ## 4 — Enrich (the only tier that fetches)
 
@@ -266,7 +399,9 @@ enrich_module(spec_dir="spec", strict=True)
 enrich_module(spec_dir="spec", offline=True)    # caches only, zero egress — and the ref check does NOT run
 ```
 
-It runs as a background task: you get a task id immediately and poll.
+It runs as a background task: you get a task id immediately and poll. It runs several links in order
+(Ensembl cache → ClinVar snapshot → live Ensembl → gnomAD) and folds in three checks — ref, clin_sig
+and rsID currency. Snapshots are provisioned from HuggingFace when absent.
 
 The fact passes are CLI-only:
 
@@ -279,8 +414,7 @@ just-dna-enricher literature spec/      # → literature.csv    (PMID/DOI/quotes
 
 **An existing sidecar is authoritative and merged, never clobbered.** To regenerate
 `resolution.csv` / `frequencies.csv` / `gene_metrics.csv` after changing the spec you must **delete
-the file first**, or stale rows persist silently. Moving it aside and re-enriching is also the only
-way to ask whether an injected table still agrees with the sources.
+the file first**, or stale rows persist silently.
 
 ## 5 — Cross-check what you asserted against what the sources say
 
@@ -295,11 +429,14 @@ just-dna-enricher clinpgx check spec/ --snapshot cp/ # pharm_variants.csv vs the
 ```
 
 Every check **reports, never repairs** — rewriting an authored value would destroy the evidence of
-the upstream mistake. Two deliberately never escalate — the `clin_sig` and allele-function
+the upstream mistake. `--strict` escalates a finding to a refusal; `--best-effort` (the default)
+warns and carries on. Two deliberately never escalate — the `clin_sig` and allele-function
 cross-checks — because failing would make the format arbitrate between expert panels.
 
 `check-acmg` needs `--sf-list` to give a real answer: NCBI's page serves SF **v3.2** while ACMG has
-published **v3.3**, so without a snapshot every disagreement comes back `unverifiable`.
+published **v3.3**, so without a snapshot every disagreement comes back `unverifiable` rather than as
+a finding. Build it once with `just-dna-enricher acmg build <workbook.xlsx> --out acmg/` and the
+check also stops needing the network.
 
 ## 6 — Compile and verify
 
@@ -311,8 +448,18 @@ verify_artifact(module_dir="out")
 
 `validate_module` refuses everything `compile_module` refuses that does not need resolved rows, so a
 green pre-flight should mean a green compile. **Pass it the same `strict` as the compile you intend
-to run** — several checks warn under best-effort and refuse under strict, so a mismatched pre-flight
-answers for the other compile.
+to run** — several checks are a ladder, so a mismatched pre-flight answers for the other compile.
+
+**Author against `strict`, because that is what the registry runs.** The difference is not cosmetic:
+
+| condition | plain | `strict` |
+|---|---|---|
+| genotype allele not among the locus's alleles | warning, **valid** | **error, invalid** |
+| two-allele genotype on `MT`/`Y` | warning | warning |
+| unresolved rows (no coordinate) | warning | counts against publishability |
+
+A plain compile **succeeds** through both of the first two. So "it compiled" is not evidence the
+module is correct — a module can compile cleanly and contain rows that will never match a genome.
 
 A successful compile reports four things: `artifact_digest`, `content_signature`,
 `resolution_signature` and `fully_resolved`. Recompiling an untouched spec must reproduce all of
@@ -328,7 +475,7 @@ module_signature("spec")  and  module_signature("rev")   # must match
 
 That is the fixed point the format guarantees. It holds wherever you wrote a value: `curator` and
 `method` can live on the row or in `defaults:`, and `reverse` re-emits them in the other place, so
-the signature folds `defaults:` into each row before hashing.
+the signature folds `defaults:` into each row before hashing and the two spellings are one content.
 
 Check what you actually shipped rather than assuming:
 
@@ -338,7 +485,7 @@ import polars as pl; w = pl.read_parquet('out/weights.parquet')
 print(w.height, 'rows;', w.filter(pl.col('chrom').is_not_null()).height, 'with a coordinate')"
 ```
 
-`0 with a coordinate` means resolution did not reach the compile.
+`0 with a coordinate` means resolution did not reach the compile — see the two traps below.
 
 ## 7 — Publish
 
@@ -352,18 +499,27 @@ registry_publish(namespace="my-ns", name="my_module", version="1.0.0",
 
 `registry_publish` re-runs `validate_module(strict=True)` locally and refuses rather than shipping a
 spec the server will reject; the server then recompiles it itself, so `compile_success` and the
-digest are trusted rather than claimed.
+digest are trusted rather than claimed. A published version is immutable. A spec whose raw parts
+exceed the server's transfer bound needs a client-side archive import instead.
+
+If you also have `just-dna-pipelines`, its `marketplace check` adds network checks on top of
+validation and returns `would_publish` — the one field to branch on. It has a **variant ceiling**, so
+a large module comes back `422 too_many_variants`: that is the check declining to run, not a verdict
+on your module. `validate_module` has no network tier and is what decides publishability.
 
 Version deliberately. A rebuild that changes the compiled shape still moves `artifact_digest`, so it
 needs a version either way; a rebuild that changes *what variants are in the module* or how they are
 grounded is a **major**, because someone pinned to the old major would silently receive different
 content. Write the changelog as a continuation of the previous one, not a fresh "initial release".
 
-A published version is immutable.
+There is a **second, separate** destination: the HuggingFace annotator collection, which the app
+discovers directly. It takes the **compiled** artifacts rather than the spec, and the two are
+published independently — no command does both, and that is deliberate for now.
 
-There is a **second, separate** destination: the HuggingFace annotator collection, which takes the
-**compiled** artifacts rather than the spec. The two are published independently and no command does
-both.
+**A 0.4-led module is joined against the VCF on `rsid` + `genotype`, not by position.** The compiler
+materializes those families verbatim from their authored CSV and applies `resolution.csv` to
+`weights.parquet` only, so a `pharm_variants` / `diplotypes` / `pgs` row's `chrom`/`start` arrive
+null. Author the rsID, and expect no matches from a VCF whose `ID` column is empty.
 
 ## Checklist before you call a module done
 
@@ -372,14 +528,43 @@ both.
 - [ ] genotypes sorted; single-allele on `MT`/`Y` outside PAR; alleles drawn from the locus
 - [ ] every PMID verified to exist, 1–8 digits, and reachable from a weighted variant
 - [ ] `resolution.csv` and `literature.csv` committed alongside the CSVs
-- [ ] `sources.csv` present and consistent with `license:` if a licensed source was used
+- [ ] `sources.csv` present, covering every source cited, and consistent with `license:`
 - [ ] `module.version` is a quoted SemVer string
 - [ ] a second **compile** of the untouched spec reproduces the same `artifact_digest` (a
-      re-**draft** will not — `sources.csv` re-stamps `fetched_at`, which is inside the digest)
+      re-**draft** will not — see below)
 
 ---
 
 # Gotchas
+
+## The two traps that ship a module no VCF can match
+
+**`compile_module(resolve_with_ensembl=False)` / `--no-resolve` disables `resolution.csv` too.** The
+name reads as "don't use Ensembl", which is exactly what a spec carrying its own resolution wants. It
+is the master switch for *all* resolution: set it False and every row compiles with `chrom=None`, and
+the compile **succeeds** — it warns, but a script checking only the exit status ships a module that
+can never match a genome. The correct call is `resolve_with_ensembl=True, ensembl_cache=None`. The
+MCP `compile_module` tool pins that and cannot reach the other branch; the CLI can.
+
+**Deleting `resolution.csv` is part of a rebuild.** Existing rows are authoritative and merged, so a
+fix that changes an authored allele will not show up until you delete the file first. The table is a
+pin, not a cache.
+
+## A re-draft always changes `artifact.digest`, even when the data is identical
+
+`sources.csv` carries a `fetched_at` timestamp stamped when the row is written, and
+`sources.parquet` is one of the files the digest is a Merkle root over — so two builds of
+byte-identical content, an hour apart, are two different artifacts. Consequences worth planning
+around:
+
+- **Recompiling is reproducible; re-drafting is not.** `compile` twice on an untouched spec gives the
+  same digest every time. That is the property to test.
+- **Do not treat a digest change as evidence that content changed.** Diff the tables.
+- **Digest-based dedup will miss matches** across rebuilds, so `find-by-hash` cannot recognise a
+  module you rebuilt without editing.
+
+If you need a rebuild to be digest-stable, keep the previous `sources.csv` rather than letting the
+draft re-stamp it.
 
 ## Coordinates and identity
 
@@ -393,10 +578,11 @@ both.
 - **A genotype is `C/C`, not `CC`.** `CC` parses as a single two-base allele. Sources (ClinPGx) write
   the unslashed form; disambiguate using the resolved ref/alt.
 - **Unphased genotypes are alphabetically sorted** (`A/G`, never `G/A`) because an unphased genotype
-  is a *set*. Phased uses `|` and order is significant.
+  is a *set*; two spellings of one call would be two rows. Phased uses `|` and order is significant.
 - **Indels are spelled out, reference-anchored**: `A/AG`, `C/CTT`.
 - **Off GRCh38, expect less and say so.** rsIDs resolve against GRCh38 only, so a `GRCh37` module
-  resolves nothing and mints no VRS ids. Author coordinates rather than rsIDs there. Known limitation
+  resolves nothing and mints no VRS ids; its keys are build-relative coordinates that will not join
+  against gnomAD/ClinVar/ClinGen. Author coordinates rather than rsIDs there. Known limitation
   (RM15), not a defect.
 - **An rsID is position-level, not per-allele.** One rsID can legitimately span pathogenic, benign and
   uncertain alleles at one locus, and a paralogous one maps to several genuinely distinct places
@@ -406,14 +592,19 @@ both.
 
 - **A `risk` weight is negative.** `weight` is a contribution to a wellness-style score, not a hazard
   ratio, so `state='risk'` or `direction='risk'` wants `weight < 0` and `protective` wants
-  `weight > 0`. Getting the sign backwards is a warning, not an error, so it compiles.
+  `weight > 0`. Getting the sign backwards is a warning, not an error, so it compiles — check it
+  rather than trusting a green run.
 - **`direction` is not a magnitude.** Its members are the same axis as `state`
   (`neutral`/`protective`/`risk`/`unknown`), not `increase`/`decrease`. Ask `describe_table` before
   writing any vocabulary cell from intuition.
-- **`direction` is authored or it is empty — nothing computes it for you.** The compiler never fills a
-  blank from `state`, since that would assert a claim you did not make. A module carrying only `state`
-  ships an empty `direction` column and a consumer keying on `direction` sees nothing. If you want
-  the newer axis read, write it — on every row it applies to, not on some.
+- **`direction` is authored or it is empty — nothing computes it for you.** `state` is the required
+  legacy axis; `direction`/`stat_significance`/`clin_sig` are the orthogonal ones that replaced it.
+  The compiler never fills a blank from `state`, since that would assert a claim you did not make
+  (`state='significant'` names no direction at all). So a module carrying only `state` compiles fine
+  and ships an empty `direction` column, and a consumer keying on `direction` sees nothing. If you
+  want the newer axis read, write it — on every row it applies to, not on some. Reading back:
+  `VariantRow.effective_direction` returns the authored value else the `state`-derived fallback, and
+  `just_dna_format.derive.direction_from_state(state, weight)` is that fallback as a plain function.
 
 ## The checks, and the two ways to defeat them by accident
 
@@ -434,71 +625,95 @@ The house algebra is **three-valued: true / false / unknown**, and `None` is nev
   absent. Never route a missing measurement to the lowest bin.
 - **Set `requires_callable=true` (with `callable_from`)** wherever the *absence* of a variant is the
   informative call: a no-call is not a reference call.
-- **On licensing, unknown terms are undetermined, never permitted.**
+- **On licensing, unknown terms are undetermined, never permitted** — `share_alike` /
+  `commercial_use` left blank do not mean allowed.
 - **`unchecked` / `unknown` in a report means the question was never put.** A check that could not run
   is not a check that passed.
 
 ## Binning bounds
 
-- **`measure_max` is inclusive on every kind.** Use `min == max` for a sharp value and a null bound
-  for open-ended.
+- **`measure_max` is inclusive on every kind.** A bounded domain's top value (allele fraction `1.0` is
+  homoplasmy, and real) has to be reachable. Use `min == max` for a sharp value and a null bound for
+  open-ended.
 - **Whether adjacent bins may share an endpoint depends on the kind, and the two cases are opposite.**
   - **Dense — `allele_fraction`, `prs_percentile`: bounds must touch**, e.g. `0.0–0.1` then `0.1–0.3`.
-    The higher bin owns the shared endpoint. A hole between bins warns.
+    A shared endpoint is a *boundary*, not an overlap, and the higher bin owns it (lookup selects the
+    row with the greatest `measure_min ≤ x`). A hole between bins warns, because on a continuous
+    measure it can be arbitrarily small.
   - **Integer — `repeat_count`, `copy_number`: bounds must NOT touch**, e.g. `[27,35]` then `[36,39]`.
-    A shared endpoint is a real overlap and is refused.
-  - **`activity_score` is in neither set** — a coarse consumer-summed grid: no gap warning, bins do
-    not touch.
-- **Two bins sharing a *lower* bound refuse on every kind.**
-- Bins are grouped by the kind's key columns **plus** `trait_efo_id`.
+    Adjacent integer bins are already contiguous, so a shared endpoint is a real overlap — both bins
+    claim that integer — and it is refused.
+  - **`activity_score` is in neither set.** It is a consumer-summed value on a coarse grid, so
+    interior holes are not meaningful (no gap warning) and bins do not touch.
+- **Two bins sharing a *lower* bound refuse on every kind** — the boundary rule selects the greatest
+  `measure_min ≤ x` and these two are the same, so there is nothing to order.
+- Bins are grouped by the kind's key columns **plus** `trait_efo_id`. If two different variants
+  collide in a heteroplasmy table, give each its own variant identity — that is what the key is for.
 
 ## PGx and star alleles
 
 - **A clinical annotation's key is `(variant_key, drug, genotype, phenotype_category, annotation_id)`**
-  — not the bare triple.
+  — not the bare triple. One variant+drug carries several distinct annotations (rs4149056+simvastatin
+  is Metabolism/PK 1A, Efficacy 3 *and* Toxicity 1A).
 - **Annotations are per genotype, and can oppose each other** — rs4149056/simvastatin is "decreased"
-  for CC/CT and "increased" for TT.
-- **CPIC recommendations are keyed by (phenotype, drug, *population*)**, and the populations disagree.
-  `draft --drug` refuses and lists the choices rather than picking one. Narrow with `--population`.
-- **`recommendation_strength` is CPIC's; `evidence_level` is PharmGKB/ClinPGx's.** Fill only the one
-  your source states.
+  for CC/CT and "increased" for TT. Genotype is in the key for that reason.
+- **CPIC recommendations are keyed by (phenotype, drug, *population*)**, and the populations disagree
+  — the same Poor Metabolizer diplotype is `strong` in one clinical context and `moderate` in another.
+  `draft --drug` **refuses and lists the choices** when several exist rather than picking one, because
+  defaulting would assert a clinical context you never chose. Narrow with `--population`.
+- **`recommendation_strength` is CPIC's; `evidence_level` is PharmGKB/ClinPGx's.** Different axes —
+  fill only the one your source states.
 - **A large star-allele gene needs `draft --allele`.** *n* alleles is *n(n+1)/2* diplotypes;
-  unfiltered CYP2D6 is 16,290 rows, 73% `Indeterminate`. `*1` is always kept; one `--gene` at a time.
-- **A star allele can be *used* without being *defined*.** Warned, not blocked.
-- **CPIC activity scores are inequality strings (`"≥3.0"`), not numbers**, and CPIC's `n/a` means
-  *not scored* — leave the cell blank.
+  unfiltered CYP2D6 is 16,290 rows, 73% `Indeterminate`. Your real bound is the allele set your caller
+  emits — six alleles turn those 16,290 into 21. The filter covers all three PGx tables, `*1` is
+  always kept, and it takes a single `--gene` because a star name is gene-scoped.
+- **A star allele can be *used* without being *defined*.** If `haplotypes.csv` never defines an allele
+  that `diplotypes.csv` or `allele_function.csv` names, a caller can never emit it and every row about
+  it is dead. Warned, not blocked — leaning on an external caller's definitions is legitimate.
+- **CPIC activity scores are inequality strings (`"≥3.0"`), not numbers**, so they do not drop into
+  numeric bin bounds; and CPIC's `n/a` means *not scored* — an absence, so leave the cell blank.
 - **A PGx module carries no `variants.csv`, and that is correct.**
 
 ## Licensing
 
 - **Every PGx upstream (ClinPGx, CPIC, PharmVar) is CC BY-SA *plus a no-sale clause*.** None is
-  sellable. (PharmGKB's API was retired 2026-07-20; the successor is ClinPGx, paths and formats
-  unchanged. CPIC is not an unrestricted alternative.)
+  sellable. Do not read a bare "CC BY-SA" as permission — read the surrounding terms. (PharmGKB's API
+  was retired on 2026-07-20; the successor is ClinPGx, paths and formats unchanged. CPIC is not an
+  unrestricted alternative — its licence page redirects to the same ClinPGx data-usage policy.)
 - **Pass `--use unstated | non-commercial | commercial`** to anything that copies rows out of a
-  source. A forbidding source is *skipped* on `unstated` and *refused* on `commercial`, at
-  acquisition — nothing is even fetched.
+  source (`draft`, `draft-panel`, `draft-clinpgx`, `dosage`, `pgx`, `clinpgx build/check`). A
+  forbidding source is *skipped* on `unstated` and *refused* on `commercial`, at acquisition —
+  nothing is even fetched.
 - **`sources.csv` is the only thing the compile gate reads.** Only the *annotation* layer taints; a
-  coordinate is a fact. Most-restrictive-wins, module-wide.
+  coordinate is a fact, so a fact-layer row carries attribution rather than a prohibition.
+  Most-restrictive-wins, module-wide.
 - **The CLI spelling and the column value differ.** `--use` accepts `non-commercial`, but the
-  `declared_use` *column* takes `non_commercial` (underscore).
-- **There is no `--non-commercial` compile flag, by design** — a flag cannot survive `reverse`.
+  `declared_use` *column* takes the vocabulary member `non_commercial` (underscore). The flag
+  normalizes; a cell you type by hand does not.
+- **There is no `--non-commercial` compile flag, by design.** A flag cannot survive `reverse`, so a
+  third compile would refuse. The declaration has to be data.
 
 ## Sex chromosomes and the PAR
 
 - **A pseudoautosomal variant is recorded once, on X**, because that is the spelling every annotation
-  source uses and a standard GRCh38 analysis set hard-masks the Y PAR.
+  source uses and a standard GRCh38 analysis set hard-masks the Y PAR. Pass `--keep-par-twin` to
+  `enrich` only if your reference is unmasked.
 - **`chrom=Y` is not "never diploid": PAR1 and PAR2 are diploid in every karyotype.** The verdict is
-  **per locus** — `XG` and `SPRY3` each straddle a boundary.
-- **`chrom=MT` is not diploid.** Use a single allele (`G`).
+  **per locus**, not per gene or per module — `XG` and `SPRY3` each straddle a boundary.
+- **`chrom=MT` is not diploid.** Use a single allele (`G`) for a homoplasmic or hemizygous call. A
+  mixed mitochondrial population is heteroplasmy and belongs in `heteroplasmy.csv`, not in a het
+  genotype.
 
 ## Module structure
 
-- **One CSV = one concern.** Compose from optional table kinds. `studies.csv` is required **iff**
-  `variants.csv` is present. At least one recognised table must exist.
-- **A value every row shares belongs in `module_spec.yaml`'s `defaults:`.** Both spellings are the
-  same content to the signature; the defaults block is the tidier module.
+- **One CSV = one concern.** Compose from optional table kinds; never add a foreign domain's columns
+  to every row. `studies.csv` is required **iff** `variants.csv` is present. At least one recognised
+  table must exist.
+- **A value every row shares belongs in `module_spec.yaml`'s `defaults:`** (`curator`, `method`).
+  Both spellings are the same content to the signature; the defaults block is the tidier module.
 - **Authored row order is preserved** through compile → reverse → recompile and is load-bearing for
-  `artifact_digest`.
+  `artifact_digest`. Drafted rows land in their gene's block or at the end; a re-run leaves anything
+  already there exactly as it is.
 - **Write CSVs with a CSV writer, not by splitting on commas.** Several `conclusion` values contain
   commas, and a column shift usually surfaces as a bizarre validation error three columns away.
 
@@ -507,10 +722,11 @@ The house algebra is **three-valued: true / false / unknown**, and `None` is nev
 Messages sometimes cite an `RMn` — a tracked item in the upstream roadmap. That marker means **known
 and deliberate**: leave the data honest and note the limitation rather than inventing a workaround.
 
-- **RM5** — symbolic and structural alleles (`<DEL>`, 5-HTTLPR, ClinPGx `del`/`ins`, CPIC's `x≥3`)
-  are outside the `^[ACGT]+$` grammar. Such rows are skipped and counted rather than coerced.
-  Distinct from IUPAC ambiguity codes (`R`, `Y`, `N`), which record an uncertainty that was never
-  expressible and must never be expanded into the alleles they could stand for.
+- **RM5** — symbolic and structural alleles (`<DEL>`, 5-HTTLPR, ClinPGx `del`/`ins`, CPIC's `x≥3` and
+  `DELTCT` notations) are outside the `^[ACGT]+$` grammar. The PGx passes skip such rows and count
+  them rather than coercing them. Distinct from CPIC's IUPAC ambiguity codes (`R`, `Y`, `N`), which
+  record an uncertainty that was never expressible and must never be expanded into the alleles they
+  could stand for.
 - **RM15** — multi-build support. GRCh38 is the only assembly with a refget table, so VRS identity
   minting and rsID resolution are GRCh38-only.
 
