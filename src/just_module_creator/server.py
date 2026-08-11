@@ -88,7 +88,7 @@ def build_server(mode: Mode | None = None, settings: Settings | None = None) -> 
     register_auth(mcp, settings, store)
     register_registry(mcp, settings, store)
     if resolved_mode == "extended":
-        register_extended(mcp, settings)
+        register_extended(mcp, settings, services)
 
     log.info(
         "Server built (mode=%s, offline=%s, registry=%s)",

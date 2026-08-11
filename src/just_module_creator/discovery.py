@@ -35,14 +35,17 @@ from typing import Any
 
 from just_dna_enricher.eutils import DEFAULT_EUTILS_BASE, EutilsSettings
 from just_dna_enricher.licensing import TERMS_BY_SOURCE
-from just_dna_enricher.literature import DEFAULT_EUROPEPMC_BASE
+from just_dna_enricher.literature import DEFAULT_EUROPEPMC_BASE, EuropePmcClient
 from just_dna_format.spec import DOI_PATTERN
 
 from just_module_creator.models import (
+    FullTextResult,
     LintAlteration,
     LintFinding,
     LiteratureCandidate,
     LiteratureSearchResult,
+    OpenAccessLocation,
+    OpenAccessResult,
     SourceLicenseNote,
     SourceStatus,
 )
@@ -883,3 +886,224 @@ def _search_findings(
             )
         )
     return findings
+
+
+# --------------------------------------------------------------------------- #
+# Reading a paper — locations, then text
+# --------------------------------------------------------------------------- #
+def _locations_from_unpaywall(payload: dict) -> list[OpenAccessLocation]:
+    """Unpaywall's `oa_locations`, keeping the *article's* licence verbatim."""
+    out: list[OpenAccessLocation] = []
+    for entry in payload.get("oa_locations") or []:
+        if not isinstance(entry, dict):
+            continue
+        url = _text(entry.get("url_for_pdf")) or _text(entry.get("url"))
+        if not url:
+            continue
+        out.append(
+            OpenAccessLocation(
+                url=url,
+                version=_text(entry.get("version")),
+                # `license` is null for bronze OA — free to read, no reuse grant.
+                # Null and "cc-by" are different answers and must stay that way.
+                license=_text(entry.get("license")),
+                host_type=_text(entry.get("host_type")),
+            )
+        )
+    return out
+
+
+def open_access(
+    services: NetworkServices, *, pmid: str | None, doi: str | None, pmcid: str | None
+) -> OpenAccessResult:
+    """Where a paper may legally be read, and on what terms.
+
+    Two sources, and they answer different halves. Europe PMC says whether *it*
+    holds the article; Unpaywall says where else a legal copy lives and, crucially,
+    under **which licence** — a per-article fact that decides whether a quoted
+    passage may travel inside a module you intend to publish and sell. No static
+    table on our side could answer that, which is why this tool exists.
+    """
+    discovery = Discovery(services=services)
+    statuses: list[SourceStatus] = []
+    findings: list[LintFinding] = []
+    is_oa: bool | None = None
+    locations: list[OpenAccessLocation] = []
+    best: OpenAccessLocation | None = None
+
+    if pmid:
+        try:
+            record = (
+                (services.lookup_clients.europepmc or EuropePmcClient()).lookup([pmid]).get(pmid)
+            )
+        except Exception as exc:  # noqa: BLE001 - any client failure is "could not answer"
+            statuses.append(
+                SourceStatus(source=EUROPEPMC, queried=True, results=None, reason=str(exc))
+            )
+        else:
+            # Europe PMC omits ids it does not know, with no error marker — so a
+            # miss here means "not retrievable", NEVER "does not exist".
+            if record is None:
+                statuses.append(SourceStatus(source=EUROPEPMC, queried=True, results=0))
+                findings.append(
+                    LintFinding(
+                        level="info",
+                        message=(
+                            "Europe PMC has no record for this id. It omits ids it does not know "
+                            "without an error, so read this as 'not retrievable there', not as "
+                            "'does not exist'."
+                        ),
+                    )
+                )
+            else:
+                statuses.append(SourceStatus(source=EUROPEPMC, queried=True, results=1))
+                is_oa = record.get("is_open_access")
+                pmcid = pmcid or record.get("pmcid")
+                doi = doi or record.get("doi")
+
+    if doi:
+        try:
+            payload = discovery.unpaywall(doi)
+        except ServiceUnavailable as exc:
+            statuses.append(
+                SourceStatus(
+                    source=UNPAYWALL,
+                    # A missing contact address means we never asked, which is a
+                    # different fact from asking and being refused.
+                    queried="contact address" not in exc.reason,
+                    results=None,
+                    reason=exc.reason,
+                    rate_limited=exc.rate_limited,
+                )
+            )
+            findings.append(
+                LintFinding(
+                    level="warning",
+                    message=(
+                        f"Unpaywall did not answer ({exc.reason}). Open-access status here is "
+                        "UNCHECKED — do not read it as 'no free copy exists'."
+                    ),
+                )
+            )
+        else:
+            locations = _locations_from_unpaywall(payload)
+            best_raw = payload.get("best_oa_location")
+            if isinstance(best_raw, dict):
+                best = next(
+                    (loc for loc in _locations_from_unpaywall({"oa_locations": [best_raw]})), None
+                )
+            unpaywall_oa = payload.get("is_oa")
+            if isinstance(unpaywall_oa, bool):
+                is_oa = unpaywall_oa if is_oa is None else (is_oa or unpaywall_oa)
+            statuses.append(SourceStatus(source=UNPAYWALL, queried=True, results=len(locations)))
+
+    if any(loc.license is None for loc in [*locations, *([best] if best else [])]):
+        findings.append(
+            LintFinding(
+                level="warning",
+                message=(
+                    "At least one location has no licence recorded — typically bronze open "
+                    "access: free to read, with NO reuse grant. Free to read is not free to "
+                    "reuse, and a quoted passage inside a published module is a reuse."
+                ),
+            )
+        )
+    return OpenAccessResult(
+        doi=doi,
+        is_open_access=is_oa,
+        best_location=best,
+        locations=locations,
+        sources=sorted(statuses, key=lambda s: s.source),
+        findings=findings,
+    )
+
+
+#: Said on every fulltext retrieval, because it is the cost of using this tool.
+_NO_PASSAGE_NOTE = (
+    "No passage was extracted for you, and none ever will be. `enrich_literature` checks "
+    "provenance_quote against this same Europe PMC fulltext, so a quote copied out of this "
+    "response would make quotes_found confirm itself — and a machine-located quote asserts a "
+    "reading that did not happen. Locate the passage yourself. Note the honest consequence: "
+    "having read this text here, quotes_found on that row is no longer independent evidence. It "
+    "has become a citation-pairing check, which still catches a quote written against the wrong "
+    "PMID."
+)
+
+
+def fulltext(
+    services: NetworkServices,
+    *,
+    pmid: str | None,
+    pmcid: str | None,
+    doi: str | None,
+    max_chars: int | None,
+) -> FullTextResult:
+    """The document, or an honest account of why not and where else to look.
+
+    Never silently substitutes: an abstract is *named* as an abstract in
+    `text_source`, and when nothing could be retrieved `text_source` is null with
+    the open-access locations attached rather than an empty string that reads
+    like an empty paper.
+    """
+    client = services.lookup_clients.europepmc or EuropePmcClient()
+    findings = [LintFinding(level="info", message=_NO_PASSAGE_NOTE)]
+    record: dict | None = None
+
+    if pmid:
+        record = client.lookup([pmid]).get(pmid)
+        pmcid = pmcid or (record or {}).get("pmcid")
+        doi = doi or (record or {}).get("doi")
+
+    text: str | None = None
+    source: str | None = None
+    if pmcid:
+        text = client.fulltext(pmcid)
+        source = "fulltext" if text else None
+
+    if not text and record and record.get("abstract"):
+        # Named as a substitute, never passed off as the article. Europe PMC
+        # returns abstracts for paywalled records too, which is why this is worth
+        # falling back to at all.
+        text = record["abstract"]
+        source = "abstract"
+        findings.append(
+            LintFinding(
+                level="warning",
+                message=(
+                    "Fulltext was not retrievable, so this is the ABSTRACT. A claim you cannot "
+                    "find in an abstract may still be in the paper — an abstract miss is not a "
+                    "verdict."
+                ),
+            )
+        )
+
+    truncated = False
+    if text and max_chars and len(text) > max_chars:
+        text = text[:max_chars]
+        truncated = True
+
+    locations: list[OpenAccessLocation] = []
+    if not text:
+        findings.append(
+            LintFinding(
+                level="warning",
+                message=(
+                    "Nothing was retrieved. `text_source` is null, which means UNCHECKED — not "
+                    "that the paper has no text. Try the locations below."
+                ),
+            )
+        )
+        if doi:
+            locations = open_access(services, pmid=None, doi=doi, pmcid=None).locations
+
+    return FullTextResult(
+        pmid=pmid,
+        pmcid=pmcid,
+        doi=doi,
+        retrieved=bool(text),
+        text=text,
+        text_source=source,
+        truncated=truncated,
+        locations=locations,
+        findings=findings,
+    )

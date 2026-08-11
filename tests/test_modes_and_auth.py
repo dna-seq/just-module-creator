@@ -24,6 +24,9 @@ ESSENTIAL_TOOLS = {
     "lint_rows",
     "validate_module",
     "compile_module",
+    # Discovery is essentials because the anti-fabrication promise depends on it:
+    # lookup_citation proves a PMID exists, which a wrong-but-real id also does.
+    "literature_search",
 }
 
 
@@ -41,13 +44,21 @@ async def test_extended_only_tools_are_absent_by_default(essentials_client):
     assert "enrich_module" not in names
     assert "authoring_reference" not in names
     assert "reverse_module" not in names
+    assert "fetch_fulltext" not in names
+    assert "lookup_open_access" not in names
 
 
 async def test_extended_mode_is_a_superset(essentials_client, extended_client):
     essentials = await _names(essentials_client)
     extended = await _names(extended_client)
     assert essentials < extended
-    assert {"enrich_module", "authoring_reference", "reverse_module"} <= extended
+    assert {
+        "enrich_module",
+        "authoring_reference",
+        "reverse_module",
+        "fetch_fulltext",
+        "lookup_open_access",
+    } <= extended
 
 
 async def test_gated_tools_are_always_listed(essentials_client, extended_client):
@@ -103,6 +114,44 @@ async def test_offline_settings_block_the_registry(make_client):
     async with make_client("essentials", offline_settings()) as client:
         with pytest.raises(ToolError, match="offline"):
             await client.call_tool("registry_search", {"query": "lactose"})
+
+
+async def test_offline_settings_block_every_literature_tool(make_client):
+    """There is no offline literature snapshot, so `offline` refuses rather than degrades.
+
+    Upstream is explicit that one will never exist — once literature.csv is
+    written it IS the pin — so serving a stale answer here would be inventing a
+    guarantee nobody made.
+    """
+    async with make_client("essentials", offline_settings()) as client:
+        with pytest.raises(ToolError, match="offline|JMC_OFFLINE"):
+            await client.call_tool("literature_search", {"query": "lactase persistence"})
+
+    async with make_client("extended", offline_settings()) as client:
+        for tool, args in (
+            ("fetch_fulltext", {"pmid": "11788828"}),
+            ("lookup_open_access", {"pmid": "11788828"}),
+        ):
+            with pytest.raises(ToolError, match="offline|JMC_OFFLINE"):
+                await client.call_tool(tool, args)
+
+
+async def test_the_offline_check_runs_before_any_client_is_constructed(make_client, monkeypatch):
+    """A tripwire on the boundary, now that this server owns sockets.
+
+    Hermeticity used to be free — every call went out through the enricher. It is
+    not free any more, so this proves the refusal happens before httpx is touched
+    rather than trusting that it does.
+    """
+    import httpx
+
+    def explode(*args, **kwargs):
+        raise AssertionError("a socket was opened under JMC_OFFLINE")
+
+    monkeypatch.setattr(httpx.Client, "__init__", explode)
+    async with make_client("essentials", offline_settings()) as client:
+        with pytest.raises(ToolError, match="offline|JMC_OFFLINE"):
+            await client.call_tool("literature_search", {"query": "lactase persistence"})
 
 
 async def test_a_call_argument_cannot_override_the_offline_ceiling():

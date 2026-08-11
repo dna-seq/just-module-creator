@@ -27,15 +27,19 @@ from just_dna_format.manifest import read_manifest
 from just_dna_registry import RegistryClient, RegistryError
 from mcp.types import ToolAnnotations
 
+from just_module_creator.discovery import fulltext, open_access
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
     EnrichReport,
+    FullTextResult,
     IdentifierReport,
     IdentifierStatus,
+    OpenAccessResult,
     OpResult,
     SignatureResult,
     VerifyResult,
 )
+from just_module_creator.net import NetworkServices
 from just_module_creator.settings import Settings
 from just_module_creator.tools._shared import offline_for, resolve_dir
 
@@ -49,8 +53,92 @@ _REGENERATE_NOTE = (
 )
 
 
-def register_extended(mcp: FastMCP, settings: Settings) -> None:
+def register_extended(mcp: FastMCP, settings: Settings, services: NetworkServices) -> None:
     """Register the extended-only tools."""
+
+    # ----------------------------------------------------------------- #
+    # Reading a paper
+    # ----------------------------------------------------------------- #
+    def _require_network(what: str) -> None:
+        if offline_for(settings, False):
+            raise ToolError(
+                f"{what} needs the network and the server is configured offline (JMC_OFFLINE). "
+                "There is no offline literature snapshot."
+            )
+
+    @mcp.tool(
+        tags={"extended"},
+        annotations=ToolAnnotations(
+            title="Find a legal open-access copy",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def lookup_open_access(
+        pmid: str | None = None, doi: str | None = None, pmcid: str | None = None
+    ) -> OpenAccessResult:
+        """Where a paper may legally be read, and **on what terms**.
+
+        The licence is the point, not the URL. **Free to read is not free to
+        reuse**: a `bronze` location has no licence recorded at all, and a passage
+        copied from a CC-BY-NC article into `studies.csv` is publisher text sitting
+        in your module's annotation layer — where `commercial_use=false` actually
+        bites on a module you intend to sell.
+
+        These terms are **per article**, not per source, which is why no table on
+        our side could answer this and why `sources.csv` needs a row carrying the
+        *article's* licence rather than PubMed's.
+
+        A `null` in `is_open_access` means unchecked. Europe PMC omits ids it does
+        not know without an error, so a miss there is "not retrievable", never
+        "does not exist".
+        """
+        _require_network("Open-access lookup")
+        if not (pmid or doi or pmcid):
+            raise ToolError("Provide a pmid, doi or pmcid.")
+        return await run_sync(lambda: open_access(services, pmid=pmid, doi=doi, pmcid=pmcid))
+
+    @mcp.tool(
+        tags={"extended"},
+        annotations=ToolAnnotations(
+            title="Fetch a paper's text",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def fetch_fulltext(
+        pmid: str | None = None,
+        pmcid: str | None = None,
+        doi: str | None = None,
+        max_chars: int | None = None,
+    ) -> FullTextResult:
+        """Retrieve a paper's text so **you** can read it. Returns no passage, ever.
+
+        There is no "find the sentence that supports this" here and there will not
+        be. `enrich_literature` checks `provenance_quote` against this same Europe
+        PMC fulltext, so a quote copied out of this response would make
+        `quotes_found` confirm itself — and a machine-located quote asserts a
+        curator reading that never happened, which is a false claim of provenance
+        rather than merely a vacuous check.
+
+        **The honest cost of using this tool**, stated so you can weigh it: having
+        read the fulltext here, `quotes_found` on that row is no longer independent
+        evidence. It has become a citation-pairing check — still useful, since it
+        catches a quote written against the wrong PMID.
+
+        `text_source` says what you actually got: `fulltext`, `abstract` (named as
+        a substitute, never passed off as the article), or `null` — which means
+        **nothing was retrieved**, not that the paper has no text. An abstract
+        *miss* is not a verdict: the claim may still be in the paper.
+        """
+        _require_network("Fulltext retrieval")
+        if not (pmid or pmcid or doi):
+            raise ToolError("Provide a pmid, pmcid or doi.")
+        return await run_sync(
+            lambda: fulltext(services, pmid=pmid, pmcid=pmcid, doi=doi, max_chars=max_chars)
+        )
 
     # ----------------------------------------------------------------- #
     # Full schema dump
