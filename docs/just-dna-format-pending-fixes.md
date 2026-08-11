@@ -17,11 +17,12 @@ stop; never commit in that repo.
 ## F5 — resolution never reaches the non-SNP table families
 
 **Filed upstream:** `CONSUMER_SUGGESTIONS.md` **S9** (opened by just-dna-lite,
-2026-08-11; corroborated by us the same day) · **Status:** open upstream
+2026-08-11; corroborated by us the same day) ·
+**Status: the legibility half shipped in 0.5.3; the coordinates themselves are deferred to upstream RM43**
 
 `compile_module` applies `resolution.csv` to the SNP core only. A module led by
 `pharm_variants.csv`, `diplotypes.csv` or `pgs.csv` keeps exactly the coordinates
-its author typed — so for an rsid-authored module, none. Nothing warns.
+its author typed — so for an rsid-authored module, none.
 
 Reproduced here twice with a one-row `pharm_variants`-only module: `chrom` and
 `start` are null in the artifact both with and without a `resolution.csv` that
@@ -29,13 +30,45 @@ covers the variant, which rules out "no table was available" and leaves "this
 family does not consult it". The same run demonstrably *read* the file — it
 warned that VRS coverage in `resolution.csv` was 0/1 — while not applying it.
 
-**Our mitigation:** documentation only, which is all an authoring surface can do.
-`skills/create-module/SKILL.md` tells authors to supply the rsID for these tables
-and states that the compiled rows carry no coordinate, so a consumer joins on
-`rsid` + `genotype`. We ship no code workaround: filling the coordinates
-ourselves would author a value the compiler did not derive, which is exactly the
-redundancy-bearing mistake the rest of this repo exists to prevent.
+### What 0.5.3 shipped, and why it is the right half first
 
-**Closes when** upstream either resolves those families too (a digest-moving
-change, so 1.0) or warns at compile time that resolvable rows were left without
-coordinates (cheap, non-breaking, digest-neutral).
+`_check_positional_joinability` now warns, per positional table, in both
+`validate` and `compile`. Verified reaching our surface unchanged on the same
+one-row reproduction:
+
+> `pharm_variants.csv: 1 of 1 row(s) have no chrom+start, so this table joins by
+> rsID only — a VCF whose ID column is empty matches none of them.
+> **resolution.csv can place 1 of them**, and the compiler applies that table to
+> variants.csv only.`
+
+That second count is the actionable half, and it is exactly the distinction our
+corroboration argued the run already held both facts to make: it separates *this
+module was never enriched* from *the coordinates exist and this tier does not
+apply them here*. An author cannot otherwise tell those apart, and they call for
+opposite actions.
+
+Deliberately a warning in both modes and never a `strict` error, which we agree
+with: rsid-only identity is legal by these models' own rule, so escalating would
+have the format tighten a field it left open — and the remedy is a compiler
+change, not an authored edit. Refusing would make a correct module uncompilable
+for something its author cannot clear.
+
+**What is still open.** The coordinates are not materialized. Upstream's reason
+is worth recording because it is not a scheduling excuse: filling them breaks
+Principle 7, since `reverse_module` rebuilds the CSV from the parquet and a
+filled coordinate returns as an *authored* one. `VariantRow.authored_ident`
+exists to prevent exactly that and no 0.4-family model has an equivalent, so the
+fix needs a new column on an existing parquet — 0.6 work, tracked upstream as
+**RM43** with two smaller constraints alongside (`PharmVariantRow` has no `alts`
+column, and `variant_key` is a property on these models so it is materialized in
+no PGx parquet).
+
+**Our mitigation is now redundant with upstream's warning** but stays, because it
+tells an author what to do rather than what happened:
+`skills/create-module/SKILL.md` says to supply the rsID for these tables and that
+a consumer joins on `rsid` + `genotype`. We still ship no code workaround —
+filling the coordinates ourselves would author a value the compiler did not
+derive, which is the redundancy-bearing mistake the rest of this repo exists to
+prevent.
+
+**Closes when** RM43 lands.

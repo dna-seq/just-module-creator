@@ -14,55 +14,82 @@ is usable, and what is missing.
 
 ---
 
-## F1 — the drafting step is not on the tool surface, and the reflex is to route around it
+## F6 — two of five literature sources refuse this host, and the tool is right to say so
 
-**Found:** 2026-08-11, authoring the first real module · **Severity:** high ·
-**Status:** open · **Roadmap:** [RM1](ROADMAP.md#rm1--the-drafting-path-is-unwrapped-so-the-authoring-loop-has-a-hole-in-the-middle)
+**Found:** 2026-08-11, capturing fixtures · **Severity:** medium ·
+**Status:** open · **Roadmap:** [RM6](ROADMAP.md#rm6--semantic-scholar-and-arxiv-are-unreachable-from-this-host-so-two-parsers-are-untested)
 
-The workflow the skill teaches is scaffold → draft → curate → enrich → compile.
-Everything but *draft* is a tool. So an agent following it reaches step 2, finds
-nothing to call, and the available move is to shell out to
-`just-dna-enricher draft-panel` — or, worse, to fetch ClinVar directly and write
-the rows by hand.
+Semantic Scholar and arXiv both answer HTTP 429 from this machine regardless of
+user-agent, arXiv on a *first* request with no prior traffic — so it is an IP
+block, not our pacing. Confirmed with plain `curl` outside the client.
 
-This is exactly the capability-gap rule: the moment you reach for a raw call to
-get past something the product cannot do, the exercise stops producing signal.
-Shelling out proves the task is possible with general tooling, which was never in
-question. **The gap is the result.**
+Reported here rather than routed around because it is the best available
+evidence that the tri-state design earns its keep. A live `literature_search`
+returns `results=null` and `rate_limited=true` for those two, plus a warning that
+their part of the literature is **unchecked, not empty** — while PubMed and
+Europe PMC answer normally. Had the model used `0`, the same call would have
+read as "no preprints exist on this subject", which is a conclusion an author
+would act on.
 
-Recorded rather than routed around. The skill now names the CLI explicitly for
-this step and `references/CLI.md` states what is deliberately unwrapped, so the
-hole is documented rather than discovered — but it is still a hole.
+The cost is real: `parse_semantic_scholar` and `parse_arxiv` have no committed
+fixture and therefore no test.
 
-## F2 — `lint_rows` documents refusals it never returns
+## F7 — a `limit` was spent entirely on whichever source was asked first
 
-**Found:** 2026-08-11, first lint of a real row · **Severity:** low ·
-**Status:** open · **Roadmap:** [RM5](ROADMAP.md#rm5--lint_rows-promises-refusals-it-does-not-currently-produce)
+**Found:** 2026-08-11, first live search · **Severity:** medium ·
+**Status:** resolved same day, kept here as the reason the ordering rule exists
 
-`LintResult.alterations` is described as carrying "normalizations applied, plus
-refusals you must act on yourself", and the tool docstring builds on that:
-"`alterations` with `applied=false` are refusals, not failures".
+The first working `literature_search` asked four sources with `limit=5` and
+returned five PubMed papers. Europe PMC had answered with five of its own and
+none of them appeared: the merge preserved first-appearance order, so source one
+filled every slot.
 
-That is true of `lookup_variant`, which returns four refused alterations for a
-plain rsID query. It is not true of `lint_rows`: upstream's `inspect_rows`
-reports the redundancy-bearing columns as `info`-level **findings** and returns
-an empty `alterations` list. Verified on a valid one-row `variants.csv` — three
-`info` findings naming `chrom`, `start` and `ref`, zero alterations.
+Nothing was broken and every count in `sources` was accurate — which is what made
+it easy to miss. It only showed up because the live run printed `found_in` per
+paper and every row said `['pubmed']`.
 
-Nothing is broken; the information is present, under a different key. But the
-docstring points an agent at a field that is reliably empty, which is the kind of
-claim §7's "attack claims, not gaps" is about — our own doc promising something
-our code does not do.
+Merge now interleaves by each source's own rank, so every source's top hit
+outranks anyone's second. Ties break on first appearance, so the order stays
+deterministic.
 
-## F5 — resolution never reaches the non-SNP table families
+**Why it stays in this file rather than moving to previous_issues.md:** the
+finding is not the bug, it is that asking several sources can silently degrade
+into asking one, and nothing in the result said so. A future federated tool wants
+the same guard.
 
-**Status:** mitigated here, open upstream. Full entry in
-[just-dna-format-pending-fixes.md](just-dna-format-pending-fixes.md); filed as
-`S9` in `../just-dna-format/docs/CONSUMER_SUGGESTIONS.md`.
+## F8 — the literature sources have no recordable licence terms
 
-Listed here too because the mitigation is documentation only: a
-`pharm_variants`-led module still compiles green with null coordinates, and
-nothing in our surface warns.
+**Status:** open here, blocked upstream. Filed as `S10` in
+`../just-dna-format/docs/CONSUMER_SUGGESTIONS.md`. Tracked as
+[RM7](ROADMAP.md#rm7--the-literature-sources-have-no-sourcescsv-terms-upstream-or-here).
+
+Every literature-enriched module already warns that `pubmed`'s terms are
+unrecorded — a source the enricher introduced itself — and it is a warning, so it
+ships unnoticed. Our tools widen the gap to five more services.
+
+Mitigation is reporting only: each literature result carries a
+`SourceLicenseNote` naming the row the author owes, with `stateable_upstream:
+false`. We deliberately do not write it.
+
+## F9 — `lookup_citation` cannot detect a fabricated PMID, and our docs said it could
+
+**Found:** 2026-08-11, designing the search tool · **Severity:** high ·
+**Status:** mitigated here, open upstream (`S12`)
+
+`CitationHint` carries `pmid_exists`, `doi`, `pmcid`, `open_access` — and no
+title, journal or year. PMIDs are densely allocated across roughly 1–40,000,000,
+so a recalled 8-digit number is almost always a real record for a **different**
+paper, and `lookup_citation` answers `pmid_exists: true` for it.
+
+Both our skill and the tool docstring said "never invent a PMID — verify each one
+with `lookup_citation`", which is a rule the surface could not enforce.
+Fabrication is a failure of *identity*; that call only answers existence.
+
+This is the finding that put `literature_search` in the **essentials** tier
+rather than extended: discovery is the missing half of an anti-fabrication
+promise the default surface had already made. `literature_search(pmids=[...])`
+reads titles back, and both docs now say to take every PMID from a search result
+rather than from memory.
 
 ---
 

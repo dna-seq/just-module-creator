@@ -3,6 +3,65 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.2.0 — literature discovery, drafting, and the fact passes (2026-08-11)
+
+### Adopted just-dna-compiler / -enricher 0.5.3
+
+- Upstream shipped `_check_positional_joinability`, which **partly closes S9/F5**: `validate` and
+  `compile` now warn per positional table how many rows have no `chrom`+`start` **and how many of
+  those the injected `resolution.csv` could place**. Verified reaching our surface unchanged on the
+  one-row `pharm_variants` reproduction. That second count is the actionable half — it separates
+  "never enriched" from "the coordinates exist and this tier does not apply them". The coordinates
+  themselves are still not materialized; upstream defers that to RM43 because filling them breaks
+  Principle 7 (`reverse_module` would return a derived coordinate as an authored one).
+- `heteroplasmy.csv` joined the enricher's subject list upstream, so an rsid-authored heteroplasmy
+  module now resolves at all.
+- `just-dna-registry` 0.11.3 is **not adopted**: it is unpublished (PyPI has 0.9.1) and lives in the
+  renamed `just-dna-marketplace` repo, so taking it would mean a local path dependency and the
+  plugin's one-command install would stop working for anyone else.
+
+### New tools
+
+- **`literature_search`** (essentials) — PubMed, Europe PMC, Semantic Scholar and the preprint
+  index, merged. `pmids=[...]` reads titles back for ids you already have.
+- **`lookup_open_access`**, **`fetch_fulltext`**, **`paper_citations`** (extended).
+- **`draft_from_clinvar`** (essentials), **`draft_from_cpic`**, **`draft_from_clinpgx`** (extended)
+  — closes F1/RM1, the hole in the middle of the taught workflow.
+- **`enrich_facts`**, **`enrich_literature_pass`** (extended) — closes RM2.
+
+### New skill
+
+- `skills/find-evidence/` — search strategy, evidence appraisal, and the copyright rules that decide
+  whether a module is publishable. `create-module` points at it from step 3 and stays the canonical
+  authoring procedure.
+
+### Why search is in the *essentials* tier
+
+`CitationHint` carries no title, so `lookup_citation` can only prove a PMID **exists** — and PMIDs
+are dense enough that a recalled one is usually a real record for a different paper. Both our skill
+and the docstring told authors to "verify every PMID with `lookup_citation`", a rule the surface
+could not enforce. Discovery is the missing half of an anti-fabrication promise the default tier had
+already made. Filed upstream as `S12`; recorded as **F9**.
+
+### Fixed
+
+- `CitationLookup` was dropping `CitationHint.alterations` entirely, so the essentials tier was
+  deleting the one refusal upstream hands it (the redundancy-bearing `doi`). Now carried, with
+  `abstract_available`.
+- `PacingGate` is not thread-safe and every tool here runs through `anyio.to_thread.run_sync`;
+  `ServiceGate` adds the lock. One shared `LookupClients` per server replaces the per-call clients
+  that were discarding rate-limit state.
+- `lint_rows` documented refusals it never returns (F2/RM5) — narrowed to what it does return.
+- `SKILL.md` and `DOMAIN.md` both claimed `draft --drug` refuses on multi-population pairs; upstream
+  removed that in 0.5.1. RM1's rationale rested on the same removed behaviour.
+
+### Owning sockets
+
+`net.py` is now the only module permitted to open one, with retries on `tenacity` and upstream's own
+`attempt_floor` stop so one deployment variable tunes our persistence and theirs together.
+`JMC_LITERATURE_SOURCES` is a policy ceiling shaped like the offline one — a per-call `sources`
+narrows it and can never widen it.
+
 ## Unreleased
 
 ### Adopted the house ruleset (2026-08-11)

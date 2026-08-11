@@ -17,9 +17,9 @@ dependencies = [
     "pydantic-settings>=2",
     "typer>=0.16",
     "anyio>=4",
-    "just-dna-compiler>=0.5.2",
+    "just-dna-compiler>=0.5.3",
     "just-dna-format>=0.5.0",
-    "just-dna-enricher>=0.5.2",
+    "just-dna-enricher>=0.5.3",
     "just-dna-registry>=0.9.1",
     "python-dotenv>=1.2.2",
     # Declared, not leaned on transitively: net.py calls httpx directly for the

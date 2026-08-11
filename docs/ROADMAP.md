@@ -6,46 +6,6 @@ deleted, only relocated.
 
 ---
 
-## RM1 — the drafting path is unwrapped, so the authoring loop has a hole in the middle
-
-**Severity:** high · **Status:** open · **Owner:** unassigned
-
-`draft-panel` (ClinVar → `variants.csv` + `studies.csv`), `draft` (CPIC → the
-three PGx tables) and `draft-clinpgx` are CLI-only. They are the step between
-"scaffold" and "curate", so an agent following the skill has to leave the tool
-surface exactly once, in the middle, and come back.
-
-This is the capability gap dogfooding is supposed to surface rather than route
-around, and it is recorded as **F1** in [dogfooding.md](dogfooding.md).
-
-**Correction (2026-08-11):** this item used to say wrapping was hard because
-`draft` refuses and lists the choices when a `(phenotype, drug)` pair spans
-several populations. Upstream removed that in 0.5.1 — `DiplotypeRow.clinical_context`
-keeps the settings as distinct rows and the consumer picks at query time, so
-`population` is now a plain filter and an unknown value is an ordinary error.
-
-What does still constrain the wrapper is licensing. The `--use` gate must be an
-explicit required argument, never defaulted: `unstated` would silently skip
-sources, and anything else would assert a licence position the user never took.
-When `declared_use` fails a source's terms upstream returns `skipped=True` and
-fetches nothing — an acquisition-time refusal, because taking the data is what
-accepts the terms — so `skipped` must stay a first-class field rather than
-collapsing into a failure, which would invite retrying with a different `use`.
-
-## RM2 — the fact passes are unwrapped
-
-**Severity:** medium · **Status:** open · **Owner:** unassigned
-
-`frequencies`, `gene-metrics`, `dosage` and `literature` each produce a sidecar
-the compile gate reads. `enrich_module` is wrapped and they are not, so the
-`sources.csv` a module needs is easy to end up without — and a missing row there
-is a warning, not an error, so it ships unnoticed.
-
-Wrapping them wants the same background-task treatment as `enrich_module`
-(gnomAD paces at roughly one batch per six seconds) and the same
-delete-to-regenerate warning in the result, since an existing sidecar is merged
-rather than clobbered.
-
 ## RM3 — signing is unwrapped, and the key handling is the reason to be careful
 
 **Severity:** low · **Status:** open · **Owner:** unassigned
@@ -70,21 +30,43 @@ The shape that fits is a marked, opt-in integration run plus a dogfooding probe
 that authors a small real module all the way through — which would also exercise
 RM1's gap from the inside.
 
-## RM5 — `lint_rows` promises refusals it does not currently produce
+## RM6 — Semantic Scholar and arXiv are unreachable from this host, so two parsers are untested
 
-**Severity:** low · **Status:** open · **Owner:** unassigned
+**Severity:** medium · **Status:** open · **Owner:** unassigned
 
-`LintResult.alterations` is documented as carrying "refusals you must act on
-yourself", and that is true of `lookup_variant`. On `lint_rows`, upstream's
-`inspect_rows` reports the redundancy-bearing columns as `info`-level *findings*
-and returns no refused alterations, so the field is reliably empty and the
-docstring over-promises.
+Both services return HTTP 429 to this machine's IP regardless of user-agent or
+pacing — arXiv on a first request, with no prior traffic. So neither has a
+captured payload under `assets/literature/`, and `parse_semantic_scholar` and
+`parse_arxiv` are exercised only by the network-marked suite that does not yet
+exist (RM4).
 
-Either narrow the docstring to what the tool actually returns, or surface the
-`info` findings under a name that matches the promise. Recorded as **F2** in
-[dogfooding.md](dogfooding.md).
+The tools behave correctly under the block — `results=null`, `rate_limited=true`,
+and a warning that those sources are *unchecked* rather than empty — which is the
+design working. But a parser with no test is a parser that will break silently
+when the API shape moves.
 
----
+Two ways out, and they are not exclusive: capture the fixtures from a host that
+is not blocked, or set `S2_API_KEY` (Semantic Scholar's keyed pool is not the one
+being throttled) and capture at least that half.
+
+## RM7 — the literature sources have no `sources.csv` terms, upstream or here
+
+**Severity:** medium · **Status:** open · **Owner:** unassigned · **Blocked upstream**
+
+`enrich_literature` writes `source="pubmed"` into `literature.csv` and
+`TERMS_BY_SOURCE` has no `pubmed`, so **every literature-enriched module already
+warns** about a source the enricher itself introduced — and it is a warning, not
+an error. Our tools add `europepmc`, `crossref`, `unpaywall`, `semanticscholar`
+and `preprints` to the same gap.
+
+We report it (`SourceLicenseNote` on every literature result) and refuse to fill
+it, because `licensing.py` says the enricher is the only tier permitted to hold a
+source convention, and because a fabricated licence string is worse than a
+missing warning.
+
+Filed upstream as `S10`, where the substantive point is that **a literature
+source's terms are per-article, not per-source** — so a single `pubmed` row would
+be wrong for any module quoting a CC-BY-NC article. Recorded here as **F8**.
 
 ## Idea book
 

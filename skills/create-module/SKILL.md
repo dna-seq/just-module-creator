@@ -399,6 +399,16 @@ when `resolution.csv` covers the variant — these tables are materialized verba
 CSV. A consumer joins them on `rsid` + `genotype`, so expect no matches from a VCF whose `ID` column
 is empty.
 
+`validate` and `compile` now say so per table, and the second number is the one to read:
+
+> *"pharm_variants.csv: 1 of 1 row(s) have no chrom+start, so this table joins by rsID only … **resolution.csv can place 1 of them**, and the compiler applies that table to variants.csv only."*
+
+"`resolution.csv` can place N of them" separates **this module was never enriched** — go and enrich —
+from **the coordinates exist and this tier does not apply them** — nothing you can do in the data,
+and inventing the coordinate yourself would author a value the compiler did not derive. It is a
+warning in both modes and never a strict error, deliberately: rsid-only identity is legal, and the
+remedy is a compiler change rather than an authored edit.
+
 ### resolution.csv — produced, committed, never hand-edited
 
 `enrich` writes one row per resolved locus: `variant_key, rsid, chrom, start, ref, alts,
