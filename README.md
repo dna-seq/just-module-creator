@@ -52,7 +52,7 @@ server with `uv run --project ${CLAUDE_PLUGIN_ROOT}`, so dependencies install on
 
 ```bash
 uv sync
-uv run pytest                                  # 81 tests, in-memory and offline
+uv run pytest                                  # in-memory and offline; no test can reach the network
 uv run just-module-creator stdio               # run over stdio
 uv run just-module-creator stdio --mode extended
 uv run fastmcp dev fastmcp.json                # MCP Inspector
@@ -137,10 +137,56 @@ allele filter on exactly the rsIDs that need it.
 `JMC_MODE` (env) or `--mode` (CLI), default `essentials`. The line is **what a tool does, not how
 useful it is**:
 
-- `essentials` — everything that only *reads*, plus the ClinVar draft. Small on purpose: fewer tools
-  is less context pollution, and this tier can still take a variants module from nothing to compiled.
-- `extended` — everything that writes into a spec directory or fetches at scale: the PGx drafters,
-  enrichment, the fact passes, integrity, round-trip and registry reads.
+- `essentials` — the authoring loop, plus the read-only lookups and the ClinVar draft. Small on
+  purpose: fewer tools is less context pollution, and this tier takes a variants module from nothing
+  to compiled and published.
+- `extended` — the PGx drafters, enrichment, the fact passes, deep literature reads, integrity,
+  round-trip and registry downloads.
+
+### Switching mode
+
+Where you set it depends on how the server was started, and **the three ways do not fall back to
+each other**:
+
+| Started as | Switch by |
+|---|---|
+| plugin (`/plugin install`, `--plugin-dir`) | edit `JMC_MODE` in `.claude-plugin/plugin.json` → reconnect |
+| project MCP server (`.mcp.json` in a checkout) | edit `JMC_MODE` in that file → reconnect |
+| standalone CLI | `uv run just-module-creator stdio --mode extended`, or `JMC_MODE` in the shell or `.env` |
+
+**Editing `.env` cannot switch a plugin-launched server.** `plugin.json` sets `JMC_MODE` in the
+server's `env` block, so it is already exported in the subprocess before any code runs, and `.env` is
+loaded with `override=False` — an exported variable wins deliberately, so the file is read and then
+ignored for that key. Nothing warns you; the tool list simply does not change. Same for `.mcp.json`.
+`JMC_MODE` is the only setting this bites, because it is the only one those files pin.
+
+To confirm which tier is actually live rather than which one you configured, ask for a tool that
+exists in one and not the other — `enrich_module` is present only in extended.
+
+## Reloading after a change
+
+The plugin runs the server from the checkout (`uv run --project ${CLAUDE_PLUGIN_ROOT}`), so a Python
+edit needs the **subprocess restarted, not a reinstall**. What restarts it is the part that surprises
+people:
+
+| Action | Restarts the MCP server? |
+|---|---|
+| `/reload-plugins` | **No.** Skills and manifests reload; a running stdio server keeps serving its old tool list. |
+| `/mcp` → reconnect the server | **Yes.** This is the one to use after editing Python. |
+| Restarting Claude Code | Yes. |
+
+`/reload-plugins` was verified not to re-exec the server by comparing process start times against the
+commit time: no new process appeared and the old tool list survived. Stale servers **accumulate**
+rather than being replaced, so if tool behaviour looks like a version you no longer have on disk,
+check for leftover processes:
+
+```bash
+pgrep -af just-module-creator
+```
+
+Editing `SKILL.md`, `references/*.md` or `plugin.json` is a *plugin* change, so `/reload-plugins` is
+the right lever there — but a `plugin.json` change to `JMC_MODE` also needs the reconnect, because
+that value is only read when the server process starts.
 
 ## Auth
 
