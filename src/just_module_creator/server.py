@@ -6,7 +6,9 @@ The hybrid registration pattern lives in ``build_server``:
 * ``register_research``   — always. Read-only lookups; no token, network-tier.
 * ``register_auth``       — always. The per-session ``authenticate`` tool.
 * ``register_registry``   — always listed, token enforced per call.
+* ``register_passes``     — always. draft_from_clinvar: step 2 of the workflow.
 * ``register_extended``   — ONLY when mode == "extended" (registered on start).
+* ``register_extended_passes`` — extended. PGx drafting and the fact passes.
 
 The server NEVER raises at startup for a missing token (see auth.py): authoring
 a module needs no registry account at all.
@@ -28,6 +30,7 @@ from just_module_creator.net import build_services
 from just_module_creator.settings import Mode, Settings
 from just_module_creator.tools.advanced import register_extended
 from just_module_creator.tools.authoring import register_essentials
+from just_module_creator.tools.passes import register_extended_passes, register_passes
 from just_module_creator.tools.registry import register_registry
 from just_module_creator.tools.research import register_research
 
@@ -87,8 +90,10 @@ def build_server(mode: Mode | None = None, settings: Settings | None = None) -> 
     register_research(mcp, settings, services)
     register_auth(mcp, settings, store)
     register_registry(mcp, settings, store)
+    register_passes(mcp, settings, services)
     if resolved_mode == "extended":
         register_extended(mcp, settings, services)
+        register_extended_passes(mcp, settings, services)
 
     log.info(
         "Server built (mode=%s, offline=%s, registry=%s)",

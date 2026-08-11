@@ -551,3 +551,118 @@ class RegistrySearchResult(BaseModel):
     page: int = Field(description="1-based page number.")
     modules: list[RegistryModule] = Field(description="This page of results.")
     registry_url: str = Field(description="Which registry answered.")
+
+
+# --------------------------------------------------------------------------- #
+# Drafting and the fact passes
+# --------------------------------------------------------------------------- #
+class DraftedTable(BaseModel):
+    """What a drafter did to one CSV. The four statuses are load-bearing."""
+
+    csv: str = Field(description="The table kind written.")
+    added: int = Field(description="Rows newly written.")
+    already_present: int = Field(description="Rows the source proposed that you already had.")
+    differs: int = Field(
+        description=(
+            "Rows where the source DISAGREES with what you authored — **left unchanged and "
+            "reported**. Report, never repair: rewriting your value would destroy the evidence "
+            "that the source and you disagree, and only you know which is right."
+        )
+    )
+    invalid: int = Field(description="Rows the source proposed that failed validation.")
+    differences: list[str] = Field(
+        default_factory=list, description="Column-level detail for the `differs` rows."
+    )
+    shifted: int = Field(
+        default=0,
+        description=(
+            "Existing rows whose line NUMBER moved because a new row landed in their group. "
+            "Their cells are byte-identical — this explains a digest change that is not a "
+            "content change."
+        ),
+    )
+    written: bool = Field(description="False on a dry run.")
+
+
+class DraftResult(BaseModel):
+    """Outcome of drafting from a published source."""
+
+    spec_dir: str = Field(description="The spec directory.")
+    source: str = Field(description="clinvar | cpic | clinpgx.")
+    declared_use: str = Field(description="The licence position you declared.")
+    skipped: bool = Field(
+        description=(
+            "**True means nothing was fetched, because your `use` does not satisfy the source's "
+            "terms.** This is the gate working, not a failure — do NOT retry with a different "
+            "`use` to make it pass. That would be asserting a licence position to get data."
+        )
+    )
+    tables: list[DraftedTable] = Field(default_factory=list, description="Per-CSV outcome.")
+    warnings: list[str] = Field(default_factory=list, description="Including the refusal reason.")
+    dry_run: bool = Field(description="Whether this was a preview.")
+    next_step: str = Field(description="What to do now.")
+
+
+class LiteratureReport(BaseModel):
+    """Outcome of the literature pass — the `literature.csv` pin."""
+
+    success: bool = Field(description="Whether the pass completed.")
+    spec_dir: str = Field(description="The spec directory.")
+    mode: str = Field(description="strict | best_effort.")
+    rows: int = Field(description="Rows in literature.csv after the merge.")
+    missing: list[str] = Field(
+        default_factory=list, description="PMIDs that did not resolve. Do not ship these."
+    )
+    doi_conflicts: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Your authored DOI disagrees with the registry's for this PMID. Reported, never "
+            "rewritten: one of the two citations is the wrong paper and only you know which."
+        ),
+    )
+    quotes_authored: int = Field(default=0, description="provenance_quote cells you wrote.")
+    quotes_found: int = Field(default=0, description="Of those, located in retrievable text.")
+    quotes_unchecked: int = Field(
+        default=0,
+        description="**Not failures** — nothing retrievable to check them against.",
+    )
+    coverage: str = Field(default="", description="Upstream's own prose summary.")
+    skipped_offline: bool = Field(
+        default=False,
+        description=(
+            "True means the pass did NOTHING. There is no offline literature snapshot and there "
+            "will not be one; any existing literature.csv remains the pin."
+        ),
+    )
+    warnings: list[str] = Field(default_factory=list, description="Advisory notes.")
+    note: str = Field(default="", description="How to regenerate.")
+
+
+class FactPassReport(BaseModel):
+    """Outcome of one or more sidecar fact passes."""
+
+    success: bool = Field(description="Whether every requested pass completed.")
+    spec_dir: str = Field(description="The spec directory.")
+    passes_run: list[str] = Field(description="Which passes actually ran.")
+    rows_written: dict[str, int] = Field(
+        default_factory=dict, description="pass -> rows in its sidecar after the merge."
+    )
+    covered: dict[str, list[str]] = Field(
+        default_factory=dict, description="pass -> what it found."
+    )
+    missing: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description="pass -> what it could not cover. Absence here is not proof of absence.",
+    )
+    declared_use_applied_to: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Which passes consumed `use`. Only `dosage` reads a licence-bearing source; the "
+            "others take none, so `use` is silently irrelevant to them — named rather than hidden."
+        ),
+    )
+    skipped_offline: list[str] = Field(
+        default_factory=list, description="Passes that did nothing because the network was off."
+    )
+    warnings: list[str] = Field(default_factory=list, description="Advisory notes.")
+    note: str = Field(default="", description="How to regenerate.")
