@@ -108,6 +108,18 @@ For a first module prefix the module name as well as the namespace — the opera
 purge sweep matches both halves, so `test_x` under `test-ns` cleans itself up where
 a bare `x` is litter the author must remember to delete.
 
+That default is against ASSUMING, not against advocating. When the catalog is
+genuinely missing a module — `registry_search` reads prod, so ask it rather than
+guessing — and yours clears every bar (strict validate and strict compile,
+fully_resolved, produced not authored resolution.csv, every PMID from a search
+result whose title you read, a declared licence, no state or direction settled by
+guessing, a rehearsal read back, and enough breadth to be worth an immutable
+version), then raise production yourself, with the search result and the checks as
+evidence. Underrepresented is necessary and nowhere near sufficient: an honest
+module and a module worth an immutable 1.0.0 are different standards, and a stub
+occupies the search result a real module would have had. Advocating never skips the
+explicit yes on claim_namespace(target="prod") or publish(target="prod").
+
 Onboarding is self-service and needs no token to start: `registry_register` mints
 an account and stores its key for the session, `registry_namespace_available`
 checks a name, and `registry_claim_namespace` takes it — that last step is

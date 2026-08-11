@@ -590,6 +590,45 @@ module name inside a prefixed namespace is litter nobody sweeps, and a first-tim
 the person who will not come back to run `registry_delete_module`. Trade the last scrap of fidelity for
 a rehearsal that cleans up after itself.
 
+### And when it genuinely is good, say so — the default is against *assuming*, not against advocating
+
+The rule above stops you promoting a module because the author sounded keen. It is **not** a reason to
+sit on a good one: the catalog is thin, and a solid module nobody publishes helps nobody. So when
+**both** halves below are true, raise production yourself rather than waiting to be asked.
+
+**Half one — the catalog is actually missing it.** Not a guess; a call. `registry_search(gene=…)` and
+`registry_search(query=…)` default to production, so ask them. "Nothing covering this gene or trait" is
+a finding you can show the author. If something overlapping already exists, read it with
+`registry_get_module` — the honest options then are extending it or saying why yours differs, not
+publishing a near-duplicate.
+
+**Half two — the module clears every bar, and these are checks, not impressions:**
+
+- `validate_module(strict=True)` **and** `compile_module(strict=True)` both pass, with
+  `fully_resolved: true`.
+- Every weighted row has a coordinate, and `resolution.csv` was *produced*, not authored.
+- Every PMID came out of a `literature_search` result whose **title you read**, never from memory.
+- A licence is declared and `sources.csv` covers every source cited, with the flags honestly filled or
+  honestly blank.
+- **No row's `state` or `direction` was settled by guessing.** Having *dropped* rows for that reason is
+  evidence in favour, not against.
+- A polygon rehearsal was published and **read back**, and what came back was what you meant.
+- It is *enough module to be worth an immutable version* — breadth a consumer would install it for.
+
+**That last bar is the one that fails most often, and here is the worked case.** `assets/fto_bmi` passed
+every other item on this list — strict, fully resolved, VRS minted, one impeccable citation, honest
+blanks throughout — and `registry_search(gene="FTO")` returned **`total: 0`**, so the catalog genuinely
+had nothing. It was still right *not* to promote it: one locus, no declared licence, no readme, unsigned.
+**Underrepresented is necessary and nowhere near sufficient.** An honest module and a module worth
+spending an immutable `1.0.0` on are different standards, and conflating them is how a thin catalog
+becomes a catalog of stubs — which is worse, because a stub occupies the search result a real module
+would have had.
+
+When you do raise it, raise it as a recommendation with its evidence — the search result, the checks
+that passed, and what is still missing — and keep the explicit yes: this permission is to *advocate*,
+never to skip the confirmation on `registry_claim_namespace(target="prod")` or
+`registry_publish(target="prod")`.
+
 Nothing is shared between the two. Separate databases, so an account, a token and a namespace exist
 on one instance only, and promoting a rehearsal means **publishing again** with `target="prod"`.
 

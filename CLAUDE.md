@@ -594,6 +594,19 @@ preference: it goes into §10, in their words, with the reason.
   in `server.INSTRUCTIONS`, and it carries a corollary: prefix the **module** name
   as well as the namespace on a first rehearsal, because `purge-test-data` matches
   both halves and a first-timer will not come back to delete litter.
+- **"If you find the module is genuinely good and is underrepresented in official
+  catalog — suggest yourself."** Added 2026-08-11, immediately after the rule above
+  and as its deliberate counterweight: the polygon default is against *assuming*,
+  not against advocating, and a good module nobody publishes helps nobody. Written
+  against **checks rather than impressions**, because an agent asked whether its own
+  work is good will say yes — a prod `registry_search` showing the gap, plus strict
+  validate and compile, produced-not-authored resolution, every PMID from a search
+  result whose title was read, a declared licence, nothing guessed, and a rehearsal
+  read back. `assets/fto_bmi` is the calibration case *against*: it cleared all of
+  that and `registry_search(gene="FTO")` returned `total: 0`, and one locus with no
+  licence and no readme was still not worth an immutable `1.0.0`. **Underrepresented
+  is necessary and nowhere near sufficient** — a stub occupies the search result a
+  real module would have had.
 
 ## 11. Learned workspace facts
 

@@ -3,6 +3,40 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.5.2 — and when it genuinely is good, advocate (2026-08-11)
+
+The other half of 0.5.1, and shipped separately only because 0.5.1 was already tagged.
+0.5.1 on its own biases toward *under*-publishing: an agent told never to raise production
+unasked will also sit on a module that deserves it, and a good module nobody publishes helps
+nobody. So the default is now stated as being against **assuming**, not against **advocating**.
+
+The hard part is that "genuinely good" cannot be left to judgement — an agent asked whether
+its own work is good will say yes. So both halves are written as checks:
+
+- **The catalog is actually missing it** — `registry_search(gene=…)` / `registry_search(query=…)`
+  read production by default, so this is a call with a result you can show the author, not a
+  guess. An overlapping module means extend it or say why yours differs, never publish a
+  near-duplicate.
+- **The module clears every bar** — strict validate *and* strict compile, `fully_resolved`,
+  a `resolution.csv` that was produced rather than authored, every PMID from a
+  `literature_search` result whose title was read, a declared licence with `sources.csv`
+  covering every source, **no `state` or `direction` settled by guessing** (having dropped
+  rows for that reason counts in favour), a rehearsal published *and read back*, and enough
+  breadth to be worth an immutable version.
+
+**The last bar is the one that fails, and `assets/fto_bmi` is now the worked counter-example
+in the skill.** It cleared everything else — strict, fully resolved, VRS minted, one
+impeccable citation, honest blanks throughout — and `registry_search(gene="FTO")` returned
+`total: 0`, so the gap was real. It was still right not to promote: one locus, no declared
+licence, no readme, unsigned. **Underrepresented is necessary and nowhere near sufficient.**
+An honest module and a module worth an immutable `1.0.0` are different standards, and
+conflating them turns a thin catalog into a catalog of stubs — worse, because a stub occupies
+the search result a real module would have had.
+
+The permission is to *advocate*, with the search result and the passing checks as evidence.
+It never skips the explicit yes on `registry_claim_namespace(target="prod")` or
+`registry_publish(target="prod")`.
+
 ## 0.5.1 — the polygon is the default *answer*, not just the default argument (2026-08-11)
 
 Guidance only. No tool signature, vocabulary, artifact or digest change — but it changes
