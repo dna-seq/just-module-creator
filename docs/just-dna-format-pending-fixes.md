@@ -11,7 +11,11 @@ when we have mitigated it but upstream still owes the fix.
 compiler and enricher findings go to `../just-dna-format/docs/CONSUMER_SUGGESTIONS.md`;
 registry and pipelines findings go to `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`
 (a stale directory name — the project and package are `just-dna-registry`). Each
-keeps its own `S<n>` series. Check there before filing — a second consumer hitting a known
+keeps its own `S<n>` series. **Both intakes now work the same way**: the registry
+adopted the split inbox/history convention on 2026-08-11, so an answered `S<n>`
+moves to `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS_HISTORY.md` there too,
+and its next id comes from `.claude/triage-state.sh --next` in that repo (`S4` as
+of 2026-08-11, after ours). Check there before filing — a second consumer hitting a known
 one appends a corroboration rather than opening a new number. Write the note and
 stop; never commit in that repo.
 
@@ -19,8 +23,10 @@ stop; never commit in that repo.
 answered `S<n>` moves to `../just-dna-format/docs/CONSUMER_SUGGESTIONS_HISTORY.md`,
 whose index table carries the verdict and where the fix landed. Its inbox has been
 empty since 2026-08-11 — every one of `S1`–`S18` is answered — so an entry of ours
-that has vanished from it was replied to, not dropped. The registry's intake has no
-history file and works the other way: nothing has moved out of it.
+that has vanished from it was replied to, not dropped. The registry's intake gained
+the same two-file split on 2026-08-11; its history file exists but is still empty,
+because `S1` was answered in place and not yet archived. So there, for now, read the
+`**Status —**` paragraphs in the inbox itself.
 
 **Number a new one with `.claude/triage-state.sh --next`, never from what the inbox
 shows** — it is empty, ids are never reused, and the next is `S19`.
@@ -260,12 +266,26 @@ refused on a principle, not a schedule.
 
 **Filed upstream:** **S1** in `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`
 (2026-08-11 — the *registry's* intake, not the format tree's: the ceiling is
-server-side) · **Status: genuinely still open, re-checked 2026-08-11 — the only one
-in this file that is.**
+server-side) · **Status: ANSWERED and accepted the same day, fixed in the registry's
+tree for 0.13.0, and NOT released — PyPI's newest is 0.12.0 and the live production
+instance reports 0.12.0. So nothing has changed for our callers yet.**
 
-The registry's intake has no reply on it and **no history file**, so unlike the
-format tree, absence of movement there means nothing has been answered rather than
-that everything has. Do not read the two intakes the same way.
+Upstream took options 1 and 3 and deferred 2 with its reasoning:
+
+- **The ceiling no longer applies to `offline=true`** — the bound exists for gnomAD's
+  paced per-subject cost, and an offline run issues no request for it to bound. So
+  `check(..., offline=True)` is the answer for a panel, with no ceiling.
+- **`422 too_many_variants` now carries what it computed** — `subject_count`, `limit`,
+  the full validation report and `would_publish_module_level`.
+- **`/validate` gained `would_publish_module_level`**: validity under strict, the
+  name↔path match and the dedup claim, composed server-side. Deliberately *not*
+  called `would_publish`, because a skip must never produce a positive verdict — the
+  same argument as `None`-is-not-`False` here, one level up.
+
+Their reply also found something our report did not: the ceiling was checked *after*
+validation, so an **invalid** spec over the ceiling always returned 200 with a full
+report while a valid one was refused. The check was answering the specs that cannot
+publish and refusing the ones that can.
 
 `marketplace check` is the only surface that adds the network tier on top of
 `validate_spec` and reduces it to one branchable field. On a large module it
@@ -285,8 +305,13 @@ the idea-book entry is withdrawn and the ask is upstream.
 check declining rather than a verdict, and that `validate_module` is what decides
 publishability. That is true, and an author driving the CLI needs it.
 
-**Closes when** the module-level half answers regardless of variant count, or the
-error names the limit and the local substitute.
+**What is ours now.** We wrap neither `validate` nor `check` — the whole 0.10–0.13
+client surface is unwrapped, tracked as `RM8`. When we do, `would_publish_module_level`
+is the field to read, and it must be reported as "nothing module-level blocks this"
+rather than "this will publish", exactly as upstream named it.
+
+**Closes when** registry 0.13.0 is on PyPI and in our lockfile. The upstream half is
+done; verify by symbol against the *installed* package, not the sibling checkout.
 
 ## F14 — a ragged CSV row is misdiagnosed by `lint_rows`, on the wrong column and the wrong line
 
@@ -365,14 +390,52 @@ version stamp on the reference, we could not confirm the documented schema appli
 to the client we run. Tightening either one now would be hardcoding a payload shape
 on a guess, which is the same bet written into our repo.
 
-**Also unresolved, and consumer-facing:** 0.12.0's notes name production as
-`module-marketplace.just-dna.life` and the polygon as `module-polygon.just-dna.life`,
-while we publish against `module-registry.just-dna.life` — where a `test-`prefixed
-namespace claim succeeded, though production is documented to refuse one with
-`422 test_data_on_prod`. Alias, third deployment, or docs ahead of DNS is unknown.
-Do not "fix" our `DEFAULT_REGISTRY_URL` on the strength of a release note; it works,
-and which host is which is part of what S2 asks to have stated.
+**The host half of this was measured on 2026-08-11 and is now known**, which is worth
+recording because the answer was three different things at once:
+
+- `module-registry.just-dna.life` — production, `{"status":"ok","version":"0.12.0"}`.
+  Our `DEFAULT_REGISTRY_URL`, unchanged.
+- `module-marketplace.just-dna.life` — answers identically. An alias of the same
+  deployment, not a third instance.
+- `module-polygon.just-dna.life` — resolves to the *same* A record (57.128.215.86)
+  and terminates TLS, but `/health` answers a bare Caddy `404`: DNS'd and fronted,
+  app not yet behind it. We ship it as `DEFAULT_POLYGON_URL` anyway so it starts
+  working the day it comes up, and a `target="test"` call fails saying the polygon
+  did not answer.
+
+The `test-modules` claim that succeeded on production predates the 0.12.0 deployment.
+The namespace still exists and is now a dead end: production refuses to publish into
+a `test-`prefixed namespace, so it cannot be used for what it was claimed for.
 
 **Closes when** the client surface is enumerated as its own contract — a document, a
 declared boundary in the client, or per-release "client surface: unchanged/changed"
 — and the reference docs say which versions they are normative for.
+
+## F16 — nothing over the wire reports a registry instance's mode, so "am I on the polygon?" is unanswerable
+
+**Found:** 2026-08-11, adopting the registry's test/prod split ·
+**Filed upstream:** **S3** in `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`
+· **Status: filed the day it was found; unanswered as of writing.**
+
+Registry 0.12 runs two deployments of one image, and `REGISTRY_MODE` decides which
+refuses test data and which mounts the DELETE verbs. No endpoint reports it:
+`/health` gives `{status, version, storage}` and `/api/v1/version` gives the contract
+versions. The only inference available is fetching `openapi.json` and testing whether
+the DELETE paths are mounted — deducing a deployment's identity from its route table,
+which is right until the next refactor.
+
+`RegistryClient.delete_version` says it outright: *"a client cannot know a host's mode
+before asking"*, and lets the 405 answer. For a delete that is a safe failure. The two
+that matter are not: a publish aimed at the polygon that lands on production
+**succeeds** and cannot be undone, and the reverse — believing you published for real
+while on the polygon — looks identical in every response.
+
+**What is ours, and stays ours:** `targets.py` resolves a URL per target from our own
+configuration and records the target in the `published.json` receipt, so our record of
+which instance answered is at least internally consistent. We deliberately do **not**
+probe `openapi.json` to verify a host's mode: that would make this repo a second source
+of truth for something only the server knows, and it would be a guess wearing a check's
+clothing — the exact shape `F11` was withdrawn for.
+
+**Closes when** an instance reports its mode over the API, at which point the target
+argument can be *verified* rather than merely declared.

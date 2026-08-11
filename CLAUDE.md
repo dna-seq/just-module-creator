@@ -645,7 +645,13 @@ preference: it goes into §10, in their words, with the reason.
   the installed `just_dna_compiler.hints`. So every mitigation for `S11`, `S12`,
   `S15`, `S16`, `S17`, `S18` stays until 0.5.4 is on PyPI. `hints.py` lives in the
   **compiler**, not the enricher, which is easy to get wrong when grepping.
-- The registry's own intake has **no history file** and, as of 2026-08-11, one
-  unanswered entry (`S1`, the `would_publish` variant ceiling = our `F11`). The two
-  intakes therefore behave differently: absence from the format tree's inbox means
-  answered, absence there would mean nothing of the sort.
+- **The registry's intake adopted the same split as the format tree on 2026-08-11**:
+  it now has `CONSUMER_SUGGESTIONS_HISTORY.md`, a `CONSUMER_TRIAGE_LOOP.md` runbook
+  and a `.claude/triage-state.sh --next`. Read both intakes the same way now — but
+  its history file is still *empty*, because `S1` was answered in place and not yet
+  archived, so check the `**Status —**` paragraphs in the inbox as well.
+- Ours there: `S1` (the `would_publish` ceiling = `F11`) — **answered and accepted
+  the same day, fixed in their tree for 0.13.0, unreleased**; `S2` (no enumerated
+  client-surface contract = `F15`) — open; `S3` (no endpoint reports an instance's
+  mode = `F16`) — filed 2026-08-11, open. Next id is `S4`; compute it, never read it
+  off the inbox.

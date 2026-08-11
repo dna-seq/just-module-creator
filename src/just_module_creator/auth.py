@@ -6,11 +6,18 @@ Design goals (multi-user safe):
   a module needs no registry account at all; only publishing does.
 * A token is resolved PER REQUEST, never stored in a server-global mutable
   field. Resolution precedence:
-    1. per-request HTTP header (``settings.api_key_header``)  -> multi-user safe
-    2. per-session store keyed by ``ctx.session_id`` (set via ``authenticate``)
-    3. ``JMC_API_KEY`` env, else ``REGISTRY_TOKEN`` (single-tenant / local)
+    1. per-request HTTP header (``settings.api_key_header_for(target)``) -> multi-user safe
+    2. per-session store keyed by ``(ctx.session_id, target)`` (set via ``authenticate``)
+    3. ``JMC_API_KEY`` / ``JMC_TEST_API_KEY`` env, else ``REGISTRY_TOKEN`` /
+       ``REGISTRY_TEST_TOKEN`` (single-tenant / local)
 * ``authenticate`` writes ONLY into the caller's own session slot, so one HTTP
   client can never read or clobber another client's token.
+
+**Every credential is scoped to one instance.** Production and the polygon keep
+separate databases, so an account minted on one does not exist on the other and a
+token is only ever a credential for the instance that issued it. Nothing here
+falls back from one to the other: a missing polygon token means "register on the
+polygon", not "try the production key and see".
 
 Anti-pattern (documented, off by default): ``mcp.enable(tags=...)`` to "unlock"
 gated tools is SERVER-GLOBAL — it would expose tools to every connected client.
@@ -34,56 +41,86 @@ from mcp.types import ToolAnnotations
 
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import AuthResult, OpResult, RegistrationResult
-from just_module_creator.settings import Settings
+from just_module_creator.settings import RegistryTarget, Settings
+from just_module_creator.targets import (
+    DEFAULT_WRITE_TARGET,
+    TEST_NAMESPACE_PREFIX,
+    describe,
+    is_test_namespace,
+)
 
 log = get_logger()
 
 # Tools tagged with this are token-gated.
 GATED_TAG = "registry_write"
-GATED_TOOLS = ["registry_whoami", "registry_publish", "registry_claim_namespace"]
+GATED_TOOLS = [
+    "registry_whoami",
+    "registry_publish",
+    "registry_claim_namespace",
+    "registry_delete_version",
+    "registry_delete_module",
+]
 
 
 class SessionKeyStore:
-    """Per-session registry tokens. The ONLY auth state — no shared/global token."""
+    """Per-session, per-instance registry tokens. The ONLY auth state.
+
+    Keyed by ``(session, target)`` rather than by session alone: one author can
+    hold an account on production and another on the polygon, and the two keys
+    are not interchangeable. A single slot would have the second
+    ``authenticate`` silently retarget the first.
+    """
 
     def __init__(self) -> None:
-        self._keys: dict[str, str] = {}
+        self._keys: dict[tuple[str, str], str] = {}
 
     @staticmethod
     def _sid(ctx: Context | None) -> str:
         sid = getattr(ctx, "session_id", None) if ctx else None
         return sid or "__local__"
 
-    def set(self, ctx: Context | None, key: str) -> None:
-        self._keys[self._sid(ctx)] = key
+    def set(self, ctx: Context | None, key: str, target: RegistryTarget) -> None:
+        self._keys[(self._sid(ctx), target)] = key
 
-    def get(self, ctx: Context | None) -> str | None:
-        return self._keys.get(self._sid(ctx))
+    def get(self, ctx: Context | None, target: RegistryTarget) -> str | None:
+        return self._keys.get((self._sid(ctx), target))
 
 
-def _header_key(settings: Settings) -> str | None:
-    """Read the token from the current HTTP request header, if any."""
+def _header_key(settings: Settings, target: RegistryTarget) -> str | None:
+    """Read the token for ``target`` from the current HTTP request header, if any."""
     try:
         from fastmcp.server.dependencies import get_http_request
 
         request = get_http_request()
     except Exception:
         return None  # not an HTTP request (stdio / in-memory)
-    return request.headers.get(settings.api_key_header)
+    return request.headers.get(settings.api_key_header_for(target))
 
 
-def resolve_api_key(ctx: Context | None, settings: Settings, store: SessionKeyStore) -> str | None:
-    """Resolve the registry token for THIS request (see module docstring)."""
-    return _header_key(settings) or store.get(ctx) or settings.registry_token()
+def resolve_api_key(
+    ctx: Context | None,
+    settings: Settings,
+    store: SessionKeyStore,
+    target: RegistryTarget,
+) -> str | None:
+    """Resolve the registry token for THIS request and THIS instance."""
+    return (
+        _header_key(settings, target) or store.get(ctx, target) or settings.registry_token(target)
+    )
 
 
-def require_key(ctx: Context | None, settings: Settings, store: SessionKeyStore) -> str | None:
+def require_key(
+    ctx: Context | None,
+    settings: Settings,
+    store: SessionKeyStore,
+    target: RegistryTarget,
+) -> str | None:
     """Return the resolved token, or ``None`` if the caller must authenticate.
 
     Gated tools use this and return a friendly ``OpResult`` on ``None`` rather
     than raising, so agents get an actionable message.
     """
-    return resolve_api_key(ctx, settings, store)
+    return resolve_api_key(ctx, settings, store, target)
 
 
 def resolve_install_id(explicit: str | None, settings: Settings) -> tuple[str | None, str]:
@@ -141,15 +178,23 @@ def _registration_failure(exc: RegistryError, *, account: str, origin: str) -> s
     return f"The registry refused the registration: {exc}"
 
 
-def unauthenticated_result(settings: Settings) -> OpResult:
+def unauthenticated_result(settings: Settings, target: RegistryTarget = "prod") -> OpResult:
+    env_var = (
+        "JMC_TEST_API_KEY / REGISTRY_TEST_TOKEN"
+        if target == "test"
+        else ("JMC_API_KEY / REGISTRY_TOKEN")
+    )
     return OpResult(
         success=False,
         message=(
-            "This tool needs a registry token. Call `authenticate` with a token for "
-            f"this session, send the `{settings.api_key_header}` header (HTTP), or set "
-            "JMC_API_KEY / REGISTRY_TOKEN in the environment. Authoring, validating "
-            "and compiling a module need no token — only registry writes do."
+            f"This tool needs a registry token for {describe(target, settings)}, and none was "
+            f"found. Call `authenticate(token, target={target!r})` for this session, send the "
+            f"`{settings.api_key_header_for(target)}` header (HTTP), or set {env_var} in the "
+            "environment. A token is issued by one instance and is not valid on the other, so a "
+            "key you already hold for the other one will not do — `registry_register` mints one "
+            "per instance. Authoring, validating and compiling a module need no token at all."
         ),
+        data={"target": target, "registry_url": settings.registry_url_for(target)},
     )
 
 
@@ -169,6 +214,7 @@ def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> N
     )
     async def registry_register(
         account: str,
+        target: RegistryTarget = DEFAULT_WRITE_TARGET,
         install_id: str | None = None,
         difficulty: int | None = None,
         ctx: Context | None = None,
@@ -179,27 +225,43 @@ def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> N
         gate is an install-id, a proof-of-work string ground locally in about a
         second. Omit `install_id` and one is ground for you.
 
+        **`target` picks the instance, and defaults to the polygon.** The two
+        keep separate databases, so registering is per instance: an account on
+        the polygon does not exist in production and its token is not a
+        production credential. Register on both — the same install-id may be
+        reused, and reusing it is what keeps the two accounts recognisably
+        yours.
+
         **Save the install-id this returns.** It is the account's only recovery
         path. Re-registering the SAME install-id reissues a key for the SAME
         account and ignores the `account` argument; calling again WITHOUT one
         grinds a fresh id, which is a different account, and the first account
         becomes unreachable if you did not keep its id. Put it in `.env` as
-        `JMC_INSTALL_ID`, and the token as `JMC_API_KEY`.
+        `JMC_INSTALL_ID`, and the tokens as `JMC_API_KEY` (production) and
+        `JMC_TEST_API_KEY` (polygon).
 
         `account` obeys the namespace rule — lowercase letters and digits with
         single hyphens. Underscores are rejected, not normalised. Note that
-        *module* names are the opposite convention and take underscores.
+        *module* names are the opposite convention and take underscores. A
+        `test-` handle is fine on the polygon and refused by production.
 
-        The token is stored for this session, so `authenticate` is not needed
-        afterwards. Claiming a namespace is a separate, irreversible step: check
-        it with `registry_namespace_available` first, then
-        `registry_claim_namespace`.
+        The token is stored for this session against this target, so
+        `authenticate` is not needed afterwards. Claiming a namespace is a
+        separate, irreversible step: check it with
+        `registry_namespace_available` first, then `registry_claim_namespace`.
         """
         if settings.offline:
             raise ToolError(
                 "The server is configured offline (JMC_OFFLINE), so the registry cannot be reached."
             )
 
+        # No local test-prefix refusal here, deliberately: production's own
+        # `test_data_refusal` guards the namespace claim, the publish and the
+        # `issue-key` CLI, and NOT the self-register route — a `test-` handle is
+        # accepted there today. Refusing it locally would invent a rule the
+        # server does not have. The consequence is reported after the fact
+        # instead, where it is true: the handle registers, its namespaces will
+        # not.
         if not is_valid_namespace(account):
             raise ToolError(
                 f"{account!r} is not a legal account name. Accounts obey the same rule as "
@@ -217,21 +279,24 @@ def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> N
                 lambda: generate_install_id(difficulty) if difficulty else generate_install_id()
             )
 
+        url = settings.registry_url_for(target)
+
         def _register() -> dict:
-            with RegistryClient(settings.registry_url, timeout=settings.registry_timeout) as client:
+            with RegistryClient(url, timeout=settings.registry_timeout) as client:
                 return client.register(resolved, account)
 
         try:
             payload = await run_sync(_register)
         except RegistryError as exc:
-            log.warning("Registration of %s failed: %s", account, exc)
+            log.warning("Registration of %s on %s failed: %s", account, target, exc)
             return RegistrationResult(
                 registered=False,
                 # Returned even on failure: it cost CPU to grind and is worth
                 # retrying with rather than replacing.
                 install_id=resolved,
                 install_id_origin=origin,
-                registry_url=settings.registry_url,
+                target=target,
+                registry_url=url,
                 message=_registration_failure(exc, account=account, origin=origin),
             )
 
@@ -240,27 +305,41 @@ def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> N
         namespaces = [str(n) for n in (payload.get("namespaces") or [])]
 
         if token:
-            store.set(ctx, token)
+            store.set(ctx, token, target)
         # The token is a secret and never reaches the log.
         log.info(
-            "Registered account %s (install-id origin=%s, namespaces=%d)",
+            "Registered account %s on %s (install-id origin=%s, namespaces=%d)",
             granted,
+            target,
             origin,
             len(namespaces),
         )
 
-        notes = [f"Registered {granted!r} on {settings.registry_url}."]
+        notes = [f"Registered {granted!r} on {describe(target, settings)}."]
+        if target == "test":
+            notes.append(
+                "This is the polygon, so this account and its token exist only there. Publishing "
+                'for real needs a second registration with target="prod".'
+            )
+        elif is_test_namespace(granted):
+            notes.append(
+                f"Production accepted a {TEST_NAMESPACE_PREFIX!r} account handle — it refuses the "
+                "prefix on namespaces and module names, not on accounts — but it will refuse "
+                "every namespace you try to claim under that spelling."
+            )
         if granted != account:
             notes.append(
                 f"This is NOT the name you asked for: that install-id already belonged to "
                 f"{granted!r}, so the registry reissued a key for it and ignored {account!r}. No "
                 "new account was created."
             )
+        key_var = "JMC_TEST_API_KEY" if target == "test" else "JMC_API_KEY"
         notes.append(
-            "SAVE BOTH SECRETS in .env — JMC_API_KEY for the token, JMC_INSTALL_ID for the "
-            "install-id. The install-id is the only way back to this account."
+            f"SAVE BOTH SECRETS in .env — {key_var} for the token, JMC_INSTALL_ID for the "
+            "install-id. The install-id is the only way back to this account, and reusing it on "
+            "the other instance registers its counterpart there."
             if origin == "generated"
-            else "Token stored. The install-id is unchanged; keep it saved."
+            else f"Token stored; save it in .env as {key_var}. The install-id is unchanged."
         )
         notes.append(
             "The token is stored for this session, so registry tools work now without "
@@ -283,7 +362,8 @@ def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> N
             install_id=resolved,
             install_id_origin=origin,
             stored_for_session=bool(token),
-            registry_url=settings.registry_url,
+            target=target,
+            registry_url=url,
             message=" ".join(notes),
         )
 
@@ -295,7 +375,9 @@ def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> N
             destructiveHint=False,
         )
     )
-    def authenticate(token: str, ctx: Context) -> AuthResult:
+    def authenticate(
+        token: str, ctx: Context, target: RegistryTarget = DEFAULT_WRITE_TARGET
+    ) -> AuthResult:
         """Provide a registry token to unlock the registry write tools for THIS session.
 
         The token is stored only against your own session and is never shared
@@ -303,20 +385,30 @@ def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> N
         have an account yet, `registry_register` mints one and stores its token
         for you, so this call is unnecessary after it. No token is needed to
         author, validate or compile a module — only to publish one.
+
+        **A token belongs to one instance.** `target` says which, and defaults to
+        the polygon. The two registries keep separate databases, so storing a
+        production key against the polygon does not make it work there — it
+        makes the next polygon call fail as an unknown key. Authenticate twice,
+        once per instance, if you work with both.
         """
         # No format check: the registry issues the token and is the only thing
         # that can judge it. Inventing a prefix rule here would reject valid
         # tokens the moment upstream changes its issuer.
         if not token.strip():
             return AuthResult(authenticated=False, message="Empty token — nothing was stored.")
-        store.set(ctx, token.strip())
-        log.info("Session %s stored a registry token", SessionKeyStore._sid(ctx))
+        store.set(ctx, token.strip(), target)
+        log.info("Session %s stored a registry token for %s", SessionKeyStore._sid(ctx), target)
         return AuthResult(
             authenticated=True,
             unlocked_tools=GATED_TOOLS,
+            target=target,
+            registry_url=settings.registry_url_for(target),
             message=(
-                "Token stored for this session. Call `registry_whoami` to confirm the "
-                "registry accepts it — nothing here validated it."
+                f"Token stored for this session against {describe(target, settings)}. Call "
+                f"`registry_whoami(target={target!r})` to confirm that instance accepts it — "
+                "nothing here validated it, and a token for the other instance would look "
+                "identical until it is used."
             ),
         )
 

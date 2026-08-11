@@ -81,7 +81,8 @@ reach the one compiler flag that silently produces a module no VCF can match.
 | fill `literature.csv` | `enrich_literature_pass` | extended |
 | fill the frequency / constraint / dosage sidecars | `enrich_facts` | extended |
 | turn an artifact back into a spec, or download one | `reverse_module`, `registry_download` | extended |
-| publish | `authenticate` → `registry_whoami` → `registry_claim_namespace` → `registry_publish` | gated |
+| publish, or rehearse a publish | `authenticate` → `registry_whoami` → `registry_claim_namespace` → `registry_publish` | gated |
+| undo a rehearsal (polygon only) | `registry_delete_version`, `registry_delete_module` | gated |
 
 **The default tier runs this whole procedure.** Everything from scaffold to publish is essentials,
 including `enrich_module` — the tiers split on cost, and essentials is everything bounded by what you
@@ -90,6 +91,10 @@ sizes (a citation graph, a whole-source PGx draft, a pass that rewrites every ro
 somebody else's compiled artifact. Publishing needs a registry token; nothing else does — and
 `registry_register` mints one from inside the surface, so there is no step that sends you to another
 package's CLI.
+
+**Every registry tool takes a `target`: `"test"` is the polygon, where a publish is a rehearsal you
+can delete; `"prod"` is the published catalog.** Writes default to the polygon and catalog reads
+default to production — see step 7 before you publish anything.
 
 **Never ask a schema question from memory — ask the tool.** Column lists, vocabularies and
 requirements are generated from the live pydantic models, so `describe_table` /
@@ -141,7 +146,7 @@ carries `pharm_variants.csv` and **no** `variants.csv`.
 ## The order, and the one place deviating from it deadlocks
 
 ```
-scaffold ──▶ draft ──▶ curate ──▶ enrich ──▶ check ──▶ compile ──▶ publish
+scaffold ──▶ draft ──▶ curate ──▶ enrich ──▶ check ──▶ compile ──▶ rehearse ──▶ publish
              (if a          (only a
               source has it) human)
 ```
@@ -542,17 +547,57 @@ print(w.height, 'rows;', w.filter(pl.col('chrom').is_not_null()).height, 'with a
 
 `0 with a coordinate` means resolution did not reach the compile — see the two traps below.
 
-## 7 — Publish
+## 7 — Publish: rehearse on the polygon, then promote
+
+**There are two registries and every registry tool takes a `target`.**
+
+| | `target="test"` — the polygon | `target="prod"` — production |
+|---|---|---|
+| what it is | where a publish is a **rehearsal** | the catalog everyone installs from |
+| `test-`namespaces / `test_`module names | accepted | `422 test_data_on_prod`, at the claim as well as the publish |
+| deleting what you published | `registry_delete_version` / `registry_delete_module` | not possible — `yank` delists, and does **not** free the content claim |
+| default for writes | **yes** | only when you ask |
+| default for catalog reads | no | **yes** (`registry_search`, `registry_get_module`, `registry_download`) |
+
+Rehearse first, always. On production a version is immutable *and* its authored rows are claimed by
+a name-independent content hash that `yank` never releases — so one botched publish burns the
+version number **and** the right to publish that data under any other name, permanently. That is why
+the write tools default to the polygon: a forgotten `target` there costs nothing.
+
+Nothing is shared between the two. Separate databases, so an account, a token and a namespace exist
+on one instance only, and promoting a rehearsal means **publishing again** with `target="prod"`.
 
 ```
-registry_register(account="my-name")   # no account yet — mints a token, stores it for this session
-authenticate(token="…")                # OR: a token you already hold; nothing local validates it
-registry_whoami()                      # the first thing that actually checks the token
-registry_namespace_available("my-ns")  # legal? free? — read-only, no token
-registry_claim_namespace("my-ns")      # once, and it cannot be undone
+# --- rehearse (defaults; every `target="test"` below could be omitted) ---------
+registry_register(account="my-name", target="test")     # a polygon account + token, no prior token needed
+registry_namespace_available("test-my-ns", target="test")
+registry_claim_namespace("test-my-ns", target="test")
+registry_publish(namespace="test-my-ns", name="test_my_module", version="1.0.0",
+                 spec_dir="spec", changelog="…", target="test")
+# read what the server made of it, fix, then free the slot and go again:
+registry_get_module("test-my-ns", "test_my_module", target="test")
+registry_delete_version("test-my-ns", "test_my_module", "1.0.0", target="test")
+
+# --- promote ------------------------------------------------------------------
+registry_register(account="my-name", target="prod", install_id="…")  # the SAME install-id
+registry_whoami(target="prod")                          # the first thing that actually checks the token
+registry_namespace_available("my-ns", target="prod")    # legal? free? — read-only, no token
+registry_claim_namespace("my-ns", target="prod")        # once, and it cannot be undone
 registry_publish(namespace="my-ns", name="my_module", version="1.0.0",
-                 spec_dir="spec", changelog="…")
+                 spec_dir="spec", changelog="…", target="prod")
 ```
+
+**Rehearse under the name you will actually publish** when you can: an unprefixed name on the
+polygon is accepted, and it is the most faithful rehearsal there is. The one consequence is that the
+operator's `purge-test-data` sweep matches by prefix and will not collect it, so delete it yourself
+when you are done. A `test-`prefixed rehearsal is the tidier default and exercises everything except
+the exact name.
+
+**A polygon result is never evidence about production.** Its namespace table, its catalog and its
+duplicate-content rule are its own — the polygon scopes `duplicate_content` to the publishing
+account, so a rehearsal cannot prove that somebody *else's* identical data would be refused. And
+nothing in a registry response says which instance answered: check the `target` field this server
+puts on every registry result and in the `published.json` receipt.
 
 **Names split two ways and both rules are enforced, not normalised.** An account or namespace is
 lowercase letters and digits with single hyphens — `my_ns` is rejected outright. A *module* name is
@@ -563,10 +608,17 @@ because the registry will call an illegal name "available".
 
 `registry_register` needs no token — it makes one. Onboarding is self-service, gated only by a
 proof-of-work install-id ground locally in about a second. It hands back **two secrets that exist
-nowhere else**: the token, and the install-id. Save both in `.env` (`JMC_API_KEY`,
-`JMC_INSTALL_ID`). The install-id is the account's only recovery path — there is no email and no
-admin — so re-registering that same id reissues a key for the same account, while registering again
-without it creates a *different* account and leaves the first unreachable.
+nowhere else**: the token, and the install-id. Save them in `.env` — `JMC_INSTALL_ID`, plus
+`JMC_API_KEY` for the production token and `JMC_TEST_API_KEY` for the polygon one. The install-id is
+the account's only recovery path — there is no email and no admin — so re-registering that same id
+reissues a key for the same account, while registering again without it creates a *different*
+account and leaves the first unreachable.
+
+**Register on each instance with the same install-id.** They are separate accounts either way, but
+reusing the id is what keeps them recognisably yours and keeps one string to protect. A token is
+only ever a credential for the instance that issued it: presenting the production key to the polygon
+does not degrade gracefully, it fails as an unknown key, so nothing here falls back from one to the
+other.
 
 The **account name is not a secret and needs no saving**: `registry_whoami` reports it from the
 token, and re-registering with the same install-id returns the account that id already owns and
@@ -606,6 +658,7 @@ content. Write the changelog as a continuation of the previous one, not a fresh 
 - [ ] `module.version` is a quoted SemVer string
 - [ ] a second **compile** of the untouched spec reproduces the same `artifact_digest` (a
       re-**draft** will not — see below)
+- [ ] published to the polygon (`target="test"`) at least once, and what came back was read
 
 ---
 

@@ -826,7 +826,7 @@ wheels = [
 
 [[package]]
 name = "just-dna-registry"
-version = "0.9.1"
+version = "0.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -834,14 +834,14 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5a/07/560967e761aa14c11f7e5bb0b40f7098fb70f1423f388c8a4acfbd1734a8/just_dna_registry-0.9.1.tar.gz", hash = "sha256:e3622f1fa0a708974c3c9223398d8283a0e34a986fbc265c4fe4496b39733da3", size = 64612, upload-time = "2026-07-09T22:20:04.491Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/22/23/00e1b0bbed046bf8c0338f7839eccc94dbaa412a950cfbc85ff6c3d1a3fb/just_dna_registry-0.12.0.tar.gz", hash = "sha256:df9089c435a16347b587317cc05cf4a37b9d81629a5a3ee6c47a4b1f757e6de5", size = 162128, upload-time = "2026-08-11T17:02:16.098Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/13/c9/a812e1b8f4d5d84dd29b4f300790e25913d87b85d3d6dd3d844fa182f1d4/just_dna_registry-0.9.1-py3-none-any.whl", hash = "sha256:c6551c3b65a3c9dc20948fbd0de927544573459dffc4055ab355d474a0a626a4", size = 84279, upload-time = "2026-07-09T22:20:06.028Z" },
+    { url = "https://files.pythonhosted.org/packages/1c/d5/20496467903c57ae731f56afa21979813f6358b634783a8cd5e0847f8166/just_dna_registry-0.12.0-py3-none-any.whl", hash = "sha256:4e858d532a5515c8c4bd09ee060b08103a684881816e13d41b334e2a47a3385d", size = 188396, upload-time = "2026-08-11T17:02:17.342Z" },
 ]
 
 [[package]]
 name = "just-module-creator"
-version = "0.4.0"
+version = "0.5.0"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
@@ -874,7 +874,7 @@ requires-dist = [
     { name = "just-dna-compiler", specifier = ">=0.5.3" },
     { name = "just-dna-enricher", specifier = ">=0.5.3" },
     { name = "just-dna-format", specifier = ">=0.5.0" },
-    { name = "just-dna-registry", specifier = ">=0.9.1" },
+    { name = "just-dna-registry", specifier = ">=0.12.0" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pydantic-settings", specifier = ">=2" },
     { name = "python-dotenv", specifier = ">=1.2.2" },

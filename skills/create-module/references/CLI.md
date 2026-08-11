@@ -88,7 +88,19 @@ never second-guessed.
 find-by-hash, amend-changelog, amend-logo, update-module-version`.
 
 Reads `REGISTRY_URL`, `REGISTRY_TOKEN`, `REGISTRY_TIMEOUT`. The MCP server reads the same
-`REGISTRY_TOKEN` as a fallback, so an author already logged in does not have to re-declare it.
+`REGISTRY_TOKEN` as its **production** fallback, and `REGISTRY_TEST_TOKEN` for the polygon, so an
+author already logged in does not have to re-declare either.
+
+**The client has one URL, so which instance it drives is whatever `REGISTRY_URL` points at.** The
+CLI cannot tell you which one that is — no endpoint reports the server's `REGISTRY_MODE` — so
+exporting the production URL and running a rehearsal is a mistake nothing catches. The MCP tools
+take `target="test" | "prod"` instead of an URL and default writes to the polygon; prefer them for
+anything that publishes.
+
+**What the CLI still owns:** `yank` / `unyank` (production's delisting, which does **not** free the
+content claim), and the operator commands `registry serve --mode`, `registry backup`,
+`registry purge-test-data` — the last of these sweeps `test-`prefixed data by prefix, on the polygon,
+and is the operator's job rather than an author's.
 
 `register` and `namespace-available` are wrapped as `registry_register` and
 `registry_namespace_available`, so onboarding no longer needs this CLI. The wrapped register also

@@ -257,6 +257,7 @@ def test_a_publish_receipt_is_written_beside_the_spec(tmp_path) -> None:
     """
     receipt, note = _record_receipt(
         tmp_path,
+        target="prod",
         registry_url="https://module-registry.just-dna.life",
         identity=FakeIdentity(),
         artifact=FakeArtifact(),
@@ -280,6 +281,7 @@ def test_a_second_version_appends_rather_than_replacing(tmp_path) -> None:
     for version in ("1.0.0", "1.1.0"):
         _record_receipt(
             tmp_path,
+            target="prod",
             registry_url="https://module-registry.just-dna.life",
             identity=None,
             artifact=None,
@@ -294,6 +296,7 @@ def test_a_republished_version_keeps_the_original_and_reports_the_difference(tmp
     """A published version is immutable, so a changed digest is a fact, not an update."""
     first, _ = _record_receipt(
         tmp_path,
+        target="prod",
         registry_url="https://module-registry.just-dna.life",
         identity=FakeIdentity(),
         artifact=FakeArtifact(),
@@ -306,6 +309,7 @@ def test_a_republished_version_keeps_the_original_and_reports_the_difference(tmp
 
     kept, note = _record_receipt(
         tmp_path,
+        target="prod",
         registry_url="https://module-registry.just-dna.life",
         identity=FakeIdentity(),
         artifact=Moved(),

@@ -127,6 +127,17 @@ Recorded so the gaps in *this* file are visible too, per the completeness rule.
   ([F13](previous_issues.md)). Both are wrapped and covered offline; **neither has
   been driven against the live service to the point of creating anything**, which is
   precisely what this probe is for.
+
+  **Unblocked differently on 2026-08-11, and this is the bigger change:** the registry
+  now runs a *polygon* (`REGISTRY_MODE=test`), where a publish is a rehearsal that
+  `registry_delete_version` frees again — version number and content claim both. The
+  reason this probe kept being deferred was that it demanded "a module we are willing to
+  publish immutably"; on the polygon it demands nothing of the sort. Run it there, with
+  `target="test"`, as many times as it takes. Two caveats to carry into it: the polygon
+  scopes `duplicate_content` to the publishing account, so a rehearsal cannot prove a
+  cross-account duplicate would be refused; and as of filing the polygon host answers a
+  bare 404 (DNS'd, app not deployed), so the probe waits on that deployment rather than
+  on us.
 - **A module with two of something the examples show one of.** The worked example
   throughout is a single-gene, single-rsID module. A paralogous rsID mapping to
   several loci, or one gene carrying two variants with different thresholds, is

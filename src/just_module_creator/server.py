@@ -79,10 +79,28 @@ which is the whole order above plus the checks around it. extended
 drafters, the bulk fact passes, and reading back somebody else's compiled
 artifact. Publishing needs a registry token; nothing else does.
 
+The registry runs TWO instances and every registry tool takes `target`:
+
+  target="test"  the polygon — where a publish is a REHEARSAL. It accepts
+                 `test-`prefixed data and, alone, will delete it again.
+  target="prod"  the published catalog everyone installs from.
+
+Rehearse first, always. On production a version is immutable AND its authored
+data is claimed by a content hash that `yank` does not release, so one botched
+publish burns the version number and the right to publish that data under any
+other name, permanently. On the polygon, `registry_delete_version` frees both.
+
+So the write tools — register, authenticate, whoami, namespace_available,
+claim_namespace, publish — default to `test`, and going live is an explicit
+`target="prod"`. The catalog reads — registry_search, registry_get_module,
+registry_download — default to `prod`, because that is the world they ask about.
+The instances share no database: an account, a token and a namespace exist on one
+of them only, so register on each and promote by publishing again.
+
 Onboarding is self-service and needs no token to start: `registry_register` mints
 an account and stores its key for the session, `registry_namespace_available`
 checks a name, and `registry_claim_namespace` takes it — that last step is
-irreversible. `authenticate` is for a token you already hold.
+irreversible on production. `authenticate` is for a token you already hold.
 
 Account and namespace names are lowercase-with-hyphens and reject underscores;
 module names are the opposite and take underscores. Both rules are enforced, not
@@ -120,10 +138,11 @@ def build_server(mode: Mode | None = None, settings: Settings | None = None) -> 
         register_extended_passes(mcp, settings, services)
 
     log.info(
-        "Server built (mode=%s, offline=%s, registry=%s)",
+        "Server built (mode=%s, offline=%s, registry=%s, polygon=%s)",
         resolved_mode,
         settings.offline,
         settings.registry_url,
+        settings.registry_test_url,
     )
     return mcp
 

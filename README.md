@@ -91,6 +91,7 @@ The server **boots with no environment configured** — authoring a module needs
 | `enrich_facts`, `enrich_literature_pass` | extended | no | the sidecars the compile gate reads; rewrite many rows at once |
 | `reverse_module`, `registry_download` | extended | no | read back somebody else's compiled artifact |
 | `registry_whoami`, `registry_claim_namespace`, `registry_publish` | gated | **yes** | registry writes; publish records the stamped identity in `published.json` |
+| `registry_delete_version`, `registry_delete_module` | gated | **yes** | undo a rehearsal on the polygon; refused for production, which offers `yank` instead |
 
 Plus a resource (`resource://just-dna/tables`) and a prompt (`create_module`).
 
@@ -111,7 +112,7 @@ immutable, so a changed digest is reported rather than applied.
 ```
 list_tables ─▶ scaffold_module ─▶ draft_from_clinvar ─▶ literature_search ─▶ author rows
    ─▶ lint_rows ─▶ validate_module(strict) ─▶ enrich_module ─▶ compile_module(strict)
-   ─▶ registry_publish
+   ─▶ registry_publish(target="test")  ─▶ registry_publish(target="prod")
 ```
 
 Publishing for the first time needs an account, and that is self-service from here — no admin, no
@@ -120,14 +121,26 @@ email, no approval:
 ```
 registry_register(account="my-name")            ─▶ mints the token, stores it for this session
 registry_namespace_available("my-ns")           ─▶ legal? free?
-registry_claim_namespace("my-ns")               ─▶ irreversible
+registry_claim_namespace("my-ns")               ─▶ irreversible on production
 ```
 
 `registry_register` returns two secrets and neither is recoverable elsewhere: put the token in `.env`
-as `JMC_API_KEY` and **the install-id as `JMC_INSTALL_ID`**. The install-id is the account's only
-recovery path — re-registering it reissues a key for the same account, while registering without it
-creates a different one and strands the first. Account and namespace names are lowercase with
-hyphens and reject underscores; module names are the opposite and take them.
+as `JMC_API_KEY` (or `JMC_TEST_API_KEY` for the polygon) and **the install-id as `JMC_INSTALL_ID`**.
+The install-id is the account's only recovery path — re-registering it reissues a key for the same
+account, while registering without it creates a different one and strands the first. Account and
+namespace names are lowercase with hyphens and reject underscores; module names are the opposite and
+take them.
+
+### Two registries: rehearse, then publish
+
+The registry runs a production catalog and a **polygon** — a second instance where a publish is a
+rehearsal you can delete again. Every registry tool takes `target="test" | "prod"`; the write tools
+default to the polygon and the catalog reads default to production. The instances share no database,
+so an account, a token and a namespace exist on one of them only, and promoting means publishing
+again with `target="prod"`.
+
+Rehearsing is worth the extra step because a production publish cannot be taken back: the version is
+immutable and the authored rows are claimed by a content hash that outlives a `yank`.
 
 Curate before you enrich: a `<<REPLACE>>` placeholder makes every loader refuse the file, `enrich`
 included, because forward resolution is allele-aware and a placeholder genotype would skip the
@@ -199,10 +212,15 @@ that value is only read when the server process starts.
 
 The server **never** raises at startup for a missing token. Gated tools resolve one **per request**:
 
-1. `X-Registry-Token` HTTP header (multi-user safe)
+1. `X-Registry-Token` / `X-Registry-Test-Token` HTTP header (multi-user safe)
 2. per-session token set via `authenticate` — or by `registry_register`, which stores the token it
    mints into the same slot
-3. `JMC_API_KEY`, else `REGISTRY_TOKEN` (what `registry-client` already reads)
+3. `JMC_API_KEY`, else `REGISTRY_TOKEN` (what `registry-client` already reads) — and
+   `JMC_TEST_API_KEY`, else `REGISTRY_TEST_TOKEN`, for the polygon
+
+Each step resolves **per instance**. A production token is never offered to the polygon or the other
+way round: the two keep separate databases, so the other instance's key is an unknown key there
+rather than a weaker one, and falling back would report the wrong problem.
 
 If none resolve, gated tools return a friendly message rather than raising. A token set via
 `authenticate` is scoped to the caller's own session and never leaks between HTTP clients. See

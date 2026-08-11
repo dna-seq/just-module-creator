@@ -42,6 +42,17 @@ class AuthResult(BaseModel):
     unlocked_tools: list[str] = Field(
         default_factory=list, description="Registry tools now usable in THIS session."
     )
+    target: str | None = Field(
+        default=None,
+        description=(
+            "Which instance answered: 'prod' (the published catalog) or 'test' (the polygon, "
+            "where a publish is a rehearsal and can be deleted again). Kept on the result "
+            "because nothing in a registry payload says which one it came from."
+        ),
+    )
+    registry_url: str | None = Field(
+        default=None, description="The instance this token was stored against."
+    )
     message: str = Field(description="Human-readable summary.")
 
 
@@ -68,8 +79,9 @@ class RegistrationResult(BaseModel):
     token: str | None = Field(
         default=None,
         description=(
-            "The API key. SECRET — put it in .env as JMC_API_KEY (or REGISTRY_TOKEN); never "
-            "commit it, and never write it into a module, fixture or doc."
+            "The API key. SECRET — put it in .env as JMC_API_KEY for production or "
+            "JMC_TEST_API_KEY for the polygon; never commit it, and never write it into a "
+            "module, fixture or doc. It is only valid on the instance that issued it."
         ),
     )
     install_id: str | None = Field(
@@ -87,6 +99,14 @@ class RegistrationResult(BaseModel):
     stored_for_session: bool = Field(
         default=False,
         description="Whether the token was stored in THIS session, so registry tools now work.",
+    )
+    target: str | None = Field(
+        default=None,
+        description=(
+            "Which instance answered: 'prod' (the published catalog) or 'test' (the polygon, "
+            "where a publish is a rehearsal and can be deleted again). Kept on the result "
+            "because nothing in a registry payload says which one it came from."
+        ),
     )
     registry_url: str | None = Field(default=None, description="The registry that was addressed.")
     message: str = Field(description="Human-readable summary, or why registration failed.")
@@ -106,6 +126,14 @@ class NamespaceAvailability(BaseModel):
         description="Whether the name is a legal namespace: lowercase alphanumeric with hyphens."
     )
     available: bool = Field(description="Whether no account owns it yet.")
+    target: str | None = Field(
+        default=None,
+        description=(
+            "Which instance answered: 'prod' (the published catalog) or 'test' (the polygon, "
+            "where a publish is a rehearsal and can be deleted again). Kept on the result "
+            "because nothing in a registry payload says which one it came from."
+        ),
+    )
     registry_url: str | None = Field(default=None, description="The registry that was asked.")
     message: str = Field(description="Human-readable summary.")
 
@@ -615,6 +643,14 @@ class RegistrySearchResult(BaseModel):
     total: int = Field(description="Total matches.")
     page: int = Field(description="1-based page number.")
     modules: list[RegistryModule] = Field(description="This page of results.")
+    target: str | None = Field(
+        default=None,
+        description=(
+            "Which instance answered: 'prod' (the published catalog) or 'test' (the polygon, "
+            "where a publish is a rehearsal and can be deleted again). Kept on the result "
+            "because nothing in a registry payload says which one it came from."
+        ),
+    )
     registry_url: str = Field(description="Which registry answered.")
 
 

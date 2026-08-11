@@ -35,6 +35,34 @@ throttled — and capture at least that half. Recorded as **F6** in
 
 ---
 
+## RM8 — three registry releases of client surface are unwrapped
+
+**Severity:** medium · **Status:** open · **Owner:** unassigned
+
+We adopted registry 0.12.0 (from 0.9.1) for the test/prod split and wrapped only what
+that needed: `target` everywhere, plus `delete_version` / `delete_module`. The rest of
+what 0.10–0.12 added to `RegistryClient` is still unwrapped, and one of it is load-bearing:
+
+- **`validate` and `check`** — server-side pre-flight. `check` is the `would_publish`
+  dry run behind [F11](just-dna-format-pending-fixes.md); upstream's 0.13.0 adds
+  `would_publish_module_level` to `validate`, which is the ceiling-free half we asked
+  for. Wrapping these is what turns "rehearse the publish" into "ask whether it would
+  publish" without spending a version number at all.
+- **`is_published`** — wrapped *inside* `registry_publish` as the dedup pre-flight, and
+  not exposed as a tool of its own. It probably should be: "has this data been published
+  already, under any name" is a question an author has before they are ready to publish.
+- **`content_signature`, `lookup_by_signature(s)`** — the local signature and the
+  name-independent lookup that `lookup_by_digest` cannot do.
+- **`health`**, **`issue_jwt_token`** — the first is how we would report an instance is
+  reachable; the second is optional and returns 501 when the server has no secret.
+
+Not urgent, and deliberately not done in the same change as the split: adopting a
+version and wrapping its surface are separate risks, and the split had to ship first.
+Do it when 0.13.0 is on PyPI, so `would_publish_module_level` is there to wrap rather
+than a field we would have to feature-detect.
+
+---
+
 ## Idea book
 
 Freeform, unscheduled, no commitment implied.

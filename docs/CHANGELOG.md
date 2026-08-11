@@ -3,6 +3,102 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.5.0 — two registries, and a publish you can rehearse (2026-08-11)
+
+Adopts the test/prod split the registry shipped in its 0.12.0, and takes the client
+from 0.9.1 to 0.12.0 with it — three releases of catch-up in one step.
+
+### Why a rehearsal was impossible before, and is now the default
+
+A published version is immutable *and* its authored rows are claimed by a
+name-independent `content_hash` that `yank` does **not** release. On one instance that
+makes every practice run permanent: it burns the version number and the right to
+publish that data under any other name. Upstream measured it (publish to a sandbox
+namespace → publish for real → `409 duplicate_content`, and yanking the sandbox copy
+does not help), which is why a "test subtree" in production was never the answer and
+the polygon exists instead.
+
+So every registry tool now takes **`target="test" | "prod"`**:
+
+- **The write tools default to `test`** — `registry_register`, `authenticate`,
+  `registry_whoami`, `registry_namespace_available`, `registry_claim_namespace`,
+  `registry_publish`. A forgotten argument on the polygon costs nothing; the same
+  omission against production cannot be undone. Going live is an explicit
+  `target="prod"`.
+- **The catalog reads default to `prod`** — `registry_search`, `registry_get_module`,
+  `registry_download` — because the question they ask is about the published world.
+  The asymmetry is deliberate and `tests/test_registry_targets.py` pins both halves, so
+  a new registry tool cannot inherit an endpoint by accident or flip a default quietly.
+- **`registry_delete_version` / `registry_delete_module`** (new, gated, polygon-only)
+  are what make a rehearsal repeatable: they free the version number *and* the content
+  claim. Aimed at production they refuse **before sending anything** and name `yank` as
+  what production offers instead — a 405 from the far end is a safe answer but not a
+  useful one.
+
+### Credentials are per instance, and never substitute
+
+The two deployments keep separate databases, so an account minted on one does not exist
+on the other. `JMC_API_KEY` / `REGISTRY_TOKEN` is the production token and
+`JMC_TEST_API_KEY` / `REGISTRY_TEST_TOKEN` the polygon's; the HTTP path reads
+`X-Registry-Token` and `X-Registry-Test-Token`; `SessionKeyStore` is keyed by
+`(session, target)`. **Nothing falls back from one to the other** — a production key on
+the polygon is a key for an account that is not there, so a fallback would report "the
+registry rejected your token" when the truth is "you have not registered here yet". The
+same install-id may be reused on both, and should be: one secret to protect, two
+recognisably-yours accounts.
+
+### Naming, checked before the round trip
+
+Production refuses `test-`prefixed namespaces and `test_`prefixed module names with
+`422 test_data_on_prod`. We check locally first and **before the credential**, because
+telling an author to go and find a token for a call that could never succeed is the
+dead end this surface keeps removing. The two prefixes are duplicated from upstream's
+`config.Settings.test_data_prefix` and `services.purge.module_name_prefix` rather than
+imported — both live outside the client's exported surface, and an import a future
+client-only wheel drops would take the server down at load time — so a test asserts
+they still match.
+
+Not refused: a `test-` **account handle** on production. The self-register route does
+not check it (only the namespace claim, the publish and `issue-key` do), so refusing it
+here would invent a rule the server does not have. It is reported after the fact
+instead, where it is true: the handle registers, its namespaces will not.
+
+An unprefixed rehearsal on the polygon is likewise advised, never refused — publishing
+under the name the module will really carry is the most faithful rehearsal there is.
+The note says the consequence: `purge-test-data` sweeps by prefix and will not collect
+it, so delete it yourself.
+
+### Also
+
+- **`registry_publish` gained a duplicate-content pre-flight** (`is_published`, new in
+  client 0.11). The signature is computed locally from the authored rows — no upload,
+  no recompile — and it is the same value the registry gates `409 duplicate_content` on.
+  When the check itself fails it says so and the publish proceeds: a check that could
+  not run is not a check that passed, and the server runs the authoritative one anyway.
+- **`published.json` records the `target`**, and prior receipts are matched on version
+  *and* target. A polygon rehearsal of 1.0.0 is not a prior publish of production's
+  1.0.0; treating it as one would have hidden the identity the registry stamped on the
+  real publish.
+- **Every registry result carries `target`.** Nothing in a registry payload says which
+  instance answered, so we say it — see `F16` for why that is not something we can
+  verify against the server.
+- The skill's §7 is rewritten as *rehearse, then promote*, with the two-instance table,
+  and `references/CLI.md` now says the client has one URL and cannot tell you which
+  instance it points at.
+
+### Filed upstream while doing this
+
+- **`S3`** (registry intake) — no endpoint reports `REGISTRY_MODE`, so a rehearsal
+  cannot prove it is not on production. Tracked here as `F16`.
+- **`S1` came back answered** the same day and is fixed in the registry's tree for
+  0.13.0: the `would_publish` ceiling no longer applies offline, the 422 carries what it
+  computed, and `/validate` gained `would_publish_module_level`. Not on PyPI, and
+  production reports 0.12.0, so `F11` stays open here until the release lands.
+- Measured while adopting: `module-marketplace.just-dna.life` is an alias of production,
+  and `module-polygon.just-dna.life` resolves and terminates TLS but answers a bare 404 —
+  DNS'd and fronted, not yet deployed. We ship the documented URL regardless, so it
+  starts working the day it comes up.
+
 ## 0.4.0 — the essentials tier now runs the whole workflow (2026-08-11)
 
 ### The tier rule was wrong, not just one tool short of right

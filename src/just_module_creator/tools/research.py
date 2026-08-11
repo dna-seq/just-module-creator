@@ -46,7 +46,8 @@ from just_module_creator.models import (
     VariantLookup,
 )
 from just_module_creator.net import NetworkServices
-from just_module_creator.settings import Settings
+from just_module_creator.settings import RegistryTarget, Settings
+from just_module_creator.targets import DEFAULT_CATALOG_TARGET, DEFAULT_WRITE_TARGET
 from just_module_creator.tools._shared import (
     jsonable,
     offline_for,
@@ -299,12 +300,18 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         category: str | None = None,
         page: int = 1,
         per_page: int = 20,
+        target: RegistryTarget = DEFAULT_CATALOG_TARGET,
     ) -> RegistrySearchResult:
         """Search the published module registry. Read-only, no token needed.
 
         Run this before authoring: an existing module covering the same genes is
         either the thing to extend or the reason not to start. Filter by free
         text (`query`), by `gene`, or by `category`.
+
+        `target` defaults to **production** — unlike the write tools, because the
+        question here is about the published world. Point it at the polygon only
+        to see your own rehearsals; its catalog is other people's rehearsals plus
+        yours, and says nothing about what is published.
         """
         if settings.offline:
             raise ToolError(
@@ -319,7 +326,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             params["category"] = category
 
         def _search() -> dict:
-            client = RegistryClient(settings.registry_url, timeout=settings.registry_timeout)
+            client = RegistryClient(
+                settings.registry_url_for(target), timeout=settings.registry_timeout
+            )
             return client.list_modules(**params)
 
         try:
@@ -332,7 +341,8 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             total=int(payload.get("total", len(items))),
             page=int(payload.get("page", page)),
             modules=[_module_card(i) for i in items if isinstance(i, dict)],
-            registry_url=settings.registry_url,
+            target=target,
+            registry_url=settings.registry_url_for(target),
         )
 
     @mcp.tool(
@@ -343,12 +353,19 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             openWorldHint=True,
         )
     )
-    async def registry_namespace_available(namespace: str) -> NamespaceAvailability:
+    async def registry_namespace_available(
+        namespace: str, target: RegistryTarget = DEFAULT_WRITE_TARGET
+    ) -> NamespaceAvailability:
         """Check whether a namespace is legal and unclaimed. Read-only, no token needed.
 
         The pre-flight for `registry_claim_namespace`, which is irreversible: a
         namespace is claimed once and then owns every module published under it.
         Run this first so the claim is a decision rather than a guess.
+
+        `target` follows the claim it precedes and defaults to the polygon. The
+        two instances keep separate namespace tables, so an answer about one is
+        not an answer about the other — ask twice if you intend to rehearse and
+        then publish for real.
 
         `valid` and `available` are separate answers. An illegal name is not a
         free one — lowercase letters and digits with single hyphens, and
@@ -361,7 +378,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             )
 
         def _check() -> dict:
-            with RegistryClient(settings.registry_url, timeout=settings.registry_timeout) as client:
+            with RegistryClient(
+                settings.registry_url_for(target), timeout=settings.registry_timeout
+            ) as client:
                 return client.namespace_available(namespace)
 
         try:
@@ -392,7 +411,8 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             namespace=str(payload.get("namespace") or namespace),
             valid=valid,
             available=available,
-            registry_url=settings.registry_url,
+            target=target,
+            registry_url=settings.registry_url_for(target),
             message=message,
         )
 
@@ -404,24 +424,34 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             openWorldHint=True,
         ),
     )
-    async def registry_get_module(namespace: str, name: str) -> OpResult:
+    async def registry_get_module(
+        namespace: str, name: str, target: RegistryTarget = DEFAULT_CATALOG_TARGET
+    ) -> OpResult:
         """Fetch one module's full registry record: card, readme, versions, manifest.
 
         The best available worked example — the published spec of a real module
-        is more instructive than any template.
+        is more instructive than any template. `target` defaults to production
+        for that reason; point it at the polygon to inspect a rehearsal of your
+        own.
         """
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
 
         def _get() -> dict:
-            client = RegistryClient(settings.registry_url, timeout=settings.registry_timeout)
+            client = RegistryClient(
+                settings.registry_url_for(target), timeout=settings.registry_timeout
+            )
             return client.get_module(namespace, name)
 
         try:
             payload = await run_sync(_get)
         except RegistryError as exc:
-            return OpResult(success=False, message=f"Registry error: {exc}")
-        return OpResult(success=True, message=f"{namespace}/{name}", data=dict(payload))
+            return OpResult(
+                success=False, message=f"Registry error: {exc}", data={"target": target}
+            )
+        return OpResult(
+            success=True, message=f"{namespace}/{name}", data={**dict(payload), "target": target}
+        )
 
     # ----------------------------------------------------------------- #
     # Identifiers — is the symbol or CURIE you wrote still current

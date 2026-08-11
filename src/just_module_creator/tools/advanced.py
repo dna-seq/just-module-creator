@@ -28,7 +28,8 @@ from just_module_creator.models import (
     OpResult,
 )
 from just_module_creator.net import NetworkServices
-from just_module_creator.settings import Settings
+from just_module_creator.settings import RegistryTarget, Settings
+from just_module_creator.targets import DEFAULT_CATALOG_TARGET
 from just_module_creator.tools._shared import offline_for, resolve_dir
 
 log = get_logger()
@@ -135,19 +136,31 @@ def register_extended(mcp: FastMCP, settings: Settings, services: NetworkService
             openWorldHint=True,
         ),
     )
-    async def registry_download(namespace: str, name: str, version: str, dest: str) -> OpResult:
+    async def registry_download(
+        namespace: str,
+        name: str,
+        version: str,
+        dest: str,
+        target: RegistryTarget = DEFAULT_CATALOG_TARGET,
+    ) -> OpResult:
         """Download and integrity-verify a published module version.
 
         Verification happens as part of the download — a failure raises rather
         than writing a module you cannot trust.
+
+        `target` defaults to production, the catalog a module is installed from.
+        The polygon holds rehearsals, so downloading from it is for checking your
+        own — never for consuming somebody's module.
         """
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
-        target = resolve_dir(dest, settings, must_exist=False)
+        dest_dir = resolve_dir(dest, settings, must_exist=False)
 
         def _download():
-            client = RegistryClient(settings.registry_url, timeout=settings.registry_timeout)
-            return client.download(namespace, name, version, target)
+            client = RegistryClient(
+                settings.registry_url_for(target), timeout=settings.registry_timeout
+            )
+            return client.download(namespace, name, version, dest_dir)
 
         try:
             manifest = await run_sync(_download)
@@ -156,9 +169,10 @@ def register_extended(mcp: FastMCP, settings: Settings, services: NetworkService
         identity = getattr(manifest, "identity", None)
         return OpResult(
             success=True,
-            message=f"Downloaded and verified into {target}.",
+            message=f"Downloaded and verified into {dest_dir}.",
             data={
-                "dest": str(target),
+                "dest": str(dest_dir),
+                "target": target,
                 "canonical_id": getattr(identity, "canonical_id", None),
             },
         )
