@@ -1,0 +1,247 @@
+{
+ "header": {
+  "type": "esummary",
+  "version": "0.3"
+ },
+ "result": {
+  "uids": [
+   "11788828",
+   "10748118"
+  ],
+  "11788828": {
+   "uid": "11788828",
+   "pubdate": "2002 Feb",
+   "epubdate": "2002 Jan 14",
+   "source": "Nat Genet",
+   "authors": [
+    {
+     "name": "Enattah NS",
+     "authtype": "Author",
+     "clusterid": ""
+    },
+    {
+     "name": "Sahi T",
+     "authtype": "Author",
+     "clusterid": ""
+    },
+    {
+     "name": "Savilahti E",
+     "authtype": "Author",
+     "clusterid": ""
+    },
+    {
+     "name": "Terwilliger JD",
+     "authtype": "Author",
+     "clusterid": ""
+    },
+    {
+     "name": "Peltonen L",
+     "authtype": "Author",
+     "clusterid": ""
+    },
+    {
+     "name": "J\u00e4rvel\u00e4 I",
+     "authtype": "Author",
+     "clusterid": ""
+    }
+   ],
+   "lastauthor": "J\u00e4rvel\u00e4 I",
+   "title": "Identification of a variant associated with adult-type hypolactasia.",
+   "sorttitle": "identification of a variant associated with adult type hypolactasia",
+   "volume": "30",
+   "issue": "2",
+   "pages": "233-7",
+   "lang": [
+    "eng"
+   ],
+   "nlmuniqueid": "9216904",
+   "issn": "1061-4036",
+   "essn": "",
+   "pubtype": [
+    "Journal Article",
+    "Research Support, Non-U.S. Gov't",
+    "Research Support, U.S. Gov't, P.H.S."
+   ],
+   "recordstatus": "PubMed - indexed for MEDLINE",
+   "pubstatus": "256",
+   "articleids": [
+    {
+     "idtype": "pubmed",
+     "idtypen": 1,
+     "value": "11788828"
+    },
+    {
+     "idtype": "doi",
+     "idtypen": 3,
+     "value": "10.1038/ng826"
+    },
+    {
+     "idtype": "pii",
+     "idtypen": 4,
+     "value": "ng826"
+    }
+   ],
+   "history": [
+    {
+     "pubstatus": "pubmed",
+     "date": "2002/01/15 10:00"
+    },
+    {
+     "pubstatus": "medline",
+     "date": "2002/03/07 10:01"
+    },
+    {
+     "pubstatus": "entrez",
+     "date": "2002/01/15 10:00"
+    }
+   ],
+   "references": [],
+   "attributes": [
+    "Has Abstract"
+   ],
+   "pmcrefcount": "",
+   "fulljournalname": "Nature genetics",
+   "elocationid": "",
+   "doctype": "citation",
+   "srccontriblist": [],
+   "booktitle": "",
+   "medium": "",
+   "edition": "",
+   "publisherlocation": "",
+   "publishername": "",
+   "srcdate": "",
+   "reportnumber": "",
+   "availablefromurl": "",
+   "locationlabel": "",
+   "doccontriblist": [],
+   "docdate": "",
+   "bookname": "",
+   "chapter": "",
+   "sortpubdate": "2002/02/01 00:00",
+   "sortfirstauthor": "Enattah NS",
+   "vernaculartitle": ""
+  },
+  "10748118": {
+   "uid": "10748118",
+   "pubdate": "2000 May 26",
+   "epubdate": "",
+   "source": "J Biol Chem",
+   "authors": [
+    {
+     "name": "Hack ES",
+     "authtype": "Author",
+     "clusterid": ""
+    },
+    {
+     "name": "Vorobyova T",
+     "authtype": "Author",
+     "clusterid": ""
+    },
+    {
+     "name": "Sakash JB",
+     "authtype": "Author",
+     "clusterid": ""
+    },
+    {
+     "name": "West JM",
+     "authtype": "Author",
+     "clusterid": ""
+    },
+    {
+     "name": "Macol CP",
+     "authtype": "Author",
+     "clusterid": ""
+    },
+    {
+     "name": "Herv\u00e9 G",
+     "authtype": "Author",
+     "clusterid": ""
+    },
+    {
+     "name": "Williams MK",
+     "authtype": "Author",
+     "clusterid": ""
+    },
+    {
+     "name": "Kantrowitz ER",
+     "authtype": "Author",
+     "clusterid": ""
+    }
+   ],
+   "lastauthor": "Kantrowitz ER",
+   "title": "Characterization of the aspartate transcarbamoylase from Methanococcus jannaschii.",
+   "sorttitle": "characterization of the aspartate transcarbamoylase from methanococcus jannaschii",
+   "volume": "275",
+   "issue": "21",
+   "pages": "15820-7",
+   "lang": [
+    "eng"
+   ],
+   "nlmuniqueid": "2985121R",
+   "issn": "0021-9258",
+   "essn": "",
+   "pubtype": [
+    "Journal Article",
+    "Research Support, U.S. Gov't, P.H.S."
+   ],
+   "recordstatus": "PubMed - indexed for MEDLINE",
+   "pubstatus": "4",
+   "articleids": [
+    {
+     "idtype": "pubmed",
+     "idtypen": 1,
+     "value": "10748118"
+    },
+    {
+     "idtype": "doi",
+     "idtypen": 3,
+     "value": "10.1074/jbc.M909220199"
+    },
+    {
+     "idtype": "pii",
+     "idtypen": 4,
+     "value": "S0021-9258(19)80365-4"
+    }
+   ],
+   "history": [
+    {
+     "pubstatus": "pubmed",
+     "date": "2000/04/05 09:00"
+    },
+    {
+     "pubstatus": "medline",
+     "date": "2000/07/08 11:00"
+    },
+    {
+     "pubstatus": "entrez",
+     "date": "2000/04/05 09:00"
+    }
+   ],
+   "references": [],
+   "attributes": [
+    "Has Abstract"
+   ],
+   "pmcrefcount": "",
+   "fulljournalname": "The Journal of biological chemistry",
+   "elocationid": "",
+   "doctype": "citation",
+   "srccontriblist": [],
+   "booktitle": "",
+   "medium": "",
+   "edition": "",
+   "publisherlocation": "",
+   "publishername": "",
+   "srcdate": "",
+   "reportnumber": "",
+   "availablefromurl": "",
+   "locationlabel": "",
+   "doccontriblist": [],
+   "docdate": "",
+   "bookname": "",
+   "chapter": "",
+   "sortpubdate": "2000/05/26 00:00",
+   "sortfirstauthor": "Hack ES",
+   "vernaculartitle": ""
+  }
+ }
+}

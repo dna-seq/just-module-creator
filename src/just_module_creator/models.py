@@ -322,6 +322,184 @@ class IdentifierReport(BaseModel):
 
 
 # --------------------------------------------------------------------------- #
+# Literature discovery (network, read-only, never writes an authored cell)
+# --------------------------------------------------------------------------- #
+class SourceStatus(BaseModel):
+    """What one source did — the field to read before believing an empty result."""
+
+    source: str = Field(description="pubmed | europepmc | semanticscholar | preprints | unpaywall.")
+    queried: bool = Field(
+        description=(
+            "False means never asked: excluded by policy, missing credential, or not requested."
+        )
+    )
+    results: int | None = Field(
+        default=None,
+        description=(
+            "How many it returned. **null means the source could not answer** — a timeout, a "
+            "rate limit, an outage. NEVER 0 for that case: 0 is reserved for a source that "
+            "genuinely answered with nothing, and an author acts differently on each."
+        ),
+    )
+    reason: str | None = Field(
+        default=None, description="Why it was not asked, or how it failed. null when it answered."
+    )
+    rate_limited: bool = Field(default=False, description="The source asked us to slow down.")
+
+
+class SourceLicenseNote(BaseModel):
+    """A source consulted, and the `sources.csv` row nothing will write for it.
+
+    Deliberately carries no `license`, `commercial_use` or `share_alike`: pointing
+    at the terms is help, asserting them is a guess, and `declared_use` is a
+    licence position only the author can take. Upstream's `TERMS_BY_SOURCE` has no
+    entry for any literature service, which is filed rather than papered over.
+    """
+
+    source: str = Field(description="The join value for sources.csv, e.g. `pubmed`.")
+    layer: str = Field(description="`literature` for the sidecar; `annotation` if you quote text.")
+    terms_url: str | None = Field(default=None, description="Where to read the terms.")
+    stateable_upstream: bool = Field(
+        description="Whether `licensing.TERMS_BY_SOURCE` can state this source's terms today."
+    )
+    note: str = Field(description="What the author still has to do.")
+
+
+class LiteratureCandidate(BaseModel):
+    """One paper a search found. A candidate to *read*, never a row to paste."""
+
+    pmid: str | None = Field(default=None, description="PubMed id, when the record has one.")
+    pmcid: str | None = Field(default=None, description="PMC id, when open access.")
+    doi: str | None = Field(
+        default=None,
+        description=(
+            "An addressing key, NOT a cell to author. `doi` is redundancy-bearing; see `withheld`."
+        ),
+    )
+    arxiv_id: str | None = Field(default=None, description="arXiv id, for a preprint.")
+    title: str | None = Field(
+        default=None,
+        description="**The point of a search** — how you tell this paper from another.",
+    )
+    authors: list[str] = Field(default_factory=list, description="As the source spells them.")
+    year: int | None = Field(default=None, description="Publication year.")
+    venue: str | None = Field(default=None, description="Journal or repository.")
+    abstract: str | None = Field(default=None, description="When the source returned one.")
+    citation_count: int | None = Field(
+        default=None, description="null means the source did not say."
+    )
+    is_open_access: bool | None = Field(default=None, description="null means unchecked.")
+    preprint: bool | None = Field(
+        default=None,
+        description=(
+            "True means **not peer-reviewed and no PMID** — so it cannot ground a studies.csv row "
+            "on its own, since `pmid` is required there. It may still inform a hedged conclusion."
+        ),
+    )
+    url: str | None = Field(default=None, description="Where the source points.")
+    found_in: list[str] = Field(
+        default_factory=list, description="Every source that returned this paper."
+    )
+    rank: dict[str, int] = Field(
+        default_factory=dict,
+        description=(
+            "Each source's own 1-based position for it. Deliberately NOT combined into one score: "
+            "a synthesized rank is a convention with no source behind it, and it invites citing "
+            "the top hit without reading it."
+        ),
+    )
+
+
+class LiteratureSearchResult(BaseModel):
+    """Papers matching a question, plus an honest account of who was asked."""
+
+    query: str = Field(description="What was searched for.")
+    papers: list[LiteratureCandidate] = Field(
+        description="Merged across sources, deterministic order."
+    )
+    sources: list[SourceStatus] = Field(
+        description="One per source. **Read this before believing an empty `papers`.**"
+    )
+    withheld: list[LintAlteration] = Field(
+        default_factory=list,
+        description="Values shown but not written — the DOI of each candidate, with its refusal.",
+    )
+    findings: list[LintFinding] = Field(default_factory=list, description="Notes and warnings.")
+    licensing: list[SourceLicenseNote] = Field(
+        default_factory=list,
+        description="The sources.csv rows you now owe, and why none was written.",
+    )
+
+
+class OpenAccessLocation(BaseModel):
+    """One place a paper may legally be read."""
+
+    url: str = Field(description="Where it is.")
+    version: str | None = Field(default=None, description="publishedVersion | acceptedVersion | …")
+    license: str | None = Field(
+        default=None,
+        description=(
+            "The **article's** licence (cc-by, cc-by-nc, bronze…), which is what decides whether a "
+            "quote may travel inside a module you publish. null means the host did not say."
+        ),
+    )
+    host_type: str | None = Field(default=None, description="publisher | repository.")
+
+
+class OpenAccessResult(BaseModel):
+    """Where a paper may be read, and on what terms. Free to read is not free to reuse."""
+
+    doi: str | None = Field(default=None, description="The DOI asked about.")
+    is_open_access: bool | None = Field(default=None, description="null means unchecked.")
+    best_location: OpenAccessLocation | None = Field(
+        default=None, description="The host's own pick."
+    )
+    locations: list[OpenAccessLocation] = Field(default_factory=list, description="All of them.")
+    sources: list[SourceStatus] = Field(default_factory=list, description="Who answered.")
+    findings: list[LintFinding] = Field(default_factory=list, description="Notes and warnings.")
+
+
+class FullTextResult(BaseModel):
+    """A document to read. Never a passage, and never a suggested quote."""
+
+    pmid: str | None = Field(default=None, description="The PMID, when known.")
+    pmcid: str | None = Field(default=None, description="The PMC id used to retrieve.")
+    doi: str | None = Field(default=None, description="The DOI, when known.")
+    retrieved: bool = Field(description="Whether any text came back.")
+    text: str | None = Field(default=None, description="The document, whitespace-normalized.")
+    text_source: str | None = Field(
+        default=None,
+        description=(
+            "`fulltext` | `abstract` | null. **null means nothing was retrieved**, not that the "
+            "paper has no text — and an abstract is named as the substitute rather than passed "
+            "off as the article."
+        ),
+    )
+    truncated: bool = Field(default=False, description="Whether `max_chars` cut the text.")
+    locations: list[OpenAccessLocation] = Field(
+        default_factory=list, description="Where to read it, when the text could not be fetched."
+    )
+    findings: list[LintFinding] = Field(
+        default_factory=list,
+        description=(
+            "Includes the standing note that no passage was extracted for you, and what that "
+            "costs: once you read a fulltext here, `quotes_found` on that row stops being "
+            "independent evidence and becomes a citation-pairing check."
+        ),
+    )
+
+
+class CitationGraph(BaseModel):
+    """Papers citing this one, or cited by it — the 'has it been replicated' question."""
+
+    paper_id: str = Field(description="What was asked about.")
+    direction: str = Field(description="citing | cited_by.")
+    papers: list[LiteratureCandidate] = Field(description="The neighbours.")
+    sources: list[SourceStatus] = Field(default_factory=list, description="Who answered.")
+    withheld: list[LintAlteration] = Field(default_factory=list, description="DOIs, with refusals.")
+
+
+# --------------------------------------------------------------------------- #
 # Enrichment
 # --------------------------------------------------------------------------- #
 class EnrichReport(BaseModel):

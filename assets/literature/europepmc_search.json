@@ -1,0 +1,974 @@
+{
+ "version": "6.9",
+ "hitCount": 291,
+ "nextCursorMark": "AoIIQPLwAyg1NDU3NzA0OA==",
+ "nextPageUrl": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=lactase persistence rs4988235&cursorMark=AoIIQPLwAyg1NDU3NzA0OA==&resultType=core&pageSize=3&format=json",
+ "request": {
+  "queryString": "lactase persistence rs4988235",
+  "resultType": "core",
+  "cursorMark": "*",
+  "pageSize": 3,
+  "sort": "",
+  "synonym": false
+ },
+ "resultList": {
+  "result": [
+   {
+    "id": "42081583",
+    "source": "MED",
+    "pmid": "42081583",
+    "pmcid": "PMC13138664",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13138664"
+     ]
+    },
+    "doi": "10.1371/journal.pgph.0006386",
+    "title": "Community based countrywide analysis of lactase persistence related genetic variants and their correlation with digestive symptoms in Libya.",
+    "authorString": "Mustafa AM, Alhudiri IM, Mohamed AA, Al-Emam H, Ramadan A, Elshwekh H, Ben Zeglam H, Enattah NS.",
+    "authorList": {
+     "author": [
+      {
+       "fullName": "Mustafa AM",
+       "firstName": "Ariej M",
+       "lastName": "Mustafa",
+       "initials": "AM",
+       "authorId": {
+        "type": "ORCID",
+        "value": "0000-0001-9678-2243"
+       },
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Genetic Engineering, Libyan Biotechnology Research Center, Tripoli, Libya."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Alhudiri IM",
+       "firstName": "Inas M",
+       "lastName": "Alhudiri",
+       "initials": "IM",
+       "authorId": {
+        "type": "ORCID",
+        "value": "0000-0002-3371-0215"
+       },
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Genetic Engineering, Libyan Biotechnology Research Center, Tripoli, Libya."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Mohamed AA",
+       "firstName": "Abdenaser A",
+       "lastName": "Mohamed",
+       "initials": "AA",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Genetic Engineering, Libyan Biotechnology Research Center, Tripoli, Libya."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Al-Emam H",
+       "firstName": "Hafsa",
+       "lastName": "Al-Emam",
+       "initials": "H",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Environment, Food and Water Sciences, Libyan Biotechnology Research Center, Tripoli, Libya."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Ramadan A",
+       "firstName": "Ahmad",
+       "lastName": "Ramadan",
+       "initials": "A",
+       "authorId": {
+        "type": "ORCID",
+        "value": "0000-0002-7510-1063"
+       },
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Genetic Engineering, Libyan Biotechnology Research Center, Tripoli, Libya."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Elshwekh H",
+       "firstName": "Halla",
+       "lastName": "Elshwekh",
+       "initials": "H",
+       "authorId": {
+        "type": "ORCID",
+        "value": "0000-0003-4100-6743"
+       },
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Genetic Engineering, Libyan Biotechnology Research Center, Tripoli, Libya."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Ben Zeglam H",
+       "firstName": "Hamza",
+       "lastName": "Ben Zeglam",
+       "initials": "H",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Genetic Engineering, Libyan Biotechnology Research Center, Tripoli, Libya."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Enattah NS",
+       "firstName": "Nabil S",
+       "lastName": "Enattah",
+       "initials": "NS",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Genetic Engineering, Libyan Biotechnology Research Center, Tripoli, Libya."
+         }
+        ]
+       }
+      }
+     ]
+    },
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0000-0001-9678-2243"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-3371-0215"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0002-7510-1063"
+      },
+      {
+       "type": "ORCID",
+       "value": "0000-0003-4100-6743"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics",
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "5",
+     "volume": "6",
+     "journalIssueId": 4189458,
+     "dateOfPublication": "2026 ",
+     "monthOfPublication": 0,
+     "yearOfPublication": 2026,
+     "printPublicationDate": "2026-01-01",
+     "journal": {
+      "title": "PLOS global public health",
+      "medlineAbbreviation": "PLOS Glob Public Health",
+      "issn": "2767-3375",
+      "essn": "2767-3375",
+      "isoabbreviation": "PLOS Glob Public Health",
+      "nlmid": "9918283779606676"
+     }
+    },
+    "pubYear": "2026",
+    "pageInfo": "e0006386",
+    "abstractText": "Lactose intolerance is a complex symptomatic response to lactose maldigestion that is influenced by, but not strictly determined by, the down- regulation of the enzyme lactase. Several nucleotide polymorphisms\u2009-\u200913910C\u2009>\u2009T (rs4988235),\u2009-\u200913907C\u2009>\u2009G (rs41525747),\u2009-\u200913915T\u2009>\u2009G (rs41380347),\u2009-\u200914010G\u2009>\u2009C (rs145946881) and -14009T\u2009>\u2009G (rs869051967) upstream of the LCT gene have been associated with lactase persistence in European, African and Middle Eastern populations. We aimed to study the prevalence of lactase-persistence associated variants of the LCT gene in the Libyan population and its correlation with digestive symptoms (heartburn, diarrhea, nausea, bloating, abdominal cramps,).Buccal DNA swabs were collected from 242 adult individuals from the western, southern and eastern regions of Libya. A 500 bp DNA region spanning the\u2009-\u200913910C\u2009>\u2009T variant was analyzed. Novel variants (-13883T\u2009>\u2009A, -13921A\u2009>\u2009C, -13961T\u2009>\u2009C and -13962C\u2009>\u2009A) were detected in the analyzed region in addition to the previously described\u2009-\u200913910C\u2009>\u2009T and -13915T\u2009>\u2009G variants. However, their functional impact on lactase expression remains to be determined. The prevalence of the lactase persistence phenotype was associated with the derived alleles -13910*T and -13915*G, which were collectively detected in 30% of the study participants. The allele frequency of the lactase persistence -13915*G variant was 0.133 (SD\u2009\u00b1\u20090.016), whereas the frequency of the -13910*T allele was 0.029 (SD\u2009\u00b1\u20090.008). The most common was the Arab variant\u2009-\u200913915T\u2009>\u2009G in the eastern region of Libya followed by the European\u2009-\u200913910C\u2009>\u2009T variant. Both novel and well-known variants of LCT gene associated with lactase persistence are common in Libyans. Further studies are needed to confirm the association of the novel discovered variants with lactase persistence.",
+    "affiliation": "Department of Genetic Engineering, Libyan Biotechnology Research Center, Tripoli, Libya.",
+    "publicationStatus": "epublish",
+    "language": "eng",
+    "pubModel": "Electronic-eCollection",
+    "pubTypeList": {
+     "pubType": [
+      "research-article",
+      "Journal Article"
+     ]
+    },
+    "fullTextUrlList": {
+     "fullTextUrl": [
+      {
+       "availability": "Subscription required",
+       "availabilityCode": "S",
+       "documentStyle": "doi",
+       "site": "DOI",
+       "url": "https://doi.org/10.1371/journal.pgph.0006386"
+      },
+      {
+       "availability": "Open access",
+       "availabilityCode": "OA",
+       "documentStyle": "html",
+       "site": "Europe_PMC",
+       "url": "https://europepmc.org/articles/PMC13138664"
+      },
+      {
+       "availability": "Open access",
+       "availabilityCode": "OA",
+       "documentStyle": "pdf",
+       "site": "Europe_PMC",
+       "url": "https://europepmc.org/articles/PMC13138664?pdf=render"
+      }
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "citedByCount": 0,
+    "hasData": "Y",
+    "hasReferences": "N",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasLabsLinks": "Y",
+    "license": "cc by",
+    "hasEvaluations": "N",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "gen",
+      "refsnp"
+     ]
+    },
+    "dateOfCompletion": "2026-05-04",
+    "dateOfCreation": "2026-05-04",
+    "firstIndexDate": "2026-05-13",
+    "fullTextReceivedDate": "2026-05-20",
+    "dateOfRevision": "2026-05-07",
+    "electronicPublicationDate": "2026-05-04",
+    "firstPublicationDate": "2026-05-04"
+   },
+   {
+    "id": "42116288",
+    "source": "MED",
+    "pmid": "42116288",
+    "pmcid": "PMC13166470",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC13166470"
+     ]
+    },
+    "doi": "10.1097/md.0000000000048583",
+    "title": "Large-scale searching for causal relationships of milk consumption with multi-omics and disease susceptibility: A phenome-wide Mendelian randomization study.",
+    "authorString": "Shao M, Lu H, Zhang R, Zhang T, Yu L.",
+    "authorList": {
+     "author": [
+      {
+       "fullName": "Shao M",
+       "firstName": "Ming",
+       "lastName": "Shao",
+       "initials": "M",
+       "authorId": {
+        "type": "ORCID",
+        "value": "0009-0004-6205-6912"
+       },
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Nursing, Chuzhou City Vocational College, Chuzhou, China."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Lu H",
+       "firstName": "Hanli",
+       "lastName": "Lu",
+       "initials": "H",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Orthopedics, The First People's Hospital of Chuzhou City, Clinic Medical College of Anhui Medical University, Chuzhou, China."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Zhang R",
+       "firstName": "Ruixiu",
+       "lastName": "Zhang",
+       "initials": "R",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Nursing, Chuzhou City Vocational College, Chuzhou, China."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Zhang T",
+       "firstName": "Tao",
+       "lastName": "Zhang",
+       "initials": "T",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Epidemiology and Biostatistics, School of Public Health, Anhui Medical University, Hefei, China."
+         },
+         {
+          "affiliation": "The Key Laboratory of Major Autoimmune Diseases, School of Public Health, Anhui Medical University, Hefei, China."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Yu L",
+       "firstName": "Lingxiang",
+       "lastName": "Yu",
+       "initials": "L",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Epidemiology and Biostatistics, School of Public Health, Nanjing Medical University, Nanjing, China."
+         }
+        ]
+       }
+      }
+     ]
+    },
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0009-0004-6205-6912"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "altmetrics",
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "19",
+     "volume": "105",
+     "journalIssueId": 4193007,
+     "dateOfPublication": "2026 May",
+     "monthOfPublication": 5,
+     "yearOfPublication": 2026,
+     "printPublicationDate": "2026-05-01",
+     "journal": {
+      "title": "Medicine",
+      "medlineAbbreviation": "Medicine (Baltimore)",
+      "issn": "0304-5412",
+      "essn": "1536-5964",
+      "isoabbreviation": "Medicine (Baltimore)",
+      "nlmid": "2985248R"
+     }
+    },
+    "pubYear": "2026",
+    "pageInfo": "e48583",
+    "abstractText": "The causal relationship between milk consumption and a broad spectrum of health outcomes remains incompletely elucidated. This study aimed to investigate potential causal effects and explore the underlying biological pathways using an integrative multi-omics framework. We conducted a large-scale 2-sample Mendelian randomization study. Genetic predisposition for milk consumption was instrumented by the lactase persistence variant (rs4988235). We assessed causal relationships with 2459 disease phenotypes from FinnGen, and 91 inflammatory proteins, 211 gut microbial taxa, 731 immunophenotypes, and 1091 plasma metabolites. Genetically predicted higher milk consumption demonstrated robust effects on different disease outcomes. It was associated with a reduced risk of intestinal diseases, particularly colorectal cancer and its subtypes (all P\u2005<2.03\u2005\u00d7\u200510-5) and a decreased risk of malnutrition (OR: 0.998, 95% confidence interval: 0.996-0.999, P\u2005=\u20056.02\u2005\u00d7\u200510-8). Multi-omics analyses revealed nominally significant associations with specific gut microbes (e.g., Lactobacillus), inflammatory proteins (TNFSF12, CXCL5), immunophenotypes, and plasma metabolites (all P\u2005<.05). After false discovery rate correction, milk consumption significantly increased levels of N,N,N- trimethyl-5-aminovalerate (TMAVA, OR: 1.001, 95% confidence interval: 1.001-1.002, P\u2005=\u20055.74\u2005\u00d7\u200510-5). This study provides genetic evidence supporting a potential causal relationship between milk consumption and health outcomes, exhibiting a strong protective role against intestinal diseases while also implicating potential pathways involving gut microbiota, host metabolism, and immune response.",
+    "affiliation": "Department of Nursing, Chuzhou City Vocational College, Chuzhou, China.",
+    "publicationStatus": "ppublish",
+    "language": "eng",
+    "pubModel": "Print",
+    "pubTypeList": {
+     "pubType": [
+      "research-article",
+      "Journal Article"
+     ]
+    },
+    "grantsList": {
+     "grant": [
+      {
+       "grantId": "2025rcyj001",
+       "agency": "the Talent Introduction Project of Chuzhou City Vocational College",
+       "orderIn": 0
+      },
+      {
+       "grantId": "2025zkyb03",
+       "agency": "the Natural Science Research Project of Chuzhou City Vocational College",
+       "orderIn": 0
+      }
+     ]
+    },
+    "meshHeadingList": {
+     "meshHeading": [
+      {
+       "majorTopic_YN": "Y",
+       "descriptorName": "Milk"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Animals"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Humans"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Disease Susceptibility"
+      },
+      {
+       "majorTopic_YN": "Y",
+       "descriptorName": "Genetic Predisposition to Disease"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Lactase",
+       "meshQualifierList": {
+        "meshQualifier": [
+         {
+          "abbreviation": "GE",
+          "qualifierName": "genetics",
+          "majorTopic_YN": "N"
+         }
+        ]
+       }
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Phenotype"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Polymorphism, Single Nucleotide"
+      },
+      {
+       "majorTopic_YN": "Y",
+       "descriptorName": "Mendelian Randomization Analysis"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Gastrointestinal Microbiome"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Multiomics"
+      }
+     ]
+    },
+    "keywordList": {
+     "keyword": [
+      "Causal Inference",
+      "Milk Consumption",
+      "Mendelian Randomization",
+      "Multi-omics"
+     ]
+    },
+    "chemicalList": {
+     "chemical": [
+      {
+       "name": "Lactase",
+       "registryNumber": "EC 3.2.1.108"
+      }
+     ]
+    },
+    "subsetList": {
+     "subset": [
+      {
+       "code": "IM",
+       "name": "Index Medicus"
+      }
+     ]
+    },
+    "fullTextUrlList": {
+     "fullTextUrl": [
+      {
+       "availability": "Subscription required",
+       "availabilityCode": "S",
+       "documentStyle": "doi",
+       "site": "DOI",
+       "url": "https://doi.org/10.1097/MD.0000000000048583"
+      },
+      {
+       "availability": "Open access",
+       "availabilityCode": "OA",
+       "documentStyle": "html",
+       "site": "Europe_PMC",
+       "url": "https://europepmc.org/articles/PMC13166470"
+      },
+      {
+       "availability": "Open access",
+       "availabilityCode": "OA",
+       "documentStyle": "pdf",
+       "site": "Europe_PMC",
+       "url": "https://europepmc.org/articles/PMC13166470?pdf=render"
+      }
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "Y",
+    "citedByCount": 0,
+    "hasData": "Y",
+    "hasReferences": "N",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasLabsLinks": "Y",
+    "license": "cc by-nc",
+    "hasEvaluations": "N",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "gwas",
+      "refsnp",
+      "doi"
+     ]
+    },
+    "dateOfCompletion": "2026-07-16",
+    "dateOfCreation": "2026-05-12",
+    "firstIndexDate": "2026-05-14",
+    "fullTextReceivedDate": "2026-05-20",
+    "dateOfRevision": "2026-08-06",
+    "firstPublicationDate": "2026-05-01"
+   },
+   {
+    "id": "41482367",
+    "source": "MED",
+    "pmid": "41482367",
+    "pmcid": "PMC12764234",
+    "fullTextIdList": {
+     "fullTextId": [
+      "PMC12764234"
+     ]
+    },
+    "doi": "10.21873/invivo.14183",
+    "title": "Frequency and Diagnostic Utility of the -13910C&gt;T &lt;i&gt;MCM6&lt;/i&gt; Gene Polymorphism for Lactose Intolerance in a Brazilian Northeast Population.",
+    "authorString": "DE Morais GP, Th\u00e9 AP, Dias Nogueira BM, DE Sousa Oliveira D, DA Cunha LS, DA Silva JBS, Th\u00e9 PMP, Monteiro AA, Xavier LGM, DE Moraes MEA, Moreira-Nunes CA.",
+    "authorList": {
+     "author": [
+      {
+       "fullName": "DE Morais GP",
+       "firstName": "Guilherme Passos",
+       "lastName": "DE Morais",
+       "initials": "GP",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Medicine, Clinical Genetics Laboratory, Drug Research and Development Center (NPDM), Federal University of Cear\u00e1, Fortaleza, CE, Brazil."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Th\u00e9 AP",
+       "firstName": "Andr\u00e9 Pontes",
+       "lastName": "Th\u00e9",
+       "initials": "AP",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Medicine, Clinical Genetics Laboratory, Drug Research and Development Center (NPDM), Federal University of Cear\u00e1, Fortaleza, CE, Brazil."
+         },
+         {
+          "affiliation": "Corporative Department, Central Unity, Clementino Fraga Group, Fortaleza, CE, Brazil."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Dias Nogueira BM",
+       "firstName": "Beatriz Maria",
+       "lastName": "Dias Nogueira",
+       "initials": "BM",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Medicine, Clinical Genetics Laboratory, Drug Research and Development Center (NPDM), Federal University of Cear\u00e1, Fortaleza, CE, Brazil."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "DE Sousa Oliveira D",
+       "firstName": "Deivide",
+       "lastName": "DE Sousa Oliveira",
+       "initials": "D",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Medicine, Clinical Genetics Laboratory, Drug Research and Development Center (NPDM), Federal University of Cear\u00e1, Fortaleza, CE, Brazil."
+         },
+         {
+          "affiliation": "Department of Hematology, Fortaleza General Hospital (HGF), Fortaleza, CE, Brazil."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "DA Cunha LS",
+       "firstName": "Leidivan Sousa",
+       "lastName": "DA Cunha",
+       "initials": "LS",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Medicine, Clinical Genetics Laboratory, Drug Research and Development Center (NPDM), Federal University of Cear\u00e1, Fortaleza, CE, Brazil."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "DA Silva JBS",
+       "firstName": "Jean Breno Silveira",
+       "lastName": "DA Silva",
+       "initials": "JBS",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Genomics and Molecular Biology Laboratory, Central Unity, Clementino Fraga Group, Fortaleza, CE, Brazil."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Th\u00e9 PMP",
+       "firstName": "Patr\u00edcia Maria Pontes",
+       "lastName": "Th\u00e9",
+       "initials": "PMP",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Pharmacy, Federal University of Cear\u00e1, Fortaleza, CE, Brazil."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Monteiro AA",
+       "firstName": "Alexandre DE Almeida",
+       "lastName": "Monteiro",
+       "initials": "AA",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Clinical Pathology, Central Unity, Clementino Fraga Group, Fortaleza, CE, Brazil."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Xavier LGM",
+       "firstName": "Luis Gonzaga Moura",
+       "lastName": "Xavier",
+       "initials": "LGM",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Clinical Pathology, Central Unity, Clementino Fraga Group, Fortaleza, CE, Brazil."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "DE Moraes MEA",
+       "firstName": "Maria Elisabete Amaral",
+       "lastName": "DE Moraes",
+       "initials": "MEA",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Medicine, Clinical Genetics Laboratory, Drug Research and Development Center (NPDM), Federal University of Cear\u00e1, Fortaleza, CE, Brazil."
+         }
+        ]
+       }
+      },
+      {
+       "fullName": "Moreira-Nunes CA",
+       "firstName": "Caroline Aquino",
+       "lastName": "Moreira-Nunes",
+       "initials": "CA",
+       "authorAffiliationDetailsList": {
+        "authorAffiliation": [
+         {
+          "affiliation": "Department of Medicine, Clinical Genetics Laboratory, Drug Research and Development Center (NPDM), Federal University of Cear\u00e1, Fortaleza, CE, Brazil; carolfam@gmail.com."
+         },
+         {
+          "affiliation": "Genomics and Molecular Biology Laboratory, Central Unity, Clementino Fraga Group, Fortaleza, CE, Brazil."
+         }
+        ]
+       }
+      }
+     ]
+    },
+    "authorIdList": {
+     "authorId": [
+      {
+       "type": "ORCID",
+       "value": "0009-0003-3385-1653"
+      },
+      {
+       "type": "ORCID",
+       "value": "0009-0008-8016-9274"
+      }
+     ]
+    },
+    "dataLinksTagsList": {
+     "dataLinkstag": [
+      "supporting_data"
+     ]
+    },
+    "journalInfo": {
+     "issue": "1",
+     "volume": "40",
+     "journalIssueId": 4082373,
+     "dateOfPublication": "2026 Jan-Feb",
+     "monthOfPublication": 0,
+     "yearOfPublication": 2026,
+     "printPublicationDate": "2026-01-01",
+     "journal": {
+      "title": "In vivo (Athens, Greece)",
+      "medlineAbbreviation": "In Vivo",
+      "issn": "0258-851X",
+      "essn": "1791-7549",
+      "isoabbreviation": "In Vivo",
+      "nlmid": "8806809"
+     }
+    },
+    "pubYear": "2026",
+    "pageInfo": "178-190",
+    "abstractText": "<h4>Background/aim</h4>Lactose intolerance (LI) is a common clinical condition associated with reduced lactase enzyme activity. The oral lactose tolerance test (OLTT), although widely used for diagnosis, has several limitations such as fasting, multiple blood collections, and gastrointestinal discomfort. As an alternative, genetic testing targeting the -13910C>T polymorphism in the <i>MCM6</i> gene, a regulator of lactase expression, has gained prominence as it is non-invasive, rapid, and unaffected by physiological variation. This study aimed to evaluate the frequency of the -13910C>T polymorphism of the <i>MCM6</i> gene in the population of Fortaleza and compare the genotyping results with the OLTT, to verify its diagnostic applicability.<h4>Materials and methods</h4>A descriptive study was conducted with data from 2359 patients examined between January 2022 and May 2025 at a private laboratory. Concordance between genotyping and OLTT was analyzed in 24 patients who underwent both tests, with OLTT considered the reference standard. Sensitivity, specificity, accuracy, and Kappa coefficient were calculated. All analyses were performed using R software.<h4>Results</h4>The median age of participants was 7 years (range=0.06-100 years). The observed genotype frequencies were 52.90% for the CC genotype, 38.74% for CT, and 8.35% for TT. The Kappa test demonstrated moderate agreement between the genetic test and OLTT [k=0.583 (<i>p</i>=0.00413)], with a sensitivity of 81.82% [95% confidence interval (CI)=48.22-97.71], overall accuracy of 79.17%, and specificity of 76.92% (95%CI=48.16-94.96).<h4>Conclusion</h4>Genotyping for the -13910C>T polymorphism in the <i>MCM6</i> gene represents a promising diagnostic alternative for lactose intolerance, offering a feasible and less invasive approach with good sensitivity and specificity.",
+    "affiliation": "Department of Medicine, Clinical Genetics Laboratory, Drug Research and Development Center (NPDM), Federal University of Cear\u00e1, Fortaleza, CE, Brazil.",
+    "publicationStatus": "ppublish",
+    "language": "eng",
+    "pubModel": "Print",
+    "pubTypeList": {
+     "pubType": [
+      "research-article",
+      "Journal Article"
+     ]
+    },
+    "meshHeadingList": {
+     "meshHeading": [
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Humans"
+      },
+      {
+       "majorTopic_YN": "Y",
+       "descriptorName": "Lactose Intolerance",
+       "meshQualifierList": {
+        "meshQualifier": [
+         {
+          "abbreviation": "DI",
+          "qualifierName": "diagnosis",
+          "majorTopic_YN": "N"
+         },
+         {
+          "abbreviation": "GE",
+          "qualifierName": "genetics",
+          "majorTopic_YN": "N"
+         },
+         {
+          "abbreviation": "EP",
+          "qualifierName": "epidemiology",
+          "majorTopic_YN": "N"
+         }
+        ]
+       }
+      },
+      {
+       "majorTopic_YN": "Y",
+       "descriptorName": "Genetic Predisposition to Disease"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Lactose Tolerance Test"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Gene Frequency"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Genotype"
+      },
+      {
+       "majorTopic_YN": "Y",
+       "descriptorName": "Polymorphism, Single Nucleotide"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Adolescent"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Adult"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Aged"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Aged, 80 and over"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Middle Aged"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Child"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Child, Preschool"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Infant"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Brazil",
+       "meshQualifierList": {
+        "meshQualifier": [
+         {
+          "abbreviation": "EP",
+          "qualifierName": "epidemiology",
+          "majorTopic_YN": "N"
+         }
+        ]
+       }
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Female"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Male"
+      },
+      {
+       "majorTopic_YN": "N",
+       "descriptorName": "Young Adult"
+      },
+      {
+       "majorTopic_YN": "Y",
+       "descriptorName": "Minichromosome Maintenance Complex Component 6",
+       "meshQualifierList": {
+        "meshQualifier": [
+         {
+          "abbreviation": "GE",
+          "qualifierName": "genetics",
+          "majorTopic_YN": "N"
+         }
+        ]
+       }
+      }
+     ]
+    },
+    "keywordList": {
+     "keyword": [
+      "Gene polymorphism",
+      "Lactose intolerance",
+      "Genetic Testing",
+      "Molecular Diagnostics",
+      "Lactase Non-persistence"
+     ]
+    },
+    "chemicalList": {
+     "chemical": [
+      {
+       "name": "Minichromosome Maintenance Complex Component 6",
+       "registryNumber": "EC 3.6.4.12"
+      },
+      {
+       "name": "MCM6 protein, human",
+       "registryNumber": "EC 3.6.4.12"
+      }
+     ]
+    },
+    "subsetList": {
+     "subset": [
+      {
+       "code": "IM",
+       "name": "Index Medicus"
+      }
+     ]
+    },
+    "fullTextUrlList": {
+     "fullTextUrl": [
+      {
+       "availability": "Subscription required",
+       "availabilityCode": "S",
+       "documentStyle": "doi",
+       "site": "DOI",
+       "url": "https://doi.org/10.21873/invivo.14183"
+      },
+      {
+       "availability": "Open access",
+       "availabilityCode": "OA",
+       "documentStyle": "html",
+       "site": "Europe_PMC",
+       "url": "https://europepmc.org/articles/PMC12764234"
+      },
+      {
+       "availability": "Open access",
+       "availabilityCode": "OA",
+       "documentStyle": "pdf",
+       "site": "Europe_PMC",
+       "url": "https://europepmc.org/articles/PMC12764234?pdf=render"
+      }
+     ]
+    },
+    "isOpenAccess": "Y",
+    "inEPMC": "Y",
+    "inPMC": "Y",
+    "hasPDF": "Y",
+    "hasBook": "N",
+    "hasSuppl": "N",
+    "citedByCount": 0,
+    "hasData": "Y",
+    "hasReferences": "Y",
+    "hasTextMinedTerms": "Y",
+    "hasDbCrossReferences": "N",
+    "hasLabsLinks": "N",
+    "license": "cc by-nc-nd",
+    "hasEvaluations": "N",
+    "authMan": "N",
+    "epmcAuthMan": "N",
+    "nihAuthMan": "N",
+    "hasTMAccessionNumbers": "Y",
+    "tmAccessionTypeList": {
+     "accessionType": [
+      "refsnp"
+     ]
+    },
+    "dateOfCompletion": "2026-01-02",
+    "dateOfCreation": "2026-01-02",
+    "firstIndexDate": "2026-01-04",
+    "fullTextReceivedDate": "2026-01-05",
+    "dateOfRevision": "2026-02-06",
+    "firstPublicationDate": "2026-01-01"
+   }
+  ]
+ }
+}

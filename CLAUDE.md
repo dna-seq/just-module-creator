@@ -426,12 +426,15 @@ preference: it goes into §10, in their words, with the reason.
 
 *Append-only. One line each, in the user's terms, with the why where it is not obvious.*
 
-- **"auto-commit grant lingers. Commit and push as you go" — "and tag."** Granted
-  2026-08-11, extending the initial-build grant to *push* and *tag*, and it does
-  not expire at the end of a feature. Still meaningfully sized commits rather than
-  atomized ones, and still explicit paths — never `git add -A`. Tag at a version
-  bump, matching the `pyproject.toml` version. Releases and branch management
-  stay the user's.
+- **"auto-commit grant lingers... you commit and tag as you go."** Granted
+  2026-08-11 and it does **not** expire at the end of a feature: commit and tag
+  without asking. Meaningfully sized commits rather than atomized ones, explicit
+  paths — never `git add -A` — and tags at a version bump, matching the
+  `pyproject.toml` version.
+- **Pushing is never persistent.** "push — in this session only." A push grant
+  covers the session it was given in and nothing after it, so a later session
+  starts from *ask first* again no matter what the tree looks like. Releases and
+  branch management stay the user's throughout.
 - **"I need to have mvp, then pace declines."** Get a working end-to-end thing
   first and refine after; do not gold-plate the early steps of a long build.
 - **Never destroy stashes**, even on explicit request. Data loss is the user's to
