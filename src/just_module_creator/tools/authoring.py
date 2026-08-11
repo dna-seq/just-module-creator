@@ -77,6 +77,9 @@ _SUBJECTS: dict[str, tuple[str, str]] = {
         "(gene, reference_sequence, tissue, variant_key)",
     ),
     "pgs.csv": ("a published polygenic score", "(pgs_id, trait)"),
+    # Draftable as of upstream 0.5.4: the one fact sidecar a human writes, and the
+    # only table the compile licence gate reads.
+    "sources.csv": ("the terms one source's data came under", "(source, layer)"),
 }
 
 _COMPOSITION_NOTE = (
@@ -124,7 +127,6 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
                 "frequencies.csv",
                 "gene_metrics.csv",
                 "literature.csv",
-                "sources.csv",
             ],
             note=_COMPOSITION_NOTE,
         )
@@ -145,10 +147,14 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         The `redundancy_bearing` map names columns a later check compares against
         a source. Author those yourself from independent reading; filling one
         from the source that checks it makes the check vacuous.
+
+        `attestation_bearing` is the stronger case, and it is a subset: those
+        cells assert that a *human read something*, so filling one from a fetched
+        document states something false rather than merely unverifiable.
         """
         name = known_kind(csv_name, draft.DRAFTABLE)
         described = hints.describe_table(name)
-        # REDUNDANCY_BEARING is global across kinds; narrow it to this table's
+        # Both constants are global across kinds; narrow each to this table's
         # columns so an agent is not told to hand-author a column it has not got.
         present = {
             str(c["name"])
@@ -160,12 +166,18 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             for col, why in getattr(hints, "REDUNDANCY_BEARING", {}).items()
             if str(col) in present
         }
+        attestation = sorted(
+            str(col)
+            for col in getattr(hints, "ATTESTATION_BEARING", frozenset())
+            if str(col) in present
+        )
         return TableDescription(
             csv=described.get("csv", name),
             model=str(described.get("model", "")),
             columns=jsonable(described.get("columns", [])),
             requirements=jsonable(described.get("requirements", {})),
             redundancy_bearing=redundancy,
+            attestation_bearing=attestation,
         )
 
     @mcp.tool(
@@ -532,8 +544,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         lines += [
             "",
             "Enricher-produced sidecars (do not hand-author): `resolution.csv`, "
-            "`frequencies.csv`, `gene_metrics.csv`, `literature.csv`, `sources.csv` — "
-            "except `sources.csv` when you copied rows from a source by hand.",
+            "`frequencies.csv`, `gene_metrics.csv`, `literature.csv`. `sources.csv` is "
+            "a table kind of its own, listed above: it is the one fact sidecar you "
+            "write by hand, and the only table the compile licence gate reads.",
         ]
         return "\n".join(lines)
 

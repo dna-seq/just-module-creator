@@ -73,8 +73,8 @@ The server **boots with no environment configured** — authoring a module needs
 | `validate_module` | essentials | no | pre-flight; pass the mode you will compile with |
 | `compile_module` | essentials | no | parquet + `manifest.json` |
 | `lookup_variant` | essentials | no | loci, alleles, ClinVar, rsID currency — and what it withholds |
-| `literature_search` | essentials | no | **the papers behind a row** — and the only way to check a PMID's *identity* |
-| `lookup_citation` | essentials | no | does this PMID/DOI *exist* (not: is it the right paper) |
+| `literature_search` | essentials | no | **the papers behind a row** — with titles, across several services |
+| `lookup_citation` | essentials | no | does this PMID/DOI exist, and which paper does it name |
 | `registry_search` | essentials | no | has someone already built this |
 | `registry_namespace_available` | essentials | no | is the name legal, is it free — the pre-flight for an irreversible claim |
 | `draft_from_clinvar` | essentials | no | ClinVar → `variants.csv` + `studies.csv`; `use` required |

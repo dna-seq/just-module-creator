@@ -29,8 +29,8 @@ because `S1` was answered in place and not yet archived. So there, for now, read
 `**Status —**` paragraphs in the inbox itself.
 
 **Number a new one with `.claude/triage-state.sh --next`, never from what the inbox
-shows** — it is empty, ids are never reused, and the next is `S21` (`S20` is ours, filed
-2026-08-11).
+shows** — it is empty, ids are never reused. As of 2026-08-11 the next is `S25` in the
+format tree and `S5` in the registry's; compute both, never read them off an inbox.
 
 **Three states, not two, and only the third releases a guard.** *accepted and
 filed* (an upstream `RMn`, still open) → *fixed in tree* (the symbol exists in
@@ -38,30 +38,44 @@ filed* (an upstream `RMn`, still open) → *fixed in tree* (the symbol exists in
 lockfile). Every status line below names both halves, because "open upstream" said
 neither and was wrong on every entry in this file until 2026-08-11.
 
-**As of 2026-08-11, upstream's 0.5.4 is written but unreleased.** PyPI's newest is
-compiler/enricher 0.5.3 and format 0.5.0. Confirm by symbol, not changelog:
-`hints.ATTESTATION_BEARING`, `hints._report_ragged` and `Finding.line` are in
-`../just-dna-format/compiler/src/just_dna_compiler/hints.py` and absent from the
-installed `just_dna_compiler.hints`.
+**0.5.4 and registry 0.13.0 both RELEASED and adopted on 2026-08-11.** `uv sync` now
+installs format/compiler/enricher **0.5.4** and `just-dna-registry` **0.13.0**, and the
+floors in `pyproject.toml` say so. Verified by symbol rather than changelog:
+`hints.ATTESTATION_BEARING`, `hints._report_ragged`, `Finding.line`,
+`CitationHint.title`, `IdentifierReport.gene_loci` and
+`RegistryClient(expect_mode=…)` are all present in the *installed* packages.
+
+That released six mitigations at once. **The entries below have been re-verified against
+the installed packages, not the sibling checkouts** — which is the check this file
+exists to force, and the reason its status lines name both halves.
 
 ## Answered items that carry no `F<n>` here
 
 `S11`, `S15`, `S16` and `S17` were filed without an `F<n>` because each shipped a
 mitigation the same day and nothing was blocked — the three documentation gaps are
 recorded in [CHANGELOG.md](CHANGELOG.md) under "Three documentation gaps filed
-upstream". All four have since been answered, and all four fixes are **in tree for
-the unreleased 0.5.4**, so none of the mitigations may come out yet:
+upstream". All four are answered and all four fixes are **released in 0.5.4**:
 
-| `S<n>` | Verdict | Landed in (unreleased) | Our mitigation, which stays |
+| `S<n>` | Verdict | Landed in (0.5.4, installed) | Our mitigation, and what became of it |
 |---|---|---|---|
-| `S11` — `provenance_quote` / `provenance_regex` are redundancy-bearing and the map does not say so | accepted and fixed, **including the fifth refusal reason we argued for**: a quote is an *attestation*, not a spent comparison | `hints.ATTESTATION_BEARING`; `ENRICHER.md` | the refusal to extract a passage from a fetched document (`CLAUDE.md` §2) |
+| `S11` — `provenance_quote` / `provenance_regex` are redundancy-bearing and the map does not say so | accepted and fixed, **including the fifth refusal reason we argued for**: a quote is an *attestation*, not a spent comparison | `hints.ATTESTATION_BEARING`; both columns also added to `REDUNDANCY_BEARING`; `ENRICHER.md` | **the refusal stays and is now upstream's too.** `describe_table` reports `attestation_bearing` as a subset of `redundancy_bearing`, so the sharper reason reaches an agent instead of only living in `CLAUDE.md` §2 |
 | `S15` — `PacingGate`'s concurrency contract is unstated and it is not safe to share | accepted and fixed — the injection API asks callers to share a gate, so the gate had to be safe to share | `net.PacingGate` slot reservation under a lock; `ENRICHER.md` | `ServiceGate`'s lock in `net.py` |
 | `S16` — whether a spec directory may hold files the compiler does not know is unspecified | accepted — tolerance is now a stated, tested contract, **and probing it found the case where "ignored" is wrong**: a mistyped table name | `COMPILER.md` + `_check_misspelled_tables` | `published.json` relies on the tolerance we tested |
 | `S17` — `source` exists only on enricher-produced rows, so an authored table cannot declare provenance | accepted and fixed both ways; our proposed table was right, and there is a fifth column — on `sources.csv` itself | `SCHEMAS.md` + `vocab.MISPLACED_COLUMN_REASONS` | none needed |
 
 `S15`'s answer is the one to note when tempted to drop the lock: upstream fixed the
 gate *because* the injection API asks callers to share one, which is exactly what
-`ServiceGate` does. Two locks is harmless; none is a race.
+`ServiceGate` does. Two locks is harmless; none is a race. Registry 0.13.0 adopted the
+same fix and corrected three comments that had claimed `enrich_max_concurrency = 1` was
+what made sharing a bundle *correct* — true through 0.5.3, wrong now. Ours never made
+that claim, and the lock stays.
+
+`S11` is the one whose consequence outlives the fix. Upstream added the constant **and**
+kept both columns in `REDUNDANCY_BEARING`, because they qualify under that map's own
+definition too. So the rule is unchanged in substance: once a fulltext has been read
+through `fetch_fulltext`, `quotes_found` on that row is no longer independent evidence —
+it has degraded to a citation-pairing check, which still catches a quote written against
+the wrong PMID. A released constant does not make a machine-located quote honest.
 
 ---
 
@@ -173,15 +187,22 @@ work here for us. Removed 2026-08-11.
 ## F9 — `lookup_citation` cannot detect a fabricated PMID, because nothing returns a title
 
 **Filed upstream:** **S12**, now in `CONSUMER_SUGGESTIONS_HISTORY.md` ·
-**Status: accepted and FIXED IN TREE for the unreleased 0.5.4 — not in the 0.5.3 we
-install, so our mitigation stays.**
+**Status: CLOSED 2026-08-11 — released in 0.5.4, installed, and adopted here.**
 
 Upstream added `CitationHint.title` / `journal` / `year` / `first_author`, plus
 `literature.bibliographic` and `hint citation --json`, agreeing that existence is
-not identity and that `esummary` already carried the answer. When 0.5.4 reaches
-PyPI, `lookup_citation` can report the title itself and this closes — until then
-`CitationHint` in our environment still has no title and the docstring's
-existence-not-identity wording is still the truth.
+not identity and that `esummary` already carried the answer at no extra request.
+
+**Adopted:** `CitationLookup` carries all four, `lookup_citation`'s docstring now tells
+a caller to read the title and compare it, and the `find-evidence` skill's
+"existence is not identity" section names both tools instead of routing around one of
+them. `tests/test_discovery.py` asserts the upstream fields exist on the *installed*
+package — so if they ever vanish, the docstring's promise fails with them — and that an
+offline lookup withholds the title as `null` rather than denying the paper.
+
+What did **not** change is the working rule: a title checks an id you already hold, and
+only a search finds the id you should be citing. So "take every PMID from a search
+result" stays, for a reason that was never about titles.
 
 `CitationHint` carries `pmid_exists`, `doi`, `registry_doi`, `pmcid`,
 `open_access`, `abstract_available` — and no **title**, journal or year. PMIDs are
@@ -194,15 +215,14 @@ densely allocated across roughly 1–40,000,000, so a recalled or hallucinated
 `_check_pmid` parses — `literature._identifiers` reads that same record for the DOI
 and PMCID and drops the rest — so this is surfacing fields upstream already has.
 
-**Our mitigation, which is why this is not blocking:** `literature_search`
+**Our mitigation, which is why this was never blocking:** `literature_search`
 (essentials) returns titles, and `literature_search(pmids=[...])` reads them back
-for ids the caller already holds. Both our docs now say to take every PMID from a
-search result rather than from memory, and `lookup_citation`'s own docstring says
-outright that it answers existence and not identity. Recorded as **F9** in
-[dogfooding.md](dogfooding.md) as well, because the mitigation is ours and the fix
-is not.
+for ids the caller already holds. That half was ours and shipped first — it is why
+`literature_search` is in the default tier at all. The dual listing has ended now
+that both halves are done: the full history is in
+[previous_issues.md](previous_issues.md) under `F9`.
 
-**Closes when** `CitationHint` carries a title.
+**Closed.** `CitationHint` carries a title, in a release `uv sync` installs.
 
 ---
 
@@ -267,9 +287,9 @@ refused on a principle, not a schedule.
 
 **Filed upstream:** **S1** in `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`
 (2026-08-11 — the *registry's* intake, not the format tree's: the ceiling is
-server-side) · **Status: ANSWERED and accepted the same day, fixed in the registry's
-tree for 0.13.0, and NOT released — PyPI's newest is 0.12.0 and the live production
-instance reports 0.12.0. So nothing has changed for our callers yet.**
+server-side), now in that repo's `CONSUMER_SUGGESTIONS_HISTORY.md` ·
+**Status: RELEASED 2026-08-11 in registry 0.13.0, installed, and both live instances
+report `0.13.0`. The upstream half is done; the remaining work is ours and is `RM8`.**
 
 Upstream took options 1 and 3 and deferred 2 with its reasoning:
 
@@ -306,20 +326,23 @@ the idea-book entry is withdrawn and the ask is upstream.
 check declining rather than a verdict, and that `validate_module` is what decides
 publishability. That is true, and an author driving the CLI needs it.
 
-**What is ours now.** We wrap neither `validate` nor `check` — the whole 0.10–0.13
-client surface is unwrapped, tracked as `RM8`. When we do, `would_publish_module_level`
-is the field to read, and it must be reported as "nothing module-level blocks this"
-rather than "this will publish", exactly as upstream named it.
+**What is ours now, and it is the only thing left.** We wrap neither `validate` nor
+`check`, so none of this reaches an author yet — the unwrapped client surface is `RM8`.
+When we do wrap it: `check(..., offline=True)` is the call for a panel, since the ceiling
+no longer applies to a run that egresses nothing; and `would_publish_module_level` must be
+reported as **"nothing module-level blocks this"** rather than "this will publish", exactly
+as upstream named it, for the same reason `None` is not `False` one level down.
 
-**Closes when** registry 0.13.0 is on PyPI and in our lockfile. The upstream half is
-done; verify by symbol against the *installed* package, not the sibling checkout.
+**The upstream half is closed** — verified by symbol on the installed 0.13.0 and by
+`/health` on both live instances. `RM8` is where the rest lives; this entry is no longer
+blocked on anybody else.
 
 ## F14 — a ragged CSV row is misdiagnosed by `lint_rows`, on the wrong column and the wrong line
 
 **Found:** 2026-08-11, first binning probe (HTT CAG repeat bins) ·
 **Filed upstream as `S18`**, now in `CONSUMER_SUGGESTIONS_HISTORY.md` ·
-**Status: both defects accepted and FIXED IN TREE the same day, for the unreleased
-0.5.4. Absent from the 0.5.3 we install, so the trap is still live for our callers.**
+**Status: CLOSED 2026-08-11 — both defects released in 0.5.4, installed, and carried
+across our boundary.**
 
 `hints._report_ragged` names a ragged row *before* the error it causes, and
 `Finding` gained a `line` field carrying the file line an editor shows — so both
@@ -327,12 +350,18 @@ halves of this note landed, including the one about `row` and `line N` disagreei
 over the same CSV. Filing it the moment it was found is what made that possible;
 this is the counter-example to `S14`'s lateness.
 
-**What this means for us now.** Nothing to build: `lint_rows` is a pass-through and
-`to_findings` will carry `line` across the boundary the day it exists. The line in
-the authoring skill about quoting free-text cells stays useful regardless — an
-author should quote them anyway — but it stops being a workaround for a silent
-mis-parse once 0.5.4 lands. Re-check `Finding.line` on the installed package before
-rewording anything.
+**Adopted:** `LintFinding.line` exists and `to_findings` passes it through. It is
+**never derived** — `row` is a 0-based data index and `line` is 1-based and
+header-inclusive, so computing one from the other would bake in an offset that goes
+silently wrong the day upstream changes either convention, which is the same argument
+that kept us from renumbering rows in the first place. Two tests in
+`tests/test_passes.py` pin both directions, including that an absent `line` stays
+`null` rather than becoming `row + 1`.
+
+`references/SYMPTOMS.md` gained the two entries this note argued for: the boolean
+misparse on a correctly-written column, and what to do when `row` and `line` disagree.
+Quoting free-text cells is still the advice — an author should quote them anyway — but
+it is no longer a workaround for a silent mis-parse.
 
 `hints.inspect_rows` positionally zips header names against parsed values
 (`hints.py:268`) without comparing the two lengths. An unquoted comma in a
@@ -371,9 +400,10 @@ documents its convention or is renamed to a 1-based `line` matching the compiler
 
 **Filed upstream:** **S2** in `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`
 (2026-08-11 — the *registry's* intake; the fix is a producer-side document or a
-declared boundary in `RegistryClient`) · **Status: open, filed the day it was
-raised.** Like `F11`, this sits in the intake that has **no history file**, so
-absence of movement there means unanswered, not answered.
+declared boundary in `RegistryClient`), now in that repo's
+`CONSUMER_SUGGESTIONS_HISTORY.md` · **Status: answered 2026-08-11 and PARTLY shipped in
+0.13.0 — the two halves that cost us real code are in; the enumerated contract itself is
+open on their roadmap, with the reason it is not a changelog-pass job.**
 
 We call eight `RegistryClient` methods — `register`, `whoami`, `claim_namespace`,
 `publish`, `list_modules`, `get_module`, `namespace_available`, `download` — out of
@@ -382,14 +412,29 @@ a 35-endpoint API. Nothing enumerates that subset as a contract, and neither
 each release is read in full to establish that our surface did not move, which for
 0.12.0 (deployment modes, polygon instance, operator purge) it did not.
 
-**What is ours, and stays:** the defensive projection in
-`tools/research.py::_module_card` — `pick("version", "latest_version")`, tolerating
-an `identity` sub-object `ModuleCard` does not document — and `registry_get_module`
-passing its payload through untyped rather than modelling it. Both look like
-over-caution against a schema upstream specifies exactly. They are not: without a
-version stamp on the reference, we could not confirm the documented schema applied
-to the client we run. Tightening either one now would be hardcoding a payload shape
-on a guess, which is the same bet written into our repo.
+**What shipped, and what it means for our code.** Both reference docs now carry the
+version range they are normative for, and every release entry opens with a
+`Client surface:` line — 0.13.0's says *unchanged*, and upstream checked it with `git log -S`
+over our eight methods rather than taking our word for it (last signature change:
+`c48deae`, the 0.9.0 rename). So the conclusion we paid a full release read to reach is now
+a line we can read. **What is still open is the enumeration itself**, and the reason is worth
+recording: it already exists and is machine-checked as `_WRAPPED_ROUTES` in their
+`tests/test_client_sdk.py`; what is missing is publishing it with a *contract version of its
+own*, which is a promise to hold it stable across package releases and therefore not
+something to do in the same pass as a changelog line.
+
+**Upstream says the defensive projection is now safe to delete** — against a 0.13 server the
+answer is `latest_version` with no `identity` key — and confirms our reading of why it was
+written: an unstamped schema could not tell us whether it described the server answering us.
+
+**We are keeping it anyway, as a decision rather than an omission.** `get_module` is not one
+of the six methods `assert_compatible` guards, so a self-hosted instance older than 0.13 will
+answer `registry_get_module` with no compatibility check in front of it, and the tolerance is
+what keeps that answer readable instead of a `KeyError`. Our *client* floor is 0.13.0; the
+*server* on the other end is somebody else's deployment and our floor says nothing about it.
+`pick(...)` costs one dict lookup. What changes is the comment: it is no longer "we cannot
+confirm the schema", it is "this tolerates an older server on an unguarded read", which is a
+narrower and checkable claim.
 
 **The host half of this was measured on 2026-08-11 and is now known**, which is worth
 recording because the answer was three different things at once:
@@ -408,15 +453,16 @@ The `test-modules` claim that succeeded on production predates the 0.12.0 deploy
 The namespace still exists and is now a dead end: production refuses to publish into
 a `test-`prefixed namespace, so it cannot be used for what it was claimed for.
 
-**Closes when** the client surface is enumerated as its own contract — a document, a
-declared boundary in the client, or per-release "client surface: unchanged/changed"
-— and the reference docs say which versions they are normative for.
+**Closes when** the client surface is enumerated as its own contract, with a contract
+version of its own. The other two halves — per-release `Client surface:` lines and
+version-stamped reference docs — landed in 0.13.0.
 
 ## F16 — nothing over the wire reports a registry instance's mode, so "am I on the polygon?" is unanswerable
 
 **Found:** 2026-08-11, adopting the registry's test/prod split ·
-**Filed upstream:** **S3** in `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`
-· **Status: filed the day it was found; unanswered as of writing.**
+**Filed upstream:** **S3**, now in that repo's `CONSUMER_SUGGESTIONS_HISTORY.md` ·
+**Status: CLOSED 2026-08-11 — filed, answered and released in registry 0.13.0 the same
+day, and adopted here.**
 
 Registry 0.12 runs two deployments of one image, and `REGISTRY_MODE` decides which
 refuses test data and which mounts the DELETE verbs. No endpoint reports it:
@@ -431,22 +477,40 @@ that matter are not: a publish aimed at the polygon that lands on production
 **succeeds** and cannot be undone, and the reverse — believing you published for real
 while on the polygon — looks identical in every response.
 
-**What is ours, and stays ours:** `targets.py` resolves a URL per target from our own
-configuration and records the target in the `published.json` receipt, so our record of
-which instance answered is at least internally consistent. We deliberately do **not**
-probe `openapi.json` to verify a host's mode: that would make this repo a second source
-of truth for something only the server knows, and it would be a guess wearing a check's
-clothing — the exact shape `F11` was withdrawn for.
+**What 0.13.0 shipped.** `mode` is on `GET /health` and `GET /api/v1/version` — both,
+because they serve different callers — and `RegistryClient(expect_mode="test")` raises
+`ModeMismatchError` before the first call that could spend anything, on the six methods the
+contract guard already covers (publish, import, download, validate, check, is_published).
+Two decisions upstream stated because they could have gone the other way: the check is
+independent of `check_version`, since silencing a contract check is not consent to publish
+on an unidentified instance; and **a server that reports no mode fails it**, because asking
+for verification and getting silence is not a pass. A server test asserts the advertised
+mode agrees with which routes are actually mounted — which makes the field strictly better
+than the `openapi.json` probe we declined to build.
 
-**Closes when** an instance reports its mode over the API, at which point the target
-argument can be *verified* rather than merely declared.
+**Adopted:** `targets.client_for` is now the single construction point for every
+`RegistryClient` in this server, and it always passes `expect_mode=target`. Uniformly, not
+only where a guarded method is reached: the alternative is a per-site judgement about which
+upstream method is guarded *today*, which is the kind of fact that goes stale in silence.
+`tests/test_registry_targets.py` pins the pin, pins that the mode and the URL name the same
+instance, and scans the source so a stray `RegistryClient(...)` anywhere else fails the
+suite — verified by adding one and watching it fail.
+
+Our own half was right and stays: the target still resolves to a URL from our configuration
+and is still recorded in the `published.json` receipt. Upstream's reply says why both
+belong — **ours records what we *intended*, the guard checks what *answered*.** We still
+never infer a mode ourselves.
+
+**Closed.** Both live instances report their mode (`prod` and `test`), and the polygon is
+serving — it was DNS'd but answering a bare Caddy 404 when this was filed.
 
 ---
 
 ## F17 — a failed Ensembl request is reported as "no such locus", and it flips a fabrication verdict
 
 **Found:** 2026-08-11, dogfooding · **Upstream:** `S20`, filed same day ·
-**Status:** open upstream, unmitigated here on purpose · **Severity:** high
+**Status: CLOSED 2026-08-11 — released in 0.5.4 and installed.** Filed, fixed and shipped
+inside a day, which is the whole argument for filing on discovery · **Severity:** high
 
 `lookup_variant` on a cache-cold rsID can answer `loci: []` with the finding *"live
 Ensembl has no GRCh38 locus for it either"* when what actually happened is that the
@@ -480,15 +544,29 @@ succeeded checked: ["…/ensembl_variations", "ensembl-rest"]
 Correct, and unreadable — a missing set element beside a prose finding that states the
 opposite conclusion, at level `info`.
 
-**Not mitigated here, deliberately.** The two candidate wrappers are both wrong:
-retrying inside `lookup_variant` narrows the window without closing it and turns a fast
-wrong answer into a slow one, still indistinguishable once retries are exhausted; and
-inferring the failure from `"ensembl-rest" not in checked` would hardcode a provenance
-string upstream owns and is free to change, to synthesise a state upstream does not
-expose — a guess wearing a check's clothing, the shape `F11` was withdrawn for. Until
-`S20` lands, the honest handling is what the tool already reports: treat a bare
-`loci: []` as **unchecked** whenever `checked` lacks `ensembl-rest`, and re-run before
-concluding an rsID does not exist.
+**Never mitigated here, and that was the right call.** Both candidate wrappers were
+wrong for reasons the fix confirms: retrying inside `lookup_variant` would have narrowed
+the window without closing it, and inferring the failure from `"ensembl-rest" not in
+checked` would have hardcoded a provenance string upstream owns in order to synthesise a
+state upstream did not expose — a guess wearing a check's clothing. **The string it would
+have keyed on is exactly what upstream changed:** `checked` now records the source on the
+answered-empty path too, so that inference would have inverted the moment the fix landed,
+silently, with our tests green. Waiting cost nothing and building would have cost a wrong
+answer.
 
-**Closes when** `resolve_rsid` distinguishes "could not ask" from "asked, nothing there"
-and `_lookup_live_loci` reports the former as a warning, in a release `uv sync` installs.
+**What 0.5.4 does.** `resolve_rsid` returns three outcomes — loci, `[]` for an answered
+absence, `None` for could-not-ask — and `_lookup_live_loci` reports the failure at
+`warning` (*"could not be reached, so its answer is unchecked rather than empty"*) against
+`info` for a genuine absence. A 4xx stays an *answer*, because Ensembl 400s on rsIDs it
+cannot resolve. The artifact half was worse and invisible from `lookup_variant`: `enrich()`
+had written `status="not_found", source="ensembl"` for a request that failed, asserting in
+the injected table that Ensembl was asked. That row is gone, the key stays unresolved so
+strict still refuses, and `unreachable_rsids` names them.
+
+**Adopted:** nothing in code — `lookup_variant` is a pass-through and `to_findings` already
+carries level and message, so the warning reaches a caller unchanged. What changed is the
+*guidance*: `skills/create-module/SKILL.md`'s triage step 1 now says to read the finding and
+re-run on the warning, instead of telling an author to infer unchecked-ness from a missing
+`checked` element.
+
+**Closed.** Verified on the installed 0.5.4.

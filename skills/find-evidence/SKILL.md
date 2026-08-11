@@ -29,23 +29,25 @@ reading and the deciding are the authoring work.
 ## Read this first: existence is not identity
 
 **PMIDs are densely allocated across roughly 1–40,000,000.** So a plausible-looking 8-digit number
-you recall is almost always a *real record for a different paper*, and `lookup_citation` answers
-`pmid_exists: true` for it. Nothing upstream returns a title from that call, so it cannot tell you
-whether the id names the paper you meant.
+you recall is almost always a *real record for a different paper*, and `pmid_exists: true` comes back
+for it. Fabrication is a failure of **identity**, and no existence answer can catch it.
 
-That makes the obvious-sounding rule — *"verify every PMID before writing it"* — unenforceable if
-`lookup_citation` is all you use. The working rule is stronger:
+Only a title settles identity. Both of these report one:
+
+```
+lookup_citation(pmid="11788828")                   # title, journal, year, first_author for one id
+literature_search(pmids=["11788828", "10748118"])  # the same, in bulk, across services
+```
+
+Compare each title against the paper you meant. **A title that disagrees means the id is wrong,
+however true `pmid_exists` is.** A `null` title means the question was not put — offline, or the
+service did not answer — and an unasked question is never a passed check. An id PubMed does not know
+comes back as an `error` finding; do not write those.
+
+That still leaves one thing a title cannot do: tell you which paper you *should* be citing. So the
+rule stays:
 
 > **Take every PMID you write from a search result in this session. Never from memory.**
-
-To check ids you already have, read their titles back:
-
-```
-literature_search(pmids=["11788828", "10748118"])
-```
-
-The result carries titles. Compare each against the paper you meant. An id PubMed does not know
-comes back as an `error` finding — do not write those.
 
 ---
 

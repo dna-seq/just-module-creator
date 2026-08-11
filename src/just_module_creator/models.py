@@ -159,8 +159,8 @@ class TableList(BaseModel):
 
     tables: list[TableKind] = Field(description="Hand-authored table kinds.")
     sidecars: list[str] = Field(
-        description="Enricher-produced files. Do not hand-author (except sources.csv "
-        "when rows were copied from a source by hand)."
+        description="Enricher-produced files. Do not hand-author. `sources.csv` used to "
+        "carry an exception here and is now a table kind in its own right, listed above."
     )
     note: str = Field(description="The composition rule in one line.")
 
@@ -193,8 +193,18 @@ class TableDescription(BaseModel):
     requirements: dict = Field(description="Same content as `table_requirements`.")
     redundancy_bearing: dict[str, str] = Field(
         default_factory=dict,
-        description="column -> why it is yours to author. Filling these from the "
-        "source that later checks them makes the check vacuous.",
+        description="column -> the check that later cross-examines it. Filling one from the "
+        "source that checks it makes the check vacuous.",
+    )
+    attestation_bearing: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Columns whose content asserts that a HUMAN read something. A stronger refusal "
+            "than redundancy: filling one from a document a tool just fetched states something "
+            "FALSE rather than merely unverifiable, because the cell means 'a curator read this "
+            "passage in this paper' and no lookup can make that true. These also appear in "
+            "`redundancy_bearing`; this names the sharper reason to refuse on."
+        ),
     )
 
 
@@ -230,6 +240,14 @@ class LintFinding(BaseModel):
     column: str | None = Field(default=None, description="Column, or null if row-wide.")
     level: str = Field(description="error | warning | info.")
     message: str = Field(description="What was found.")
+    line: int | None = Field(
+        default=None,
+        description=(
+            "1-based line in the file, header included — the number an editor shows, so "
+            "`row` and `line` legitimately differ for the same finding. null when upstream "
+            "did not locate one; never inferred from `row` here."
+        ),
+    )
 
 
 class LintAlteration(BaseModel):
@@ -359,13 +377,13 @@ class VariantLookup(BaseModel):
 
 
 class CitationLookup(BaseModel):
-    """Whether a citation **exists** — which is not the same as being the right one.
+    """Whether a citation exists, and **which paper it actually names**.
 
     PMIDs are densely allocated, so a recalled 8-digit number is usually a real
-    record for a *different* paper, and this comes back `pmid_exists=true`. Nothing
-    here carries a title, so identity cannot be checked from this result. Use
-    `literature_search(pmids=[...])` when the question is "does this id name the
-    paper I meant".
+    record for a *different* paper and comes back `pmid_exists=true`. Existence
+    therefore never settles identity — `title` does. Compare the title against the
+    paper you meant; if they disagree, the id is wrong however true
+    `pmid_exists` is.
     """
 
     pmid: str | None = Field(default=None, description="The PMID.")
@@ -383,6 +401,19 @@ class CitationLookup(BaseModel):
             "Whether Europe PMC holds an abstract — it returns one for paywalled records too. "
             "null means unchecked."
         ),
+    )
+    title: str | None = Field(
+        default=None,
+        description=(
+            "The title of the record this id actually names — the field that decides identity. "
+            "Read it and compare against the paper you meant. null means unchecked, not "
+            "'no such paper'."
+        ),
+    )
+    journal: str | None = Field(default=None, description="Journal name. null means unchecked.")
+    year: str | None = Field(default=None, description="Publication year. null means unchecked.")
+    first_author: str | None = Field(
+        default=None, description="First author. null means unchecked."
     )
     findings: list[LintFinding] = Field(default_factory=list, description="Notes and warnings.")
     withheld: list[LintAlteration] = Field(
@@ -412,6 +443,25 @@ class IdentifierReport(BaseModel):
     genes: list[IdentifierStatus] = Field(description="Gene symbol verdicts.")
     traits: list[IdentifierStatus] = Field(description="Trait CURIE verdicts.")
     stale: list[str] = Field(description="Identifiers needing attention, summarised.")
+    gene_locus_conflicts: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Rows whose `gene` sits on a different chromosome than the row's own variant. "
+            "**Read these even when every identifier is current** — the relationship is false "
+            "while both halves are individually true, so nothing else catches it. It is the "
+            "signature of a generated row: a real gene symbol beside an invented rsID, which "
+            "resolves anyway because dbSNP is dense. Reported, never repaired: which half is "
+            "wrong is not something a lookup can know."
+        ),
+    )
+    gene_locus_check_skipped: str | None = Field(
+        default=None,
+        description=(
+            "Why the gene/chromosome comparison did not run, or null when it did. An empty "
+            "`gene_locus_conflicts` means 'nothing disagreed' ONLY when this is null — "
+            "otherwise it means the comparison never happened, which is not a pass."
+        ),
+    )
 
 
 # --------------------------------------------------------------------------- #

@@ -71,27 +71,6 @@ It briefly had a roadmap item (`RM7`), which was wrong — there is no work here
 us to do. Removed on 2026-08-11 during a sweep for upstream gaps this repo had
 absorbed as its own.
 
-## F9 — `lookup_citation` cannot detect a fabricated PMID, and our docs said it could
-
-**Found:** 2026-08-11, designing the search tool · **Severity:** high ·
-**Status:** mitigated here, open upstream (`S12`)
-
-`CitationHint` carries `pmid_exists`, `doi`, `pmcid`, `open_access` — and no
-title, journal or year. PMIDs are densely allocated across roughly 1–40,000,000,
-so a recalled 8-digit number is almost always a real record for a **different**
-paper, and `lookup_citation` answers `pmid_exists: true` for it.
-
-Both our skill and the tool docstring said "never invent a PMID — verify each one
-with `lookup_citation`", which is a rule the surface could not enforce.
-Fabrication is a failure of *identity*; that call only answers existence.
-
-This is the finding that put `literature_search` in the **essentials** tier
-rather than extended: discovery is the missing half of an anti-fabrication
-promise the default surface had already made. `literature_search(pmids=[...])`
-reads titles back, and both docs now say to take every PMID from a search result
-rather than from memory.
-
-
 ---
 
 ## Probes not yet run
@@ -229,97 +208,6 @@ call it before the thing it is diagnosing.
 make the server read git state it has no business reading, and it is wrong for anyone who installed
 from PyPI, where there is no tree to compare against.
 
-## F20 — `list_tables` advertises `sources.csv`; `describe_table` and `get_template` reject it
-
-**Found:** 2026-08-11, authoring `assets/fto_bmi` · **Severity:** medium · **Status:** open ·
-**Upstream half:** `S21`, filed same day
-
-The done-checklist in `skills/create-module/SKILL.md` requires `sources.csv` ("present, covering every
-source cited, and consistent with `license:`"), and the skill is explicit that a source read by hand is
-invisible to the gate so the author must write the row. Every route to its columns then refuses:
-
-```
-list_tables()               → sidecars: [… "literature.csv", "sources.csv"]
-describe_table("sources.csv") → Unknown table kind 'sources.csv'. Authorable kinds: … (11 listed)
-get_template("sources.csv")   → Unknown table kind 'sources.csv'. Authorable kinds: … (11 listed)
-```
-
-Ours, and self-inflicted: the sidecar list in `tools/authoring.py:121-127` is a hardcoded literal while
-the authorable set comes from `draft.DRAFTABLE`, so one tool names a file the next two deny exists. The
-error even helpfully lists eleven alternatives, none of which is what was asked for — which reads as
-"you invented that filename", not "this kind is real but undescribed".
-
-`authoring_reference` does not rescue it: `just_dna_format.reference.authoring_reference()` omits
-`SourceRow` entirely, along with `layer`, `declared_use` and the three licence flags — verified by
-substring search over the generated JSON. That is the upstream half, filed as `S21`. **The two are
-separate defects and both need fixing:** even after upstream includes `SourceRow`, `describe_table`
-would still reject the name, because the rejection is our registry lookup and not upstream's.
-
-**Consequence.** To write two rows I imported `SourceRow` and read `model_fields` — leaving the product
-to read a dependency's source, which is the shape this repo treats as a doc bug on sight. What is at
-stake is not cosmetic: `share_alike` / `commercial_use` / `redistribution` are three independent axes
-where `None` means UNKNOWN and never *permitted*, and `sources.csv` is the only input the compile
-licence gate reads. An author reconstructing that from the filename gets the licence declaration wrong
-in the permissive direction.
-
-**Candidate fix:** let `describe_table` / `get_template` answer for any table with a model behind it,
-sidecars included, and mark the row's provenance in the result — `hand_authored: true` for
-`sources.csv`, `false` for the four a pass writes — so the answer also tells the author whether writing
-it is their job. That removes the hardcoded sidecar literal as a side effect.
-
-**A candidate that is wrong:** restating the columns in the skill. It is the exact drift the "never
-hardcode a schema fact" rule forbids, and the licence vocabularies are the last place to accept a
-second source of truth.
-
-## F21 — the skill's `sources.csv` rule is backwards: compliance warns, omission is silent
-
-**Found:** 2026-08-11, compiling `assets/fto_bmi` · **Severity:** medium · **Status:** open ·
-**Upstream half:** `S23`, filed same day
-
-`skills/create-module/SKILL.md:451` says:
-
-> It must cover **every** source your fact tables cite, including PubMed if you carry studies. A missing
-> row is a warning, not an error, so it is easy to ship without noticing.
-
-Both halves of that are wrong for the literature layer, and I found out by doing what it said. Same
-spec, strict compile, twice:
-
-```
-sources.csv with pubmed + europepmc rows  →  warnings: ["sources.csv declares 2 source(s)
-                                                        no table in this module uses:
-                                                        ['europepmc', 'pubmed']"]
-sources.csv deleted entirely              →  warnings: []          # succeeds, fully_resolved: true
-```
-
-So the documented behaviour is inverted: following the rule earns a warning, and ignoring it is
-completely silent. The sentence's stated risk — "easy to ship without noticing" — is real, but it is the
-*omission* that ships unnoticed, and the skill implies the opposite.
-
-**Why it happens** (upstream, filed as `S23`): the orphan and undeclared checks both compare `declared`
-against a `used_sources` set gathered from the `source` **columns** of the generated tables.
-`studies.csv` has no `source` column by design — `vocab.py:411` states that design and, in the same
-breath, instructs the author to add a `sources.csv` row instead. So `pubmed` can never enter
-`used_sources`, and both branches follow mechanically.
-
-**The harm is the incentive, not the warning.** An author who reads a warning tends to make it go away,
-and here the only way to silence it is to delete a true row — after which the module carries no record of
-the literature terms and the compile is clean. Our skill sent them to write the row; the compiler tells
-them it is superfluous; the tidy resolution is the wrong one.
-
-**Candidate fix, ours:** correct `SKILL.md:451` to state what actually happens — a `layer='literature'`
-row is not joinable to any table and currently draws an orphan warning; write it anyway because it is
-the only record of the terms, and expect the warning until `S23` lands. Naming the warning in the skill
-also stops the next author treating it as their mistake. The done-checklist line "sources.csv present,
-covering every source cited" should say the same.
-
-**A candidate that is wrong:** telling authors to omit literature rows to keep compiles clean. It
-optimises the warning count and loses the provenance, which is the whole point of the file — and it
-would make our skill contradict `vocab.py:411`.
-
-**Do not mitigate by suppressing the warning** in `_shared.to_findings`. Upstream's warning is a real
-signal for genuinely orphaned rows, and filtering by layer on our side would hardcode a judgement about
-which layers are joinable — a schema fact we do not own.
-
 ## F22 — `published.json`, the receipt we tell the author to commit, records `owner: null`
 
 **Found:** 2026-08-11, rehearsing `test-sheep/fto_bmi@1.0.0` · **Severity:** low · **Status:** open
@@ -351,44 +239,6 @@ deliberate and must not be tightened on the strength of undated client docs.
 reports `sources: ["clinvar"]` with a signature, while `versions[0].resolution` reports `sources: []`
 and `signature: null` for the same version. Ours is the read side only; noting it here so the next
 reader of that payload does not treat the nested copy as authoritative.
-
-## F23 — the `gene` column is unverified, and it is the column that exposes a fabricated source
-
-**Found:** 2026-08-11, triaging an LLM-written source · **Severity:** medium ·
-**Upstream:** `S24`, filed same day · **Status:** open, documented as a manual step
-
-`variants.csv:gene` is checked against nothing. A deliberately wrong pairing lints clean:
-
-```
-rs2252481 (chromosome 6) + gene NEGR1 (chromosome 1)  →  errors: 0, warnings: 0
-```
-
-`check_identifiers` does not cover it — it asks HGNC whether the *symbol* is current, and returned
-`state: "approved"` for a real module's `FTO` without ever asking whether `rs1421085` is in FTO. The two
-questions read alike in a result payload, which is what makes this easy to believe already handled.
-
-**Why it matters more than an unchecked free-text column usually would.** This is the single check that
-distinguished the honest half of a machine-written source from the fabricated half: four of seven rows
-named a real gene with an rsID on another chromosome, and every other check passed on each half
-separately — the rsID resolved, the symbol was approved, only the *pairing* was false. Triaging a
-machine-written document is now a real authoring workflow (see `assets/fto_bmi/README.md`), and this is
-its highest-value check.
-
-**Consequence, and why it is filed rather than fixed:** catching it required reading gene coordinates
-from a service outside the toolchain. That is the move this repo treats as a finding on sight, and it is
-now written into `skills/create-module/SKILL.md` §0 as an explicitly-labelled manual step — labelled,
-because a procedure that quietly requires leaving the product trains authors to skip it.
-
-**We should not build the lookup here.** `identifiers.py` already resolves symbols against HGNC and
-`resolution.csv` already carries the chromosome, so upstream holds both halves of the comparison; adding
-a gene-coordinate client on our side would be a second source of truth for a fact we do not own, and the
-value is entirely in the comparison. `S24` also argues *against* the stronger interval check — a variant
-legitimately names a distal gene (`rs1421085` is in an FTO intron and acts on IRX3/IRX5), so
-chromosome-level is the right granularity and an inside-the-gene-body check would fire on correct rows
-until somebody disabled it.
-
-**Closes when** an enricher check reports a chromosome disagreement between `gene` and the resolved
-locus, in a release `uv sync` installs — at which point the manual step comes out of §0.
 
 ## F24 — the suite's hermeticity is a convention with no guard, and a bare `Settings()` reads the real `.env`
 
@@ -435,8 +285,10 @@ shared project default at all. `build_services` logs the origin at `debug`, whic
 
 That matters because `skills/create-module/SKILL.md` now instructs an agent to ask the author for an email
 **only when nothing is configured**, and the only way to establish that is to read `.env` off disk — a step
-outside the tool surface, in a file that also holds tokens. It is the `F23` shape again: a documented
-procedure whose precondition the product cannot report.
+outside the tool surface, in a file that also holds tokens. It is the shape `F23` had before 0.5.4
+closed it (see [previous_issues.md](previous_issues.md)): a documented procedure whose precondition the
+product cannot report. That one was closed by upstream giving us the check; this one has no upstream half
+— the address is ours to report.
 
 **Candidate fix:** surface it read-only on an existing result rather than adding a tool — the origin string
 `build_services` already computes (`"JMC_USER_EMAIL"` / `"JUST_DNA_CONTACT_EMAIL"` / `"project default"`)

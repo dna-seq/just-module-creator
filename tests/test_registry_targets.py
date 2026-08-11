@@ -21,10 +21,16 @@ import pytest
 from conftest import offline_settings
 
 from just_module_creator.auth import SessionKeyStore, resolve_api_key, unauthenticated_result
-from just_module_creator.settings import DEFAULT_POLYGON_URL, DEFAULT_REGISTRY_URL, Settings
+from just_module_creator.settings import (
+    DEFAULT_POLYGON_URL,
+    DEFAULT_REGISTRY_URL,
+    RegistryTarget,
+    Settings,
+)
 from just_module_creator.targets import (
     TEST_MODULE_PREFIX,
     TEST_NAMESPACE_PREFIX,
+    client_for,
     polygon_naming_note,
     prod_refusal,
 )
@@ -246,3 +252,60 @@ async def test_the_instructions_teach_the_split(make_client):
 
     assert 'target="test"' in INSTRUCTIONS and 'target="prod"' in INSTRUCTIONS
     assert "polygon" in INSTRUCTIONS
+
+
+# --------------------------------------------------------------------------- #
+# The declared target is verified by the server (F16, closed by registry 0.13)
+# --------------------------------------------------------------------------- #
+def test_a_client_pins_the_mode_its_target_names():
+    """Our config says which instance we *meant*; the guard checks which answered.
+
+    `expect_mode` is why `targets.py` no longer has to end with "we deliberately
+    do not verify this". It costs no request — upstream asserts it lazily, on the
+    calls that spend something — so it is passed uniformly rather than per site.
+    """
+    settings = offline_settings()
+
+    assert client_for("test", settings)._expect_mode == "test"
+    assert client_for("prod", settings)._expect_mode == "prod"
+
+
+def test_the_mode_pin_uses_the_url_for_the_same_target():
+    """A pin naming one instance while the URL names the other would be worse than none."""
+    settings = offline_settings()
+
+    pairs: tuple[tuple[RegistryTarget, str], ...] = (
+        ("test", DEFAULT_POLYGON_URL),
+        ("prod", DEFAULT_REGISTRY_URL),
+    )
+    for target, url in pairs:
+        client = client_for(target, settings)
+        assert client.base_url == url.rstrip("/")
+        assert client._expect_mode == target
+
+
+def test_every_client_in_the_server_is_built_through_client_for():
+    """The guard is only real if no site constructs a client of its own.
+
+    Asserted against the source rather than by behaviour: a forgotten
+    `RegistryClient(...)` somewhere would publish to an unverified instance, and
+    that is exactly the failure that cannot be undone.
+    """
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent / "src" / "just_module_creator"
+    offenders = {
+        path.relative_to(root).as_posix()
+        for path in root.rglob("*.py")
+        if path.name != "targets.py" and "RegistryClient(" in path.read_text()
+    }
+    assert not offenders, f"construct these through targets.client_for: {sorted(offenders)}"
+
+
+def test_a_token_reaches_the_client_and_absence_of_one_does_not_invent_a_header():
+    settings = offline_settings()
+
+    with_token = client_for("test", settings, token="abc")
+    assert with_token._http.headers["Authorization"] == "Bearer abc"
+    # No token means no header at all, not an empty bearer.
+    assert "Authorization" not in client_for("test", settings)._http.headers

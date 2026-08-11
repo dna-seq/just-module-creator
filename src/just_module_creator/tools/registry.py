@@ -19,7 +19,7 @@ from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from just_dna_compiler import compiler
 from just_dna_format.identity import is_valid_version, validate_namespace
-from just_dna_registry import RegistryClient, RegistryError
+from just_dna_registry import RegistryError
 from mcp.types import ToolAnnotations
 
 from just_module_creator.auth import (
@@ -33,6 +33,7 @@ from just_module_creator.models import OpResult
 from just_module_creator.settings import RegistryTarget, Settings
 from just_module_creator.targets import (
     DEFAULT_WRITE_TARGET,
+    client_for,
     describe,
     polygon_naming_note,
     prod_refusal,
@@ -138,9 +139,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
     """Register the token-gated registry tools (tag: registry_write)."""
 
     def _client(token: str, target: RegistryTarget):
-        return RegistryClient(
-            settings.registry_url_for(target), token=token, timeout=settings.registry_timeout
-        )
+        return client_for(target, settings, token=token)
 
     @mcp.tool(
         tags={GATED_TAG},
