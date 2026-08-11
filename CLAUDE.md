@@ -611,14 +611,25 @@ preference: it goes into §10, in their words, with the reason.
   `research.py::_module_card`'s defensive projection or type
   `registry_get_module`'s payload on the strength of those docs until they carry a
   version stamp.
-- **Which registry host is which is unsettled.** 0.12.0's notes name production
-  `module-marketplace.just-dna.life` and a test polygon `module-polygon.just-dna.life`,
-  while our `DEFAULT_REGISTRY_URL` is `module-registry.just-dna.life` and works —
-  including a `test-`prefixed namespace claim that production is documented to
-  refuse. Do not "correct" the default from a release note.
-- The published registry is `https://module-registry.just-dna.life`; as of
-  2026-08-11 it holds exactly one module, `eric-mods/lactose_tolerance@1.0.0`,
-  which is the best available worked example of a real spec.
+- **The registry is TWO instances and they share no database.** Production is the
+  catalog everyone installs from; the polygon (registry 0.12 `REGISTRY_MODE=test`)
+  is where a publish is a rehearsal. An account, a token and a namespace exist on
+  one of them only, so registering on one gives you nothing on the other. See
+  `targets.py`; the write tools default to the polygon and the catalog reads to
+  production, because a forgotten `target` costs nothing on one and is
+  irreversible on the other.
+- **We hold no registry credential as of 2026-08-11.** The `test-creator` account
+  and its `test-modules` namespace are **gone from production**, which now refuses
+  `test-`prefixed data outright. `JMC_API_KEY` was cleared from `.env` rather than
+  left stale — a dead token makes every registry tool report *"the registry
+  rejected your token"*, which sends an author to debug auth instead of to
+  register. `JMC_TEST_API_KEY` (the polygon's, a separate header and a separate
+  token) has never been set. `JMC_INSTALL_ID` is still there deliberately: it is a
+  proof-of-work string rather than an instance credential, it exists nowhere else,
+  and destroying it is the user's call, not ours.
+- As of 2026-08-11 production holds one module, `eric-mods/lactose_tolerance@1.0.0`
+  — still the best available worked example of a real spec, and now the only thing
+  a catalog read will find.
 - The enricher's Ensembl cache lands in
   `~/.cache/just-dna-pipelines/ensembl_variations`. The live V2 GraphQL endpoint
   currently 404s and the client falls back to REST — expected, not a defect.

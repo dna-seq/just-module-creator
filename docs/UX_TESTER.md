@@ -25,26 +25,38 @@ Two rules do most of the work here:
 Attack claims, not gaps. A documented deferral is a decision; what counts is where a
 docstring or doc *promises* something the code does not do.
 
-## Credentials — which account this seat uses
+## Credentials — you have none right now
 
 State only. **How to obtain and save a token is the skill's job**, not this file's:
 `skills/create-module/SKILL.md` §7 covers registering, what the two secrets are, and why
 the install-id has to be kept. Read it there; do not restate it here, or the two drift.
 
-A registry account was created on 2026-08-11 against
-`https://module-registry.just-dna.life`:
+**The `test-creator` account and its `test-modules` namespace are gone from production**
+(2026-08-11). Production now refuses `test-`prefixed data outright, so that account could
+not exist there again under that name even if you re-registered. Its token has been
+**cleared from `.env`** rather than left in place: a dead token makes every registry tool
+fail as *"the registry rejected your token"*, which sends you to debug auth instead of
+telling you the truth, which is that you have no account.
 
-```
-account:    test-creator
-namespace:  test-modules      (claimed; irreversible; owner test-creator)
-```
+**There are two instances now and they share no database** — an account, a token and a
+namespace live on one of them only. So starting again means registering on whichever one
+you are aiming at:
 
-Both secrets are already in `/data/sources/just-module-creator/.env`, which is gitignored
-(`.gitignore:141`) and therefore invisible to `git status`. The server reads `JMC_API_KEY`
-from the environment, so registry tools work without calling `authenticate`. The one thing
-worth repeating because it is destructive: **never call `registry_register` without the
-saved `JMC_INSTALL_ID`** unless a genuinely new account is wanted — a fresh id strands this
-one.
+| | production | the polygon |
+|---|---|---|
+| what it is | the catalog everyone installs from | the rehearsal instance |
+| `test-` names | `422 test_data_on_prod` | accepted |
+| deleting a bad publish | impossible | `registry_delete_version` |
+| token env var | `JMC_API_KEY` (**cleared**) | `JMC_TEST_API_KEY` (never set) |
+
+**Rehearse on the polygon.** A production publish is immutable *and* claims its authored
+data by a content hash that `yank` does not release, so one botched publish burns the
+version number and the right to publish that data under any other name.
+
+`JMC_INSTALL_ID` is **still in `.env` and was deliberately left there.** It is a
+proof-of-work string, not a credential for a specific instance, and it exists nowhere else
+— clearing it would be unrecoverable for a value that costs a second to reuse and may
+still be worth registering with. If you want it gone, say so; it is not mine to destroy.
 
 ## What has been established
 
@@ -95,9 +107,15 @@ carries `<<REPLACE>>` in title/description/report_title, and `repeat_alleles.csv
 the two generated stub rows.
 
 The intent is the probe `dogfooding.md` lists as outstanding: a binning module taken
-scaffold → validate → compile → publish under `test-modules`, which would close both
-remaining probe entries at once. The user has confirmed test-prefixed namespaces are
-hidden from the main app, so publishing immutably is fine and needs no further approval.
+scaffold → validate → compile → publish, which would close both remaining probe entries
+at once.
+
+**The publish half needs re-planning.** It was written against a single instance and a
+`test-modules` namespace on production, and neither exists now — the account is gone and
+production refuses `test-` names. The publish now goes to the **polygon**
+(`target="test"`), which is the better probe anyway: it is deletable, so the run can be
+repeated, and it exercises the two-target surface that shipped after this plan was
+written. Register on the polygon first; nothing carries over from the old account.
 
 The rows to author are real HTT CAG bins, already linted clean (0 errors, 0 warnings)
 in an earlier probe:
