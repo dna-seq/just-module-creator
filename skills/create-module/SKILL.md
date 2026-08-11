@@ -67,21 +67,27 @@ reach the one compiler flag that silently produces a module no VCF can match.
 | check a PMID exists (existence only — see below) | `lookup_citation` | essentials |
 | see whether a module already exists | `registry_search` | essentials |
 | **draft variants + studies from ClinVar** | `draft_from_clinvar` | essentials |
+| resolve coordinates, mint VRS ids, catch a ref mismatch | `enrich_module` | essentials |
+| gene/trait currency — what `trait_efo_id` needs | `check_identifiers`, `lookup_identifier` | essentials |
+| where may I read this paper, on what terms | `lookup_open_access` | essentials |
+| read a paper | `fetch_fulltext` | essentials |
+| content signature, artifact integrity | `module_signature`, `verify_artifact` | essentials |
+| the whole generated DSL at once | `authoring_reference` | essentials |
+| read one published module's full record | `registry_get_module` | essentials |
+| is a namespace legal and free | `registry_namespace_available` | essentials |
+| get an account and a token | `registry_register` | always |
 | draft the PGx tables | `draft_from_cpic`, `draft_from_clinpgx` | extended |
-| where may I read this paper, on what terms | `lookup_open_access` | extended |
-| read a paper | `fetch_fulltext` | extended |
 | has this finding been replicated | `paper_citations` | extended |
-| resolve coordinates, mint VRS ids, catch a ref mismatch | `enrich_module` | extended |
 | fill `literature.csv` | `enrich_literature_pass` | extended |
 | fill the frequency / constraint / dosage sidecars | `enrich_facts` | extended |
-| gene/trait currency | `check_identifiers`, `lookup_identifier` | extended |
-| content signature, integrity, round-trip | `module_signature`, `verify_artifact`, `reverse_module` | extended |
-| the whole generated DSL at once | `authoring_reference` | extended |
-| get an account and a token | `registry_register` | always |
-| is a namespace legal and free | `registry_namespace_available` | essentials |
+| turn an artifact back into a spec, or download one | `reverse_module`, `registry_download` | extended |
 | publish | `authenticate` → `registry_whoami` → `registry_claim_namespace` → `registry_publish` | gated |
 
-Extended tools need `JMC_MODE=extended`. Publishing needs a registry token; nothing else does — and
+**The default tier runs this whole procedure.** Everything from scaffold to publish is essentials,
+including `enrich_module` — the tiers split on cost, and essentials is everything bounded by what you
+named: one identifier, one paper, one spec directory. `JMC_MODE=extended` adds only what a corpus
+sizes (a citation graph, a whole-source PGx draft, a pass that rewrites every row) and reading back
+somebody else's compiled artifact. Publishing needs a registry token; nothing else does — and
 `registry_register` mints one from inside the surface, so there is no step that sends you to another
 package's CLI.
 

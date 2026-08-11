@@ -1,8 +1,14 @@
 """ESSENTIALS (network, read-only) — look things up before you author them.
 
 Registered in every mode, because curation is not possible without them: to
-write a genotype you need the allele pair, and to write a PMID you need to know
-it exists.
+write a genotype you need the allele pair, to write a PMID you need to know it
+exists, to write a `trait_efo_id` you need to know the CURIE is real and current,
+and to judge a claim you need the paper's text in front of you.
+
+Each call here is bounded by what you named — one variant, one identifier, one
+paper, one spec directory — which is what makes them cheap enough to be default.
+The unbounded cousins (``paper_citations`` traverses a citation graph the corpus
+sizes) stayed extended.
 
 Every tool here **reports and refuses to write**. A value the lookup could fill
 comes back as an alteration with ``applied=false`` and a ``refusal``, because
@@ -20,15 +26,21 @@ from anyio.to_thread import run_sync
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 from just_dna_enricher import lookup as enricher_lookup
+from just_dna_enricher.identifiers import check_identifiers as _check_identifiers
 from just_dna_registry import RegistryClient, RegistryError
 from mcp.types import ToolAnnotations
 
-from just_module_creator.discovery import search_literature
+from just_module_creator.discovery import fulltext, open_access, search_literature
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
     CitationLookup,
+    FullTextResult,
+    IdentifierReport,
+    IdentifierStatus,
     LiteratureSearchResult,
     NamespaceAvailability,
+    OpenAccessResult,
+    OpResult,
     RegistryModule,
     RegistrySearchResult,
     VariantLookup,
@@ -38,6 +50,7 @@ from just_module_creator.settings import Settings
 from just_module_creator.tools._shared import (
     jsonable,
     offline_for,
+    resolve_dir,
     to_alterations,
     to_findings,
 )
@@ -381,4 +394,206 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             available=available,
             registry_url=settings.registry_url,
             message=message,
+        )
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Get a registry module",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def registry_get_module(namespace: str, name: str) -> OpResult:
+        """Fetch one module's full registry record: card, readme, versions, manifest.
+
+        The best available worked example — the published spec of a real module
+        is more instructive than any template.
+        """
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        def _get() -> dict:
+            client = RegistryClient(settings.registry_url, timeout=settings.registry_timeout)
+            return client.get_module(namespace, name)
+
+        try:
+            payload = await run_sync(_get)
+        except RegistryError as exc:
+            return OpResult(success=False, message=f"Registry error: {exc}")
+        return OpResult(success=True, message=f"{namespace}/{name}", data=dict(payload))
+
+    # ----------------------------------------------------------------- #
+    # Identifiers — is the symbol or CURIE you wrote still current
+    # ----------------------------------------------------------------- #
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Check identifiers",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def check_identifiers(spec_dir: str) -> IdentifierReport:
+        """Check every gene symbol (HGNC) and trait CURIE (OLS4) in a spec is current.
+
+        Reports, never repairs — rewriting an authored value would destroy the
+        evidence of the upstream change. Writes nothing.
+        """
+        target = resolve_dir(spec_dir, settings)
+        if settings.offline:
+            raise ToolError(
+                "The server is configured offline (JMC_OFFLINE); this check needs HGNC and OLS4."
+            )
+        report = await run_sync(lambda: _check_identifiers(spec_dir=target))
+
+        genes = [
+            IdentifierStatus(
+                identifier=g.symbol,
+                kind="gene",
+                state=g.state,
+                current=g.current,
+                label=g.hgnc_id,
+            )
+            for g in getattr(report, "genes", []) or []
+        ]
+        traits = [
+            IdentifierStatus(
+                identifier=t.curie,
+                kind="trait",
+                state=t.state,
+                current=t.replaced_by,
+                label=t.label,
+            )
+            for t in getattr(report, "traits", []) or []
+        ]
+        stale = [
+            f"{s.kind} {s.identifier}: {s.state}" + (f" -> {s.current}" if s.current else "")
+            for s in genes + traits
+            if s.state not in {"approved", "current"}
+        ]
+        return IdentifierReport(spec_dir=str(target), genes=genes, traits=traits, stale=stale)
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Look up a gene or trait",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def lookup_identifier(kind: str, identifier: str) -> IdentifierStatus:
+        """Check one gene symbol or trait CURIE. `kind` is "gene" or "trait".
+
+        A gene comes back approved / retired / unknown; a trait current /
+        obsolete / absent. Writes nothing.
+
+        This is what `trait_efo_id` is for: `describe_table` tells you the column
+        takes an ontology CURIE, and this is the only thing that tells you the one
+        you have in mind is real and current. Writing an ontology id from memory
+        is the failure this exists to prevent.
+        """
+        if kind not in {"gene", "trait"}:
+            raise ToolError('kind must be "gene" or "trait".')
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        if kind == "gene":
+            status = await run_sync(lambda: enricher_lookup.lookup_gene(identifier))
+            return IdentifierStatus(
+                identifier=status.symbol,
+                kind="gene",
+                state=status.state,
+                current=status.current,
+                label=status.hgnc_id,
+            )
+        status = await run_sync(lambda: enricher_lookup.lookup_trait(identifier))
+        return IdentifierStatus(
+            identifier=status.curie,
+            kind="trait",
+            state=status.state,
+            current=status.replaced_by,
+            label=status.label,
+        )
+
+    # ----------------------------------------------------------------- #
+    # Reading a paper
+    # ----------------------------------------------------------------- #
+    def _require_network(what: str) -> None:
+        if offline_for(settings, False):
+            raise ToolError(
+                f"{what} needs the network and the server is configured offline (JMC_OFFLINE). "
+                "There is no offline literature snapshot."
+            )
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Find a legal open-access copy",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def lookup_open_access(
+        pmid: str | None = None, doi: str | None = None, pmcid: str | None = None
+    ) -> OpenAccessResult:
+        """Where a paper may legally be read, and **on what terms**.
+
+        The licence is the point, not the URL. **Free to read is not free to
+        reuse**: a `bronze` location has no licence recorded at all, and a passage
+        copied from a CC-BY-NC article into `studies.csv` is publisher text sitting
+        in your module's annotation layer — where `commercial_use=false` actually
+        bites on a module you intend to sell.
+
+        These terms are **per article**, not per source, which is why no table on
+        our side could answer this and why `sources.csv` needs a row carrying the
+        *article's* licence rather than PubMed's.
+
+        A `null` in `is_open_access` means unchecked. Europe PMC omits ids it does
+        not know without an error, so a miss there is "not retrievable", never
+        "does not exist".
+        """
+        _require_network("Open-access lookup")
+        if not (pmid or doi or pmcid):
+            raise ToolError("Provide a pmid, doi or pmcid.")
+        return await run_sync(lambda: open_access(services, pmid=pmid, doi=doi, pmcid=pmcid))
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Fetch a paper's text",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def fetch_fulltext(
+        pmid: str | None = None,
+        pmcid: str | None = None,
+        doi: str | None = None,
+        max_chars: int | None = None,
+    ) -> FullTextResult:
+        """Retrieve a paper's text so **you** can read it. Returns no passage, ever.
+
+        There is no "find the sentence that supports this" here and there will not
+        be. `enrich_literature` checks `provenance_quote` against this same Europe
+        PMC fulltext, so a quote copied out of this response would make
+        `quotes_found` confirm itself — and a machine-located quote asserts a
+        curator reading that never happened, which is a false claim of provenance
+        rather than merely a vacuous check.
+
+        **The honest cost of using this tool**, stated so you can weigh it: having
+        read the fulltext here, `quotes_found` on that row is no longer independent
+        evidence. It has become a citation-pairing check — still useful, since it
+        catches a quote written against the wrong PMID.
+
+        `text_source` says what you actually got: `fulltext`, `abstract` (named as
+        a substitute, never passed off as the article), or `null` — which means
+        **nothing was retrieved**, not that the paper has no text. An abstract
+        *miss* is not a verdict: the claim may still be in the paper.
+        """
+        _require_network("Fulltext retrieval")
+        if not (pmid or pmcid or doi):
+            raise ToolError("Provide a pmid, pmcid or doi.")
+        return await run_sync(
+            lambda: fulltext(services, pmid=pmid, pmcid=pmcid, doi=doi, max_chars=max_chars)
         )

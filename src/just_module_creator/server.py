@@ -2,14 +2,19 @@
 
 The hybrid registration pattern lives in ``build_server``:
 
-* ``register_essentials`` — always. The offline authoring loop.
-* ``register_research``   — always. Read-only lookups; no token, network-tier.
+* ``register_essentials`` — always. The offline authoring loop, the schema dump
+  and the integrity checks. Touches no network.
+* ``register_research``   — always. Read-only lookups: variants, citations,
+  literature, identifiers, papers, registry reads. No token, network-tier.
 * ``register_auth``       — always. ``registry_register`` (mints a token, so it
   cannot be gated by one) and the per-session ``authenticate``.
 * ``register_registry``   — always listed, token enforced per call.
-* ``register_passes``     — always. draft_from_clinvar: step 2 of the workflow.
+* ``register_passes``     — always. The two tools that fetch and then write into
+  a spec directory: ``draft_from_clinvar`` (step 2) and ``enrich_module``
+  (step 6). Both are named in the workflow INSTRUCTIONS teach, which is why
+  neither can sit behind a mode flag.
 * ``register_extended``   — ONLY when mode == "extended" (registered on start).
-* ``register_extended_passes`` — extended. PGx drafting and the fact passes.
+* ``register_extended_passes`` — extended. PGx drafting and the bulk fact passes.
 
 The server NEVER raises at startup for a missing token (see auth.py): authoring
 a module needs no registry account at all.
@@ -67,10 +72,12 @@ Three rules this server enforces rather than merely documents:
 
 `start` is always the 1-based VCF position: paste it, never subtract one.
 
-The tiers split on what a tool DOES, not on how useful it is: essentials is
-everything that only reads, plus the ClinVar draft; extended (JMC_MODE=extended)
-is everything that writes into a spec directory or fetches at scale. Publishing
-needs a registry token; nothing else does.
+The tiers split on COST, not on usefulness. Essentials is everything whose work
+is bounded by what you named — one identifier, one paper, one spec directory —
+which is the whole order above plus the checks around it. extended
+(JMC_MODE=extended) adds only what a corpus sizes: the citation graph, the PGx
+drafters, the bulk fact passes, and reading back somebody else's compiled
+artifact. Publishing needs a registry token; nothing else does.
 
 Onboarding is self-service and needs no token to start: `registry_register` mints
 an account and stores its key for the session, `registry_namespace_available`

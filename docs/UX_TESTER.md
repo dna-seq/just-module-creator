@@ -77,12 +77,16 @@ Small, and each belongs to the second agent rather than upstream:
   `registry_register` and says a token is needed only to publish.
 - ~~**`plugin.json` says `0.2.0`; `pyproject.toml` says `0.3.0`.**~~ **Fixed** in `a1f50a2`,
   with `tests/test_plugin_manifest.py` failing on any future mismatch.
-- **The essentials tier cannot verify a trait CURIE.** `lookup_identifier` /
-  `check_identifiers` are extended-only, so an author in the default tier either leaves
-  `trait_efo_id` blank or writes an ontology id from memory. Blank is the honest choice
-  and is what the in-flight module does; the friction is real.
-- **The README documents installing the plugin and not reloading it**, which is the loop
-  a local developer actually runs.
+- ~~**The essentials tier cannot verify a trait CURIE.**~~ **Fixed in 0.4.0** — this one
+  turned out to be the visible corner of a wrong tier rule, and the tier was widened
+  rather than the single tool moved. Essentials now runs the whole workflow: the
+  identifier checks, `enrich_module`, `fetch_fulltext`, `lookup_open_access`,
+  `authoring_reference`, the integrity pair and `registry_get_module`. Extended keeps
+  only what a corpus sizes. **Re-probe from the default tier** — the friction you
+  recorded should be gone, and what is left of extended is worth its own look.
+- ~~**The README documents installing the plugin and not reloading it.**~~ **Fixed** —
+  README now has "Reloading after a change" and "Switching mode", including the trap that
+  `.env` cannot switch a plugin-launched server.
 
 ## In flight
 

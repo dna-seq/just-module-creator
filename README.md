@@ -78,17 +78,18 @@ The server **boots with no environment configured** — authoring a module needs
 | `registry_search` | essentials | no | has someone already built this |
 | `registry_namespace_available` | essentials | no | is the name legal, is it free — the pre-flight for an irreversible claim |
 | `draft_from_clinvar` | essentials | no | ClinVar → `variants.csv` + `studies.csv`; `use` required |
+| `enrich_module` | essentials | no | **background task**; the only thing that catches a shifted `start` |
+| `check_identifiers`, `lookup_identifier` | essentials | no | HGNC / OLS4 currency — what makes `trait_efo_id` writable honestly |
+| `lookup_open_access`, `fetch_fulltext` | essentials | no | where may I read it and on what terms; the document, never a passage |
+| `authoring_reference` | essentials | no | the whole generated DSL |
+| `module_signature`, `verify_artifact` | essentials | no | did the content change; is the artifact intact |
+| `registry_get_module` | essentials | no | one module's full record — the best worked example there is |
 | `registry_register` | always | — | **mints** an account and token, so it cannot be gated by one |
 | `authenticate` | always | — | stores a registry token you already hold, for *this session* |
-| `lookup_open_access`, `fetch_fulltext` | extended | no | where may I read it and on what terms; the document, never a passage |
-| `paper_citations` | extended | no | has this finding been replicated |
+| `paper_citations` | extended | no | has this finding been replicated — traverses a graph the corpus sizes |
 | `draft_from_cpic`, `draft_from_clinpgx` | extended | no | the PGx tables |
-| `enrich_facts`, `enrich_literature_pass` | extended | no | the sidecars the compile gate reads |
-| `enrich_module` | extended | no | **background task**; the only thing that catches a shifted `start` |
-| `check_identifiers`, `lookup_identifier` | extended | no | HGNC / OLS4 currency |
-| `authoring_reference` | extended | no | the whole generated DSL |
-| `module_signature`, `verify_artifact`, `reverse_module` | extended | no | integrity and round-trip |
-| `registry_get_module`, `registry_download` | extended | no | read the catalog |
+| `enrich_facts`, `enrich_literature_pass` | extended | no | the sidecars the compile gate reads; rewrite many rows at once |
+| `reverse_module`, `registry_download` | extended | no | read back somebody else's compiled artifact |
 | `registry_whoami`, `registry_claim_namespace`, `registry_publish` | gated | **yes** | registry writes; publish records the stamped identity in `published.json` |
 
 Plus a resource (`resource://just-dna/tables`) and a prompt (`create_module`).
@@ -134,14 +135,20 @@ allele filter on exactly the rsIDs that need it.
 
 ## Modes
 
-`JMC_MODE` (env) or `--mode` (CLI), default `essentials`. The line is **what a tool does, not how
-useful it is**:
+`JMC_MODE` (env) or `--mode` (CLI), default `essentials`. The line is **cost, not usefulness**:
 
-- `essentials` — the authoring loop, plus the read-only lookups and the ClinVar draft. Small on
-  purpose: fewer tools is less context pollution, and this tier takes a variants module from nothing
-  to compiled and published.
-- `extended` — the PGx drafters, enrichment, the fact passes, deep literature reads, integrity,
-  round-trip and registry downloads.
+- `essentials` — everything whose work is bounded by what you named: one identifier, one paper, one
+  spec directory. That is the whole taught workflow plus the checks around it, so this tier takes a
+  variants or SNP module from nothing to compiled, verified and published.
+- `extended` — only what a corpus sizes: `paper_citations`, the PGx drafters, the bulk fact passes,
+  and reading back somebody else's compiled artifact (`reverse_module`, `registry_download`).
+
+It used to be read-vs-write, which never described the code — `scaffold_module` and `compile_module`
+both write and were always essentials, while `lookup_identifier` only reads and was not. Worse, the
+server taught `… → enrich_module → compile_module` as the canonical order while `enrich_module` was
+extended-only, so an agent following the default tier's own instructions hit a tool that was not
+there. `tests/test_modes_and_auth.py::test_the_taught_workflow_runs_in_the_default_tier` now parses
+the tool names out of that instruction text and fails if any of them is missing from essentials.
 
 ### Switching mode
 
@@ -256,10 +263,11 @@ src/just_module_creator/
   net.py               the ONLY module that opens a socket: pacing, retries
   discovery.py         literature sources, parsers, and the refusals
   tools/
-    authoring.py       essentials — the offline authoring loop
-    research.py        essentials — read-only network lookups + literature search
-    passes.py          drafting from a source; the sidecar fact passes
-    advanced.py        extended — enrichment, integrity, round-trip
+    authoring.py       essentials — the offline loop, schema dump, integrity
+    research.py        essentials — read-only lookups: variants, papers, identifiers
+    passes.py          fetch-then-write: draft_from_clinvar + enrich_module (both
+                       essentials), then the extended PGx drafters and fact passes
+    advanced.py        extended — citation graph, reverse, registry download
     registry.py        token-gated registry writes
     _shared.py         path containment, offline ceiling, converters
 tests/                 in-memory, offline

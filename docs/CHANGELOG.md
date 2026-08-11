@@ -3,6 +3,67 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.4.0 — the essentials tier now runs the whole workflow (2026-08-11)
+
+### The tier rule was wrong, not just one tool short of right
+
+Dogfooding reported a narrow gap: the default tier could not verify a trait CURIE, because
+`lookup_identifier` and `check_identifiers` were extended-only. `describe_table` would tell an
+author that `trait_efo_id` takes an ontology CURIE and then offer nothing that checks one, so the
+honest move was to leave the column blank and the tempting one was to write an id from memory —
+which is precisely what rule 1 of the server instructions forbids.
+
+Surveying before fixing turned up that the gap was a symptom. The stated rule — *essentials is
+everything that only reads, plus the ClinVar draft* — did not describe the code **in either
+direction**. `scaffold_module` and `compile_module` both write and were always essentials, while six
+read-only tools sat behind the mode flag. And the worst case was not on anyone's list:
+**`enrich_module` was extended-only while being step 6 of the order the server's own INSTRUCTIONS
+teach**, so an agent following the default tier's instructions reached for a tool that was not there.
+
+So the rule changed rather than the membership. **The tiers now split on cost, not usefulness:**
+
+- **essentials** — everything whose work is bounded by what the caller named: one identifier, one
+  paper, one spec directory. That is the whole taught workflow, scaffold through publish.
+- **extended** — only what a *corpus* sizes (`paper_citations`, the PGx drafters, the bulk fact
+  passes) or that reads back somebody else's compiled artifact (`reverse_module`,
+  `registry_download`). Seven tools, down from sixteen.
+
+Nine tools moved into essentials: `enrich_module`, `check_identifiers`, `lookup_identifier`,
+`fetch_fulltext`, `lookup_open_access`, `authoring_reference`, `module_signature`, `verify_artifact`,
+`registry_get_module`. Nothing left essentials, so this is additive for every existing caller —
+`extended` still lists a strict superset.
+
+Each landed beside its siblings rather than in a second closure: the schema dump and the integrity
+pair in `authoring.py` (still network-free), the identifier and paper reads in `research.py` (still
+writes nothing to a spec), and `enrich_module` in `passes.py` next to `draft_from_clinvar` — they are
+the only two tools that fetch and then write into a spec directory, which is now what that module
+means. `advanced.py` keeps the three that stayed.
+
+### The guard is derived, not restated
+
+`tests/test_modes_and_auth.py::test_the_taught_workflow_runs_in_the_default_tier` parses tool names
+straight out of `server.INSTRUCTIONS` and asserts every one exists in essentials. It is written
+against the text rather than a copy of it, so editing the taught order re-checks the tier for free.
+Verified to bite: the parse yields `enrich_module`, which the pre-0.4.0 essentials tier did not have.
+`test_extended_mode_is_a_superset` additionally pins `extended - essentials` to an exact set, so a
+tool cannot drift between tiers unnoticed.
+
+### Also
+
+- **`authoring_reference` was unreachable from the tier that is told to call it.** `CLAUDE.md` §2 and
+  the skill both instruct an agent to ask `describe_table` / `table_requirements` /
+  `authoring_reference` rather than recall a schema fact — and the third was behind a mode flag. A
+  rule pointing at a tool the default tier lacks is a rule that gets ignored.
+- **README gained "Reloading after a change" and "Switching mode."** `/reload-plugins` does not
+  re-exec a stdio MCP server — `/mcp` reconnect does — and stale servers accumulate. Mode has three
+  launch paths that do not fall back to each other, and **editing `.env` cannot switch a
+  plugin-launched server**: `plugin.json` exports `JMC_MODE` into the subprocess and `.env` loads with
+  `override=False`, so the file is read and then ignored for that key, silently. Probed, not assumed.
+- **The credential how-to moved into the skill.** It had been living in `docs/UX_TESTER.md`, where an
+  author would never see it. `SKILL.md` §7 now also answers the account-*name* half: there is nothing
+  to save, because `registry_whoami` reports it and re-registering with the same install-id returns
+  the account that id owns while ignoring the `account` argument.
+
 ## 0.3.0 — registry onboarding (2026-08-11)
 
 ### A version bump touches two files, and the suite now knows it

@@ -1,20 +1,27 @@
 """ESSENTIALS — the offline authoring loop, present in every mode.
 
-Scaffold, learn a table, lint rows, validate, compile. Nothing here touches the
-network and nothing here invents a value: every schema answer is generated from
-the live pydantic models in ``just-dna-format``, so it cannot drift from what
-the compiler accepts.
+Scaffold, learn a table, lint rows, validate, compile, then check what you
+shipped is what you meant (``module_signature``, ``verify_artifact``). Nothing
+here touches the network and nothing here invents a value: every schema answer
+is generated from the live pydantic models in ``just-dna-format``, so it cannot
+drift from what the compiler accepts.
 
-Keeping this set small is the point of the essentials/extended split — a smaller
-default tool list means less context pollution for an agent.
+``authoring_reference`` lives here rather than behind the mode flag because the
+guidelines tell an agent to call it — a rule pointing at a tool the default tier
+does not have is a rule that gets ignored.
 """
 
 from __future__ import annotations
+
+import json
 
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from just_dna_compiler import compiler, draft, hints, scaffold
+from just_dna_format import reference
+from just_dna_format.integrity import IntegrityError, verify_manifest
+from just_dna_format.manifest import read_manifest
 from mcp.types import ToolAnnotations
 
 from just_module_creator.logging_setup import get_logger
@@ -22,12 +29,14 @@ from just_module_creator.models import (
     CompileReport,
     LintResult,
     ScaffoldResult,
+    SignatureResult,
     TableDescription,
     TableKind,
     TableList,
     TableRequirements,
     TemplateResult,
     ValidationReport,
+    VerifyResult,
 )
 from just_module_creator.settings import Settings
 from just_module_creator.tools._shared import (
@@ -400,6 +409,107 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             resolution_signature=getattr(comp, "resolution_signature", None),
             fully_resolved=getattr(comp, "fully_resolved", None),
             files=[f.name for f in getattr(artifact, "files", []) or []],
+        )
+
+    # ----------------------------------------------------------------- #
+    # Full schema dump
+    # ----------------------------------------------------------------- #
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Authoring reference", readOnlyHint=True, idempotentHint=True
+        ),
+    )
+    def authoring_reference(schemas: bool = False) -> str:
+        """The complete generated description of the authoring DSL, as JSON.
+
+        Every model, column, vocabulary and one-of rule at once, generated from
+        the live pydantic models. Large — prefer `describe_table` for one table.
+        Pass `schemas=true` for raw JSON Schema instead of the summary form.
+        """
+        payload = reference.json_schemas() if schemas else reference.authoring_reference()
+        return json.dumps(payload, indent=2, default=str)
+
+    # ----------------------------------------------------------------- #
+    # Integrity — did the content change, and is the artifact intact
+    # ----------------------------------------------------------------- #
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Content signature", readOnlyHint=True, idempotentHint=True
+        ),
+    )
+    async def module_signature(spec_dir: str) -> SignatureResult:
+        """The content signature of the raw authored data. No compile, no network.
+
+        Use it to tell whether two specs are the same content, and to check a
+        `reverse` round-trip. It folds module_spec.yaml's `defaults:` into each
+        row before hashing, so a value written once under `defaults:` and the
+        same value repeated on every row are one content.
+        """
+        target = resolve_dir(spec_dir, settings)
+        sig = await run_sync(lambda: compiler.content_signature(target))
+        return SignatureResult(
+            spec_dir=str(target),
+            content_signature=sig,
+            note=(
+                "Covers the authored content only — not the compiled artifact. "
+                "artifact.digest is a different hash and moves whenever sources.csv "
+                "re-stamps fetched_at, so a digest change is not evidence that "
+                "content changed."
+            ),
+        )
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Verify an artifact", readOnlyHint=True, idempotentHint=True
+        ),
+    )
+    async def verify_artifact(
+        module_dir: str, public_key: str | None = None, require_marketplace: bool = False
+    ) -> VerifyResult:
+        """Re-hash every file in a compiled artifact and recompute the digest.
+
+        Without `public_key` the signature is NOT checked — `signature_checked`
+        says so, and an unchecked signature is not a valid one.
+        """
+        target = resolve_dir(module_dir, settings)
+        manifest_path = target / "manifest.json"
+        if not manifest_path.is_file():
+            raise ToolError(f"No manifest.json in {target}.")
+
+        manifest = await run_sync(lambda: read_manifest(manifest_path))
+        identity = getattr(manifest, "identity", None)
+        artifact = getattr(manifest, "artifact", None)
+
+        try:
+            await run_sync(
+                lambda: verify_manifest(
+                    target,
+                    manifest,
+                    require_marketplace=require_marketplace,
+                    public_key=public_key,
+                )
+            )
+        except IntegrityError as exc:
+            return VerifyResult(
+                verified=False,
+                module_dir=str(target),
+                artifact_digest=getattr(artifact, "digest", None),
+                canonical_id=getattr(identity, "canonical_id", None),
+                signature_checked=public_key is not None,
+                message=str(exc),
+            )
+        return VerifyResult(
+            verified=True,
+            module_dir=str(target),
+            artifact_digest=getattr(artifact, "digest", None),
+            canonical_id=getattr(identity, "canonical_id", None),
+            signature_checked=public_key is not None,
+            message=(
+                "Every file re-hashed and the digest recomputed."
+                if public_key
+                else "Digests verified. The SIGNATURE was not checked — pass "
+                "public_key to check it."
+            ),
         )
 
     # ----------------------------------------------------------------- #

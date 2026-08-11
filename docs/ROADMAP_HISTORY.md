@@ -9,6 +9,34 @@ here: it is filed upstream as an `S<n>` and tracked in
 
 ---
 
+## The essentials tier was defined by the wrong axis
+
+**Shipped:** 2026-08-11 in 0.4.0 · *"If you find essentials surface lacking
+before I even started, maybe reconsider the essential stack?"*
+
+Never a numbered roadmap item — it arrived as a dogfooding observation (the
+default tier could not verify a trait CURIE) and was widened into a rule change
+because the survey found the observation was a symptom.
+
+The old rule, *essentials = everything that only reads, plus the ClinVar draft*,
+was false in both directions: `scaffold_module` and `compile_module` write and
+were always in it, and six read-only tools were not. The decisive case was
+`enrich_module` — extended-only while being step 6 of the workflow the server's
+own `INSTRUCTIONS` teach. **A tier that teaches a step it cannot run is the
+failure mode**, and it is now asserted rather than remembered: a test parses the
+tool names out of that instruction text and requires all of them in essentials.
+
+The replacement axis is **cost**: essentials is everything bounded by what the
+caller named (one identifier, one paper, one spec directory); extended is what a
+corpus sizes, plus reading back somebody else's artifact. Nine tools moved in,
+none moved out.
+
+**The scope decision was the user's**, and it went wider than the recommendation.
+The proposal was the three tools that closed the gap; the answer was "6 +
+fulltexts + lookup_openaccess + enrich which can be useful for common snip
+modules" — reading the tier from the perspective of the module people actually
+write first, which is what surfaced `enrich_module` as the real defect.
+
 ## RM3 — signing is unwrapped
 
 **Deferred:** 2026-08-11 · *"signing thing is a prototype rather than a real

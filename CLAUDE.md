@@ -308,12 +308,25 @@ comparison against ISO values.
 
 ### How to add a tool
 
-1. Pick the tier. The line is **what the tool does, not how useful it is**:
-   **essentials** = everything that only *reads*, plus the ClinVar draft;
-   **extended** (`JMC_MODE=extended`) = everything that writes into a spec
-   directory or fetches at scale; **token-gated** = registry writes. Stated this
-   way because "the loop you need on every module" stopped discriminating once
-   drafting — step 2 of the taught workflow — became a tool.
+1. Pick the tier. The line is **cost, not usefulness**: **essentials** =
+   everything whose work is bounded by what the caller named — one identifier,
+   one paper, one spec directory; **extended** (`JMC_MODE=extended`) = only what
+   a *corpus* sizes (a citation graph, a whole-source draft, a pass that rewrites
+   every row) or that reads back somebody else's compiled artifact;
+   **token-gated** = registry writes.
+
+   **Read-vs-write was the previous rule and it was wrong twice over.** It never
+   described the code — `scaffold_module` and `compile_module` both write and were
+   always essentials — and it put `lookup_identifier` behind the flag, so the
+   default tier could tell you `trait_efo_id` takes an ontology CURIE and then
+   give you no way to check one, which is an invitation to write it from memory:
+   the exact thing rule 1 of the server instructions forbids. Worst of all,
+   `enrich_module` was extended-only while being step 6 of the order those same
+   instructions teach. **A tier that teaches a step it cannot run is the failure
+   mode to check for**, and
+   `tests/test_modes_and_auth.py::test_the_taught_workflow_runs_in_the_default_tier`
+   now parses the tool names straight out of `server.INSTRUCTIONS` and fails if
+   any is missing from essentials. Widened in 0.4.0 (see `docs/ROADMAP_HISTORY.md`).
 
    **The one exception, and its test.** `registry_register` writes to the registry
    and is *not* gated, because it is what mints the token — gating it would be a

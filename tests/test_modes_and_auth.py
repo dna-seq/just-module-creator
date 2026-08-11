@@ -7,11 +7,14 @@ egress.
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from conftest import offline_settings  # tests/ is on sys.path via pytest rootdir
 from fastmcp.exceptions import ToolError
 
 from just_module_creator.auth import GATED_TOOLS, resolve_install_id
+from just_module_creator.server import INSTRUCTIONS
 from just_module_creator.settings import Settings
 
 # The authoring loop an agent cannot work without. Present in EVERY mode.
@@ -23,10 +26,28 @@ ESSENTIAL_TOOLS = {
     "scaffold_module",
     "lint_rows",
     "validate_module",
+    "enrich_module",
     "compile_module",
     # Discovery is essentials because the anti-fabrication promise depends on it:
     # lookup_citation proves a PMID exists, which a wrong-but-real id also does.
     "literature_search",
+    # And so does identifier checking: describe_table says trait_efo_id takes an
+    # ontology CURIE, and this is the only thing that says the one you have in
+    # mind is real. Without it the default tier invites writing one from memory.
+    "lookup_identifier",
+    "check_identifiers",
+}
+
+# Bounded by a corpus rather than by what you named, or about reading back
+# somebody else's artifact. The only things a mode flag still hides.
+EXTENDED_ONLY = {
+    "paper_citations",
+    "reverse_module",
+    "registry_download",
+    "draft_from_cpic",
+    "draft_from_clinpgx",
+    "enrich_facts",
+    "enrich_literature_pass",
 }
 
 
@@ -39,26 +60,34 @@ async def test_essentials_mode_exposes_the_authoring_loop(essentials_client):
     assert names >= ESSENTIAL_TOOLS
 
 
+async def test_the_taught_workflow_runs_in_the_default_tier(essentials_client, extended_client):
+    """Every tool the server's own instructions name must exist in essentials.
+
+    The server teaches an order in ``INSTRUCTIONS``. Teaching a step the default
+    tier cannot run is the specific defect this asserts against — ``enrich_module``
+    was named in that order while being extended-only, so an agent following the
+    instructions hit a tool that was not there. Derived from the text rather than
+    restated, so editing the taught order re-checks it.
+    """
+    workflow = INSTRUCTIONS.split("Work in this order:")[1].split("Three rules")[0]
+    every_tool = await _names(extended_client)
+    named = {word for word in re.findall(r"[a-z_]{4,}", workflow) if word in every_tool}
+
+    assert named, "parsed no tool names out of the taught workflow — the format changed"
+    assert named <= await _names(essentials_client)
+
+
 async def test_extended_only_tools_are_absent_by_default(essentials_client):
-    names = await _names(essentials_client)
-    assert "enrich_module" not in names
-    assert "authoring_reference" not in names
-    assert "reverse_module" not in names
-    assert "fetch_fulltext" not in names
-    assert "lookup_open_access" not in names
+    assert not (EXTENDED_ONLY & await _names(essentials_client))
 
 
 async def test_extended_mode_is_a_superset(essentials_client, extended_client):
     essentials = await _names(essentials_client)
     extended = await _names(extended_client)
     assert essentials < extended
-    assert {
-        "enrich_module",
-        "authoring_reference",
-        "reverse_module",
-        "fetch_fulltext",
-        "lookup_open_access",
-    } <= extended
+    assert extended >= EXTENDED_ONLY
+    # The mode flag hides these and nothing else.
+    assert extended - essentials == EXTENDED_ONLY
 
 
 async def test_gated_tools_are_always_listed(essentials_client, extended_client):

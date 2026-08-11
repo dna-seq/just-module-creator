@@ -19,10 +19,15 @@ terms. That arrives as a first-class `skipped` field rather than `success=False`
 because a failure invites retrying with a different `use`, which is exactly
 fabricating a licence position to make a tool work.
 
-`draft_from_clinvar` is registered in **every** mode: the essentials tier has to
-be able to take a variants module from nothing to compiled. The two PGx drafters
-and the fact passes are extended — a PGx module is the specialist path, and
-`draft_from_clinpgx` needs a snapshot only a CLI-only builder produces.
+`draft_from_clinvar` and `enrich_module` are registered in **every** mode: they
+are steps 2 and 6 of the taught order, and a tier that teaches a step it cannot
+run is worse than one that never mentioned it. They are the only two tools that
+fetch and then write into a spec directory, which is why they share a module.
+
+The two PGx drafters and the bulk fact passes are extended — a PGx module is the
+specialist path, `draft_from_clinpgx` needs a snapshot only a CLI-only builder
+produces, and the fact passes rewrite many rows at once rather than answering
+about the one thing you named.
 """
 
 from __future__ import annotations
@@ -37,6 +42,7 @@ from just_dna_enricher.clingen import ClinGenError, enrich_dosage_sensitivity
 from just_dna_enricher.clinpgx_draft import ClinPgxEnrichmentError, draft_pharm_variants
 from just_dna_enricher.clinvar_draft import ClinVarDraftError, draft_gene_panel
 from just_dna_enricher.cpic import CpicError
+from just_dna_enricher.enrich import EnrichmentError, enrich
 from just_dna_enricher.frequencies import FrequencyEnrichmentError, enrich_frequencies
 from just_dna_enricher.gene_metrics import GeneMetricsEnrichmentError, enrich_gene_metrics
 from just_dna_enricher.literature import LiteratureEnrichmentError, enrich_literature
@@ -47,6 +53,7 @@ from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
     DraftedTable,
     DraftResult,
+    EnrichReport,
     FactPassReport,
     LiteratureReport,
 )
@@ -57,6 +64,13 @@ from just_module_creator.tools._shared import offline_for, resolve_dir
 log = get_logger()
 
 VALID_USE = ("unstated", "non_commercial", "commercial")
+
+_REGENERATE_NOTE = (
+    "An existing sidecar is authoritative and merged, never clobbered. To "
+    "regenerate resolution.csv after changing the spec you must DELETE it first, "
+    "or stale rows persist silently. Moving it aside and re-enriching is also the "
+    "only way to ask whether an injected table still agrees with the sources."
+)
 
 _REGENERATE = (
     "An existing sidecar is authoritative and MERGED, never clobbered. To regenerate "
@@ -269,6 +283,99 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
             await ctx.report_progress(progress=2, total=2)
         return _draft_result(
             result, spec_dir=target, source="clinvar", use=declared, dry_run=dry_run
+        )
+
+    @mcp.tool(
+        task=True,
+        annotations=ToolAnnotations(
+            title="Enrich a spec (resolve coordinates)",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def enrich_module(
+        spec_dir: str,
+        strict: bool = False,
+        offline: bool = False,
+        ctx: Context | None = None,
+    ) -> EnrichReport:
+        """Resolve rsIDs to coordinates and mint VRS ids, writing resolution.csv.
+
+        The only step that fetches, and the only thing that can catch the mistake
+        no offline gate can: it compares your authored `ref` against the actual
+        genome and reports `ref mismatch: N row(s) — coordinate shifted 1 base`.
+        **Read that line as being about `start`, not `ref`** — it is what
+        subtracting one from a VCF position produces. It is a floor, not a total:
+        only rows whose neighbouring base differs from `ref` are visible.
+
+        Runs as a background task: you get a task id immediately and poll.
+
+        Curate before you enrich. A `<<REPLACE>>` anywhere makes every loader
+        refuse the file, this one included — deliberately, since forward
+        resolution is allele-aware and a placeholder genotype would skip the
+        allele filter on exactly the rsIDs that need it.
+
+        `offline=true` restricts to local caches, where the ref check does not
+        run at all. A check that could not run is not a check that passed.
+        """
+        target = resolve_dir(spec_dir, settings)
+        eff_offline = offline_for(settings, offline)
+        mode = "strict" if strict else "best_effort"
+
+        if ctx:
+            await ctx.info(
+                f"Enriching {target.name} (mode={mode}, "
+                f"{'cache-only' if eff_offline else 'network'})"
+            )
+            await ctx.report_progress(progress=1, total=3)
+
+        try:
+            result = await run_sync(
+                lambda: enrich(target, mode=mode, offline=eff_offline, write=True)
+            )
+        except EnrichmentError as exc:
+            return EnrichReport(
+                success=False,
+                spec_dir=str(target),
+                mode=mode,
+                offline=eff_offline,
+                resolved=0,
+                unresolved=[],
+                sources=[],
+                ref_mismatches=[],
+                clin_sig_conflicts=[],
+                stale_rsids=[],
+                warnings=[str(exc)],
+                note=_REGENERATE_NOTE,
+            )
+
+        if ctx:
+            await ctx.report_progress(progress=3, total=3)
+
+        vrs = getattr(result, "vrs", None)
+        mismatches = [str(m) for m in getattr(result, "ref_mismatches", []) or []]
+        warnings: list[str] = []
+        if eff_offline and not mismatches:
+            warnings.append(
+                "No ref mismatches reported — but this ran offline, where the check "
+                "needs sequence access and therefore did not run at all."
+            )
+        return EnrichReport(
+            success=True,
+            spec_dir=str(target),
+            mode=mode,
+            offline=eff_offline,
+            resolved=len(getattr(result, "rows", []) or []),
+            unresolved=[str(u) for u in getattr(result, "unresolved", []) or []],
+            sources=[str(s) for s in getattr(result, "sources", []) or []],
+            ref_mismatches=mismatches,
+            clin_sig_conflicts=[str(c) for c in getattr(result, "clin_sig_conflicts", []) or []],
+            clin_sig_not_checked=getattr(result, "clin_sig_not_checked", None),
+            stale_rsids=[str(s) for s in getattr(result, "stale_rsids", []) or []],
+            vrs_minted=getattr(vrs, "minted", None) if vrs else None,
+            warnings=warnings,
+            note=_REGENERATE_NOTE,
         )
 
 
