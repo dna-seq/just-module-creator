@@ -338,3 +338,41 @@ that found it.
 
 **Closes when** `_parse` reports a field-count mismatch, and `Finding.row` either
 documents its convention or is renamed to a 1-based `line` matching the compiler.
+
+---
+
+## F15 — the registry has no enumerated client-surface contract, so we cannot tell an upgrade that affects us from one that does not
+
+**Filed upstream:** **S2** in `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`
+(2026-08-11 — the *registry's* intake; the fix is a producer-side document or a
+declared boundary in `RegistryClient`) · **Status: open, filed the day it was
+raised.** Like `F11`, this sits in the intake that has **no history file**, so
+absence of movement there means unanswered, not answered.
+
+We call eight `RegistryClient` methods — `register`, `whoami`, `claim_namespace`,
+`publish`, `list_modules`, `get_module`, `namespace_available`, `download` — out of
+a 35-endpoint API. Nothing enumerates that subset as a contract, and neither
+`API-REFERENCE.md` nor `CLIENT.md` is stamped with the versions it describes. So
+each release is read in full to establish that our surface did not move, which for
+0.12.0 (deployment modes, polygon instance, operator purge) it did not.
+
+**What is ours, and stays:** the defensive projection in
+`tools/research.py::_module_card` — `pick("version", "latest_version")`, tolerating
+an `identity` sub-object `ModuleCard` does not document — and `registry_get_module`
+passing its payload through untyped rather than modelling it. Both look like
+over-caution against a schema upstream specifies exactly. They are not: without a
+version stamp on the reference, we could not confirm the documented schema applied
+to the client we run. Tightening either one now would be hardcoding a payload shape
+on a guess, which is the same bet written into our repo.
+
+**Also unresolved, and consumer-facing:** 0.12.0's notes name production as
+`module-marketplace.just-dna.life` and the polygon as `module-polygon.just-dna.life`,
+while we publish against `module-registry.just-dna.life` — where a `test-`prefixed
+namespace claim succeeded, though production is documented to refuse one with
+`422 test_data_on_prod`. Alias, third deployment, or docs ahead of DNS is unknown.
+Do not "fix" our `DEFAULT_REGISTRY_URL` on the strength of a release note; it works,
+and which host is which is part of what S2 asks to have stated.
+
+**Closes when** the client surface is enumerated as its own contract — a document, a
+declared boundary in the client, or per-release "client surface: unchanged/changed"
+— and the reference docs say which versions they are normative for.

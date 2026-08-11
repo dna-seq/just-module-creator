@@ -598,10 +598,24 @@ preference: it goes into §10, in their words, with the reason.
   directory, which is a path quirk and not a rename.
 - The registry keeps its own intake at
   `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`, created 2026-08-11.
-- As of 2026-08-11 that repo declares `just-dna-registry` **0.11.3**, which is
-  **not on PyPI** (published: 0.9.1). Adopting it would need a local path
-  dependency, which breaks the plugin's one-command install for anyone else, so we
-  stay on the published version until it ships.
+- **`just-dna-registry` moves fast: 0.9.1 → 0.12.0 inside 2026-08-11.** 0.12.0 was
+  published to PyPI at 17:02 UTC that day and is what `uv sync` installs; the
+  sibling tree declares the same version, so the path-dependency problem that
+  applied at 0.11.3 has gone away for now. **Re-check with
+  `importlib.metadata.version("just-dna-registry")` rather than trusting this
+  line** — it went stale within hours last time.
+- **There is no enumerated client-surface contract for that client** (`F15` / their
+  `S2`), and neither `API-REFERENCE.md` nor `CLIENT.md` says which versions it
+  describes. So an upgrade has to be read in full to establish that the eight
+  `RegistryClient` methods we call did not move. Do not tighten
+  `research.py::_module_card`'s defensive projection or type
+  `registry_get_module`'s payload on the strength of those docs until they carry a
+  version stamp.
+- **Which registry host is which is unsettled.** 0.12.0's notes name production
+  `module-marketplace.just-dna.life` and a test polygon `module-polygon.just-dna.life`,
+  while our `DEFAULT_REGISTRY_URL` is `module-registry.just-dna.life` and works —
+  including a `test-`prefixed namespace claim that production is documented to
+  refuse. Do not "correct" the default from a release note.
 - The published registry is `https://module-registry.just-dna.life`; as of
   2026-08-11 it holds exactly one module, `eric-mods/lactose_tolerance@1.0.0`,
   which is the best available worked example of a real spec.
