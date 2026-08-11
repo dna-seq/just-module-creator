@@ -29,6 +29,35 @@ Three companions ship beside this file:
 | `references/SYMPTOMS.md` | Anything reports a message you do not recognise. Match on the quoted phrase. |
 | `references/CLI.md` | The full CLI surface, what is *not* wrapped by a tool, and the environment. |
 
+## Explaining this to someone who is not a geneticist
+
+Most authors are not, and a novice who does not understand what a module *is* will ask for things that
+cannot exist. These are the framings that were tested on a real beginner session and landed — the
+conversation changed the moment "module" became **rulebook** ("*a module is a rulebook, you should've
+said so!*").
+
+| Say this | It explains |
+|---|---|
+| **A module is a rulebook.** "If the DNA says X at spot Y, that means Z, and here is who showed it" | what a module *is*. Lead with this one; it does more work than the rest combined |
+| **A variant is a street address.** `rs4988235` names one specific spot where people differ | `rsid` |
+| **Your genotype is which letters you have at that address** | `genotype` |
+| **There are two jobs: writing the rulebook, and reading a DNA file against it. This only writes** | the misconception that wastes the most time |
+| **The module is the knowledge; whoever runs it brings the measurement** | why nothing here opens a VCF |
+| **Every row is a claim with a receipt.** `conclusion` is the claim, `pmid` is the receipt | why `studies.csv` is required whenever `variants.csv` exists |
+| **A blank cell means "we don't know", never "no"** | the three-valued algebra, and why you must not write `false` to tidy a warning |
+| **Those two quote columns mean "a human read this and found the sentence"** — not "here is a relevant quote" | why nothing may fill them from a fetched fulltext |
+| **On a dial, a shared endpoint is a boundary; on a counter, it is two bins claiming the same number** | why dense bins must touch and integer bins must not |
+
+**Correct the DNA-reading misconception early and unprompted.** Do not wait to be asked. A beginner's
+working model is usually "point this at my DNA file and it tells me about me", and every later step reads
+as nonsense against that model — they will not know why they are confused, only that they are. One
+sentence up front saves the whole conversation.
+
+**And never let a metaphor make a decision.** "Rulebook" is the right way to *explain* a module and the
+wrong basis for choosing a column, a vocabulary member or a table kind. The instant the question is what
+a cell may contain, stop explaining and ask `describe_table` / `table_requirements`. A metaphor that
+starts answering schema questions has become a second source of truth.
+
 ## The four packages, and which one you need
 
 The dependency arrow points inward — **enricher → compiler → format** — and only the enricher
@@ -162,6 +191,57 @@ You do not need to: **the draft report prints the allele pair for each stubbed r
 
 Steps 4 and 6 are the only ones that use the network. Once `resolution.csv` and `literature.csv`
 exist they *are* the pin: every later compile is offline and reproducible.
+
+## 0 — Where a module comes from
+
+Authors arrive with an idea, or with nothing, or with something somebody told them. Four honest
+starting points, cheapest first:
+
+| Start | How | Good for |
+|---|---|---|
+| **A gap in the catalog** | `registry_search(gene=…)` / `registry_search(query=…)` — these read **production** by default | knowing the work is wanted before doing it |
+| **A source that publishes the table** | `draft_from_clinvar` for a gene panel; `draft_from_cpic` / `draft_from_clinpgx` for drug response (extended) | the fastest route to real rows. Curate what it stubs |
+| **A paper the author actually read** | `literature_search` to pin the PMID and title | one well-grounded finding, which is a legitimate module |
+| **Something the author was told** — a video, a podcast, a blog, an AI summary | **triage first**, below | by far the most common in practice, and the only one that starts by *removing* claims |
+
+If an author has no idea at all, the catalog gap is the best prompt: search a gene or trait they care
+about, and either nothing exists (a module to write) or something does (a module to read, which teaches
+more than any template).
+
+### Triaging a source you were handed
+
+A summary is not evidence — it is somebody's reading of evidence, and if a machine wrote it, the
+citations may be generated rather than recalled. **Assume nothing, check each claim, and expect most of
+them to fail.** A real run of this procedure turned **seven** offered rsIDs into **one** authored row.
+
+1. **Does every rsID resolve?** `lookup_variant(rsid=…)`. **Re-run any no-locus answer before believing
+   it** — a failed request currently reports as a definite "no such locus" (`F17` / upstream `S20`), and
+   `loci: []` is also the fingerprint of a fabricated id, so a flaky network makes real variants look
+   invented. Treat a bare `loci: []` as *unchecked* when `checked` lacks `ensembl-rest`.
+2. **Does the rsID sit on the same chromosome as the gene the source names?** This is the step that
+   catches generated citations, and **nothing in this surface answers it** (`F23` / upstream `S24`) — you
+   need a gene lookup from outside the toolchain until that lands. Labelled as manual on purpose: a
+   procedure that quietly requires leaving the product trains people to skip it.
+3. **Does the pairing appear in any paper?** `literature_search(rsid=…, gene=…)`. Zero results from
+   sources that *answered* is strong evidence; **read `sources` first**, because a source that could not
+   answer reports `results: null` and a miss is not absence.
+4. **Does the cited paper say what the source claims?** `literature_search(pmids=[…])` reads the title
+   back — the only thing that settles identity. `lookup_citation` proves a PMID exists, which a
+   fabricated one usually does.
+5. **Are two survivors the same signal?** Variants in strong LD tag one finding; two rows would
+   double-count it in a score. Keep the one with the mechanism behind it.
+6. **Does anything state the direction?** If no located paper says *which* allele carries the risk, drop
+   the row. A guessed `direction` is a coin flip that will look exactly as authoritative as a real one.
+
+**The tell for a generated claim is a real gene name beside an invented rsID.** Both halves survive
+their own checks — the symbol is approved, the number resolves — and only the relationship is false.
+That is why step 2 finds what steps 1 and 3 miss.
+
+**Most claims not surviving is the result, not a failure**, and it is worth saying to the author in those
+words. Numbers a summary offers (effect sizes, "7×", kilograms per allele) are the least reliable part
+and must be re-read from the paper or left out: in the run above, one such figure was the paper's
+*rescue* factor reported as its deficit. A module of one checked row is worth more than seven confident
+ones, and an author who sees the arithmetic understands the tool afterwards.
 
 ## 1 — Start the spec
 

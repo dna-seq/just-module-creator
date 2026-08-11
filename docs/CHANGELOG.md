@@ -3,6 +3,57 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.5.3 — metaphors that survive a beginner, and triage for a source you were handed (2026-08-11)
+
+Two skill additions, both drawn from an assisted session with a genuine non-specialist rather
+than invented at a desk.
+
+### `## Explaining this to someone who is not a geneticist`
+
+The framings that were *observed* to work, not the ones that sound good. **A module is a
+rulebook** — "if the DNA says X at spot Y it means Z, and here is who showed it" — did more
+than everything else combined; the session visibly turned on it (*"a module is a rulebook,
+you should've said so!"*). Alongside it: a variant as a **street address**, a genotype as
+**which letters you have there**, a row as **a claim with a receipt**, a blank cell as
+**"we don't know" and never "no"**, and the quote columns as **"a human read this and found
+the sentence"** rather than "here is a relevant quote".
+
+Two rules travel with the table. **Correct the DNA-reading misconception early and
+unprompted** — a beginner's model is "point this at my DNA file and it tells me about me", and
+every later step reads as nonsense against it, so they cannot tell you why they are lost. And
+**never let a metaphor make a decision**: "rulebook" is right for explaining and wrong for
+choosing a column, so the moment the question is what a cell may contain, ask the tool. A
+metaphor that answers schema questions has become a second source of truth.
+
+### `## 0 — Where a module comes from`
+
+Where ideas come from — a catalog gap (`registry_search` reads prod, so it is a call and not a
+guess), a source that publishes the table, a paper the author read, or **something the author
+was told**. That last is the commonest in practice and the only one that begins by *removing*
+claims, so it gets a procedure.
+
+**Triaging a source you were handed** is the new content, and it is the run's main
+methodological result. A summary is somebody's reading of evidence, and if a machine wrote it
+the citations may be generated rather than recalled. Six steps: does the rsID resolve (re-run a
+no-locus before believing it — `F17`); **is it on the same chromosome as the named gene**; does
+the pairing appear in any paper (read `sources` before trusting an empty result); does the
+cited paper say what is claimed (only a title settles identity); are two survivors the same
+signal; does anything state the direction, and drop the row if not.
+
+Real numbers, stated in the skill because they calibrate expectations: **seven offered rsIDs
+became one authored row.** Four paired a real gene name with an rsID on a different
+chromosome — the signature of a generated citation, and invisible to every other check because
+both halves pass separately and only the relationship is false. One survivor was dropped as an
+LD duplicate, one because no located paper said which allele carried the risk. A number the
+summary offered turned out to be the paper's *rescue* factor reported as its deficit.
+
+**Step 2 is labelled as requiring a lookup outside the toolchain**, because it does: nothing
+verifies `gene` against the resolved locus (`F23`, upstream `S24` — filed with the argument
+that the check belongs at chromosome granularity, since a variant legitimately names a distal
+gene and an interval check would fire on correct rows until someone disabled it). Labelling it
+is deliberate — a procedure that quietly requires leaving the product trains authors to skip
+the step.
+
 ## 0.5.2 — and when it genuinely is good, advocate (2026-08-11)
 
 The other half of 0.5.1, and shipped separately only because 0.5.1 was already tagged.

@@ -351,3 +351,41 @@ deliberate and must not be tightened on the strength of undated client docs.
 reports `sources: ["clinvar"]` with a signature, while `versions[0].resolution` reports `sources: []`
 and `signature: null` for the same version. Ours is the read side only; noting it here so the next
 reader of that payload does not treat the nested copy as authoritative.
+
+## F23 — the `gene` column is unverified, and it is the column that exposes a fabricated source
+
+**Found:** 2026-08-11, triaging an LLM-written source · **Severity:** medium ·
+**Upstream:** `S24`, filed same day · **Status:** open, documented as a manual step
+
+`variants.csv:gene` is checked against nothing. A deliberately wrong pairing lints clean:
+
+```
+rs2252481 (chromosome 6) + gene NEGR1 (chromosome 1)  →  errors: 0, warnings: 0
+```
+
+`check_identifiers` does not cover it — it asks HGNC whether the *symbol* is current, and returned
+`state: "approved"` for a real module's `FTO` without ever asking whether `rs1421085` is in FTO. The two
+questions read alike in a result payload, which is what makes this easy to believe already handled.
+
+**Why it matters more than an unchecked free-text column usually would.** This is the single check that
+distinguished the honest half of a machine-written source from the fabricated half: four of seven rows
+named a real gene with an rsID on another chromosome, and every other check passed on each half
+separately — the rsID resolved, the symbol was approved, only the *pairing* was false. Triaging a
+machine-written document is now a real authoring workflow (see `assets/fto_bmi/README.md`), and this is
+its highest-value check.
+
+**Consequence, and why it is filed rather than fixed:** catching it required reading gene coordinates
+from a service outside the toolchain. That is the move this repo treats as a finding on sight, and it is
+now written into `skills/create-module/SKILL.md` §0 as an explicitly-labelled manual step — labelled,
+because a procedure that quietly requires leaving the product trains authors to skip it.
+
+**We should not build the lookup here.** `identifiers.py` already resolves symbols against HGNC and
+`resolution.csv` already carries the chromosome, so upstream holds both halves of the comparison; adding
+a gene-coordinate client on our side would be a second source of truth for a fact we do not own, and the
+value is entirely in the comparison. `S24` also argues *against* the stronger interval check — a variant
+legitimately names a distal gene (`rs1421085` is in an FTO intron and acts on IRX3/IRX5), so
+chromosome-level is the right granularity and an inside-the-gene-body check would fire on correct rows
+until somebody disabled it.
+
+**Closes when** an enricher check reports a chromosome disagreement between `gene` and the resolved
+locus, in a release `uv sync` installs — at which point the manual step comes out of §0.
