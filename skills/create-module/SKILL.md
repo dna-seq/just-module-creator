@@ -1,7 +1,7 @@
 ---
 name: create-module
 description: >-
-  Author, validate, compile and publish a just-dna annotation module (format 0.5) end to end —
+  Author, validate, compile and publish a just-dna annotation module end to end —
   scaffold, draft from a source, curate what only a human can decide, enrich, cross-check, compile,
   publish. Use when creating or extending a module spec directory (module_spec.yaml + CSVs), when
   choosing which table kind a finding belongs in, when preparing a module for the registry, or when
@@ -364,6 +364,12 @@ The duplicate key is `(variant, drug, genotype, phenotype_category, annotation_i
 drug legitimately carry separate efficacy, toxicity and pharmacokinetic rows, and they can disagree.
 This module type carries **no** `variants.csv` and needs **no** `studies.csv`.
 
+**Author the rsID here, not a coordinate.** Resolution is applied to `weights.parquet` only, so a
+`pharm_variants` / `diplotypes` / `pgs` row's `chrom` and `start` arrive **null** in the artifact even
+when `resolution.csv` covers the variant — these tables are materialized verbatim from their authored
+CSV. A consumer joins them on `rsid` + `genotype`, so expect no matches from a VCF whose `ID` column
+is empty.
+
 ### resolution.csv — produced, committed, never hand-edited
 
 `enrich` writes one row per resolved locus: `variant_key, rsid, chrom, start, ref, alts,
@@ -512,15 +518,6 @@ needs a version either way; a rebuild that changes *what variants are in the mod
 grounded is a **major**, because someone pinned to the old major would silently receive different
 content. Write the changelog as a continuation of the previous one, not a fresh "initial release".
 
-There is a **second, separate** destination: the HuggingFace annotator collection, which the app
-discovers directly. It takes the **compiled** artifacts rather than the spec, and the two are
-published independently — no command does both, and that is deliberate for now.
-
-**A 0.4-led module is joined against the VCF on `rsid` + `genotype`, not by position.** The compiler
-materializes those families verbatim from their authored CSV and applies `resolution.csv` to
-`weights.parquet` only, so a `pharm_variants` / `diplotypes` / `pgs` row's `chrom`/`start` arrive
-null. Author the rsID, and expect no matches from a VCF whose `ID` column is empty.
-
 ## Checklist before you call a module done
 
 - [ ] `validate_module(strict=True)` passes
@@ -597,14 +594,12 @@ draft re-stamp it.
 - **`direction` is not a magnitude.** Its members are the same axis as `state`
   (`neutral`/`protective`/`risk`/`unknown`), not `increase`/`decrease`. Ask `describe_table` before
   writing any vocabulary cell from intuition.
-- **`direction` is authored or it is empty — nothing computes it for you.** `state` is the required
-  legacy axis; `direction`/`stat_significance`/`clin_sig` are the orthogonal ones that replaced it.
-  The compiler never fills a blank from `state`, since that would assert a claim you did not make
+- **`direction` is authored or it is empty — nothing computes it for you.** `state` is required;
+  `direction` / `stat_significance` / `clin_sig` are orthogonal to it and optional. The compiler
+  never fills a blank `direction` from `state`, since that would assert a claim you did not make
   (`state='significant'` names no direction at all). So a module carrying only `state` compiles fine
-  and ships an empty `direction` column, and a consumer keying on `direction` sees nothing. If you
-  want the newer axis read, write it — on every row it applies to, not on some. Reading back:
-  `VariantRow.effective_direction` returns the authored value else the `state`-derived fallback, and
-  `just_dna_format.derive.direction_from_state(state, weight)` is that fallback as a plain function.
+  and ships an empty `direction` column, and a consumer keying on `direction` sees nothing. Write it
+  on every row it applies to, or on none.
 
 ## The checks, and the two ways to defeat them by accident
 
@@ -677,9 +672,10 @@ The house algebra is **three-valued: true / false / unknown**, and `None` is nev
 ## Licensing
 
 - **Every PGx upstream (ClinPGx, CPIC, PharmVar) is CC BY-SA *plus a no-sale clause*.** None is
-  sellable. Do not read a bare "CC BY-SA" as permission — read the surrounding terms. (PharmGKB's API
-  was retired on 2026-07-20; the successor is ClinPGx, paths and formats unchanged. CPIC is not an
-  unrestricted alternative — its licence page redirects to the same ClinPGx data-usage policy.)
+  sellable. Do not read a bare "CC BY-SA" as permission — read the surrounding terms. CPIC is not an
+  unrestricted alternative: its licence page redirects to the same ClinPGx data-usage policy. (If you
+  find PharmGKB API documentation, it is dead — ClinPGx is the successor, paths and formats
+  unchanged.)
 - **Pass `--use unstated | non-commercial | commercial`** to anything that copies rows out of a
   source (`draft`, `draft-panel`, `draft-clinpgx`, `dosage`, `pgx`, `clinpgx build/check`). A
   forbidding source is *skipped* on `unstated` and *refused* on `commercial`, at acquisition —

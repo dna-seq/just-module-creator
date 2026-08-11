@@ -296,7 +296,7 @@ never `False`.
 
 - **Every PGx upstream (ClinPGx, CPIC, PharmVar) is CC BY-SA *plus a no-sale
   clause*.** None is sellable. Do not read a bare "CC BY-SA" as permission.
-  (PharmGKB's API retired 2026-07-20; successor is ClinPGx, paths unchanged.)
+  (PharmGKB API docs are dead; ClinPGx is the successor, paths unchanged.)
 - Pass `--use unstated | non-commercial | commercial` to anything that copies
   rows out of a source. A forbidding source is *skipped* on `unstated` and
   *refused* on `commercial`, **at acquisition**.
@@ -370,6 +370,30 @@ deliberate**. Leave the data honest and note the limitation.
   against gnomAD/ClinVar/ClinGen, and say so.
 
 ---
+
+## Upstream findings go to the producer, never into a workaround
+
+We consume `just-dna-format` / `-compiler` / `-enricher` / `-registry` and own
+none of them. **Every upstream question, quirk or bug goes into
+`../just-dna-format/docs/CONSUMER_SUGGESTIONS.md`** — that file is the intake for
+all four, since they share a repo.
+
+- **Check whether it is already filed before writing.** Entries are `S<n>`; a
+  second consumer hitting a known one appends a corroboration to that entry
+  rather than opening a new number. Two independent reproductions is itself the
+  signal that raises its priority.
+- **Write the note, and stop there.** Never commit in that repo, and never open
+  a PR against it. Writing the note is the whole job.
+- **Record our side here** — in `docs/CHANGELOG.md` if we shipped a mitigation,
+  so nobody re-investigates a finding that looks fixed.
+- **Never work around it silently in the data.** A workaround that leaves the
+  module dishonest is worse than the gap. Say what the limitation is, leave the
+  data truthful, and file the note.
+
+Already filed (do not re-file): **S9** — resolution is applied to the SNP core
+only, so `pharm_variants` / `diplotypes` / `pgs` rows compile with null
+`chrom`/`start` even when `resolution.csv` covers the variant. Independently
+reproduced from this repo on 2026-08-11 and appended as a corroboration.
 
 ## Design rules for THIS server
 
