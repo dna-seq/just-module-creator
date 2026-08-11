@@ -39,6 +39,7 @@ from just_dna_enricher.literature import DEFAULT_EUROPEPMC_BASE, EuropePmcClient
 from just_dna_format.spec import DOI_PATTERN
 
 from just_module_creator.models import (
+    CitationGraph,
     FullTextResult,
     LintAlteration,
     LintFinding,
@@ -1106,4 +1107,41 @@ def fulltext(
         truncated=truncated,
         locations=locations,
         findings=findings,
+    )
+
+
+def citation_graph(
+    services: NetworkServices, *, paper_id: str, direction: str, limit: int
+) -> CitationGraph:
+    """Papers citing this one, or cited by it — the replication question.
+
+    Semantic Scholar only: it is the source that publishes the graph. A failure
+    comes back as `results=None` rather than an empty list, because "S2 is rate
+    limiting us" and "nobody has cited this" would otherwise look identical, and
+    the second one is a real finding about the evidence.
+    """
+    discovery = Discovery(services=services)
+    try:
+        found = discovery.citations(paper_id, direction, limit)
+    except ServiceUnavailable as exc:
+        return CitationGraph(
+            paper_id=paper_id,
+            direction=direction,
+            papers=[],
+            sources=[
+                SourceStatus(
+                    source=SEMANTICSCHOLAR,
+                    queried=True,
+                    results=None,
+                    reason=exc.reason,
+                    rate_limited=exc.rate_limited,
+                )
+            ],
+        )
+    return CitationGraph(
+        paper_id=paper_id,
+        direction=direction,
+        papers=found,
+        sources=[SourceStatus(source=SEMANTICSCHOLAR, queried=True, results=len(found))],
+        withheld=doi_refusals(found),
     )

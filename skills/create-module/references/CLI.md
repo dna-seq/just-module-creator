@@ -18,9 +18,12 @@ Install: `pip install just-dna-enricher` pulls the compiler and the format tier.
 | signature / integrity / round-trip | `module_signature`, `verify_artifact`, `reverse_module` | `signature`, `verify`, `reverse` |
 | identifier currency | `check_identifiers`, `lookup_identifier` | `check-identifiers`, `hint gene/trait` |
 | variant + citation lookup | `lookup_variant`, `lookup_citation` | `hint variant`, `hint citation` |
+| **literature search** | `literature_search` | — (nothing upstream searches) |
+| **open access + full text** | `lookup_open_access`, `fetch_fulltext` | — |
+| **citation graph** | `paper_citations` | — |
 | registry search / read / publish | `registry_search`, `registry_get_module`, `registry_download`, `registry_publish` | `registry-client list / download / publish` |
-| **drafting from a source** | — | `draft`, `draft-panel`, `draft-clinpgx` |
-| **fact passes** | — | `frequencies`, `gene-metrics`, `dosage`, `literature` |
+| drafting from a source | `draft_from_clinvar`, `draft_from_cpic`, `draft_from_clinpgx` | `draft-panel`, `draft`, `draft-clinpgx` |
+| fact passes | `enrich_facts`, `enrich_literature_pass` | `frequencies`, `gene-metrics`, `dosage`, `literature` |
 | **signing** | — | `keygen`, `sign` |
 | **PGx cross-checks** | — | `pgx`, `clinpgx check`, `check-acmg` |
 | **snapshot building** | — | `clinvar build`, `clinpgx build`, `acmg build`, `cache pull` |
@@ -67,6 +70,10 @@ kind, so the compile succeeds and writes a module whose every row has no `chrom`
 | `hint variant\|citation\|trait\|gene` | look up one identifier. Writes nothing. `--json`, `--offline`, `--ambiguity`, `--frequencies` |
 | `vrs mint <dir>` | stamp `ga4gh:VA.…` ids onto `resolution.csv` (substitutions offline, indels online) |
 | `enrich-and-compile <dir> <out>` | enrich + compile in one call. `--frequencies`, `--gene-metrics` |
+
+The three sources this server reaches that the enricher does not — Semantic Scholar, arXiv and
+Unpaywall — have no CLI equivalent anywhere in the toolchain. Discovery is an app-surface feature;
+the enricher's literature tier verifies citations you already have and deliberately does not search.
 
 Snapshot builders (dev/publisher surface): `clinvar build|citations|publish`, `clinpgx build`,
 `acmg build`, `gnomad constraint`, `cpic build`, `pharmvar build`, `cache status|pull`, `upload`.

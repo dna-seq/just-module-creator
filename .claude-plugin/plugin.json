@@ -1,8 +1,8 @@
 {
   "name": "just-module-creator",
   "displayName": "just-dna Module Creator",
-  "version": "0.1.0",
-  "description": "Author, validate, compile and publish just-dna annotation modules. Ships a skill and an MCP server whose schema answers are generated from the live just-dna-format models, so they cannot drift from what the compiler accepts.",
+  "version": "0.2.0",
+  "description": "Author, validate, compile and publish just-dna annotation modules. Ships two skills and an MCP server whose schema answers are generated from the live just-dna-format models, so they cannot drift from what the compiler accepts — plus literature search across PubMed, Europe PMC, Semantic Scholar and preprints, which the toolchain has nowhere else.",
   "author": {
     "name": "just-dna-seq"
   },
@@ -13,7 +13,9 @@
     "just-dna",
     "variants",
     "pharmacogenomics",
-    "mcp"
+    "mcp",
+    "literature",
+    "pubmed"
   ],
   "skills": "./skills",
   "mcpServers": {

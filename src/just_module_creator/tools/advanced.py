@@ -27,9 +27,10 @@ from just_dna_format.manifest import read_manifest
 from just_dna_registry import RegistryClient, RegistryError
 from mcp.types import ToolAnnotations
 
-from just_module_creator.discovery import fulltext, open_access
+from just_module_creator.discovery import citation_graph, fulltext, open_access
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
+    CitationGraph,
     EnrichReport,
     FullTextResult,
     IdentifierReport,
@@ -138,6 +139,51 @@ def register_extended(mcp: FastMCP, settings: Settings, services: NetworkService
             raise ToolError("Provide a pmid, pmcid or doi.")
         return await run_sync(
             lambda: fulltext(services, pmid=pmid, pmcid=pmcid, doi=doi, max_chars=max_chars)
+        )
+
+    @mcp.tool(
+        tags={"extended"},
+        annotations=ToolAnnotations(
+            title="Who cited this paper",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def paper_citations(
+        pmid: str | None = None,
+        doi: str | None = None,
+        arxiv_id: str | None = None,
+        direction: str = "citing",
+        limit: int = 20,
+    ) -> CitationGraph:
+        """Papers citing this one (`citing`) or cited by it (`cited_by`).
+
+        This is how you ask **whether a finding was replicated**, which is most of
+        the `weight` and `state` judgement. One paper reporting an association and
+        forty papers reporting it are different evidence, and no other call here
+        distinguishes them.
+
+        Semantic Scholar only — it is the source that publishes the graph. Coverage
+        is uneven for older clinical literature, so a short list is weak evidence
+        of little citation rather than proof of none.
+
+        A rate limit or outage comes back as `results=null`, never an empty list:
+        "S2 could not answer" and "nobody cited this" are different facts, and the
+        second one is a real finding you would act on.
+        """
+        _require_network("Citation lookup")
+        if direction not in {"citing", "cited_by"}:
+            raise ToolError("`direction` must be 'citing' or 'cited_by'.")
+        identifier = (
+            f"PMID:{pmid}"
+            if pmid
+            else (f"DOI:{doi}" if doi else (f"ARXIV:{arxiv_id}" if arxiv_id else None))
+        )
+        if not identifier:
+            raise ToolError("Provide a pmid, doi or arxiv_id.")
+        return await run_sync(
+            lambda: citation_graph(services, paper_id=identifier, direction=direction, limit=limit)
         )
 
     # ----------------------------------------------------------------- #

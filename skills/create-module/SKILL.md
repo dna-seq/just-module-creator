@@ -63,9 +63,17 @@ reach the one compiler flag that silently produces a module no VCF can match.
 | pre-flight a compile | `validate_module` | essentials |
 | build the artifact | `compile_module` | essentials |
 | find the alleles for a genotype | `lookup_variant` | essentials |
-| check a PMID exists | `lookup_citation` | essentials |
+| **find the papers behind a row** | `literature_search` | essentials |
+| check a PMID exists (existence only — see below) | `lookup_citation` | essentials |
 | see whether a module already exists | `registry_search` | essentials |
+| **draft variants + studies from ClinVar** | `draft_from_clinvar` | essentials |
+| draft the PGx tables | `draft_from_cpic`, `draft_from_clinpgx` | extended |
+| where may I read this paper, on what terms | `lookup_open_access` | extended |
+| read a paper | `fetch_fulltext` | extended |
+| has this finding been replicated | `paper_citations` | extended |
 | resolve coordinates, mint VRS ids, catch a ref mismatch | `enrich_module` | extended |
+| fill `literature.csv` | `enrich_literature_pass` | extended |
+| fill the frequency / constraint / dosage sidecars | `enrich_facts` | extended |
 | gene/trait currency | `check_identifiers`, `lookup_identifier` | extended |
 | content signature, integrity, round-trip | `module_signature`, `verify_artifact`, `reverse_module` | extended |
 | the whole generated DSL at once | `authoring_reference` | extended |
@@ -79,10 +87,13 @@ requirements are generated from the live pydantic models, so `describe_table` /
 therefore does not reproduce them — the per-table section below carries only the rules a schema dump
 *cannot* express.
 
-The CLIs remain the fallback for anything the server does not wrap — chiefly **drafting from a
-source** (`draft`, `draft-panel`, `draft-clinpgx`), the **fact passes** (`frequencies`,
-`gene-metrics`, `dosage`, `literature`), **signing** (`keygen`, `sign`), and the PGx cross-checks.
-See `references/CLI.md`.
+The CLIs remain the fallback for what the server still does not wrap — **signing**
+(`keygen`, `sign`), the **PGx cross-checks** (`pgx`, `clinpgx check`, `check-acmg`) and **snapshot
+building**. See `references/CLI.md`.
+
+**Finding the evidence is its own skill.** Searching the literature, checking that a PMID names the
+paper you meant, reading a paper legally, and deciding what may honestly be written from it are
+covered in [find-evidence](../find-evidence/SKILL.md). Load it at step 3.
 
 ## Directory layout
 
@@ -206,7 +217,21 @@ on exactly the rows still to do, rather than compiling into a module that assert
 
 ## 2 — Draft from a source, if one publishes the table
 
-Not wrapped by the MCP server — use the CLI:
+`draft_from_clinvar` is an MCP tool (essentials); the PGx drafters are extended. `use` is required
+on all three and has no default: `unstated` would silently skip licence-bearing sources, and
+anything else asserts a licence position you may not hold. If a draft comes back `skipped=true`,
+the terms were not satisfied and nothing was fetched — **that is the gate working, and re-running
+with a different `use` to get past it is fabricating a licence position.**
+
+```
+draft_from_clinvar(spec_dir="spec", genes=["HFE"], use="non_commercial", dry_run=True)
+```
+
+Read `differs` in the result: rows where the source disagrees with something you already authored.
+They are left unchanged, because rewriting your value would destroy the evidence of the
+disagreement and only you know which side is right.
+
+The equivalent CLI, still available:
 
 ```bash
 just-dna-enricher draft-panel spec/ --gene HFE --use non-commercial            # ClinVar → variants.csv (+ studies.csv)
@@ -262,7 +287,8 @@ To write a genotype you need the alleles. Ask, without writing anything:
 lookup_variant(rsid="rs1801133")                     # loci, ref, alts — plus what it refuses to fill
 lookup_variant(rsid="rs334", ambiguity=True)         # warn when the answer is not unique
 lookup_variant(chrom="1", start=11796321, ref="G", alts="A")   # allele-exact by coordinate
-lookup_citation(pmid="7647779")                      # does it exist, and what DOI does it carry
+literature_search(gene="MTHFR", trait="homocysteine")          # find the papers — with titles
+lookup_citation(pmid="7647779")                                # exists? (NOT: is it the right paper)
 lookup_identifier(kind="trait", identifier="EFO_0004541")      # current | obsolete | absent
 lookup_identifier(kind="gene", identifier="MTHFR")             # approved | retired | unknown
 ```
@@ -354,7 +380,10 @@ Required: `pmid`. Identity: `rsid` **or** `chrom` (+`start`, `ref`).
 - **A study must carry the same identity its variant row got.** If the variant is keyed by
   coordinate, the study must be too, or it is an orphan.
 - **`pmid` is 1–8 digits.** Nine-digit ids are not PubMed ids and are rejected.
-- Never invent a PMID. Verify each one with `lookup_citation` before writing it.
+- **Take every PMID from a `literature_search` result, never from memory.** `lookup_citation` proves
+  a PMID *exists*, and PMIDs are dense enough that a half-remembered one is usually a real record for
+  a different paper — so existence is a weak guard against fabrication. Only a title settles it, and
+  `literature_search(pmids=[...])` reads titles back. See the `find-evidence` skill.
 
 ### pharm_variants.csv (drug response)
 
