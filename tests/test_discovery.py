@@ -247,3 +247,20 @@ def test_an_unknown_source_names_the_valid_ones() -> None:
     assert "scihub" in message
     for name in known_sources():
         assert name in message
+
+
+def test_a_limit_is_spent_across_sources_not_on_the_first_one(
+    pubmed_records, europepmc_records
+) -> None:
+    """Found by dogfooding: `limit=5` over four sources returned five PubMed hits.
+
+    If one source can crowd out the rest, asking several of them stops meaning
+    anything. Every source's top hit must outrank anyone's second.
+    """
+    merged = merge([pubmed_records, europepmc_records])
+
+    top_two = merged[:2]
+    assert {s for c in top_two for s in c.found_in} == {PUBMED, EUROPEPMC}
+    # And the ordering is by each source's own best rank, ascending.
+    ranks = [min(c.rank.values()) for c in merged]
+    assert ranks == sorted(ranks)

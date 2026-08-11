@@ -34,10 +34,18 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from just_dna_enricher.eutils import DEFAULT_EUTILS_BASE, EutilsSettings
+from just_dna_enricher.licensing import TERMS_BY_SOURCE
 from just_dna_enricher.literature import DEFAULT_EUROPEPMC_BASE
 from just_dna_format.spec import DOI_PATTERN
 
-from just_module_creator.models import LintAlteration, LiteratureCandidate, SourceStatus
+from just_module_creator.models import (
+    LintAlteration,
+    LintFinding,
+    LiteratureCandidate,
+    LiteratureSearchResult,
+    SourceLicenseNote,
+    SourceStatus,
+)
 from just_module_creator.net import HttpService, NetworkServices, ServiceGate, ServiceUnavailable
 
 log = logging.getLogger(__name__)
@@ -370,8 +378,10 @@ def merge(groups: list[list[LiteratureCandidate]]) -> list[LiteratureCandidate]:
     this small the cost of a duplicate is far lower than the cost of a
     disappearance.
 
-    Ordering is by first-appearance across the requested sources, then by that
-    source's own rank — deterministic, and never emitted from set iteration.
+    Ordering interleaves the sources by their own rank — every source's top hit
+    before anyone's second — so a `limit` is spent across them rather than on
+    whoever was asked first. Ties break on first appearance, so the result is
+    deterministic and never emitted from set or dict iteration.
     """
     merged: list[LiteratureCandidate] = []
     index: dict[str, int] = {}
@@ -392,7 +402,17 @@ def merge(groups: list[list[LiteratureCandidate]]) -> list[LiteratureCandidate]:
             for key in keys:
                 if key:
                     index[key] = position
-    return merged
+
+    # Interleave by each source's own best position, so a `limit` spends itself
+    # across the sources rather than on whichever one was asked first. Without
+    # this, `limit=5` over four sources returns five PubMed hits and the reason
+    # to ask anyone else disappears. Ties break on first appearance, so the order
+    # stays deterministic and never depends on set or dict iteration.
+    order = {id(c): i for i, c in enumerate(merged)}
+    return sorted(
+        merged,
+        key=lambda c: (min(c.rank.values()) if c.rank else 10**6, order[id(c)]),
+    )
 
 
 def _combine(kept: LiteratureCandidate, extra: LiteratureCandidate) -> LiteratureCandidate:
@@ -547,7 +567,24 @@ class Discovery:
         return parse_semantic_scholar(unwrapped)
 
     # -- arXiv ----------------------------------------------------------- #
-    def arxiv(self, query: str, limit: int) -> list[LiteratureCandidate]:
+    def preprints(self, query: str, limit: int) -> list[LiteratureCandidate]:
+        """Europe PMC's SRC:PPR index plus arXiv, merged.
+
+        Named `preprints` rather than `arxiv` because bioRxiv/medRxiv have no
+        free-text search API of their own — `api.biorxiv.org` does date-interval
+        listing and per-DOI detail only — and naming a server we do not query
+        would be a lie in the argument schema.
+        """
+        from_epmc: list[LiteratureCandidate] = []
+        try:
+            from_epmc = self.europepmc(query, limit, preprints=True)
+        except ServiceUnavailable as exc:
+            # One index failing must not hide the other; the caller still learns
+            # the source was degraded through the ServiceStatus if BOTH fail.
+            log.info("preprints: Europe PMC leg unavailable (%s)", exc.reason)
+        return merge([from_epmc, self._arxiv(query, limit)])
+
+    def _arxiv(self, query: str, limit: int) -> list[LiteratureCandidate]:
         text = (
             self.service(PREPRINTS)
             .get(
@@ -623,3 +660,226 @@ def resolve_sources(
         else:
             queried.append(name)
     return queried, excluded
+
+
+# --------------------------------------------------------------------------- #
+# Orchestration — one query, several sources, one honest answer
+# --------------------------------------------------------------------------- #
+def _licensing_notes(sources_used: list[str]) -> list[SourceLicenseNote]:
+    """The `sources.csv` rows the author now owes, and why none was written.
+
+    `sources.csv` must cover every source a fact table cites, and a missing row is
+    a **warning, not an error**, so it ships unnoticed. Upstream's
+    `TERMS_BY_SOURCE` has no entry for any literature service — not even `pubmed`,
+    which `enrich_literature` writes itself — so nothing can state these terms
+    today. We report that and refuse to invent it: `declared_use` is a licence
+    position only the author can take, and a fabricated licence string would be
+    worse than the missing warning.
+    """
+    notes: list[SourceLicenseNote] = []
+    for name in sorted(set(sources_used)):
+        spec = SOURCES[name]
+        notes.append(
+            SourceLicenseNote(
+                source=name,
+                layer="literature",
+                terms_url=spec.terms_url,
+                stateable_upstream=name in TERMS_BY_SOURCE,
+                note=(
+                    f"You read {name} by hand, so nothing wrote a sources.csv row for it and the "
+                    "compile gate cannot see it. Add the row yourself. If you copy a passage from "
+                    "an article into studies.csv, that is a SECOND row at layer='annotation' "
+                    "carrying the ARTICLE's licence, not this service's — use lookup_open_access "
+                    "to read it, because those terms are per-article."
+                ),
+            )
+        )
+    return notes
+
+
+def _query_string(terms: list[str], year_from: int | None) -> str:
+    """One search string. Deterministic, so the same request reads the same way."""
+    joined = (
+        " AND ".join(f"({t})" for t in terms) if len(terms) > 1 else (terms[0] if terms else "")
+    )
+    if year_from:
+        joined = f"{joined} AND {year_from}:3000[dp]" if joined else f"{year_from}:3000[dp]"
+    return joined
+
+
+def search_literature(
+    *,
+    services: NetworkServices,
+    terms: list[str],
+    pmids: list[str] | None,
+    year_from: int | None,
+    requested: list[str] | None,
+    limit: int,
+) -> LiteratureSearchResult:
+    """Ask each permitted source, merge, and report what every one of them did.
+
+    Blocking: the tool wraps this in ``anyio.to_thread.run_sync``. One source
+    failing never fails the call — it becomes a ``SourceStatus`` with
+    ``results=None``, because a partial answer that says which part is missing is
+    far more useful than an exception.
+    """
+    discovery = Discovery(services=services)
+    query = _query_string(terms, year_from)
+
+    # An explicit `pmids` lookup is its own path: it is the "does this id name the
+    # paper I meant" question, and only PubMed can answer it.
+    if pmids and not terms:
+        return _lookup_by_pmid(discovery, pmids)
+
+    queried, statuses = resolve_sources(requested, services.settings.allowed_literature_sources())
+    groups: list[list[LiteratureCandidate]] = []
+
+    for name in queried:
+        try:
+            found = _run_source(discovery, name, query, limit)
+        except ServiceUnavailable as exc:
+            # results=None, never 0 — a source that failed is not a source that
+            # found nothing, and an author acts differently on each.
+            statuses.append(
+                SourceStatus(
+                    source=name,
+                    queried=True,
+                    results=None,
+                    reason=exc.reason,
+                    rate_limited=exc.rate_limited,
+                )
+            )
+            log.info("literature: %s could not answer (%s)", name, exc.reason)
+            continue
+        statuses.append(SourceStatus(source=name, queried=True, results=len(found), reason=None))
+        groups.append(found)
+
+    papers = merge(groups)[:limit] if groups else []
+    findings = _search_findings(statuses, papers)
+    return LiteratureSearchResult(
+        query=query,
+        papers=papers,
+        sources=sorted(statuses, key=lambda s: s.source),
+        withheld=doi_refusals(papers),
+        findings=findings,
+        licensing=_licensing_notes([s.source for s in statuses if s.queried]),
+    )
+
+
+def _run_source(
+    discovery: Discovery, name: str, query: str, limit: int
+) -> list[LiteratureCandidate]:
+    """Dispatch to one source. Kept explicit rather than a dict of lambdas."""
+    if name == PUBMED:
+        return discovery.pubmed(query, limit)
+    if name == EUROPEPMC:
+        return discovery.europepmc(query, limit)
+    if name == SEMANTICSCHOLAR:
+        return discovery.semantic_scholar(query, limit)
+    if name == PREPRINTS:
+        return discovery.preprints(query, limit)
+    raise ValueError(f"{name} is not a searchable source")
+
+
+def _lookup_by_pmid(discovery: Discovery, pmids: list[str]) -> LiteratureSearchResult:
+    """Read back the titles for ids the caller already has.
+
+    This is the anti-fabrication path: `lookup_citation` proves a PMID exists,
+    which a wrong-but-real id also does. Only a title settles it.
+    """
+    try:
+        found = discovery.pubmed_summaries(pmids)
+    except ServiceUnavailable as exc:
+        return LiteratureSearchResult(
+            query=f"pmids: {', '.join(pmids)}",
+            papers=[],
+            sources=[
+                SourceStatus(
+                    source=PUBMED,
+                    queried=True,
+                    results=None,
+                    reason=exc.reason,
+                    rate_limited=exc.rate_limited,
+                )
+            ],
+            findings=[
+                LintFinding(
+                    level="warning",
+                    message=(
+                        "PubMed could not answer, so NONE of these ids was checked. An empty "
+                        "result here means unchecked, not absent."
+                    ),
+                )
+            ],
+        )
+
+    returned = {c.pmid for c in found if c.pmid}
+    missing = [p for p in pmids if p not in returned]
+    findings = [
+        LintFinding(
+            level="info",
+            message=(
+                "Compare each title against the paper you meant. A PMID that exists but names a "
+                "different paper is the failure mode this call is for."
+            ),
+        )
+    ]
+    if missing:
+        findings.append(
+            LintFinding(
+                level="error",
+                message=(
+                    f"PubMed returned no record for: {', '.join(missing)}. Do not write these "
+                    "into studies.csv."
+                ),
+            )
+        )
+    return LiteratureSearchResult(
+        query=f"pmids: {', '.join(pmids)}",
+        papers=found,
+        sources=[SourceStatus(source=PUBMED, queried=True, results=len(found), reason=None)],
+        withheld=doi_refusals(found),
+        findings=findings,
+        licensing=_licensing_notes([PUBMED]),
+    )
+
+
+def _search_findings(
+    statuses: list[SourceStatus], papers: list[LiteratureCandidate]
+) -> list[LintFinding]:
+    """Say out loud what the status list already implies, once."""
+    findings: list[LintFinding] = []
+    unanswered = sorted(s.source for s in statuses if s.queried and s.results is None)
+    if unanswered:
+        findings.append(
+            LintFinding(
+                level="warning",
+                message=(
+                    f"These sources could not answer: {', '.join(unanswered)}. Their part of the "
+                    "literature is UNCHECKED, not empty — do not read this result as 'nothing "
+                    "was published'."
+                ),
+            )
+        )
+    if any(p.preprint for p in papers):
+        findings.append(
+            LintFinding(
+                level="warning",
+                message=(
+                    "Some results are preprints: not peer-reviewed, and they carry no PMID, so "
+                    "they cannot ground a studies.csv row (pmid is required). They may still "
+                    "inform a hedged conclusion."
+                ),
+            )
+        )
+    if papers:
+        findings.append(
+            LintFinding(
+                level="info",
+                message=(
+                    "Titles and abstracts are for you to read. No passage was extracted and no "
+                    "paper was judged to support anything — that reading is the authoring work."
+                ),
+            )
+        )
+    return findings

@@ -23,9 +23,11 @@ from just_dna_enricher import lookup as enricher_lookup
 from just_dna_registry import RegistryClient, RegistryError
 from mcp.types import ToolAnnotations
 
+from just_module_creator.discovery import search_literature
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
     CitationLookup,
+    LiteratureSearchResult,
     RegistryModule,
     RegistrySearchResult,
     VariantLookup,
@@ -196,6 +198,77 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             abstract_available=getattr(hint, "abstract_available", None),
             findings=to_findings(getattr(hint, "findings", [])),
             withheld=to_alterations(getattr(hint, "alterations", [])),
+        )
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Search the literature",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def literature_search(
+        query: str | None = None,
+        pmids: list[str] | None = None,
+        gene: str | None = None,
+        rsid: str | None = None,
+        trait: str | None = None,
+        year_from: int | None = None,
+        sources: list[str] | None = None,
+        limit: int = 10,
+    ) -> LiteratureSearchResult:
+        """Find the papers behind a row — and confirm a PMID names the paper you meant.
+
+        **Take every PMID you write from a result here, never from memory.** A
+        recalled 8-digit number is usually a real record for a *different* paper,
+        and `lookup_citation` answers `pmid_exists=true` for it. The title in this
+        result is what makes the difference checkable. Pass `pmids=[...]` to look
+        up ids you already have and read their titles back.
+
+        Combine `query` with `gene`, `rsid` and `trait` — they are ANDed into one
+        search string. `sources` narrows which services are asked and can never
+        widen what `JMC_LITERATURE_SOURCES` permits.
+
+        **Read `sources` before believing an empty `papers`.** A source that could
+        not answer reports `results=null`; only a source that genuinely found
+        nothing reports `0`. A miss is not evidence of absence.
+
+        What this refuses, deliberately:
+
+        - **`doi` comes back in `withheld`, not as a cell.** It is
+          redundancy-bearing: filling `studies.csv:doi` from the record that gave
+          you the PMID makes the DOI cross-check compare a source with itself.
+        - **No relevance score across sources.** Each source's own rank is kept
+          under its own name, because a combined score is a convention with no
+          source behind it and it invites citing the top hit without reading it.
+        - **No verdict on whether a paper supports your claim.** That is the
+          reading you have to do.
+
+        A result flagged `preprint` has no PMID and is not peer-reviewed, so it
+        cannot ground a `studies.csv` row on its own — `pmid` is required there.
+        """
+        eff_offline = offline_for(settings, False)
+        if eff_offline:
+            raise ToolError(
+                "Literature search needs the network and the server is configured offline "
+                "(JMC_OFFLINE). There is no offline literature snapshot — upstream is explicit "
+                "that once literature.csv is written it IS the pin."
+            )
+
+        terms = [t for t in (query, gene, rsid, trait) if t]
+        if not terms and not pmids:
+            raise ToolError("Provide a query, or gene/rsid/trait, or pmids to look up.")
+
+        return await run_sync(
+            lambda: search_literature(
+                services=services,
+                terms=terms,
+                pmids=pmids,
+                year_from=year_from,
+                requested=sources,
+                limit=limit,
+            )
         )
 
     @mcp.tool(
