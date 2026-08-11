@@ -852,6 +852,7 @@ dependencies = [
     { name = "just-dna-registry" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
+    { name = "python-dotenv" },
     { name = "typer" },
 ]
 
@@ -873,6 +874,7 @@ requires-dist = [
     { name = "just-dna-registry", specifier = ">=0.9.1" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pydantic-settings", specifier = ">=2" },
+    { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "typer", specifier = ">=0.16" },
 ]
 

@@ -1,418 +1,415 @@
-# CLAUDE.md
+# Agent Guidelines — just-module-creator
 
-Build/test commands, repo architecture and code conventions live in
-[AGENTS.md](./AGENTS.md). **This file is the domain briefing** — what a just-dna
-module *is*, what the packages we wrap actually guarantee, and the traps that
-have already cost someone a day. Read it before touching a tool signature, a
-docstring or the skill: every tool in this server is a promise about one of the
-rules below, and a wrapper that quietly breaks one is worse than no wrapper.
+A **Claude Code plugin** shipping two halves: an MCP server that wraps the
+just-dna toolchain with agent-shaped tools, and a skill that teaches the
+workflow those tools serve. It is an **application, not a published library** —
+the contract is the MCP tool surface and the skill, not Python imports, so
+internals are free to change and no `__all__` is curated.
 
-Distilled from two independent write-ups of real module-creation experience,
-made against different surfaces so that each reached traps the other missed.
-Both have been unified into `skills/create-module/` — that skill and this file
-are now the only copies; there is no separate source material to consult.
+It is **not** a format, a schema or an annotation engine. We own no schema:
+every column list, vocabulary and requirement comes from the live pydantic
+models in `just-dna-format`. It also never executes a VCF — nothing here reads a
+sample or calls a genotype.
 
----
-
-## What this repo is
-
-An MCP server **plus** a Claude Code skill that together help an agent author
-just-dna annotation modules. We are the *authoring surface*; we own no schema.
-Every column list, vocabulary and requirement is generated from the live pydantic
-models in `just-dna-format`, so it cannot drift from what the compiler accepts.
-
-**Never restate a schema fact in our own code, docstrings or skill text.** Call
-`describe_table` / `table_requirements` / `authoring_reference` and pass through
-what they return. A hardcoded vocabulary here is a bug waiting for the next
-upstream release.
-
-### The four packages we wrap
-
-The dependency arrow points inward — **enricher → compiler → format** — and only
-the enricher may touch the network.
-
-| Package | Gives us | Never does |
-|---|---|---|
-| `just-dna-format` | schema models, vocabularies, identity + integrity rules. No CLI. | touch the network |
-| `just-dna-compiler` | spec dir → parquet + `manifest.json`; scaffold, describe, hint, validate, reverse, sign | touch the network |
-| `just-dna-enricher` | resolution, VRS minting, drafting from sources, cross-checks, lookups | decide what a variant *means* |
-| `just-dna-registry` | catalog / publish / download REST client for `module-registry.just-dna.life` | — |
-
-Python ≥ 3.13 (the just-dna packages require it; that is why `requires-python`
-moved up from the template's 3.11).
+`AGENTS.md` is a symlink to this file. If the two ever differ, that is a bug —
+`ln -sf CLAUDE.md AGENTS.md`.
 
 ---
 
-## What a module is
+## Read these first, in this order
 
-A directory of **human-authored CSVs plus `module_spec.yaml`**, compiled into a
-parquet artifact with a content-addressed `manifest.json`. It carries
-**annotation only** — lookup tables mapping a genotype or a measured quantity to
-a phenotype. It never holds a sample, a genotype under test, or a measured
-value: the consumer supplies the measurement at query time.
+Obligatory. Read them yourself. **Do not delegate a document you are about to
+judge a design against** — a subagent returns a summary, and a summary of a rule
+drops the qualifier the decision turned on. Delegation is for finding, never for
+deciding.
 
-```
-spec/
-  module_spec.yaml     # the ONLY always-present file
-  variants.csv         # a lead table — or pharm_variants.csv, diplotypes.csv, pgs.csv …
-  studies.csv          # required IFF variants.csv is present
-  resolution.csv       # produced by `enrich`. Commit it.
-  literature.csv       # produced by `literature`. Commit it.
-  sources.csv          # required when data came from a licence-bearing source
-  logo.png             # optional
-```
+1. **[docs/DOMAIN.md](docs/DOMAIN.md)** — what a just-dna module is, what the
+   four upstream packages guarantee, and the traps that constrain what we may
+   build. Every tool here is a promise about one of its rules.
+2. **[docs/ROADMAP.md](docs/ROADMAP.md)** — active-only, forward-only. One
+   `## RMn — name` section per *open* item.
+3. **[docs/CHANGELOG.md](docs/CHANGELOG.md)** — what actually shipped, newest first.
+4. **[docs/dogfooding.md](docs/dogfooding.md)** — open findings from using the
+   shipped surface for real work. Read before touching the tool surface.
 
-**A module composes from optional table kinds.** At least one recognised table
-must exist. A PGx / PRS / binning module carries only its own tables and **no
-`variants.csv`** — adding an empty one "to look complete" is exactly the mistake
-the composition rule exists to prevent. One CSV = one concern.
+Everything below is self-contained: no rule here requires following a link to
+know what you must not do. Links carry positive detail only.
 
-`studies.csv` is mandatory whenever `variants.csv` exists: grounding evidence is
-not optional.
+### The agent assets this repo ships
 
-### Choosing the table kind
-
-The question is **what is the row's subject** — not what data you happen to have.
-
-| The row is about… | Table | Keyed on |
-|---|---|---|
-| one variant + one genotype | `variants.csv` | `(variant_key, genotype)` |
-| the evidence for a variant | `studies.csv` | `(variant_key, pmid)` |
-| which variants make up a named allele | `haplotypes.csv` | `(haplotype_name, variant, allele)` |
-| what a named allele *does* | `allele_function.csv` | `(gene, allele)` |
-| a **pair** of alleles (a diplotype) | `diplotypes.csv` | `(gene, a, b, trait, drug, clinical_context)` |
-| one variant + one drug | `pharm_variants.csv` | `(variant_key, drug, genotype, category, annotation_id)` |
-| a metabolizer **activity score** range | `activity_phenotype.csv` | `(gene)` |
-| a **copy number** range | `copynumbers.csv` | `(gene, modifier_gene, modifier_cn)` |
-| a **repeat count** range | `repeat_alleles.csv` | `(gene, repeat_unit)` |
-| an mtDNA **heteroplasmy fraction** range | `heteroplasmy.csv` | `(gene, reference_sequence, tissue, variant_key)` |
-| a published polygenic score | `pgs.csv` | `(pgs_id, trait)` |
-
-Enricher-produced sidecars nobody hand-authors: `resolution.csv`,
-`frequencies.csv`, `gene_metrics.csv`, `literature.csv`, `sources.csv`. The one
-exception is `sources.csv` when rows were copied out of a source by hand — no
-pass ran, so no pass will write the row, and the compile gate reads that file
-and nothing else.
-
-**A quantity with a threshold is a binning table, not a variant row.** If the
-finding depends on *how much*, the subject is the measurement.
-
-**Two alleles on one chromosome vs one on each is a haplotype vs a diplotype.**
-`haplotypes.csv` is a junction table (one row per defining variant);
-`diplotypes.csv` pairs two haplotypes, which is what *in trans* means.
-
----
-
-## The pipeline, and the one place deviating deadlocks
-
-```
-scaffold ──▶ draft ──▶ curate ──▶ enrich ──▶ check ──▶ compile ──▶ sign/publish
-            (if a       (only a
-             source      human)
-             has it)
-```
-
-**Curate before you enrich.** A drafted row leaves `<<REPLACE>>` in the cells
-only a human can decide, and that placeholder makes *every* loader refuse the
-file — `enrich` included. That is deliberate: forward resolution is allele-aware,
-and a placeholder genotype would silently skip the allele filter on exactly the
-one-to-many rsIDs that need it. You cannot "enrich first to see the alleles" —
-and you don't need to, because the draft report prints the allele pair for each
-stubbed row.
-
-Only `enrich` and the fact passes use the network. Once `resolution.csv` and
-`literature.csv` exist they *are* the pin: every later compile is offline and
-reproducible.
-
----
-
-## Requiredness has three shapes, and the middle one is invisible
-
-`required` / **`defaulted`** / `optional`. A **defaulted** column
-(`measure_kind`, `unresolved`) is not required *and must not be left empty*: an
-empty cell arrives as `None` rather than as the field's default, and fails on
-type with `Input should be a valid string [input_value=None]` on a column nobody
-told you to fill.
-
-Always read `table_requirements` (`draft.authoring_requirements`), never
-pydantic's `is_required()` alone. It also reports the **one-of** rules
-("rsid **or** chrom+start") that no per-field flag can express.
-
-`<<REPLACE>>` is rejected *before* type coercion, so an unreplaced placeholder in
-an `int` column reads as "unreplaced template placeholder in column start", not
-as a number-parsing error. That is the design: a half-filled table fails loudly
-on the rows still to do.
-
----
-
-## The mistake nothing offline can catch
-
-Worth its own section because it happened at scale, to a careful author, on 3,038
-variants across four modules that all passed every gate.
-
-**`start` is the 1-based VCF position. Copy it as printed; never subtract one.**
-The reflex to convert to 0-based — from BED, or from VRS's own interbase model —
-is the single most expensive mistake available here, because here is what does
-*not* happen: `validate` passes, `compile --strict` passes, the manifest says
-`fully_resolved: true`, and every `ga4gh:VA.…` id is minted and reported
-**verified**. A content-addressed id is a correct digest of whatever it is
-handed, so it certifies the wrong locus without hesitating.
-
-Two things conspire:
-
-- **Never author both sides of a redundancy check.** Hand-writing
-  `resolution.csv` *and* the coordinates in `variants.csv` makes the coordinate
-  cross-check compare your convention against itself, and it agrees perfectly.
-  Let `enrich` produce the sidecar.
-- **`--strict` means reproducible, not correct.** It refuses when resolution left
-  something it could not reproduce. It has no opinion on whether your coordinates
-  name the variant you meant, and cannot have one — the compiler never fetches.
-
-Only online `enrich` catches it, reporting **`ref mismatch: N row(s) —
-coordinate shifted 1 base…`**. Read that line as being about `start`, not `ref`.
-It is a floor, not a total: only rows where the neighbouring base differs from
-your `ref` are visible, roughly three in four.
-
-**Prefer the rsID and let `enrich` find the coordinate.** An rsid-only row cannot
-carry a coordinate mistake, and the resolution table it produces is the
-independent second value the cross-check needs.
-
----
-
-## Never fill a cell from the same source that checks it
-
-`rsid`, `chrom`, `start`, `ref`, `alts`, `clin_sig`, `doi`, `acmg_sf`,
-`function_status`, `evidence_level` and `p_value_num` are **redundancy-bearing**:
-a check compares the independently authored value against a source, so filling it
-*from* that source makes the check vacuous. Worse, for an rsid-only row the
-coordinate check then does not run at all, so the row moves from honestly
-unverified to apparently verified.
-
-`hints.REDUNDANCY_BEARING` is the authoritative list. The lookup tools show the
-value and **refuse to apply it** — `applied: false` with a `refusal` and a
-`note`. **That refusal is the feature, not a limitation, and our MCP tools must
-preserve it.** A convenience tool here that auto-fills a redundancy-bearing cell
-does not bend a convention; it deletes a whole validation class.
-
-Corollary for this repo: **no tool we expose may write an authored cell from a
-lookup result.** Lookups report; the human decides; `lint_rows` checks.
-
----
-
-## What only a human can decide
-
-| Cell | Why |
+| Path | What |
 |---|---|
-| `genotype` | Sources publish **alleles, not genotypes**. Whether one copy is informative follows from the condition's inheritance mode. Exception: non-diploid contigs, where only one genotype is expressible, so `draft-panel` writes it. |
-| `state` (when stubbed) | The record is `uncertain_significance` and no vocabulary member means "undecided" — `neutral` says benign, `risk` says a direction. If you can justify neither, **drop the row** rather than pick one to make the compile pass. |
-| `weight`, `direction`, `effect_size` | Your model of the finding. ClinVar publishes no effect statistic. |
-| `trait_efo_id` | Mapping free-text/MedGen conditions to an ontology is inference. |
-| `conclusion` | What the module *says*. Keep it hedged where the biology is. |
+| `skills/create-module/SKILL.md` | **The canonical copy of the authoring procedure.** Do not restate it here or in `docs/` — restating a procedure beside its skill is how the two drift. |
+| `skills/create-module/references/TABLES.md` | Which table kind a finding belongs in. |
+| `skills/create-module/references/SYMPTOMS.md` | Upstream message text → cause → action. |
+| `skills/create-module/references/CLI.md` | The full CLI surface, and what this server deliberately does **not** wrap. |
+| `.claude-plugin/plugin.json` | Plugin manifest; declares the MCP server via `${CLAUDE_PLUGIN_ROOT}`. |
+| `.claude-plugin/marketplace.json` | Lets `/plugin marketplace add ./` work. |
 
 ---
 
-## Genotype, weight and the axes
+## 1. Adopting these guidelines: ask, never infer
 
-- **Alphabetically sorted, unphased.** `A/G`, never `G/A`. An unphased genotype
-  is a *set*; two spellings would be two rows. Phased uses `|` and order matters.
-- **`C/C`, not `CC`.** `CC` parses as one two-base allele. ClinPGx writes the
-  unslashed form; disambiguate from the resolved ref/alt.
-- **Alleles are `[ACGT]+`** and must be drawn from `{ref} ∪ alts` at that locus.
-- **Indels are spelled out, reference-anchored**: `A/AG`, `C/CTT`.
-- **Non-diploid contigs take a single allele**: `MT` always; `Y` outside PAR1/PAR2.
-  The verdict is **per locus**, not per gene — `XG` and `SPRY3` straddle a
-  boundary. PAR1/PAR2 on Y *are* diploid.
-- **A pseudoautosomal variant is recorded once, on X** — every annotation source
-  spells it that way and a standard GRCh38 analysis set hard-masks the Y PAR.
-- **`ref`/`alts` may only appear *with* `chrom`+`start`.** Identity is filled
-  whole or not at all; a lone `alts` on a position-only row changes *which
-  variant the row is* (the key becomes a VRS id instead of `chrom:start:ref`).
-- **A `risk` weight is negative.** `weight` contributes to a wellness-style
-  score, not a hazard ratio: `risk` wants `weight < 0`, `protective` wants `> 0`.
-  Getting the sign backwards is a **warning**, so it compiles.
-- **`direction` is not a magnitude** — same axis as `state`
-  (`neutral`/`protective`/`risk`/`unknown`), not `increase`/`decrease`.
-- **`direction` is authored or it is empty.** Nothing derives it from `state`;
-  a module carrying only `state` ships an empty `direction` column and a consumer
-  keying on it sees nothing. Write it on every row it applies to, or none.
-- **An rsID is position-level, not per-allele.** One rsID can span pathogenic,
-  benign and uncertain alleles; a paralogous one maps to several real places
-  (`expanded to N rows` is expected — do not delete rows to suppress it).
-- **An rsID row's `variant_key` stays the rsID.** VRS ids are not the key; they
-  live in `resolution.csv.vrs_id`, one per ALT, positionally aligned with `alts`.
+**When two rules conflict — this file against a sibling repo's, this file
+against the user's global preferences, a rule against what the code actually
+does — stop and run a questionnaire.** Do not pick the one that looks better, do
+not synthesize a compromise, and do not silently follow the more specific file. A
+contradiction between two live rules is almost always a real difference in the
+repos' natures, and inferring which nature applies here is exactly the guess that
+produces a rule nobody agreed to.
 
-## Withhold rather than assert
-
-The house algebra is **three-valued: true / false / unknown**, and `None` is
-never `False`.
-
-- A blank cell means "not stated" and is always legitimate. Never write `false`
-  to silence a reminder.
-- Every binning table has an **`unresolved` sentinel** for an absent measurement.
-  Never route a missing measurement to the lowest bin.
-- `requires_callable=true` (with `callable_from`) wherever the *absence* of a
-  variant is the informative call: a no-call is not a reference call.
-- On licensing, unknown terms are **undetermined, never permitted**.
-- `unchecked` / `unknown` in a report means the question was never put. **A check
-  that could not run is not a check that passed** — our tool output must keep
-  that distinction visible, never collapsing it to a boolean pass.
-
-## Binning bounds
-
-- `measure_max` is **inclusive** on every kind. `min == max` for a sharp value,
-  a null bound for open-ended.
-- Whether adjacent bins may share an endpoint depends on the kind, **and the two
-  cases are opposite**:
-  - **Dense** (`allele_fraction`, `prs_percentile`): bounds **must touch**
-    (`0.0–0.1` then `0.1–0.3`). The higher bin owns the shared endpoint. A hole
-    warns.
-  - **Integer** (`repeat_count`, `copy_number`): bounds must **not** touch
-    (`[27,35]` then `[36,39]`) — a shared endpoint is a real overlap, refused.
-  - **`activity_score`** is in neither set: coarse consumer-summed grid, no gap
-    warning, bins do not touch.
-- Two bins sharing a *lower* bound refuse on every kind.
-- Bins group by the kind's key columns **plus `trait_efo_id`**.
-
-## PGx and star alleles
-
-- A clinical annotation's key is `(variant_key, drug, genotype,
-  phenotype_category, annotation_id)` — not the bare triple. 1,199 of 17,380
-  triples collide without the last two.
-- Annotations are **per genotype and can oppose each other**
-  (rs4149056+simvastatin: "decreased" for CC/CT, "increased" for TT).
-- **CPIC recommendations are keyed by (phenotype, drug, *population*)** and the
-  populations disagree. `draft --drug` refuses and lists the choices rather than
-  picking one.
-- `recommendation_strength` is CPIC's; `evidence_level` is PharmGKB/ClinPGx's.
-  Fill only the one your source states.
-- A large star-allele gene needs `--allele`: *n* alleles is *n(n+1)/2*
-  diplotypes; unfiltered CYP2D6 is 16,290 rows, 73% `Indeterminate`. `*1` is
-  always kept. One `--gene` at a time — a star name is gene-scoped.
-- A star allele can be **used without being defined**; warned, not blocked.
-- CPIC activity scores are inequality strings (`"≥3.0"`), not numbers; CPIC's
-  `n/a` means *not scored* — leave the cell blank.
-
-## Licensing
-
-- **Every PGx upstream (ClinPGx, CPIC, PharmVar) is CC BY-SA *plus a no-sale
-  clause*.** None is sellable. Do not read a bare "CC BY-SA" as permission.
-  (PharmGKB API docs are dead; ClinPGx is the successor, paths unchanged.)
-- Pass `--use unstated | non-commercial | commercial` to anything that copies
-  rows out of a source. A forbidding source is *skipped* on `unstated` and
-  *refused* on `commercial`, **at acquisition**.
-- **`sources.csv` is the only thing the compile gate reads.** A source copied
-  from by hand is invisible to it. Only the *annotation* layer taints; a
-  coordinate is a fact. Most-restrictive-wins, module-wide.
-- The CLI spelling and the column value differ: `--use non-commercial`, but the
-  `declared_use` column takes `non_commercial` (underscore).
-- **There is no `--non-commercial` compile flag, by design** — a flag cannot
-  survive `reverse`, so a third compile would refuse. The declaration must be data.
+1. **Survey first, ask second.** Read the conflicting rules in full and find out
+   *why* each side adopted its version. A question that does not carry the reason
+   is unanswerable.
+2. **One question per contradiction, batched** — never drip-fed. Two to four
+   concrete options each, never an open prompt.
+3. **Each option states its cost**: what breaks, what it forces on other repos,
+   which existing rule it contradicts.
+4. **Recommend one and say so.** A questionnaire with no recommendation offloads
+   work the survey already did.
+5. **Record the answer where it will be read again** — the rule into its section
+   below, the reasoning into §10 in the user's own words. An answered
+   contradiction that is not written down gets re-asked, which is worse than a guess.
 
 ---
 
-## Sidecars, signatures and reproducibility
+## 2. Non-negotiables
 
-- **An existing sidecar is authoritative and merged, never clobbered.** To
-  regenerate `resolution.csv` / `frequencies.csv` / `gene_metrics.csv` you must
-  **delete the file first**, or stale rows persist silently. Moving it aside and
-  re-enriching is also the only way to ask whether an injected table still agrees
-  with the sources. Any tool we expose that re-runs a pass must say this.
-- **`compile_module(resolve_with_ensembl=False)` disables `resolution.csv` too.**
-  The name reads as "don't use Ensembl"; it is the master switch for *all*
-  resolution. Set it False and every row compiles with `chrom=None` — and the
-  compile **succeeds**. The correct call is `resolve_with_ensembl=True,
-  ensembl_cache=None`. **Our wrapper must never expose a way to reach the False
-  branch by accident.**
-- **Recompiling is reproducible; re-drafting is not.** `sources.csv` carries a
-  `fetched_at` stamped when the row is written and `sources.parquet` is inside
-  the Merkle root, so two builds of byte-identical content an hour apart are two
-  different artifacts. Do not treat a digest change as evidence content changed;
-  digest-based dedup misses rebuilds.
-- **Authored row order is preserved** through compile → reverse → recompile and
-  is load-bearing for `artifact.digest`.
-- `content_signature` folds `module_spec.yaml`'s `defaults:` into each row before
-  hashing, so `curator`/`method` on the row and in `defaults:` are one content —
-  and `reverse` round-trips to the same signature. That is the fixed point the
-  format guarantees.
-- **Write CSVs with a CSV writer, never by splitting on commas.** Several
-  `conclusion` values contain commas, and a column shift usually surfaces as a
-  bizarre validation error three columns away
-  (`trait_efo_id tokens must be ontology CURIEs` on a value that is not a trait).
+Read the whole list before the first edit. The reason follows each one, because a
+rule without its reason gets rationalised away at 2 a.m.
 
-## `--strict` vs plain
+### Environment and packaging
 
-Author against `--strict`, because that is what the registry runs. Pass
-`validate` **the same mode as the compile you intend to run** — several checks
-are a ladder (warn under best-effort, refuse under strict), so a modeless
-pre-flight answers for the other compile.
+- **Never `uv pip install`.** Use `uv sync` / `uv add` / `uv add --dev`.
+  `uv pip install` writes into the venv without touching `pyproject.toml` or the
+  lockfile, so the next clean checkout silently lacks the dependency.
+- **Never call bare `python` / `python3`.** Always `uv run python …`,
+  `uv run pytest …`. A bare interpreter bypasses the workspace environment.
+- **Never hardcode a version string.** It comes from `pyproject.toml` via
+  `importlib.metadata.version("just-module-creator")`. Two sources of truth drift,
+  and the one you read is the wrong one.
+- **Never rename a user-facing command to dodge a stale `uv run` wrapper.** Bump
+  the version and re-run `uv sync` so uv rebuilds the entry points.
+- **Never use a placeholder path or a fabricated example value** in committed
+  code — `/my/custom/path/`, a dummy digest, `rs999999999`, `1e-328`. Fixtures use
+  real identifiers (`rs4988235`, PMID `11788828`). A fabricated value proves
+  nothing and outlives the session that invented it.
+- **Never commit large data.** No VCF/parquet/gz/BAM/FASTA/`.db`. Anything over
+  ~5 MB that must travel goes through Git LFS. A blob committed *before*
+  `git lfs track` stays in every past commit even after the pointer replaces it at
+  HEAD, so the pack still ships it — surface it, and hand the remediation to the user.
+- **Never run tree operations.** No `git push`, tags, releases, branch management
+  or history rewriting — the user's domain. **Never `git stash drop` /
+  `git stash clear`**, even on explicit request. **Never `git add -A` or
+  `git add .`** — it sweeps in `.env` files and editor swap files; stage explicit
+  paths. Commit only when asked.
 
-| condition | plain | `--strict` |
-|---|---|---|
-| genotype allele not among the locus's alleles | warning, valid | **error** |
-| two-allele genotype on `MT`/`Y` | warning | warning |
-| unresolved rows (no coordinate) | warning | counts against publishability |
+### Code
 
-A plain compile **succeeds** through the first two. "It compiled" is not evidence
-the module is correct.
+- **Never write an inline import.** Every import at module top level, absolute.
+  The sole exception is a guarded module-level `try/except ImportError` for an
+  *optional* dependency — and this repo has none: all four just-dna packages are
+  hard dependencies, so every tool works after a bare `uv sync`. See §5.
+- **Never nest a `try`/`except` inside another.** It hides the real error. Let
+  typed exceptions propagate; wrap only where a genuine recovery path exists.
+- **Never `print` for diagnostics.** Stdlib `logging` to **stderr** — under stdio
+  the JSON-RPC stream owns stdout, and a log line on stdout corrupts the protocol.
+  `print`/`typer.echo` is only for CLI output the user asked to see.
+- **Never curate `__all__` or add a re-export `__init__.py`.** This is an
+  application; import from where the symbol actually lives.
 
-## Known gaps — do not work around these in the data
+### The domain rules this server exists to enforce
 
-An `RMn` in a message is a tracked upstream roadmap item: **known and
-deliberate**. Leave the data honest and note the limitation.
+Each corresponds to a trap in [docs/DOMAIN.md](docs/DOMAIN.md). Breaking one does
+not merely bend a convention — it deletes a class of validation the upstream
+design depends on.
 
-- **RM5** — symbolic/structural alleles (`<DEL>`, 5-HTTLPR, `del`/`ins`, CPIC's
-  `x≥3`) are outside `^[ACGT]+$`. Rows are skipped and counted, never coerced.
-  Distinct from IUPAC ambiguity codes (`R`, `Y`, `N`), which record an
-  uncertainty that must never be expanded into the alleles it could stand for.
-- **RM15** — multi-build. GRCh38 is the only assembly with a refget table, so
-  VRS minting and rsID resolution are GRCh38-only. Off GRCh38: author
-  coordinates rather than rsIDs, expect build-relative keys that will not join
-  against gnomAD/ClinVar/ClinGen, and say so.
+- **Never hardcode a schema fact** — no column list, no vocabulary, no
+  requirement. Call `describe_table` / `table_requirements` /
+  `authoring_reference` and pass through what they return. A hardcoded vocabulary
+  is a bug waiting for the next upstream release. The single exception is
+  `authoring._SUBJECTS`, which answers "which table?" — a question about *intent*
+  that the schema cannot answer — and is commented as such.
+- **Never fill a value from the same source that checks it.** A cross-check
+  compares an independently authored value against a source; filling it *from*
+  that source makes the check compare a convention against itself, and it agrees
+  perfectly. Worse, the row moves from honestly unverified to apparently verified.
+- **Never let a tool write a checked value from a lookup result.** Lookups report,
+  the human decides, the linter checks. Preserve `applied: false` and its
+  `refusal` verbatim across the MCP boundary — **the refusal is the feature.**
+- **Never collapse "unknown" into a boolean.** Answers are three-valued: true /
+  false / **unknown**, and `None` is never `False`. When unknown, withhold — never
+  report, never negate. **A check that could not run is not a check that passed**,
+  and tool output must keep that visible. Combine with Kleene semantics, not
+  withhold-on-any-unknown: `unknown AND false` really is `false`.
+- **Never treat a determinism gate as a correctness gate.** `--strict`, a digest
+  match, a reproducible build mean *reproducible*, not *right*.
+- **Never expose a path to `resolve_with_ensembl=False`.** Despite its name it is
+  the master switch for *all* resolution, injected `resolution.csv` included; it
+  compiles every row with `chrom=None` and **succeeds**. `compile_module` pins it
+  `True` with `ensembl_cache=None`.
+- **Never widen the write surface.** Tools write only where the upstream API
+  already writes (scaffold, enrich, compile out-dir), always through
+  `_shared.resolve_dir` so `JMC_WORKSPACE` containment holds, and never overwrite
+  an authored file.
+- **Never let a per-call argument loosen the offline ceiling.** `JMC_OFFLINE`
+  combines with a per-call `offline` by **OR**, via `_shared.offline_for`. Never
+  read the two separately.
+- **Never silently fall back when primary data is missing.** Refuse explicitly or
+  name the substitute. The caller cannot see that the source differed.
+- **Never resolve a contradiction between two rules by inference.** Run §1.
 
 ---
 
-## Upstream findings go to the producer, never into a workaround
+## 3. Repository layout, data and assets
+
+```
+src/just_module_creator/   source (src layout)
+tests/                     pytest suite — in-memory, offline
+docs/                      all markdown except this file and README.md
+skills/create-module/      the plugin's skill (canonical authoring procedure)
+.claude-plugin/            plugin + marketplace manifests
+assets/                    fixtures that MUST travel — committed
+data/input|interim|output  git-ignored, never travels
+scripts/                   operational one-offs, not importable code
+```
+
+- `data/` is git-ignored by ignore-all + allowlist. To commit a subtree, add
+  explicit `!<dir>/` and `!<dir>/**`.
+- Committed test data lives in `assets/`, not `data/`. Tests write to `tmp_path`
+  or a resolved cache dir, **never** into the project tree.
+- Sibling repos, **read-only** unless the task explicitly targets them:
+  `../just-dna-format` (which also hosts the compiler, enricher and their docs),
+  `../just-dna-lite`, `../just-dna-registry`.
+
+---
+
+## 4. Build, run, test
+
+```bash
+uv sync                                        # install
+uv run pytest                                  # the suite; -vvv when diagnosing
+uv run ruff check . && uv run pyright          # lint + types
+uv run just-module-creator stdio               # run over stdio
+uv run just-module-creator http --port 3011    # run over HTTP
+uv run just-module-creator stdio --mode extended
+uv run fastmcp dev fastmcp.json                # MCP Inspector
+claude --plugin-dir .                          # load as a plugin for one session
+```
+
+`just <recipe>` wraps all of these. **Always run `uv run pytest` and
+`uv run ruff check .` after changing code.** Python **≥ 3.13** — the just-dna
+packages require it.
+
+Every CLI that starts a network transport **prints its URL** in the first lines
+of output, and every CLI **loads `.env` via `python-dotenv`** (`_load_env`,
+`override=False`) before reading configuration — which is what lets one `.env`
+serve both this server and the enricher it shells into. New configurable values
+are read from env with sensible defaults, documented in `.env.template`, and
+mentioned here.
+
+**Timestamps: store ISO-8601 UTC, display local.** Never a naive
+`YYYY-MM-DD HH:MM:SS` — it is misparsed as local time and breaks string
+comparison against ISO values.
+
+---
+
+## 5. Coding standards
+
+- **Type hints mandatory. `pathlib.Path` for every path** internally. Tool
+  *signatures* take `str` because that is the MCP wire type, and convert
+  immediately via `_shared.resolve_dir`.
+- **Dependency tier: everything is a hard dependency.** All four just-dna
+  packages (`format`, `compiler`, `enricher`, `registry`) plus `fastmcp[tasks]`,
+  `pydantic`, `pydantic-settings`, `typer`, `anyio`, `python-dotenv`. Chosen so
+  every tool works after a bare `uv sync` and the plugin's one-command install
+  stays true; the cost is a heavier install for someone who only wants offline
+  linting. There are no extras and no optional imports.
+- **Typer for the CLI. Pydantic 2 at every boundary** — every tool returns a
+  model from `models.py`, never a bare dict, because an agent reads the field
+  descriptions.
+- **Constrained vocabularies:** `Mode` is a `Literal` because it is local config
+  read from env and never appears in a wire artifact. Anything that *does* reach a
+  persisted artifact would need `frozenset[str]` + a validator, so additions stay
+  non-breaking — but nothing here does; upstream owns every wire vocabulary.
+- **Polars only where upstream hands it to us.** We do not build dataframes; we
+  read the parquet upstream wrote.
+- **Deterministic ordering is load-bearing** wherever output is compared or
+  hashed. Never emit from `set`/`dict` iteration without an explicit sort —
+  `sorted(draft.DRAFTABLE)`, `sorted(...checked...)`.
+- **Preserve upstream's distinctions.** `error` / `warning` / `info`,
+  `applied` / `refusal`, and `None`-means-unchecked are all load-bearing.
+  `_shared.to_findings` / `to_alterations` exist to carry them across the boundary
+  field-for-field.
+- **Aggregate repeated warnings** by *reason*, with a count — never one per row.
+- **Heed terminal warnings, deprecations especially.** A deprecation in code you
+  touched is a **blocker**: find the current API, fix it, and update this file.
+- **Refactor internals aggressively** — no dead code, no API kept for nostalgia.
+  The contract is the MCP tool surface, the skill and the CLI; breaking *that* is
+  allowed but deliberate and versioned.
+
+### How to add a tool
+
+1. Pick the tier: essentials (always), extended (`JMC_MODE=extended`), or
+   token-gated.
+2. Add it inside the matching `register_*` with type hints, a docstring (it
+   becomes the description) and `ToolAnnotations`.
+3. Return a model from `models.py`.
+4. Paths through `resolve_dir`; network through `offline_for` and
+   `anyio.to_thread.run_sync`.
+5. Gated tools take `ctx: Context`, call `require_key`, return
+   `unauthenticated_result(settings)` on `None`, are tagged `registry_write`, and
+   are listed in `auth.GATED_TOOLS`.
+6. Add a test using the in-memory client.
+7. **Never** use `mcp.enable()`/`disable()` to gate per-user on multi-tenant
+   HTTP — it is server-global and would leak tools across clients.
+
+---
+
+## 6. Testing — layer 1
+
+- **Real data + ground truth.** Real rsIDs and PMIDs; compute expected values from
+  the fixture rather than pasting a count read off a dump. Hardcoding a documented
+  constant is fine; hardcoding a row count is not.
+- **Meaningful assertions** — relationships and set equality over `len(df) > 0`.
+- **Never mock the transformation under test.** We test our wrapper against the
+  real upstream packages; only the *network* is excluded, by the offline ceiling.
+- **The suite is hermetic**: every fixture forces `offline=True` and
+  `_env_file=None`, so no test can reach the network or read a developer's `.env`.
+- **A test that means "no credential" must say so.** `api_key=None` is
+  indistinguishable from "not passed" when the reader does
+  `api_key or os.environ.get(...)`. Neutralize with `setenv(VAR, "")`, **not**
+  `delenv` — `load_dotenv(override=False)` skips a key that is merely present.
+- **Suspect ordering whenever a test passes alone and fails in the suite.**
+- **Never claim a test "would have caught" a bug** without running it against the
+  buggy code and watching it fail.
+- Note `from conftest import ...`, not `from tests.conftest import ...`: a
+  transitive dependency ships a `tests` package that shadows ours.
+
+---
+
+## 7. Dogfooding — layer 2
+
+Tests prove the code does what it was told. Dogfooding asks whether it is
+**usable, and what is missing**. Both are required.
+
+**Do not verify the tool's answers with a second implementation while
+dogfooding** — that is a test and belongs in the suite. Use the tool, notice the
+friction, write down what was not there.
+
+- **A capability the tool LACKS is the result, not an obstacle to route around.**
+  The moment you reach for an ad-hoc script or a raw HTTP call to get past
+  something the product cannot do, the exercise has stopped producing signal.
+  Record the gap; if it blocks the work, build it into the product.
+- **Attack claims, not gaps.** A documented deferral is a decision. What counts is
+  where a docstring or doc *promises* something the code does not do.
+- **Use real data.** No `rs999999999`, no `1e-328`.
+- **Pick the probe where the design generalized from one case** — if the example
+  shows one of something, use a real case with two.
+- **Dogfood a finding before you report it.** Build a real example against the
+  actual code path and show it fails.
+- **Finish each probe as a committed reference example whose README names what it
+  broke**, demonstrating the failure on the *old* behaviour.
+- **Separate "fix it" from "surface it" before writing code**, and say *why each
+  candidate repair is wrong* for the surfaced ones.
+
+Findings carry stable `F#` IDs and **move** between files, never duplicated —
+except one mitigated here but still owed upstream, which legitimately appears in
+two: `docs/dogfooding.md` (open) → `docs/previous_issues.md` (resolved here) /
+`docs/just-dna-format-pending-fixes.md` (blocked upstream).
+
+---
+
+## 8. Docs and their lifecycle
+
+- **All new markdown goes in `docs/`** — the only exceptions are this file and
+  `README.md`. `docs/` is the single ground truth; this file duplicates only what
+  is needed to *orient*, and every prohibition lives here in full because a
+  `don't` behind a link does not get read.
+- **`docs/ROADMAP.md` is active-only.** Shipped items move to
+  `docs/ROADMAP_HISTORY.md` with their rationale. Nothing is deleted, only relocated.
+- **`docs/CHANGELOG.md` records what shipped**, newest first, including cross-repo
+  integration changes made on our side.
+- **Update this file and the affected `docs/` in the same change as the
+  refactor**, not after. Policy is written first; code complies.
+- **Keep the skill and the tool docstrings in agreement.** If a tool changes what
+  it refuses to do, the skill's claim about that refusal changes with it.
+- **Run the commands yourself** rather than telling the user to run them — except
+  where a command genuinely needs an interactive terminal, which is when you hand
+  over a verbatim line.
+- **Before a PR**, print `git diff <upstream>/main --stat HEAD` and
+  `git log <upstream>/main..HEAD --oneline`, show the output, and wait for approval.
+
+### Upstream findings go to the producer, never into a workaround
 
 We consume `just-dna-format` / `-compiler` / `-enricher` / `-registry` and own
 none of them. **Every upstream question, quirk or bug goes into
 `../just-dna-format/docs/CONSUMER_SUGGESTIONS.md`** — that file is the intake for
 all four, since they share a repo.
 
-- **Check whether it is already filed before writing.** Entries are `S<n>`; a
-  second consumer hitting a known one appends a corroboration to that entry
-  rather than opening a new number. Two independent reproductions is itself the
-  signal that raises its priority.
-- **Write the note, and stop there.** Never commit in that repo, and never open
-  a PR against it. Writing the note is the whole job.
-- **Record our side here** — in `docs/CHANGELOG.md` if we shipped a mitigation,
-  so nobody re-investigates a finding that looks fixed.
-- **Never work around it silently in the data.** A workaround that leaves the
-  module dishonest is worse than the gap. Say what the limitation is, leave the
-  data truthful, and file the note.
+- **Check whether it is already filed first.** Entries are `S<n>`; a second
+  consumer hitting a known one appends a corroboration to that entry rather than
+  opening a new number. Two independent reproductions is itself the signal that
+  raises its priority.
+- **Write the note, and stop there.** **Never commit in that repo**, and never
+  open a PR against it. Writing the note is the whole job.
+- **Record our side in `docs/CHANGELOG.md`** if we shipped a mitigation, so nobody
+  re-investigates a finding that looks fixed.
+- **Never work around it silently in the data.** A workaround that leaves a module
+  dishonest is worse than the gap. Say what the limitation is, leave the data
+  truthful, file the note.
 
-Already filed (do not re-file): **S9** — resolution is applied to the SNP core
-only, so `pharm_variants` / `diplotypes` / `pgs` rows compile with null
-`chrom`/`start` even when `resolution.csv` covers the variant. Independently
-reproduced from this repo on 2026-08-11 and appended as a corroboration.
+### Prose style
 
-## Design rules for THIS server
+Natural, human prose. Avoid AI tells — em-dash pile-ups, filler transitions,
+marketing voice. Never hallucinate documentation or overpromise an unimplemented
+feature. **This project must never be described as interpreting a genome, calling
+a genotype, or giving medical advice**: it helps author annotation tables, and the
+consumer supplies the measurement.
 
-Everything above turns into a constraint on what we may build:
+---
 
-1. **Ask the tool, never memory.** No vocabulary, column list or requirement is
-   hardcoded here. Pass through `just_dna_format.reference` /
-   `just_dna_compiler.hints` / `just_dna_compiler.draft`.
-2. **Report, never repair.** No tool writes an authored cell from a lookup.
-   Preserve `applied: false` + `refusal` verbatim in the output.
-3. **Preserve three-valued answers.** Never collapse `unknown` / `not_checked`
-   into a boolean pass. A check that could not run is not a check that passed.
-4. **Offline is a ceiling, not a default.** `Settings.offline` overrides any
-   per-call argument; a tool that could fetch must say which tier it used.
-5. **Warnings are the interesting output.** Surface `warnings` and `info`
-   alongside `errors` — most of the traps above arrive as warnings on a green run.
-6. **Never widen the write surface.** Tools that write do so only where the
-   upstream API already writes (scaffold, enrich, compile out-dir), honour
-   `Settings.workspace`, and never overwrite an authored file.
-7. **Structured output, friendly failure.** Return the Pydantic models in
-   `models.py`; return `success=False` rather than raising, except on malformed
-   input (then `ToolError`).
+## 9. Self-correction
+
+When outdated API knowledge causes a real crash or logic failure, fix the code
+**and** update this file (and the affected `docs/`) with the correct pattern, so
+the next agent does not repeat it. The same applies when the user corrects a
+preference: it goes into §10, in their words, with the reason.
+
+## 10. Learned user preferences
+
+*Append-only. One line each, in the user's terms, with the why where it is not obvious.*
+
+- **Tree operations and publishing are the user's domain.** Never push, tag,
+  release, or manage branches. Commit only when asked — though "auto-commit as you
+  go" was granted for the initial build, with meaningfully sized commits rather
+  than atomized ones.
+- **Never destroy stashes**, even on explicit request. Data loss is the user's to
+  enact.
+- **Never blind-stage** (`git add -A` / `git add .`) — it once committed a `.env`
+  swap file with live tokens.
+- **Do not restate schema lists in prose; ask the tool.** Confirmed when the two
+  authoring takes disagreed: "create-module preference on lists is proper; they
+  may drift."
+- **This is a *new*-module creator — do not carry historical baggage.** 0.4-era
+  quirks never went to production, so a module author has no use for them.
+- **The two authoring write-ups were independent takes made to reveal different
+  surfaces**, not drafts of one another — so they were unified rather than one
+  chosen over the other.
+
+## 11. Learned workspace facts
+
+*Append-only. Environment, ports, credential layout, host quirks, sibling paths.*
+
+- Sibling repos live beside this one under `/data/sources/`:
+  `../just-dna-format` (hosts format, compiler and enricher docs — including
+  `CONSUMER_SUGGESTIONS.md`, the upstream intake), `../just-dna-lite`,
+  `../just-dna-registry`.
+- The published registry is `https://module-registry.just-dna.life`; as of
+  2026-08-11 it holds exactly one module, `eric-mods/lactose_tolerance@1.0.0`,
+  which is the best available worked example of a real spec.
+- The enricher's Ensembl cache lands in
+  `~/.cache/just-dna-pipelines/ensembl_variations`. The live V2 GraphQL endpoint
+  currently 404s and the client falls back to REST — expected, not a defect.
+- A transitive dependency ships a top-level `tests` package that shadows this
+  repo's, so test helpers import as `from conftest import ...`.

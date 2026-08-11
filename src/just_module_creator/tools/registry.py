@@ -13,6 +13,9 @@ from __future__ import annotations
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
+from just_dna_compiler import compiler
+from just_dna_format.identity import is_valid_version, validate_namespace
+from just_dna_registry import RegistryClient, RegistryError
 from mcp.types import ToolAnnotations
 
 from just_module_creator.auth import (
@@ -33,8 +36,6 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
     """Register the token-gated registry tools (tag: registry_write)."""
 
     def _client(token: str):
-        from just_dna_registry import RegistryClient
-
         return RegistryClient(settings.registry_url, token=token, timeout=settings.registry_timeout)
 
     @mcp.tool(
@@ -57,8 +58,6 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
             return unauthenticated_result(settings)
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
-
-        from just_dna_registry import RegistryError
 
         try:
             payload = await run_sync(lambda: _client(token).whoami())
@@ -87,9 +86,6 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
             return unauthenticated_result(settings)
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
-
-        from just_dna_format.identity import validate_namespace
-        from just_dna_registry import RegistryError
 
         try:
             validate_namespace(namespace)
@@ -141,17 +137,11 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
 
         target = resolve_dir(spec_dir, settings)
 
-        from just_dna_format.identity import is_valid_version
-        from just_dna_registry import RegistryError
-
         if not is_valid_version(version):
             raise ToolError(
                 f"{version!r} is not a SemVer version. Use e.g. '1.0.0' — and quote it "
                 "in YAML, where an unquoted 1 parses as an int and is rejected."
             )
-
-        # Refuse locally rather than shipping a spec the server will reject.
-        from just_dna_compiler import compiler
 
         pre = await run_sync(lambda: compiler.validate_spec(target, strict=True))
         if not pre.valid:

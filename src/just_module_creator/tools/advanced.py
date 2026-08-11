@@ -17,6 +17,14 @@ import json
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
+from just_dna_compiler import compiler
+from just_dna_enricher import lookup as enricher_lookup
+from just_dna_enricher.enrich import EnrichmentError, enrich
+from just_dna_enricher.identifiers import check_identifiers as _check_identifiers
+from just_dna_format import reference
+from just_dna_format.integrity import IntegrityError, verify_manifest
+from just_dna_format.manifest import read_manifest
+from just_dna_registry import RegistryClient, RegistryError
 from mcp.types import ToolAnnotations
 
 from just_module_creator.logging_setup import get_logger
@@ -44,8 +52,6 @@ _REGENERATE_NOTE = (
 def register_extended(mcp: FastMCP, settings: Settings) -> None:
     """Register the extended-only tools."""
 
-    from just_dna_compiler import compiler
-
     # ----------------------------------------------------------------- #
     # Full schema dump
     # ----------------------------------------------------------------- #
@@ -62,8 +68,6 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
         the live pydantic models. Large — prefer `describe_table` for one table.
         Pass `schemas=true` for raw JSON Schema instead of the summary form.
         """
-        from just_dna_format import reference
-
         payload = reference.json_schemas() if schemas else reference.authoring_reference()
         return json.dumps(payload, indent=2, default=str)
 
@@ -115,8 +119,6 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
                 f"{'cache-only' if eff_offline else 'network'})"
             )
             await ctx.report_progress(progress=1, total=3)
-
-        from just_dna_enricher.enrich import EnrichmentError, enrich
 
         try:
             result = await run_sync(
@@ -186,9 +188,7 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
             raise ToolError(
                 "The server is configured offline (JMC_OFFLINE); this check needs HGNC and OLS4."
             )
-        from just_dna_enricher.identifiers import check_identifiers as _check
-
-        report = await run_sync(lambda: _check(spec_dir=target))
+        report = await run_sync(lambda: _check_identifiers(spec_dir=target))
 
         genes = [
             IdentifierStatus(
@@ -237,10 +237,8 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
 
-        from just_dna_enricher import lookup as L
-
         if kind == "gene":
-            status = await run_sync(lambda: L.lookup_gene(identifier))
+            status = await run_sync(lambda: enricher_lookup.lookup_gene(identifier))
             return IdentifierStatus(
                 identifier=status.symbol,
                 kind="gene",
@@ -248,7 +246,7 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
                 current=status.current,
                 label=status.hgnc_id,
             )
-        status = await run_sync(lambda: L.lookup_trait(identifier))
+        status = await run_sync(lambda: enricher_lookup.lookup_trait(identifier))
         return IdentifierStatus(
             identifier=status.curie,
             kind="trait",
@@ -305,9 +303,6 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
         manifest_path = target / "manifest.json"
         if not manifest_path.is_file():
             raise ToolError(f"No manifest.json in {target}.")
-
-        from just_dna_format.integrity import IntegrityError, verify_manifest
-        from just_dna_format.manifest import read_manifest
 
         manifest = await run_sync(lambda: read_manifest(manifest_path))
         identity = getattr(manifest, "identity", None)
@@ -393,7 +388,6 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
         """
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
-        from just_dna_registry import RegistryClient, RegistryError
 
         def _get() -> dict:
             client = RegistryClient(settings.registry_url, timeout=settings.registry_timeout)
@@ -423,7 +417,6 @@ def register_extended(mcp: FastMCP, settings: Settings) -> None:
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
         target = resolve_dir(dest, settings, must_exist=False)
-        from just_dna_registry import RegistryClient, RegistryError
 
         def _download():
             client = RegistryClient(settings.registry_url, timeout=settings.registry_timeout)

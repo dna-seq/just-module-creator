@@ -18,6 +18,7 @@ import signal
 import sys
 
 import typer
+from dotenv import load_dotenv
 from fastmcp import FastMCP
 
 from just_module_creator import __version__
@@ -154,13 +155,28 @@ app = typer.Typer(add_completion=False, help="just-dna module authoring MCP serv
 _MODE_OPT = typer.Option(None, "--mode", help="essentials | extended")
 
 
+def _load_env() -> None:
+    """Load ``.env`` before any configuration is read.
+
+    ``override=False`` so a variable already exported in the shell wins over the
+    file. The just-dna toolchain reads its own cache/API-key variables straight
+    from ``os.environ``, so loading here is what makes a single ``.env`` serve
+    both this server and the enricher it calls.
+    """
+    load_dotenv(override=False)
+
+
 def _run(transport: str, mode: str | None, host: str | None, port: int | None) -> None:
+    _load_env()
     settings = Settings()
     server = build_server(mode=mode, settings=settings)  # type: ignore[arg-type]
     kwargs: dict = {"transport": transport}
     if transport != "stdio":
         kwargs["host"] = host or settings.host
         kwargs["port"] = port or settings.port
+        # Print the URL before binding: a server whose address you have to guess
+        # from the config is a server you cannot connect to.
+        typer.echo(f"just-module-creator listening on http://{kwargs['host']}:{kwargs['port']}")
     run_with_graceful_shutdown(server, **kwargs)
 
 

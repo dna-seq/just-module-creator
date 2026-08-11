@@ -14,6 +14,7 @@ from __future__ import annotations
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
+from just_dna_compiler import compiler, draft, hints, scaffold
 from mcp.types import ToolAnnotations
 
 from just_module_creator.logging_setup import get_logger
@@ -80,8 +81,6 @@ _COMPOSITION_NOTE = (
 
 def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     """Register the always-on authoring tools, a resource, and a prompt."""
-
-    from just_dna_compiler import compiler, draft, hints, scaffold
 
     # ----------------------------------------------------------------- #
     # Schema discovery

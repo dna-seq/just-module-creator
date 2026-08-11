@@ -19,6 +19,8 @@ from __future__ import annotations
 from anyio.to_thread import run_sync
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
+from just_dna_enricher import lookup as enricher_lookup
+from just_dna_registry import RegistryClient, RegistryError
 from mcp.types import ToolAnnotations
 
 from just_module_creator.logging_setup import get_logger
@@ -108,11 +110,9 @@ def register_research(mcp: FastMCP, settings: Settings) -> None:
         if not rsid and not (chrom and start):
             raise ToolError("Provide either rsid, or chrom and start.")
 
-        from just_dna_enricher import lookup as L
-
         eff_offline = offline_for(settings, offline)
         hint = await run_sync(
-            lambda: L.lookup_variant(
+            lambda: enricher_lookup.lookup_variant(
                 rsid=rsid,
                 chrom=chrom,
                 start=start,
@@ -159,10 +159,10 @@ def register_research(mcp: FastMCP, settings: Settings) -> None:
         if not pmid and not doi:
             raise ToolError("Provide either pmid or doi.")
 
-        from just_dna_enricher import lookup as L
-
         eff_offline = offline_for(settings, offline)
-        hint = await run_sync(lambda: L.lookup_citation(pmid=pmid, doi=doi, offline=eff_offline))
+        hint = await run_sync(
+            lambda: enricher_lookup.lookup_citation(pmid=pmid, doi=doi, offline=eff_offline)
+        )
         return CitationLookup(
             pmid=getattr(hint, "pmid", None) or pmid,
             doi=getattr(hint, "doi", None) or doi,
@@ -199,8 +199,6 @@ def register_research(mcp: FastMCP, settings: Settings) -> None:
             raise ToolError(
                 "The server is configured offline (JMC_OFFLINE), so the registry cannot be reached."
             )
-        from just_dna_registry import RegistryClient, RegistryError
-
         params: dict = {"page": page, "per_page": per_page}
         if query:
             params["q"] = query

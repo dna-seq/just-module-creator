@@ -5,7 +5,7 @@ description = "MCP server + Claude Code skill for authoring and publishing just-
 readme = "README.md"
 requires-python = ">=3.13"
 license = { file = "LICENSE" }
-authors = [{ name = "Your Name", email = "you@example.com" }]
+authors = [{ name = "winternewt", email = "anton.kulaga@uni-rostock.de" }]
 keywords = ["mcp", "fastmcp", "just-dna", "genomics", "annotation", "agent", "llm"]
 
 dependencies = [
@@ -21,6 +21,7 @@ dependencies = [
     "just-dna-format>=0.5.0",
     "just-dna-enricher>=0.5.2",
     "just-dna-registry>=0.9.1",
+    "python-dotenv>=1.2.2",
 ]
 
 [project.scripts]

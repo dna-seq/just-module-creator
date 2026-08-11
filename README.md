@@ -10,7 +10,8 @@ A module is a directory of authored CSVs plus `module_spec.yaml`, compiled into 
 with a content-addressed `manifest.json`. It carries annotation only — lookup tables mapping a
 genotype or a measured quantity to a phenotype.
 
-> Agents: start with [CLAUDE.md](./CLAUDE.md) (the domain), then [AGENTS.md](./AGENTS.md) (the code).
+> Agents: start with [CLAUDE.md](./CLAUDE.md) — the house rules and the must-read order.
+> (`AGENTS.md` is a symlink to it.) The domain itself is [docs/DOMAIN.md](./docs/DOMAIN.md).
 
 ## Why a server and not just a skill
 
@@ -115,7 +116,7 @@ The server **never** raises at startup for a missing token. Gated tools resolve 
 
 If none resolve, gated tools return a friendly message rather than raising. A token set via
 `authenticate` is scoped to the caller's own session and never leaks between HTTP clients. See
-[AGENTS.md](./AGENTS.md) for the multi-tenant caveat about `mcp.enable()`.
+[CLAUDE.md](./CLAUDE.md) for the multi-tenant caveat about `mcp.enable()`.
 
 ## Safety switches
 
@@ -126,9 +127,9 @@ If none resolve, gated tools return a friendly message rather than raising. A to
 
 ## Configuration
 
-All `JMC_*` variables are optional — see `.env.example` and `settings.py`. The just-dna toolchain's
+All `JMC_*` variables are optional — see `.env.template` and `settings.py`. The just-dna toolchain's
 own variables (`JUST_DNA_*_CACHE`, `NCBI_API_KEY`, `PHARMVAR_API_KEY`, `REGISTRY_TOKEN`) are read by
-the enricher straight from the process environment; `.env.example` documents them so everything is
+the enricher straight from the process environment; `.env.template` documents them so everything is
 configured in one place.
 
 `PHARMVAR_API_KEY` is personal under PharmVar's ToS §2 — never bake it into a module or a snapshot.
@@ -142,6 +143,12 @@ configured in one place.
 ## Project layout
 
 ```
+CLAUDE.md              house rules; AGENTS.md is a symlink to it
+docs/
+  DOMAIN.md            what a module is and the traps that constrain the tools
+  CHANGELOG.md         what shipped, newest first
+  ROADMAP.md           open items only; ROADMAP_HISTORY.md holds the rest
+  dogfooding.md        open findings from real use (F# ids)
 .claude-plugin/
   plugin.json          manifest; declares the MCP server via ${CLAUDE_PLUGIN_ROOT}
   marketplace.json     so `/plugin marketplace add ./` works
@@ -164,6 +171,7 @@ src/just_module_creator/
     registry.py        token-gated registry writes
     _shared.py         path containment, offline ceiling, converters
 tests/                 in-memory, offline
+assets/                fixtures that must travel; data/ is git-ignored
 ```
 
 ## Upstream
