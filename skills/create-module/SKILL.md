@@ -562,6 +562,18 @@ nowhere else**: the token, and the install-id. Save both in `.env` (`JMC_API_KEY
 admin — so re-registering that same id reissues a key for the same account, while registering again
 without it creates a *different* account and leaves the first unreachable.
 
+The **account name is not a secret and needs no saving**: `registry_whoami` reports it from the
+token, and re-registering with the same install-id returns the account that id already owns and
+*ignores* the `account` argument you passed. So the id is what identifies you; the name is a label
+the registry hands back. Two consequences worth knowing before you call it: a second
+`registry_register` will not rename an existing account, and it mints a fresh key every time rather
+than returning the old one, so the last one you saved is the one that works.
+
+`.env` is where both belong because that is what the server reads on the next boot — a token that
+lives only in the session dies with it, and an install-id that lives only in a transcript is gone.
+Never paste either into a module, a fixture, a commit or a note; `.env` is gitignored, everything
+else here is not.
+
 `registry_publish` re-runs `validate_module(strict=True)` locally and refuses rather than shipping a
 spec the server will reject; the server then recompiles it itself, so `compile_success` and the
 digest are trusted rather than claimed. A published version is immutable. A spec whose raw parts

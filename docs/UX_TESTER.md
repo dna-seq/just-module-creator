@@ -25,7 +25,11 @@ Two rules do most of the work here:
 Attack claims, not gaps. A documented deferral is a decision; what counts is where a
 docstring or doc *promises* something the code does not do.
 
-## Credentials — where the token is
+## Credentials — which account this seat uses
+
+State only. **How to obtain and save a token is the skill's job**, not this file's:
+`skills/create-module/SKILL.md` §7 covers registering, what the two secrets are, and why
+the install-id has to be kept. Read it there; do not restate it here, or the two drift.
 
 A registry account was created on 2026-08-11 against
 `https://module-registry.just-dna.life`:
@@ -35,18 +39,12 @@ account:    test-creator
 namespace:  test-modules      (claimed; irreversible; owner test-creator)
 ```
 
-**Both secrets are in `/data/sources/just-module-creator/.env`**, which is gitignored
-(`.gitignore:141`) and therefore invisible to `git status`:
-
-- `JMC_API_KEY` — the registry token. The server reads it from the environment, so
-  registry tools work without calling `authenticate`.
-- `JMC_INSTALL_ID` — **the account's only recovery path.** No email, no admin.
-  Re-registering this same install-id reissues a key for this same account; registering
-  without it mints a *different* account and leaves this one unreachable. Never call
-  `registry_register` without passing it unless a new account is genuinely wanted.
-
-Underscores are rejected in account and namespace names — hence `test-creator`, not
-`test_creator`. Module names are the opposite convention and take underscores.
+Both secrets are already in `/data/sources/just-module-creator/.env`, which is gitignored
+(`.gitignore:141`) and therefore invisible to `git status`. The server reads `JMC_API_KEY`
+from the environment, so registry tools work without calling `authenticate`. The one thing
+worth repeating because it is destructive: **never call `registry_register` without the
+saved `JMC_INSTALL_ID`** unless a genuinely new account is wanted — a fresh id strands this
+one.
 
 ## What has been established
 
@@ -75,11 +73,10 @@ Underscores are rejected in account and namespace names — hence `test-creator`
 
 Small, and each belongs to the second agent rather than upstream:
 
-- **`authenticate`'s docstring is stale.** It still says "Get one by registering with the
-  registry (`registry-client register`)" — the exact sentence that sent this seat out of
-  the plugin in the first place, now wrong because `registry_register` exists.
-- **`plugin.json` says `0.2.0`; `pyproject.toml` says `0.3.0`.** The manifest cannot read
-  `importlib.metadata`, so it has to be bumped by hand in the release commit.
+- ~~**`authenticate`'s docstring is stale.**~~ **Fixed** in `6ad1898` — it now points at
+  `registry_register` and says a token is needed only to publish.
+- ~~**`plugin.json` says `0.2.0`; `pyproject.toml` says `0.3.0`.**~~ **Fixed** in `a1f50a2`,
+  with `tests/test_plugin_manifest.py` failing on any future mismatch.
 - **The essentials tier cannot verify a trait CURIE.** `lookup_identifier` /
   `check_identifiers` are extended-only, so an author in the default tier either leaves
   `trait_efo_id` blank or writes an ontology id from memory. Blank is the honest choice
