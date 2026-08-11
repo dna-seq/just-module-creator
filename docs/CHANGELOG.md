@@ -3,6 +3,41 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.5.1 — the polygon is the default *answer*, not just the default argument (2026-08-11)
+
+Guidance only. No tool signature, vocabulary, artifact or digest change — but it changes
+what an agent should *say*, which for a plugin whose contract includes a skill is a
+shipped change and not a docs tidy-up.
+
+0.5.0 made every registry write default to `target="test"`. That fixed the mechanism and
+left the conversation open. An agent helping a first-time author could still volunteer
+`target="prod"` to be helpful, and the exposure is entirely in what a novice's words mean:
+**"publish it", "put it online", "share it with my friends", "send it to your site" is not
+a request for the immutable catalog** — it is somebody who does not yet know there are two
+registries. Observed in an assisted dogfooding session where that last phrasing came up
+verbatim, from a user who had been told a module is "a rulebook" ten minutes earlier.
+
+`skills/create-module/SKILL.md` §7 and `server.INSTRUCTIONS` now both say: publish to the
+polygon, **name it out loud**, say it is a rehearsal instance nobody installs from, and
+stop. Promoting is a separate decision the author makes after seeing a clean run, and it
+needs an explicit yes with the cost stated *in* the question — because neither
+`registry_claim_namespace(target="prod")` nor `registry_publish(target="prod")` can be
+undone by anyone, and production's content claim survives a `yank`, so a half-finished
+first module spends the version number *and* the right to publish that data under any
+other name.
+
+One corollary, learned the same session by leaving litter: **prefix the module name as well
+as the namespace on a first rehearsal** — `test_my_module` under `test-my-ns`. The
+operator's `purge-test-data` sweep matches on both halves, so a bare `my_module` inside a
+prefixed namespace is rubbish nobody collects, and a first-time author is exactly the
+person who will not return to run `registry_delete_module`. The existing advice to rehearse
+under the real name is still correct and still there — it is now explicitly *not* the
+first-module default.
+
+Recorded in `CLAUDE.md` §10 in the user's own words, because the reasoning ("this confuses
+the crowd and we don't want half-baked test modules on prod") is what makes the rule
+survive contact with an author who is impatient to share.
+
 ## 0.5.0 — two registries, and a publish you can rehearse (2026-08-11)
 
 Adopts the test/prod split the registry shipped in its 0.12.0, and takes the client

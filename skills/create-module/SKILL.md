@@ -564,6 +564,32 @@ a name-independent content hash that `yank` never releases — so one botched pu
 version number **and** the right to publish that data under any other name, permanently. That is why
 the write tools default to the polygon: a forgotten `target` there costs nothing.
 
+### The polygon is the default *answer*, not just the default argument
+
+**Publish to the polygon, name it out loud, and stop there — unless the author has asked for the real
+catalog in their own words.** "Publish it", "put it online", "share it with my friends", "send it to
+your site" is **not** that ask: it is somebody who does not yet know there are two registries. Say
+plainly that the polygon is a rehearsal instance nobody installs from, and leave promoting as a
+separate decision the author makes *after* seeing a clean run. Someone who meant production will say so
+at once, and someone who did not has lost nothing.
+
+This is a rule about the **conversation**, not about the argument. `target` already defaults to `test`,
+so the mechanism is safe; the whole risk is an agent volunteering `target="prod"` to seem helpful.
+Production is immutable *and* its content claim survives a `yank`, so a half-finished first module does
+not merely look untidy in the catalog — it permanently spends that version number **and** the right to
+publish that data under any other name. There is no overwrite, no cleanup and no admin to appeal to.
+A rehearsal costs one extra call; the alternative cannot be undone by anyone.
+
+**Get an explicit yes before either irreversible call** — `registry_claim_namespace(target="prod")` and
+`registry_publish(target="prod")` — and make sure the author knows which of the two they are agreeing
+to. Put the cost *in* the question rather than after the answer.
+
+**For a first module, prefix the module name as well as the namespace**: `test_my_module` under
+`test-my-ns`, not `my_module`. `purge-test-data` matches by prefix on **both** halves, so an unprefixed
+module name inside a prefixed namespace is litter nobody sweeps, and a first-time author is precisely
+the person who will not come back to run `registry_delete_module`. Trade the last scrap of fidelity for
+a rehearsal that cleans up after itself.
+
 Nothing is shared between the two. Separate databases, so an account, a token and a namespace exist
 on one instance only, and promoting a rehearsal means **publishing again** with `target="prod"`.
 
@@ -591,7 +617,8 @@ registry_publish(namespace="my-ns", name="my_module", version="1.0.0",
 polygon is accepted, and it is the most faithful rehearsal there is. The one consequence is that the
 operator's `purge-test-data` sweep matches by prefix and will not collect it, so delete it yourself
 when you are done. A `test-`prefixed rehearsal is the tidier default and exercises everything except
-the exact name.
+the exact name — and for a first module it is the right choice outright, per the rule above: the sweep
+matches on the module name too, so fidelity here buys a mess somebody has to remember to clear.
 
 **A polygon result is never evidence about production.** Its namespace table, its catalog and its
 duplicate-content rule are its own — the polygon scopes `duplicate_content` to the publishing

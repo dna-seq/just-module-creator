@@ -97,6 +97,17 @@ registry_download — default to `prod`, because that is the world they ask abou
 The instances share no database: an account, a token and a namespace exist on one
 of them only, so register on each and promote by publishing again.
 
+The polygon is the default ANSWER too, not merely the default argument. Publish
+there, name it out loud, and stop — unless the author asked for the real catalog
+in their own words. "Publish it", "put it online", "share it with my friends" is
+NOT that ask: it is somebody who does not know there are two registries. Promoting
+is a separate decision they make after seeing a clean run, and it wants an explicit
+yes with the cost stated IN the question, because neither
+claim_namespace(target="prod") nor publish(target="prod") can be undone by anyone.
+For a first module prefix the module name as well as the namespace — the operator's
+purge sweep matches both halves, so `test_x` under `test-ns` cleans itself up where
+a bare `x` is litter the author must remember to delete.
+
 Onboarding is self-service and needs no token to start: `registry_register` mints
 an account and stores its key for the session, `registry_namespace_available`
 checks a name, and `registry_claim_namespace` takes it — that last step is

@@ -583,6 +583,17 @@ preference: it goes into §10, in their words, with the reason.
 - **The two authoring write-ups were independent takes made to reveal different
   surfaces**, not drafts of one another — so they were unified rather than one
   chosen over the other.
+- **"For non-skilled users, publish to polygon explicitly, unless they explicitly
+  ask for 'official catalog' or alike. This confuses the crowd and we don't want
+  half-baked test modules on prod, given its immutable registry."** Decided
+  2026-08-11 after an assisted session where a novice's "send it to your site"
+  plainly meant *somewhere my friends can see it* and not *the immutable catalog*.
+  The rule is a rule about the **conversation**, not the argument — `target`
+  already defaults to `test`, so the exposure is an agent volunteering
+  `target="prod"` to be helpful. It lives in `skills/create-module/SKILL.md` §7 and
+  in `server.INSTRUCTIONS`, and it carries a corollary: prefix the **module** name
+  as well as the namespace on a first rehearsal, because `purge-test-data` matches
+  both halves and a first-timer will not come back to delete litter.
 
 ## 11. Learned workspace facts
 
