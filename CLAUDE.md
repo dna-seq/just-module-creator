@@ -736,3 +736,19 @@ preference: it goes into §10, in their words, with the reason.
   its own. Next ids as of 2026-08-11: **`S25`** in the format tree, **`S5`** in the
   registry's. Compute both with `.claude/triage-state.sh --next`; never read them
   off an inbox.
+- **"The goal of this plugin is to be ai-coauthor. And it can be driven by a lyman."** Stated
+  2026-08-12. The module owner brings the *theme* and the *sources* — a trait, some PDFs, a video.
+  Everything after that is the agent's: triage, rows, conclusions, located passages. **"Here you
+  kinda ask v2 work from a wrong person"** — the worked case was asking a gardener, who cannot read
+  a genetics paper, to supply `provenance_quote` and to judge whether the module was good enough to
+  publish. Both are a reviewer's job and a different person's. **"AI totaly can read articles."**
+- **Versions and curation carry NO implicit contract.** Corrected 2026-08-12 after the skill turned
+  an illustration into a ladder: *"1.0.0 2.0.0 arent strict milestones, it was an example, we don't
+  have any implicit contracts on versioning or order of curation."* The real rule is a signal read
+  off the module, never a schedule: *"if module is v25 - likely it's worked on iteratively, slightly
+  more trust; module has non-ai curators - that's a silver one already, human labor costs. v52 and
+  2+ curator med_geneticists? That's platinum."* So `2.0.0` does not mean reviewed, a human may
+  curate from the first version or never, and **no agent may withhold a publish or a bump waiting
+  for a milestone that does not exist**. Curated work is then cherry-picked into a featured catalog
+  section by the operator. `authorship` is where the signal actually lives, which is why it is now
+  documented in `skills/create-module/SKILL.md` rather than left to the schema.
