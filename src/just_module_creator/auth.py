@@ -15,15 +15,25 @@ Design goals (multi-user safe):
 Anti-pattern (documented, off by default): ``mcp.enable(tags=...)`` to "unlock"
 gated tools is SERVER-GLOBAL — it would expose tools to every connected client.
 Safe only for single-tenant stdio. See ``register_stdio_only_unlock`` below.
+
+``registry_register`` lives here rather than in the gated ``tools/registry.py``
+even though it writes to the registry, because it is the one registry write that
+**cannot** be token-gated: it is what mints the token. Putting it behind the
+extended tier would be the same mistake in a different place — the default
+surface would still dead-end at "get a token from somewhere else".
 """
 
 from __future__ import annotations
 
+from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
+from fastmcp.exceptions import ToolError
+from just_dna_format.identity import NAMESPACE_PATTERN, is_valid_namespace
+from just_dna_registry import RegistryClient, RegistryError, generate_install_id
 from mcp.types import ToolAnnotations
 
 from just_module_creator.logging_setup import get_logger
-from just_module_creator.models import AuthResult, OpResult
+from just_module_creator.models import AuthResult, OpResult, RegistrationResult
 from just_module_creator.settings import Settings
 
 log = get_logger()
@@ -76,6 +86,61 @@ def require_key(ctx: Context | None, settings: Settings, store: SessionKeyStore)
     return resolve_api_key(ctx, settings, store)
 
 
+def resolve_install_id(explicit: str | None, settings: Settings) -> tuple[str | None, str]:
+    """The install-id to register with, and where it came from.
+
+    ``(None, "generated")`` means nothing was supplied and one has to be ground.
+    That is returned rather than ground here so the caller can put the CPU work
+    *after* the offline ceiling and the account-name check — grinding for a
+    request that was going to be refused anyway is pure waste.
+
+    The origin travels into the result because a reused id and a fresh one have
+    opposite consequences: reusing one reissues a key for its existing account,
+    while a fresh one creates a new account that the caller must now save the id
+    for. Reporting only the id would make those look identical.
+    """
+    if explicit and explicit.strip():
+        return explicit.strip(), "argument"
+    if settings.install_id and settings.install_id.strip():
+        return settings.install_id.strip(), "environment"
+    return None, "generated"
+
+
+def _registration_failure(exc: RegistryError, *, account: str, origin: str) -> str:
+    """Turn the registry's error slug into something the caller can act on."""
+    detail = str(getattr(exc, "detail", "") or exc)
+
+    if "account_taken" in detail:
+        return (
+            f"{account!r} already exists and is bound to a different install-id. A key can only "
+            "be reissued to the install-id that created an account, and there is no email or "
+            "admin to recover through, so retrying will not help: either pass the install-id you "
+            "saved for that account, or pick another name."
+        )
+    if "invalid_install_id" in detail:
+        origin_note = (
+            "the id was generated at this client's default difficulty"
+            if origin == "generated"
+            else f"the id came from the {origin}"
+        )
+        return (
+            f"The registry rejected the install-id ({origin_note}). It requires more "
+            "proof-of-work than was supplied — call again with a higher `difficulty`."
+        )
+    if "invalid_account" in detail:
+        return (
+            f"The registry rejected {account!r} as an account name, so its rule is stricter than "
+            f"the one checked here ({NAMESPACE_PATTERN.pattern}). Report this — the local check "
+            "should not disagree with the server."
+        )
+    if "self_register_disabled" in detail:
+        return (
+            "This registry has self-registration switched off, so an account cannot be minted "
+            "from here. Its operator has to issue the token."
+        )
+    return f"The registry refused the registration: {exc}"
+
+
 def unauthenticated_result(settings: Settings) -> OpResult:
     return OpResult(
         success=False,
@@ -89,7 +154,138 @@ def unauthenticated_result(settings: Settings) -> OpResult:
 
 
 def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> None:
-    """Register the always-on ``authenticate`` tool (per-session scope)."""
+    """Register the always-on auth tools: ``registry_register`` and ``authenticate``."""
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Registry: register an account and mint a token",
+            readOnlyHint=False,
+            # Each call issues a NEW api key, even when the account already
+            # exists, so repeating it is not a no-op.
+            idempotentHint=False,
+            destructiveHint=False,
+            openWorldHint=True,
+        )
+    )
+    async def registry_register(
+        account: str,
+        install_id: str | None = None,
+        difficulty: int | None = None,
+        ctx: Context | None = None,
+    ) -> RegistrationResult:
+        """Create a registry account and mint its API key. No token needed — this makes one.
+
+        Onboarding is self-service: no admin, no email, no approval. The only
+        gate is an install-id, a proof-of-work string ground locally in about a
+        second. Omit `install_id` and one is ground for you.
+
+        **Save the install-id this returns.** It is the account's only recovery
+        path. Re-registering the SAME install-id reissues a key for the SAME
+        account and ignores the `account` argument; calling again WITHOUT one
+        grinds a fresh id, which is a different account, and the first account
+        becomes unreachable if you did not keep its id. Put it in `.env` as
+        `JMC_INSTALL_ID`, and the token as `JMC_API_KEY`.
+
+        `account` obeys the namespace rule — lowercase letters and digits with
+        single hyphens. Underscores are rejected, not normalised. Note that
+        *module* names are the opposite convention and take underscores.
+
+        The token is stored for this session, so `authenticate` is not needed
+        afterwards. Claiming a namespace is a separate, irreversible step: check
+        it with `registry_namespace_available` first, then
+        `registry_claim_namespace`.
+        """
+        if settings.offline:
+            raise ToolError(
+                "The server is configured offline (JMC_OFFLINE), so the registry cannot be reached."
+            )
+
+        if not is_valid_namespace(account):
+            raise ToolError(
+                f"{account!r} is not a legal account name. Accounts obey the same rule as "
+                f"namespaces, {NAMESPACE_PATTERN.pattern} — lowercase letters and digits with "
+                "single hyphens between them. Underscores are REJECTED rather than normalised, so "
+                "'my_account' has to be 'my-account'. (Module names use the opposite rule and do "
+                "take underscores, which is why the two look inconsistent.)"
+            )
+
+        resolved, origin = resolve_install_id(install_id, settings)
+        if resolved is None:
+            if ctx:
+                await ctx.info("Grinding a fresh install-id (proof-of-work, about a second)…")
+            resolved = await run_sync(
+                lambda: generate_install_id(difficulty) if difficulty else generate_install_id()
+            )
+
+        def _register() -> dict:
+            with RegistryClient(settings.registry_url, timeout=settings.registry_timeout) as client:
+                return client.register(resolved, account)
+
+        try:
+            payload = await run_sync(_register)
+        except RegistryError as exc:
+            log.warning("Registration of %s failed: %s", account, exc)
+            return RegistrationResult(
+                registered=False,
+                # Returned even on failure: it cost CPU to grind and is worth
+                # retrying with rather than replacing.
+                install_id=resolved,
+                install_id_origin=origin,
+                registry_url=settings.registry_url,
+                message=_registration_failure(exc, account=account, origin=origin),
+            )
+
+        token = str(payload.get("token") or "")
+        granted = str(payload.get("account") or account)
+        namespaces = [str(n) for n in (payload.get("namespaces") or [])]
+
+        if token:
+            store.set(ctx, token)
+        # The token is a secret and never reaches the log.
+        log.info(
+            "Registered account %s (install-id origin=%s, namespaces=%d)",
+            granted,
+            origin,
+            len(namespaces),
+        )
+
+        notes = [f"Registered {granted!r} on {settings.registry_url}."]
+        if granted != account:
+            notes.append(
+                f"This is NOT the name you asked for: that install-id already belonged to "
+                f"{granted!r}, so the registry reissued a key for it and ignored {account!r}. No "
+                "new account was created."
+            )
+        notes.append(
+            "SAVE BOTH SECRETS in .env — JMC_API_KEY for the token, JMC_INSTALL_ID for the "
+            "install-id. The install-id is the only way back to this account."
+            if origin == "generated"
+            else "Token stored. The install-id is unchanged; keep it saved."
+        )
+        notes.append(
+            "The token is stored for this session, so registry tools work now without "
+            "`authenticate`."
+            if token
+            else "The registry returned no token, so nothing was stored — report this."
+        )
+        notes.append(
+            f"Namespaces owned: {', '.join(namespaces)}."
+            if namespaces
+            else "No namespace yet: check one with `registry_namespace_available`, then claim it "
+            "with `registry_claim_namespace`. A claim cannot be undone."
+        )
+
+        return RegistrationResult(
+            registered=bool(token),
+            account=granted,
+            namespaces=namespaces,
+            token=token or None,
+            install_id=resolved,
+            install_id_origin=origin,
+            stored_for_session=bool(token),
+            registry_url=settings.registry_url,
+            message=" ".join(notes),
+        )
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -103,9 +299,10 @@ def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> N
         """Provide a registry token to unlock the registry write tools for THIS session.
 
         The token is stored only against your own session and is never shared
-        with other clients. Get one by registering with the registry
-        (``registry-client register``). No token is needed to author, validate or
-        compile a module — only to publish one.
+        with other clients. Use this when you already hold a token; if you do not
+        have an account yet, `registry_register` mints one and stores its token
+        for you, so this call is unnecessary after it. No token is needed to
+        author, validate or compile a module — only to publish one.
         """
         # No format check: the registry issues the token and is the only thing
         # that can judge it. Inventing a prefix rule here would reject valid

@@ -15,13 +15,55 @@ keeps its own `S<n>` series. Check there before filing — a second consumer hit
 one appends a corroboration rather than opening a new number. Write the note and
 stop; never commit in that repo.
 
+**Read the answered half too.** The format tree's inbox holds only *open* items; an
+answered `S<n>` moves to `../just-dna-format/docs/CONSUMER_SUGGESTIONS_HISTORY.md`,
+whose index table carries the verdict and where the fix landed. Its inbox has been
+empty since 2026-08-11 — every one of `S1`–`S18` is answered — so an entry of ours
+that has vanished from it was replied to, not dropped. The registry's intake has no
+history file and works the other way: nothing has moved out of it.
+
+**Number a new one with `.claude/triage-state.sh --next`, never from what the inbox
+shows** — it is empty, ids are never reused, and the next is `S19`.
+
+**Three states, not two, and only the third releases a guard.** *accepted and
+filed* (an upstream `RMn`, still open) → *fixed in tree* (the symbol exists in
+`../just-dna-format`, not in what we install) → *released* (on PyPI, in our
+lockfile). Every status line below names both halves, because "open upstream" said
+neither and was wrong on every entry in this file until 2026-08-11.
+
+**As of 2026-08-11, upstream's 0.5.4 is written but unreleased.** PyPI's newest is
+compiler/enricher 0.5.3 and format 0.5.0. Confirm by symbol, not changelog:
+`hints.ATTESTATION_BEARING`, `hints._report_ragged` and `Finding.line` are in
+`../just-dna-format/compiler/src/just_dna_compiler/hints.py` and absent from the
+installed `just_dna_compiler.hints`.
+
+## Answered items that carry no `F<n>` here
+
+`S11`, `S15`, `S16` and `S17` were filed without an `F<n>` because each shipped a
+mitigation the same day and nothing was blocked — the three documentation gaps are
+recorded in [CHANGELOG.md](CHANGELOG.md) under "Three documentation gaps filed
+upstream". All four have since been answered, and all four fixes are **in tree for
+the unreleased 0.5.4**, so none of the mitigations may come out yet:
+
+| `S<n>` | Verdict | Landed in (unreleased) | Our mitigation, which stays |
+|---|---|---|---|
+| `S11` — `provenance_quote` / `provenance_regex` are redundancy-bearing and the map does not say so | accepted and fixed, **including the fifth refusal reason we argued for**: a quote is an *attestation*, not a spent comparison | `hints.ATTESTATION_BEARING`; `ENRICHER.md` | the refusal to extract a passage from a fetched document (`CLAUDE.md` §2) |
+| `S15` — `PacingGate`'s concurrency contract is unstated and it is not safe to share | accepted and fixed — the injection API asks callers to share a gate, so the gate had to be safe to share | `net.PacingGate` slot reservation under a lock; `ENRICHER.md` | `ServiceGate`'s lock in `net.py` |
+| `S16` — whether a spec directory may hold files the compiler does not know is unspecified | accepted — tolerance is now a stated, tested contract, **and probing it found the case where "ignored" is wrong**: a mistyped table name | `COMPILER.md` + `_check_misspelled_tables` | `published.json` relies on the tolerance we tested |
+| `S17` — `source` exists only on enricher-produced rows, so an authored table cannot declare provenance | accepted and fixed both ways; our proposed table was right, and there is a fifth column — on `sources.csv` itself | `SCHEMAS.md` + `vocab.MISPLACED_COLUMN_REASONS` | none needed |
+
+`S15`'s answer is the one to note when tempted to drop the lock: upstream fixed the
+gate *because* the injection API asks callers to share one, which is exactly what
+`ServiceGate` does. Two locks is harmless; none is a race.
+
 ---
 
 ## F5 — resolution never reaches the non-SNP table families
 
-**Filed upstream:** `CONSUMER_SUGGESTIONS.md` **S9** (opened by just-dna-lite,
-2026-08-11; corroborated by us the same day) ·
-**Status: the legibility half shipped in 0.5.3; the coordinates themselves are deferred to upstream RM43**
+**Filed upstream:** **S9** (opened by just-dna-lite, 2026-08-11; corroborated by us
+the same day), now in `CONSUMER_SUGGESTIONS_HISTORY.md` ·
+**Status: answered — the legibility half shipped in 0.5.3 and we have it; the
+coordinates themselves are open as upstream RM43, tracked in `RM_TOC.md`**
 
 `compile_module` applies `resolution.csv` to the SNP core only. A module led by
 `pharm_variants.csv`, `diplotypes.csv` or `pgs.csv` keeps exactly the coordinates
@@ -80,8 +122,14 @@ prevent.
 
 ## F8 — no literature source has recordable `sources.csv` terms
 
-**Filed upstream:** `CONSUMER_SUGGESTIONS.md` **S10** (2026-08-11) ·
-**Status:** open upstream
+**Filed upstream:** **S10**, now in `CONSUMER_SUGGESTIONS_HISTORY.md` ·
+**Status: answered 2026-08-11 — accepted, and the granularity question is filed as
+upstream RM46 (0.6, with RM27). Nothing to adopt; nothing more to say.**
+
+Upstream agreed a per-source constant would be the wrong fix, for the reason this
+entry argues below: a literature licence is per article. So the question is open as
+*design work*, not as an unanswered report, and `RM_TOC.md` rather than the
+suggestions inbox is where its progress lives.
 
 `enrich_literature` writes `source="pubmed"` into every `literature.csv` row.
 `_source_checks` builds `used_sources` from the `source` column of every fact
@@ -117,8 +165,16 @@ work here for us. Removed 2026-08-11.
 
 ## F9 — `lookup_citation` cannot detect a fabricated PMID, because nothing returns a title
 
-**Filed upstream:** `CONSUMER_SUGGESTIONS.md` **S12** (2026-08-11) ·
-**Status:** mitigated here, open upstream
+**Filed upstream:** **S12**, now in `CONSUMER_SUGGESTIONS_HISTORY.md` ·
+**Status: accepted and FIXED IN TREE for the unreleased 0.5.4 — not in the 0.5.3 we
+install, so our mitigation stays.**
+
+Upstream added `CitationHint.title` / `journal` / `year` / `first_author`, plus
+`literature.bibliographic` and `hint citation --json`, agreeing that existence is
+not identity and that `esummary` already carried the answer. When 0.5.4 reaches
+PyPI, `lookup_citation` can report the title itself and this closes — until then
+`CitationHint` in our environment still has no title and the docstring's
+existence-not-identity wording is still the truth.
 
 `CitationHint` carries `pmid_exists`, `doi`, `registry_doi`, `pmcid`,
 `open_access`, `abstract_available` — and no **title**, journal or year. PMIDs are
@@ -145,7 +201,34 @@ is not.
 
 ## F10 — `resolve_with_ensembl=False` is the master switch for all resolution, and its name says otherwise
 
-**Filed upstream:** `CONSUMER_SUGGESTIONS.md` **S14** (2026-08-11) · **Status:** open upstream
+**Filed upstream:** **S14**, now in `CONSUMER_SUGGESTIONS_HISTORY.md` ·
+**Status: SETTLED 2026-08-11. The warning had already shipped in 0.5.2 from another
+report; the rename is REFUSED with a reason. Our pin is permanent, not interim.**
+
+This one stays in this file precisely because a refusal is an upstream state worth
+keeping, and it is the entry to read before anyone reopens the question:
+
+- **(1) shipped, before we filed.** The compiler already warns when a present
+  `resolution.csv` goes unread — someone hit the same flag a day earlier. The row
+  count our note asked for is added in 0.5.4: `… ({N} row(s), covering {K} variant
+  key(s)), which was not read …`, rows before keys because a one-to-many rsID makes
+  those different numbers.
+- **(2) refused, and the reason is stronger than "unnecessary".** A `--no-ensembl`
+  flag would *assert something false*: the compiler has no branch that reaches the
+  network at all, so the flag would imply it otherwise might. Passing no flag is how
+  the request is already spelled. Our instinct that this should be `--offline` was
+  right about the concept and wrong about the tier — egress lives in the enricher.
+- **(3) not doing it.** Renaming a published parameter removes a name, which is
+  major-only under their P3 whatever the charter says about additive columns. An
+  additive alias would be legal and they decline it, because the only honest alias
+  (`--no-resolution`) buys a better name for the price of two flags meaning one
+  thing.
+
+Upstream calls our pin "belt-and-braces rather than load-bearing" now that (1) warns.
+**We keep it anyway**, and the rule in `CLAUDE.md` §2 stays absolute: a warning tells
+an author what happened after the fact, while the pin means no agent driving our
+surface can produce the empty-but-green module in the first place. There is nothing
+left to wait for here — do not re-file it, and do not word the guard as interim.
 
 `compile_module(resolve_with_ensembl=False)` / `--no-resolve` reads as "do not go
 out to Ensembl", which is a reasonable thing to want and the obvious flag to
@@ -168,8 +251,8 @@ with `ensembl_cache=None`, so no agent driving our surface can reach the branch.
 pass it — that guidance is legitimately ours to give, because an author reading
 `references/CLI.md` may well use the CLI directly.
 
-**Closes when** upstream warns that a present `resolution.csv` went unread, or
-splits the flag so the name matches the action.
+**Closed.** The first half of that condition was already met in 0.5.2; the second is
+refused on a principle, not a schedule.
 
 ---
 
@@ -177,7 +260,12 @@ splits the flag so the name matches the action.
 
 **Filed upstream:** **S1** in `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`
 (2026-08-11 — the *registry's* intake, not the format tree's: the ceiling is
-server-side) · **Status:** open upstream
+server-side) · **Status: genuinely still open, re-checked 2026-08-11 — the only one
+in this file that is.**
+
+The registry's intake has no reply on it and **no history file**, so unlike the
+format tree, absence of movement there means nothing has been answered rather than
+that everything has. Do not read the two intakes the same way.
 
 `marketplace check` is the only surface that adds the network tier on top of
 `validate_spec` and reduces it to one branchable field. On a large module it
@@ -203,7 +291,22 @@ error names the limit and the local substitute.
 ## F14 — a ragged CSV row is misdiagnosed by `lint_rows`, on the wrong column and the wrong line
 
 **Found:** 2026-08-11, first binning probe (HTT CAG repeat bins) ·
-**Filed upstream as `S18`** · **Status:** open upstream, unmitigated here
+**Filed upstream as `S18`**, now in `CONSUMER_SUGGESTIONS_HISTORY.md` ·
+**Status: both defects accepted and FIXED IN TREE the same day, for the unreleased
+0.5.4. Absent from the 0.5.3 we install, so the trap is still live for our callers.**
+
+`hints._report_ragged` names a ragged row *before* the error it causes, and
+`Finding` gained a `line` field carrying the file line an editor shows — so both
+halves of this note landed, including the one about `row` and `line N` disagreeing
+over the same CSV. Filing it the moment it was found is what made that possible;
+this is the counter-example to `S14`'s lateness.
+
+**What this means for us now.** Nothing to build: `lint_rows` is a pass-through and
+`to_findings` will carry `line` across the boundary the day it exists. The line in
+the authoring skill about quoting free-text cells stays useful regardless — an
+author should quote them anyway — but it stops being a workaround for a silent
+mis-parse once 0.5.4 lands. Re-check `Finding.line` on the installed package before
+rewording anything.
 
 `hints.inspect_rows` positionally zips header names against parsed values
 (`hints.py:268`) without comparing the two lengths. An unquoted comma in a

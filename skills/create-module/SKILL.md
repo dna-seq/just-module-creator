@@ -77,9 +77,13 @@ reach the one compiler flag that silently produces a module no VCF can match.
 | gene/trait currency | `check_identifiers`, `lookup_identifier` | extended |
 | content signature, integrity, round-trip | `module_signature`, `verify_artifact`, `reverse_module` | extended |
 | the whole generated DSL at once | `authoring_reference` | extended |
-| publish | `authenticate` → `registry_whoami` → `registry_publish` | gated |
+| get an account and a token | `registry_register` | always |
+| is a namespace legal and free | `registry_namespace_available` | essentials |
+| publish | `authenticate` → `registry_whoami` → `registry_claim_namespace` → `registry_publish` | gated |
 
-Extended tools need `JMC_MODE=extended`. Publishing needs a registry token; nothing else does.
+Extended tools need `JMC_MODE=extended`. Publishing needs a registry token; nothing else does — and
+`registry_register` mints one from inside the surface, so there is no step that sends you to another
+package's CLI.
 
 **Never ask a schema question from memory — ask the tool.** Column lists, vocabularies and
 requirements are generated from the live pydantic models, so `describe_table` /
@@ -535,12 +539,28 @@ print(w.height, 'rows;', w.filter(pl.col('chrom').is_not_null()).height, 'with a
 ## 7 — Publish
 
 ```
-authenticate(token="…")           # per session; nothing local validates it
-registry_whoami()                 # the first thing that actually checks the token
-registry_claim_namespace("my-ns") # once, if you have no namespace yet
+registry_register(account="my-name")   # no account yet — mints a token, stores it for this session
+authenticate(token="…")                # OR: a token you already hold; nothing local validates it
+registry_whoami()                      # the first thing that actually checks the token
+registry_namespace_available("my-ns")  # legal? free? — read-only, no token
+registry_claim_namespace("my-ns")      # once, and it cannot be undone
 registry_publish(namespace="my-ns", name="my_module", version="1.0.0",
                  spec_dir="spec", changelog="…")
 ```
+
+**Names split two ways and both rules are enforced, not normalised.** An account or namespace is
+lowercase letters and digits with single hyphens — `my_ns` is rejected outright. A *module* name is
+the opposite, `[a-z][a-z0-9_]*`, so it takes underscores and rejects hyphens. Hence
+`my-ns/lactose_tolerance`. Checking a namespace costs nothing and claiming one cannot be reversed, so
+run `registry_namespace_available` first; note that it reports `valid` and `available` separately,
+because the registry will call an illegal name "available".
+
+`registry_register` needs no token — it makes one. Onboarding is self-service, gated only by a
+proof-of-work install-id ground locally in about a second. It hands back **two secrets that exist
+nowhere else**: the token, and the install-id. Save both in `.env` (`JMC_API_KEY`,
+`JMC_INSTALL_ID`). The install-id is the account's only recovery path — there is no email and no
+admin — so re-registering that same id reissues a key for the same account, while registering again
+without it creates a *different* account and leaves the first unreachable.
 
 `registry_publish` re-runs `validate_module(strict=True)` locally and refuses rather than shipping a
 spec the server will reject; the server then recompiles it itself, so `compile_success` and the

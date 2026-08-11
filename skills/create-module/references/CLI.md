@@ -90,6 +90,12 @@ find-by-hash, amend-changelog, amend-logo, update-module-version`.
 Reads `REGISTRY_URL`, `REGISTRY_TOKEN`, `REGISTRY_TIMEOUT`. The MCP server reads the same
 `REGISTRY_TOKEN` as a fallback, so an author already logged in does not have to re-declare it.
 
+`register` and `namespace-available` are wrapped as `registry_register` and
+`registry_namespace_available`, so onboarding no longer needs this CLI. The wrapped register also
+stores the token it mints into the session and returns the install-id with a warning about what it
+is for; the CLI prints both and leaves saving them to you. Use the CLI if you want an account
+without a running server, or `--difficulty` control the tool exposes as `difficulty`.
+
 ## Environment
 
 A `.env` found by walking up from the working directory is loaded automatically.

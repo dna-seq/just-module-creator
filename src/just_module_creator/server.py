@@ -4,7 +4,8 @@ The hybrid registration pattern lives in ``build_server``:
 
 * ``register_essentials`` — always. The offline authoring loop.
 * ``register_research``   — always. Read-only lookups; no token, network-tier.
-* ``register_auth``       — always. The per-session ``authenticate`` tool.
+* ``register_auth``       — always. ``registry_register`` (mints a token, so it
+  cannot be gated by one) and the per-session ``authenticate``.
 * ``register_registry``   — always listed, token enforced per call.
 * ``register_passes``     — always. draft_from_clinvar: step 2 of the workflow.
 * ``register_extended``   — ONLY when mode == "extended" (registered on start).
@@ -69,7 +70,16 @@ Three rules this server enforces rather than merely documents:
 The tiers split on what a tool DOES, not on how useful it is: essentials is
 everything that only reads, plus the ClinVar draft; extended (JMC_MODE=extended)
 is everything that writes into a spec directory or fetches at scale. Publishing
-needs a registry token via `authenticate`; nothing else does.
+needs a registry token; nothing else does.
+
+Onboarding is self-service and needs no token to start: `registry_register` mints
+an account and stores its key for the session, `registry_namespace_available`
+checks a name, and `registry_claim_namespace` takes it — that last step is
+irreversible. `authenticate` is for a token you already hold.
+
+Account and namespace names are lowercase-with-hyphens and reject underscores;
+module names are the opposite and take underscores. Both rules are enforced, not
+normalised.
 """
 
 

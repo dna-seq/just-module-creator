@@ -44,6 +44,16 @@ class Settings(BaseSettings):
     api_key: str | None = None
     api_key_header: str = "X-Registry-Token"
 
+    # The proof-of-work id an account was registered with. OURS, not the
+    # ecosystem's: `registry-client` takes it as a flag and prints it, and reads
+    # no variable for it, so there is nothing upstream to inherit here.
+    #
+    # It is the account's only recovery path — the registry has no email and no
+    # admin — and re-registering it reissues a key for the SAME account. Reading
+    # it from the environment is what lets `registry_register` be re-run in a
+    # later session without minting a second, unreachable account.
+    install_id: str | None = None
+
     # Registry endpoint. The published instance by default.
     registry_url: str = DEFAULT_REGISTRY_URL
     registry_timeout: float = 600.0

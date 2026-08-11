@@ -76,8 +76,10 @@ The server **boots with no environment configured** — authoring a module needs
 | `literature_search` | essentials | no | **the papers behind a row** — and the only way to check a PMID's *identity* |
 | `lookup_citation` | essentials | no | does this PMID/DOI *exist* (not: is it the right paper) |
 | `registry_search` | essentials | no | has someone already built this |
+| `registry_namespace_available` | essentials | no | is the name legal, is it free — the pre-flight for an irreversible claim |
 | `draft_from_clinvar` | essentials | no | ClinVar → `variants.csv` + `studies.csv`; `use` required |
-| `authenticate` | always | — | stores a registry token for *this session* |
+| `registry_register` | always | — | **mints** an account and token, so it cannot be gated by one |
+| `authenticate` | always | — | stores a registry token you already hold, for *this session* |
 | `lookup_open_access`, `fetch_fulltext` | extended | no | where may I read it and on what terms; the document, never a passage |
 | `paper_citations` | extended | no | has this finding been replicated |
 | `draft_from_cpic`, `draft_from_clinpgx` | extended | no | the PGx tables |
@@ -111,6 +113,21 @@ list_tables ─▶ scaffold_module ─▶ draft_from_clinvar ─▶ literature_s
    ─▶ registry_publish
 ```
 
+Publishing for the first time needs an account, and that is self-service from here — no admin, no
+email, no approval:
+
+```
+registry_register(account="my-name")            ─▶ mints the token, stores it for this session
+registry_namespace_available("my-ns")           ─▶ legal? free?
+registry_claim_namespace("my-ns")               ─▶ irreversible
+```
+
+`registry_register` returns two secrets and neither is recoverable elsewhere: put the token in `.env`
+as `JMC_API_KEY` and **the install-id as `JMC_INSTALL_ID`**. The install-id is the account's only
+recovery path — re-registering it reissues a key for the same account, while registering without it
+creates a different one and strands the first. Account and namespace names are lowercase with
+hyphens and reject underscores; module names are the opposite and take them.
+
 Curate before you enrich: a `<<REPLACE>>` placeholder makes every loader refuse the file, `enrich`
 included, because forward resolution is allele-aware and a placeholder genotype would skip the
 allele filter on exactly the rsIDs that need it.
@@ -130,12 +147,16 @@ useful it is**:
 The server **never** raises at startup for a missing token. Gated tools resolve one **per request**:
 
 1. `X-Registry-Token` HTTP header (multi-user safe)
-2. per-session token set via the `authenticate` tool
+2. per-session token set via `authenticate` — or by `registry_register`, which stores the token it
+   mints into the same slot
 3. `JMC_API_KEY`, else `REGISTRY_TOKEN` (what `registry-client` already reads)
 
 If none resolve, gated tools return a friendly message rather than raising. A token set via
 `authenticate` is scoped to the caller's own session and never leaks between HTTP clients. See
 [CLAUDE.md](./CLAUDE.md) for the multi-tenant caveat about `mcp.enable()`.
+
+`registry_register` is the one registry write that is never gated, because it is what produces the
+token. It lives beside `authenticate` for that reason rather than with the other registry writes.
 
 ## Safety switches
 

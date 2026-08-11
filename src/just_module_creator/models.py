@@ -45,6 +45,71 @@ class AuthResult(BaseModel):
     message: str = Field(description="Human-readable summary.")
 
 
+class RegistrationResult(BaseModel):
+    """Result of ``registry_register`` — a freshly minted account and API key.
+
+    Both secrets travel back to the caller because neither can be recovered from
+    anywhere else: the registry has no email and no admin, so the install-id IS
+    the account, and the token is what a later session authenticates with.
+    """
+
+    registered: bool = Field(description="Whether the registry minted a token.")
+    account: str | None = Field(
+        default=None,
+        description=(
+            "The account name the REGISTRY reports, which is authoritative. It differs from the "
+            "name you asked for when the install-id already belonged to an account — see message."
+        ),
+    )
+    namespaces: list[str] = Field(
+        default_factory=list,
+        description="Namespaces this account already owns. Empty on a brand-new account.",
+    )
+    token: str | None = Field(
+        default=None,
+        description=(
+            "The API key. SECRET — put it in .env as JMC_API_KEY (or REGISTRY_TOKEN); never "
+            "commit it, and never write it into a module, fixture or doc."
+        ),
+    )
+    install_id: str | None = Field(
+        default=None,
+        description=(
+            "The proof-of-work id bound to this account. SAVE IT: it is the account's ONLY "
+            "recovery path — re-registering it reissues a key for the same account, and there is "
+            "no email or admin to recover through. Put it in .env as JMC_INSTALL_ID."
+        ),
+    )
+    install_id_origin: str | None = Field(
+        default=None,
+        description="Where the install-id came from: 'argument', 'environment' or 'generated'.",
+    )
+    stored_for_session: bool = Field(
+        default=False,
+        description="Whether the token was stored in THIS session, so registry tools now work.",
+    )
+    registry_url: str | None = Field(default=None, description="The registry that was addressed.")
+    message: str = Field(description="Human-readable summary, or why registration failed.")
+
+
+class NamespaceAvailability(BaseModel):
+    """Whether a namespace could be claimed — the pre-flight for an irreversible claim.
+
+    ``valid`` and ``available`` are kept apart deliberately. An illegal name is
+    not a free one, and collapsing the two into a single boolean would answer
+    "can I claim this?" with the same value for "no, it is taken" and "no, that
+    is not a legal namespace" — two different problems with different fixes.
+    """
+
+    namespace: str = Field(description="The namespace that was checked.")
+    valid: bool = Field(
+        description="Whether the name is a legal namespace: lowercase alphanumeric with hyphens."
+    )
+    available: bool = Field(description="Whether no account owns it yet.")
+    registry_url: str | None = Field(default=None, description="The registry that was asked.")
+    message: str = Field(description="Human-readable summary.")
+
+
 # --------------------------------------------------------------------------- #
 # Schema discovery
 # --------------------------------------------------------------------------- #

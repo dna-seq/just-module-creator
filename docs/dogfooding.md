@@ -91,80 +91,6 @@ promise the default surface had already made. `literature_search(pmids=[...])`
 reads titles back, and both docs now say to take every PMID from a search result
 rather than from memory.
 
-## F12 — the first step of the publishing workflow is not in the tool surface
-
-**Found:** 2026-08-11, asked to create an account and a namespace on the live
-registry · **Severity:** high · **Status:** open
-
-The task was "create the `test_creator` account with the `test_modules`
-namespace". It stops at step zero. `registry_whoami`, `registry_claim_namespace`
-and `registry_publish` all need a token; the only instruction the surface gives
-for obtaining one is `authenticate`'s docstring, which says *"Get one by
-registering with the registry (`registry-client register`)"* — a shell command in
-another package. Every tool that could act is gated behind a credential no tool
-can mint.
-
-`RegistryClient.register(install_id, account)` is public upstream and does the
-whole thing: it POSTs `/auth/register` and returns `{token, account, namespaces}`.
-Registration is deliberately self-service — no admin, no email — gated only by a
-Hashcash-style install-id that `just_dna_registry.installid.generate_install_id`
-grinds locally in about a second. So this is not an upstream gap to file; it is a
-public onboarding API we simply never wrapped.
-
-**Why it counts rather than being a shrug:** the moment the answer is "shell out
-to `uv run registry-client register`", the plugin has stopped being the surface
-and become a thing you keep a terminal next to. The install instructions promise
-one command; onboarding quietly costs a second toolchain.
-
-**Desires, in the order they matter:**
-
-- A `registry_register(account, install_id=None)` tool that grinds the
-  proof-of-work when no install-id is passed, registers, and hands back the
-  token. It writes to the registry but *cannot* be token-gated — it is what
-  produces the token — so it belongs beside `authenticate` in `auth.py`, not in
-  the gated `registry.py`. The tiering rule in `CLAUDE.md` §5 ("token-gated =
-  registry writes") has no row for this and would need one sentence added.
-- It should store the minted token into the caller's own session slot, the same
-  way `authenticate` does, so registering leaves the session usable instead of
-  making the agent copy a secret back through the transcript.
-- **The install-id is the account's only recovery path** and nothing in our
-  surface has anywhere to put it. Re-registering the same install-id reissues a
-  key for the *same* account; lose it and the account is unreachable, since there
-  is no email and no admin. The CLI merely prints it. Returning it with a "save
-  this to `.env`" note is the honest minimum; persisting it ourselves would widen
-  the write surface (§2) and should not be done casually.
-
-## F13 — an irreversible claim has no pre-flight, though upstream ships one
-
-**Found:** 2026-08-11, same session · **Severity:** medium · **Status:** open
-
-`registry_claim_namespace`'s own docstring says a namespace "is claimed once and
-then owns every module published under it, so this is not a step to run
-speculatively" — and then offers no way to be non-speculative. The only way to
-find out whether `test-modules` is free is to try to take it.
-
-`RegistryClient.namespace_available(namespace)` is public upstream, read-only and
-needs no token. It is unwrapped. It belongs next to `registry_search` in
-`research.py`, which is already the home for token-free registry reads.
-
-Two things surfaced while establishing this, both of which a pre-flight would
-have answered without a round trip:
-
-- **Neither name in the request was legal.** Accounts are validated with the same
-  slug rule as namespaces — `is_valid_namespace`, lowercase alphanumeric plus
-  hyphens (`api/routers/auth.py:104`). `test_creator` and `test_modules` are
-  rejected with `invalid_account` / a `ValueError`; they have to be
-  `test-creator` and `test-modules`. `registry_claim_namespace` does validate
-  locally before spending a call, which is right. Nothing validates an account
-  name, because nothing creates an account (F12).
-- **The underscore rule is only discoverable by reading upstream source.** Our
-  docstring says "Lowercase, hyphen-separated", which a reader can take as a
-  style preference rather than a hard reject. Saying what is rejected, and that
-  the same rule governs the account name, costs one clause.
-
-**Desire:** wrap `namespace_available` as a read-only tool, and have
-`registry_claim_namespace` name the pattern in its error rather than passing
-through `ValueError`'s text.
 
 ---
 
@@ -195,8 +121,12 @@ Recorded so the gaps in *this* file are visible too, per the completeness rule.
   a small real module all the way through. `registry_publish` needs a token, a
   namespace and a module we are willing to publish immutably; the new
   `published.json` receipt is what makes the result inspectable afterwards.
-  **Blocked on [F12](#f12--the-first-step-of-the-publishing-workflow-is-not-in-the-tool-surface)**:
-  the token cannot currently be obtained from the tool surface at all.
+  **Unblocked 2026-08-11** — `registry_register` now mints the token from inside the
+  surface ([F12](previous_issues.md)), and `registry_namespace_available` answers the
+  namespace question without spending the irreversible claim to ask it
+  ([F13](previous_issues.md)). Both are wrapped and covered offline; **neither has
+  been driven against the live service to the point of creating anything**, which is
+  precisely what this probe is for.
 - **A module with two of something the examples show one of.** The worked example
   throughout is a single-gene, single-rsID module. A paralogous rsID mapping to
   several loci, or one gene carrying two variants with different thresholds, is

@@ -28,6 +28,7 @@ from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
     CitationLookup,
     LiteratureSearchResult,
+    NamespaceAvailability,
     RegistryModule,
     RegistrySearchResult,
     VariantLookup,
@@ -319,4 +320,65 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             page=int(payload.get("page", page)),
             modules=[_module_card(i) for i in items if isinstance(i, dict)],
             registry_url=settings.registry_url,
+        )
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Registry: is this namespace free",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def registry_namespace_available(namespace: str) -> NamespaceAvailability:
+        """Check whether a namespace is legal and unclaimed. Read-only, no token needed.
+
+        The pre-flight for `registry_claim_namespace`, which is irreversible: a
+        namespace is claimed once and then owns every module published under it.
+        Run this first so the claim is a decision rather than a guess.
+
+        `valid` and `available` are separate answers. An illegal name is not a
+        free one — lowercase letters and digits with single hyphens, and
+        underscores are rejected rather than normalised, so `my_ns` comes back
+        `valid: false` however unclaimed it is.
+        """
+        if settings.offline:
+            raise ToolError(
+                "The server is configured offline (JMC_OFFLINE), so the registry cannot be reached."
+            )
+
+        def _check() -> dict:
+            with RegistryClient(settings.registry_url, timeout=settings.registry_timeout) as client:
+                return client.namespace_available(namespace)
+
+        try:
+            payload = await run_sync(_check)
+        except RegistryError as exc:
+            raise ToolError(f"Registry error: {exc}") from exc
+
+        valid = bool(payload.get("valid"))
+        available = bool(payload.get("available"))
+        if not valid:
+            message = (
+                f"{namespace!r} is not a legal namespace, so it cannot be claimed whatever its "
+                "availability says. Use lowercase letters and digits with single hyphens; replace "
+                "any underscore with a hyphen."
+            )
+        elif available:
+            message = (
+                f"{namespace!r} is free. Claiming it is irreversible and it will own every module "
+                "you publish under it, so pick the name you want to keep."
+            )
+        else:
+            message = (
+                f"{namespace!r} is already owned. Pick another, or ask its owner to add you as a "
+                "member — publishing under it needs a role in it, not a second claim."
+            )
+
+        return NamespaceAvailability(
+            namespace=str(payload.get("namespace") or namespace),
+            valid=valid,
+            available=available,
+            registry_url=settings.registry_url,
+            message=message,
         )

@@ -154,10 +154,18 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         ),
     )
     async def registry_claim_namespace(namespace: str, ctx: Context) -> OpResult:
-        """Claim a publishing namespace. Lowercase, hyphen-separated.
+        """Claim a publishing namespace. Irreversible — check it first.
 
         A namespace is claimed once and then owns every module published under
-        it, so this is not a step to run speculatively.
+        it, so this is not a step to run speculatively. Call
+        `registry_namespace_available` first: it is read-only, needs no token, and
+        answers both halves of the question.
+
+        Legal names are lowercase letters and digits with single hyphens between
+        them. An underscore is **rejected**, not normalised, so `my_ns` fails —
+        and the same rule governs your *account* name. Module names use the
+        opposite convention and do take underscores, which is why a spec can hold
+        `my-ns/lactose_tolerance`.
         """
         token = require_key(ctx, settings, store)
         if token is None:

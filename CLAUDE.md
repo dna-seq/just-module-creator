@@ -160,8 +160,12 @@ design depends on.
   sharper reason is that those columns exist to record *that a curator read the
   paper and located the claim* — a machine-located quote asserts a reading that
   never happened, which is a false claim of provenance, not merely a vacuous
-  check. `hints.REDUNDANCY_BEARING` omits both columns; that is filed upstream,
-  and until it lands the refusal is ours to keep. Say the consequence out loud:
+  check. The installed `hints.REDUNDANCY_BEARING` omits both columns. That was
+  filed as `S11` and is **accepted and fixed in tree** — upstream added
+  `hints.ATTESTATION_BEARING` for exactly these two, adopting the argument that a
+  quote is an *attestation* rather than a spent comparison — but the fix is in the
+  unreleased 0.5.4, so it is absent from what `uv sync` installs and the refusal
+  stays ours to keep until then. Say the consequence out loud:
   once a fulltext has been read through `fetch_fulltext`, `quotes_found` on that
   row is no longer independent evidence — it has degraded to a citation-pairing
   check, which still catches a quote written against the wrong PMID.
@@ -301,6 +305,16 @@ comparison against ISO values.
    way because "the loop you need on every module" stopped discriminating once
    drafting — step 2 of the taught workflow — became a tool.
 
+   **The one exception, and its test.** `registry_register` writes to the registry
+   and is *not* gated, because it is what mints the token — gating it would be a
+   cycle. So the rule is: a registry write is token-gated **unless the token is its
+   output**, and that is a set of exactly one. It lives in `auth.py` beside
+   `authenticate` rather than in `tools/registry.py`, and it is registered in every
+   mode, not extended-only: hiding the only route to a credential behind a mode
+   flag reproduces the dead end it exists to remove (`F12`). If a second such tool
+   ever appears, that is the moment to ask whether "ungated onboarding" is a tier
+   rather than an exception — do not grow the exception silently.
+
    There is no third mode, and tags are not the escape hatch: `mcp.enable()` is
    server-global (see 7 below) and FastMCP 3.4.7 deprecated `include_tags` /
    `exclude_tags` in its favour. Splitting extended would need a second `Mode`
@@ -413,6 +427,43 @@ Its `S<n>` numbering is a separate series from the format tree's; both start at
 `S1`. If a note is in the wrong file it may as well not be filed, so decide by
 asking who would change code, not which surface you noticed it through.
 
+#### The format tree's intake is split, and the inbox is the empty half
+
+`../just-dna-format/docs/CONSUMER_SUGGESTIONS.md` holds **only what is still
+unanswered**. The moment upstream writes a `**Status —**` reply, the whole entry
+moves — prose byte-for-byte — to
+**`../just-dna-format/docs/CONSUMER_SUGGESTIONS_HISTORY.md`**, whose index table
+gives every `S<n>`, who reported it, the verdict and where it landed. So:
+
+- **An empty inbox means nothing is owed, not that our notes were lost.** As of
+  2026-08-11 it reads "Nothing open: S1–S18 are all answered". A note of ours that
+  is no longer in `CONSUMER_SUGGESTIONS.md` has been answered — read the history
+  file's index before concluding anything else.
+- **Never number a new `S<n>` from what the inbox shows.** An empty inbox says
+  nothing about which ids are taken, and ids are never reused — not even for an
+  item answered as a non-issue, because the reply is part of the record. Compute it:
+  `.claude/triage-state.sh --next` in their repo scans the inbox *and* the history
+  file. The inbox states the next id in its own heading too ("The next item is
+  S19", as of 2026-08-11). Their `CONSUMER_TRIAGE_LOOP.md` is the producer-side
+  runbook and not ours to drive.
+- **"Answered" is not "fixed", and "fixed" is not "released".** Three distinct
+  states, and only the third lets a guard come out:
+  1. *accepted and filed* — a reply exists and the work is an upstream `RMn`, still
+     open. Check `RM_TOC.md`, not the history file, for that half.
+  2. *fixed in tree* — the symbol exists in `../just-dna-format` but the version we
+     install does not have it. **This is the common case and the easy mistake.**
+  3. *released* — on PyPI and in our lockfile.
+- **Verify state 2 against the installed package, never the sibling checkout.**
+  Import the symbol and check, e.g. `hasattr(hints, "ATTESTATION_BEARING")`. A
+  mitigation of ours stays until the release that carries the fix is what
+  `uv sync` gives us, and dropping one because the upstream tree looks fixed
+  breaks the plugin for everyone who installs from PyPI.
+- **A refusal is an answer too, and it is load-bearing.** Upstream refused half of
+  `S14` with a reason: the compiler has **no** network branch, so a `--no-ensembl`
+  flag would assert something false. That makes our pin permanent rather than
+  interim, and "closes when upstream renames the flag" was never going to happen.
+  Record a refusal as settled, not as pending.
+
 - **A gap in the docs is a finding too.** If you had to *probe* to learn something —
   run an experiment, read their source, test a guess — that is a doc bug, and it
   gets filed with the same urgency as a behavioural one. The next consumer will
@@ -441,6 +492,12 @@ asking who would change code, not which surface you noticed it through.
 - **Track our side too**: `docs/just-dna-format-pending-fixes.md` as an `F<n>` while
   it is open upstream, and `docs/CHANGELOG.md` if we shipped a mitigation, so
   nobody re-investigates a finding that looks fixed.
+- **Re-read the upstream verdicts before trusting our own `Status:` lines.** Ours
+  go stale silently — upstream answers in its own tree and nothing notifies us. On
+  2026-08-11 every entry in `docs/just-dna-format-pending-fixes.md` said "open
+  upstream" while all eight had in fact been answered, six of them fixed in tree.
+  The status line has to name the upstream state *and* whether the fix is in the
+  version we install; "open upstream" says neither.
 - **Never work around it silently in the data.** A workaround that leaves a module
   dishonest is worse than the gap. Say what the limitation is, leave the data
   truthful, file the note.
@@ -509,8 +566,9 @@ preference: it goes into §10, in their words, with the reason.
 *Append-only. Environment, ports, credential layout, host quirks, sibling paths.*
 
 - Sibling repos live beside this one under `/data/sources/`:
-  `../just-dna-format` (hosts format, compiler and enricher, and their
-  `CONSUMER_SUGGESTIONS.md` intake), `../just-dna-lite`, and the registry at
+  `../just-dna-format` (hosts format, compiler and enricher, their
+  `CONSUMER_SUGGESTIONS.md` intake and its answered half,
+  `docs/CONSUMER_SUGGESTIONS_HISTORY.md`), `../just-dna-lite`, and the registry at
   **`../just-dna-marketplace`** — a **stale directory name only**. The project,
   package and service are `just-dna-registry`; "marketplace" is the old word,
   retained on the path and nowhere else. There is no `../just-dna-registry`
@@ -529,3 +587,17 @@ preference: it goes into §10, in their words, with the reason.
   currently 404s and the client falls back to REST — expected, not a defect.
 - A transitive dependency ships a top-level `tests` package that shadows this
   repo's, so test helpers import as `from conftest import ...`.
+- **Upstream's 0.5.4 is written but unreleased, and six of our findings are fixed
+  only in it.** Checked 2026-08-11: PyPI's newest is compiler/enricher **0.5.3**
+  and `just-dna-format` **0.5.0**, which is what we install, while the
+  `../just-dna-format` working tree still declares 0.5.3 and carries the 0.5.4
+  work. Verified by symbol rather than by changelog — `hints.ATTESTATION_BEARING`,
+  `hints._report_ragged` and `Finding.line` are all present in
+  `../just-dna-format/compiler/src/just_dna_compiler/hints.py` and all absent from
+  the installed `just_dna_compiler.hints`. So every mitigation for `S11`, `S12`,
+  `S15`, `S16`, `S17`, `S18` stays until 0.5.4 is on PyPI. `hints.py` lives in the
+  **compiler**, not the enricher, which is easy to get wrong when grepping.
+- The registry's own intake has **no history file** and, as of 2026-08-11, one
+  unanswered entry (`S1`, the `would_publish` variant ceiling = our `F11`). The two
+  intakes therefore behave differently: absence from the format tree's inbox means
+  answered, absence there would mean nothing of the sort.

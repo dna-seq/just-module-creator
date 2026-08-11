@@ -11,7 +11,7 @@ import pytest
 from conftest import offline_settings  # tests/ is on sys.path via pytest rootdir
 from fastmcp.exceptions import ToolError
 
-from just_module_creator.auth import GATED_TOOLS
+from just_module_creator.auth import GATED_TOOLS, resolve_install_id
 from just_module_creator.settings import Settings
 
 # The authoring loop an agent cannot work without. Present in EVERY mode.
@@ -84,6 +84,84 @@ async def test_authenticate_stores_a_token_for_this_session(essentials_client):
 async def test_authenticate_rejects_an_empty_token(essentials_client):
     result = await essentials_client.call_tool("authenticate", {"token": "   "})
     assert result.data.authenticated is False
+
+
+# --------------------------------------------------------------------------- #
+# Onboarding — the one registry write that cannot be token-gated
+# --------------------------------------------------------------------------- #
+async def test_onboarding_tools_are_in_every_mode(essentials_client, extended_client):
+    """The route to a token must exist in the DEFAULT surface.
+
+    Behind `extended` it would be the same dead end in a different place: every
+    other registry tool needs a token, and only this one produces one.
+    """
+    for client in (essentials_client, extended_client):
+        names = await _names(client)
+        assert {"registry_register", "registry_namespace_available"} <= names
+
+
+async def test_the_tool_that_mints_the_token_is_not_gated_by_one():
+    assert "registry_register" not in GATED_TOOLS
+
+
+async def test_onboarding_tools_respect_the_offline_ceiling(make_client):
+    async with make_client("essentials", offline_settings()) as client:
+        for tool, args in (
+            ("registry_register", {"account": "test-creator"}),
+            ("registry_namespace_available", {"namespace": "test-modules"}),
+        ):
+            with pytest.raises(ToolError, match="offline|JMC_OFFLINE"):
+                await client.call_tool(tool, args)
+
+
+async def test_an_illegal_account_name_is_refused_before_any_socket(make_client, monkeypatch):
+    """`test_creator` is the name that has to fail, and fail locally.
+
+    Accounts are validated with the namespace rule, so an underscore is rejected
+    rather than normalised. Spending a round trip to learn that is a round trip
+    wasted, and the message has to name the pattern — "lowercase,
+    hyphen-separated" reads as a style preference rather than a hard reject.
+    """
+    import httpx
+
+    def explode(*args, **kwargs):
+        raise AssertionError("a socket was opened for a name that could be rejected locally")
+
+    monkeypatch.setattr(httpx.Client, "__init__", explode)
+    async with make_client("essentials", Settings(offline=False, _env_file=None)) as client:  # type: ignore[call-arg]
+        with pytest.raises(ToolError, match="not a legal account name") as caught:
+            await client.call_tool("registry_register", {"account": "test_creator"})
+    # The pattern itself, so the author does not have to guess what "legal" means.
+    assert "[a-z0-9]" in str(caught.value)
+
+
+async def test_install_id_precedence_and_origin():
+    """Argument beats environment beats grinding, and the origin is reported.
+
+    The origin is load-bearing: a reused id reissues a key for its existing
+    account, a fresh one creates a new account whose only recovery path the
+    caller now has to save. Returning just the id makes those indistinguishable.
+    """
+    from_env = Settings(offline=True, install_id="jdi1_from_env_0", _env_file=None)  # type: ignore[call-arg]
+    assert resolve_install_id("jdi1_explicit_0", from_env) == ("jdi1_explicit_0", "argument")
+    assert resolve_install_id(None, from_env) == ("jdi1_from_env_0", "environment")
+    assert resolve_install_id("   ", from_env) == ("jdi1_from_env_0", "environment")
+
+    unset = Settings(offline=True, _env_file=None)  # type: ignore[call-arg]
+    assert resolve_install_id(None, unset) == (None, "generated")
+    # Whitespace-only in the environment is not a credential either.
+    blank = Settings(offline=True, install_id="  ", _env_file=None)  # type: ignore[call-arg]
+    assert resolve_install_id(None, blank) == (None, "generated")
+
+
+async def test_a_ground_install_id_satisfies_upstreams_own_validator():
+    """The grind is ours to call but upstream's to judge, so ask upstream.
+
+    Hermetic: proof-of-work is CPU only and opens no socket.
+    """
+    from just_dna_registry import generate_install_id, validate_install_id
+
+    assert validate_install_id(generate_install_id())
 
 
 async def test_a_token_does_not_leak_between_sessions(make_client):

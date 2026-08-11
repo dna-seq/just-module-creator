@@ -3,6 +3,83 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.3.0 — registry onboarding (2026-08-11)
+
+### You can get a registry account from inside the tool surface
+
+Dogfooding hit the wall at step zero: every registry tool needed a token, and the only route to one
+the surface named was `registry-client register`, a shell command in another package. The plugin
+gated every registry action behind a credential nothing in it could mint, which made a one-command
+install quietly cost a second toolchain. Recorded as `F12`/`F13`, both now in
+[previous_issues.md](previous_issues.md).
+
+Nothing upstream was owed. `RegistryClient.register` and `.namespace_available` are public in the
+**published** 0.9.1; `POST /auth/register` needs no auth because it mints the token,
+`allow_self_register` defaults true (no admin, no email, self-service by design), and
+`generate_install_id()` grinds the proof-of-work locally in about a second. Two public APIs we had
+never wrapped.
+
+- **`registry_register(account, install_id=None, difficulty=None)`** — always on, in `auth.py`
+  beside `authenticate`. The one registry write that cannot be token-gated, because it is what
+  produces the token; `CLAUDE.md` §5 now names that exception and bounds it to a set of one. Not
+  extended-only either — hiding the only route to a credential behind a mode flag is the same dead
+  end in a different place. The minted token goes into the caller's own session slot, so registering
+  leaves the session usable and no secret travels back through the transcript by hand.
+- **Both secrets are returned, and the install-id carries its warning in the field description.** It
+  is the account's only recovery path: re-registering it reissues a key for the *same* account,
+  while registering again without it creates a different one and strands the first. `JMC_INSTALL_ID`
+  was added so a later session can reuse it — a value we read and never write, because persisting a
+  secret ourselves would widen the write surface. `account_taken` now says outright that retrying
+  cannot help, since a key is only ever reissued to the install-id that created the account.
+- **`registry_namespace_available(namespace)`** — essentials, read-only, no token. The pre-flight
+  `registry_claim_namespace` demanded and did not offer. `valid` and `available` stay separate
+  answers, which the live registry justifies immediately: it reports `test_modules` as
+  `valid: false, available: true`. One boolean would have called an illegal name claimable.
+- **The name rules are stated wherever they bite.** Accounts obey the *namespace* rule
+  (`^[a-z0-9]+(-[a-z0-9]+)*$`), so `test_creator` was rejected before anything else could happen,
+  while module names are the opposite (`^[a-z][a-z0-9_]*$`) — hence `my-ns/lactose_tolerance`. An
+  illegal account name is refused locally, with the pattern quoted, before a round trip is spent.
+  "Lowercase, hyphen-separated" was replaced everywhere it appeared: it read as a style preference
+  rather than a hard reject.
+
+Verified hermetically (name refused before any socket opens, offline ceiling holds for both tools,
+install-id precedence and origin) and against the live registry read-only, including one real
+failure path. Minting an account and claiming a namespace are left to the dogfooding side: a builder
+who runs the irreversible probe has graded their own work.
+
+### Upstream had answered every one of our findings, and our docs did not know
+
+Checked `../just-dna-format/docs/CONSUMER_SUGGESTIONS_HISTORY.md` for the first time. The format
+tree's inbox holds only *open* items — an answered `S<n>` moves out, prose byte-for-byte — so it has
+been empty since 2026-08-11 with `S1`–`S18` all answered. Meanwhile every entry in our
+[just-dna-format-pending-fixes.md](just-dna-format-pending-fixes.md) still said "open upstream". All
+eight were answered; six are fixed **in tree for the unreleased 0.5.4**.
+
+That distinction is now written down as three states rather than two — *accepted and filed* →
+*fixed in tree* → *released* — because only the third lets a mitigation come out, and the middle one
+is the easy mistake. PyPI's newest is compiler/enricher 0.5.3 and format 0.5.0, which is what we
+install; confirmed by symbol rather than changelog (`hints.ATTESTATION_BEARING`,
+`hints._report_ragged`, `Finding.line` are in the sibling checkout and absent from the installed
+package — and `hints.py` lives in the **compiler**, not the enricher).
+
+- `S11`, `S12`, `S15`, `S16`, `S17`, `S18` — accepted and fixed in tree. Every mitigation stays until
+  0.5.4 ships. `S18` (our `F14`, filed the same day it was found) had both defects fixed the same
+  day, which is the counter-example to `S14`'s lateness.
+- `S10` — accepted, filed as upstream `RM46`; the granularity question is design work, not an
+  unanswered report.
+- `S14` — **settled, and half of it refused with a reason.** A `--no-ensembl` flag would assert
+  something false, because the compiler has no branch that reaches the network at all; renaming a
+  published parameter is major-only regardless. Our pin is therefore permanent rather than interim,
+  and `F10` is closed. A refusal is an answer, and wording a guard as "until upstream fixes it" when
+  upstream has declined is its own kind of stale.
+- The registry's intake behaves the opposite way: no history file, and `S1` (our `F11`) genuinely
+  still open. Absence of movement there means nothing has been answered.
+
+`CLAUDE.md` §8 gained the history path, the id rule (`.claude/triage-state.sh --next` — ids are never
+reused and the inbox being empty says nothing about what is taken; the next is `S19`), and the
+instruction to re-read upstream's verdicts rather than trusting our own `Status:` lines, which go
+stale silently because upstream answers in its own tree and nothing notifies us.
+
 ## 0.2.0 — literature discovery, drafting, and the fact passes (2026-08-11)
 
 ### Adopted just-dna-compiler / -enricher 0.5.3
