@@ -36,7 +36,7 @@ from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from just_dna_format.identity import NAMESPACE_PATTERN, is_valid_namespace
-from just_dna_registry import RegistryClient, RegistryError, generate_install_id
+from just_dna_registry import RegistryError, generate_install_id
 from mcp.types import ToolAnnotations
 
 from just_module_creator.logging_setup import get_logger
@@ -45,6 +45,7 @@ from just_module_creator.settings import RegistryTarget, Settings
 from just_module_creator.targets import (
     DEFAULT_WRITE_TARGET,
     TEST_NAMESPACE_PREFIX,
+    client_for,
     describe,
     is_test_namespace,
 )
@@ -282,7 +283,11 @@ def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> N
         url = settings.registry_url_for(target)
 
         def _register() -> dict:
-            with RegistryClient(url, timeout=settings.registry_timeout) as client:
+            # Through `client_for` like every other call, so the construction point
+            # stays single. `register` is not one of the methods upstream's mode
+            # guard fires on, so this is a no-op today — which is the point: no site
+            # has to know which methods are guarded in the version we happen to run.
+            with client_for(target, settings) as client:
                 return client.register(resolved, account)
 
         try:

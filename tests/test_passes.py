@@ -193,6 +193,44 @@ def test_a_message_with_no_cli_flags_is_left_completely_alone() -> None:
 
 
 # --------------------------------------------------------------------------- #
+# The findings boundary
+# --------------------------------------------------------------------------- #
+def test_the_editor_line_survives_the_boundary_and_is_never_derived() -> None:
+    """`row` and `line` are different conventions and both have to arrive (F14).
+
+    Upstream's `row` is a 0-based data-row index; `line` is the 1-based
+    header-inclusive file line an editor shows. They disagree by design for the
+    same finding, so `to_findings` passes both through rather than computing one
+    from the other — an offset baked in here would silently go wrong the day
+    upstream changed either convention.
+    """
+    from just_dna_compiler.hints import Finding
+
+    from just_module_creator.tools._shared import to_findings
+
+    # A real upstream Finding, not a stub: the field has to exist to be carried.
+    upstream = Finding(0, "unresolved", "error", "Input should be a valid boolean", 3)
+
+    (carried,) = to_findings([upstream])
+
+    assert (carried.row, carried.line) == (0, 3)
+    assert carried.column == "unresolved"
+    assert carried.level == "error"
+
+
+def test_an_absent_line_stays_null_rather_than_becoming_row_plus_one() -> None:
+    """A table-wide finding has no line; inventing one would point at real text."""
+    from just_dna_compiler.hints import Finding
+
+    from just_module_creator.tools._shared import to_findings
+
+    (carried,) = to_findings([Finding(None, None, "warning", "table-wide note")])
+
+    assert carried.line is None
+    assert carried.row is None
+
+
+# --------------------------------------------------------------------------- #
 # Tiering
 # --------------------------------------------------------------------------- #
 async def test_clinvar_drafting_is_available_in_essentials(make_client) -> None:

@@ -54,9 +54,11 @@ def europepmc_records():
 def test_pubmed_summaries_carry_the_title_that_makes_a_pmid_checkable(pubmed_records) -> None:
     """The whole reason search exists in the essentials tier.
 
-    `lookup_citation` can only say a PMID exists, and PMIDs are dense enough that
-    a recalled one is usually a real record for the wrong paper. A title is what
-    turns "it exists" into "it is the paper I meant".
+    PMIDs are dense enough that a recalled one is usually a real record for the
+    wrong paper, so existence never settles identity — a title is what turns "it
+    exists" into "it is the paper I meant". `lookup_citation` reports a title too
+    as of upstream 0.5.4, but only search finds the id in the first place, and
+    only search asks several services at once.
     """
     enattah = next(c for c in pubmed_records if c.pmid == "11788828")
 
@@ -264,3 +266,92 @@ def test_a_limit_is_spent_across_sources_not_on_the_first_one(
     # And the ordering is by each source's own best rank, ascending.
     ranks = [min(c.rank.values()) for c in merged]
     assert ranks == sorted(ranks)
+
+
+# --------------------------------------------------------------------------- #
+# Identity, not just existence (F9, closed by upstream 0.5.4)
+# --------------------------------------------------------------------------- #
+def test_upstream_supplies_the_bibliographic_fields_identity_needs() -> None:
+    """The contract F9 waited on. If these vanish, our docstring becomes a lie.
+
+    `lookup_citation` promises a caller can compare a title against the paper they
+    meant. That promise is only keepable while upstream's `CitationHint` carries
+    the field, and it arrived in 0.5.4 — so assert against the installed package
+    rather than trusting the floor in `pyproject.toml`.
+    """
+    import dataclasses
+
+    from just_dna_enricher.lookup import CitationHint
+
+    fields = {f.name for f in dataclasses.fields(CitationHint)}
+    assert {"title", "journal", "year", "first_author"} <= fields
+
+
+async def test_an_offline_citation_lookup_withholds_the_title_rather_than_denying_it(
+    essentials_client,
+) -> None:
+    """A check that could not run is not a check that failed.
+
+    Offline, every existence answer is null — and `title` has to be null too. A
+    falsy-but-present title would read as "this id names no paper", which is the
+    fabricated-citation fingerprint, on a run that asked nobody.
+    """
+    result = await essentials_client.call_tool(
+        "lookup_citation", {"pmid": "11788828", "offline": True}
+    )
+    data = result.data
+
+    assert data.pmid == "11788828"
+    assert data.pmid_exists is None
+    assert data.title is None
+    assert (data.journal, data.year, data.first_author) == (None, None, None)
+    # And the run says so out loud rather than looking like a clean pass.
+    assert any("offline" in f.message.lower() for f in data.findings)
+
+
+# --------------------------------------------------------------------------- #
+# The gene/chromosome check, and the fact that it might not have run
+# --------------------------------------------------------------------------- #
+def test_the_gene_locus_conflict_check_reaches_our_model_three_valued() -> None:
+    """A conflict list is only a pass when the skip reason is null (S24, 0.5.4).
+
+    Built against upstream's real report object rather than a stub, because the
+    whole finding is that `gene_loci` is empty in two opposite situations and only
+    `gene_loci_not_checked` tells them apart.
+    """
+    from just_dna_enricher.identifiers import GeneLocusConflict, IdentifierReport
+
+    from just_module_creator.models import IdentifierReport as OurReport
+
+    ran_and_found_nothing = IdentifierReport()
+    assert ran_and_found_nothing.gene_loci == []
+    assert ran_and_found_nothing.gene_loci_not_checked is None
+
+    conflict = GeneLocusConflict(
+        gene="MCM6", gene_chrom="2", variant_key="1-11796321-G-A", variant_chrom="1"
+    )
+    # Upstream's own sentence carries both chromosomes and the advice; we pass it
+    # through rather than writing a second wording for one finding.
+    rendered = str(conflict)
+    assert "MCM6" in rendered and "chromosome 2" in rendered and "chromosome 1" in rendered
+
+    ours = OurReport(
+        spec_dir="/tmp/spec",
+        genes=[],
+        traits=[],
+        stale=[],
+        gene_locus_conflicts=[rendered],
+        gene_locus_check_skipped=None,
+    )
+    assert ours.gene_locus_conflicts == [rendered]
+
+    # And an unrun comparison is distinguishable from a clean one.
+    skipped = OurReport(
+        spec_dir="/tmp/spec",
+        genes=[],
+        traits=[],
+        stale=[],
+        gene_locus_check_skipped="no chromosome is known for any row",
+    )
+    assert skipped.gene_locus_conflicts == []
+    assert skipped.gene_locus_check_skipped is not None

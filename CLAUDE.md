@@ -170,15 +170,17 @@ design depends on.
   sharper reason is that those columns exist to record *that a curator read the
   paper and located the claim* — a machine-located quote asserts a reading that
   never happened, which is a false claim of provenance, not merely a vacuous
-  check. The installed `hints.REDUNDANCY_BEARING` omits both columns. That was
-  filed as `S11` and is **accepted and fixed in tree** — upstream added
-  `hints.ATTESTATION_BEARING` for exactly these two, adopting the argument that a
-  quote is an *attestation* rather than a spent comparison — but the fix is in the
-  unreleased 0.5.4, so it is absent from what `uv sync` installs and the refusal
-  stays ours to keep until then. Say the consequence out loud:
-  once a fulltext has been read through `fetch_fulltext`, `quotes_found` on that
-  row is no longer independent evidence — it has degraded to a citation-pairing
-  check, which still catches a quote written against the wrong PMID.
+  check. Filed as `S11`, and **released in 0.5.4**: `hints.ATTESTATION_BEARING`
+  holds exactly these two columns, adopting the argument that a quote is an
+  *attestation* rather than a spent comparison, and both are now in
+  `REDUNDANCY_BEARING` too because they qualify under that map's own definition.
+  `describe_table` reports `attestation_bearing` as a **subset** of
+  `redundancy_bearing`, so the sharper reason reaches an agent rather than living
+  only here. **A released constant does not make a machine-located quote honest**,
+  so say the consequence out loud anyway: once a fulltext has been read through
+  `fetch_fulltext`, `quotes_found` on that row is no longer independent evidence —
+  it has degraded to a citation-pairing check, which still catches a quote written
+  against the wrong PMID.
 - **Never collapse "unknown" into a boolean.** Answers are three-valued: true /
   false / **unknown**, and `None` is never `False`. When unknown, withhold — never
   report, never negate. **A check that could not run is not a check that passed**,
@@ -479,15 +481,16 @@ moves — prose byte-for-byte — to
 gives every `S<n>`, who reported it, the verdict and where it landed. So:
 
 - **An empty inbox means nothing is owed, not that our notes were lost.** As of
-  2026-08-11 it reads "Nothing open: S1–S18 are all answered". A note of ours that
-  is no longer in `CONSUMER_SUGGESTIONS.md` has been answered — read the history
-  file's index before concluding anything else.
+  2026-08-11 every `S<n>` we have filed there is answered, `S1`–`S24`. A note of
+  ours that is no longer in `CONSUMER_SUGGESTIONS.md` has been answered — read the
+  history file's index before concluding anything else.
 - **Never number a new `S<n>` from what the inbox shows.** An empty inbox says
   nothing about which ids are taken, and ids are never reused — not even for an
   item answered as a non-issue, because the reply is part of the record. Compute it:
   `.claude/triage-state.sh --next` in their repo scans the inbox *and* the history
-  file. The inbox states the next id in its own heading too ("The next item is
-  S19", as of 2026-08-11). Their `CONSUMER_TRIAGE_LOOP.md` is the producer-side
+  file. The inbox states the next id in its own heading too (**`S25`** in the format
+  tree and **`S5`** in the registry's, as of 2026-08-11 — and those move within
+  hours, so run the script). Their `CONSUMER_TRIAGE_LOOP.md` is the producer-side
   runbook and not ours to drive.
 - **"Answered" is not "fixed", and "fixed" is not "released".** Three distinct
   states, and only the third lets a guard come out:
@@ -642,24 +645,32 @@ preference: it goes into §10, in their words, with the reason.
   directory, which is a path quirk and not a rename.
 - The registry keeps its own intake at
   `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`, created 2026-08-11.
-- **`just-dna-registry` moves fast: 0.9.1 → 0.12.0 inside 2026-08-11.** 0.12.0 was
-  published to PyPI at 17:02 UTC that day and is what `uv sync` installs; the
-  sibling tree declares the same version, so the path-dependency problem that
-  applied at 0.11.3 has gone away for now. **Re-check with
+- **`just-dna-registry` moves fast: 0.9.1 → 0.12.0 → 0.13.0 inside 2026-08-11.**
+  0.13.0 is on PyPI, is what `uv sync` installs, is our floor, and is what **both**
+  live instances report on `/health`. The sibling tree declares the same version, so
+  the path-dependency problem that applied at 0.11.3 is still absent. **Re-check with
   `importlib.metadata.version("just-dna-registry")` rather than trusting this
-  line** — it went stale within hours last time.
-- **There is no enumerated client-surface contract for that client** (`F15` / their
-  `S2`), and neither `API-REFERENCE.md` nor `CLIENT.md` says which versions it
-  describes. So an upgrade has to be read in full to establish that the eight
-  `RegistryClient` methods we call did not move. Do not tighten
-  `research.py::_module_card`'s defensive projection or type
-  `registry_get_module`'s payload on the strength of those docs until they carry a
-  version stamp.
+  line** — it went stale within hours twice.
+- **Reading a registry upgrade got cheaper in 0.13.0** (their `S2` = our `F15`).
+  Every release entry now opens with a `Client surface:` line — 0.13.0's says
+  *unchanged*, checked with `git log -S` over the eight `RegistryClient` methods we
+  call — and both reference docs are stamped with the versions they are normative
+  for. **What is still missing is the enumeration itself**, which needs a contract
+  version of its own; it exists machine-checked as `_WRAPPED_ROUTES` in their
+  `tests/test_client_sdk.py` but is not published. Upstream says
+  `research.py::_module_card`'s defensive projection is safe to delete against a
+  0.13 server; **we keep it anyway**, for the narrower reason recorded in `F15` —
+  `get_module` is not one of the six methods `assert_compatible` guards, so an
+  older *server* answers it unchecked.
 - **The registry is TWO instances and they share no database.** Production is the
-  catalog everyone installs from; the polygon (registry 0.12 `REGISTRY_MODE=test`)
-  is where a publish is a rehearsal. An account, a token and a namespace exist on
-  one of them only, so registering on one gives you nothing on the other. See
-  `targets.py`; the write tools default to the polygon and the catalog reads to
+  catalog everyone installs from; the polygon (`REGISTRY_MODE=test`) is where a
+  publish is a rehearsal. An account, a token and a namespace exist on one of them
+  only, so registering on one gives you nothing on the other. **Both are serving
+  0.13.0 and both report their mode**, so a target is now *verified* rather than
+  merely declared: `targets.client_for` passes `expect_mode=target` on every client,
+  and a publish aimed at the polygon that would land on production refuses. The
+  polygon is up — it was DNS'd but answering a bare Caddy 404 earlier the same day.
+  See `targets.py`; the write tools default to the polygon and the catalog reads to
   production, because a forgotten `target` costs nothing on one and is
   irreversible on the other.
 - **We hold no registry credential as of 2026-08-11.** The `test-creator` account
@@ -679,23 +690,31 @@ preference: it goes into §10, in their words, with the reason.
   currently 404s and the client falls back to REST — expected, not a defect.
 - A transitive dependency ships a top-level `tests` package that shadows this
   repo's, so test helpers import as `from conftest import ...`.
-- **Upstream's 0.5.4 is written but unreleased, and six of our findings are fixed
-  only in it.** Checked 2026-08-11: PyPI's newest is compiler/enricher **0.5.3**
-  and `just-dna-format` **0.5.0**, which is what we install, while the
-  `../just-dna-format` working tree still declares 0.5.3 and carries the 0.5.4
-  work. Verified by symbol rather than by changelog — `hints.ATTESTATION_BEARING`,
-  `hints._report_ragged` and `Finding.line` are all present in
-  `../just-dna-format/compiler/src/just_dna_compiler/hints.py` and all absent from
-  the installed `just_dna_compiler.hints`. So every mitigation for `S11`, `S12`,
-  `S15`, `S16`, `S17`, `S18` stays until 0.5.4 is on PyPI. `hints.py` lives in the
-  **compiler**, not the enricher, which is easy to get wrong when grepping.
+- **0.5.4 and registry 0.13.0 both released 2026-08-11, and we install both.**
+  `uv sync` gives format/compiler/enricher **0.5.4** and `just-dna-registry`
+  **0.13.0**; the floors in `pyproject.toml` say so. Adopted in our 0.7.0, which
+  retired six mitigations at once — `S11`, `S12`, `S15`, `S16`, `S17`, `S18`, plus
+  `S20`/`S21`/`S23`/`S24` and the registry's `S1`/`S3`. **Re-verify by symbol, never
+  by this line or a changelog**: `hints.ATTESTATION_BEARING`, `hints._report_ragged`,
+  `Finding.line`, `CitationHint.title`, `IdentifierReport.gene_loci`,
+  `RegistryClient(expect_mode=…)`. `hints.py` lives in the **compiler**, not the
+  enricher, which is easy to get wrong when grepping; `SourceRow` lives in
+  `just_dna_format.sources`, not `.spec`.
+- **Three mitigations are kept on purpose and are not oversights**: `ServiceGate`'s
+  lock (upstream fixed `PacingGate` *because* callers share one), `compile_module`'s
+  `resolve_with_ensembl=True` pin (`S14`'s rename was **refused** with a reason, so
+  the pin is permanent), and `_module_card`'s defensive projection (`get_module` is
+  not one of the six methods `assert_compatible` guards, so an older *server* can
+  still answer it unchecked — our floor pins the client, not the host).
 - **The registry's intake adopted the same split as the format tree on 2026-08-11**:
   it now has `CONSUMER_SUGGESTIONS_HISTORY.md`, a `CONSUMER_TRIAGE_LOOP.md` runbook
-  and a `.claude/triage-state.sh --next`. Read both intakes the same way now — but
-  its history file is still *empty*, because `S1` was answered in place and not yet
-  archived, so check the `**Status —**` paragraphs in the inbox as well.
-- Ours there: `S1` (the `would_publish` ceiling = `F11`) — **answered and accepted
-  the same day, fixed in their tree for 0.13.0, unreleased**; `S2` (no enumerated
-  client-surface contract = `F15`) — open; `S3` (no endpoint reports an instance's
-  mode = `F16`) — filed 2026-08-11, open. Next id is `S4`; compute it, never read it
-  off the inbox.
+  and a `.claude/triage-state.sh --next`. Read both intakes the same way — and its
+  history file is now populated, so the earlier advice to read `**Status —**`
+  paragraphs in its inbox no longer applies.
+- Ours there: `S1` (the `would_publish` ceiling = `F11`), `S2` (no enumerated
+  client-surface contract = `F15`) and `S3` (no endpoint reports an instance's mode
+  = `F16`) — **all three answered and released in 0.13.0**, except `S2`'s enumerated
+  contract, which is open on their roadmap because it needs a contract version of
+  its own. Next ids as of 2026-08-11: **`S25`** in the format tree, **`S5`** in the
+  registry's. Compute both with `.claude/triage-state.sh --next`; never read them
+  off an inbox.

@@ -18,15 +18,23 @@ irreversible. Reads about the published world (searching the catalog,
 downloading a module) default to production, because that is the world the
 question is about.
 
-**What we deliberately do NOT do:** infer an instance's mode. No endpoint reports
-``REGISTRY_MODE`` (filed as ``S3`` in the registry's intake), and the only
-available inference — testing whether ``openapi.json`` mounts the DELETE routes —
-would make this a second source of truth for something only the server knows. A
-target names a *host we were configured with*; it is never a claim about what
-that host believes it is.
+**A target is declared here and verified by the server.** Registry 0.13 reports
+``REGISTRY_MODE`` on ``/health`` and ``/api/v1/version``, and
+``RegistryClient(expect_mode=…)`` asserts it before the first call that could
+spend anything. So ``client_for`` always passes it: our configuration records
+which instance we *meant*, and the guard checks which one *answered*. The two are
+deliberately separate — we still never infer a mode ourselves, because that would
+make this a second source of truth for something only the server knows.
+
+An unreported mode fails the check rather than passing it: a caller who asked for
+the deployment to be verified is worse off believing it was than knowing it could
+not be. The remedy for that direction is a server upgrade; the remedy for the
+other direction is nothing, because the publish already happened.
 """
 
 from __future__ import annotations
+
+from just_dna_registry.client import RegistryClient
 
 from just_module_creator.settings import RegistryTarget, Settings
 
@@ -48,6 +56,30 @@ TEST_MODULE_PREFIX = "test_"
 #: kinds are asking about different worlds — see the module docstring.
 DEFAULT_WRITE_TARGET: RegistryTarget = "test"
 DEFAULT_CATALOG_TARGET: RegistryTarget = "prod"
+
+
+def client_for(
+    target: RegistryTarget, settings: Settings, *, token: str | None = None
+) -> RegistryClient:
+    """A client for ``target``, pinned to the mode that target names.
+
+    **The single construction point, so no call site can forget the guard.**
+    ``expect_mode`` costs no request — upstream asserts it lazily, on the same
+    calls its version guard already covers (publish, import, download, validate,
+    check, is_published) and never on a cheap read. That is why it is passed
+    uniformly here rather than only where a guarded method happens to be reached:
+    the alternative is a per-site judgement about which upstream method is
+    guarded today, which is exactly the kind of fact that goes stale silently.
+
+    ``RegistryTarget`` and upstream's mode share one spelling (``prod`` /
+    ``test``), so this passes the target through rather than mapping it.
+    """
+    return RegistryClient(
+        settings.registry_url_for(target),
+        token=token,
+        timeout=settings.registry_timeout,
+        expect_mode=target,
+    )
 
 
 def is_test_namespace(namespace: str) -> bool:

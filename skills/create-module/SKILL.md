@@ -93,11 +93,11 @@ reach the one compiler flag that silently produces a module no VCF can match.
 | build the artifact | `compile_module` | essentials |
 | find the alleles for a genotype | `lookup_variant` | essentials |
 | **find the papers behind a row** | `literature_search` | essentials |
-| check a PMID exists (existence only — see below) | `lookup_citation` | essentials |
+| check a PMID/DOI and read back the paper it names | `lookup_citation` | essentials |
 | see whether a module already exists | `registry_search` | essentials |
 | **draft variants + studies from ClinVar** | `draft_from_clinvar` | essentials |
 | resolve coordinates, mint VRS ids, catch a ref mismatch | `enrich_module` | essentials |
-| gene/trait currency — what `trait_efo_id` needs | `check_identifiers`, `lookup_identifier` | essentials |
+| gene/trait currency, **and gene↔chromosome agreement** | `check_identifiers`, `lookup_identifier` | essentials |
 | where may I read this paper, on what terms | `lookup_open_access` | essentials |
 | read a paper | `fetch_fulltext` | essentials |
 | content signature, artifact integrity | `module_signature`, `verify_artifact` | essentials |
@@ -148,7 +148,7 @@ my_module/
   studies.csv          # required IFF variants.csv is present: the grounding
   resolution.csv       # produced by enrich — coordinates + VRS ids. Commit it.
   literature.csv       # produced by `literature` — PMID/DOI existence. Commit it.
-  sources.csv          # required when data came from a licence-bearing source
+  sources.csv          # you write this: required when data came from a licence-bearing source
   logo.png             # optional
 ```
 
@@ -250,20 +250,21 @@ A summary is not evidence — it is somebody's reading of evidence, and if a mac
 citations may be generated rather than recalled. **Assume nothing, check each claim, and expect most of
 them to fail.** A real run of this procedure turned **seven** offered rsIDs into **one** authored row.
 
-1. **Does every rsID resolve?** `lookup_variant(rsid=…)`. **Re-run any no-locus answer before believing
-   it** — a failed request currently reports as a definite "no such locus" (`F17` / upstream `S20`), and
-   `loci: []` is also the fingerprint of a fabricated id, so a flaky network makes real variants look
-   invented. Treat a bare `loci: []` as *unchecked* when `checked` lacks `ensembl-rest`.
-2. **Does the rsID sit on the same chromosome as the gene the source names?** This is the step that
-   catches generated citations, and **nothing in this surface answers it** (`F23` / upstream `S24`) — you
-   need a gene lookup from outside the toolchain until that lands. Labelled as manual on purpose: a
-   procedure that quietly requires leaving the product trains people to skip it.
+1. **Does every rsID resolve?** `lookup_variant(rsid=…)`. Read the finding, not just `loci`: an
+   unreachable Ensembl now reports *"could not be reached, so its answer is unchecked rather than
+   empty"* at `warning`, while a genuine absence stays `info`. **Re-run on the warning** — it says
+   nothing about whether the id is real. A bare `loci: []` with no such warning is a real negative,
+   and that is the fingerprint of a fabricated id.
+2. **Does the rsID sit on the same chromosome as the gene the source names?** `check_identifiers`
+   answers this now: read `gene_locus_conflicts`. **Read it even when `stale` is empty** — the symbol
+   is approved and the number resolves, so only the relationship is false, and no per-identifier check
+   sees it. If `gene_locus_check_skipped` is non-null the comparison never ran, which is not a pass.
 3. **Does the pairing appear in any paper?** `literature_search(rsid=…, gene=…)`. Zero results from
    sources that *answered* is strong evidence; **read `sources` first**, because a source that could not
    answer reports `results: null` and a miss is not absence.
-4. **Does the cited paper say what the source claims?** `literature_search(pmids=[…])` reads the title
-   back — the only thing that settles identity. `lookup_citation` proves a PMID exists, which a
-   fabricated one usually does.
+4. **Does the cited paper say what the source claims?** Read the **title** back — that is the only
+   thing that settles identity, and both `lookup_citation` and `literature_search(pmids=[…])` report
+   one. Existence is no guard: a fabricated PMID usually exists, for another paper.
 5. **Are two survivors the same signal?** Variants in strong LD tag one finding; two rows would
    double-count it in a score. Keep the one with the mechanism behind it.
 6. **Does anything state the direction?** If no located paper says *which* allele carries the risk, drop
@@ -419,7 +420,7 @@ lookup_variant(rsid="rs1801133")                     # loci, ref, alts — plus 
 lookup_variant(rsid="rs334", ambiguity=True)         # warn when the answer is not unique
 lookup_variant(chrom="1", start=11796321, ref="G", alts="A")   # allele-exact by coordinate
 literature_search(gene="MTHFR", trait="homocysteine")          # find the papers — with titles
-lookup_citation(pmid="7647779")                                # exists? (NOT: is it the right paper)
+lookup_citation(pmid="7647779")                                # exists? and WHICH paper — read the title
 lookup_identifier(kind="trait", identifier="EFO_0004541")      # current | obsolete | absent
 lookup_identifier(kind="gene", identifier="MTHFR")             # approved | retired | unknown
 ```
@@ -511,10 +512,10 @@ Required: `pmid`. Identity: `rsid` **or** `chrom` (+`start`, `ref`).
 - **A study must carry the same identity its variant row got.** If the variant is keyed by
   coordinate, the study must be too, or it is an orphan.
 - **`pmid` is 1–8 digits.** Nine-digit ids are not PubMed ids and are rejected.
-- **Take every PMID from a `literature_search` result, never from memory.** `lookup_citation` proves
-  a PMID *exists*, and PMIDs are dense enough that a half-remembered one is usually a real record for
-  a different paper — so existence is a weak guard against fabrication. Only a title settles it, and
-  `literature_search(pmids=[...])` reads titles back. See the `find-evidence` skill.
+- **Take every PMID from a `literature_search` result, never from memory.** PMIDs are dense enough
+  that a half-remembered one is usually a real record for a different paper, so existence is a weak
+  guard against fabrication — only a **title** settles it. Both `lookup_citation` and
+  `literature_search(pmids=[...])` report one; read it and compare. See the `find-evidence` skill.
 
 ### pharm_variants.csv (drug response)
 
@@ -564,8 +565,16 @@ a source write it for you; a source you read by hand is invisible, so write the 
 - `license:` in the YAML must not contradict `sources.csv`. A ClinVar module declaring `CC0-1.0`
   warns, because the source row says `public-domain`; they are the same grant, but the check compares
   **spellings**. Match the source's spelling.
-- It must cover **every** source your fact tables cite, including PubMed if you carry studies. A
-  missing row is a warning, not an error, so it is easy to ship without noticing.
+- It must cover **every** source your fact tables cite, including PubMed if you carry studies. Once
+  the file exists, a *missing* row for a source your tables do use is a warning — so write them all.
+  A literature row is not reported as unused when `studies.csv` carries rows: `studies.csv` has no
+  `source` column by design, so nothing can corroborate the service you read the record through, and
+  the row is the only record of its terms. Declaring one costs nothing; omitting it loses the
+  provenance.
+- `sources.csv` is a table kind, not a sidecar — `describe_table("sources.csv")` and
+  `get_template("sources.csv")` answer for it like any other. Never reconstruct its columns from the
+  filename: `share_alike` / `commercial_use` / `redistribution` are three independent axes where an
+  empty cell means **unknown**, never *permitted*, and this is the only file the licence gate reads.
 
 ## 4 — Enrich (the only tier that fetches)
 
@@ -834,7 +843,9 @@ content. Write the changelog as a continuation of the previous one, not a fresh 
 - [ ] `validate_module(strict=True)` passes
 - [ ] every weight row has a coordinate (or you can say why not)
 - [ ] genotypes sorted; single-allele on `MT`/`Y` outside PAR; alleles drawn from the locus
-- [ ] every PMID verified to exist, 1–8 digits, and reachable from a weighted variant
+- [ ] every PMID's **title** read back and matched against the paper meant, 1–8 digits, and reachable
+      from a weighted variant — existence alone never settles identity
+- [ ] `check_identifiers` run, and `gene_locus_conflicts` empty *with* `gene_locus_check_skipped` null
 - [ ] `resolution.csv` and `literature.csv` committed alongside the CSVs
 - [ ] `sources.csv` present, covering every source cited, and consistent with `license:`
 - [ ] `module.version` is a quoted SemVer string

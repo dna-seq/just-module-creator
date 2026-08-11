@@ -3,6 +3,145 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.7.0 — six mitigations come out, and a target that verifies itself (2026-08-11)
+
+Upstream shipped. `uv sync` now installs format/compiler/enricher **0.5.4** and
+`just-dna-registry` **0.13.0**, and the floors say so. Between them they released every fix
+this repo was holding a guard for, so this release is mostly *deletion of caution* — plus one
+real behaviour change, which is why it is a minor.
+
+**Every claim below was verified by importing the symbol from the installed package**, never
+by reading the sibling checkout or a changelog. That is the rule this repo learned the hard
+way: on 2026-08-11 every entry in `just-dna-format-pending-fixes.md` said "open upstream"
+while all eight had been answered and six were already fixed in tree.
+
+### The behaviour change: a declared target is now verified
+
+`targets.client_for` is the single construction point for every `RegistryClient` in the
+server, and it always passes `expect_mode=target`. Registry 0.13.0 reports `REGISTRY_MODE` on
+`/health` and `/api/v1/version`, and the client raises `ModeMismatchError` before the first
+call that could spend anything.
+
+So the polygon/production split stopped being a convention. Our configuration records which
+instance we *meant*; the server says which one *answered*; a publish aimed at the polygon that
+would have landed on production now refuses instead of succeeding irreversibly. **A server
+that reports no mode fails the check** — upstream's decision, and the right one: asking for
+verification and getting silence is not a pass, and the remedy for that direction is a server
+upgrade while the remedy for the other direction is nothing.
+
+Passed uniformly rather than only where a guarded method is reached. The alternative is a
+per-site judgement about which upstream method is guarded *today*, which is exactly the kind
+of fact that goes stale in silence. A test scans the source so a stray `RegistryClient(...)`
+anywhere else fails the suite — verified by adding one and watching it fail.
+
+What we still do **not** do is infer a mode ourselves. Upstream's reply to `S3` says why both
+halves belong: ours records the intent, the guard checks the answer.
+
+### `lookup_citation` answers identity, not just existence (F9, closed)
+
+`CitationHint` gained `title` / `journal` / `year` / `first_author`, all from the same
+`esummary` response that answers existence, so they cost no extra request. `CitationLookup`
+carries all four and the docstring now tells a caller to read the title and compare it against
+the paper they meant — **a title that disagrees means the id is wrong however true
+`pmid_exists` is.**
+
+The working rule did not change, for a reason that was never about titles: a title checks an
+id you already hold, and only a search finds the id you should be citing. "Take every PMID
+from a `literature_search` result" stays in both skills and in `server.INSTRUCTIONS`.
+
+### `check_identifiers` now catches the fabrication pattern (F23, closed)
+
+The highest-value check in the triage workflow, and it used to require leaving the product.
+`IdentifierReport` carries `gene_locus_conflicts` — rows whose `gene` sits on a different
+chromosome than the row's own variant — and `gene_locus_check_skipped`, because an empty
+conflict list otherwise says two opposite things: "compared everything, nothing disagreed" and
+"never compared".
+
+This is the pairing that separated the honest half of a machine-written source from the
+fabricated half: four of seven rows named a real gene with an rsID on another chromosome, and
+every other check passed on each half separately. Upstream's sentence is passed through
+verbatim rather than reformatted — it already names both chromosomes and what to do, and a
+second wording in front of one finding is how two answers to one question start.
+
+`skills/create-module/SKILL.md`'s triage step 2 now names the tool instead of an
+explicitly-labelled manual step.
+
+### `sources.csv` is a table kind (F20, F21, closed)
+
+Upstream put it in `draft.DRAFTABLE` with `(source, layer)` as its key and taught
+`authoring_reference()` about `SourceRow`. **Our half had to move too, and with upstream's
+alone it got worse**: `sources.csv` appeared as a table kind *and* under `sidecars` ("do not
+hand-author"), telling an author two opposite things. The hardcoded sidecar literal is gone
+and it has a `_SUBJECTS` entry, so all four schema tools answer for it.
+
+`S23` also inverted the incentive back the right way: a `literature` row is no longer reported
+as unused when `studies.csv` carries rows, and a source a fact table *does* cite with no row
+now warns that its terms are unrecorded. Re-verified on `assets/fto_bmi`'s real rows —
+compliance silent, omission warns, exactly the reverse of what shipped before. The skill's
+rule is corrected to match; it previously told authors the opposite of what happened.
+
+### Findings now carry the line an editor shows (F14, closed)
+
+`LintFinding.line` exists and `to_findings` passes it through. **Never derived:** `row` is a
+0-based data index and `line` is 1-based and header-inclusive, so computing one from the other
+would bake in an offset that goes silently wrong the day upstream changes either convention.
+`references/SYMPTOMS.md` gained the two entries this finding argued for — the boolean misparse
+on a correctly-written column, and what to do when `row` and `line` disagree about one CSV.
+
+### An unreachable Ensembl is unchecked, not absent (F17, closed)
+
+Never mitigated here, and the fix vindicates that. `checked` now records the source on the
+answered-empty path too — which is precisely the string the rejected workaround would have
+keyed on, so `"ensembl-rest" not in checked` would have **inverted the day 0.5.4 landed**,
+silently, with our tests green. Waiting cost nothing; building would have cost a wrong answer.
+
+Nothing to adopt in code: `lookup_variant` is a pass-through and the new `warning` reaches a
+caller unchanged. The guidance changed — triage step 1 says to read the finding and re-run on
+the warning, rather than inferring unchecked-ness from a missing set element.
+
+### `ATTESTATION_BEARING`, and the consequence that outlives it (S11)
+
+`describe_table` reports `attestation_bearing` as a **subset** of `redundancy_bearing`, so the
+sharper refusal reason reaches an agent instead of living only in `CLAUDE.md`. Upstream added
+the constant *and* kept both provenance columns in `REDUNDANCY_BEARING`, because they qualify
+under that map's own definition too.
+
+The rule is unchanged in substance, and worth restating because a released constant can look
+like a solved problem: once a fulltext has been read through `fetch_fulltext`, `quotes_found`
+on that row is no longer independent evidence. It has degraded to a citation-pairing check —
+still worth having, since it catches a quote filed against the wrong PMID — but nothing
+establishes that a human ever looked.
+
+### Kept on purpose
+
+- **`ServiceGate`'s lock.** Upstream made `PacingGate` thread-safe (`S15`) *because* the
+  injection API asks callers to share one. Two locks is harmless; none is a race. Registry
+  0.13.0 adopted the same fix and corrected three comments that had claimed
+  `enrich_max_concurrency = 1` was what made sharing a bundle correct — true through 0.5.3,
+  wrong now. Ours never made that claim.
+- **`compile_module`'s `resolve_with_ensembl=True` pin.** `S14`'s rename was **refused** with
+  a reason — the compiler has no network branch, so a `--no-ensembl` flag would assert
+  something false. That makes the pin permanent rather than interim.
+- **`_module_card`'s defensive projection.** Upstream says it is safe to delete against a 0.13
+  server, and the reference docs are now version-stamped, which was the condition `CLAUDE.md`
+  set. Kept anyway, for a **narrower** reason than the one it was written for: `get_module` is
+  not one of the six methods `assert_compatible` guards, so a self-hosted instance older than
+  0.13 answers it with no compatibility check in front of it. Our floor pins the *client*; the
+  server on the other end is someone else's deployment. The comment now says that instead.
+
+### Where the findings went
+
+`F9`, `F20`, `F21` and `F23` moved to [previous_issues.md](previous_issues.md) — moved, not
+copied. `F14`, `F16`, `F17` and `F11`'s upstream half are closed in
+[just-dna-format-pending-fixes.md](just-dna-format-pending-fixes.md). `F15` is partly answered:
+per-release `Client surface:` lines and version-stamped reference docs shipped, and the
+enumerated contract is open on their roadmap with the reason stated — it needs a contract
+version of its own, which is a promise to hold it stable across package releases.
+
+[RM8](ROADMAP.md) is **unblocked, not done**: `would_publish_module_level` is now a field to
+wrap rather than one to feature-detect. Wrapping a new tool surface is a separate change from
+adopting a version, which is why it is not in this one.
+
 ## 0.6.0 — a contact address that is somebody's, and asking before assuming (2026-08-11)
 
 A minor rather than a patch: it adds a configuration variable and changes default network

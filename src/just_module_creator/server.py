@@ -65,10 +65,11 @@ Three rules this server enforces rather than merely documents:
    never collapse into a pass, and warnings on a green run are the interesting
    output.
 
-4. Take every PMID from a literature_search result, never from memory.
-   lookup_citation proves a PMID *exists*, and PMIDs are dense enough that a
-   recalled one is usually a real record for a different paper. Only a title
-   settles identity.
+4. Take every PMID from a literature_search result, never from memory. PMIDs are
+   dense enough that a recalled one is usually a real record for a different
+   paper, so existence never settles identity — only a title does. Both
+   lookup_citation and literature_search report one; read it and compare it
+   against the paper you meant.
 
 `start` is always the 1-based VCF position: paste it, never subtract one.
 

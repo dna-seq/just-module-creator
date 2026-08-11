@@ -27,6 +27,18 @@ the genotype; `risk` for a variant you have reason to treat as actionable, `neut
 reason to discount, and if you can justify neither, the honest move is to drop the row rather than pick
 a `state` to make the compile pass.
 
+**`Input should be a valid boolean, unable to interpret input` on a column you wrote correctly**
+An unquoted comma inside a free-text cell — `conclusion` and `phenotype` invite one — split the row and
+shifted every later column left by one, so the error names the wrong column. Since compiler/enricher
+0.5.4 the ragged row is reported **first**, ahead of the error it causes, so read the findings in order
+rather than jumping to the last one. Quote every free-text cell.
+
+**A finding whose `row` and `line` disagree about the same CSV**
+Both are correct and they count differently: `row` is a 0-based index into the *data* rows, `line` is the
+1-based file line an editor shows, header included. So data row 1 is line 3. Jump to `line`; quote `row`
+when talking about the row itself. `line` is null when upstream could not locate one — it is never
+derived from `row`.
+
 **`Input should be a valid string [input_value=None]` on a column you were not told to fill**
 A *defaulted* column left empty. An empty cell arrives as `None` and overrides the default. Run
 `just-dna-compiler requirements <kind>` — its "never leave empty (defaults)" line names them. A list of

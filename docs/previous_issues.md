@@ -121,3 +121,157 @@ refused locally with the pattern named, before a round trip is spent.
 Pointer: `src/just_module_creator/tools/research.py` —
 `registry_namespace_available`; `models.NamespaceAvailability`;
 `src/just_module_creator/tools/registry.py` — `registry_claim_namespace`'s docstring.
+
+## F9 — `lookup_citation` could not detect a fabricated PMID, and our docs said it could
+
+**Found:** 2026-08-11, designing the search tool · **Resolved:** 2026-08-11 ·
+**Upstream:** `S12`, released in compiler/enricher **0.5.4**
+
+`CitationHint` carried `pmid_exists`, `doi`, `pmcid`, `open_access` — and no title, journal
+or year. PMIDs are densely allocated across roughly 1–40,000,000, so a recalled 8-digit
+number is almost always a real record for a **different** paper, and `lookup_citation`
+answered `pmid_exists: true` for it. Both our skill and the tool docstring said "verify each
+PMID with `lookup_citation`", a rule the surface could not enforce: fabrication is a failure
+of *identity*, and that call only answered existence.
+
+**Two things fixed it, and the order matters.** First, ours: this is the finding that put
+`literature_search` in the **essentials** tier rather than extended, because discovery is the
+missing half of an anti-fabrication promise the default surface had already made. Then
+upstream's: 0.5.4 added `CitationHint.title` / `journal` / `year` / `first_author`, which
+arrive in the same `esummary` response that answers existence and therefore cost no extra
+request. Both tools now report a title, and the docs tell a caller to read it and compare.
+
+The working rule survived the fix unchanged, for a reason that was never about titles: a
+title checks an id you already hold, and only a search finds the id you should be citing.
+
+Pointer: `models.CitationLookup`, `tools/research.py::lookup_citation`;
+`tests/test_discovery.py::test_upstream_supplies_the_bibliographic_fields_identity_needs`
+asserts the fields exist on the *installed* package, so the docstring's promise fails with
+them if they ever go away, and
+`test_an_offline_citation_lookup_withholds_the_title_rather_than_denying_it` pins that a
+missing title reads as unchecked rather than as "no such paper".
+
+## F20 — `list_tables` advertised `sources.csv`; `describe_table` and `get_template` rejected it
+
+**Found:** 2026-08-11, authoring `assets/fto_bmi` · **Resolved:** 2026-08-11 ·
+**Upstream:** `S21`, released in **0.5.4**
+
+The done-checklist required `sources.csv`, and every route to its columns refused:
+`list_tables()` named it under `sidecars`, while `describe_table("sources.csv")` and
+`get_template("sources.csv")` both answered *"Unknown table kind"* and helpfully listed
+eleven alternatives, none of which was what was asked for — which reads as "you invented
+that filename", not "this kind is real but undescribed".
+
+**Two separate defects, and both had to be fixed.** Upstream's: `authoring_reference()`
+omitted `SourceRow` entirely, and the root cause was a level below the report —
+`SourceRow.layer` and `.declared_use` ran closed-vocabulary validators with no `vocabulary=`
+marker, and the guard that discovers enforcement by behaviour iterates `_ALL_MODELS`, which
+the model was not in. One omission hid the other. 0.5.4 fixes both and puts `sources.csv`
+in `draft.DRAFTABLE` with `(source, layer)` as its natural key.
+
+Ours: the sidecar list in `tools/authoring.py` was a hardcoded literal while the authorable
+set came from `draft.DRAFTABLE`, so one tool named a file the next two denied existed. With
+upstream's half released, that literal made it *worse* — `sources.csv` appeared as a table
+kind **and** as a "do not hand-author" sidecar, telling an author two opposite things.
+
+Fixed by giving it a `_SUBJECTS` entry and removing it from the sidecar list, so all four
+schema tools now answer for it. `authoring_reference`'s sidecar sentence says it is the one
+fact sidecar a human writes rather than carrying an "except" clause.
+
+What was at stake was not cosmetic: `share_alike` / `commercial_use` / `redistribution` are
+three independent axes where an empty cell means **unknown** and never *permitted*, and
+`sources.csv` is the only input the compile licence gate reads. An author reconstructing that
+from the filename gets the licence declaration wrong in the permissive direction. The
+candidate fix we rejected — restating the columns in the skill — would have been the exact
+drift the "never hardcode a schema fact" rule forbids.
+
+Pointer: `tools/authoring.py::_SUBJECTS` and `list_tables`;
+`tests/test_authoring.py::test_sources_csv_is_a_table_kind_not_a_sidecar`. The related
+strengthening is worth noting: `test_list_tables_covers_every_draftable_kind` asserted
+`all(t.subject and t.keyed_on)`, which the placeholder fallback satisfied — so it passed
+while telling an author nothing, and did not notice `sources.csv` arriving. It now names the
+placeholders, verified by removing the entry and watching it fail.
+
+## F21 — the skill's `sources.csv` rule was backwards: compliance warned, omission was silent
+
+**Found:** 2026-08-11, compiling `assets/fto_bmi` · **Resolved:** 2026-08-11 ·
+**Upstream:** `S23`, released in **0.5.4**
+
+The skill said a missing `sources.csv` row "is a warning, not an error, so it is easy to ship
+without noticing". Both halves were wrong for the literature layer, found by doing what it
+said — declaring `pubmed` and `europepmc` earned *"sources.csv declares 2 source(s) no table
+in this module uses"*, and deleting the file entirely was completely silent.
+
+Upstream's cause: the orphan and undeclared checks both compared `declared` against a
+`used_sources` set gathered from the `source` **columns** of the generated tables, and
+`studies.csv` has no `source` column by design — the same design that already exempts the
+annotation layer. So `pubmed` could never enter `used_sources` and both branches followed
+mechanically.
+
+**The harm was the incentive, not the warning.** An author who reads a warning makes it go
+away, and the only way to silence this one was to delete a true row, after which the module
+carried no record of the literature terms and the compile was clean. Our skill sent them to
+write the row; the compiler told them it was superfluous; the tidy resolution was the wrong
+one.
+
+0.5.4 puts `literature` into the same exemption as `annotation` whenever the module's
+literature evidence is `studies.csv`, and adds the converse warning: a source a fact table
+*does* cite with no `sources.csv` row now reports that its terms are unrecorded. Verified on
+the real asset's three rows — compliance is silent, omission warns, exactly inverted from
+before:
+
+```
+0.5.4, studies.csv has rows:  []
+same rows, clinvar row removed:
+  ["sources.csv has no row for 1 source(s) the module's fact tables cite:
+    ['clinvar'] — their terms are unrecorded."]
+```
+
+Ours was a doc fix, and the two candidates we rejected are worth keeping on record: telling
+authors to omit literature rows to keep compiles clean would have optimised the warning count
+and lost the provenance, and suppressing the warning in `to_findings` would have hardcoded a
+judgement about which layers are joinable — a schema fact we do not own.
+
+Pointer: `skills/create-module/SKILL.md` §"sources.csv and licensing".
+
+## F23 — the `gene` column was unverified, and it is the column that exposes a fabricated source
+
+**Found:** 2026-08-11, triaging an LLM-written source · **Resolved:** 2026-08-11 ·
+**Upstream:** `S24`, released in **0.5.4**
+
+`variants.csv:gene` was checked against nothing, so a deliberately wrong pairing linted
+clean: `rs2252481` (chromosome 6) beside gene `NEGR1` (chromosome 1) gave zero errors and
+zero warnings. `check_identifiers` did not cover it — it asked HGNC whether the *symbol* was
+current and answered `state: "approved"` for `FTO` without ever asking whether `rs1421085`
+is in FTO. The two questions read alike in a result payload, which is what made this easy to
+believe already handled.
+
+**Why it mattered more than an unchecked free-text column usually would.** This was the
+single check that separated the honest half of a machine-written source from the fabricated
+half: four of seven rows named a real gene with an rsID on another chromosome, and every
+other check passed on each half separately — the rsID resolved, the symbol was approved, only
+the *pairing* was false.
+
+0.5.4 adds `IdentifierReport.gene_loci` (a `GeneLocusConflict` per disagreeing row, naming
+both chromosomes) and `gene_loci_not_checked`, which exists for the same reason
+`clin_sig_not_checked` does: an empty conflict list otherwise says two opposite things,
+"compared everything, nothing disagreed" and "never compared". Upstream kept the granularity
+at chromosome level on the argument our note made — a variant legitimately names a distal
+gene (`rs1421085` sits in an FTO intron and acts on IRX3/IRX5), so an inside-the-gene-body
+check would fire on correct rows until somebody disabled it.
+
+**Adopted rather than merely available**, which is the part that closes this: our
+`IdentifierReport` carries `gene_locus_conflicts` and `gene_locus_check_skipped`, and
+`check_identifiers`' docstring says to read them even when `stale` is empty. Upstream's own
+sentence is passed through verbatim rather than reformatted — it already names both
+chromosomes and what to do — because a second wording in front of one finding is how two
+answers to one question start. **The manual step is out of the skill**: triage step 2 now
+names the tool instead of sending an author to a service outside the toolchain, which was the
+consequence this finding was filed for.
+
+We were right not to build the lookup here: `identifiers.py` already resolved symbols against
+HGNC and `resolution.csv` already carried the chromosome, so upstream held both halves and
+the value was entirely in the comparison.
+
+Pointer: `models.IdentifierReport`, `tools/research.py::check_identifiers`;
+`tests/test_discovery.py::test_the_gene_locus_conflict_check_reaches_our_model_three_valued`.

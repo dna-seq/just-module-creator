@@ -8,6 +8,7 @@ __pycache__/
 .python-version
 # C extensions
 *.so
+.claude
 
 # Distribution / packaging
 .Python

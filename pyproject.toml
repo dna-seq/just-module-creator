@@ -1,6 +1,6 @@
 [project]
 name = "just-module-creator"
-version = "0.6.0"
+version = "0.7.0"
 description = "MCP server + Claude Code skill for authoring and publishing just-dna annotation modules"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -17,10 +17,16 @@ dependencies = [
     "pydantic-settings>=2",
     "typer>=0.16",
     "anyio>=4",
-    "just-dna-compiler>=0.5.3",
-    "just-dna-format>=0.5.0",
-    "just-dna-enricher>=0.5.3",
-    "just-dna-registry>=0.12.0",
+    # 0.5.4 across all three: it carries CitationHint.title, Finding.line,
+    # hints.ATTESTATION_BEARING and the Ensembl unreachable/absent split, each of
+    # which retires a mitigation here. Floored together because upstream versions
+    # the three in lockstep.
+    "just-dna-compiler>=0.5.4",
+    "just-dna-format>=0.5.4",
+    "just-dna-enricher>=0.5.4",
+    # 0.13.0 lifts the would_publish variant ceiling for offline runs and adds
+    # would_publish_module_level, which is what closes F11.
+    "just-dna-registry>=0.13.0",
     "python-dotenv>=1.2.2",
     # Declared, not leaned on transitively: net.py calls httpx directly for the
     # literature sources, and a transitive pin is not a contract.

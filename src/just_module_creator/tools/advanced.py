@@ -18,7 +18,7 @@ from anyio.to_thread import run_sync
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 from just_dna_compiler import compiler
-from just_dna_registry import RegistryClient, RegistryError
+from just_dna_registry import RegistryError
 from mcp.types import ToolAnnotations
 
 from just_module_creator.discovery import citation_graph
@@ -29,7 +29,7 @@ from just_module_creator.models import (
 )
 from just_module_creator.net import NetworkServices
 from just_module_creator.settings import RegistryTarget, Settings
-from just_module_creator.targets import DEFAULT_CATALOG_TARGET
+from just_module_creator.targets import DEFAULT_CATALOG_TARGET, client_for
 from just_module_creator.tools._shared import offline_for, resolve_dir
 
 log = get_logger()
@@ -157,9 +157,7 @@ def register_extended(mcp: FastMCP, settings: Settings, services: NetworkService
         dest_dir = resolve_dir(dest, settings, must_exist=False)
 
         def _download():
-            client = RegistryClient(
-                settings.registry_url_for(target), timeout=settings.registry_timeout
-            )
+            client = client_for(target, settings)
             return client.download(namespace, name, version, dest_dir)
 
         try:

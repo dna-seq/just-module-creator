@@ -27,7 +27,7 @@ from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 from just_dna_enricher import lookup as enricher_lookup
 from just_dna_enricher.identifiers import check_identifiers as _check_identifiers
-from just_dna_registry import RegistryClient, RegistryError
+from just_dna_registry import RegistryError
 from mcp.types import ToolAnnotations
 
 from just_module_creator.discovery import fulltext, open_access, search_literature
@@ -47,7 +47,11 @@ from just_module_creator.models import (
 )
 from just_module_creator.net import NetworkServices
 from just_module_creator.settings import RegistryTarget, Settings
-from just_module_creator.targets import DEFAULT_CATALOG_TARGET, DEFAULT_WRITE_TARGET
+from just_module_creator.targets import (
+    DEFAULT_CATALOG_TARGET,
+    DEFAULT_WRITE_TARGET,
+    client_for,
+)
 from just_module_creator.tools._shared import (
     jsonable,
     offline_for,
@@ -60,7 +64,16 @@ log = get_logger()
 
 
 def _module_card(card: dict) -> RegistryModule:
-    """Project a registry card onto our trimmed model, tolerating shape drift."""
+    """Project a registry card onto our trimmed model, tolerating an older server.
+
+    Against a 0.13 registry the answer is `latest_version` with no `identity` key, and
+    upstream says outright that this tolerance is safe to delete there (their `S2`). It
+    stays for a narrower reason than the one it was written for: `get_module` is **not**
+    one of the six methods `RegistryClient.assert_compatible` guards, so a self-hosted
+    instance older than 0.13 answers it with no compatibility check in front of it. Our
+    dependency floor pins the *client*; the server on the other end is someone else's
+    deployment. `pick` costs one dict lookup and keeps that answer readable.
+    """
     identity = card.get("identity") or {}
     display = card.get("display") or {}
     stats = card.get("stats") or {}
@@ -174,20 +187,24 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     async def lookup_citation(
         pmid: str | None = None, doi: str | None = None, offline: bool = False
     ) -> CitationLookup:
-        """Check that a PMID or DOI **exists** — not that it is the right one.
+        """Check a PMID or DOI, and read back **which paper it names**.
 
-        This answers existence only, and existence is a weak guard against a
-        recalled id: PMIDs are densely allocated, so a number you half-remember is
-        usually a real record for a different paper and comes back
-        `pmid_exists=true`. Nothing upstream returns a title here, so identity
-        cannot be checked from this result. **Use `literature_search(pmids=[...])`
-        when the question is "does this id name the paper I meant"**, and take
-        every PMID you write from a search result rather than from memory.
+        Existence alone is a weak guard against a recalled id: PMIDs are densely
+        allocated, so a number you half-remember is usually a real record for a
+        different paper and comes back `pmid_exists=true`. Fabrication is a failure
+        of *identity*, so read `title` — with `journal`, `year` and `first_author`
+        beside it — and compare it against the paper you meant. A title that
+        disagrees means the id is wrong however true `pmid_exists` is. They cost no
+        extra request: the same `esummary` response answers both questions.
 
-        A `null` in `pmid_exists` means the question was not put — not a negative
-        answer, and an unasked question is never a passed check. PMIDs are 1-8
-        digits; nine-digit ids are not PubMed ids (a few hundred of ClinVar's
-        citation ids are exactly that).
+        Still take every PMID you write from a `literature_search` result rather
+        than from memory. This tool checks an id you already hold; it cannot tell
+        you which paper you *should* be citing.
+
+        A `null` in `pmid_exists` — or in `title` — means the question was not put,
+        not a negative answer, and an unasked question is never a passed check.
+        PMIDs are 1-8 digits; nine-digit ids are not PubMed ids (a few hundred of
+        ClinVar's citation ids are exactly that).
 
         `withheld` carries PubMed's DOI with its refusal rather than as a cell to
         paste: `doi` is redundancy-bearing, and filling it from the record that
@@ -211,6 +228,10 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             pmcid=getattr(hint, "pmcid", None),
             open_access=getattr(hint, "open_access", None),
             abstract_available=getattr(hint, "abstract_available", None),
+            title=getattr(hint, "title", None),
+            journal=getattr(hint, "journal", None),
+            year=getattr(hint, "year", None),
+            first_author=getattr(hint, "first_author", None),
             findings=to_findings(getattr(hint, "findings", [])),
             withheld=to_alterations(getattr(hint, "alterations", [])),
         )
@@ -237,9 +258,11 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
 
         **Take every PMID you write from a result here, never from memory.** A
         recalled 8-digit number is usually a real record for a *different* paper,
-        and `lookup_citation` answers `pmid_exists=true` for it. The title in this
-        result is what makes the difference checkable. Pass `pmids=[...]` to look
-        up ids you already have and read their titles back.
+        and existence checks pass for it — only a title settles identity. Pass
+        `pmids=[...]` to look up ids you already have and read their titles back.
+        `lookup_citation` now reports a title too, so either tool can check an id
+        you hold; this one is also how you find the id in the first place, across
+        several services at once.
 
         Combine `query` with `gene`, `rsid` and `trait` — they are ANDed into one
         search string. `sources` narrows which services are asked and can never
@@ -326,9 +349,7 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             params["category"] = category
 
         def _search() -> dict:
-            client = RegistryClient(
-                settings.registry_url_for(target), timeout=settings.registry_timeout
-            )
+            client = client_for(target, settings)
             return client.list_modules(**params)
 
         try:
@@ -378,9 +399,7 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             )
 
         def _check() -> dict:
-            with RegistryClient(
-                settings.registry_url_for(target), timeout=settings.registry_timeout
-            ) as client:
+            with client_for(target, settings) as client:
                 return client.namespace_available(namespace)
 
         try:
@@ -438,9 +457,7 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
 
         def _get() -> dict:
-            client = RegistryClient(
-                settings.registry_url_for(target), timeout=settings.registry_timeout
-            )
+            client = client_for(target, settings)
             return client.get_module(namespace, name)
 
         try:
@@ -469,6 +486,15 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
 
         Reports, never repairs — rewriting an authored value would destroy the
         evidence of the upstream change. Writes nothing.
+
+        **`gene_locus_conflicts` is the one to read even when `stale` is empty.**
+        It names rows whose gene sits on a different chromosome than the row's own
+        variant — a relationship that is false while both halves are individually
+        true, so no per-identifier check can catch it. That pairing is what a
+        machine-written summary produces: a real symbol beside an invented rsID
+        that resolves anyway. And an empty list only means "nothing disagreed"
+        while `gene_locus_check_skipped` is null; otherwise the comparison never
+        ran, which is not a pass.
         """
         target = resolve_dir(spec_dir, settings)
         if settings.offline:
@@ -502,7 +528,17 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             for s in genes + traits
             if s.state not in {"approved", "current"}
         ]
-        return IdentifierReport(spec_dir=str(target), genes=genes, traits=traits, stale=stale)
+        return IdentifierReport(
+            spec_dir=str(target),
+            genes=genes,
+            traits=traits,
+            stale=stale,
+            # `str(conflict)` is upstream's own sentence, which already says which
+            # chromosome each half claims and what to do about it. Reformatting it
+            # here would put a second wording in front of one finding.
+            gene_locus_conflicts=[str(c) for c in getattr(report, "gene_loci", []) or []],
+            gene_locus_check_skipped=getattr(report, "gene_loci_not_checked", None),
+        )
 
     @mcp.tool(
         annotations=ToolAnnotations(

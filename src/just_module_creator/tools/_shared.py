@@ -53,7 +53,13 @@ def offline_for(settings: Settings, requested: bool) -> bool:
 
 
 def to_findings(items: Any) -> list[LintFinding]:
-    """Convert upstream ``Finding`` dataclasses, preserving ``level`` verbatim."""
+    """Convert upstream ``Finding`` dataclasses, preserving ``level`` verbatim.
+
+    ``line`` is passed through and never derived. Upstream's ``row`` is a 0-based
+    data-row index while ``line`` is the 1-based header-inclusive file line, so
+    computing one from the other would bake in an offset that silently becomes
+    wrong the day upstream changes either convention.
+    """
     out: list[LintFinding] = []
     for f in items or []:
         out.append(
@@ -62,6 +68,7 @@ def to_findings(items: Any) -> list[LintFinding]:
                 column=getattr(f, "column", None),
                 level=getattr(f, "level", "info"),
                 message=getattr(f, "message", str(f)),
+                line=getattr(f, "line", None),
             )
         )
     return out

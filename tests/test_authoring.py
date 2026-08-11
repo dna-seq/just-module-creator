@@ -18,7 +18,33 @@ async def test_list_tables_covers_every_draftable_kind(essentials_client):
     listed = {t.csv for t in result.data.tables}
     assert listed == set(draft.DRAFTABLE)
     # Every kind gets a subject and a key, so "which table?" is answerable here.
-    assert all(t.subject and t.keyed_on for t in result.data.tables)
+    # Truthiness alone is not enough: `_SUBJECTS.get` falls back to a placeholder,
+    # so a kind upstream adds would satisfy `all(t.subject)` while telling an author
+    # nothing. sources.csv arrived exactly that way in 0.5.4 and this assertion did
+    # not notice. Name the placeholders instead.
+    unanswered = [
+        t.csv
+        for t in result.data.tables
+        if "see describe_table" in t.subject or "see describe_table" in t.keyed_on
+    ]
+    assert not unanswered, f"no subject/key for: {unanswered}"
+
+
+async def test_sources_csv_is_a_table_kind_not_a_sidecar(essentials_client):
+    """0.5.4 made sources.csv draftable; it must not be described as both.
+
+    It is the one fact sidecar a human writes and the only table the compile
+    licence gate reads, so listing it under `sidecars` ("do not hand-author")
+    while also listing it as a table told an author two opposite things.
+    """
+    result = await essentials_client.call_tool("list_tables", {})
+    assert "sources.csv" in {t.csv for t in result.data.tables}
+    assert "sources.csv" not in result.data.sidecars
+    # And it is answerable through the same surface as any other kind.
+    described = await essentials_client.call_tool("describe_table", {"csv_name": "sources.csv"})
+    assert {c["name"] for c in described.data.columns} >= {"source", "layer"}
+    req = await essentials_client.call_tool("table_requirements", {"csv_name": "sources.csv"})
+    assert set(req.data.always) == {"source", "layer"}
 
 
 async def test_list_tables_states_the_companion_rule(essentials_client):
@@ -64,6 +90,30 @@ async def test_describe_table_flags_redundancy_bearing_columns(essentials_client
     # ever stops marking them, our "report, never repair" promise is hollow.
     assert result.data.redundancy_bearing
     assert "chrom" in result.data.redundancy_bearing
+    # variants.csv holds no attestation cell, so the stronger list stays empty
+    # rather than echoing the redundancy map.
+    assert result.data.attestation_bearing == []
+
+
+async def test_describe_table_separates_attestation_from_redundancy(essentials_client):
+    """The provenance cells carry BOTH reasons, and the sharper one must survive.
+
+    `provenance_quote` is redundancy-bearing (compared against the fulltext) and
+    attestation-bearing (it asserts a curator read the passage). Reporting only the
+    first would let a caller conclude that a fetched quote is merely an unverifiable
+    cell rather than a false claim of provenance.
+    """
+    result = await essentials_client.call_tool("describe_table", {"csv_name": "studies.csv"})
+    assert set(result.data.attestation_bearing) == {"provenance_quote", "provenance_regex"}
+    # Subset, never an alternative to it.
+    assert set(result.data.attestation_bearing) <= set(result.data.redundancy_bearing)
+
+
+async def test_attestation_bearing_is_narrowed_to_the_table(essentials_client):
+    """A table without the provenance columns must not be told to hand-author them."""
+    result = await essentials_client.call_tool("describe_table", {"csv_name": "sources.csv"})
+    columns = {c["name"] for c in result.data.columns}
+    assert not set(result.data.attestation_bearing) - columns
 
 
 async def test_template_header_only_vs_stub(essentials_client):
