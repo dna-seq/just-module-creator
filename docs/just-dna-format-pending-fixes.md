@@ -29,7 +29,8 @@ because `S1` was answered in place and not yet archived. So there, for now, read
 `**Status —**` paragraphs in the inbox itself.
 
 **Number a new one with `.claude/triage-state.sh --next`, never from what the inbox
-shows** — it is empty, ids are never reused, and the next is `S19`.
+shows** — it is empty, ids are never reused, and the next is `S21` (`S20` is ours, filed
+2026-08-11).
 
 **Three states, not two, and only the third releases a guard.** *accepted and
 filed* (an upstream `RMn`, still open) → *fixed in tree* (the symbol exists in
@@ -439,3 +440,55 @@ clothing — the exact shape `F11` was withdrawn for.
 
 **Closes when** an instance reports its mode over the API, at which point the target
 argument can be *verified* rather than merely declared.
+
+---
+
+## F17 — a failed Ensembl request is reported as "no such locus", and it flips a fabrication verdict
+
+**Found:** 2026-08-11, dogfooding · **Upstream:** `S20`, filed same day ·
+**Status:** open upstream, unmitigated here on purpose · **Severity:** high
+
+`lookup_variant` on a cache-cold rsID can answer `loci: []` with the finding *"live
+Ensembl has no GRCh38 locus for it either"* when what actually happened is that the
+request failed. The two states are fused before our code sees them:
+`EnsemblResolver.resolve_rsid` swallows transport errors into an empty list, so
+`enricher.lookup._lookup_live_loci` tests `if not loci:` on an empty that has two
+possible meanings and writes a finding asserting one of them.
+
+Reproduced by re-running an unchanged call: `rs6567160` and `rs13010010` both reported
+no locus on the first attempt and resolved to `chr18:60161902` and `chr2:100236272` on
+the second, minutes later, same batch of seven where the other five succeeded.
+
+**Why it is `high` and not a cosmetic wording bug.** `loci: []` plus "Ensembl has no
+locus" is the exact fingerprint of a *fabricated* rsID, which is what the check is most
+often used to detect. The probe that found this was triage of an LLM-written document
+where four of seven rsIDs really were fabricated — a real dbSNP id paired with a gene on
+a different chromosome — so the false negative put two genuine variants into the
+fabricated pile. The failure mode is an author deleting true rows and reporting a source
+as less trustworthy than it is, with a green run and no warning. It contradicts the
+tri-state rule the rest of the ecosystem keeps: `literature_search` reports an
+unreachable source as `results=null`, never `0`, for exactly this reason.
+
+**The one signal that exists is an absence.** `hint.checked` gains `ensembl-rest` only on
+the success path, so a failed run omits it:
+
+```
+failed    checked: ["…/ensembl_variations"]
+succeeded checked: ["…/ensembl_variations", "ensembl-rest"]
+```
+
+Correct, and unreadable — a missing set element beside a prose finding that states the
+opposite conclusion, at level `info`.
+
+**Not mitigated here, deliberately.** The two candidate wrappers are both wrong:
+retrying inside `lookup_variant` narrows the window without closing it and turns a fast
+wrong answer into a slow one, still indistinguishable once retries are exhausted; and
+inferring the failure from `"ensembl-rest" not in checked` would hardcode a provenance
+string upstream owns and is free to change, to synthesise a state upstream does not
+expose — a guess wearing a check's clothing, the shape `F11` was withdrawn for. Until
+`S20` lands, the honest handling is what the tool already reports: treat a bare
+`loci: []` as **unchecked** whenever `checked` lacks `ensembl-rest`, and re-run before
+concluding an rsID does not exist.
+
+**Closes when** `resolve_rsid` distinguishes "could not ask" from "asked, nothing there"
+and `_lookup_live_loci` reports the former as a warning, in a release `uv sync` installs.

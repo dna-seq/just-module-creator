@@ -25,7 +25,13 @@ Two rules do most of the work here:
 Attack claims, not gaps. A documented deferral is a decision; what counts is where a
 docstring or doc *promises* something the code does not do.
 
-## Credentials — you have none right now
+## Credentials — polygon: yes. Production: still none.
+
+**Changed 2026-08-11.** You now hold a **polygon** account: `sheep`, registered with the *existing*
+`JMC_INSTALL_ID` (the result reported `install_id_origin: "environment"`, so no new id was ground and
+the old one still identifies you), token saved in `.env` as `JMC_TEST_API_KEY`. The namespace
+**`test-sheep` is claimed.** Production is untouched — no account, no token, nothing claimed — and the
+paragraphs below about it are all still current.
 
 State only. **How to obtain and save a token is the skill's job**, not this file's:
 `skills/create-module/SKILL.md` §7 covers registering, what the two secrets are, and why
@@ -47,7 +53,7 @@ you are aiming at:
 | what it is | the catalog everyone installs from | the rehearsal instance |
 | `test-` names | `422 test_data_on_prod` | accepted |
 | deleting a bad publish | impossible | `registry_delete_version` |
-| token env var | `JMC_API_KEY` (**cleared**) | `JMC_TEST_API_KEY` (never set) |
+| token env var | `JMC_API_KEY` (**still cleared**) | `JMC_TEST_API_KEY` — **set 2026-08-11**, account `sheep` |
 
 **Rehearse on the polygon.** A production publish is immutable *and* claims its authored
 data by a content hash that `yank` does not release, so one botched publish burns the
@@ -81,9 +87,43 @@ still be worth registering with. If you want it gone, say so; it is not mine to 
 | F14 / S18 | `just-dna-format-pending-fixes.md` + upstream | `hints.inspect_rows` zips header names positionally without comparing field counts, so an unquoted comma in a free-text cell shifts every later column and the error is reported against a column the author wrote correctly. `Finding.row` is 0-based where the compiler uses 1-based `line N`. Left unmitigated here on purpose: `lint_rows` is a deliberate pass-through. |
 | S19 | upstream | A binning table has nowhere to record evidence. `studies.csv` keys on `rsid`/`chrom` only and is required iff `variants.csv` exists, so a `repeat_alleles.csv` row cannot be grounded and compiles green asserting a clinical threshold with no citation. |
 
+### The assisted session — a novice user, an LLM-written source (same day)
+
+Run in a different shape: the user role-played a non-specialist who brought a Gemini summary of two
+YouTube genetics lectures and asked for a module. **That shape found more than solo probing did**, because
+triaging a machine-written source exercises the lookup tools against claims that are *plausibly* wrong
+rather than absent. Worth repeating deliberately. Reference example: `assets/fto_bmi/`, whose README is
+the write-up.
+
+| id | where | what |
+|---|---|---|
+| **S20** / F17 | upstream + `pending-fixes.md` | **high.** A failed live-Ensembl request is reported as `loci: []` + *"live Ensembl has no GRCh38 locus for it either"* — a definite negative. Same call, minutes apart: `rs6567160` and `rs13010010` both no-locus, then both resolved. `resolve_rsid` swallows transport errors into an empty list, so `if not loci:` cannot tell the two apart; the only trace is `checked` *lacking* `ensembl-rest`. **`loci: []` is the fingerprint of a fabricated rsID**, so flaky egress makes real variants look invented — it misfiled two genuine SNPs mid-triage. F17 left unmitigated on purpose; both candidate wrappers argued wrong in the note. |
+| F18 | `dogfooding.md` | The skill's "a green pre-flight should mean a green compile" is false pre-`resolution.csv`: strict validate returned valid with **zero** findings at all three levels, strict compile refused. Compile gate itself is fine, which is why it is medium. |
+| F19 | `dogfooding.md` | Nine essentials tools missing → the stdio process was 3h older than HEAD. **Nothing on the surface reports the server's version**, so this was indistinguishable from "the skill documents a tool that does not exist" without `ps` + `git log` + a grep. Suggested fix: append the version to `server.INSTRUCTIONS`, not a `server_info` tool — instructions are always in context, a tool has to be called by someone who already suspects the problem. |
+| **S21** / F20 | upstream + `dogfooding.md` | `sources.csv` is the one sidecar a human must hand-write; `list_tables` advertises it and `describe_table`/`get_template` reject the name, and `authoring_reference()` omits `SourceRow` entirely. Columns had to be read from `model_fields`. Two separate defects — fixing upstream will not fix ours. |
+| **S23** / F21 | upstream + `dogfooding.md` | The `sources.csv` rule is **inverted**: the pubmed/europepmc rows draw *"declares 2 source(s) no table in this module uses"*, and deleting the file entirely warns about **nothing**. Compliance is warned, omission is silent — and the tidy fix is to delete provenance. |
+| F22 | `dogfooding.md` | low. `published.json` — the receipt we tell the author to commit — records `owner: null`, though the claim and `registry_get_module` both know `sheep`. |
+| **S22** | upstream | Longshot, filed at the user's direction as low priority: literature reports hg19, modules must be GRCh38, no supported path. Argued **out from under RM15** (that is `❌ — 1.0` and is about supporting another build; this is a one-way authoring-time conversion) and argued that **rsID recovery beats liftover** — liftover is only reachable when there is no rsID, i.e. exactly when its output cannot be cross-checked. |
+
+**What held up, and is not worth re-probing:** every refusal fired (`lookup_variant`'s withheld
+coordinates, every DOI, `check_identifiers` reporting without writing); the strict compile gate refused
+the unresolved module and named the remedy; `artifact_digest` reproduced exactly across a local
+recompile *and* the registry server's independent one; Semantic Scholar 429'd all session and was
+reported `results: null` rather than `0` (F6 earning its keep in the same session S20 fused the same
+distinction).
+
 ## Observations not yet filed
 
 Small, and each belongs to the second agent rather than upstream:
+
+- **`registry_register`'s docstring says "Omit `install_id` and one is ground for you."** It grinds only
+  when the environment has none — `auth.py:141` reads `settings.install_id` first and reports
+  `install_id_origin: "environment"`. The imprecision costs both ways: an agent either pastes a live
+  secret into a transcript to be safe, or avoids the call for fear of orphaning the existing account. One
+  clause fixes it.
+- **`registry_register` echoes the install-id back even when it came from the environment.** The caller
+  already has it in `.env`, so returning the value only writes an existing secret into the transcript.
+  Returning `install_id_origin` without the value would be strictly better in that branch.
 
 - ~~**`authenticate`'s docstring is stale.**~~ **Fixed** in `6ad1898` — it now points at
   `registry_register` and says a token is needed only to publish.
@@ -101,6 +141,17 @@ Small, and each belongs to the second agent rather than upstream:
   `.env` cannot switch a plugin-launched server.
 
 ## In flight
+
+**`assets/fto_bmi/` — done through the rehearsal.** Authored, enriched, strict-compiled, and published
+to `test-sheep/fto_bmi@1.0.0` on the polygon; server-side recompile reproduced our digest. **Two things
+remain open on it:**
+
+1. **The production decision is the user's and has not been made.** They chose "polygon first, then
+   decide". Do not promote without asking again — a production publish burns the version number *and*
+   the right to publish that data under any other name.
+2. **The polygon copy needs cleaning up eventually.** It was published under the real module name
+   (`fto_bmi`, not `test_fto_bmi`), so the operator's `purge-test-data` sweep will not collect it — the
+   namespace `test-sheep` is prefixed but the module name is not. `registry_delete_version` when done.
 
 `assets/htt_cag_repeats/` — scaffolded, **not yet authored**. `module_spec.yaml` still
 carries `<<REPLACE>>` in title/description/report_title, and `repeat_alleles.csv` holds
