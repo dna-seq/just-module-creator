@@ -7,8 +7,10 @@ already in place on our side.
 A finding legitimately appears both here and in [dogfooding.md](dogfooding.md)
 when we have mitigated it but upstream still owes the fix.
 
-**Intake:** these are filed into `../just-dna-format/docs/CONSUMER_SUGGESTIONS.md`
-as `S<n>` entries. Check there before filing — a second consumer hitting a known
+**Intake — two files, and a note belongs where the fix would land.** Format,
+compiler and enricher findings go to `../just-dna-format/docs/CONSUMER_SUGGESTIONS.md`;
+registry and pipelines findings go to `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`
+(the registry repo after its rename). Each keeps its own `S<n>` series. Check there before filing — a second consumer hitting a known
 one appends a corroboration rather than opening a new number. Write the note and
 stop; never commit in that repo.
 
@@ -172,8 +174,9 @@ splits the flag so the name matches the action.
 
 ## F11 — `would_publish`'s variant ceiling withholds the check on the modules that need it
 
-**Filed upstream:** `CONSUMER_SUGGESTIONS.md` **S15** (2026-08-11) ·
-**Status:** open upstream
+**Filed upstream:** **S1** in `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`
+(2026-08-11 — the *registry's* intake, not the format tree's: the ceiling is
+server-side) · **Status:** open upstream
 
 `marketplace check` is the only surface that adds the network tier on top of
 `validate_spec` and reduces it to one branchable field. On a large module it

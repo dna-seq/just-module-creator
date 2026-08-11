@@ -389,10 +389,25 @@ two: `docs/dogfooding.md` (open) → `docs/previous_issues.md` (resolved here) /
 ### Upstream findings go to the producer, never into a workaround
 
 We consume `just-dna-format` / `-compiler` / `-enricher` / `-registry` and own
-none of them. **Every upstream question, quirk or bug goes into
-`../just-dna-format/docs/CONSUMER_SUGGESTIONS.md`** — that file is the intake for
-all four, since they share a repo.
+none of them. **There are two intakes, and a note belongs wherever the fix would
+land:**
 
+| The fix would land in | File the `S<n>` in |
+|---|---|
+| format, compiler, enricher (one repo) | `../just-dna-format/docs/CONSUMER_SUGGESTIONS.md` |
+| the registry service, its client, or a `just-dna-pipelines` command calling it | `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md` |
+
+`../just-dna-marketplace` is the registry repo after its rename — the *package* is
+still `just-dna-registry`. Its numbering is a separate series from the format
+tree's; both start at `S1`. If a note is in the wrong file it may as well not be
+filed, so decide by asking who would change code, not who you noticed it through.
+
+- **A gap in the docs is a finding too.** If you had to *probe* to learn something —
+  run an experiment, read their source, test a guess — that is a doc bug, and it
+  gets filed with the same urgency as a behavioural one. The next consumer will
+  otherwise run the same experiment. Say how you found it: "we put a `source`
+  column on `pharm_variants.csv` and got `Extra inputs are not permitted`" argues
+  for a fix better than "this is undocumented" does.
 - **File it the moment you find it. Do not batch.** Found it → write the `S<n>`
   entry → carry on with what you were doing. Not after the guard is built, not
   after the task closes, not as a tidy set of "field notes" at the end of a work
@@ -480,9 +495,15 @@ preference: it goes into §10, in their words, with the reason.
 *Append-only. Environment, ports, credential layout, host quirks, sibling paths.*
 
 - Sibling repos live beside this one under `/data/sources/`:
-  `../just-dna-format` (hosts format, compiler and enricher docs — including
-  `CONSUMER_SUGGESTIONS.md`, the upstream intake), `../just-dna-lite`,
-  `../just-dna-registry`.
+  `../just-dna-format` (hosts format, compiler and enricher, and their
+  `CONSUMER_SUGGESTIONS.md` intake), `../just-dna-lite`, and
+  **`../just-dna-marketplace`** — the registry repo after its rename, whose package
+  is still `just-dna-registry` and which has its own
+  `docs/CONSUMER_SUGGESTIONS.md`. `../just-dna-registry` no longer exists.
+- As of 2026-08-11 the marketplace repo declares `just-dna-registry` **0.11.3**,
+  which is **not on PyPI** (published: 0.9.1). Adopting it would need a local path
+  dependency, which breaks the plugin's one-command install for anyone else, so we
+  stay on the published version until it ships.
 - The published registry is `https://module-registry.just-dna.life`; as of
   2026-08-11 it holds exactly one module, `eric-mods/lactose_tolerance@1.0.0`,
   which is the best available worked example of a real spec.

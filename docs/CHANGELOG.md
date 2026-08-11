@@ -32,6 +32,37 @@ that does not survive the session is not a record. It cannot go into `module_spe
 (upstream S1). An already-recorded version is never overwritten; a published version is immutable, so
 a changed digest is reported for investigation rather than applied.
 
+### Three documentation gaps filed upstream
+
+Facts we had to establish by **experiment** rather than read, filed as `S15`–`S17`
+in the format tree under their own "Documentation gaps" heading — nothing is
+misbehaving, so they read as a separate category:
+
+- **`PacingGate`'s concurrency contract is unstated, and it is not thread-safe.** We
+  found this by demonstration (four threads overlap inside `wait()` on a frozen
+  clock) and shipped a locked `ServiceGate` subclass. `ENRICHER.md` documents the
+  class in nine places without a concurrency caveat, which matters because
+  `LookupClients`' own docstring tells callers to hold and reuse one — exactly the
+  arrangement that needs the answer.
+- **Whether a spec directory may hold files the compiler does not know is
+  unspecified.** It tolerates them; we tested, and `published.json` now relies on it.
+- **`source` exists on only 4 of 16 row models, and all four are enricher-produced.**
+  No authored table has one, so the `sources.csv` coverage check can only see sources
+  a *pass* introduced — a hand-read source is structurally invisible, not merely easy
+  to forget. Found by putting a `source` column on a `pharm_variants.csv` and getting
+  `Extra inputs are not permitted`.
+
+The rule behind them is now in `CLAUDE.md` §8: a fact you had to probe is a doc bug,
+and the experiment is the argument for fixing it.
+
+### Two upstream intakes, not one
+
+The registry repo was renamed to `just-dna-marketplace` and has its own
+`docs/CONSUMER_SUGGESTIONS.md` (created 2026-08-11, its own `S<n>` series). Our
+intake rule said one file served all four packages, which had stopped being true. The
+`would_publish` note was written into the format tree by mistake and moved; a note in
+the wrong file may as well not be filed.
+
 ### Docs swept for upstream gaps we had absorbed as our own
 
 Three items were sitting in our roadmap or our skill as though the work were ours:
