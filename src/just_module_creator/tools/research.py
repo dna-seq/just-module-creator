@@ -30,6 +30,7 @@ from just_module_creator.models import (
     RegistrySearchResult,
     VariantLookup,
 )
+from just_module_creator.net import NetworkServices
 from just_module_creator.settings import Settings
 from just_module_creator.tools._shared import (
     jsonable,
@@ -71,8 +72,14 @@ def _module_card(card: dict) -> RegistryModule:
     )
 
 
-def register_research(mcp: FastMCP, settings: Settings) -> None:
-    """Register the always-on read-only lookup tools."""
+def register_research(mcp: FastMCP, settings: Settings, services: NetworkServices) -> None:
+    """Register the always-on read-only lookup tools.
+
+    ``services`` carries the one shared ``LookupClients`` for the whole server.
+    Passing it into every upstream call is not an optimization: a fresh client set
+    per question throws away the pacing state that keeps NCBI and gnomAD from
+    refusing us, and reopens a connection for a single request.
+    """
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -121,6 +128,7 @@ def register_research(mcp: FastMCP, settings: Settings) -> None:
                 ambiguity=ambiguity,
                 frequencies=frequencies,
                 offline=eff_offline,
+                clients=services.lookup_clients,
             )
         )
         status = getattr(hint, "rsid_status", None)
@@ -149,19 +157,33 @@ def register_research(mcp: FastMCP, settings: Settings) -> None:
     async def lookup_citation(
         pmid: str | None = None, doi: str | None = None, offline: bool = False
     ) -> CitationLookup:
-        """Check that a PMID or DOI exists before you write it into studies.csv.
+        """Check that a PMID or DOI **exists** — not that it is the right one.
 
-        Never invent a PMID. A `null` in `pmid_exists` means the question was not
-        put — which is not the same as a negative answer, and an unasked question
-        is never a passed check. PMIDs are 1-8 digits; nine-digit ids are not
-        PubMed ids (a few hundred of ClinVar's citation ids are exactly that).
+        This answers existence only, and existence is a weak guard against a
+        recalled id: PMIDs are densely allocated, so a number you half-remember is
+        usually a real record for a different paper and comes back
+        `pmid_exists=true`. Nothing upstream returns a title here, so identity
+        cannot be checked from this result. **Use `literature_search(pmids=[...])`
+        when the question is "does this id name the paper I meant"**, and take
+        every PMID you write from a search result rather than from memory.
+
+        A `null` in `pmid_exists` means the question was not put — not a negative
+        answer, and an unasked question is never a passed check. PMIDs are 1-8
+        digits; nine-digit ids are not PubMed ids (a few hundred of ClinVar's
+        citation ids are exactly that).
+
+        `withheld` carries PubMed's DOI with its refusal rather than as a cell to
+        paste: `doi` is redundancy-bearing, and filling it from the record that
+        gave you the PMID makes the DOI cross-check compare PubMed with itself.
         """
         if not pmid and not doi:
             raise ToolError("Provide either pmid or doi.")
 
         eff_offline = offline_for(settings, offline)
         hint = await run_sync(
-            lambda: enricher_lookup.lookup_citation(pmid=pmid, doi=doi, offline=eff_offline)
+            lambda: enricher_lookup.lookup_citation(
+                pmid=pmid, doi=doi, offline=eff_offline, clients=services.lookup_clients
+            )
         )
         return CitationLookup(
             pmid=getattr(hint, "pmid", None) or pmid,
@@ -171,7 +193,9 @@ def register_research(mcp: FastMCP, settings: Settings) -> None:
             registry_doi=getattr(hint, "registry_doi", None),
             pmcid=getattr(hint, "pmcid", None),
             open_access=getattr(hint, "open_access", None),
+            abstract_available=getattr(hint, "abstract_available", None),
             findings=to_findings(getattr(hint, "findings", [])),
+            withheld=to_alterations(getattr(hint, "alterations", [])),
         )
 
     @mcp.tool(

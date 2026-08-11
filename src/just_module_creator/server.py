@@ -24,6 +24,7 @@ from fastmcp import FastMCP
 from just_module_creator import __version__
 from just_module_creator.auth import SessionKeyStore, register_auth
 from just_module_creator.logging_setup import get_logger, setup_logging
+from just_module_creator.net import build_services
 from just_module_creator.settings import Mode, Settings
 from just_module_creator.tools.advanced import register_extended
 from just_module_creator.tools.authoring import register_essentials
@@ -78,8 +79,12 @@ def build_server(mode: Mode | None = None, settings: Settings | None = None) -> 
     )
 
     store = SessionKeyStore()
+    # One shared client set for the whole server. Lazy: constructing it opens no
+    # connection, so importing this module still touches no network.
+    services = build_services(settings)
+
     register_essentials(mcp, settings)
-    register_research(mcp, settings)
+    register_research(mcp, settings, services)
     register_auth(mcp, settings, store)
     register_registry(mcp, settings, store)
     if resolved_mode == "extended":

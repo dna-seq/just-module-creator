@@ -287,10 +287,19 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         a `risk` state with a positive weight compiles happily), and `info`
         names the columns deliberately left to you.
 
-        `alterations` with `applied=false` are refusals, not failures: the linter
-        is declining to author a redundancy-bearing cell on your behalf, because
-        filling it from the source that later checks it would make that check
-        vacuous. Act on them yourself.
+        **Where the redundancy-bearing columns show up here is `findings`, at
+        `info` level** — one per column the linter is deliberately leaving to you.
+        `alterations` on this tool carries normalizations that were *applied*, and
+        on a valid table it is usually empty; upstream's `inspect_rows` reports the
+        left-to-you columns as findings rather than as refused alterations. It is
+        `lookup_variant` and `lookup_citation` that return refusals with
+        `applied=false` and a `refusal`, because they are the tools holding a value
+        they could have written.
+
+        Either way the rule is the same: a redundancy-bearing cell is yours to
+        author independently, since filling it from the source that later checks it
+        makes that check vacuous. `describe_table` names the columns under
+        `redundancy_bearing`.
         """
         name = known_kind(csv_name, draft.DRAFTABLE)
         report = hints.inspect_rows(name, csv_text)

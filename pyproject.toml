@@ -22,6 +22,11 @@ dependencies = [
     "just-dna-enricher>=0.5.2",
     "just-dna-registry>=0.9.1",
     "python-dotenv>=1.2.2",
+    # Declared, not leaned on transitively: net.py calls httpx directly for the
+    # literature sources, and a transitive pin is not a contract.
+    "httpx>=0.28",
+    # Already the enricher's retry idiom; we reuse it rather than hand-roll a loop.
+    "tenacity>=9",
 ]
 
 [project.scripts]

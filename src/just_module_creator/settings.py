@@ -4,10 +4,17 @@ Everything has a safe default, so the server boots with no environment set.
 Values are read from ``JMC_*`` environment variables and an optional ``.env``.
 
 Note the deliberate split between *this* server's config and the just-dna
-toolchain's own environment. Cache paths (``JUST_DNA_*``), NCBI pacing keys and
-``PHARMVAR_API_KEY`` are read by the enricher itself, straight from the process
-environment — this server neither reads nor forwards them. Documented in
-``.env.example`` so an author configures them in one place.
+toolchain's own environment. Cache paths (``JUST_DNA_*``) and ``PHARMVAR_API_KEY``
+are read by the enricher itself, straight from the process environment — this
+server never *forwards* them. Documented in ``.env.template`` so an author
+configures everything in one place.
+
+Reading is a different matter from forwarding. Since literature discovery landed,
+this server makes outbound calls of its own, and for those it reads the same
+variables the enricher reads — ``JUST_DNA_CONTACT_EMAIL`` for the polite-pool
+contact, ``NCBI_API_KEY`` for PubMed pacing — through ``EutilsSettings`` rather
+than ``os.environ``, so upstream's precedence is inherited rather than copied.
+One ``.env`` configures both surfaces.
 """
 
 from __future__ import annotations
@@ -60,6 +67,19 @@ class Settings(BaseSettings):
     # Refuse to write outside this directory, when set. Unset = no restriction.
     workspace: str | None = None
 
+    # Which third-party literature services this deployment will talk to.
+    # A policy ceiling with the same shape as `offline`: a per-call `sources`
+    # argument can NARROW it and can never widen it.
+    #   None (unset) -> every source        ""  -> none
+    #   "pubmed,europepmc" -> just those two
+    # `None` and `""` are deliberately different, so "unset" stays distinguishable
+    # from "explicitly nothing".
+    literature_sources: str | None = None
+
+    # Semantic Scholar raises the rate limit for a keyed caller. Absent means
+    # unauthenticated and slower, never unavailable.
+    s2_api_key: str | None = None
+
     def registry_token(self) -> str | None:
         """The env-tier registry token: ``JMC_API_KEY`` else ``REGISTRY_TOKEN``.
 
@@ -68,3 +88,19 @@ class Settings(BaseSettings):
         logged in once should not have to re-declare the token for this server.
         """
         return self.api_key or os.environ.get("REGISTRY_TOKEN") or None
+
+    def semantic_scholar_key(self) -> str | None:
+        """``JMC_S2_API_KEY`` else ``S2_API_KEY`` — the name S2's own docs use."""
+        return self.s2_api_key or os.environ.get("S2_API_KEY") or None
+
+    def allowed_literature_sources(self) -> frozenset[str] | None:
+        """The sources this deployment permits, or ``None`` for "no restriction".
+
+        ``None`` (unset) and an empty string are different answers and must stay
+        that way: unset means every source, ``""`` means the operator switched
+        them all off. Collapsing the two would turn a deliberate refusal into a
+        default, which is the same mistake as reading ``None`` as ``False``.
+        """
+        if self.literature_sources is None:
+            return None
+        return frozenset(s.strip() for s in self.literature_sources.split(",") if s.strip())

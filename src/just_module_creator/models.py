@@ -167,7 +167,11 @@ class LintResult(BaseModel):
     warnings: int = Field(description="Count of warning-level findings.")
     findings: list[LintFinding] = Field(description="All findings, in order.")
     alterations: list[LintAlteration] = Field(
-        description="Normalizations applied, plus refusals you must act on yourself."
+        description=(
+            "Normalizations that were applied. Often empty on a valid table — the "
+            "redundancy-bearing columns arrive as `info` findings here, not as refusals. "
+            "Refusals with `applied=false` come from the lookup tools."
+        )
     )
     normalized_csv: str = Field(
         description="The input with `applied` normalizations only. Never invents a value."
@@ -262,7 +266,14 @@ class VariantLookup(BaseModel):
 
 
 class CitationLookup(BaseModel):
-    """Whether a citation exists. Never invent a PMID."""
+    """Whether a citation **exists** — which is not the same as being the right one.
+
+    PMIDs are densely allocated, so a recalled 8-digit number is usually a real
+    record for a *different* paper, and this comes back `pmid_exists=true`. Nothing
+    here carries a title, so identity cannot be checked from this result. Use
+    `literature_search(pmids=[...])` when the question is "does this id name the
+    paper I meant".
+    """
 
     pmid: str | None = Field(default=None, description="The PMID.")
     doi: str | None = Field(default=None, description="The DOI.")
@@ -273,7 +284,22 @@ class CitationLookup(BaseModel):
     registry_doi: str | None = Field(default=None, description="The DOI PubMed records.")
     pmcid: str | None = Field(default=None, description="PMC id, when open access.")
     open_access: bool | None = Field(default=None, description="null means unchecked.")
+    abstract_available: bool | None = Field(
+        default=None,
+        description=(
+            "Whether Europe PMC holds an abstract — it returns one for paywalled records too. "
+            "null means unchecked."
+        ),
+    )
     findings: list[LintFinding] = Field(default_factory=list, description="Notes and warnings.")
+    withheld: list[LintAlteration] = Field(
+        default_factory=list,
+        description=(
+            "Values shown but NOT written, each with its refusal. PubMed's DOI arrives here "
+            "rather than as a cell to paste: `doi` is redundancy-bearing, so filling it from the "
+            "record that supplied the PMID makes the DOI cross-check compare a source with itself."
+        ),
+    )
 
 
 class IdentifierStatus(BaseModel):

@@ -18,12 +18,19 @@ surface exactly once, in the middle, and come back.
 This is the capability gap dogfooding is supposed to surface rather than route
 around, and it is recorded as **F1** in [dogfooding.md](dogfooding.md).
 
-Wrapping it is not mechanical. `draft` refuses and lists the choices when a
-`(phenotype, drug)` pair spans several populations, and that refusal has to
-survive as a structured result rather than as a raised error. The `--use`
-licensing gate must be an explicit required argument, never defaulted, because
-defaulting it to `unstated` would silently skip sources and defaulting it to
-anything else would assert a licence position the user never took.
+**Correction (2026-08-11):** this item used to say wrapping was hard because
+`draft` refuses and lists the choices when a `(phenotype, drug)` pair spans
+several populations. Upstream removed that in 0.5.1 — `DiplotypeRow.clinical_context`
+keeps the settings as distinct rows and the consumer picks at query time, so
+`population` is now a plain filter and an unknown value is an ordinary error.
+
+What does still constrain the wrapper is licensing. The `--use` gate must be an
+explicit required argument, never defaulted: `unstated` would silently skip
+sources, and anything else would assert a licence position the user never took.
+When `declared_use` fails a source's terms upstream returns `skipped=True` and
+fetches nothing — an acquisition-time refusal, because taking the data is what
+accepts the terms — so `skipped` must stay a first-class field rather than
+collapsing into a failure, which would invite retrying with a different `use`.
 
 ## RM2 — the fact passes are unwrapped
 

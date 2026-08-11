@@ -198,6 +198,32 @@ does not bend a convention; it deletes a whole validation class.
 Corollary for this repo: **no tool we expose may write an authored cell from a
 lookup result.** Lookups report; the human decides; `lint_rows` checks.
 
+### The two columns the list is missing, and why they are worse
+
+`provenance_quote` and `provenance_regex` are absent from
+`hints.REDUNDANCY_BEARING`, yet `enrich_literature` checks both against the Europe
+PMC fulltext to produce `quotes_found`. By the list's own definition they belong
+on it: a quote extracted from that same fulltext makes the check agree with
+itself.
+
+They are worse than the others, though, and it is worth being precise about why.
+The other redundancy-bearing columns lose a *check* when auto-filled. These lose a
+*fact about the world*. `provenance_quote` exists to record that a curator read
+the paper and located the claim in it; a passage a machine pulled out of a
+document the machine fetched asserts a reading that never happened. That is a
+false claim of provenance, not a vacuous check.
+
+So no tool in this repo extracts a passage — no best-matching passage, no
+suggested quote, no search-within-text. `fetch_fulltext` returns the document and
+nothing else. Filed upstream; ours to hold until it lands.
+
+The honest consequence, which the tool and the skill both state: **once a fulltext
+has been read through `fetch_fulltext`, `quotes_found` on that row is no longer
+independent evidence.** It has degraded to a citation-pairing check — still
+useful, because it catches a quote written against the wrong PMID, but no longer
+evidence that the claim is in the paper. A tool that did not say so would be
+laundering its own output.
+
 ---
 
 ## What only a human can decide
@@ -282,8 +308,9 @@ never `False`.
 - Annotations are **per genotype and can oppose each other**
   (rs4149056+simvastatin: "decreased" for CC/CT, "increased" for TT).
 - **CPIC recommendations are keyed by (phenotype, drug, *population*)** and the
-  populations disagree. `draft --drug` refuses and lists the choices rather than
-  picking one.
+  populations disagree. Every clinical context is drafted, kept apart by
+  `clinical_context`, and the consumer selects one at query time; `population`
+  filters rather than decides.
 - `recommendation_strength` is CPIC's; `evidence_level` is PharmGKB/ClinPGx's.
   Fill only the one your source states.
 - A large star-allele gene needs `--allele`: *n* alleles is *n(n+1)/2*

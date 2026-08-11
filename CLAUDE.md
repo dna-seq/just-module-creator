@@ -117,6 +117,15 @@ rule without its reason gets rationalised away at 2 a.m.
   `print`/`typer.echo` is only for CLI output the user asked to see.
 - **Never curate `__all__` or add a re-export `__init__.py`.** This is an
   application; import from where the symbol actually lives.
+- **Never open a socket outside `net.py`.** Every outbound request goes through a
+  `ServiceGate` there, so pacing, User-Agent and the shared NCBI budget cannot
+  drift between clients. This server was socket-free until literature discovery
+  landed; that is a normal thing for an app surface to own, but only in one place.
+- **Never reach into an upstream private API.** No `EutilsClient._get`, no
+  `EuropePmcClient._get`, no reassigning another package's decorator state.
+  Everything we need is public — `EutilsSettings.identity_params()`,
+  `PacingGate`, `EuropePmcClient.lookup()/.fulltext()`, and the injectable
+  `LookupClients`. If something genuinely is not, file it; do not tunnel to it.
 
 ### The domain rules this server exists to enforce
 
@@ -137,6 +146,18 @@ design depends on.
 - **Never let a tool write a checked value from a lookup result.** Lookups report,
   the human decides, the linter checks. Preserve `applied: false` and its
   `refusal` verbatim across the MCP boundary — **the refusal is the feature.**
+- **Never extract a passage from a document a tool fetched.** No "best-matching
+  passage", no suggested quote, no search-within-text. `enrich_literature` checks
+  `provenance_quote` / `provenance_regex` against the Europe PMC fulltext, so a
+  quote lifted from that same fulltext makes `quotes_found` confirm itself. The
+  sharper reason is that those columns exist to record *that a curator read the
+  paper and located the claim* — a machine-located quote asserts a reading that
+  never happened, which is a false claim of provenance, not merely a vacuous
+  check. `hints.REDUNDANCY_BEARING` omits both columns; that is filed upstream,
+  and until it lands the refusal is ours to keep. Say the consequence out loud:
+  once a fulltext has been read through `fetch_fulltext`, `quotes_found` on that
+  row is no longer independent evidence — it has degraded to a citation-pairing
+  check, which still catches a quote written against the wrong PMID.
 - **Never collapse "unknown" into a boolean.** Answers are three-valued: true /
   false / **unknown**, and `None` is never `False`. When unknown, withhold — never
   report, never negate. **A check that could not run is not a check that passed**,
@@ -221,10 +242,26 @@ comparison against ISO values.
   immediately via `_shared.resolve_dir`.
 - **Dependency tier: everything is a hard dependency.** All four just-dna
   packages (`format`, `compiler`, `enricher`, `registry`) plus `fastmcp[tasks]`,
-  `pydantic`, `pydantic-settings`, `typer`, `anyio`, `python-dotenv`. Chosen so
-  every tool works after a bare `uv sync` and the plugin's one-command install
-  stays true; the cost is a heavier install for someone who only wants offline
-  linting. There are no extras and no optional imports.
+  `pydantic`, `pydantic-settings`, `typer`, `anyio`, `python-dotenv`, `httpx`,
+  `tenacity`. Chosen so every tool works after a bare `uv sync` and the plugin's
+  one-command install stays true; the cost is a heavier install for someone who
+  only wants offline linting. There are no extras and no optional imports.
+  `httpx` and `tenacity` are **declared** rather than leaned on transitively,
+  because `net.py` calls both directly and a transitive pin is not a contract.
+- **Do not hand-roll what the enricher already uses.** Retries are `tenacity`
+  with upstream's own `net.attempt_floor` stop, so one deployment variable tunes
+  our persistence and theirs together. Pacing is upstream's `PacingGate` — not a
+  rate-limiter library — because `ServiceGate` must share the *same instance*
+  with `EutilsClient` for the NCBI budget to be one budget. `ServiceGate` adds a
+  lock and nothing else.
+- **We read the ecosystem's env vars; we never forward them.** `settings.py`
+  passes nothing through to the enricher — it reads its own configuration from
+  the process environment. But when *we* are the one making the call, reading a
+  variable the enricher also reads is right, not a leak: `JUST_DNA_CONTACT_EMAIL`
+  and `NCBI_API_KEY` reach our clients through `EutilsSettings`, so one `.env`
+  configures both surfaces and upstream's precedence is inherited rather than
+  copied. Never fabricate a contact address — an invented one misattributes the
+  traffic to someone.
 - **Typer for the CLI. Pydantic 2 at every boundary** — every tool returns a
   model from `models.py`, never a bare dict, because an agent reads the field
   descriptions.
@@ -250,8 +287,17 @@ comparison against ISO values.
 
 ### How to add a tool
 
-1. Pick the tier: essentials (always), extended (`JMC_MODE=extended`), or
-   token-gated.
+1. Pick the tier. The line is **what the tool does, not how useful it is**:
+   **essentials** = everything that only *reads*, plus the ClinVar draft;
+   **extended** (`JMC_MODE=extended`) = everything that writes into a spec
+   directory or fetches at scale; **token-gated** = registry writes. Stated this
+   way because "the loop you need on every module" stopped discriminating once
+   drafting — step 2 of the taught workflow — became a tool.
+
+   There is no third mode, and tags are not the escape hatch: `mcp.enable()` is
+   server-global (see 7 below) and FastMCP 3.4.7 deprecated `include_tags` /
+   `exclude_tags` in its favour. Splitting extended would need a second `Mode`
+   member and a second `register_*`, and should wait for evidence that it is needed.
 2. Add it inside the matching `register_*` with type hints, a docstring (it
    becomes the description) and `ToolAnnotations`.
 3. Return a model from `models.py`.
@@ -380,10 +426,14 @@ preference: it goes into §10, in their words, with the reason.
 
 *Append-only. One line each, in the user's terms, with the why where it is not obvious.*
 
-- **Tree operations and publishing are the user's domain.** Never push, tag,
-  release, or manage branches. Commit only when asked — though "auto-commit as you
-  go" was granted for the initial build, with meaningfully sized commits rather
-  than atomized ones.
+- **"auto-commit grant lingers. Commit and push as you go" — "and tag."** Granted
+  2026-08-11, extending the initial-build grant to *push* and *tag*, and it does
+  not expire at the end of a feature. Still meaningfully sized commits rather than
+  atomized ones, and still explicit paths — never `git add -A`. Tag at a version
+  bump, matching the `pyproject.toml` version. Releases and branch management
+  stay the user's.
+- **"I need to have mvp, then pace declines."** Get a working end-to-end thing
+  first and refine after; do not gold-plate the early steps of a long build.
 - **Never destroy stashes**, even on explicit request. Data loss is the user's to
   enact.
 - **Never blind-stage** (`git add -A` / `git add .`) — it once committed a `.env`
