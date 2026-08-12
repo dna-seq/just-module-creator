@@ -135,6 +135,19 @@ class NamespaceAvailability(BaseModel):
         ),
     )
     registry_url: str | None = Field(default=None, description="The registry that was asked.")
+    requires_allow_test_data: bool | None = Field(
+        default=None,
+        description=(
+            "True when the name is claimable here but only if the caller asks explicitly — a "
+            "`test-`prefixed namespace on production. **`available: true` with this set is not a "
+            "green light**: the plain claim is refused, and this server does not offer the "
+            "override. null means the instance did not report it (pre-0.14)."
+        ),
+    )
+    warnings: list[str] = Field(
+        default_factory=list,
+        description="The instance's own warnings about claiming this name. Read them.",
+    )
     message: str = Field(description="Human-readable summary.")
 
 

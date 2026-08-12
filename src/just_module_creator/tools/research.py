@@ -397,6 +397,12 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         free one — lowercase letters and digits with single hyphens, and
         underscores are rejected rather than normalised, so `my_ns` comes back
         `valid: false` however unclaimed it is.
+
+        **`available: true` with `requires_allow_test_data: true` is not a green
+        light.** A `test-`prefixed name on production is unclaimed *and* refused
+        there by default; the registry has an explicit override and this server
+        does not offer it, so claim such a name on the polygon instead. Read
+        `warnings` — they are the instance's own words about what it will do.
         """
         if settings.offline:
             raise ToolError(
@@ -414,11 +420,29 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
 
         valid = bool(payload.get("valid"))
         available = bool(payload.get("available"))
+        # null, not False, when the instance is too old to report it: "did not say"
+        # is not "does not require it", and the difference decides whether a claim
+        # that reads as free will actually be accepted.
+        needs_override = payload.get("requires_allow_test_data")
+        needs_override = None if needs_override is None else bool(needs_override)
+        warnings = [str(w) for w in payload.get("warnings") or []]
+
         if not valid:
             message = (
                 f"{namespace!r} is not a legal namespace, so it cannot be claimed whatever its "
                 "availability says. Use lowercase letters and digits with single hyphens; replace "
                 "any underscore with a hyphen."
+            )
+        elif available and needs_override:
+            # `available: true` that this surface still cannot act on. Upstream fixed
+            # the older contradiction — the pre-flight used to say free where the claim
+            # refused — and this is the honest reading of the fix rather than a
+            # re-flattening of it: the name IS claimable there, just not by us.
+            message = (
+                f"{namespace!r} is unclaimed on production, but a `test-`prefixed name is refused "
+                "there by default and this server does not offer the override. Claim it on the "
+                'polygon (target="test") instead, or drop the prefix if the module is real. Read '
+                "`warnings` — they are the instance's own words."
             )
         elif available:
             message = (
@@ -437,6 +461,8 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             available=available,
             target=target,
             registry_url=settings.registry_url_for(target),
+            requires_allow_test_data=needs_override,
+            warnings=warnings,
             message=message,
         )
 

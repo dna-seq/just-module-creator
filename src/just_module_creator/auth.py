@@ -62,6 +62,9 @@ GATED_TOOLS = [
     "registry_validate",
     "registry_check",
     "registry_publish",
+    # Out-of-digest and no version bump, so it is the one published-module write that
+    # is genuinely repairable rather than permanent.
+    "registry_amend_readme",
     "registry_claim_namespace",
     "registry_delete_version",
     "registry_delete_module",

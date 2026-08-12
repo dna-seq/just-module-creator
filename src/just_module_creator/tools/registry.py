@@ -562,6 +562,108 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
     @mcp.tool(
         tags={GATED_TAG},
         annotations=ToolAnnotations(
+            title="Registry: fix a published module's readme",
+            readOnlyHint=False,
+            idempotentHint=True,
+            destructiveHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def registry_amend_readme(
+        namespace: str,
+        name: str,
+        version: str,
+        ctx: Context,
+        spec_dir: str | None = None,
+        readme_text: str | None = None,
+        target: RegistryTarget = DEFAULT_WRITE_TARGET,
+    ) -> OpResult:
+        """Replace a published version's readme — **no version bump, nothing burned**.
+
+        The rare registry write that is cheap and reversible. The readme sits
+        **outside `artifact.digest`**, deliberately: prose must not change a
+        module's content identity, or editing a caveat would mint a new digest and
+        collide with the duplicate-content claim of the module it is a copy of. So
+        unlike everything else about a published version, this is repairable.
+
+        It is also the field where a module says what it is **not** — that its rows
+        are candidates, that one association was not significant, which population
+        the evidence came from. `description` is one sentence and cannot carry
+        that, which is the reason this is amendable at all on an otherwise
+        immutable registry.
+
+        Give it **one** of two things, and the distinction matters because both
+        arrive as strings over this wire: `spec_dir` reads `README.md` from that
+        directory (the usual case — you have the file), or `readme_text` is the
+        markdown itself (fixing one sentence). Passing a path as `readme_text`
+        would publish the path *as* the prose, so they are separate arguments
+        rather than one that guesses.
+
+        Last-publish-wins, and a publish carrying no readme leaves the existing one
+        alone rather than blanking it — so this does not fight the next publish.
+        """
+        if not spec_dir and readme_text is None:
+            raise ToolError(
+                "Provide either spec_dir (to read README.md from it) or readme_text (the markdown)."
+            )
+        if spec_dir and readme_text is not None:
+            raise ToolError(
+                "Provide spec_dir or readme_text, not both — only you know which one is current."
+            )
+
+        # Everything decidable without a credential is decided first, the same order
+        # `registry_publish` uses and for the same reason: sending an author off to
+        # get a token for a call that could never have succeeded is a dead end.
+        if spec_dir:
+            spec = resolve_dir(spec_dir, settings)
+            readme = spec / "README.md"
+            if not readme.is_file():
+                raise ToolError(
+                    f"No README.md in {spec}. The registry reads that exact name — a "
+                    "`MODULE.md` is renamed on upload, and any other spelling is carried but "
+                    "never read. Write one, or pass the markdown as readme_text."
+                )
+            body = readme.read_text(encoding="utf-8")
+        else:
+            body = str(readme_text)
+
+        if not body.strip():
+            raise ToolError(
+                "The readme is empty, and sending it would blank the card rather than fix it. "
+                "Last-publish-wins applies to this field, so an empty body replaces what is "
+                "there instead of leaving it alone."
+            )
+
+        token = require_key(ctx, settings, store, target)
+        if token is None:
+            return unauthenticated_result(settings, target)
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        try:
+            payload = await run_sync(
+                lambda: _client(token, target).amend_readme(namespace, name, version, body)
+            )
+        except RegistryError as exc:
+            return OpResult(
+                success=False,
+                message=f"{describe(target, settings)} refused the readme: {exc}",
+                data={"target": target},
+            )
+        log.info("Amended readme for %s/%s@%s on %s", namespace, name, version, target)
+        return OpResult(
+            success=True,
+            message=(
+                f"Readme replaced on {namespace}/{name}@{version} at "
+                f"{describe(target, settings)}. No version was spent and the artifact digest is "
+                "unchanged — the readme is outside it."
+            ),
+            data={**dict(payload), "target": target},
+        )
+
+    @mcp.tool(
+        tags={GATED_TAG},
+        annotations=ToolAnnotations(
             title="Registry: claim a namespace",
             readOnlyHint=False,
             idempotentHint=True,

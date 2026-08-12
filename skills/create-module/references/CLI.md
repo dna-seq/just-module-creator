@@ -25,6 +25,7 @@ Install: `pip install just-dna-enricher` pulls the compiler and the format tier.
 | **would this publish** (dry run, no version spent) | `registry_check`, `registry_validate` | `registry-client check`, `registry-client validate` |
 | already published under any name | `registry_is_published` | `registry-client signature` + `find-by-hash` |
 | instance up, and which mode is it | `registry_health` | `registry-client version` (or `curl /health`) |
+| fix a published readme / logo / changelog | `registry_amend_readme` | `amend-changelog`, `amend-logo` (readme is tool-only) |
 | drafting from a source | `draft_from_clinvar`, `draft_from_cpic`, `draft_from_clinpgx` | `draft-panel`, `draft`, `draft-clinpgx` |
 | fact passes | `enrich_facts`, `enrich_literature_pass` | `frequencies`, `gene-metrics`, `dosage`, `literature` |
 | **signing** | — | `keygen`, `sign` |

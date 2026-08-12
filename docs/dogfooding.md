@@ -503,40 +503,10 @@ say in the docstring that `validate_module`'s warnings are the resolution-indepe
 if they are going to be a subset, that should be a stated property rather than something discovered by
 diffing two outputs.
 
-## F33 — our registry floor pins us below the fix upstream shipped, and `amend_readme` is unwrapped
+## F34 — every publish uploads the previous version's `published.json`
 
-**Found:** 2026-08-12, publishing `assets/longevity_2026` · **Severity:** medium · **Status:** open
-
-The defect itself is `F27` in
-[just-dna-format-pending-fixes.md](just-dna-format-pending-fixes.md) — a spec-directory `README.md`
-never reaches the module card. It is now **answered and fixed in registry 0.14.0**. This entry is the
-part that is ours.
-
-Verified by symbol rather than by changelog, which is what that rule is for:
-
-```
-installed just-dna-registry: 0.13.0
-amend_readme present: False
-amend_logo present: True
-```
-
-`pyproject.toml` pins `just-dna-registry>=0.13.0`. So the fix is on PyPI, `longevity_2026@1.0.0` has an
-empty readme, and our own floor is what keeps us off it — released upstream, state 2 for us.
-
-Three separable pieces of work:
-
-1. **Raise the floor to `>=0.14.0`**, `uv sync`, and re-verify by importing `amend_readme` rather than
-   by reading their changelog.
-2. **Wrap `amend_readme` as a tool.** It mirrors `amend_logo`, sits **outside `artifact.digest`** and
-   needs no version bump, so a published module's readme is repairable without burning a version. That
-   property is why it earns a wrapper instead of a note telling authors to shell out: it is the rare
-   registry write that is genuinely cheap and genuinely reversible. `longevity_2026@1.0.0` is the first
-   caller waiting for it.
-3. **Teach the name.** `skills/create-module/SKILL.md` mentions neither `README.md` nor `MODULE.md`,
-   while the directory-layout section lists `logo.png` as optional. Once the floor moves it should say
-   a `README.md` in the spec directory becomes the card's readme — module-level, last-publish-wins, and
-   left alone by a publish that carries none. `MODULE.md` is renamed on upload in 0.14.0, so an author
-   who followed upstream's older advice is repaired rather than dropped.
+**Found:** 2026-08-12, upstream's review of a publish (theirs to notice, ours to own) ·
+**Severity:** low · **Status:** open
 
 **One thing upstream noticed that we did not.** `gather_spec_files` uploads our own `published.json` on
 every publish, so each version's storage carries the previous version's receipt. We are the ones who

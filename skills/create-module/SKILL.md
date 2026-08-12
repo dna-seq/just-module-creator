@@ -115,6 +115,7 @@ reach the one compiler flag that silently produces a module no VCF can match.
 | is this data already published, under any name | `registry_is_published` | essentials |
 | is this instance up, and is it the one I named | `registry_health` | essentials |
 | publish, or rehearse a publish | `authenticate` → `registry_whoami` → `registry_claim_namespace` → `registry_publish` | gated |
+| fix a published module's readme (no version spent) | `registry_amend_readme` | gated |
 | undo a rehearsal (polygon only) | `registry_delete_version`, `registry_delete_module` | gated |
 
 **The default tier runs this whole procedure.** Everything from scaffold to publish is essentials,
@@ -153,8 +154,16 @@ my_module/
   resolution.csv       # produced by enrich — coordinates + VRS ids. Commit it.
   literature.csv       # produced by `literature` — PMID/DOI existence. Commit it.
   sources.csv          # you write this: required when data came from a licence-bearing source
+  README.md            # you write this: it BECOMES the module's registry card
   logo.png             # optional
 ```
+
+**`README.md` is the module card.** The registry projects it onto the published module, so a module
+without one has a blank card in the catalog — which is what a browsing consumer sees first. Write it
+for someone deciding whether to install: what the module claims, which population the evidence came
+from, and what it does not cover. `MODULE.md` is the old name; it still uploads and is renamed on the
+way in with a warning, and any other spelling warns rather than silently doing nothing. Prose can be
+fixed after publishing without spending a version number, unlike every other file here.
 
 One CSV = one concern. A module leads with **exactly one** primary table. A drug-response module
 carries `pharm_variants.csv` and **no** `variants.csv`.

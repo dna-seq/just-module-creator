@@ -663,12 +663,18 @@ preference: it goes into §10, in their words, with the reason.
   directory, which is a path quirk and not a rename.
 - The registry keeps its own intake at
   `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`, created 2026-08-11.
-- **`just-dna-registry` moves fast: 0.9.1 → 0.12.0 → 0.13.0 inside 2026-08-11.**
-  0.13.0 is on PyPI, is what `uv sync` installs, is our floor, and is what **both**
-  live instances report on `/health`. The sibling tree declares the same version, so
-  the path-dependency problem that applied at 0.11.3 is still absent. **Re-check with
+- **`just-dna-registry` moves fast: 0.9.1 → 0.12.0 → 0.13.0 → 0.14.0 in two days.**
+  0.14.0 is on PyPI, is what `uv sync` installs, and is our floor. **That floor is
+  load-bearing rather than hygiene**: 0.14.0 is the release that projects a
+  spec-directory `README.md` onto the module card, so below it every module we publish
+  has a blank catalog card (`F33`). **Re-check with
   `importlib.metadata.version("just-dna-registry")` rather than trusting this
-  line** — it went stale within hours twice.
+  line** — it has gone stale within hours three times.
+- **Their release notes carry a `Client surface:` line, and it is trustworthy.** Their
+  answer to our `S2`. Read that one line instead of the whole release to establish that
+  the client methods we call did not move — 0.13.0 and 0.14.0 both say *unchanged*, and
+  0.14.0's was verified upstream with `git log -S` over our eight. The **additions**
+  still have to be read: 0.14.0's four all mattered to us.
 - **Reading a registry upgrade got cheaper in 0.13.0** (their `S2` = our `F15`).
   Every release entry now opens with a `Client surface:` line — 0.13.0's says
   *unchanged*, checked with `git log -S` over the eight `RegistryClient` methods we
@@ -735,12 +741,18 @@ preference: it goes into §10, in their words, with the reason.
   client-surface contract = `F15`) and `S3` (no endpoint reports an instance's mode
   = `F16`) — **all three answered and released in 0.13.0**, except `S2`'s enumerated
   contract, which is open on their roadmap because it needs a contract version of
-  its own. Next ids as of 2026-08-12: **`S27`** in the format tree, **`S8`** in the
-  registry's. Compute both with `.claude/triage-state.sh --next`; never read them
-  off an inbox. **And read `docs/` before filing, not just the inbox** — on
-  2026-08-12 two of our own sessions filed the same readme defect hours apart
-  (`F27` = registry `S5`, then `S7`), and the second was closed as a duplicate. The
-  duplicate check is cheap and neither session ran it.
+  its own. `S5`–`S7` (the readme) — **released in 0.14.0**. `S8` (they attribute
+  `write_module_md` to us) and `S9` (`amend_readme` is on their client but not their
+  CLI) — filed 2026-08-12, open.
+- **Never read a next-`S<n>` off a line like this one; run
+  `.claude/triage-state.sh --next` in the repo you are filing into.** The proof is in
+  this file's own history: it said `S25`/`S5` on 2026-08-11, `S27`/`S8` hours later,
+  and both were wrong again by the next session (`S29`/`S10`). A number written down
+  here is stale by construction, because either seat may file between sessions.
+- **Read `docs/` before filing, not just the inbox.** On 2026-08-12 two of our own
+  sessions filed the same readme defect hours apart (`F27` = registry `S5`, then
+  `S7`), and the second was closed as a duplicate. The duplicate check is cheap and
+  neither session ran it.
 - **"The goal of this plugin is to be ai-coauthor. And it can be driven by a lyman."** Stated
   2026-08-12. The module owner brings the *theme* and the *sources* — a trait, some PDFs, a video.
   Everything after that is the agent's: triage, rows, conclusions, located passages. **"Here you

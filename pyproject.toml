@@ -1,6 +1,6 @@
 [project]
 name = "just-module-creator"
-version = "0.8.0"
+version = "0.9.0"
 description = "MCP server + Claude Code skill for authoring and publishing just-dna annotation modules"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -24,9 +24,11 @@ dependencies = [
     "just-dna-compiler>=0.5.4",
     "just-dna-format>=0.5.4",
     "just-dna-enricher>=0.5.4",
-    # 0.13.0 lifts the would_publish variant ceiling for offline runs and adds
-    # would_publish_module_level, which is what closes F11.
-    "just-dna-registry>=0.13.0",
+    # 0.14.0 is the floor because it is the release that projects a spec-directory
+    # README.md onto the module card, and it adds `amend_readme` so an already-published
+    # module's prose is repairable without spending a version number (F33). Below it,
+    # every module we publish has a blank catalog card.
+    "just-dna-registry>=0.14.0",
     "python-dotenv>=1.2.2",
     # Declared, not leaned on transitively: net.py calls httpx directly for the
     # literature sources, and a transitive pin is not a contract.

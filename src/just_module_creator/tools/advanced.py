@@ -141,12 +141,26 @@ def register_extended(mcp: FastMCP, settings: Settings, services: NetworkService
         name: str,
         version: str,
         dest: str,
+        include_inputs: bool = True,
         target: RegistryTarget = DEFAULT_CATALOG_TARGET,
     ) -> OpResult:
         """Download and integrity-verify a published module version.
 
         Verification happens as part of the download — a failure raises rather
         than writing a module you cannot trust.
+
+        **`include_inputs` defaults to `true` here, and upstream's client defaults
+        it to `false`.** That is deliberate rather than an oversight: without it a
+        download is the compiled parquets and `manifest.json` alone, and the
+        authored CSVs stay on the server — so the published spec, which is the most
+        instructive thing a registry holds, would not arrive. Measured against
+        `eric-mods/lactose_tolerance@1.0.0`: 4 files without, 7 with, and the three
+        extra are `module_spec.yaml`, `variants.csv` and `studies.csv`. Pass
+        `false` when you genuinely want only the artifact.
+
+        With the inputs present you usually do not need `reverse_module` on a
+        downloaded module — that tool reconstructs a spec from parquet, and here the
+        spec arrived as itself.
 
         `target` defaults to production, the catalog a module is installed from.
         The polygon holds rehearsals, so downloading from it is for checking your
@@ -158,7 +172,15 @@ def register_extended(mcp: FastMCP, settings: Settings, services: NetworkService
 
         def _download():
             client = client_for(target, settings)
-            return client.download(namespace, name, version, dest_dir)
+            # `layout` stays flat and is not exposed. 0.14 added `layout="split"`,
+            # which emits the enricher's files under `derived/` — genuinely useful
+            # for seeing which files an author wrote, and a tree
+            # `just-dna-compiler compile` REFUSES, because it wants the authored
+            # tables at the spec root. Offering it from an authoring surface would
+            # hand someone a directory that cannot be rebuilt.
+            return client.download(
+                namespace, name, version, dest_dir, include_inputs=include_inputs
+            )
 
         try:
             manifest = await run_sync(_download)

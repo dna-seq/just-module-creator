@@ -1,16 +1,17 @@
 """Which registry instance a call is aimed at, and what each one accepts.
 
-The registry runs **two deployments of one image** (registry 0.12): production —
-the catalog everyone installs from — and the **polygon**, an instance started
-with ``REGISTRY_MODE=test``. They do not share a database, an account, a
-namespace or an artifact store.
+The registry runs **two deployments of one image**: production — the catalog
+everyone installs from — and the **polygon**, an instance started with
+``REGISTRY_MODE=test``. They do not share a database, an account, a namespace or
+an artifact store.
 
 The split exists because a published version is immutable *and* its authored data
 is claimed by a name-independent ``content_hash`` that ``yank`` does not release.
 So on a single instance every rehearsal permanently burns both a version number
 and the right to publish that data under any other name. The polygon accepts
-``test-``prefixed data and will hard-delete it again; production refuses to
-accept it at all.
+``test-``prefixed data and will hard-delete it again; production refuses it **by
+default** — registry 0.14 added an explicit ``allow_test_data`` override, which
+this surface does not expose (see ``prod_refusal``).
 
 **Why the write tools default to the polygon.** A forgotten ``target`` there
 costs nothing — delete it and go again. The same omission against production is
@@ -104,21 +105,34 @@ def prod_refusal(target: RegistryTarget, *, namespace: str = "", name: str = "")
     A local pre-check, not a replacement for the server's: production answers
     ``422 test_data_on_prod`` on its own and remains the authority. Checking here
     costs nothing and turns a round trip into a sentence that says what to do.
+
+    **As of registry 0.14 the server's ban is a default rather than an absolute** —
+    ``allow_test_data=true`` is a documented way through, on publish, import and the
+    namespace claim. This surface deliberately does **not** expose it, so the refusal
+    below is now partly *ours*, and it says so rather than claiming the server makes
+    it impossible. The reason to keep refusing is the one upstream gives for keeping
+    the default: the failure is silent and permanent, because a mistyped namespace
+    spends a version number and a global ``content_hash`` that only an operator purge
+    frees. An agent that can wave that through on an author's behalf is exactly what
+    the polygon default exists to prevent.
     """
     if target != "prod":
         return None
     if namespace and is_test_namespace(namespace):
         return (
-            f"Production refuses test data: a namespace starting {TEST_NAMESPACE_PREFIX!r} is "
-            "`422 test_data_on_prod` there, at the claim as well as at the publish. Rehearse "
-            'under this name on the polygon (target="test"), and publish to production under a '
-            "name that is not marked as test data."
+            f"A namespace starting {TEST_NAMESPACE_PREFIX!r} is refused on production by default "
+            "— `422 test_data_on_prod`, at the claim as well as at the publish. The registry does "
+            "have an explicit override and this surface does not offer it, because a mistyped "
+            "namespace there spends a version number and a global content hash that only an "
+            'operator purge frees. Rehearse under this name on the polygon (target="test"), and '
+            "publish to production under a name that is not marked as test data."
         )
     if name and is_test_module_name(name):
         return (
-            f"Production refuses test data: a module name starting {TEST_MODULE_PREFIX!r} is "
-            '`422 test_data_on_prod` there. Rehearse it on the polygon (target="test"); a module '
-            "published for real needs a name that is not marked as a test."
+            f"A module name starting {TEST_MODULE_PREFIX!r} is refused on production by default "
+            "— `422 test_data_on_prod`. The registry has an explicit override; this surface does "
+            'not offer it. Rehearse on the polygon (target="test"); a module published for real '
+            "needs a name that is not marked as a test."
         )
     return None
 

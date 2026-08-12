@@ -3,6 +3,100 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.9.0 — the card an author actually ships (2026-08-12)
+
+Adopts `just-dna-registry` **0.14.0**. The floor moves to `>=0.14.0` and that is the load-bearing
+part: 0.14.0 is the release that projects a spec-directory `README.md` onto the module card, so
+**below it every module we publish has a blank catalog card** — which is the first thing a browsing
+consumer sees. Our own pin was what kept us off the fix (`F33`).
+
+Verified by importing the symbol from the installed package, per the rule: `amend_readme present:
+True` on 0.14.0, `False` on 0.13.0.
+
+**Their `Client surface: unchanged` line did its job.** `F15` asked for exactly this, and reading one
+line replaced reading a release in full to establish that our eight-plus methods had not moved. Four
+things were *added*, and all four turned out to matter here.
+
+### `registry_amend_readme` — the one published-module write that spends nothing
+
+The readme sits **outside `artifact.digest`**, deliberately, so prose cannot change a module's content
+identity. That makes it the only thing about a published version that is repairable, which is why it
+earned a wrapper rather than a note telling authors to shell out.
+
+Two refusals, both tested, both about not making things worse:
+
+- **A path is not prose.** Upstream disambiguates a file path from markdown *by type*, and every MCP
+  argument arrives as a string — so one collapsed parameter would let `readme="spec/README.md"`
+  publish the path itself as the card's text, on a module whose whole problem was an unreadable card.
+  `spec_dir` and `readme_text` are separate, and both-at-once is refused.
+- **An empty body is refused.** The field is last-publish-wins, so empty prose *replaces* what is
+  there. A tool for fixing a blank card must not be able to make one.
+
+Checks that need no credential run **before** `require_key`, matching `registry_publish`'s order:
+sending an author to fetch a token for a call that could never succeed is a dead end. The first draft
+had it backwards and the new tests caught it — they asserted refusals and got an unauthenticated
+result instead.
+
+**Run against the real waiting caller**, not a fixture: `test-sheep/longevity_2026@1.0.0` went from a
+zero-length readme to 6860 characters, and the artifact digest afterwards was byte-identical to the
+one `published.json` recorded at publish time. That is the tool's central claim, so it is worth
+having actually run.
+
+### A download now carries the authored CSVs (`include_inputs`)
+
+`download(include_inputs=…)` is new, and upstream's default is `false` — which means the compiled
+parquets and `manifest.json` arrive and the *authored spec does not*. Measured against
+`eric-mods/lactose_tolerance@1.0.0`: 4 files without, 7 with, the three extra being
+`module_spec.yaml`, `variants.csv` and `studies.csv`.
+
+**Our `registry_download` defaults it to `true`**, and the docstring says it differs from the client
+on purpose. This is an authoring surface; the published spec is the most instructive thing the
+registry holds, and a "worked example" without the CSVs is not one. With the inputs present you
+usually do not need `reverse_module` on a downloaded module — the spec arrived as itself.
+
+`layout="split"` also shipped and is **not** exposed. It emits the enricher's files under `derived/`,
+which is genuinely useful for seeing which files an author wrote — and a tree
+`just-dna-compiler compile` refuses, because it wants the authored tables at the spec root. Offering
+it from here would hand someone a directory they cannot rebuild.
+
+### `available: true` that this surface still cannot act on
+
+0.14.0 turned production's test-data ban into a **default** rather than an absolute:
+`allow_test_data=true` is a documented way through, and the availability pre-flight gained
+`requires_allow_test_data` and a `warnings` list to stop contradicting the claim it precedes.
+
+Both are surfaced, and `requires_allow_test_data` is **null rather than false** when the instance did
+not report it — "did not say" is not "does not require it", and the difference decides whether a name
+that reads as free will actually be accepted. Confirmed live: production answers
+`available: true, requires_allow_test_data: true` for `test-modules`.
+
+**We do not expose the override**, and the refusal messages now say that the remaining refusal is
+partly ours instead of claiming the server makes it impossible. Keeping it is the decision, for the
+reason upstream gives for keeping the default: a mistyped namespace there spends a version number and
+a global content hash that only an operator purge frees. An agent that can wave that through on an
+author's behalf is what the polygon default exists to prevent.
+
+### `README.md`, taught where an author will read it
+
+The skill's directory layout listed `logo.png` as optional and mentioned no readme at all, so
+following it produced a blank card. It now names `README.md` as the file that *becomes* the card, says
+what belongs in it — what the module claims, which population the evidence came from, what it does not
+cover — and records that `MODULE.md` is renamed on upload with a warning while any other spelling is
+carried but never read.
+
+### Filed upstream
+
+- **registry `S8`** — their `specfiles.py` comment and changelog both attribute `MODULE.md` to
+  "`just-module-creator`'s `write_module_md` tool". **That tool has never existed here**: no match in
+  the tree, and `git log --all -S write_module_md` finds none in the history either. It lives in
+  `just-dna-pipelines`, in a file named `module_creator.py` — a good enough reason for the mix-up, and
+  it will only get more confusing with age. Their rename decision is unaffected and right; the cost is
+  a wrong address for anyone who later wants the producer to emit `README.md` at the source.
+- **registry `S9`** — `amend_readme` is on the client and not the CLI, while `amend-logo` and
+  `amend-changelog` both are. Noticed because our `references/CLI.md` documents their CLI for authors
+  who drive it directly, and now has to say the readme is the one amend they cannot do without our
+  server.
+
 ## 0.8.0 — ask whether it would publish, and hermeticity stops being a promise (2026-08-12)
 
 Two things: `RM8` — the registry client surface is wrapped — and `F24`, where the suite's

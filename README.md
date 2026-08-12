@@ -94,6 +94,7 @@ The server **boots with no environment configured** — authoring a module needs
 | `reverse_module`, `registry_download` | extended | no | read back somebody else's compiled artifact |
 | `registry_validate`, `registry_check` | gated | **yes** | would this publish — server-side, spending no version number. `check` is the full dry run |
 | `registry_whoami`, `registry_claim_namespace`, `registry_publish` | gated | **yes** | registry writes; publish records the stamped identity in `published.json` |
+| `registry_amend_readme` | gated | **yes** | fix a published module's card — outside `artifact.digest`, so no version is spent |
 | `registry_delete_version`, `registry_delete_module` | gated | **yes** | undo a rehearsal on the polygon; refused for production, which offers `yank` instead |
 
 Plus a resource (`resource://just-dna/tables`) and a prompt (`create_module`).

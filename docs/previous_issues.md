@@ -337,3 +337,69 @@ the old behaviour by exposing the real token (verified by flipping the fixture t
 `test_the_clear_list_covers_every_variable_settings_reads` pins that the list stays derived.
 A companion test records whether this checkout even has a `.env`, so a green suite cannot be
 mistaken for proof the leak is closed when there was nothing to leak.
+
+## F33 — our registry floor pinned us below the fix upstream shipped, and `amend_readme` was unwrapped
+
+**Found:** 2026-08-12, publishing `assets/longevity_2026` · **Resolved:** 2026-08-12 ·
+**Upstream half:** `F27` / registry `S5`, released in **0.14.0**
+
+The defect was upstream's — a spec-directory `README.md` never reached the module card — and it was
+fixed in registry 0.14.0. What was ours: our floor said `>=0.13.0`, so `uv sync` gave us a client
+without `amend_readme`, `longevity_2026@1.0.0` had an empty readme, and **our own pin was what kept
+us off the fix**. Released upstream, state 2 for us — the exact case the three-states rule exists to
+name.
+
+All three pieces of the filed work list are done.
+
+**1. The floor is `just-dna-registry>=0.14.0`**, verified the way the rule requires — by importing the
+symbol from the installed package rather than reading a changelog:
+
+```
+installed just-dna-registry: 0.14.0
+amend_readme present: True
+```
+
+**2. `amend_readme` is wrapped** as `registry_amend_readme`, and it earned a wrapper for the reason
+the finding gave: the readme sits **outside `artifact.digest`**, so this is the one write against a
+published version that spends nothing and can be redone. Everything else about a published version is
+permanent.
+
+Two refusals were worth building into it, and both are tested:
+
+- **A path is not prose.** Upstream's `amend_readme(readme=…)` disambiguates a file path from markdown
+  *by type*, and every MCP argument arrives as a string — so one collapsed parameter would let
+  `readme="spec/README.md"` publish the path itself as the card's text, quietly, on a module whose
+  whole problem was an unreadable card. Hence `spec_dir` and `readme_text` as separate arguments, with
+  both-at-once refused.
+- **An empty body is refused.** The field is last-publish-wins, so empty prose replaces what is there.
+  A tool for fixing a blank card must not be able to make one.
+
+The checks that need no credential run **before** `require_key`, matching `registry_publish`'s
+order and its stated reason: sending an author to fetch a token for a call that could never have
+succeeded is a dead end. The first draft had that backwards and the tests caught it — they were
+written to assert refusals and instead got an unauthenticated result.
+
+**Verified on the waiting caller rather than a fixture.** `test-sheep/longevity_2026@1.0.0` on the
+polygon went from `readme` of length 0 to 6860 characters, and the artifact digest afterwards was
+byte-identical to the one `published.json` recorded at publish time:
+
+```
+digest now     : sha256:809facbf…de2f
+digest recorded: sha256:809facbf…de2f
+unchanged by the readme amend: True
+```
+
+That check is the tool's central claim, so it is worth having actually run.
+
+**3. `README.md` is taught.** The skill's directory layout listed `logo.png` as optional and mentioned
+no readme at all, so an author following it shipped a blank card. It now names `README.md` as the file
+that *becomes* the card, says what to write in it (what the module claims, which population the
+evidence came from, what it does not cover), and records that `MODULE.md` is renamed on upload with a
+warning while any other spelling is carried but never read.
+
+**A record correction went upstream as registry `S8`.** Their `specfiles.py` comment and changelog
+both attribute `MODULE.md` to "`just-module-creator`'s `write_module_md` tool". That tool has never
+existed here — no match in the tree, and `git log --all -S` finds none in the history either. It lives
+in `just-dna-pipelines`, in a file named `module_creator.py`, which is a good enough reason for the
+mix-up. Their rename decision is unaffected and correct; the cost is a wrong address for anyone who
+later wants the producer to emit `README.md` at the source.

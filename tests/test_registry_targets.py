@@ -53,6 +53,9 @@ REGISTRY_TOOL_DEFAULTS = {
     # polygon and vice versa.
     "registry_validate": "test",
     "registry_check": "test",
+    # A write, so it rehearses like the others — and it is per-instance anyway: the
+    # module it amends exists on one registry only.
+    "registry_amend_readme": "test",
     # And this one asks about the published world, like every other catalog read: the
     # question is "has anyone published this data", and production is where that
     # matters — a polygon duplicate is deletable.
@@ -500,3 +503,131 @@ def test_no_token_is_not_a_negative_verdict() -> None:
     assert out.verdict_unavailable == "no_registry_token"
     assert not out.blocking, "nothing was checked, so nothing can be reported as blocking"
     assert "validate_module" in out.next_step
+
+
+# --------------------------------------------------------------------------- #
+# Registry 0.14: an unclaimed name this surface still cannot claim
+# --------------------------------------------------------------------------- #
+def test_available_plus_requires_override_is_not_reported_as_a_green_light():
+    """`available: true` and "go ahead" are different answers (registry 0.14).
+
+    A `test-`prefixed namespace on production is genuinely unclaimed *and* refused
+    there by default. Upstream deliberately did NOT flip `valid` to false — the
+    policy moved, so the name really is claimable with the override — which leaves
+    the wrapper responsible for not reading `available` alone as permission.
+    Confirmed against the live instance while adopting 0.14: production answers
+    `available: true, requires_allow_test_data: true` for `test-modules`.
+    """
+    from just_module_creator.models import NamespaceAvailability
+
+    answer = NamespaceAvailability(
+        namespace="test-modules",
+        valid=True,
+        available=True,
+        requires_allow_test_data=True,
+        warnings=["starts with 'test-', which this production instance does not accept by default"],
+        message=(
+            "'test-modules' is unclaimed on production, but a `test-`prefixed name is refused "
+            'there by default and this server does not offer the override. Claim it on the '
+            'polygon (target="test") instead.'
+        ),
+    )
+
+    assert answer.available is True
+    assert answer.requires_allow_test_data is True
+    # The message must not read as permission, and must name the way out.
+    assert "polygon" in answer.message
+    assert answer.warnings, "the instance's own warning must survive"
+
+
+def test_an_instance_that_does_not_report_the_override_is_null_not_false():
+    """Pre-0.14 said nothing; "did not say" is not "does not require it"."""
+    from just_module_creator.models import NamespaceAvailability
+
+    answer = NamespaceAvailability(
+        namespace="my-ns", valid=True, available=True, message="free"
+    )
+
+    assert answer.requires_allow_test_data is None
+    assert answer.warnings == []
+
+
+def test_the_prod_refusal_no_longer_claims_the_server_makes_it_impossible():
+    """0.14 turned the ban into a default, so the refusal is partly ours now.
+
+    Keeping the refusal is the decision (an agent must not wave an author's data
+    onto an immutable registry); claiming the server forbids it outright would be
+    a false statement about somebody else's API.
+    """
+    refusal = prod_refusal("prod", namespace="test-mine")
+
+    assert refusal is not None
+    assert "by default" in refusal, "the ban is a default as of 0.14, not an absolute"
+    assert "does not offer it" in refusal, "and the remaining refusal is ours — say so"
+    assert "polygon" in refusal
+
+
+# --------------------------------------------------------------------------- #
+# amend_readme: the one published-module write that is cheap (F33)
+# --------------------------------------------------------------------------- #
+async def test_amend_readme_refuses_a_path_masquerading_as_prose(make_client):
+    """The one ambiguity worth spending two arguments on.
+
+    Upstream's `amend_readme(readme=...)` disambiguates a path from markdown by
+    TYPE, and every MCP argument arrives as a string. Collapsed into one parameter,
+    `readme="spec/README.md"` would publish the path *as* the card's prose — quietly,
+    and on a module whose whole problem was a card nobody could read.
+    """
+    from fastmcp.exceptions import ToolError
+
+    async with make_client("essentials", offline_settings()) as client:
+        args = {"namespace": "ns", "name": "m", "version": "1.0.0"}
+        with pytest.raises(ToolError, match="Provide either spec_dir"):
+            await client.call_tool("registry_amend_readme", args)
+        with pytest.raises(ToolError, match="not both"):
+            await client.call_tool(
+                "registry_amend_readme",
+                {**args, "spec_dir": "/tmp", "readme_text": "# hi"},
+            )
+
+
+async def test_amend_readme_refuses_to_blank_a_card(make_client, tmp_path):
+    """Sending empty prose would replace a readme rather than repair one.
+
+    Last-publish-wins is the registry's rule for the field, so an empty body is
+    accepted and destroys what was there. The tool is for fixing a blank card, so
+    making one is the failure mode to close.
+    """
+    from fastmcp.exceptions import ToolError
+
+    async with make_client("essentials", offline_settings()) as client:
+        with pytest.raises(ToolError, match="blank the card"):
+            await client.call_tool(
+                "registry_amend_readme",
+                {"namespace": "ns", "name": "m", "version": "1.0.0", "readme_text": "   \n"},
+            )
+
+
+async def test_amend_readme_names_the_exact_filename_it_reads(make_client, tmp_path):
+    """A spec dir with no README.md must say which name the registry reads.
+
+    `MODULE.md` is renamed on upload and anything else is carried-but-never-read, so
+    "no readme found" without the exact name is the dead end this message removes.
+    """
+    from fastmcp.exceptions import ToolError
+
+    spec = tmp_path / "spec"
+    spec.mkdir()
+    (spec / "MODULE.md").write_text("# the old name")
+
+    async with make_client("essentials", offline_settings()) as client:
+        with pytest.raises(ToolError, match="README.md"):
+            await client.call_tool(
+                "registry_amend_readme",
+                {
+                    "namespace": "ns",
+                    "name": "m",
+                    "version": "1.0.0",
+                    "spec_dir": str(spec),
+                },
+            )
