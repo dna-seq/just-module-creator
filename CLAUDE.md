@@ -506,9 +506,9 @@ gives every `S<n>`, who reported it, the verdict and where it landed. So:
   nothing about which ids are taken, and ids are never reused — not even for an
   item answered as a non-issue, because the reply is part of the record. Compute it:
   `.claude/triage-state.sh --next` in their repo scans the inbox *and* the history
-  file. The inbox states the next id in its own heading too (**`S25`** in the format
-  tree and **`S5`** in the registry's, as of 2026-08-11 — and those move within
-  hours, so run the script). Their `CONSUMER_TRIAGE_LOOP.md` is the producer-side
+  file. The inbox states the next id in its own heading too (**`S27`** in the format
+  tree and **`S8`** in the registry's, as of 2026-08-12 — and those move within
+  hours, so run the script: both moved by two on 2026-08-12 alone). Their `CONSUMER_TRIAGE_LOOP.md` is the producer-side
   runbook and not ours to drive.
 - **"Answered" is not "fixed", and "fixed" is not "released".** Three distinct
   states, and only the third lets a guard come out:
@@ -691,13 +691,15 @@ preference: it goes into §10, in their words, with the reason.
   See `targets.py`; the write tools default to the polygon and the catalog reads to
   production, because a forgotten `target` costs nothing on one and is
   irreversible on the other.
-- **We hold no registry credential as of 2026-08-11.** The `test-creator` account
-  and its `test-modules` namespace are **gone from production**, which now refuses
-  `test-`prefixed data outright. `JMC_API_KEY` was cleared from `.env` rather than
-  left stale — a dead token makes every registry tool report *"the registry
-  rejected your token"*, which sends an author to debug auth instead of to
-  register. `JMC_TEST_API_KEY` (the polygon's, a separate header and a separate
-  token) has never been set. `JMC_INSTALL_ID` is still there deliberately: it is a
+- **We hold a POLYGON credential and no production one, as of 2026-08-12.**
+  `JMC_TEST_API_KEY` is set in `.env` and `registry_whoami(target="test")` answers
+  **account `sheep`, namespace `test-sheep`** — so a polygon rehearsal needs no
+  `registry_register` and no namespace claim. Production is still empty: the
+  `test-creator` account and its `test-modules` namespace are **gone from
+  production**, which now refuses `test-`prefixed data outright, and `JMC_API_KEY`
+  was cleared from `.env` rather than left stale — a dead token makes every registry
+  tool report *"the registry rejected your token"*, which sends an author to debug
+  auth instead of to register. `JMC_INSTALL_ID` is still there deliberately: it is a
   proof-of-work string rather than an instance credential, it exists nowhere else,
   and destroying it is the user's call, not ours.
 - As of 2026-08-11 production holds one module, `eric-mods/lactose_tolerance@1.0.0`
@@ -733,9 +735,12 @@ preference: it goes into §10, in their words, with the reason.
   client-surface contract = `F15`) and `S3` (no endpoint reports an instance's mode
   = `F16`) — **all three answered and released in 0.13.0**, except `S2`'s enumerated
   contract, which is open on their roadmap because it needs a contract version of
-  its own. Next ids as of 2026-08-11: **`S25`** in the format tree, **`S5`** in the
+  its own. Next ids as of 2026-08-12: **`S27`** in the format tree, **`S8`** in the
   registry's. Compute both with `.claude/triage-state.sh --next`; never read them
-  off an inbox.
+  off an inbox. **And read `docs/` before filing, not just the inbox** — on
+  2026-08-12 two of our own sessions filed the same readme defect hours apart
+  (`F27` = registry `S5`, then `S7`), and the second was closed as a duplicate. The
+  duplicate check is cheap and neither session ran it.
 - **"The goal of this plugin is to be ai-coauthor. And it can be driven by a lyman."** Stated
   2026-08-12. The module owner brings the *theme* and the *sources* — a trait, some PDFs, a video.
   Everything after that is the agent's: triage, rows, conclusions, located passages. **"Here you

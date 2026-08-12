@@ -392,3 +392,159 @@ would close this without touching the refusal model: the author still reads the 
 reports traits alongside genes, `registry_get_module` surfaces them, and a trait key is how two modules
 about the same phenotype are ever going to find each other. A column that is empty because the surface
 cannot help you fill it is a different thing from one that is empty because nothing was stated.
+
+---
+
+## F30 — we read PubMed's `pmcid` display string instead of its `pmc` identifier
+
+**Found:** 2026-08-12, authoring `assets/longevity_2026` · **Severity:** high · **Status:** open
+
+`literature_search` returns PMCIDs that are not PMCIDs:
+
+```json
+{"pmid": "41427385", "pmcid": "pmc-id: PMC12713140;"}
+```
+
+`esummary` publishes the same id twice under two `idtype`s, and only one of them is an identifier:
+
+```
+'pmc'   -> 'PMC12713140'
+'pmcid' -> 'pmc-id: PMC12713140;'
+```
+
+`discovery.parse_pubmed_summaries` does `pmcid=ids.get("pmcid")`, so it takes the display string. Every
+PubMed-sourced result in a mixed search carries the mangled form while every Europe PMC-sourced result
+in the *same response* carries a clean `PMC12155586`, so the field's shape depends on which service
+answered — and an agent reading down a result list has no reason to expect that.
+
+**The cost is that the value cannot be passed on.** `fetch_fulltext(pmcid=…)` wants a real PMCID.
+Getting one out of our own search result means noticing the prefix and stripping it by eye, which is
+what happened here — and only because the paper mattered enough to chase. The fix is `ids.get("pmc")`,
+with the `pmcid` key kept as a fallback that strips `pmc-id:` and `;` rather than trusted.
+
+**The generalisable point: two keys differing by four characters, one of which is a label.** Nothing
+downstream type-checks a PMCID, so a display string travels as far as the first thing that dereferences
+it, and that thing is usually a network call that comes back empty rather than an error.
+
+## F31 — `fetch_fulltext(pmid=…)` reports "nothing retrieved" for papers whose fulltext it will return by PMCID
+
+**Found:** 2026-08-12, authoring `assets/longevity_2026` · **Severity:** high · **Status:** open
+
+The centrepiece paper of that module — the bioRxiv preprint with the *CGAS* functional work, PMID
+`41427385` — came back empty:
+
+```json
+{"retrieved": false, "text": null, "text_source": null, "locations": []}
+```
+
+with the finding *"Nothing was retrieved. `text_source` is null, which means UNCHECKED … Try the
+locations below"* — pointing at an empty list. The same call keyed by PMCID returned **82 KB of
+fulltext** immediately:
+
+```
+fetch_fulltext(pmcid="PMC12713140")   ->  text_source: "fulltext"
+```
+
+**Why.** `discovery.fulltext` resolves the PMID→PMCID hop through Europe PMC alone:
+
+```python
+record = client.lookup([pmid]).get(pmid)
+pmcid  = pmcid or (record or {}).get("pmcid")
+```
+
+Europe PMC does not index preprint-pilot records under their PubMed PMID — `EXT_ID:41427385` returns
+**0 hits** — so `record` is None, and with it go the PMCID, the DOI *and* the abstract fallback. Europe
+PMC holds the fulltext perfectly well; it just will not answer to that key.
+
+**This is the retrieval half of `F28`.** That one fixed a warning that said preprints have no PMID while
+handing you one that does. This is the same class of record failing at the next step: it has a PMID, it
+has a PMCID, it has fulltext in Europe PMC, and the one route we offer joins them through the single
+service that cannot make the join.
+
+**It compounds with `F30`.** PubMed *did* give us the PMCID in the search result a moment earlier — we
+mangled it, and then did not consult it. Either fix alone recovers the paper: read `pmc` in the parser,
+or fall back to PubMed's `articleids` when Europe PMC's lookup misses.
+
+**And `locations: []` beside "try the locations below" is its own small defect.** The open-access probe
+is keyed on a DOI that the same failed lookup was supposed to supply, so when the hop fails the advice
+fails with it. Guidance that names a field should not survive that field being empty.
+
+## F32 — `validate_module`'s warnings are a silent subset of the compile's, including one that needs no resolution
+
+**Found:** 2026-08-12, authoring `assets/longevity_2026` · **Severity:** medium · **Status:** open
+
+Same spec, same `strict=True`, `resolution.csv` present for both:
+
+| | warnings |
+|---|---|
+| `validate_module` | 2 — both the VRS coverage pair |
+| `compile_module` | 5 — those two, two locus expansions, **and the licence pair** |
+
+The licence one is the problem:
+
+> *module declares license 'CC0-1.0' but annotation-layer sources report ['public-domain']. Not
+> adjudicated here — a compatible pair is legitimate, an incompatible one is a real problem, and only a
+> human can tell which.*
+
+It compares `module_spec.yaml` against `sources.csv`. It reads no resolved row and could run on a spec
+with no `resolution.csv` at all, yet it is reachable only by compiling.
+
+**`F18` is not this.** That one is about a pre-flight run *before* resolution exists. Here resolution
+existed and the pre-flight still withheld a check that does not depend on it.
+
+**Why it matters more than the count suggests.** The message says only a human can adjudicate — it is
+addressed to the author, and it is the one warning in the set that asks for a *decision* rather than
+reporting a fact about coverage. The documented contract is about refusals, so nothing is technically
+broken; but the skill also says to read the warnings on a green run, and an author who pre-flights,
+sees two warnings about VRS coverage and stops has not been asked the question.
+
+**Candidate fix:** move the licence-pair check into the shared pre-flight both entry points call, and
+say in the docstring that `validate_module`'s warnings are the resolution-independent subset — because
+if they are going to be a subset, that should be a stated property rather than something discovered by
+diffing two outputs.
+
+## F33 — our registry floor pins us below the fix upstream shipped, and `amend_readme` is unwrapped
+
+**Found:** 2026-08-12, publishing `assets/longevity_2026` · **Severity:** medium · **Status:** open
+
+The defect itself is `F27` in
+[just-dna-format-pending-fixes.md](just-dna-format-pending-fixes.md) — a spec-directory `README.md`
+never reaches the module card. It is now **answered and fixed in registry 0.14.0**. This entry is the
+part that is ours.
+
+Verified by symbol rather than by changelog, which is what that rule is for:
+
+```
+installed just-dna-registry: 0.13.0
+amend_readme present: False
+amend_logo present: True
+```
+
+`pyproject.toml` pins `just-dna-registry>=0.13.0`. So the fix is on PyPI, `longevity_2026@1.0.0` has an
+empty readme, and our own floor is what keeps us off it — released upstream, state 2 for us.
+
+Three separable pieces of work:
+
+1. **Raise the floor to `>=0.14.0`**, `uv sync`, and re-verify by importing `amend_readme` rather than
+   by reading their changelog.
+2. **Wrap `amend_readme` as a tool.** It mirrors `amend_logo`, sits **outside `artifact.digest`** and
+   needs no version bump, so a published module's readme is repairable without burning a version. That
+   property is why it earns a wrapper instead of a note telling authors to shell out: it is the rare
+   registry write that is genuinely cheap and genuinely reversible. `longevity_2026@1.0.0` is the first
+   caller waiting for it.
+3. **Teach the name.** `skills/create-module/SKILL.md` mentions neither `README.md` nor `MODULE.md`,
+   while the directory-layout section lists `logo.png` as optional. Once the floor moves it should say
+   a `README.md` in the spec directory becomes the card's readme — module-level, last-publish-wins, and
+   left alone by a publish that carries none. `MODULE.md` is renamed on upload in 0.14.0, so an author
+   who followed upstream's older advice is repaired rather than dropped.
+
+**One thing upstream noticed that we did not.** `gather_spec_files` uploads our own `published.json` on
+every publish, so each version's storage carries the previous version's receipt. We are the ones who
+tell authors to commit that file beside the spec, so the loop is ours to have spotted. Harmless, and
+still something shipping that nobody chose.
+
+**The process lesson is the expensive one.** `F27` was already in this repo, filed hours earlier by
+another session, with the upstream number on it. This session found the same defect, wrote a fresh
+`S7` against the registry, and got it closed as a duplicate of `S5`. The rule that would have caught it
+— *"check whether it is already filed first"* — is in `CLAUDE.md` §8 and neither session ran it. Filing
+fast is right; filing without reading `docs/` first is how the same note gets written twice.

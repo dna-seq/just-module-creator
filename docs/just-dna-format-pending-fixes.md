@@ -29,8 +29,10 @@ because `S1` was answered in place and not yet archived. So there, for now, read
 `**Status —**` paragraphs in the inbox itself.
 
 **Number a new one with `.claude/triage-state.sh --next`, never from what the inbox
-shows** — it is empty, ids are never reused. As of 2026-08-11 the next is `S25` in the
-format tree and `S5` in the registry's; compute both, never read them off an inbox.
+shows** — it is empty, ids are never reused. As of 2026-08-12 the next is `S27` in the
+format tree and `S8` in the registry's; compute both, never read them off an inbox. **These
+numbers go stale within hours** — both moved by two on 2026-08-12 alone, and one of those was
+our own duplicate re-report, so a number read off this line would already have collided.
 
 **Three states, not two, and only the third releases a guard.** *accepted and
 filed* (an upstream `RMn`, still open) → *fixed in tree* (the symbol exists in
@@ -574,9 +576,37 @@ re-run on the warning, instead of telling an author to infer unchecked-ness from
 ## F27 — a module card cannot carry a readme; the registry reads the column but never writes it
 
 **Found:** 2026-08-12, rehearsing a longevity module on the polygon ·
-**Upstream:** registry `S5`, filed 2026-08-12 in
-`../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md` · **Status:** open upstream, unreleased,
-and **no mitigation is possible on our side**
+**Upstream:** registry `S5`, filed 2026-08-12 · **Status:** **answered and fixed in registry
+0.14.0** — released upstream, not installable here, because `pyproject.toml` floors us at 0.13.0.
+The "no mitigation is possible" below was true when written and is now false: see `F33`.
+
+> **Answered same day, and re-reported independently.** A second session of ours filed the identical
+> defect as registry `S7` before reading this entry, and upstream closed it as a duplicate of `S5`.
+> Two independent reproductions inside one day is itself the signal; the cost is that the second
+> report was work already done. **Read this file before filing** — the check the rule asks for is
+> cheap and neither session ran it.
+>
+> Their reply settles the three-way ambiguity the second report raised. (1) In 0.13.0 the server
+> genuinely ignored the file — the field was declared, stored and returned with **no writer at all**.
+> (2) It also wanted a different name: `MODULE.md` was what their own docs advertised and *nothing
+> read that either*; 0.14.0 picks `README.md` and **renames `MODULE.md` on upload** rather than
+> dropping it. (3) It is module-level, fed by publish, **last-publish-wins**, and a publish carrying
+> no readme leaves the existing one alone instead of blanking it — now stated in their
+> `API-REFERENCE.md` §37 instead of left to be inferred.
+>
+> `amend_readme` shipped too: outside `artifact.digest`, no version bump, so an already-published
+> module's readme is repairable without spending a version. A misspelt readme — `readme.md`,
+> `README.txt`, bare `README` — now warns on `/validate`, `/check` and publish, naming `README.md`
+> and pointing at `amend_readme`; deliberately **not** auto-renamed, since guessing that `README.txt`
+> meant the card would be inventing intent, whereas repairing `MODULE.md` repairs their own advice.
+>
+> **The half that is still open is the one this file is for.** A readme reaches the *card* and no
+> further: `/files/{path}` and the tarball are built from what the **manifest** attests, and the
+> manifest has a `logo` field and no `readme` field. So a reader who clones the spec gets the prose
+> and a reader who downloads the module does not. That is format-tree `S25` — *"the manifest attests
+> a logo but not a readme"* — **answered, fixed in tree, and landing in format 0.6.0**, against our
+> installed 0.5.4. Upstream named `assets/longevity_2026` in it: an AI-authored module whose readme
+> is where the authoring decisions are auditable was the argument they used for the field.
 
 `ModuleDetail.readme` is declared, stored with a `''` default, and returned by
 `services/catalog.py` — and `grep -rn 'readme=' --include=*.py` over `just_dna_registry/` finds
