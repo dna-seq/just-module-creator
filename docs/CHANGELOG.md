@@ -82,6 +82,33 @@ the same change. The hand-written first draft covered the credentials and missed
 changes what a test asserts as effectively as a token does and far less visibly. Only the four
 upstream names stay hand-maintained, because no field of ours can name them.
 
+### `assets/longevity_2026` — a second reference example, authored with no human in the loop
+
+Thirteen longevity rsIDs, 19 authored rows, grounded in five papers that are all 2025 or 2026 — one
+of them a bioRxiv preprint, cited by the PMID the NIH preprint pilot gives it. Written end to end by
+an agent through the MCP surface, `authorship: [ai, agent]`, and rehearsed to
+`test-sheep/longevity_2026@1.0.0` on the polygon, where the server's own recompile reproduced the
+local `artifact_digest` exactly.
+
+It complements `assets/fto_bmi` rather than repeating it. `fto_bmi` is the *triage* example — seven
+offered claims, four of them fabricated gene/rsID pairings, one row surviving. This one is the
+*grounding* example: nothing was fabricated and the interesting decisions are all about how much a
+row may claim. Five variants named in the same papers were dropped for having no stated effect
+allele, nine rare candidates carry `direction: unknown` and no weight because the preprint prioritises
+them without a direction, and exactly one preprint variant is written `protective` — the *CGAS* one
+with functional work behind it, at a deliberately small weight.
+
+Two findings came out of authoring it, both in `docs/dogfooding.md`: **`F29`** (nothing can search for
+a trait CURIE, so a correct `trait_efo_id` was reached only because a guess landed on a deprecated
+term whose obsolescence pointer named the replacement) and a second, sharper instance of **`F26`** —
+this session's server had none of the four registry tools listed above, while the repo, the manifest
+and the skill were all 0.8.0. A build that has been reloaded once goes stale again at the next bump,
+and the symptom this time was the skill teaching four steps the surface could not run.
+
+`S7` was filed to the registry's intake: a `README.md` in the spec directory is uploaded by
+`gather_spec_files` and never surfaces — the published card's `readme` stays empty, with no
+`amend_readme` on the client and no documentation of what does populate it.
+
 ## 0.7.0 — six mitigations come out, and a target that verifies itself (2026-08-11)
 
 Upstream shipped. `uv sync` now installs format/compiler/enricher **0.5.4** and

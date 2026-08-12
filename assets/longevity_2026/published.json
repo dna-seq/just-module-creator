@@ -1,0 +1,14 @@
+[
+  {
+    "target": "test",
+    "canonical_id": "test-sheep/longevity_2026@1.0.0",
+    "namespace": "test-sheep",
+    "name": "longevity_2026",
+    "version": "1.0.0",
+    "owner": null,
+    "artifact_digest": "sha256:809facbf9875efdb070b44ee19c99abad481608966de356cd4bcb1bc0ff2de2f",
+    "content_signature": "sha256:518f5dbb9cc9ca04fcd0b549cd5649143e05241ad0d41813d30ad99dcd9b99ff",
+    "registry_url": "https://module-polygon.just-dna.life",
+    "published_at": "2026-08-12T15:44:11+00:00"
+  }
+]

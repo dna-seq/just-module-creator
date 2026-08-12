@@ -288,6 +288,19 @@ consistent — with a surface that shipped months ago.
 | the `S23` literature exemption never fires | 0.2.0 pins `just-dna-compiler>=0.5.3`; its resolved compiler predates the exemption |
 | the skill's advice was wrong on all three | the skill was right; the server was old |
 
+**Second instance, 2026-08-12, and it is not the same one.** A later session authoring
+`assets/longevity_2026` found `registry_check`, `registry_validate`, `registry_health` and
+`registry_is_published` **absent from the tool surface** while `pyproject.toml`, the manifest and
+`skills/create-module/SKILL.md` were all 0.8.0 — and `git log -S "async def registry_check"` puts all
+four in `2e77c4e`, the 0.8.0 commit itself. The stale surface also still emitted the pre-`F28` preprint
+warning. So this is not "the reload never happened once": a build that had already been reloaded went
+stale again at the next version bump, and the symptom moved from *wrong answers about tables* to
+*four tools the skill teaches simply not being there*. That is the failure mode §5 of `CLAUDE.md`
+names — a surface that teaches a step it cannot run — arriving by staleness rather than by tiering,
+where no test can catch it. **The tell that cost the least time was reading `git log -S` for the
+missing symbol**, which separates "not built yet" from "built, not running" in one command; nothing in
+any tool result does.
+
 Three of those were written into `SKILL.md` as corrections before the cause was found, which would
 have enshrined 0.2.0's bugs as 0.7.0's documented behaviour — including restating `SourceRow`'s
 columns in the skill, **the exact fix `F20` explicitly rejected**. Reverted.
@@ -337,3 +350,45 @@ carried the same false claim ("A preprint has **no PMID** … full stop") and is
 **The generalisable bug is a class claim standing in for a field read.** "Preprints have no PMID" was
 true of the arXiv index and got written as a property of the category; the fix is that the record
 answers, never the class.
+
+---
+
+## F29 — `lookup_identifier` can verify a trait CURIE but nothing can find one, so the honest routes are luck
+
+**Found:** 2026-08-12, authoring `assets/longevity_2026` · **Severity:** medium · **Status:** open
+
+`describe_table` says `trait_efo_id` takes an "EFO/MONDO/OBA/HP trait ontology id", and
+`lookup_identifier` exists precisely so the id is checked rather than recalled — its own docstring says
+"writing an ontology id from memory is the failure this exists to prevent."
+
+**But it only answers a closed question.** Given an id it returns current / obsolete / absent with a
+label. There is no call that goes the other way, from "human longevity" to a CURIE. So an author who
+does not already hold the id has three options, and two of them are the thing the tool exists to stop:
+
+1. recall one and check it — the check passes or fails, but the *recall* is the forbidden step, and a
+   plausible wrong id that happens to be `current` passes;
+2. leave the column blank — legitimate, and it loses the one machine-readable trait key the row has;
+3. go outside the surface to OLS4, which is what "a capability the tool lacks" means.
+
+**What actually happened here was luck, and it is worth writing down because it will not repeat.**
+Guessing `EFO_0007796` returned `current` with label `parental longevity` — a real, current term for a
+*different* trait, which is exactly failure mode 1 rendering as a pass. Guessing `EFO_0004300` returned:
+
+```json
+{"state": "obsolete", "current": "OBA_VT0005372", "label": "obsolete_longevity"}
+```
+
+The obsolescence pointer named the replacement, `OBA_VT0005372` ("life span determination trait"), and a
+second call confirmed it `current`. **The module got a correct CURIE because a guess happened to land on
+a deprecated term.** Had `EFO_0004300` been merely absent, the honest outcome was an empty column.
+
+**The `label` field is the thing to lean on, and half a search already lives in it.** It is what turned
+`parental longevity` from a pass into a rejection. A `lookup_identifier(kind="trait", label="longevity")`
+returning candidate ids with their labels — reporting, never writing, like every other lookup here —
+would close this without touching the refusal model: the author still reads the labels and chooses, and
+`trait_efo_id` is not redundancy-bearing, so nothing downstream is made vacuous by it.
+
+**Why not just leave it blank.** Blank is honest and we say so everywhere. But `check_identifiers`
+reports traits alongside genes, `registry_get_module` surfaces them, and a trait key is how two modules
+about the same phenotype are ever going to find each other. A column that is empty because the surface
+cannot help you fill it is a different thing from one that is empty because nothing was stated.

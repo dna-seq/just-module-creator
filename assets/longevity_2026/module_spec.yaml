@@ -1,0 +1,24 @@
+schema_version: '1.0'
+module:
+  title: Longevity-associated variants (2025-2026 literature)
+  description: Thirteen positions in the genome that recent research links to living
+    a long, healthy life — the two APOE sites, the FOXO3 site, and ten rare variants
+    found in families where many members reached very old age. Each row records what
+    one study reported, not a prediction about any person, and none of it is medical
+    advice.
+  report_title: Longevity and healthy aging
+  icon: heartbeat
+  icon_set: fomantic
+  color: '#21ba45'
+  name: longevity_2026
+  version: '1.0.0'
+license: CC0-1.0
+defaults:
+  curator: ai-module-creator
+  method: literature-review
+genome_build: GRCh38
+authorship:
+  - who: ai-module-creator
+    role: created
+    kind: [ai, agent]
+    at: '2026-08-12'
