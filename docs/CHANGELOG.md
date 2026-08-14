@@ -3,6 +3,31 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.9.1 — a README for the person the plugin is for (2026-08-14)
+
+Docs only; no code changed. The README had grown into a server manual — tool tiers, mode-switching
+tables, auth resolution order, `pgrep` — and the first thing a prospective *module author* met was
+`ToolAnnotations`. It is now user-first and short, and everything it used to carry moved rather than
+being deleted.
+
+- **`README.md`** — what a module is in four lines (the "rulebook" framing that landed on a real
+  beginner), install, the seven steps, the four curation rules, a worked example you can actually
+  run, and publishing. The DNA-reading misconception is corrected up front and unprompted, because
+  every later step reads as nonsense against it.
+- **`docs/FOR_DEVELOPERS.md`** — new. The full tool table, tiers, mode switching, reload semantics,
+  auth, safety switches, deployment, layout, upstream.
+- **`docs/BEYOND_BASICS.md`** — new. Pharmacogenomics and its no-sale licence trap, polygenic
+  scores, binning tables, deeper evidence work, reading other people's modules, and what happens
+  after a publish. It names capability areas and defers every column list to `describe_table`, so
+  it cannot drift the way a restated schema does.
+
+**The worked example is run, not written.** `assets/fto_bmi` — one rsID, one PMID — is verified end
+to end before being documented: `scaffold_module` creates the three files, `lint_rows` reports the
+six columns it leaves to the author, `validate_module(strict)` returns zero findings, and
+`compile_module(strict)` reproduces `sha256:e52bd75…`, the digest the fixture's own README recorded
+on 2026-08-11. The one expected compile warning is named in the README rather than hidden, so a
+reader who runs it is not surprised by it.
+
 ## 0.9.0 — the card an author actually ships (2026-08-12)
 
 Adopts `just-dna-registry` **0.14.0**. The floor moves to `>=0.14.0` and that is the load-bearing
