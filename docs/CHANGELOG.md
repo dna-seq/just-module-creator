@@ -3,6 +3,33 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.9.2 — the off-by-one gets a source and a check (2026-08-14)
+
+Skill only; no code changed. `start` being the 1-based VCF position was already stated in three
+places, and the shifted-module story was already told at length — but all of it was *downstream* of
+the mistake. It said what goes wrong and what no gate catches. It did not say where the wrong number
+comes from, or how to find out before writing the file.
+
+- **A callout at the top of `SKILL.md`**, above everything, for anyone about to type a coordinate.
+  Every gate passes on an off-by-one module; that belongs before step 1, not inside step 3.
+- **Where the wrong number comes from.** Nobody decides to subtract one — it arrives with the source,
+  and the dangerous sources use *both* conventions in different fields. UCSC's position box is
+  1-based and its Table Browser `chromStart`/`txStart` columns are 0-based; `pysam`'s `record.pos` is
+  1-based and `record.start` is 0-based. So the rule is not "know your source", it is **know which
+  field**, and the failure is usually *not adding one back* rather than subtracting again.
+- **The decoy in the other direction.** VCF anchors an indel on the base *before* it, so an insertion
+  a paper puts at X appears at `POS` X−1 with the anchor base leading both `ref` and `alts`. That
+  looks exactly like an unfixed off-by-one and must not be "repaired".
+- **A one-call check that fires on row 1 instead of row 3,000.** Author one row, call
+  `lookup_variant`, compare `start` — the signal is exact equality, and a difference of exactly 1 in
+  a consistent direction is conversion rather than a typo. Run once per *source*. Verified against
+  the real record while writing it: `rs4988235` → `2:135851076 G>A`, with the position arriving in
+  `withheld` under `applied: false`. That is the point made twice — reading the number to check a
+  convention is fine, pasting it is the vacuous-check mistake one section earlier.
+- **A checklist line** gated on having authored a `start` at all, and a pointer from
+  `references/SYMPTOMS.md`'s `ref mismatch` entry back to the source list, since that message is
+  where an author meets this after the fact.
+
 ## 0.9.1 — a README for the person the plugin is for (2026-08-14)
 
 Docs only; no code changed. The README had grown into a server manual — tool tiers, mode-switching

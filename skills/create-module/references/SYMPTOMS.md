@@ -141,6 +141,11 @@ the neighbouring base differs from your `ref`; roughly one row in four escapes b
 the count as a floor, not a total. Every id minted for a shifted row names the wrong place and must be
 regenerated, not patched.
 
+Then find the source, because the shift arrived with it and will arrive again: UCSC's Table Browser
+columns and `pysam`'s `record.start` are 0-based while the same tools' browser display and
+`record.pos` are 1-based. `SKILL.md`'s *The mistake nothing offline can catch* has the full list and
+the one-call check that catches it on row 1 instead of row 3,000.
+
 **`ref mismatch: N row(s) — single-base ref disagrees at a position nothing else contradicts`**
 The residue after the shift check: the base at your coordinate is not the one you wrote, and neither
 neighbour explains it — either the `ref` cell really is wrong, or it is a shifted row whose neighbours

@@ -29,6 +29,12 @@ Three companions ship beside this file:
 | `references/SYMPTOMS.md` | Anything reports a message you do not recognise. Match on the quoted phrase. |
 | `references/CLI.md` | The full CLI surface, what is *not* wrapped by a tool, and the environment. |
 
+> **If you are about to type a coordinate anywhere, read *The mistake nothing offline can catch*
+> (step 3) first.** `start` is the **1-based VCF position** — paste it exactly as the source printed
+> it, never subtract one. Every gate in this toolchain passes on an off-by-one module: validate,
+> strict compile, `fully_resolved: true`, and minted VRS ids that come back *verified*. Only an
+> online `enrich_module` can see it, and only on some rows. It has already happened at scale.
+
 ## Explaining this to someone who is not a geneticist
 
 Most authors are not, and a novice who does not understand what a module *is* will ask for things that
@@ -578,6 +584,49 @@ and then reported **verified**. A content-addressed id is a correct digest of wh
 so it certifies the wrong locus without hesitating. The module is internally consistent,
 reproducible, signed — and about the wrong bases.
 
+#### Where the wrong number comes from
+
+Nobody decides to subtract one. It arrives with the source, and **the dangerous sources are the ones
+that use both conventions in different places**:
+
+| Convention | Where you meet it |
+|---|---|
+| **1-based, inclusive — what `start` wants** | VCF `POS`, Ensembl (browser and REST), dbSNP, ClinVar, gnomAD, GTF/GFF, SAM, HGVS `g.` |
+| **0-based, half-open (interbase)** | BED, bedtools, BigBed/bigWig, BAM internals, GA4GH VRS |
+| **Both, in one tool** | **UCSC** — the position box and the browser display are 1-based, the Table Browser's `chromStart`/`txStart`/`cdsStart` columns are 0-based. **pysam** — `record.pos` is 1-based, `record.start` is 0-based |
+
+So the rule is not "know your source", it is **know which field of your source**. A number lifted
+from a UCSC table dump or a `pysam` `.start` is already one lower than `start` wants, and subtracting
+again is not what goes wrong — *not adding one back* is.
+
+**The other direction has a decoy: VCF anchors an indel on the base before it.** An insertion a paper
+describes as being at position X appears in VCF at `POS` X−1, with the anchor base leading both `ref`
+and `alts` (`A` → `AG`). That looks exactly like an off-by-one someone forgot to fix, and it is not.
+Copy the VCF `POS` as printed; do not "repair" it back to the paper's number.
+
+#### Catching it in one call, before you write 3,000 rows
+
+Author **one** row, then ask the source that is not yours:
+
+```
+lookup_variant(rsid="rs4988235")      # or the rsID your row is about
+```
+
+It answers with the locus — `rs4988235` is `2:135851076 G>A` — and the same numbers come back a
+second time in `withheld`, each with `applied: false` and a `refusal`. Compare `start` with the
+number you were about to paste. The signal is not "close" — it is **exact**. A match means your
+convention is right and the rest of the file inherits it. A difference of exactly 1, in the same
+direction, is conversion, not a typo, and it will be in every row you write from that source.
+Anything else is a different problem: wrong build, wrong variant, or a paralogous rsID with several
+loci.
+
+**Reading that number is allowed; pasting it is the previous section's mistake.** You are checking
+which convention your *source* uses, not sourcing the cell — that is why the value arrives withheld
+rather than applied. If the answer is that you had the coordinate right all along, the right move is
+still usually to delete it and let `enrich_module` produce it.
+
+Do this once per *source*, not once per module, and do it before the bulk pass rather than after.
+
 Two things conspire, and knowing them tells you what to do:
 
 - **Never author both sides of a redundancy check.** Hand-writing `resolution.csv` *and* the
@@ -1025,6 +1074,8 @@ content. Write the changelog as a continuation of the previous one, not a fresh 
 
 - [ ] `validate_module(strict=True)` passes
 - [ ] every weight row has a coordinate (or you can say why not)
+- [ ] **if you authored any `start` yourself**: one row per source checked against `lookup_variant`
+      and the position matched **exactly** — no gate below catches a whole file shifted by one
 - [ ] genotypes sorted; single-allele on `MT`/`Y` outside PAR; alleles drawn from the locus
 - [ ] every PMID's **title** read back and matched against the paper meant, 1–8 digits, and reachable
       from a weighted variant — existence alone never settles identity
