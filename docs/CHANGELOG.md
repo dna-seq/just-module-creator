@@ -3,6 +3,14 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — Codex marketplace packaging
+
+- Added a native `.codex-plugin` manifest with a Codex-compatible MCP declaration.
+- Reused the existing `create-module` and `find-evidence` skills so they appear in
+  Codex's skill and slash-command picker.
+- Kept the MCP runtime checkout-relative through `${PLUGIN_ROOT}`; Codex and Claude
+  now launch the same source package without duplicating the server implementation.
+
 ## 0.9.2 — the off-by-one gets a source and a check (2026-08-14)
 
 Skill only; no code changed. `start` being the 1-based VCF position was already stated in three

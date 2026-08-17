@@ -1,13 +1,14 @@
-"""The plugin manifest is a second source of truth, so the suite holds it to the first.
+"""Plugin manifests are additional sources of truth, so the suite holds them to the first.
 
-`.claude-plugin/plugin.json` cannot read `importlib.metadata`, so its `version` has
-to be bumped by hand alongside `pyproject.toml` — the one place `CLAUDE.md` §2's "never
-hardcode a version string" cannot be obeyed. Discipline alone already failed once
+The Claude and Codex manifests cannot read `importlib.metadata`, so their `version`
+has to be bumped by hand alongside `pyproject.toml` — the packaging boundary where
+`CLAUDE.md` §2's "never hardcode a version string" cannot be obeyed. Discipline
+alone already failed once
 (0.3.0 shipped with a manifest still declaring 0.2.0, caught in review rather than by
 the suite), and the failure is quiet: loading is unaffected, so the only symptom is an
 installed plugin misreporting itself.
 
-These tests turn every hand-maintained claim in the manifest into a failing assertion
+These tests turn every hand-maintained claim in the manifests into a failing assertion
 instead. They read files and import nothing over the network.
 """
 
@@ -21,11 +22,17 @@ import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 MANIFEST = REPO / ".claude-plugin" / "plugin.json"
+CODEX_MANIFEST = REPO / ".codex-plugin" / "plugin.json"
 
 
 @pytest.fixture(scope="module")
 def manifest() -> dict:
     return json.loads(MANIFEST.read_text())
+
+
+@pytest.fixture(scope="module")
+def codex_manifest() -> dict:
+    return json.loads(CODEX_MANIFEST.read_text())
 
 
 def test_the_manifest_version_matches_the_package(manifest):
@@ -63,5 +70,20 @@ def test_the_marketplace_entry_points_at_this_plugin():
     marketplace = json.loads((REPO / ".claude-plugin" / "marketplace.json").read_text())
     names = {p["name"] for p in marketplace["plugins"]}
     assert "just-module-creator" in names
-    # Deliberately no version here: one hand-maintained version string is the ceiling.
+    # Deliberately no third version copy in the marketplace entry.
     assert all("version" not in p for p in marketplace["plugins"])
+
+
+def test_the_codex_manifest_matches_the_package_and_skills(codex_manifest):
+    assert codex_manifest["version"] == version("just-module-creator")
+    skills_dir = REPO / codex_manifest["skills"].removeprefix("./")
+    shipped = {p.name for p in skills_dir.iterdir() if (p / "SKILL.md").is_file()}
+    assert shipped == {"create-module", "find-evidence"}
+
+
+def test_the_codex_mcp_config_launches_this_checkout(codex_manifest):
+    server = codex_manifest["mcpServers"]["just-module-creator"]
+    assert server["type"] == "stdio"
+    assert server["command"] == "uv"
+    assert "${PLUGIN_ROOT}" in server["args"]
+    assert "just-module-creator" in server["args"]

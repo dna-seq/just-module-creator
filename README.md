@@ -1,6 +1,6 @@
 # just-module-creator
 
-A **Claude Code plugin** that writes [just-dna](https://module-registry.just-dna.life) annotation
+A **Claude Code and Codex plugin** that writes [just-dna](https://module-registry.just-dna.life) annotation
 modules with you. You bring a topic and some sources — a paper, a PDF, a lecture. The agent does the
 rest: reads the evidence, writes the rows, checks them, compiles the module and publishes it.
 
@@ -23,12 +23,26 @@ medical advice — whoever runs the module later brings the measurement.
 
 ## Install
 
+### Claude Code
+
 ```bash
 /plugin marketplace add /path/to/just-module-creator
 /plugin install just-module-creator@just-dna
 ```
 
 Or for a single session, straight from a checkout: `claude --plugin-dir /path/to/just-module-creator`
+
+### Codex
+
+Add the DNA Seq marketplace, install the plugin, then start a new task:
+
+```bash
+codex plugin marketplace add dna-seq/dna-seq-claude-marketplace
+codex plugin add just-module-creator@dna-seq
+```
+
+The `create-module` and `find-evidence` skills appear in Codex's skill and slash-command picker.
+The Codex package uses `${PLUGIN_ROOT}` to start the same source checkout as the Claude plugin.
 
 Needs [`uv`](https://docs.astral.sh/uv/) on PATH and Python ≥ 3.13; dependencies install on first
 use. Nothing else to configure — you only need an account when you decide to publish.
