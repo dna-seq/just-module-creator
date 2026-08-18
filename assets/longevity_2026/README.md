@@ -48,8 +48,10 @@ genome anyway — all 13 rsIDs resolved and no allele fell outside its locus.
   empty list is a pass rather than a silence.
 - `validate_module(strict=True)` and `compile_module(strict=True)`: both pass, `fully_resolved: true`,
   all 21 compiled weight rows carry a coordinate.
-- Recompiled from the untouched spec: identical `artifact_digest`
-  `sha256:809facbf…`. `verify_artifact`: digests verified (signature **not** checked — no key).
+- Recompiled from the untouched spec: identical `artifact_digest`. That was `sha256:809facbf…` under
+  format 0.5.4 and is `sha256:2df1276ace2d13…` under 0.6.1 — a compiler upgrade moves the
+  byte identity and leaves `content_signature` alone, which is exactly what happened here.
+  `verify_artifact`: digests verified (signature **not** checked — no key).
 
 ### The trait CURIE was found by being told, not by guessing
 

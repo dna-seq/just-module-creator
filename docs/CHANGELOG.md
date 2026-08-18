@@ -3,6 +3,139 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.10.0 — format 0.6, and authoring gets an end (2026-08-18)
+
+Adopts **just-dna-format 0.6.1**, **just-dna-compiler 0.6.1**, **just-dna-enricher 0.6.2** and
+**just-dna-registry 0.17.0**. 0.6 is the first release where the three format-tier packages do *not*
+move together — the enricher alone goes to 0.6.2, for RM101 — so the floors name three versions
+rather than one.
+
+### The thing to know before upgrading: the live registries are still on 0.5.4
+
+`contract_compatible` treats a `0.x` **minor** as a breaking contract, in both directions. Both
+deployed instances answer `format: 0.5.4` today, so on this release every version-guarded registry
+call — publish, import, download, validate, check, is_published — is refused until the operator
+upgrades them. Confirmed live rather than reasoned about: `registry_download` of
+`eric-mods/lactose_tolerance@1.0.0` comes back `409 just-dna-format contract mismatch: server 0.5.4,
+client 0.6.1`.
+
+That is correct behaviour — a 0.6 artifact genuinely cannot be published to a 0.5 catalog — but
+upstream's message names two version numbers beside the module the author was trying to publish, and
+reads like something they did. `targets.instance_note` appends the sentence that says otherwise:
+whose problem it is, that nothing about the spec will change the answer, and that recompiling will
+not either.
+
+It is a **suffix on the existing `except RegistryError` arm**, not a new `except` clause ahead of it.
+Both mismatch types are `RegistryError` subclasses, so an arm for them placed after the parent would
+be dead and silently so — the same trap the exception work below is about. There is no ordering to
+get wrong if there is only ever one arm.
+
+### `close_module` — the step 0.6 tells every author to take
+
+A 0.6 compile warns on every module that records no closure, and told the author to run
+`just-dna-compiler close`, which this surface did not wrap. A tier that teaches a step it cannot run
+is the failure mode `CLAUDE.md` §5 already names, so it is wrapped.
+
+Closing writes a `closure` into `verification.json` binding the statement to the hash of
+`module_spec.yaml` plus the authored CSVs as they stand; edit one afterwards and the compiler drops
+it. Deliberately not signed from here — `close --private-key` exists and a key that reaches a tool
+argument has been logged, so that half stays CLI-only and the docstring says why.
+
+Both committed fixtures are now closed, which is what makes `assets/fto_bmi` compile with **zero
+warnings** for the first time. It had one under 0.5.4 — the `licensing.csv` orphan (`F21`/`S23`) —
+and upstream has since fixed that, so the README line promising "expect one warning" was teaching a
+warning that no longer exists.
+
+### `licensing.csv`, and the two spellings that must never both exist
+
+0.6 renames `sources.csv` to `licensing.csv`. Both read; only the new one is created; a module
+carrying **both** is refused rather than merged, because two copies of a fact-hashed, hand-editable
+table are two claims and preferring either discards somebody's curation silently.
+
+`draft.DRAFTABLE` lists both names and backs them with one model, so `list_tables` would have
+presented one table as two kinds. `TableKind` gains `deprecated` and `preferred`, both read from
+`just_dna_format.layout` rather than restated, and `_SUBJECTS` carries the entry once under the
+current spelling with the old one inheriting it — two entries would have answered "which table?"
+twice differently the first time somebody edited one line.
+
+`scaffold_module` now routes a deprecated spelling through `layout.sidecar_write_path`: **write to
+the file you read**, and the preferred spelling when neither exists. Upstream's scaffold creates
+whatever name it is handed, so asking for `sources.csv` on a fresh module used to create a file that
+stops being read at format 1.0, in a module being written today. The swap is reported rather than
+silent.
+
+The rename stops at the CSV. `sources.parquet` and `manifest.sources` keep their names for the whole
+`0.x` tail, so nothing here was renamed to match.
+
+### An outage stops costing three passes their work
+
+`enrich_facts` ran its passes inside no `try` at all, so a gnomAD 503 propagated out of the tool and
+took `gene_metrics` and `dosage` with it, including whatever they had already written. Each pass now
+gets its own `try`, and the report separates two verdicts that read identically before: `unreachable`
+(the source was asked and never answered) from `failed` (the source answered; the problem is local).
+`covered: []` beside `missing: []` cannot distinguish those, which is the whole reason the field
+exists rather than a warning line. `success` is false when either is non-empty — a pass that never
+reached its source did not complete.
+
+This is what enricher 0.6.2 makes possible: every pass now raises its own type with unavailability as
+a **subclass**. That is also the release's one real hazard, and it fails *silently* — a `*Unavailable`
+arm written after its parent is dead, so `unreachable` comes back empty on exactly the run where a
+source was down. `tests/test_passes.py` carries an AST walk that fails on any `except` clause an
+earlier arm of the same `try` already catches, plus a self-test driving all three shapes, because a
+guard reporting zero proves nothing until it is shown able to report one. Both were run against the
+parent-first ordering and watched to fail; the walk names the line.
+
+`_SOURCE_ERRORS` stays parents-only in one tuple, which upstream's upgrade table calls "keeps working
+unchanged" — a parent and its subclass in one tuple is redundant, not dead.
+
+### The RM44 counters, and `fully_resolved` stops being read alone
+
+`compile_module` reports `resolution_subjects`, `positional_rows`, `positional_rows_placed`,
+`expanded_keys` and `expanded_rows`. The first is the denominator `fully_resolved` quantifies over:
+over an empty list that flag is `all()` over nothing, so `true` beside `0` says the module resolved
+everything there was, which was nothing. All five are `int | None` and **null is never zero** — each
+has a meaningful zero, so coalescing would report a module as having no positional rows where nothing
+had counted them.
+
+### The suite was not hermetic, and had not been for a while (`F35`, upstream `S39`)
+
+`test_a_token_does_not_leak_between_sessions` was failing before any of this work — on 0.5.4 too —
+and the reason was worth chasing. `just_dna_enricher.locations` calls `load_dotenv` while resolving a
+cache path, which `build_server` reaches through `net.py`, and `load_dotenv(override=False)` skips a
+key that is **present** — so `F24`'s fixture clearing the environment with `delenv` is precisely what
+let the file win. Measured: `JMC_TEST_API_KEY` was `None` after the fixture and held a live
+`mk_live_…` polygon token immediately after `build_server`. A session that had authenticated nothing
+resolved a real credential, got past the auth check, and failed on the offline ceiling behind it.
+
+The fixture now neutralizes the **loader**, by walking `sys.modules` — every module that did `from
+dotenv import load_dotenv` holds its own binding, so patching `dotenv.load_dotenv` would reach none of
+them. `setenv(VAR, "")` is not available as a blanket fix here and that is why `delenv` was chosen
+originally: these variables reach typed fields, so `JMC_PORT=""` is a parse error rather than "unset".
+
+Filed upstream the same day as format-tree `S39`, because a *library* path loading the caller's `.env`
+surprises every consumer, not only this one.
+
+### Also
+
+- **`check_identifiers` still writes nothing, and that now costs something.** The enricher's
+  `check-identifiers` / `check-acmg` **CLI commands** record that the question was put; the functions
+  we call do not. So a module authored entirely here carries no attestation for those checks. Named
+  in `tools/research.py` rather than left implied, and filed as **RM9** — the fix needs a policy
+  decision about that module's read-only promise, not just code.
+- **Digests re-measured and re-recorded.** `assets/fto_bmi` moved to
+  `sha256:c3d633f0…` and `assets/longevity_2026` to `sha256:2df1276a…`; both `content_signature`s
+  are unchanged, which is upstream's promise measured on our own fixtures. `README.md` and both
+  fixture READMEs now say that a digest is reproducible **under one compiler version** and that
+  `content_signature` is the one to compare across an upgrade.
+- **Skill and references updated for 0.6**: the pipeline diagram gains `close`, `SYMPTOMS.md` gains
+  the PMC-id refusal (RM50), the wrong-build coordinate error (RM48, an error in *both* modes), the
+  sidecar collision, the deprecation and the closure warning; `CLI.md` gains `close`, `gene-validity`,
+  `assertions`, `gwas` and `hint recover`, plus the `verify --require-marketplace` default that
+  rejects every locally-compiled module; `TABLES.md` gains `licensing.csv` and the three new fact
+  tables, with the warning that `gwas_effects.csv` deliberately does not fill `weight`.
+- **RM93 and RM98 needed no mitigation** — both were 0.6.0 defects fixed in 0.6.1, which is our
+  floor. Recorded so nobody builds a guard against them.
+
 ## Unreleased — Codex marketplace packaging
 
 - Added a native `.codex-plugin` manifest with a Codex-compatible MCP declaration.

@@ -14,6 +14,7 @@ stays deterministic even though half the tool surface is network-capable.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -52,6 +53,16 @@ _ECOSYSTEM_VARS = tuple(
 ) + _UPSTREAM_VARS
 
 
+def _refuse_dotenv(*args: object, **kwargs: object) -> bool:
+    """Stand-in for ``load_dotenv`` during the suite: reads nothing, reports nothing.
+
+    Returns ``False`` — dotenv's own "no file was loaded" answer — so a caller that
+    branches on the result takes the same path it would on a machine with no ``.env``,
+    which is the machine the suite is pretending to be.
+    """
+    return False
+
+
 @pytest.fixture(autouse=True)
 def _hermetic_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
     """Make a forgotten ``_env_file=None`` harmless instead of silently live.
@@ -75,17 +86,34 @@ def _hermetic_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
     2. The ecosystem's variables are cleared from ``os.environ``, so an *exported*
        shell variable cannot do what the file no longer can.
 
-    ``delenv`` rather than ``setenv(VAR, "")`` here, deliberately, and it does not
-    contradict §6's rule: that rule is about ``load_dotenv(override=False)``, which
-    skips a key that is merely present, and nothing in the suite calls it. With the
-    dotenv source neutralized, pydantic reads ``os.environ`` directly, where absent
-    genuinely means unset. A test that wants to say "no credential" to a reader doing
-    ``x or os.environ.get(...)`` should still use ``setenv(VAR, "")`` — running after
-    this fixture, it wins.
+    ``delenv`` rather than ``setenv(VAR, "")``, because these variables reach typed
+    fields: ``JMC_PORT=""`` and ``JMC_OFFLINE=""`` are parse errors, not "unset". A
+    test that wants to say "no credential" to a reader doing ``x or
+    os.environ.get(...)`` should still use ``setenv(VAR, "")`` — running after this
+    fixture, it wins.
+
+    **Third half, and it is the one that had actually stopped holding.** ``delenv``
+    is only safe while nothing re-reads ``.env`` mid-test, and the original note
+    asserted that nothing did. That was true of *our* code and never true of the
+    dependency tree: ``just_dna_enricher.locations`` calls ``load_dotenv`` when a
+    cache path is resolved, which ``build_server`` reaches through ``net.py``. And
+    ``load_dotenv(override=False)`` skips a key that is *present* — so deleting the
+    variable is precisely what lets the file win. Measured on this tree before the
+    fix: ``JMC_TEST_API_KEY`` was ``None`` after the fixture and held a live
+    ``mk_live_…`` polygon token immediately after ``build_server``.
+
+    So the loader itself is neutralized. **Derived, never listed**: every module that
+    did ``from dotenv import load_dotenv`` holds its own binding, so patching
+    ``dotenv.load_dotenv`` would miss all of them — the sweep walks ``sys.modules``
+    instead, which covers a dependency that starts calling it in some later release
+    without anyone remembering this fixture exists.
     """
     monkeypatch.setitem(
         Settings.model_config, "env_file", str(Path(__file__).parent / ".env.nonexistent")
     )
+    for module in list(sys.modules.values()):
+        if getattr(module, "load_dotenv", None) is not None:
+            monkeypatch.setattr(module, "load_dotenv", _refuse_dotenv, raising=False)
     for var in _ECOSYSTEM_VARS:
         monkeypatch.delenv(var, raising=False)
 

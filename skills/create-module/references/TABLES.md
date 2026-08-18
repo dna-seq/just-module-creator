@@ -23,10 +23,24 @@ below, generated from the live models.
 | an mtDNA **heteroplasmy fraction** range | `heteroplasmy.csv` | `binning.HeteroplasmyRow` | `(gene, reference_sequence, tissue, variant_key)` |
 | a published polygenic score | `pgs.csv` | `pgs.PgsRow` | `(pgs_id, trait)` |
 
+| the terms one source's data came under | `licensing.csv` | `sources.SourceRow` | `(source, layer)` |
+
 Enricher-produced sidecars you never hand-author: `resolution.csv`, `frequencies.csv`,
-`gene_metrics.csv`, `literature.csv`, `sources.csv`. The one exception is `sources.csv` when you copied
-rows out of a source by hand — no pass ran, so no pass will write the row, and the compile gate reads
-that file and nothing else.
+`gene_metrics.csv`, `literature.csv`, `licensing.csv`, and — new in format 0.6 —
+`gene_validity.csv`, `clinical_assertions.csv` and `gwas_effects.csv`. The one exception is
+`licensing.csv` when you copied rows out of a source by hand: no pass ran, so no pass will write the
+row, and the compile gate reads that file and nothing else.
+
+**`licensing.csv` was `sources.csv` before format 0.6.** Both names read, only the new one is
+created, and a module carrying both is refused rather than merged. The rename stops at the CSV —
+`sources.parquet` and `manifest.sources` keep their names for the whole 0.x tail.
+
+**The three new fact tables are written by the enricher, not by you** (`gene-validity`, `assertions`,
+`gwas`). One of them is worth a warning: `gwas_effects.csv` carries published effect sizes and
+deliberately does **not** fill `weight`. Those betas are not weights — a single real variant can
+carry a dozen distinct `effect_unit` values across its traits, and a large share of GWAS Catalog
+associations name no effect allele at all, which means they have no direction you can apply to a
+genotype. `weight` stays your model of the finding.
 
 ## The four decisions people get wrong
 

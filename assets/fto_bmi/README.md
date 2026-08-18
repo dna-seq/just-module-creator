@@ -74,8 +74,11 @@ question this probe raised rather than from a failure in it.
 - **Every refusal that was supposed to fire, fired.** `lookup_variant` withheld `chrom`/`start`/`ref`/
   `alts` with a reason; `literature_search` withheld every DOI; `check_identifiers` confirmed `FTO`
   against HGNC without touching the cell.
-- **Reproducibility is real.** Recompiling the untouched spec reproduced `artifact_digest`
-  `e52bd75…` exactly, and so did the **registry server's own** independent recompile.
+- **Reproducibility is real.** Recompiling the untouched spec reproduced its `artifact_digest`
+  exactly, and so did the **registry server's own** independent recompile. That was `e52bd75…` under
+  format 0.5.4; on 0.6.1 it is `sha256:c3d633f…`, because a compiler
+  upgrade moves the *byte* identity by design. `content_signature` did not move, which is the
+  measurement that says the authored rows are untouched.
 - **Semantic Scholar 429'd throughout and was reported as `results: null`, not `0`** — unchecked, not
   empty (`F6`), which is the tri-state design earning its keep in the same session as `S20`, where the
   same distinction was fused.
@@ -86,7 +89,17 @@ question this probe raised rather than from a failure in it.
 validate_module(spec_dir="assets/fto_bmi", strict=True)
 enrich_module(spec_dir="assets/fto_bmi")        # delete resolution.csv first to re-resolve
 compile_module(spec_dir="assets/fto_bmi", output_dir="out", strict=True)
+close_module(spec_dir="assets/fto_bmi", closed_by="ai-module-creator")   # already closed here
 ```
 
-Expect one warning on compile — the `sources.csv` orphan (`F21`). It is expected until `S23` lands, and
-the rows are correct; do not delete them to silence it.
+Compiles with **zero warnings** on format 0.6.1. It did not before: the `licensing.csv` orphan
+(`F21`/`S23`) fired on every run under 0.5.4, and upstream has since fixed it, so the line that used
+to say "expect one warning" would now be teaching a warning that no longer exists. The module is also
+closed — `verification.json` carries the closure — which is what silences 0.6's other standing
+warning. Re-close it after editing any authored file; the binding is to the bytes, so an edit drops
+it on purpose.
+
+The file was named `sources.csv` until format 0.6 renamed it. Both spellings still read; only the new
+one is created, and a module carrying *both* is refused rather than merged. `sources.parquet` and
+`manifest.sources` deliberately keep their old names, so the chain reads
+`licensing.csv` → `sources.parquet` → `manifest.sources`.

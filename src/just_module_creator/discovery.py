@@ -667,9 +667,10 @@ def resolve_sources(
 # Orchestration — one query, several sources, one honest answer
 # --------------------------------------------------------------------------- #
 def _licensing_notes(sources_used: list[str]) -> list[SourceLicenseNote]:
-    """The `sources.csv` rows the author now owes, and why none was written.
+    """The `licensing.csv` rows the author now owes, and why none was written.
 
-    `sources.csv` must cover every source a fact table cites, and a missing row is
+    `licensing.csv` (`sources.csv` before format 0.6 — both spellings still read)
+    must cover every source a fact table cites, and a missing row is
     a **warning, not an error**, so it ships unnoticed. Upstream's
     `TERMS_BY_SOURCE` has no entry for any literature service — not even `pubmed`,
     which `enrich_literature` writes itself — so nothing can state these terms
@@ -687,7 +688,7 @@ def _licensing_notes(sources_used: list[str]) -> list[SourceLicenseNote]:
                 terms_url=spec.terms_url,
                 stateable_upstream=name in TERMS_BY_SOURCE,
                 note=(
-                    f"You read {name} by hand, so nothing wrote a sources.csv row for it and the "
+                    f"You read {name} by hand, so nothing wrote a licensing.csv row for it and the "
                     "compile gate cannot see it. Add the row yourself. If you copy a passage from "
                     "an article into studies.csv, that is a SECOND row at layer='annotation' "
                     "carrying the ARTICLE's licence, not this service's — use lookup_open_access "

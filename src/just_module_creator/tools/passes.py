@@ -38,13 +38,25 @@ from typing import Any
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
-from just_dna_enricher.clingen import ClinGenError, enrich_dosage_sensitivity
+from just_dna_enricher.clingen import (
+    ClinGenError,
+    ClinGenUnavailable,
+    enrich_dosage_sensitivity,
+)
 from just_dna_enricher.clinpgx_draft import ClinPgxEnrichmentError, draft_pharm_variants
 from just_dna_enricher.clinvar_draft import ClinVarDraftError, draft_gene_panel
 from just_dna_enricher.cpic import CpicError
 from just_dna_enricher.enrich import EnrichmentError, enrich
-from just_dna_enricher.frequencies import FrequencyEnrichmentError, enrich_frequencies
-from just_dna_enricher.gene_metrics import GeneMetricsEnrichmentError, enrich_gene_metrics
+from just_dna_enricher.frequencies import (
+    FrequencyEnrichmentError,
+    FrequencyUnavailable,
+    enrich_frequencies,
+)
+from just_dna_enricher.gene_metrics import (
+    GeneMetricsEnrichmentError,
+    GeneMetricsUnavailable,
+    enrich_gene_metrics,
+)
 from just_dna_enricher.literature import LiteratureEnrichmentError, enrich_literature
 from just_dna_enricher.pgx_draft import draft_gene
 from mcp.types import ToolAnnotations
@@ -103,6 +115,13 @@ def _translate(message: str) -> str:
     )
 
 
+# Parents only, in ONE tuple. Since enricher 0.6.2 each pass raises its own type with
+# unavailability as a *subclass* (`FrequencyUnavailable(FrequencyEnrichmentError)` and
+# five siblings), so listing the parents catches strictly more than it used to and
+# nothing less. The shape matters: two separate `except` arms with the parent first
+# would send every outage into the parent arm and leave the outage arm dead, silently.
+# `tests/test_passes.py::test_no_except_arm_is_shadowed_by_an_earlier_one` walks this
+# module's AST for exactly that, because it is the failure that raises nothing.
 _SOURCE_ERRORS = (
     ClinVarDraftError,
     CpicError,
@@ -111,6 +130,18 @@ _SOURCE_ERRORS = (
     GeneMetricsEnrichmentError,
     ClinGenError,
 )
+
+# Narrow-first, and only ever used where the two verdicts are reported differently.
+_PASS_UNAVAILABLE = {
+    "frequencies": FrequencyUnavailable,
+    "gene_metrics": GeneMetricsUnavailable,
+    "dosage": ClinGenUnavailable,
+}
+_PASS_ERROR = {
+    "frequencies": FrequencyEnrichmentError,
+    "gene_metrics": GeneMetricsEnrichmentError,
+    "dosage": ClinGenError,
+}
 
 
 async def _guard(call):
@@ -655,6 +686,8 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
         covered: dict[str, list[str]] = {}
         missing: dict[str, list[str]] = {}
         skipped: list[str] = []
+        unreachable: dict[str, str] = {}
+        failed: dict[str, str] = {}
         warnings: list[str] = []
         ran: list[str] = []
 
@@ -662,9 +695,24 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
             if ctx:
                 await ctx.info(f"Running {name} on {target.name}")
                 await ctx.report_progress(progress=index, total=len(wanted) + 1)
-            result = await run_sync(
-                lambda n=name: _run_pass(n, target, mode, eff_offline, declared)
-            )
+            # One pass per `try`, so one source's outage costs one source's findings.
+            # Sharing a `try` across the loop discarded every pass that had already
+            # succeeded on its way out — three sources' work lost to one source being
+            # down, which is the shape upstream fixed in its own PGx legs.
+            #
+            # The `*Unavailable` arm MUST come first: since 0.6.2 it is a subclass of
+            # the arm below it, so parent-first would catch every outage as a data
+            # error and this field would read `{}` on a run where gnomAD was down.
+            try:
+                result = await run_sync(
+                    lambda n=name: _run_pass(n, target, mode, eff_offline, declared)
+                )
+            except _PASS_UNAVAILABLE[name] as exc:
+                unreachable[name] = str(exc)
+                continue
+            except _PASS_ERROR[name] as exc:
+                failed[name] = str(exc)
+                continue
             ran.append(name)
             rows[name] = len(getattr(result, "rows", []) or [])
             covered[name] = [str(c) for c in (getattr(result, "covered", []) or [])]
@@ -677,10 +725,23 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
                 f"Offline, so these did nothing: {', '.join(skipped)}. Their sidecars are "
                 "unchanged — an absent row means UNCHECKED, not absent."
             )
+        if unreachable:
+            warnings.append(
+                f"Source never answered for: {', '.join(sorted(unreachable))}. Those passes "
+                "asked nothing, so their absence from `covered` is silence, not a negative "
+                "result — re-run them rather than reading the sidecar as complete."
+            )
+        if failed:
+            warnings.append(
+                f"Failed on something that is not an outage: {', '.join(sorted(failed))}. "
+                "The source answered; read `failed` for what it refused."
+            )
         if ctx:
             await ctx.report_progress(progress=len(wanted) + 1, total=len(wanted) + 1)
         return FactPassReport(
-            success=True,
+            # A pass that never reached its source did not complete, and a report that
+            # called that success would be the `covered: 0` trap one field over.
+            success=not unreachable and not failed,
             spec_dir=str(target),
             passes_run=ran,
             rows_written=rows,
@@ -688,6 +749,8 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
             missing=missing,
             declared_use_applied_to=["dosage"] if "dosage" in ran else [],
             skipped_offline=skipped,
+            unreachable=unreachable,
+            failed=failed,
             warnings=warnings,
             note=_REGENERATE,
         )

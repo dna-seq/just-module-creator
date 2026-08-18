@@ -35,7 +35,8 @@ other direction is nothing, because the publish already happened.
 
 from __future__ import annotations
 
-from just_dna_registry.client import RegistryClient
+from just_dna_registry import RegistryError
+from just_dna_registry.client import ModeMismatchError, RegistryClient, VersionMismatchError
 
 from just_module_creator.settings import RegistryTarget, Settings
 
@@ -165,3 +166,39 @@ def polygon_naming_note(
         "name is the most faithful one — but clean it up yourself with `registry_delete_version` "
         "or `registry_delete_module` when you are done."
     )
+
+
+def instance_note(exc: RegistryError) -> str:
+    """The sentence that says a failure is about the *instance*, not the module.
+
+    Both mismatch types are ``RegistryError`` subclasses, so every ``except
+    RegistryError`` arm already catches them and nothing crashes — which is the
+    problem this solves. Upstream's message is accurate and reads, to an author,
+    like something they did: it names two version numbers beside the module they
+    were trying to publish. Neither is theirs to change.
+
+    Deliberately a **suffix on the existing arm** rather than a new ``except``
+    clause ahead of it. An arm for a subclass placed after its parent is dead,
+    and the failure is silent — the same trap `passes.py` carries an AST guard
+    for. There is no ordering to get wrong if there is only ever one arm.
+
+    Empty string when the failure is an ordinary refusal, so a caller can append
+    it unconditionally.
+    """
+    if isinstance(exc, VersionMismatchError):
+        return (
+            " This is the instance, not your module. A registry serves one "
+            "`just-dna-format` contract and refuses a client on a different 0.x minor in "
+            "either direction, because compiled artifacts and their digests do not "
+            "interoperate across one. Nothing about the spec will change the answer and "
+            "recompiling will not either. Either the deployment is upgraded to the "
+            "contract this client speaks, or you drive the registry from a checkout "
+            "pinned to the contract it serves — an operator's call, not an author's."
+        )
+    if isinstance(exc, ModeMismatchError):
+        return (
+            " That is a refusal to act on an instance other than the one you named, and "
+            "it is the guard working. Check `target`: the polygon and production share no "
+            "database, so a call aimed at one and answered by the other is never harmless."
+        )
+    return ""

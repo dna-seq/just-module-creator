@@ -19,13 +19,14 @@ from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from just_dna_compiler import compiler, draft, hints, scaffold
-from just_dna_format import reference
+from just_dna_format import layout, reference
 from just_dna_format.integrity import IntegrityError, verify_manifest
 from just_dna_format.manifest import read_manifest
 from mcp.types import ToolAnnotations
 
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
+    ClosureResult,
     CompileReport,
     LintResult,
     ScaffoldResult,
@@ -78,16 +79,35 @@ _SUBJECTS: dict[str, tuple[str, str]] = {
     ),
     "pgs.csv": ("a published polygenic score", "(pgs_id, trait)"),
     # Draftable as of upstream 0.5.4: the one fact sidecar a human writes, and the
-    # only table the compile licence gate reads.
-    "sources.csv": ("the terms one source's data came under", "(source, layer)"),
+    # only table the compile licence gate reads. `licensing.csv` is its 0.6 spelling;
+    # `sources.csv` is the deprecated one and inherits this entry rather than
+    # repeating it, so the two can never describe themselves differently.
+    "licensing.csv": ("the terms one source's data came under", "(source, layer)"),
 }
+
+
+def _subject_for(name: str) -> tuple[str, str]:
+    """Subject and key for a table kind, following a deprecated spelling to its own.
+
+    `draft.DRAFTABLE` lists both `sources.csv` and `licensing.csv` in 0.6 and backs
+    them with one model, so answering "which table?" twice would be answering it
+    twice differently the first time somebody edits one line. Which spelling is
+    which is upstream's fact, read from `layout`, not restated here.
+    """
+    canonical = layout.preferred_spelling(name)
+    fallback = ("(see describe_table)", "(see describe_table)")
+    return _SUBJECTS.get(canonical, _SUBJECTS.get(name, fallback))
 
 _COMPOSITION_NOTE = (
     "A module composes from optional table kinds: module_spec.yaml is the only "
     "always-present file, and at least one recognised table must exist. "
     "studies.csv is required IFF variants.csv is present. A PGx/PRS/binning "
     "module carries only its own tables and no variants.csv — never add an empty "
-    "table to keep another company."
+    "table to keep another company. Where a kind carries `preferred`, the two "
+    "spellings are one table: write to whichever is already there, create only "
+    "the preferred one, and never both — a module carrying both is refused, "
+    "because two copies of a hand-editable fact table are two claims and picking "
+    "one would discard somebody's curation silently."
 )
 
 
@@ -110,16 +130,21 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         quantity with a threshold (repeat count, copy number, heteroplasmy
         fraction, activity score) is a binning table, not a variant row.
         """
-        tables = [
-            TableKind(
-                csv=name,
-                model=draft.DRAFTABLE[name].__name__,
-                subject=_SUBJECTS.get(name, ("(see describe_table)", "—"))[0],
-                keyed_on=_SUBJECTS.get(name, ("—", "(see describe_table)"))[1],
-                companions=list(scaffold.COMPANION_KINDS.get(name, ())),
+        tables = []
+        for name in sorted(draft.DRAFTABLE):
+            subject, keyed_on = _subject_for(name)
+            canonical = layout.preferred_spelling(name)
+            tables.append(
+                TableKind(
+                    csv=name,
+                    model=draft.DRAFTABLE[name].__name__,
+                    subject=subject,
+                    keyed_on=keyed_on,
+                    companions=list(scaffold.COMPANION_KINDS.get(name, ())),
+                    deprecated=layout.is_deprecated_spelling(name),
+                    preferred=canonical if canonical != name else None,
+                )
             )
-            for name in sorted(draft.DRAFTABLE)
-        ]
         return TableList(
             tables=tables,
             sidecars=[
@@ -271,6 +296,24 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         if rows < 1:
             raise ToolError("rows must be >= 1.")
 
+        # Write to the file you read. Upstream's scaffold creates whatever spelling it
+        # is handed, so asking for `sources.csv` on a fresh module would create the
+        # deprecated one — a file that stops being read at format 1.0, in a module
+        # being written today. `sidecar_write_path` answers with the copy that already
+        # exists and the preferred spelling otherwise, which is the same rule the
+        # enricher's passes follow, so the two cannot produce a second copy between them.
+        renamed: list[str] = []
+        resolved: list[str] = []
+        for kind in requested:
+            if layout.preferred_spelling(kind) == kind:
+                resolved.append(kind)
+                continue
+            actual = layout.sidecar_write_path(target, kind).name
+            if actual != kind:
+                renamed.append(f"{kind} -> {actual}")
+            resolved.append(actual)
+        requested = resolved
+
         plan = scaffold.scaffold_module(
             target, kinds=requested, name=name, rows=rows, dry_run=dry_run
         )
@@ -283,11 +326,16 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             for c in scaffold.COMPANION_KINDS.get(k, ())
             if c not in requested and not (target / c).exists()
         ]
+        spelling_notes = [
+            f"created {swap} instead: that is the current spelling, and the one you asked for "
+            f"is read but deprecated, and removed at format 1.0"
+            for swap in renamed
+        ]
         return ScaffoldResult(
             spec_dir=str(target),
             created=created,
             refused=refused,
-            warnings=list(plan.warnings) + missing_companion,
+            warnings=list(plan.warnings) + missing_companion + spelling_notes,
             written=plan.written,
             next_step=(
                 "Replace every <<REPLACE>> in module_spec.yaml (title, description, "
@@ -382,12 +430,19 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
         Offline and deterministic: it consumes the `resolution.csv` that enrich
         produced and never fetches one. Recompiling an untouched spec reproduces
-        every hash — that is the property to test. (Re-*drafting* does not:
-        sources.csv re-stamps `fetched_at`, which is inside the digest.)
+        every hash **under one compiler version** — that is the property to test.
+        Upgrading the compiler moves `artifact_digest` on purpose and moves
+        `content_signature` on nothing, so compare the second one across versions.
+        (Re-*drafting* moves the digest too: the licence table re-stamps
+        `fetched_at`, which is inside it.)
 
         A green compile is not evidence the module is correct. Read `warnings`:
         a genotype whose alleles are not at its locus, or a `risk` state with a
         positive weight, compiles cleanly under best-effort.
+
+        Read `resolution_subjects` beside `fully_resolved` — over an empty list
+        that flag is vacuously true. All five counters are null on a pre-0.6
+        artifact, and **null never means zero**.
         """
         source = resolve_dir(spec_dir, settings)
         out = resolve_dir(output_dir, settings, must_exist=False)
@@ -420,7 +475,64 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             content_signature=getattr(manifest, "content_signature", None),
             resolution_signature=getattr(comp, "resolution_signature", None),
             fully_resolved=getattr(comp, "fully_resolved", None),
+            # RM44/S31/S33. `getattr(..., None)` is the honest default rather than a
+            # convenience: on a pre-0.6 manifest these are genuinely absent, and each
+            # has a meaningful zero, so coalescing to 0 would report a module with no
+            # positional rows where nothing had counted them.
+            resolution_subjects=getattr(comp, "resolution_subjects", None),
+            positional_rows=getattr(comp, "positional_rows", None),
+            positional_rows_placed=getattr(comp, "positional_rows_placed", None),
+            expanded_keys=getattr(comp, "expanded_keys", None),
+            expanded_rows=getattr(comp, "expanded_rows", None),
             files=[f.name for f in getattr(artifact, "files", []) or []],
+        )
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Close a module", readOnlyHint=False, idempotentHint=True
+        )
+    )
+    async def close_module(
+        spec_dir: str,
+        closed_by: str | None = None,
+    ) -> ClosureResult:
+        """Declare this module's authoring phase finished, bound to its authored bytes.
+
+        Authoring had no end, so every check that needed to know whether a stub
+        was still a stub was guessing. This is the end. It writes a `closure`
+        into the module's `verification.json` naming the hash of
+        `module_spec.yaml` and the authored CSVs **as they stand right now**.
+        Edit any of them afterwards and the hash moves, the compiler drops the
+        closure, and the module is open again — which is the point, not a bug.
+
+        **Nothing does this for you and nothing should.** `validate_module` stays
+        read-only however cleanly it passes: a record stamped by whatever
+        happened to run says only that something ran. Run this when the module is
+        done, not to clear the warning a compile prints — an unclosed module is a
+        true statement about a module still being written.
+
+        It does **not** refuse on warnings. An unresolved rsID or an ungrounded
+        threshold is a legitimate thing to call finished; only a spec that will
+        not validate is refused.
+
+        `closed_by` is legibility, never proof — it is a string nobody checks.
+        Signing a closure needs a private key, which this server deliberately
+        does not take: a key that reaches a tool argument has been logged.
+        Use `just-dna-compiler close <spec-dir> --private-key …` for that.
+        """
+        target = resolve_dir(spec_dir, settings)
+        result = await run_sync(
+            lambda: compiler.close_module(target, closed_by=closed_by or None)
+        )
+        return ClosureResult(
+            closed=result.closed,
+            spec_dir=str(target),
+            path=str(result.path) if result.path else None,
+            module_hash=result.module_hash,
+            signed=result.signed,
+            dropped_checks=list(result.dropped_checks),
+            errors=list(result.errors),
+            warnings=list(result.warnings),
         )
 
     # ----------------------------------------------------------------- #
@@ -464,9 +576,10 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             content_signature=sig,
             note=(
                 "Covers the authored content only — not the compiled artifact. "
-                "artifact.digest is a different hash and moves whenever sources.csv "
-                "re-stamps fetched_at, so a digest change is not evidence that "
-                "content changed."
+                "artifact.digest is a different hash: it moves whenever licensing.csv "
+                "re-stamps fetched_at, AND on a compiler upgrade, so a digest change is "
+                "not evidence that content changed. This signature is the one that holds "
+                "across both."
             ),
         )
 
@@ -544,9 +657,12 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         lines += [
             "",
             "Enricher-produced sidecars (do not hand-author): `resolution.csv`, "
-            "`frequencies.csv`, `gene_metrics.csv`, `literature.csv`. `sources.csv` is "
-            "a table kind of its own, listed above: it is the one fact sidecar you "
-            "write by hand, and the only table the compile licence gate reads.",
+            "`frequencies.csv`, `gene_metrics.csv`, `literature.csv`, and the format 0.6 "
+            "fact tables `gene_validity.csv`, `clinical_assertions.csv`, `gwas_effects.csv`. "
+            "`licensing.csv` is a table kind of its own, listed above: it is the one fact "
+            "sidecar you write by hand, and the only table the compile licence gate reads. "
+            "It was called `sources.csv` before 0.6; both spellings read, only the new one "
+            "is created, and a module carrying both is refused rather than merged.",
         ]
         return "\n".join(lines)
 

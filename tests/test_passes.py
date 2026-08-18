@@ -359,3 +359,178 @@ def test_a_republished_version_keeps_the_original_and_reports_the_difference(tmp
     assert "artifact_digest" in note and "immutable" in note
     stored = json.loads((tmp_path / RECEIPTS_FILE).read_text())
     assert len(stored) == 1
+
+
+# --------------------------------------------------------------------------- #
+# The 0.6.2 exception contract (RM101 upstream, S38 in the registry's tree)
+# --------------------------------------------------------------------------- #
+def _shadowed_except_arms(path):
+    """Every `except` clause in `path` that an earlier arm of the same `try` already catches.
+
+    Compares each clause against *earlier arms only*. A parent and its subclass inside
+    one tuple is redundant, not dead — every instance is still caught and the arm still
+    runs — so reporting that would be crying wolf on working code, which is how a guard
+    gets deleted instead of fixed.
+    """
+    import ast
+
+    tree = ast.parse(path.read_text())
+    findings = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Try):
+            continue
+        seen: list[set[str]] = []
+        for handler in node.handlers:
+            if handler.type is None:
+                names = {"BaseException"}
+            elif isinstance(handler.type, ast.Tuple):
+                names = {ast.unparse(e) for e in handler.type.elts}
+            else:
+                names = {ast.unparse(handler.type)}
+            for earlier in seen:
+                for caught in names:
+                    for parent in earlier:
+                        if _is_subclass_by_name(caught, parent):
+                            findings.append(
+                                f"line {handler.lineno}: `except {caught}` is already caught "
+                                f"by the earlier `except {parent}`"
+                            )
+            seen.append(names)
+    return findings
+
+
+def _is_subclass_by_name(child: str, parent: str) -> bool:
+    """Resolve two source-level names against the real classes the module imports."""
+    from just_module_creator.tools import passes as module
+
+    def resolve(expr: str):
+        # `_PASS_UNAVAILABLE[name]` and friends are subscripts, not names — resolve the
+        # mapping to the set of classes it can yield, since any of them may be raised.
+        table = {"_PASS_UNAVAILABLE": module._PASS_UNAVAILABLE, "_PASS_ERROR": module._PASS_ERROR}
+        for key, mapping in table.items():
+            if expr.startswith(f"{key}["):
+                return tuple(mapping.values())
+        obj = getattr(module, expr, None)
+        return obj if obj is not None else ()
+
+    kids, parents = resolve(child), resolve(parent)
+    kids = kids if isinstance(kids, tuple) else (kids,)
+    parents = parents if isinstance(parents, tuple) else (parents,)
+    return bool(kids) and bool(parents) and all(
+        any(isinstance(k, type) and isinstance(p, type) and issubclass(k, p) for p in parents)
+        for k in kids
+    )
+
+
+def test_no_except_arm_is_shadowed_by_an_earlier_one():
+    """The 0.6.2 upgrade's silent failure: an outage arm dead behind its own parent.
+
+    Since enricher 0.6.2 every `*Unavailable` is a subclass of the type beside it, so a
+    parent-first pair of arms catches every outage in the parent and reports `unreachable`
+    as empty on precisely the run where a source was down. Nothing raises and nothing
+    fails loudly, which is why this is a structural check rather than a behavioural one.
+    """
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "src/just_module_creator/tools/passes.py"
+    assert path.is_file()
+    assert not _shadowed_except_arms(path)
+
+
+def test_the_guard_can_actually_report_a_shadowed_arm(tmp_path):
+    """A guard reporting zero proves nothing until it is shown able to report one."""
+    bad = tmp_path / "bad.py"
+    bad.write_text(
+        "try:\n    pass\n"
+        "except FrequencyEnrichmentError:\n    pass\n"
+        "except FrequencyUnavailable:\n    pass\n"
+    )
+    findings = _shadowed_except_arms(bad)
+    assert findings and "FrequencyUnavailable" in findings[0]
+
+    good = tmp_path / "good.py"
+    good.write_text(
+        "try:\n    pass\n"
+        "except FrequencyUnavailable:\n    pass\n"
+        "except FrequencyEnrichmentError:\n    pass\n"
+    )
+    assert not _shadowed_except_arms(good)
+
+    one_tuple = tmp_path / "tuple.py"
+    one_tuple.write_text(
+        "try:\n    pass\n"
+        "except (FrequencyEnrichmentError, FrequencyUnavailable):\n    pass\n"
+    )
+    assert not _shadowed_except_arms(one_tuple)
+
+
+async def test_one_sources_outage_does_not_discard_the_other_passes(
+    monkeypatch, extended_client, spec_dir
+):
+    """The bug the per-pass `try` exists for: three sources' work lost to one being down.
+
+    Before this, `enrich_facts` ran the passes inside no `try` at all, so a gnomAD 503
+    propagated out of the tool and took `gene_metrics` and `dosage` with it — including
+    whatever they had already written. Asserted as a partition: every requested pass ends
+    up in exactly one of ran / unreachable / failed.
+    """
+    from just_dna_enricher.frequencies import FrequencyUnavailable
+
+    from just_module_creator.tools import passes as module
+
+    class Result:
+        rows, covered, missing, skipped_offline = [], ["PCSK9"], [], False
+
+    def fake_run_pass(name, target, mode, offline, use):
+        if name == "frequencies":
+            raise FrequencyUnavailable("gnomAD returned 503")
+        return Result()
+
+    monkeypatch.setattr(module, "_run_pass", fake_run_pass)
+
+    result = await extended_client.call_tool(
+        "enrich_facts",
+        {"spec_dir": str(spec_dir), "use": "unstated", "offline": True},
+    )
+    data = result.data
+
+    assert data.unreachable == {"frequencies": "gnomAD returned 503"}
+    assert data.failed == {}
+    # The other two still ran and their findings survived.
+    assert sorted(data.passes_run) == ["dosage", "gene_metrics"]
+    assert data.covered["gene_metrics"] == ["PCSK9"]
+    # A pass that never reached its source did not complete.
+    assert data.success is False
+    # Partition: nothing is silently dropped.
+    requested = {"frequencies", "gene_metrics", "dosage"}
+    assert set(data.passes_run) | set(data.unreachable) | set(data.failed) == requested
+
+
+async def test_an_outage_is_reported_apart_from_a_data_failure(
+    monkeypatch, extended_client, spec_dir
+):
+    """`unreachable` and `failed` answer different questions and must not merge.
+
+    `covered: []` reads identically whether the source had nothing or was never asked,
+    which is the whole reason the outage gets its own field rather than a warning line.
+    """
+    from just_dna_enricher.gene_metrics import GeneMetricsEnrichmentError
+
+    from just_module_creator.tools import passes as module
+
+    def fake_run_pass(name, target, mode, offline, use):
+        if name == "gene_metrics":
+            raise GeneMetricsEnrichmentError("gene_metrics.csv will not parse")
+        raise AssertionError("only gene_metrics was requested")
+
+    monkeypatch.setattr(module, "_run_pass", fake_run_pass)
+
+    result = await extended_client.call_tool(
+        "enrich_facts",
+        {"spec_dir": str(spec_dir), "use": "unstated", "passes": ["gene_metrics"]},
+    )
+    data = result.data
+
+    assert data.failed == {"gene_metrics": "gene_metrics.csv will not parse"}
+    assert data.unreachable == {}
+    assert data.passes_run == []

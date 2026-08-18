@@ -159,10 +159,19 @@ my_module/
   studies.csv          # required IFF variants.csv is present: the grounding
   resolution.csv       # produced by enrich — coordinates + VRS ids. Commit it.
   literature.csv       # produced by `literature` — PMID/DOI existence. Commit it.
-  sources.csv          # you write this: required when data came from a licence-bearing source
+  licensing.csv        # you write this: required when data came from a licence-bearing source
+  verification.json    # produced by close_module (and the check passes). Commit it.
   README.md            # you write this: it BECOMES the module's registry card
   logo.png             # optional
 ```
+
+**`licensing.csv` was called `sources.csv` until format 0.6.** Both names still read and the old one
+is removed at 1.0, so: create only `licensing.csv`, write to whichever one a module you inherited
+already carries, and never let a module carry both — that is refused outright rather than merged,
+because two copies of a hand-editable fact table are two claims and preferring either would discard
+somebody's curation silently. The rename stops at the file: `sources.parquet` and `manifest.sources`
+keep their names for the whole 0.x tail, so the chain reads
+`licensing.csv` → `sources.parquet` → `manifest.sources`. Do not rename anything else to match.
 
 **`README.md` is the module card.** The registry projects it onto the published module, so a module
 without one has a blank card in the catalog — which is what a browsing consumer sees first. Write it
@@ -187,16 +196,16 @@ carries `pharm_variants.csv` and **no** `variants.csv`.
 3. **What is the source, and may you use it this way?** Every PGx upstream (ClinPGx, CPIC,
    PharmVar) is CC BY-SA **plus a no-sale clause**, so none is sellable — do not read a bare
    "CC BY-SA" as permission. Pass `--use unstated | non-commercial | commercial` to every command
-   that copies rows out of a source. The terms land in `sources.csv`, which is the only thing the
+   that copies rows out of a source. The terms land in `licensing.csv`, which is the only thing the
    compile gate reads — so a source you copied from by hand is invisible to it, and you must add the
    row yourself.
 
 ## The order, and the one place deviating from it deadlocks
 
 ```
-scaffold ──▶ draft ──▶ curate ──▶ enrich ──▶ check ──▶ compile ──▶ rehearse ──▶ publish
-             (if a          (only a
-              source has it) human)
+scaffold ─▶ draft ─▶ curate ─▶ enrich ─▶ check ─▶ compile ─▶ close ─▶ rehearse ─▶ publish
+            (if a         (only a                            (only a
+             source has it) human)                            human)
 ```
 
 **Curate before you enrich.** A drafted row leaves `<<REPLACE>>` in the cells only a human can
@@ -210,6 +219,13 @@ You do not need to: **the draft report prints the allele pair for each stubbed r
 
 Steps 4 and 6 are the only ones that use the network. Once `resolution.csv` and `literature.csv`
 exist they *are* the pin: every later compile is offline and reproducible.
+
+**Close is deliberate and nothing does it for you.** `close_module` is the second place in this list
+that only a human can reach, and for the same reason as curation: a record stamped by whatever
+happened to pass says only that something ran. Until a module is closed, a consumer cannot tell a
+spec still being edited from one its author considers done, and a compile says so as a warning. Do
+not run it to clear that warning — an unclosed module is a true statement about a module still being
+written.
 
 ## You are the author. The layers below say who checks you
 
@@ -436,7 +452,7 @@ defaults:                     # optional; folded into every row before hashing
   curator: ai-module-creator
   method: literature-review
 genome_build: GRCh38
-# license: CC0-1.0            # SPDX id; must not contradict sources.csv
+# license: CC0-1.0            # SPDX id; must not contradict licensing.csv
 # authorship:
 #   - who: your-name
 #     role: created           # audited | created | edited | reviewed
@@ -752,25 +768,30 @@ travels with the module.
   the reference sequence**, so an offline run leaves them unminted — expect ~50% coverage on an
   indel-heavy module, ~99% online.
 
-### sources.csv and licensing
+### licensing.csv and licensing
 
 Any module built from a licence-bearing source needs a row recording the terms. Passes that read such
 a source write it for you; a source you read by hand is invisible, so write the row yourself.
 
+The file was `sources.csv` before format 0.6 and both spellings still read — see **Directory layout**
+for the rule. Everything below applies to whichever one the module carries.
+
 - The compiler **refuses to build** content from a no-sale source unless `declared_use` is recorded.
   Delete the cell and the compile fails — that is the gate working.
-- `license:` in the YAML must not contradict `sources.csv`. A ClinVar module declaring `CC0-1.0`
+- `license:` in the YAML must not contradict `licensing.csv`. A ClinVar module declaring `CC0-1.0`
   warns, because the source row says `public-domain`; they are the same grant, but the check compares
   **spellings**. Match the source's spelling.
 - It must cover **every** source your fact tables cite, including PubMed if you carry studies. Once
   the file exists, a *missing* row for a source your tables do use is a warning — so write them all.
+  The opposite complaint, a declared source no table uses, fired on every run under format 0.5 and no
+  longer does (`F21`); if you see it, you are on an old toolchain.
   A literature row is not reported as unused when `studies.csv` carries rows: `studies.csv` has no
   `source` column by design, so nothing can corroborate the service you read the record through, and
   the row is the only record of its terms. Declaring one costs nothing; omitting it loses the
   provenance.
-- `sources.csv` is a table kind, not a sidecar — `describe_table("sources.csv")` and
-  `get_template("sources.csv")` answer for it like any other. Never reconstruct its columns from the
-  filename: `share_alike` / `commercial_use` / `redistribution` are three independent axes where an
+- `licensing.csv` is a table kind, not a sidecar — `describe_table("licensing.csv")` and
+  `get_template("licensing.csv")` answer for it like any other, and so do the old spelling's.
+  Never reconstruct its columns from the filename: `share_alike` / `commercial_use` / `redistribution` are three independent axes where an
   empty cell means **unknown**, never *permitted*, and this is the only file the licence gate reads.
 
 ## 4 — Enrich (the only tier that fetches)
@@ -832,6 +853,11 @@ verify_artifact(module_dir="out")
 green pre-flight should mean a green compile. **Pass it the same `strict` as the compile you intend
 to run** — several checks are a ladder, so a mismatched pre-flight answers for the other compile.
 
+Two shapes broke that promise on format 0.6.0 — a module with `frequencies.csv`, and a table-only
+module with `studies.csv`, both of which could pass `validate --strict` and then be refused by
+`compile --strict`. Fixed in 0.6.1, which is this plugin's floor, so it is a reason to be on the
+floor rather than a caveat to work around.
+
 **Author against `strict`, because that is what the registry runs.** The difference is not cosmetic:
 
 | condition | plain | `strict` |
@@ -843,9 +869,22 @@ to run** — several checks are a ladder, so a mismatched pre-flight answers for
 A plain compile **succeeds** through both of the first two. So "it compiled" is not evidence the
 module is correct — a module can compile cleanly and contain rows that will never match a genome.
 
-A successful compile reports four things: `artifact_digest`, `content_signature`,
-`resolution_signature` and `fully_resolved`. Recompiling an untouched spec must reproduce all of
-them. Signing is CLI-only (`just-dna-compiler keygen` / `sign`); `keygen` writes an unencrypted
+A successful compile reports three signatures — `artifact_digest`, `content_signature`,
+`resolution_signature` — plus `fully_resolved` and five counters. Recompiling an untouched spec must
+reproduce all of them **under one compiler version**. Across a version boundary the rule is
+different and worth knowing before you panic: `artifact_digest` is the *byte* identity and moves on a
+compiler upgrade by design, while `content_signature` is the identity of your authored rows and does
+not. So compare `content_signature` when you upgrade, and re-pin any stored `artifact_digest`.
+
+**Read `resolution_subjects` beside `fully_resolved`.** Over an empty list that flag is `true`
+vacuously — it is `all()` over nothing — so `fully_resolved: true` with `resolution_subjects: 0`
+says the module resolved everything there was to resolve, which was nothing. The other four are
+`positional_rows` / `positional_rows_placed` (how much of the PGx side actually joins to a VCF;
+complete is `placed == rows`, and it is two numbers rather than a ratio on purpose) and
+`expanded_keys` / `expanded_rows` (the one-to-many rsID expansion). **A null counter is not a
+zero** — it means nothing counted, which is what every pre-0.6 artifact honestly is.
+
+Signing is CLI-only (`just-dna-compiler keygen` / `sign`); `keygen` writes an unencrypted
 PKCS#8 key — it bootstraps a key, it is not a key-management system.
 
 If you changed the schema rather than the data, prove the round-trip:
@@ -868,6 +907,33 @@ print(w.height, 'rows;', w.filter(pl.col('chrom').is_not_null()).height, 'with a
 ```
 
 `0 with a coordinate` means resolution did not reach the compile — see the two traps below.
+
+## 6b — Close: say the authoring is finished
+
+```
+close_module(spec_dir="spec", closed_by="your-name")
+```
+
+Authoring had no end, so every check that wanted to know whether a stub was still a stub was
+guessing. This is the end. It writes a `closure` into the module's `verification.json` naming the
+hash of `module_spec.yaml` and the authored CSVs **as they stand right now**. Edit any of them
+afterwards and the hash moves, the compiler drops the closure, and the module is open again. That is
+the design, not a bug — re-close when you are finished again.
+
+Three things worth being exact about:
+
+- **Nothing does it for you and nothing should.** `validate_module` stays read-only however cleanly
+  it passes. A record stamped by whatever happened to run says only that something ran; a closure
+  says a person decided.
+- **It does not refuse on warnings.** An unresolved rsID or an ungrounded threshold is a legitimate
+  state to call finished. Only a spec that will not validate is refused.
+- **`closed_by` is legibility, not proof** — it is a string nobody checks. Signing a closure needs a
+  private key, and this server deliberately takes none: a key that reaches a tool argument has been
+  logged. Use `just-dna-compiler close <spec-dir> --private-key …` if you want the act attributed
+  rather than merely recorded.
+
+An unclosed module still compiles and still publishes; it just carries a warning saying nobody has
+declared it done. Requiring a closure is filed for format 1.0.
 
 ## 7 — Publish: rehearse on the polygon, then promote
 
@@ -963,7 +1029,7 @@ publishing a near-duplicate.
   `fully_resolved: true`.
 - Every weighted row has a coordinate, and `resolution.csv` was *produced*, not authored.
 - Every PMID came out of a `literature_search` result whose **title you read**, never from memory.
-- A licence is declared and `sources.csv` covers every source cited, with the flags honestly filled or
+- A licence is declared and `licensing.csv` covers every source cited, with the flags honestly filled or
   honestly blank.
 - **No row's `state` or `direction` was settled by guessing.** Having *dropped* rows for that reason is
   evidence in favour, not against.
@@ -1081,7 +1147,8 @@ content. Write the changelog as a continuation of the previous one, not a fresh 
       from a weighted variant — existence alone never settles identity
 - [ ] `check_identifiers` run, and `gene_locus_conflicts` empty *with* `gene_locus_check_skipped` null
 - [ ] `resolution.csv` and `literature.csv` committed alongside the CSVs
-- [ ] `sources.csv` present, covering every source cited, and consistent with `license:`
+- [ ] `licensing.csv` present, covering every source cited, and consistent with `license:`
+- [ ] `close_module` run, and re-run if any authored file changed afterwards
 - [ ] `module.version` is a quoted SemVer string
 - [ ] a second **compile** of the untouched spec reproduces the same `artifact_digest` (a
       re-**draft** will not — see below)
@@ -1107,7 +1174,7 @@ pin, not a cache.
 
 ## A re-draft always changes `artifact.digest`, even when the data is identical
 
-`sources.csv` carries a `fetched_at` timestamp stamped when the row is written, and
+`licensing.csv` carries a `fetched_at` timestamp stamped when the row is written, and
 `sources.parquet` is one of the files the digest is a Merkle root over — so two builds of
 byte-identical content, an hour apart, are two different artifacts. Consequences worth planning
 around:
@@ -1118,7 +1185,7 @@ around:
 - **Digest-based dedup will miss matches** across rebuilds, so `find-by-hash` cannot recognise a
   module you rebuilt without editing.
 
-If you need a rebuild to be digest-stable, keep the previous `sources.csv` rather than letting the
+If you need a rebuild to be digest-stable, keep the previous `licensing.csv` rather than letting the
 draft re-stamp it.
 
 ## Coordinates and identity
@@ -1241,7 +1308,7 @@ The house algebra is **three-valued: true / false / unknown**, and `None` is nev
   source (`draft`, `draft-panel`, `draft-clinpgx`, `dosage`, `pgx`, `clinpgx build/check`). A
   forbidding source is *skipped* on `unstated` and *refused* on `commercial`, at acquisition —
   nothing is even fetched.
-- **`sources.csv` is the only thing the compile gate reads.** Only the *annotation* layer taints; a
+- **`licensing.csv` is the only thing the compile gate reads.** Only the *annotation* layer taints; a
   coordinate is a fact, so a fact-layer row carries attribution rather than a prohibition.
   Most-restrictive-wins, module-wide.
 - **The CLI spelling and the column value differ.** `--use` accepts `non-commercial`, but the

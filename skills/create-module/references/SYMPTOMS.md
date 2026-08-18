@@ -191,11 +191,30 @@ before the `authority` column existed simply says nothing here; re-enrich to fil
 by `compile --strict` is a pre-flight for the *other* compile, so pass the same flag to both:
 `validate spec/ --strict`.
 With the modes matched it should not happen, and if it does, that is a bug worth reporting upstream
-rather than working around. `validate` covers `resolution.csv`, the four fact sidecars (`sources.csv`,
+rather than working around. Two shapes genuinely did on format 0.6.0 — a module with
+`frequencies.csv`, and a table-only module with `studies.csv` — both fixed in 0.6.1, which is this
+plugin's floor. `validate` covers `resolution.csv`, the four fact sidecars (`licensing.csv`,
 `literature.csv`, `frequencies.csv`, `gene_metrics.csv`), the licence gate, the stored `vrs_id`, the
 p-value pair, and whether every genotype and `effect_allele` names an allele its locus actually has.
 What still only appears at compile is anything computed from *resolved* rows — the expansion and hosting
 findings above — because resolution has not run when `validate` does.
+
+**A `pmid` cell holding a PMC id is refused by name**
+`PMC 3110566` used to be accepted as PMID 3110566 — a real identifier, for an unrelated article. A
+cell that compiled before can refuse now (RM50), and that is the fix rather than a regression: the
+row was citing the wrong paper. Look the record up again and write the PMID it actually has.
+
+**A coordinate past its contig's end, or on a contig only the other assembly names**
+An error in **both** modes (RM48). `--strict` is deliberately not the switch, because this is
+arithmetic rather than judgement — the position cannot exist on the build the module declares. Two
+usual causes: the module is GRCh37 data declared as GRCh38, or the coordinate is an off-by-one that
+happened to land past the end. `just-dna-enricher hint recover` tells you which rs-number GRCh37
+dbSNP records at that coordinate, which usually settles it in one call.
+
+**`effect_allele … is not among the resolved alleles at this locus`**
+A `studies.csv` row states an effect relative to an allele the locus cannot host (RM91). A warning
+under `--best-effort`, an **error** under `--strict`. Usually the effect allele was copied from a
+paper reporting the other strand.
 
 **`--no-resolve switches off resolution entirely, including the injected resolution.csv`**
 You passed `--no-resolve` (or `resolve_with_ensembl=False`) with a `resolution.csv` beside the spec. The
@@ -314,7 +333,28 @@ Same unphased genotype, different conclusions, but the haplotype definitions *do
 resolves it. Correct and expected for a cis/trans pair; a consumer with unphased calls must withhold.
 
 **`sources.csv declares N source(s) no table in this module uses`**
-Over-declaration; usually a stale row after you removed a table. Harmless.
+Over-declaration; usually a stale row after you removed a table. Harmless. It also fired
+spuriously on the pubmed/europepmc rows of any module carrying `studies.csv` — that was `F21`/`S23`
+and it is **fixed as of format 0.6**, so on the current floor this message means what it says.
+
+**`sources.csv is the deprecated spelling of this table and will be removed at 1.0`**
+Format 0.6 renamed the file to `licensing.csv`. Nothing is broken: it reads exactly as before, and
+`sources.parquet` and `manifest.sources` deliberately keep their names. Rename the CSV. Do not
+"finish" the rename into the parquet or the manifest key — a test upstream pins those, because
+renaming either breaks every reader.
+
+**`… are the same table in two places, and both are present`**
+A module carrying **both** `licensing.csv` and `sources.csv` (or one of them twice, once under
+`derived/`). This is an error rather than a warning and there is no correct silent behaviour
+available: these tables are fact-hashed and hand-editable, so two copies are two claims, and
+preferring either would discard somebody's curation without saying so. Keep one, delete the other,
+and keep the spelling the message names.
+
+**`This module records no closure`**
+Nothing has stated that authoring is finished, so a consumer cannot tell a spec still being edited
+from one its author considers done. Run `close_module` when the module actually *is* done — not to
+clear the warning. Editing any authored file afterwards drops the closure again, which is the point.
+A warning today; required at format 1.0 (RM73).
 
 **The compile refuses over licensing**
 An annotation-layer source forbids sale and the module records no declaration. Draft with

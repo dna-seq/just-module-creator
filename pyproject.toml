@@ -1,6 +1,6 @@
 [project]
 name = "just-module-creator"
-version = "0.9.2"
+version = "0.10.0"
 description = "MCP server + Claude Code skill for authoring and publishing just-dna annotation modules"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -17,18 +17,20 @@ dependencies = [
     "pydantic-settings>=2",
     "typer>=0.16",
     "anyio>=4",
-    # 0.5.4 across all three: it carries CitationHint.title, Finding.line,
-    # hints.ATTESTATION_BEARING and the Ensembl unreachable/absent split, each of
-    # which retires a mitigation here. Floored together because upstream versions
-    # the three in lockstep.
-    "just-dna-compiler>=0.5.4",
-    "just-dna-format>=0.5.4",
-    "just-dna-enricher>=0.5.4",
-    # 0.14.0 is the floor because it is the release that projects a spec-directory
-    # README.md onto the module card, and it adds `amend_readme` so an already-published
-    # module's prose is repairable without spending a version number (F33). Below it,
-    # every module we publish has a blank catalog card.
-    "just-dna-registry>=0.14.0",
+    # 0.6 is the first release where the three do NOT move in lockstep: format and
+    # compiler stop at 0.6.1, the enricher goes to 0.6.2 for RM101 alone. The
+    # enricher floor is the load-bearing one — below 0.6.2 an enricher pass raises
+    # its *client's* exception type rather than the type the pass documents, so
+    # `except FrequencyEnrichmentError` is silently dead.
+    "just-dna-compiler>=0.6.1",
+    "just-dna-format>=0.6.1",
+    "just-dna-enricher>=0.6.2",
+    # 0.17.0 is the release that adopts format 0.6, and the floor has to move with ours:
+    # its client reads `just_dna_format.layout` and the new manifest blocks unguarded, so a
+    # 0.14 client beside a 0.6 format install is an AttributeError waiting inside a download.
+    # It also adds `unreachable` to every check pass, which is what separates "gnomAD was
+    # down" from "this module has no coverage" in a `registry_check` report.
+    "just-dna-registry>=0.17.0",
     "python-dotenv>=1.2.2",
     # Declared, not leaned on transitively: net.py calls httpx directly for the
     # literature sources, and a transitive pin is not a contract.

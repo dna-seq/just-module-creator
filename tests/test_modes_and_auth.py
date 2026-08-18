@@ -385,3 +385,52 @@ def test_the_clear_list_covers_every_variable_settings_reads() -> None:
     # test asserts just as effectively as a token does, and far less visibly.
     assert {"JMC_API_KEY_HEADER", "JMC_TRANSPORT", "JMC_PORT"} <= set(_ECOSYSTEM_VARS)
     assert {"JUST_DNA_CONTACT_EMAIL", "NCBI_API_KEY", "REGISTRY_TOKEN"} <= set(_ECOSYSTEM_VARS)
+
+
+async def test_building_a_server_cannot_repopulate_the_environment_from_dotenv():
+    """`F24`'s other half: `delenv` is only safe while nothing re-reads `.env` mid-test.
+
+    The original fixture reasoned that `delenv` was fine because "nothing in the suite
+    calls `load_dotenv`". That was true of our code and never true of the dependency
+    tree — `just_dna_enricher.locations` calls it when a cache path is resolved, which
+    `build_server` reaches through `net.py`. And `load_dotenv(override=False)` skips a
+    key that is *present*, so deleting the variable is exactly what lets the file win.
+
+    Measured before the fix, on a machine with a real `.env`: `JMC_TEST_API_KEY` was
+    `None` after the fixture and held a live `mk_live_…` token immediately after
+    `build_server` — a fresh session then resolved a credential nobody passed it.
+
+    Asserted over `build_server` rather than over the loader, because the loader is an
+    implementation detail of a package we do not own and the property is about ours.
+    """
+    import os
+
+    from conftest import _ECOSYSTEM_VARS, offline_settings
+
+    from just_module_creator.server import build_server
+
+    before = {var: os.environ.get(var) for var in _ECOSYSTEM_VARS}
+    assert before.get("JMC_TEST_API_KEY") is None  # the fixture ran
+
+    build_server(mode="essentials", settings=offline_settings())
+
+    after = {var: os.environ.get(var) for var in _ECOSYSTEM_VARS}
+    repopulated = {var: value for var, value in after.items() if value != before[var]}
+    assert not repopulated, (
+        "building a server put these back into os.environ from .env: "
+        f"{sorted(repopulated)} — the dotenv sweep in conftest has stopped covering "
+        "whoever loads it now"
+    )
+
+
+def test_the_dotenv_sweep_actually_finds_the_loader_that_broke_this():
+    """A sweep that patched nothing would pass the test above on a machine with no `.env`.
+
+    So assert the mechanism directly: the module that reintroduced the leak is one of
+    the ones the sweep reaches, and what it holds is the refusal rather than the real
+    loader. Named explicitly because this is the concrete case that failed.
+    """
+    import just_dna_enricher.locations as locations
+    from conftest import _refuse_dotenv
+
+    assert locations.load_dotenv is _refuse_dotenv

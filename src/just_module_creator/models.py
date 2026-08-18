@@ -165,6 +165,17 @@ class TableKind(BaseModel):
         default_factory=list,
         description="Kinds that must be present alongside this one (studies.csv <-> variants.csv).",
     )
+    deprecated: bool = Field(
+        default=False,
+        description="True when this is an older spelling of another kind on this list. It still "
+        "reads, and it is removed at format 1.0. Never create one.",
+    )
+    preferred: str | None = Field(
+        default=None,
+        description="The spelling a NEW file takes, when it differs from `csv`. Both spellings "
+        "back the same model, and a module carrying both is refused rather than merged — so "
+        "write to the file that is already there, and use this name only when neither exists.",
+    )
 
 
 class TableList(BaseModel):
@@ -172,8 +183,9 @@ class TableList(BaseModel):
 
     tables: list[TableKind] = Field(description="Hand-authored table kinds.")
     sidecars: list[str] = Field(
-        description="Enricher-produced files. Do not hand-author. `sources.csv` used to "
-        "carry an exception here and is now a table kind in its own right, listed above."
+        description="Enricher-produced files. Do not hand-author. `licensing.csv` (formerly "
+        "`sources.csv`) used to carry an exception here and is now a table kind in its own "
+        "right, listed above."
     )
     note: str = Field(description="The composition rule in one line.")
 
@@ -334,9 +346,73 @@ class CompileReport(BaseModel):
     )
     resolution_signature: str | None = Field(default=None, description="Signature of resolution.")
     fully_resolved: bool | None = Field(
-        default=None, description="Whether every row reached a coordinate."
+        default=None,
+        description="Whether every row reached a coordinate. Read `resolution_subjects` beside "
+        "it: over an empty list this is vacuously true, not evidence of anything.",
+    )
+    resolution_subjects: int | None = Field(
+        default=None,
+        description="The denominator `fully_resolved` quantifies over, counted AFTER rsID "
+        "expansion. `0` beside `fully_resolved: true` means nothing was resolved because there "
+        "was nothing to resolve. **null is not 0** — it means this compiler did not count.",
+    )
+    positional_rows: int | None = Field(
+        default=None,
+        description="Rows on the positional/PGx side. **null is not 0**: `0` says the module has "
+        "none, null says nothing counted them.",
+    )
+    positional_rows_placed: int | None = Field(
+        default=None,
+        description="How many of `positional_rows` actually join to a VCF. Complete is "
+        "`placed == rows` — two parts, deliberately not a ratio.",
+    )
+    expanded_keys: int | None = Field(
+        default=None,
+        description="Authored keys that resolved onto more than one locus. Expansion is expected "
+        "and correct; deleting rows to suppress it is not.",
+    )
+    expanded_rows: int | None = Field(
+        default=None,
+        description="Rows those keys became. `expanded_rows - expanded_keys` is NOT the "
+        "unmatchable-row count — that needs a number the manifest does not carry.",
     )
     files: list[str] = Field(default_factory=list, description="Artifact file names.")
+
+
+class ClosureResult(BaseModel):
+    """Outcome of declaring a module's authoring phase finished.
+
+    Closing is the one thing in the pipeline no check does for you. A record
+    stamped by whatever happened to pass says only that something ran; this says
+    a person decided the module was done, over the exact authored bytes.
+    """
+
+    closed: bool = Field(description="Whether the closure was written.")
+    spec_dir: str = Field(description="The spec directory.")
+    path: str | None = Field(
+        default=None, description="The verification.json the closure was written into."
+    )
+    module_hash: str | None = Field(
+        default=None,
+        description="Hash of module_spec.yaml plus the authored CSVs as they stand. Edit any of "
+        "them and this moves, the compiler drops the closure, and the module is open again.",
+    )
+    signed: bool = Field(
+        default=False,
+        description="False means change-evident but not attributed: it records that someone "
+        "closed the module, not which party did.",
+    )
+    dropped_checks: list[str] = Field(
+        default_factory=list,
+        description="Check records attested over different bytes, dropped as no longer binding. "
+        "Re-run those checks against the closed module.",
+    )
+    errors: list[str] = Field(default_factory=list, description="Why the close was refused.")
+    warnings: list[str] = Field(
+        default_factory=list,
+        description="Advisory. Closing deliberately does NOT refuse on warnings — an unresolved "
+        "rsID is a legitimate state to call finished.",
+    )
 
 
 class SignatureResult(BaseModel):
@@ -504,7 +580,7 @@ class SourceStatus(BaseModel):
 
 
 class SourceLicenseNote(BaseModel):
-    """A source consulted, and the `sources.csv` row nothing will write for it.
+    """A source consulted, and the `licensing.csv` row nothing will write for it.
 
     Deliberately carries no `license`, `commercial_use` or `share_alike`: pointing
     at the terms is help, asserting them is a guess, and `declared_use` is a
@@ -512,7 +588,7 @@ class SourceLicenseNote(BaseModel):
     entry for any literature service, which is filed rather than papered over.
     """
 
-    source: str = Field(description="The join value for sources.csv, e.g. `pubmed`.")
+    source: str = Field(description="The join value for licensing.csv, e.g. `pubmed`.")
     layer: str = Field(description="`literature` for the sidecar; `annotation` if you quote text.")
     terms_url: str | None = Field(default=None, description="Where to read the terms.")
     stateable_upstream: bool = Field(
@@ -583,7 +659,7 @@ class LiteratureSearchResult(BaseModel):
     findings: list[LintFinding] = Field(default_factory=list, description="Notes and warnings.")
     licensing: list[SourceLicenseNote] = Field(
         default_factory=list,
-        description="The sources.csv rows you now owe, and why none was written.",
+        description="The licensing.csv rows you now owe, and why none was written.",
     )
 
 
@@ -989,6 +1065,22 @@ class FactPassReport(BaseModel):
     )
     skipped_offline: list[str] = Field(
         default_factory=list, description="Passes that did nothing because the network was off."
+    )
+    unreachable: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "pass -> why its source never answered. This is NOT `missing`: a gene gnomAD has no "
+            "entry for and a gene gnomAD never answered about both leave the sidecar row absent, "
+            "and only this field tells them apart. A pass named here asked nothing, so its "
+            "`covered: []` is silence rather than a negative result."
+        ),
+    )
+    failed: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "pass -> why it failed on something that is not an outage: a table that will not "
+            "load, a refused licence declaration. The source answered; the problem is here."
+        ),
     )
     warnings: list[str] = Field(default_factory=list, description="Advisory notes.")
     note: str = Field(default="", description="How to regenerate.")

@@ -126,17 +126,30 @@ validate_module(spec_dir="assets/fto_bmi", strict=True)
 → valid: true, 0 errors, 0 warnings
 
 compile_module(spec_dir="assets/fto_bmi", output_dir="out", strict=True)
-→ sha256:e52bd7516dc93e4c1c27c740acd558d0056375186c4a0593ea11c8f187d49107
+→ sha256:c3d633f06c216440892ca571e2b88e6e2b7734cbffd0ac76991bbd7e8071aa09
 ```
 
 That digest is reproducible: compiling the untouched folder gives the same one every time, on any
-machine, and the registry's own server recomputes it independently on publish. (Expect one warning
-about `sources.csv` naming two sources no table uses — expected here, and
-[`assets/fto_bmi/README.md`](./assets/fto_bmi/README.md) says why.)
+machine, and the registry's own server recomputes it independently on publish. It is reproducible
+**under one compiler version** — upgrading the compiler moves it on purpose, which is why this line
+changed when the toolchain went to format 0.6. What does *not* move is `content_signature`, the
+identity of the authored rows; that is the one to compare across an upgrade.
 
 `strict` means **reproducible**, not **correct**. A green compile says the module rebuilds
 identically; it has no opinion on whether the biology is right. Read the warnings on a green run —
 they are the interesting output.
+
+**7 — say you are finished.** `close_module` writes the one thing no check can write for you: that a
+person considers this module done, bound to the exact bytes of the files as they stand.
+
+```
+close_module(spec_dir="assets/fto_bmi", closed_by="your-name")
+→ closed: true
+```
+
+Edit any authored file afterwards and the binding moves, the closure is dropped, and the module is
+open again — that is the feature. Compiling without one is a warning, not a refusal, so an
+unfinished module stays compilable and simply says it is unfinished.
 
 ## Publishing
 

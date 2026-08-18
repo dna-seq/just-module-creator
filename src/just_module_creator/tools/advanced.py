@@ -29,7 +29,11 @@ from just_module_creator.models import (
 )
 from just_module_creator.net import NetworkServices
 from just_module_creator.settings import RegistryTarget, Settings
-from just_module_creator.targets import DEFAULT_CATALOG_TARGET, client_for
+from just_module_creator.targets import (
+    DEFAULT_CATALOG_TARGET,
+    client_for,
+    instance_note,
+)
 from just_module_creator.tools._shared import offline_for, resolve_dir
 
 log = get_logger()
@@ -185,7 +189,9 @@ def register_extended(mcp: FastMCP, settings: Settings, services: NetworkService
         try:
             manifest = await run_sync(_download)
         except RegistryError as exc:
-            return OpResult(success=False, message=f"Registry error: {exc}")
+            return OpResult(
+                success=False, message=f"Registry error: {exc}{instance_note(exc)}"
+            )
         identity = getattr(manifest, "identity", None)
         return OpResult(
             success=True,

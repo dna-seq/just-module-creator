@@ -41,6 +41,7 @@ from just_module_creator.targets import (
     DEFAULT_WRITE_TARGET,
     client_for,
     describe,
+    instance_note,
     polygon_naming_note,
     prod_refusal,
 )
@@ -404,7 +405,8 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
             )
         except RegistryError as exc:
             raise ToolError(
-                f"{describe(target, settings)} could not validate the spec: {exc}"
+                f"{describe(target, settings)} could not validate the spec: "
+                f"{exc}{instance_note(exc)}"
             ) from exc
 
         return _preflight(
@@ -502,7 +504,8 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
             )
         except RegistryError as exc:
             raise ToolError(
-                f"{describe(target, settings)} could not complete the dry run: {exc}"
+                f"{describe(target, settings)} could not complete the dry run: "
+                f"{exc}{instance_note(exc)}"
             ) from exc
 
         return _preflight(
@@ -549,7 +552,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
                 message=(
                     f"{describe(target, settings)} rejected the token: {exc}. A token issued by "
                     "the other instance is an unknown key here, not a weaker one — check which "
-                    "one you stored."
+                    f"one you stored.{instance_note(exc)}"
                 ),
                 data={"target": target, "registry_url": settings.registry_url_for(target)},
             )
@@ -647,7 +650,10 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         except RegistryError as exc:
             return OpResult(
                 success=False,
-                message=f"{describe(target, settings)} refused the readme: {exc}",
+                message=(
+                    f"{describe(target, settings)} refused the readme: "
+                    f"{exc}{instance_note(exc)}"
+                ),
                 data={"target": target},
             )
         log.info("Amended readme for %s/%s@%s on %s", namespace, name, version, target)
@@ -718,7 +724,10 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         except RegistryError as exc:
             return OpResult(
                 success=False,
-                message=f"{describe(target, settings)} refused the claim: {exc}",
+                message=(
+                    f"{describe(target, settings)} refused the claim: "
+                    f"{exc}{instance_note(exc)}"
+                ),
                 data={"target": target, "namespace": namespace},
             )
         note = polygon_naming_note(target, namespace=namespace)
@@ -824,7 +833,8 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
             already = None
             duplicate_note = (
                 f" The duplicate-content pre-flight could not run ({exc}), so nothing here "
-                "confirmed this data is unpublished — the registry's own check decided."
+                f"confirmed this data is unpublished — the registry's own check decided."
+                f"{instance_note(exc)}"
             )
         if already:
             refs = ", ".join(str(getattr(r, "canonical_id", None) or r) for r in already)
@@ -853,7 +863,10 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         except RegistryError as exc:
             return OpResult(
                 success=False,
-                message=f"{describe(target, settings)} refused the publish: {exc}",
+                message=(
+                    f"{describe(target, settings)} refused the publish: "
+                    f"{exc}{instance_note(exc)}"
+                ),
                 data={"target": target},
             )
 
@@ -962,7 +975,10 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         except RegistryError as exc:
             return OpResult(
                 success=False,
-                message=f"{describe(target, settings)} refused the delete: {exc}",
+                message=(
+                    f"{describe(target, settings)} refused the delete: "
+                    f"{exc}{instance_note(exc)}"
+                ),
                 data={"target": target},
             )
         log.info("Deleted %s/%s@%s from %s", namespace, name, version, target)
@@ -1013,7 +1029,10 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         except RegistryError as exc:
             return OpResult(
                 success=False,
-                message=f"{describe(target, settings)} refused the delete: {exc}",
+                message=(
+                    f"{describe(target, settings)} refused the delete: "
+                    f"{exc}{instance_note(exc)}"
+                ),
                 data={"target": target},
             )
         log.info("Deleted module %s/%s from %s", namespace, name, target)

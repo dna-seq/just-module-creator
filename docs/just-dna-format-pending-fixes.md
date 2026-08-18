@@ -28,17 +28,26 @@ the same two-file split on 2026-08-11; its history file exists but is still empt
 because `S1` was answered in place and not yet archived. So there, for now, read the
 `**Status —**` paragraphs in the inbox itself.
 
-**Number a new one with `.claude/triage-state.sh --next`, never from what the inbox
-shows** — it is empty, ids are never reused. As of 2026-08-12 the next is `S27` in the
-format tree and `S8` in the registry's; compute both, never read them off an inbox. **These
-numbers go stale within hours** — both moved by two on 2026-08-12 alone, and one of those was
-our own duplicate re-report, so a number read off this line would already have collided.
+**Number a new one with the triage script, never from what the inbox shows** — it is
+empty, ids are never reused. **The script is `.claude/triage-state.py` in the format
+tree as of 2026-08-18**, not the `.sh` this file used to name; run whichever one is
+there. **These numbers go stale within hours** — this line has said `S25`, `S27` and
+`S29` on three different days, and one of those sessions filed a duplicate because it
+trusted the number instead of the script. Compute it, every time.
 
 **Three states, not two, and only the third releases a guard.** *accepted and
 filed* (an upstream `RMn`, still open) → *fixed in tree* (the symbol exists in
 `../just-dna-format`, not in what we install) → *released* (on PyPI, in our
 lockfile). Every status line below names both halves, because "open upstream" said
 neither and was wrong on every entry in this file until 2026-08-11.
+
+**Format 0.6.1 / enricher 0.6.2 / registry 0.17.0 RELEASED and adopted on 2026-08-18.**
+`uv sync` installs those, and the floors say so. 0.6 is the first release where the
+three do **not** move in lockstep: format and compiler stop at 0.6.1 and the enricher
+alone goes to 0.6.2, for RM101. Verified by symbol: `just_dna_format.layout`,
+`compiler.ARTIFACT_PARQUETS`, `compiler.close_module`,
+`frequencies.FrequencyUnavailable`. The paragraph below is the previous adoption and
+is kept as the record of it.
 
 **0.5.4 and registry 0.13.0 both RELEASED and adopted on 2026-08-11.** `uv sync` now
 installs format/compiler/enricher **0.5.4** and `just-dna-registry` **0.13.0**, and the
@@ -630,3 +639,42 @@ most from a preprint, one association was not significant" has nowhere on the ca
 `description` is one sentence. The card otherwise shows a title, a gene list and a green
 `compile_success: true`, which reads as more confidence than the rows support — the precise
 inversion §2's three-valued rule exists to prevent, arriving through presentation rather than data.
+
+
+## F35 — a library call loads the caller's `.env`, and it un-did our test isolation
+
+**Severity:** high (in the suite) · **Status:** filed upstream 2026-08-18 as format-tree
+**`S39`**, open · **Mitigated here:** yes, in `tests/conftest.py`
+
+`just_dna_enricher.locations` calls `load_dotenv(env_path, override=override)` while
+resolving a cache path — a *library* path, not a CLI entry point — so `build_server`
+repopulates `os.environ` from whatever `.env` sits above the working directory.
+
+That is a mild surprise for a consumer generally and a sharp one for us specifically,
+because `load_dotenv(override=False)` **skips a key that is present**. `F24`'s fixture
+cleared the ecosystem's variables with `delenv`, which is exactly what made the file
+win. Measured on this tree: `JMC_TEST_API_KEY` was `None` after the fixture and held a
+live `mk_live_…` polygon token immediately after `build_server`, so a session that had
+authenticated nothing resolved a real credential. It surfaced as
+`test_a_token_does_not_leak_between_sessions` failing with *"the server is configured
+offline"* rather than with its own assertion — the token was real enough to get past the
+auth check.
+
+**The mitigation is to neutralize the loader, not the file.** The autouse fixture walks
+`sys.modules` and replaces every `load_dotenv` binding with a no-op returning `False`.
+Walking rather than patching `dotenv.load_dotenv` is the load-bearing part: every module
+that did `from dotenv import load_dotenv` holds its own binding, so patching the source
+module reaches none of them, and a dependency that starts calling it in a later release
+is covered without anybody remembering this exists.
+
+`setenv(VAR, "")` — §6's usual answer to this shape — is **not** available as a blanket
+fix here, and that is why the fixture used `delenv` in the first place: these variables
+reach typed fields, so `JMC_PORT=""` and `JMC_OFFLINE=""` are parse errors rather than
+"unset". The rule still holds inside an individual test, where the field is a string.
+
+**Closes when** the enricher stops loading `.env` from a library path, or documents that
+it does. The sweep is cheap and correct either way, so it is not urgent to remove.
+
+**Guarded by** `tests/test_modes_and_auth.py::test_building_a_server_cannot_repopulate_the_environment_from_dotenv`
+and `::test_the_dotenv_sweep_actually_finds_the_loader_that_broke_this`, both run against
+the unfixed fixture and watched to fail.

@@ -14,6 +14,7 @@ Install: `pip install just-dna-enricher` pulls the compiler and the format tier.
 | templates, scaffolding | `get_template`, `scaffold_module` | `template`, `stub`, `scaffold` |
 | lint authored rows | `lint_rows` | `hint <kind> --file F` |
 | validate / compile | `validate_module`, `compile_module` | `validate`, `compile` |
+| declare authoring finished | `close_module` | `close` (add `--private-key` to sign it) |
 | resolve coordinates | `enrich_module` | `enrich` |
 | signature / integrity / round-trip | `module_signature`, `verify_artifact`, `reverse_module` | `signature`, `verify`, `reverse` |
 | identifier currency | `check_identifiers`, `lookup_identifier` | `check-identifiers`, `hint gene/trait` |
@@ -28,8 +29,10 @@ Install: `pip install just-dna-enricher` pulls the compiler and the format tier.
 | fix a published readme / logo / changelog | `registry_amend_readme` | `amend-changelog`, `amend-logo` (readme is tool-only) |
 | drafting from a source | `draft_from_clinvar`, `draft_from_cpic`, `draft_from_clinpgx` | `draft-panel`, `draft`, `draft-clinpgx` |
 | fact passes | `enrich_facts`, `enrich_literature_pass` | `frequencies`, `gene-metrics`, `dosage`, `literature` |
-| **signing** | — | `keygen`, `sign` |
+| **signing** | — | `keygen`, `sign` (and `close --private-key`) |
 | **PGx cross-checks** | — | `pgx`, `clinpgx check`, `check-acmg` |
+| **fact tables from ClinGen / ClinVar / GWAS Catalog** | — | `gene-validity`, `assertions`, `gwas` |
+| **which rsID sits at a GRCh37 coordinate** | — | `hint recover` |
 | **snapshot building** | — | `clinvar build`, `clinpgx build`, `acmg build`, `cache pull` |
 
 ## `just-dna-compiler` (offline, never fetches)
@@ -48,7 +51,16 @@ Install: `pip install just-dna-enricher` pulls the compiler and the format tier.
 | `reverse <artifact> <out>` | artifact → authored spec DSL. `--resolution/--no-resolution`, `--genome-build` |
 | `keygen --out key.pem` | Ed25519 key; prints the public key `verify` pins |
 | `sign <dir> --private-key K` | signs `artifact.digest`, writes the signature into the manifest |
-| `verify <dir>` | re-hash every file, recompute the digest, check the signature. `--public-key`, `--no-require-marketplace`, `--check-inputs/-logs/-provenance/-logo` |
+| `close <dir>` | write the `closure` into `verification.json`, bound to the authored bytes. `--by`, `--private-key`. Refuses a spec that does not validate; does **not** refuse on warnings |
+| `verify <dir>` | re-hash every file, recompute the digest, check the signature. `--public-key`, `--no-require-marketplace`, `--check-inputs/-logs/-provenance/-logo/-readme/-derived` |
+
+**`verify`'s `--require-marketplace` defaults to on, and that is the registry's policy, not yours.**
+A bare `verify` rejects every locally-compiled module — ours included — because the reference
+compiler leaves `compiled_by` null by design. It is a fork, one policy per install route; the
+guarantee that is actually load-bearing is the pinned `--public-key`.
+
+Use the `just-dna-enricher` entry point rather than `python -m just_dna_enricher.cli`, which is
+missing three commands.
 
 **Never pass `--no-resolve` (`resolve_with_ensembl=False`) with a `resolution.csv` beside the spec.**
 The flag reads as "do not use Ensembl" and is actually the master switch for resolution of *every*
@@ -65,10 +77,14 @@ kind, so the compile succeeds and writes a module whose every row has no `chrom`
 | `dosage <dir>` | ClinGen dosage rows onto `gene_metrics.csv`. `--use`, `--url` |
 | `literature <dir>` | → `literature.csv`. `--fulltext/--no-fulltext`, `--doi/--no-doi` |
 | `draft <dir> --gene G` | CPIC → the three PGx tables. `--drug`, `--allele`, `--population`, `--use`, `--dry-run` |
-| `draft-panel <dir> --gene G` | ClinVar → `variants.csv` + `studies.csv`. `--snapshot`, `--offline`, `--clin-sig`, `--min-review-stars`, `--max-citations`, `--use`, `--dry-run` |
+| `draft-panel <dir> --gene G` | ClinVar → `variants.csv` + `studies.csv`. `--snapshot`, `--offline`, `--clin-sig`, `--min-review-stars`, `--max-citations`, `--use`, `--download/--no-download`, `--dry-run` |
 | `draft-clinpgx <dir> --snapshot S` | ClinPGx → `pharm_variants.csv`. `--gene`, `--drug`, `--min-evidence-level`, `--use`, `--dry-run` |
-| `check-identifiers <dir>` | trait CURIEs (OLS4), gene symbols (HGNC). `--no-traits`, `--no-genes` |
-| `check-acmg <dir>` | `acmg_sf` vs the ACMG SF list. `--sf-list` (strongly preferred), `--offline`, `--url` |
+| `check-identifiers <dir>` | trait CURIEs (OLS4), gene symbols (HGNC). `--no-traits`, `--no-genes`. Writes no authored cell — but since 0.6 it **does** record that the question was put, into `verification.json`, unconditionally |
+| `gene-validity <dir>` | → `gene_validity.csv` from ClinGen / GenCC |
+| `assertions <dir>` | → `clinical_assertions.csv` from ClinVar |
+| `gwas <dir>` | → `gwas_effects.csv` from the GWAS Catalog. It deliberately does **not** fill `weight`. Budget is `1 + 2N` requests per variant — measured at 382 for one real module — so `--no-study-facts` before you script it |
+| `hint recover` | which rs-number GRCh37 dbSNP records at an hg19/GRCh37 coordinate. Reports, never fills |
+| `check-acmg <dir>` | `acmg_sf` vs the ACMG SF list. `--sf-list` (strongly preferred), `--offline`, `--url`. Records the question like `check-identifiers` |
 | `pgx <dir>` | `function_status` vs PharmVar + CPIC. `--no-pharmvar`, `--no-cpic`, `--use` |
 | `clinpgx check <dir> --snapshot S` | `pharm_variants.csv` vs the ClinPGx snapshot, offline-capable |
 | `hint variant\|citation\|trait\|gene` | look up one identifier. Writes nothing. `--json`, `--offline`, `--ambiguity`, `--frequencies` |
@@ -89,7 +105,9 @@ never second-guessed.
 ## `registry-client`
 
 `version, list, download, import-module, publish, register, namespace-available, claim-namespace,
-find-by-hash, amend-changelog, amend-logo, update-module-version`.
+find-by-hash, amend-changelog, amend-logo, update-module-version`, plus `check`, whose output now
+prints an `unreachable` list above any findings — for `frequencies`, `literature` and `acmg` that is
+the only place a source outage becomes visible at all.
 
 Reads `REGISTRY_URL`, `REGISTRY_TOKEN`, `REGISTRY_TIMEOUT`. The MCP server reads the same
 `REGISTRY_TOKEN` as its **production** fallback, and `REGISTRY_TEST_TOKEN` for the polygon, so an

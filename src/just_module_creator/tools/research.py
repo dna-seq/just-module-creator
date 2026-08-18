@@ -18,6 +18,17 @@ make the check vacuous — and for an rsid-only row the coordinate check would n
 run at all, moving the row from honestly unverified to apparently verified.
 
 No tool in this module writes to a spec directory.
+
+That is still true on format 0.6, and it now costs something worth naming. The
+enricher's `check-identifiers` / `check-acmg` **CLI commands** record that the
+question was put — a `verification.json` entry, unconditionally and with no flag,
+so that "not run" and "ran and found nothing" stop reading alike. The underlying
+functions this module calls do not; the write lives in those commands. So a
+module authored entirely through this server carries no attestation for these
+checks, and a registry rendering its `verification` block shows nothing where a
+CLI-driven author's module shows a record. Tracked as RM9 in `docs/ROADMAP.md`. Until it is built,
+say so rather than implying the checks left a trace: `close_module` is the only
+thing here that writes into `verification.json`.
 """
 
 from __future__ import annotations
@@ -55,6 +66,7 @@ from just_module_creator.targets import (
     DEFAULT_WRITE_TARGET,
     client_for,
     describe,
+    instance_note,
 )
 from just_module_creator.tools._shared import (
     jsonable,
@@ -562,7 +574,7 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         try:
             matches = await run_sync(_lookup)
         except RegistryError as exc:
-            raise ToolError(f"Registry error: {exc}") from exc
+            raise ToolError(f"Registry error: {exc}{instance_note(exc)}") from exc
 
         published = to_published_versions(matches)
         return DuplicateCheck(
@@ -788,7 +800,7 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         bites on a module you intend to sell.
 
         These terms are **per article**, not per source, which is why no table on
-        our side could answer this and why `sources.csv` needs a row carrying the
+        our side could answer this and why `licensing.csv` needs a row carrying the
         *article's* licence rather than PubMed's.
 
         A `null` in `is_open_access` means unchecked. Europe PMC omits ids it does

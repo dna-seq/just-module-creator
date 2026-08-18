@@ -43,8 +43,9 @@ know what you must not do. Links carry positive detail only.
 | `skills/create-module/references/TABLES.md` | Which table kind a finding belongs in. |
 | `skills/create-module/references/SYMPTOMS.md` | Upstream message text → cause → action. |
 | `skills/create-module/references/CLI.md` | The full CLI surface, and what this server deliberately does **not** wrap. |
-| `.claude-plugin/plugin.json` | Plugin manifest; declares the MCP server via `${CLAUDE_PLUGIN_ROOT}`. |
+| `.claude-plugin/plugin.json` | Claude plugin manifest; declares the MCP server via `${CLAUDE_PLUGIN_ROOT}`. |
 | `.claude-plugin/marketplace.json` | Lets `/plugin marketplace add ./` work. |
+| `.codex-plugin/plugin.json` | Codex plugin manifest; same skills and server, via `${PLUGIN_ROOT}`. Carries the **second** hand-bumped version string. |
 
 ---
 
@@ -89,15 +90,18 @@ rule without its reason gets rationalised away at 2 a.m.
   `importlib.metadata.version("just-module-creator")`. Two sources of truth drift,
   and the one you read is the wrong one.
 
-  **The single unavoidable exception is `.claude-plugin/plugin.json`**, which is JSON
-  and cannot read `importlib.metadata`. So its `version` **must be bumped by hand in
-  the same commit as the `pyproject.toml` bump** — a version bump touches two files
-  here, always. The drift is silent: loading is unaffected, so the only symptom is an
-  installed plugin misreporting itself, and 0.3.0 shipped with a manifest still
-  saying 0.2.0 because of exactly that. `tests/test_plugin_manifest.py` now fails on
-  the mismatch, which is the guard — do not rely on remembering. Keep it at one
-  hand-maintained version string: `marketplace.json` deliberately carries none, and a
-  test pins that too.
+  **The unavoidable exceptions are the two plugin manifests** —
+  `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json`. Both are JSON and
+  cannot read `importlib.metadata`, so both `version` fields **must be bumped by hand
+  in the same commit as the `pyproject.toml` bump** — a version bump touches **three**
+  files here, always. It was two until the Codex manifest landed; a rule that still
+  says "two" will leave the Codex one behind. The drift is silent: loading is
+  unaffected, so the only symptom is an installed plugin misreporting itself, and
+  0.3.0 shipped with a manifest still saying 0.2.0 because of exactly that.
+  `tests/test_plugin_manifest.py` fails on either mismatch, which is the guard — do
+  not rely on remembering. Keep it at those two and no more:
+  `.claude-plugin/marketplace.json` deliberately carries none, and a test pins that
+  too.
 - **Never rename a user-facing command to dodge a stale `uv run` wrapper.** Bump
   the version and re-run `uv sync` so uv rebuilds the entry points.
 - **Never use a placeholder path or a fabricated example value** in committed
@@ -192,6 +196,20 @@ design depends on.
   the master switch for *all* resolution, injected `resolution.csv` included; it
   compiles every row with `chrom=None` and **succeeds**. `compile_module` pins it
   `True` with `ensembl_cache=None`.
+- **Never let a module carry two spellings of one sidecar.** `licensing.csv` and `sources.csv`
+  are one table with one model; both read, only the preferred one is created, and both present is
+  an **error** rather than a merge. Route every write through `layout.sidecar_write_path` (write to
+  the file you read) and read `layout.preferred_spelling` / `is_deprecated_spelling` rather than
+  restating which is which. The rename stops at the CSV: `sources.parquet` and `manifest.sources`
+  keep their names for the whole 0.x tail, so never "finish" it into a published key.
+- **Never read `fully_resolved` without `resolution_subjects`, and never coalesce a null counter
+  to zero.** Over an empty list the flag is `all()` over nothing. All five RM44/S31/S33 counters
+  are `int | None` where `0` is a real answer and `None` means nothing counted — which is what
+  every pre-0.6 manifest honestly is.
+- **Never place a `*Unavailable` except-arm after its parent.** Since enricher 0.6.2 each is a
+  subclass of the type beside it, so parent-first catches every outage in the parent arm and the
+  outage arm goes dead — silently, raising nothing. One tuple is safe; two arms must be
+  narrow-first. `tests/test_passes.py` walks the AST for this.
 - **Never widen the write surface.** Tools write only where the upstream API
   already writes (scaffold, enrich, compile out-dir), always through
   `_shared.resolve_dir` so `JMC_WORKSPACE` containment holds, and never overwrite
@@ -716,7 +734,23 @@ preference: it goes into §10, in their words, with the reason.
   currently 404s and the client falls back to REST — expected, not a defect.
 - A transitive dependency ships a top-level `tests` package that shadows this
   repo's, so test helpers import as `from conftest import ...`.
-- **0.5.4 and registry 0.13.0 both released 2026-08-11, and we install both.**
+- **Format 0.6.1 / compiler 0.6.1 / enricher 0.6.2 / registry 0.17.0 — released and adopted
+  2026-08-18 (our 0.10.0).** 0.6 is the first release where the format-tier three do **not** move in
+  lockstep: the enricher alone goes to 0.6.2, for RM101's exception contract. Verify by symbol:
+  `just_dna_format.layout`, `compiler.ARTIFACT_PARQUETS`, `compiler.close_module`,
+  `frequencies.FrequencyUnavailable`.
+- **Both live registry instances still serve `format: 0.5.4` as of 2026-08-18**, while our client is
+  on 0.6.1. `contract_compatible` treats a `0.x` minor as breaking in both directions, so **every
+  version-guarded registry call is refused right now** — publish, import, download, validate, check,
+  is_published. That is expected and the operator's to fix; `targets.instance_note` is what tells an
+  author it is not their module. Re-probe with `curl -s <url>/api/v1/version`, never assume.
+- **The format tree's triage script is `.claude/triage-state.py`**, not the `.sh` older notes name.
+- **An upstream *library* call loads your `.env`.** `just_dna_enricher.locations` calls `load_dotenv`
+  while resolving a cache path, so `build_server` repopulates `os.environ` from whatever `.env` is
+  above the cwd. `load_dotenv(override=False)` skips a key that is *present*, so clearing a variable
+  with `delenv` is what lets the file win — which is how the suite quietly stopped being hermetic.
+  `F35` / format-tree `S39`; the fixture neutralizes the loader by walking `sys.modules`.
+- **0.5.4 and registry 0.13.0 both released 2026-08-11, and we installed both** (superseded above).
   `uv sync` gives format/compiler/enricher **0.5.4** and `just-dna-registry`
   **0.13.0**; the floors in `pyproject.toml` say so. Adopted in our 0.7.0, which
   retired six mitigations at once — `S11`, `S12`, `S15`, `S16`, `S17`, `S18`, plus

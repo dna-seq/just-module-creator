@@ -59,9 +59,17 @@ spec/
   studies.csv          # required IFF variants.csv is present
   resolution.csv       # produced by `enrich`. Commit it.
   literature.csv       # produced by `literature`. Commit it.
-  sources.csv          # required when data came from a licence-bearing source
+  licensing.csv        # required when data came from a licence-bearing source
+  verification.json    # produced by `close` and the check passes. Commit it.
   logo.png             # optional
 ```
+
+**`licensing.csv` was `sources.csv` before format 0.6.** Both spellings read, the old one is removed
+at 1.0, and a module carrying **both** is refused rather than merged — two copies of a fact-hashed,
+hand-editable table are two claims, and preferring either discards somebody's curation silently. Write
+to the file that is there; create only the new spelling. The rename stops at the CSV: `sources.parquet`
+and `manifest.sources` keep their names for the whole 0.x tail, so the chain reads
+`licensing.csv` → `sources.parquet` → `manifest.sources`.
 
 **A module composes from optional table kinds.** At least one recognised table
 must exist. A PGx / PRS / binning module carries only its own tables and **no
@@ -90,10 +98,17 @@ The question is **what is the row's subject** — not what data you happen to ha
 | a published polygenic score | `pgs.csv` | `(pgs_id, trait)` |
 
 Enricher-produced sidecars nobody hand-authors: `resolution.csv`,
-`frequencies.csv`, `gene_metrics.csv`, `literature.csv`, `sources.csv`. The one
-exception is `sources.csv` when rows were copied out of a source by hand — no
-pass ran, so no pass will write the row, and the compile gate reads that file
-and nothing else.
+`frequencies.csv`, `gene_metrics.csv`, `literature.csv`, `licensing.csv`, and —
+new in format 0.6 — `gene_validity.csv`, `clinical_assertions.csv` and
+`gwas_effects.csv`. The one exception is `licensing.csv` when rows were copied
+out of a source by hand: no pass ran, so no pass will write the row, and the
+compile gate reads that file and nothing else.
+
+`gwas_effects.csv` deliberately does **not** fill `weight`, and that is its
+point rather than a limitation. Published betas are not weights: one real
+variant carries a dozen distinct `effect_unit` spellings across its traits, and
+a large share of GWAS Catalog associations name no effect allele, so they have
+no direction that can be applied to a genotype at all.
 
 **A quantity with a threshold is a binning table, not a variant row.** If the
 finding depends on *how much*, the subject is the measurement.
@@ -107,11 +122,18 @@ finding depends on *how much*, the subject is the measurement.
 ## The pipeline, and the one place deviating deadlocks
 
 ```
-scaffold ──▶ draft ──▶ curate ──▶ enrich ──▶ check ──▶ compile ──▶ sign/publish
-            (if a       (only a
-             source      human)
-             has it)
+scaffold ─▶ draft ─▶ curate ─▶ enrich ─▶ check ─▶ compile ─▶ close ─▶ sign/publish
+           (if a      (only a                              (only a
+            source     human)                               human)
+            has it)
 ```
+
+**Authoring has an end as of format 0.6, and only a human may declare it.** `close` writes a
+`closure` into `verification.json` binding the statement to the hash of `module_spec.yaml` plus the
+authored CSVs as they stand. Edit any of them and the hash moves, the compiler drops the closure, and
+the module is open again. Nothing stamps it on a passing check — a record written by whatever happened
+to run says only that something ran. A module without one compiles and publishes, and carries a
+warning saying nobody has declared it done; requiring one is filed for 1.0 (RM73).
 
 **Curate before you enrich.** A drafted row leaves `<<REPLACE>>` in the cells
 only a human can decide, and that placeholder makes *every* loader refuse the
@@ -328,7 +350,7 @@ never `False`.
 - Pass `--use unstated | non-commercial | commercial` to anything that copies
   rows out of a source. A forbidding source is *skipped* on `unstated` and
   *refused* on `commercial`, **at acquisition**.
-- **`sources.csv` is the only thing the compile gate reads.** A source copied
+- **`licensing.csv` is the only thing the compile gate reads.** A source copied
   from by hand is invisible to it. Only the *annotation* layer taints; a
   coordinate is a fact. Most-restrictive-wins, module-wide.
 - The CLI spelling and the column value differ: `--use non-commercial`, but the
@@ -352,11 +374,21 @@ never `False`.
   compile **succeeds**. The correct call is `resolve_with_ensembl=True,
   ensembl_cache=None`. **Our wrapper must never expose a way to reach the False
   branch by accident.**
-- **Recompiling is reproducible; re-drafting is not.** `sources.csv` carries a
+- **Recompiling is reproducible; re-drafting is not.** `licensing.csv` carries a
   `fetched_at` stamped when the row is written and `sources.parquet` is inside
   the Merkle root, so two builds of byte-identical content an hour apart are two
   different artifacts. Do not treat a digest change as evidence content changed;
   digest-based dedup misses rebuilds.
+- **Reproducibility is scoped to one compiler version.** `artifact.digest` is the
+  *byte* identity and moves on a compiler upgrade by design; `content_signature`
+  is the identity of the authored rows and does not. Measured across the 0.5.4 →
+  0.6.1 boundary on the reference corpus: every `artifact.digest` moved, no
+  `content_signature` did. So compare `content_signature` across an upgrade, and
+  re-pin anything that stored a digest.
+- **`fully_resolved` is vacuously true over an empty list.** Read
+  `resolution_subjects` beside it — `0` there means there was nothing to resolve,
+  not that everything resolved. And a **null** counter is not a zero: it means
+  this compiler did not count, which is what every pre-0.6 manifest honestly is.
 - **Authored row order is preserved** through compile → reverse → recompile and
   is load-bearing for `artifact.digest`.
 - `content_signature` folds `module_spec.yaml`'s `defaults:` into each row before
