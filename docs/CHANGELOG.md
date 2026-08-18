@@ -3,6 +3,116 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.10.1 — enricher 0.6.3, registry 0.18.1, and a drafter that had been dropping rows (2026-08-19)
+
+Adopts **just-dna-enricher 0.6.3** and **just-dna-registry 0.18.1**; `just-dna-format` and
+`just-dna-compiler` stay at **0.6.1**, so this is the second partial cut in the 0.6 line and `uv sync`
+now gives `0.6.1 / 0.6.1 / 0.6.3`. No tool was added or removed and no signature changed. 153 tests
+green, `ruff` clean.
+
+### The blocker in 0.10.0's own release note is gone
+
+0.10.0 opened by saying every version-guarded registry call was refused, because both deployed
+instances answered `format: 0.5.4` against our 0.6.1 client. **Both are now on `0.6.1`, and both are
+serving registry 0.18.1.** Re-probed rather than assumed, and then driven end to end: the exact call
+that came back `409 just-dna-format contract mismatch: server 0.5.4, client 0.6.1` — a
+`download` of `eric-mods/lactose_tolerance@1.0.0` — now returns its manifest, and
+`assert_compatible()` passes against production and the polygon alike.
+
+Nothing in our code changed for this, which is the point: `targets.instance_note` is a suffix on an
+existing `except RegistryError` arm, so it costs nothing while the contract agrees and is still there
+if an instance is rolled back. Worth knowing for anyone reading that module's card: the artifact
+itself is still stamped `just-dna-compiler 0.5.1`, which is the contract gap registry 0.18.0's
+`upgrade` now detects on its own. That is an operator's sweep, not an author's problem.
+
+### `draft_from_clinvar` had been silently dropping ClinVar records
+
+Upstream **S41**. Below 0.6.3 `multi_allelic_rsids` keyed the site on `ref` and fired on more than one
+alt *within* that group — which is not what its own docstring claimed. An ordinary ClinVar dup/del
+mirror pair (`A>AT` beside `ATT>A` at one position, the same event written from either side) is two
+groups of one alt each, so the rsID was never flagged as multi-allelic, both records reduced to the
+same rsid-only identity, and the second was dropped as `already_present`. Upstream measured 725
+records lost over five genes, **187 of them dropping the better-reviewed half**, because
+`select_by_gene` orders by `ref` before `review_stars DESC` — so which record survived was decided by
+allele spelling rather than by evidence.
+
+The fix is entirely upstream's; ours is the floor and what we tell an author holding an
+already-drafted module. Upstream said such modules "need a re-draft" and said plainly they had not
+measured that end to end, so we did, on `MLH1` at 2★ against the local snapshot:
+
+| | rows | distinct identities |
+|---|---:|---:|
+| drafted with the 0.6.2 predicate | 996 | — |
+| drafted fresh on 0.6.3 | 1,030 | 882 |
+| the first, re-drafted on 0.6.3 | 1,061 | 913 |
+
+**A re-draft recovers every dropped record and retracts none of the collapsed ones** — 0 identities
+missing, 31 present that a fresh draft does not contain, and 1,061 − 1,030 = 913 − 882 = 31 exactly.
+Because drafting appends, the correct coordinate-keyed rows arrive *beside* the stale rsid-only rows
+rather than replacing them, and the module then asserts both the right answer and the wrong one for
+the same locus. Those 31 are precisely the rows carrying the downstream half of S41.
+
+**And they cannot be found from inside the module.** The obvious predicate — an rsid-only row whose
+rsID also appears on a coordinate row — finds 0 of 31, because a coordinate-identity row carries no
+`rsid` at all. So `draft_from_clinvar`'s docstring and the skill now say to draft into a **fresh
+directory** and reconcile against that, and say why re-running over the existing file looks like it
+worked. Filed upstream as **S45** and tracked as **F36**; the candidate we offered is that
+`append_partial_rows` *name* those rows on the draft report — it holds both halves at merge time —
+and explicitly not that it delete them, since by re-draft time a human may have curated the
+`genotype`, `state` and `conclusion` on a drafted row.
+
+### `draft_from_clinpgx` was dropping rows too, and the repair is the opposite one
+
+Upstream **S44**: the genotype gate took only the doubled single-base form, so `CTT/CTT` — already
+separated by the source — and the bare haploid spelling ClinPGx uses for mtDNA were declined. That
+cost **CFTR F508del** (its annotation carries a `del`-spelled genotype and a pure-nucleotide one under
+one `annotation_id`, so skipping the annotation discarded the writable row with it) and **every
+MT-RNR1 annotation**, 32 rows at evidence level 1A.
+
+The remediation is not the same, and assuming it was is the trap. We ran the equivalent probe with a
+stand-in old gate deliberately *broader* than 0.6.2's — 12,410 rows where the fix produces 18,895, so
+it declined more than the real one and is therefore the harder case — and a plain re-draft into the
+same directory landed on **18,895 rows, 0 stale, 0 missing**: exactly the fresh draft. S44 *skipped*
+rows; S41 *wrote them under an identity that has since moved*. Only the second leaves anything behind.
+Both docstrings now say which shape they are.
+
+### The skill was teaching a version rule that stopped being true
+
+`SKILL.md` said `module.version` must be quoted because *"unquoted 1 parses as an int and is rejected"*.
+Measured on installed 0.6.1: `ModuleInfo(version=1).version` is `'1.0.0'` — accepted. That was the
+**pre-0.6** behaviour, and format 0.6's RM17 widening at `mode="before"` is what fixed it, after 26 of
+61 foreign modules refused on an unquoted integer.
+
+Quoting is still right, so the checklist line stays — but for the two reasons that are actually true.
+The unquoted **decimal** is the hazard, and it is refused with a good message (YAML reads `1.10` as
+`1.1`, so the author's text is gone before any validator runs). The silent one is a **digitless**
+version: `draft`, `TBD` and `abc` all coerce to `'0.0.0'`, which is a real version somebody could mean,
+and it reaches `manifest.identity.version`. That is upstream's open **RM103** (our S42), filed rather
+than fixed because refusing it would newly break specs that compile today. It is not invisible, though,
+and the checklist now points at where it shows: `validate_module` warns *"module.version 'draft' was
+read as SemVer '0.0.0'"*, confirmed through our own tool surface rather than read off their source.
+
+### Also
+
+- **Floors moved with their reasons.** `just-dna-enricher>=0.6.3` is load-bearing — a drafter that
+  quietly writes fewer rows than the source has is the worst kind of floor to leave soft.
+  `just-dna-registry>=0.18.1` is not: both 0.18.0 and 0.18.1 declare `Client surface: unchanged` and
+  both check out. It moves anyway because 0.18.1 requires enricher 0.6.3 itself, so pinning it stops a
+  resolver handing us the new enricher beside a registry built against the old one.
+- **Nothing to do for S39, our own filing from 0.10.0.** 0.6.3 threads `load_dotenv_file` through the
+  six cache resolvers, where it had been inert. We pass that flag nowhere, so the registry's rule for
+  this release — *check the flags you already pass on a dependency bump, an inert argument becoming
+  live is a behaviour change with no import to grep for* — was run and came back empty. `F35`'s
+  `sys.modules` sweep stays: upstream confirmed our reproduction ran the default path, which the fix
+  does not reach, and RM102 is open.
+- **S43 needs nothing from us.** `likely_pathogenic` and `likely_benign` turn out to be unwritable
+  rather than merely unwritten — parquet columns with no authored field behind them, a literal `False`
+  since 0.1.0. Our surface never offered them (`describe_table` is generated from the model, which
+  does not declare them) and `passes.py` already reads `clin_sig`. Recorded so nobody adds them.
+- **Both fixtures re-verified on the new floor**, unchanged: `assets/fto_bmi` and
+  `assets/longevity_2026` are literature-review modules, not ClinVar-drafted, so S41 does not reach
+  them and no digest moved.
+
 ## 0.10.0 — format 0.6, and authoring gets an end (2026-08-18)
 
 Adopts **just-dna-format 0.6.1**, **just-dna-compiler 0.6.1**, **just-dna-enricher 0.6.2** and

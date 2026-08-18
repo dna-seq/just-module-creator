@@ -734,16 +734,28 @@ preference: it goes into §10, in their words, with the reason.
   currently 404s and the client falls back to REST — expected, not a defect.
 - A transitive dependency ships a top-level `tests` package that shadows this
   repo's, so test helpers import as `from conftest import ...`.
-- **Format 0.6.1 / compiler 0.6.1 / enricher 0.6.2 / registry 0.17.0 — released and adopted
-  2026-08-18 (our 0.10.0).** 0.6 is the first release where the format-tier three do **not** move in
-  lockstep: the enricher alone goes to 0.6.2, for RM101's exception contract. Verify by symbol:
+- **Format 0.6.1 / compiler 0.6.1 / enricher 0.6.3 / registry 0.18.1 — adopted 2026-08-19 (our
+  0.10.1).** 0.6 is the line where the format-tier three stop moving in lockstep: format and compiler
+  sit at 0.6.1 while the enricher takes patches alone (0.6.2 for RM101's exception contract, 0.6.3 for
+  the ClinVar and ClinPGx drafter fixes). Verify by symbol, never by this line:
   `just_dna_format.layout`, `compiler.ARTIFACT_PARQUETS`, `compiler.close_module`,
-  `frequencies.FrequencyUnavailable`.
-- **Both live registry instances still serve `format: 0.5.4` as of 2026-08-18**, while our client is
-  on 0.6.1. `contract_compatible` treats a `0.x` minor as breaking in both directions, so **every
-  version-guarded registry call is refused right now** — publish, import, download, validate, check,
-  is_published. That is expected and the operator's to fix; `targets.instance_note` is what tells an
-  author it is not their module. Re-probe with `curl -s <url>/api/v1/version`, never assume.
+  `frequencies.FrequencyUnavailable`, and for 0.6.3 the `(chrom, start, ref, alt)` event key inside
+  `clinvar_draft.multi_allelic_rsids`.
+- **Both live registry instances now serve `format: 0.6.1` / `registry: 0.18.1`, verified 2026-08-19,
+  and the 0.5.4 contract block is over.** Every version-guarded call works again — a `download` of
+  `eric-mods/lactose_tolerance@1.0.0` returns its manifest where it 409'd a day earlier, and
+  `assert_compatible()` passes on prod and polygon alike. `targets.instance_note` stays: it is a
+  suffix on an existing `except RegistryError` arm, costs nothing while the contract agrees, and is
+  there if an instance is rolled back. **Re-probe with `curl -s <url>/api/v1/version`, never assume** —
+  this line has now been wrong in both directions within two days. Note the catalog's one module is
+  still stamped `just-dna-compiler 0.5.1`; that is the contract gap registry 0.18.0's `upgrade`
+  detects, and an operator's sweep rather than an author's problem.
+- **A drafter fix does not reach a module already drafted, and the two drafters need opposite
+  repairs.** Enricher 0.6.3's ClinVar fix (S41) moved identities, so re-drafting over an existing
+  spec restores the lost records and leaves the collapsed ones — measured 0 missing, 31 stale on
+  MLH1, and nothing in the file tells them apart. Draft into a fresh directory and reconcile. Its
+  ClinPGx fix (S44) only *skipped* rows, so a plain re-run converges exactly (0 stale, 0 missing).
+  Ours is `F36`, filed upstream as `S45`.
 - **The format tree's triage script is `.claude/triage-state.py`**, not the `.sh` older notes name.
 - **An upstream *library* call loads your `.env`.** `just_dna_enricher.locations` calls `load_dotenv`
   while resolving a cache path, so `build_server` repopulates `os.environ` from whatever `.env` is

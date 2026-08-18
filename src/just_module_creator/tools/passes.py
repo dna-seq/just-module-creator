@@ -262,6 +262,19 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
         leave the tool surface. Re-runnable and additive: rows already in the files
         are left exactly as they are.
 
+        **If this module was drafted before enricher 0.6.3, draft into a FRESH
+        directory and reconcile — do not re-run over the file you have.** Below
+        0.6.3 the drafter keyed a site on `ref`, so an ordinary ClinVar dup/del
+        mirror pair collapsed onto one row and the second record was dropped
+        silently (upstream S41). Re-running here *does* recover every dropped
+        record, which is what makes it the tempting move — but "additive" cuts
+        both ways: the collapsed rsid-only rows are not retracted, so the module
+        ends up asserting both the right answer and the wrong one for the same
+        locus. Measured on one gene: 0 records still missing, 31 stale identities
+        left behind. **Nothing in the file distinguishes them** — a coordinate
+        row carries no `rsid`, so no column separates a stale row from a
+        legitimate rsid-only one. A fresh draft is the only clean comparison.
+
         **`use` is required.** Pass `unstated`, `non_commercial` or `commercial`.
         There is no default because both possible defaults are wrong: `unstated`
         would silently skip licence-bearing sources, and anything else asserts a
@@ -508,6 +521,17 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
         applied to `weights.parquet` only, so these rows arrive with null
         `chrom`/`start` in the artifact even when `resolution.csv` covers the
         variant, and a consumer joins them on `rsid` + `genotype`.
+
+        **A module drafted before enricher 0.6.3 is missing rows here too, and
+        unlike `draft_from_clinvar` a plain re-run is the whole repair.** Below
+        0.6.3 the genotype gate was narrower than the schema it writes into: it
+        took only the doubled single-base form, so `CTT/CTT` — already separated
+        by the source — and the bare haploid spelling ClinPGx uses for mtDNA were
+        declined, costing CFTR F508del and every MT-RNR1 annotation (upstream
+        S44). Those rows were **skipped**, not written under a wrong identity, so
+        nothing stale is left to retract and re-running converges on exactly what
+        a fresh draft produces — measured at 0 stale and 0 missing keys. That is
+        the difference from the ClinVar case, where the identity itself moved.
         """
         declared = _check_use(use)
         target = resolve_dir(spec_dir, settings)

@@ -447,7 +447,8 @@ module:
   icon: database              # icon within icon_set
   icon_set: fomantic          # 'fomantic' or 'awesome'
   color: '#6435c9'
-  # version: "1.0.0"          # advisory. A SemVer STRING — unquoted 1 parses as an int and is rejected
+  # version: "1.0.0"          # advisory, but QUOTE it — see the note below on what an unquoted
+                              # or digitless version silently becomes
 defaults:                     # optional; folded into every row before hashing
   curator: ai-module-creator
   method: literature-review
@@ -523,6 +524,15 @@ which is what makes the panel compilable, since a variant row needs grounding ev
 (`already_present` / `differs`), never overwritten — drift on existing rows is `pgx` /
 `clinpgx check`'s job to report, not drafting's to fix. Re-run per gene as the module grows;
 `--dry-run` first.
+
+**A ClinVar panel drafted before enricher 0.6.3 is missing rows, and the repair is a fresh
+directory rather than a re-run.** Below 0.6.3 the drafter keyed a site on `ref`, so an ordinary
+dup/del mirror pair (`A>AT` beside `ATT>A` at one position) collapsed onto one row and the second
+ClinVar record was dropped in silence. Because drafting appends, re-running over the file you have
+restores every dropped record *and keeps the collapsed rows*, leaving the module asserting both the
+right answer and the wrong one for the same locus — measured at 0 records still missing and 31
+stale identities left behind, on one gene. No column tells the two apart, since a coordinate row
+carries no `rsid`. Draft into an empty directory and reconcile against that.
 
 **Read the warnings. They are the interesting output**: skipped rows, aggregated counts, and the
 allele pairs you need for step 3. Two you will see on a real ClinVar panel and should not chase:
@@ -1149,7 +1159,8 @@ content. Write the changelog as a continuation of the previous one, not a fresh 
 - [ ] `resolution.csv` and `literature.csv` committed alongside the CSVs
 - [ ] `licensing.csv` present, covering every source cited, and consistent with `license:`
 - [ ] `close_module` run, and re-run if any authored file changed afterwards
-- [ ] `module.version` is a quoted SemVer string
+- [ ] `module.version` is a **quoted** SemVer string, and no `validate_module` warning says it
+      "was read as SemVer" — a digitless version becomes `0.0.0`, which is a real version
 - [ ] a second **compile** of the untouched spec reproduces the same `artifact_digest` (a
       re-**draft** will not — see below)
 - [ ] `registry_check` run, `verdict` **true** (not null), and `unchecked` / `non_blocking` read
