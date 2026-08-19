@@ -58,11 +58,51 @@ def test_the_manifest_launches_the_console_script_pyproject_declares(manifest):
     assert 'just-module-creator = "just_module_creator.server:cli_app"' in pyproject
 
 
+_SKILL_COUNT_WORDS = {
+    1: "one",
+    2: "two",
+    3: "three",
+    4: "four",
+    5: "five",
+    6: "six",
+    7: "seven",
+    8: "eight",
+    9: "nine",
+    10: "ten",
+    11: "eleven",
+    12: "twelve",
+    13: "thirteen",
+    14: "fourteen",
+    15: "fifteen",
+    16: "sixteen",
+    17: "seventeen",
+    18: "eighteen",
+    19: "nineteen",
+    20: "twenty",
+}
+
+
 def test_the_declared_skill_directory_holds_the_skills_the_description_promises(manifest):
-    """The manifest says "two skills"; a deleted or renamed one would make that a lie."""
+    """The description states a skill COUNT, so the number and the directory must agree.
+
+    Derived rather than hand-kept. The set was pinned literally until the skill surface
+    started growing, and then every addition failed this test for the wrong reason — the
+    fault it reports would be "you added a skill", not "the plugin misdescribes itself".
+    What must not drift is the *promise*: the count a user reads in the description, and
+    the two skills every other document sends a reader to.
+    """
     skills_dir = REPO / manifest["skills"].removeprefix("./")
     shipped = {p.name for p in skills_dir.iterdir() if (p / "SKILL.md").is_file()}
-    assert shipped == {"create-module", "find-evidence"}
+
+    # `module-101` is the declared entry point and `create-module` is the one canonical copy
+    # of the procedure; CLAUDE.md, the server instructions and module-101 itself all point at
+    # them by name, so their absence is a broken link rather than a smaller surface.
+    assert {"module-101", "create-module"} <= shipped
+
+    promised = _SKILL_COUNT_WORDS[len(shipped)]
+    assert f"{promised} skills" in manifest["description"], (
+        f"{len(shipped)} skills ship, so the description must say '{promised} skills'"
+    )
 
 
 def test_the_marketplace_entry_points_at_this_plugin():
@@ -74,11 +114,20 @@ def test_the_marketplace_entry_points_at_this_plugin():
     assert all("version" not in p for p in marketplace["plugins"])
 
 
-def test_the_codex_manifest_matches_the_package_and_skills(codex_manifest):
+def test_the_codex_manifest_matches_the_package_and_skills(codex_manifest, manifest):
+    """Both manifests must serve the SAME skills, which is a property of the path they name.
+
+    The Codex description states no count, so there is nothing to keep in step there — what
+    would break silently is the two manifests pointing at different directories, which is how
+    one host would ship a skill the other does not.
+    """
     assert codex_manifest["version"] == version("just-module-creator")
-    skills_dir = REPO / codex_manifest["skills"].removeprefix("./")
-    shipped = {p.name for p in skills_dir.iterdir() if (p / "SKILL.md").is_file()}
-    assert shipped == {"create-module", "find-evidence"}
+    codex_dir = REPO / codex_manifest["skills"].removeprefix("./")
+    claude_dir = REPO / manifest["skills"].removeprefix("./")
+    assert codex_dir.resolve() == claude_dir.resolve()
+
+    shipped = {p.name for p in codex_dir.iterdir() if (p / "SKILL.md").is_file()}
+    assert {"module-101", "create-module"} <= shipped
 
 
 def test_the_codex_mcp_config_launches_this_checkout(codex_manifest):
