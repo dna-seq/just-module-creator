@@ -154,6 +154,17 @@ only if something actually lands in it, so a module with no sidecars gets no emp
 `published.json` never arrives in any shape: it is this plugin's **local receipt** of a publish, never
 uploaded and never part of the module.
 
+**`verification.json` is also *projected*, not merely carried.** The registry's module-detail response
+renders `manifest.verification` as a `VerificationInfo` block — `closed`, `closed_at`, `closed_by`,
+`producer`, `produced_at`, plus a per-check list of `check`/`subjects`/`findings`/`skipped` — built from
+the **latest** version's manifest (per-version access is the `…/manifest` route). It reads the manifest
+and never the file, and since the registry compiles the spec itself that `closed: true` was **re-bound
+by their compiler against the authored bytes** and dropped if it did not match. So it is hash-checked
+rather than asserted — and still not a registry verdict about your checks, which they deliberately will
+not read as one. Not a card facet, not a filter, not sortable, and `None` is **not** collapsed with an
+empty block: absent means no attestation survived, which is a different statement from an attestation
+that recorded no checks.
+
 ## What the registry fills, and strips back out
 
 You upload the **spec, not the parquets**. The server enriches, strict-compiles and stores the artifact

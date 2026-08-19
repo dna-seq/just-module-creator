@@ -123,16 +123,41 @@ answered it directly:
 append the entry → **re-run the checks** → **close again** → publish. The re-close *is* the review being
 recorded, not a workaround for it.
 
-⚠️ **`MODULE_LIFECYCLE.md` §6.6 currently argues this is unsettled, on a premise that has moved.** It
-says the closure *"reaches nothing — `verification.json` is uploaded, stored, and then read by no code
-path, absent from `RECOGNIZED_SPEC_FILES`"*, and concludes that a re-close costs a version for an
-invisible record. Measured against registry 0.18.2 today: it **is** in `RECOGNIZED_SPEC_FILES` (so
-`revalidate` materializes it and `upgrade` carries it forward) and **is** in `DERIVED_FILES` (so a
-split download places it in `derived/`), both since registry 0.16/0.17, and `manifest.verification`
-attests it. It is still **not** in `SIGNATURE_INPUTS`, which is the property that makes carrying an
-unread file safe. What remains true is that the registry will not read it *as a verdict* — it compiles
-what it publishes, so the digest is theirs and the attestation is the publisher's word. Filed upstream
-as `S46`; if §6.6 is updated, cite them and delete this box.
+**The re-close IS visible downstream, and that still does not make it the default.** Both halves
+matter, and the second is the one an agent gets wrong:
+
+- **Visible, by two independent routes.** `manifest.verification` is projected onto the registry's
+  module-detail response as a `VerificationInfo` block — `closed`, `closed_at`, `closed_by`, `producer`,
+  `produced_at`, and a per-check list of `check`/`subjects`/`findings`/`skipped`. It reads the **latest**
+  version's manifest; per-version access is the `…/manifest` route. And the bytes come back too, but
+  **only under `download(include_inputs=True, layout="split")`**, which lands `derived/verification.json`
+  — a plain download does not carry it. Deliberately not a card facet, not a filter, not sortable, and
+  `None` is not collapsed with an empty block: **absent means no attestation survived**, which is a
+  different statement from an attestation that recorded no checks.
+- **That `closed: true` is hash-checked, not asserted.** The projection reads the manifest, never the
+  file, and the registry compiles the spec itself — so the closure in that block was re-bound by *their*
+  compiler against the authored bytes and dropped if it did not match. It is the strongest form of
+  "visible" available, and it is still **not a registry verdict about your checks**: they will not read
+  your attestation as one, because they cannot reproduce offline what your enricher saw against live
+  sources.
+- **So do not invert the advice.** *Visible* is not *recommended*. The default instrument for a plain
+  review is still the `reviews` row above. A skill that told authors to bump a version for every review
+  would be the opposite error to the one this box used to correct.
+
+Two neighbouring facts, both current:
+
+- **The pre-flight no longer refuses a review publish.** It did, and that disagreement was repaired in
+  registry **0.16.0**: `would_publish_module_level` now quantifies over `published_elsewhere` — content
+  hits under a *different* `(namespace, name)`, which is what the gate actually refuses — while
+  `published_as` still lists the same-module hit, because *"this data is already published as 1.0.0"* is
+  exactly what a review pass wants to confirm. **The honest caveat is a version floor**: a deployment
+  older than 0.16.0 still refuses.
+- **`authorship` reaches no projected field, and that is policy rather than an omission.** It is
+  payload, so the card never renders an author's claim about their own reviewer beside the server's own
+  claims. **Read it from the manifest.**
+
+*(This section was the subject of `S46`, filed and answered 2026-08-20. `MODULE_LIFECYCLE.md` §6.6 and
+RM86 are rewritten and RM86 is closed; the facts above are theirs, not our correction of theirs.)*
 
 ## What the registry does with v2
 
