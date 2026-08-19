@@ -657,6 +657,27 @@ preference: it goes into §10, in their words, with the reason.
   The **upgrade path is real work and is not yet populated**: it gets built from the
   authoring transcripts, from the moves a real author actually needed, rather than
   designed against the schema history. Until then, do not invent it.
+- **"Don't say 'broken' to user — say: needs this this and this decision to work in
+  latest."** The voice-and-scope half of the rule above, stated 2026-08-20: *"only cover
+  decisions, auto-correct the evident stuff silently per rulebook (to-populate-later)."*
+  An old module is **out of date, not defective**, and those are different claims about
+  somebody's work — usually the module met the requirements that existed when it was
+  written. So: never *broken* / *invalid* / *fails* about a module being brought forward;
+  reserve failure language for a module wrong on its own terms, like a shifted coordinate
+  or a quote that is not in the paper. The output of a revisit is a **decision list**, not
+  a diff and not a findings dump: if a human must choose, it goes in the list; if nothing
+  must be chosen, it does not appear.
+
+  **This is not an exception to §2's *report, never repair* — the two split on judgement,
+  and the split is the whole rulebook.** Evident and mechanical (a rename, a deprecated
+  spelling, a column that moved) → apply it and say nothing, because no judgement exists
+  to exercise and nothing downstream re-checks it against a source. A **checked or
+  authored** value (a genotype, a `weight`, a `clin_sig`, a conclusion, a
+  `provenance_quote`) → never touch it, put it in the decision list; writing one silently
+  is exactly the redundancy-bearing mistake the design exists to prevent. **That rulebook
+  is TO-POPULATE-LATER and does not exist yet** — until it does, do not settle a boundary
+  case ad hoc, because an auto-applied judgement becomes precedent. When unsure, surface
+  it: over-surfacing is recoverable, a silent wrong write is not.
 - **The two authoring write-ups were independent takes made to reveal different
   surfaces**, not drafts of one another — so they were unified rather than one
   chosen over the other.

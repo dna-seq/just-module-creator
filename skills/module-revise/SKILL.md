@@ -19,6 +19,32 @@ A second pass is the **normal state of a module**, not a correction of a botched
 authoring session we have transcripts for was a second pass. A module at version 25 is a module
 somebody kept caring about.
 
+## How to talk to the author about an old module
+
+**An old module is out of date, not defective — and those are different claims about somebody's
+work.** It usually met the requirements that existed when it was written. So:
+
+- **Never say broken, invalid or failing** about a module being brought forward. Say **"this needs
+  these decisions to work in the latest"**, and then list them. Save failure language for a module
+  that is wrong on its own terms — a shifted coordinate, a quote that is not in the paper.
+- **Report decisions, not findings.** If a human has to choose, it goes in the list. If nothing has to
+  be chosen, it does not appear at all. Noise about work nobody had to do is what buries the three
+  things that mattered.
+- **Fix the evident silently.** A rename, a deprecated spelling, a column that moved — apply it and
+  say nothing.
+
+**And the line that governs that last one, because it is one step from a serious mistake.** Silent
+correction is *not* an exception to report-never-repair. The two split on **judgement**:
+
+| | |
+|---|---|
+| evident, mechanical — no judgement exists to exercise | **apply it, say nothing** |
+| a checked or authored value — `genotype`, `weight`, `clin_sig`, `conclusion`, `provenance_quote` | **never touch it. It goes in the decision list** |
+
+Writing one of the second kind silently is the redundancy-bearing mistake the whole design exists to
+prevent: a later check would compare a source against itself and agree. **When you cannot tell which
+side a case falls on, surface it** — over-surfacing is recoverable and a silent wrong write is not.
+
 **The question is never "what version does this deserve."** It is these four, in order:
 
 1. **What moved?** — which of the six kinds below

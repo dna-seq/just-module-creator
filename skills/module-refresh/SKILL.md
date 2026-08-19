@@ -34,7 +34,7 @@ Read this before deleting. The cost column is what you will not get back by re-r
 |---|---|---|---|
 | `resolution.csv` | skips every `variant_key` already covered | an identity column changed, or a locus resolved wrongly | **hand-authored `source=manual` rows** — real, and not reproducible. `reference_examples/cyp2c9_warfarin_grch37` carries three |
 | `frequencies.csv` | merges; existing rows win | the variant set changed, or you want a newer gnomAD | normally nothing hand-written |
-| `gene_metrics.csv` | merges | the gene set changed | curator overrides — **and see the 🚧 below, they are broken anyway** |
+| `gene_metrics.csv` | merges | the gene set changed | curator overrides — **and see the 🚧 below: the override mechanism does not currently do what it promises, so check what you have before relying on it** |
 | `literature.csv` | refetches nothing, and **will not back-fill** the 0.6 licence columns onto older rows | you need the licence columns, or a `doi_checked` verdict re-put | a curator's deliberate **blank**, which merge cannot distinguish from an absent value |
 | `gene_validity.csv`, `clinical_assertions.csv` | merge, on the same governing rule | the source cut a newer release | curator overrides |
 | `licensing.csv` | never clobbers a row — **except** `withdraw_stale_dataset` blanking `dataset` when rows were actually added, and `draft_digest` being re-stamped | rarely; those two machine-owned columns maintain themselves | the curator's hand-written **terms** — which is exactly what never-clobber exists to protect |
