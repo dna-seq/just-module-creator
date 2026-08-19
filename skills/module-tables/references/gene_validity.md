@@ -10,6 +10,13 @@
 > expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
 > exhaustive.
 
+> **Correction, 2026-08-20 (later than the banner above).** This file says `describe_table`
+> refuses this table and quotes that refusal's wording. Both were true when written and are not
+> now: **ask `describe_machine_table`**, which answers the live columns of all seven
+> machine-produced tables and carries `hand_authored=False` in its own schema. Nothing about
+> *you read this, you never hand-finish it* has changed — that signal is now carried by the tool
+> split rather than by a refusal.
+
 ## What it is
 
 `gene_validity.csv` records one **curated gene–disease assertion** per row: a named body says that

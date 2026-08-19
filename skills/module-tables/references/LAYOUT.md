@@ -189,13 +189,17 @@ comments; `ModuleManifest` carries `derived` among its 34 top-level fields.
 `--with-inputs` download *does* return the sidecars. Filed as registry `S13` / our `F37`
 (`docs/just-dna-format-pending-fixes.md`) on 2026-08-20.
 
-## ⚠️ Check — the plugin's own sidecar roster is short
+## The sidecar roster is derived now, so ask for it
 
-`list_tables().sidecars` returns a hardcoded four: `resolution.csv`, `frequencies.csv`,
-`gene_metrics.csv`, `literature.csv`. It omits `licensing.csv`, the three format-0.6 fact tables
-(`gene_validity.csv`, `clinical_assertions.csv`, `gwas_effects.csv`) and `verification.json`, all of
-which `authoring_reference` does name. **Take the roster from `authoring_reference` or from this file,
-not from that field.** Recorded in `docs/HANDOFF-skills-split.md`; it is our defect, not upstream's.
+`list_tables().sidecars` was a hardcoded four until 2026-08-20 (RM10) and is now derived from
+`just_dna_registry.specfiles.FACT_CSVS + RESOLUTION_CSV` minus what is authorable — so it answers seven,
+and a fact table added upstream appears with no edit here. `licensing.csv` is absent from it *by
+derivation* rather than by exception: it is both produced and authorable, so it belongs to
+`describe_table`.
+
+**Note the roster now comes from a different package than the loader it describes**, so a registry
+release lagging a compiler release makes the answer lag. A pinning test is the guard, not a version
+floor.
 
 ## Blanks for just-dna-lite
 

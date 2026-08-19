@@ -19,9 +19,9 @@ description: >-
 This skill answers three questions and nothing else: **which table** a finding belongs in, **what the
 tree looks like** around it, and **which dossier** to open for the detail. It holds no procedure — that
 is the stage skills — and no column lists or vocabularies. For a cell's type, its pick-list or whether
-it is required, **ask `describe_table` / `table_requirements`**; those answers are generated from the
-live pydantic models and cannot drift from what the compiler accepts. That has one boundary, and it is
-stated where it bites: `describe_table` answers for authored tables, not for the machine-produced ones.
+it is required, **ask `describe_table` / `table_requirements`** for an authored table and
+**`describe_machine_table`** for a machine-produced one; those answers are generated from the live
+pydantic models and cannot drift from what the compiler accepts.
 
 ## Reading the dossiers
 
@@ -81,10 +81,17 @@ a hand-kept list, so where a number matters, re-run the call rather than trustin
 | [`gwas_effects.md`](references/gwas_effects.md) | what a study measured, **and on what scale** | enricher (GWAS Catalog) |
 | [`verification.md`](references/verification.md) | whether anything was ever *checked*, and the closure | enricher + `close` |
 
-⚠️ **CHECK — `describe_table` does not answer for these.** It covers the eleven authored kinds plus
-both spellings of `licensing.csv`, and **refuses the other six fact tables and `resolution.csv`** —
-`Unknown table kind`, not a column list. So "ask the tool" has a boundary: for a machine-produced
-table the dossier beside this file *is* the reference, and `authoring_reference` names the roster.
+**Ask `describe_machine_table` for these — a different tool, and the split is the point.**
+`describe_table` covers the eleven authored kinds plus both spellings of `licensing.csv` and redirects
+for the rest; `describe_machine_table` answers the live columns of all seven machine-produced tables.
+The separation carries the signal that a shared tool could not: `hand_authored` is `Literal[False]`
+here against `Literal[True]` there, so an agent sees which kind of table it is holding **in the schema,
+before it calls** — and there is no template, no linter and no requirements answer for these, because
+"what is required of you" is not a question about a table you do not write.
+
+*(Until 2026-08-20 `describe_table` simply refused them and this box said so. Upstream shipped
+`hints.DERIVED_TABLE_MODELS` the same day and declined to widen their own `describe_table` for the same
+reason — the missing piece was the map, not the presentation.)*
 
 **Four properties of that derived family**, each of which has cost somebody a day. `module-refresh`
 owns the procedure; these are the properties that make it necessary.

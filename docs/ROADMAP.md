@@ -133,11 +133,51 @@ outrank ClinVar on `clin_sig` while its `direction` is ordinary. Three shapes ar
 since it is their document. **Do not design our writer around a guess** — write what today's schema
 allows, and keep the capture's internal representation per-field so it can be emitted either way.
 
+### The two pathways — this is the discriminator's specification
+
+Both start identically. **They diverge only afterwards, which is why no check can tell them apart at
+the moment of the mismatch:**
+
+```
+1  hallucination, or an author's stale knowledge
+     -> erroneously authored item -> check -> MISMATCH -> WARN
+     -> the agent sees the flag and corrects the item          <- the warning did its job
+
+2  the module is right and the archive is stale
+     -> item corrected -> check -> MISMATCH -> WARN
+     -> reasoning provided -> no longer warns on this row
+     -> the edit is preserved as a MASK across re-revisions
+     -> eventually the source catches up and the mismatch disappears
+```
+
+**Three requirements fall out, and all three are ours:**
+
+- **The record is a response to a warning, never a filter filed ahead of one.** An author must not be
+  able to mark a row outranked *before* the mismatch is reported, or pathway 1 loses the only signal
+  that catches it. So the capture point is "an agent or author is reacting to a reported mismatch", not
+  "an author is editing a cell".
+- **The edit must survive re-revision as a mask.** *"Such edits are the highest value manual overrides,
+  so we need to tread around them carefully."* This is the **same mask** the sidecar-refresh work
+  captures — an outranking edit is precisely the hand-curated row a delete-and-re-derive would discard.
+  The two must share one representation rather than growing two.
+- **Detect the terminal state.** Pathway 2 ends with the source catching up. **An outrank whose mismatch
+  has since resolved is an outrank that turned out to be right** — a trust signal available nowhere else,
+  and free, because the check already runs every compile. A resolved record is retirable; one standing
+  across several source releases is worth aging, because it is either a genuine standing disagreement or
+  a stale correction nobody revisited, and a human decides which. And a record whose authored value has
+  changed *again* is stale by construction — the same shape as the attestation binding, so it probably
+  wants to be hash-bound to the value it justifies.
+
+**What none of this may do is produce a pass.** "No longer warns" means downgraded and still visible.
+A row where the module and the archive disagree stays interesting forever; the record says who decided
+and why, it does not make the disagreement go away.
+
 ### Done when
 
-A tool writes `provenance.json`; an override through any tool of ours captures its reason and logs the
-move; the skills carry the grading recommendations; and `S52`'s answer decides whether a severity
-change follows.
+A tool writes `provenance.json`; an override through any tool of ours captures its reason **in response
+to a reported mismatch** and logs the move; the capture shares one mask representation with the
+sidecar-refresh work; a resolved outrank is detected and reported as retirable; the skills carry the
+grading recommendations; and `S52`'s answer decides whether a severity change follows upstream.
 
 ## RM15 — we absorbed the format layer's philosophy wholesale, and it is load-bearing in 19 files
 
