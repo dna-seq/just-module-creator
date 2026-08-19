@@ -729,30 +729,38 @@ preference: it goes into §10, in their words, with the reason.
   auth instead of to register. `JMC_INSTALL_ID` is still there deliberately: it is a
   proof-of-work string rather than an instance credential, it exists nowhere else,
   and destroying it is the user's call, not ours.
-- As of 2026-08-11 production holds one module, `eric-mods/lactose_tolerance@1.0.0`
-  — still the best available worked example of a real spec, and now the only thing
-  a catalog read will find.
+- **Production holds FIVE modules, measured 2026-08-20** with `registry_search()` (defaults to prod).
+  Four are `antonkulaga/*` at `2.0.0`/`2.1.0` — `aggression_anger_snps` (28 variants),
+  `big_five_personality_snps` (330), `cognitive_intelligence` (32), `risk_impulsivity_snps` (474) —
+  and `eric-mods/lactose_tolerance` is now at **`1.0.1`**, not the `1.0.0` this file said until today.
+  The `antonkulaga` four are the published outputs of the four authoring transcripts, so they are the
+  worked examples of *what an outside driver actually ships*, and `lactose_tolerance` is still the
+  smallest readable real spec. **This line goes stale the moment somebody publishes — re-run
+  `registry_search()` rather than quoting it**, which is exactly how it came to claim "one module" for
+  nine days.
 - The enricher's Ensembl cache lands in
   `~/.cache/just-dna-pipelines/ensembl_variations`. The live V2 GraphQL endpoint
   currently 404s and the client falls back to REST — expected, not a defect.
 - A transitive dependency ships a top-level `tests` package that shadows this
   repo's, so test helpers import as `from conftest import ...`.
-- **Format 0.6.1 / compiler 0.6.1 / enricher 0.6.4 / registry 0.18.1 — adopted 2026-08-19 (our
+- **Format 0.6.1 / compiler 0.6.1 / enricher 0.6.4 / registry 0.18.2 — adopted 2026-08-19, registry
+  re-measured 0.18.2 on 2026-08-20 (our
   0.10.2; 0.6.3 and our 0.10.1 lasted hours).** 0.6 is the line where the format-tier three stop moving in lockstep: format and compiler
   sit at 0.6.1 while the enricher takes patches alone (0.6.2 for RM101's exception contract, 0.6.3 for
   the ClinVar and ClinPGx drafter fixes). Verify by symbol, never by this line:
   `just_dna_format.layout`, `compiler.ARTIFACT_PARQUETS`, `compiler.close_module`,
   `frequencies.FrequencyUnavailable`, the `(chrom, start, ref, alt)` event key inside
   `clinvar_draft.multi_allelic_rsids` (0.6.3), and `clinvar_draft._superseded_rsid_rows` (0.6.4).
-- **Both live registry instances now serve `format: 0.6.1` / `registry: 0.18.1`, verified 2026-08-19,
-  and the 0.5.4 contract block is over.** Every version-guarded call works again — a `download` of
-  `eric-mods/lactose_tolerance@1.0.0` returns its manifest where it 409'd a day earlier, and
+- **Both live registry instances now serve `format: 0.6.1` / `registry: 0.18.x`, verified 2026-08-19,
+  and the 0.5.4 contract block is over.** The installed client is **0.18.2** as of 2026-08-20 — this
+  line said 0.18.1 for a day. Every version-guarded call works again — a `download` of
+  `eric-mods/lactose_tolerance` returns its manifest where it 409'd a day earlier, and
   `assert_compatible()` passes on prod and polygon alike. `targets.instance_note` stays: it is a
   suffix on an existing `except RegistryError` arm, costs nothing while the contract agrees, and is
   there if an instance is rolled back. **Re-probe with `curl -s <url>/api/v1/version`, never assume** —
-  this line has now been wrong in both directions within two days. Note the catalog's one module is
-  still stamped `just-dna-compiler 0.5.1`; that is the contract gap registry 0.18.0's `upgrade`
-  detects, and an operator's sweep rather than an author's problem.
+  this line has now been wrong in both directions within two days. Note that `lactose_tolerance` was
+  stamped `just-dna-compiler 0.5.1`; that is the contract gap registry 0.18.0's `upgrade` detects, and
+  an operator's sweep rather than an author's problem.
 - **A drafter fix does not reach a module already drafted, and the two drafters need opposite
   repairs.** Enricher 0.6.3's ClinVar fix (S41) moved identities, so re-drafting over an existing
   spec restores the lost records and leaves the collapsed ones — measured 0 missing, 31 stale on

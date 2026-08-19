@@ -150,8 +150,14 @@ curation question.**
 
 - **The fill is skipped off GRCh38**, with its own line citing RM15: the compiler is
   GRCh38-bound, so the injected table is not joined and those rows keep the
-  coordinates their author typed. That is the open half and it is upstream **RM69**,
-  not RM43.
+  coordinates their author typed. That is the open half, and it is **two upstream
+  numbers rather than one** — the skip itself is **RM15** (multi-build support), and
+  its consequence is **RM69**: `resolution_signature` is not a round-trip invariant
+  on a non-GRCh38 module carrying a positional table. RM69 is blocked on RM15 and is
+  explicitly **not** a Principle 7 breach, because `resolution.csv` is a derived
+  sidecar. Neither is RM43, which shipped. (Upstream's own `RM_TOC.md` entry for RM43
+  compresses the two into *"skipped off GRCh38 (RM15), which is what RM69 is about"*;
+  read both.)
 - **The stamped fields are `Field(exclude=True)` on the 0.4-family models and are
   *not* excluded on `VariantRow`** — measured: `VariantRow.authored_ident` and
   `.variant_key` have `exclude=None`. Grandfathered, and a 1.0-cleanup candidate
