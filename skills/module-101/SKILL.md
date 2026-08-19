@@ -285,10 +285,11 @@ given number is.
 land, `create-module` carries the procedure for stages 1–8 and is the one canonical copy; this file
 never restates it. The planned split is `module-start`, `module-draft`, `module-curate`,
 `module-enrich`, `module-check`, `module-compile`, `module-close`, `module-publish` for the spine;
-`module-refresh` and `module-diff` for the rest of the second-pass half; and `module-weights`,
-`module-consumer` as references the stages load. **Two are written**: `module-tables` owns the table
-roster, the on-disk shapes and the registry's `derived/` layout, and **`module-revise` owns pass two
-and beyond** — load it whenever a module already exists, which is the normal case.
+`module-diff` for the rest of the second-pass half; and `module-weights`, `module-consumer` as
+references the stages load. **Three are written**: `module-tables` owns the table roster, the on-disk
+shapes and the registry's `derived/` layout; **`module-revise`** owns pass two and beyond — load it
+whenever a module already exists, which is the normal case; and **`module-refresh`** owns re-running
+anything that already ran, which is where merge-not-clobber stops being a footnote.
 
 ## What this file deliberately does not contain
 
