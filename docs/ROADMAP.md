@@ -72,3 +72,51 @@ Freeform, unscheduled, no commitment implied.
   intended content change.
 - Surfacing `hints.REDUNDANCY_BEARING` as a resource rather than only as a field
   on `describe_table`, so an agent can read the whole list once instead of per table.
+
+---
+
+## RM10 — three tool answers restate a schema fact instead of generating it
+
+**Severity:** medium · **Status:** open · **Owner:** unassigned
+
+Each is a hardcoded schema fact, which §2 forbids for the reason all three show.
+
+- `authoring._SUBJECTS["copynumbers.csv"]` emits `modifier_cn`; deprecated at 0.6.
+- `list_tables().sidecars` is a literal four; omits licensing + the three 0.6 facts.
+- `authoring.py:59` + `create-module/SKILL.md:708` describe studies.csv pre-RM47.
+
+Derive all three from the models. `modifier_copy_number` replaces `modifier_cn`,
+`specfiles.FACT_CSVS` is the sidecar roster, and RM47 moved studies.csv's columns.
+
+## RM11 — no route answers a machine-produced table's columns
+
+**Severity:** medium · **Status:** open · **Owner:** unassigned
+
+`describe_table` refuses the six fact tables and `resolution.csv` — `DRAFTABLE`
+covers authored kinds only. So "ask the tool, never memory" has a hole exactly
+where an author reads a sidecar they must not hand-finish. The dossiers cover it
+in prose; a tool answer would not drift.
+
+## RM12 — `enrich_gwas` is wrapped by no MCP tool
+
+**Severity:** low · **Status:** open · **Owner:** unassigned
+
+The enricher publishes it; `gwas_effects.csv` is reachable only via the CLI.
+Extended tier by the cost rule — a corpus sizes it.
+
+## RM13 — nothing on a generated answer says which format version produced it
+
+**Severity:** high · **Status:** open · **Owner:** unassigned
+
+A stale plugin cache serves stale schema silently. Measured: the cache at 0.7.0
+serves format 0.5.4, so `describe_table("activity_phenotype.csv")` returned 11
+columns where installed 0.6.1 has 14 — no signal, and every skill says to ask
+the tool. Stamp `format_version` on each answer, compared to `importlib.metadata`
+at call time, so the surface is self-diagnosing.
+
+## RM14 — `provenance.json` is recognised by the registry and by nothing here
+
+**Severity:** low · **Status:** open · **Owner:** unassigned
+
+In `specfiles.RECOGNIZED_SPEC_FILES`, survives a storage round-trip, and no tool
+or dossier covers it. Named in `module-tables/references/LAYOUT.md` only.
