@@ -642,6 +642,21 @@ preference: it goes into §10, in their words, with the reason.
   may drift."
 - **This is a *new*-module creator — do not carry historical baggage.** 0.4-era
   quirks never went to production, so a module author has no use for them.
+- **"Idempotent `to_current_state`, so to say."** Sharpened 2026-08-20, and it widens the
+  line above from *do not document old quirks* to *do not carry an era axis at all*:
+  *"this one repo (toolset) doesn't care about legacy in a sense that we only keep
+  upgrade path + state of the art recipes… we only care about the resulting state to
+  meet reqs for a good module. Whether previous state conforms 0.1 0.2 0.3 or other
+  schemas — we don't care."* So: recipes target the **current release only** (0.6 today),
+  with no per-era branch in a tool and no *"under 0.5 this differed"* aside in a skill;
+  **uplift mechanics stay upstream's** — registry and format already carry the minute
+  handling for schemas and renames, so describe it and never shim beside it; and a
+  backwards-compatibility measurement is *their* property to hold, not a result we
+  report. Detecting an input's era is fine — reading the deprecated `sources.csv`
+  spelling so you write back to the file you read is correct — **preserving it is not.**
+  The **upgrade path is real work and is not yet populated**: it gets built from the
+  authoring transcripts, from the moves a real author actually needed, rather than
+  designed against the schema history. Until then, do not invent it.
 - **The two authoring write-ups were independent takes made to reveal different
   surfaces**, not drafts of one another — so they were unified rather than one
   chosen over the other.

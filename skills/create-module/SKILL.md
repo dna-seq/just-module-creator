@@ -911,7 +911,8 @@ says the module resolved everything there was to resolve, which was nothing. The
 `positional_rows` / `positional_rows_placed` (how much of the PGx side actually joins to a VCF;
 complete is `placed == rows`, and it is two numbers rather than a ratio on purpose) and
 `expanded_keys` / `expanded_rows` (the one-to-many rsID expansion). **A null counter is not a
-zero** — it means nothing counted, which is what every pre-0.6 artifact honestly is.
+zero.** `0` is a real answer and `None` means nothing counted — never coalesce one into the other, and
+never read a null as a failure: an artifact that counted nothing is a normal artifact.
 
 Signing is CLI-only (`just-dna-compiler keygen` / `sign`); `keygen` writes an unencrypted
 PKCS#8 key — it bootstraps a key, it is not a key-management system.

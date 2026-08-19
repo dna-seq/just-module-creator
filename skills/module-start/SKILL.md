@@ -45,9 +45,13 @@ yet every real session began with a handed bundle.
   `authoring_reference()`. Two real sessions concluded the field did not exist.
 - **26 of 27 real submitted bundles carry `MODULE.md`, not `README.md`**, and `_collect_readme` returns
   `None` for it, so a local compile silently yields `manifest.readme: null`. Rename on intake.
-- **A handed bundle is 0.1-era and that is fine**: 0 genuine breaks across 27 bundles under 0.6.1,
-  24/27 still validate. Classify each discrepancy as era gap / live deprecation / genuine break, and
-  keep plain author defects out of all three.
+- **Do not ask which schema era a handed bundle came from.** The operation is `to_current_state` and it
+  is idempotent: bring it up to what a good module needs today and stop. Whether it was authored
+  against 0.1, 0.3 or last week is an input property, not a thing to classify or preserve. Uplift
+  mechanics — schema migration, the sidecar rename — are the format's and the registry's, already
+  handled; read the deprecated spelling so you write back to the file you read, and leave the history
+  to them. **A discrepancy is either something to fix now or something to record honestly**, and that
+  judgement does not need an era.
 - **Do not trust a bundle's own README** - one asserted allele validation performed over coordinates
   that were shifted by one base.
 - Record which shape of second pass this origin implies: a source-drafted module inherits a release
