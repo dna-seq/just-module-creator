@@ -96,61 +96,77 @@ the wrong PMID. A released constant does not make a machine-located quote honest
 
 **Filed upstream:** **S9** (opened by just-dna-lite, 2026-08-11; corroborated by us
 the same day), now in `CONSUMER_SUGGESTIONS_HISTORY.md` ·
-**Status: answered — the legibility half shipped in 0.5.3 and we have it; the
-coordinates themselves are open as upstream RM43, tracked in `RM_TOC.md`**
+**Status: CLOSED here on 2026-08-20 — RM43 shipped in format/compiler 0.6.0 and we
+install it. One residue is open under a different number (RM69), recorded below.**
 
-`compile_module` applies `resolution.csv` to the SNP core only. A module led by
-`pharm_variants.csv`, `diplotypes.csv` or `pgs.csv` keeps exactly the coordinates
-its author typed — so for an rsid-authored module, none.
+The original report: `compile_module` applied `resolution.csv` to the SNP core only,
+so a module led by `pharm_variants.csv`, `diplotypes.csv` or `pgs.csv` kept exactly
+the coordinates its author typed — for an rsid-authored module, none. Reproduced
+here twice with a one-row `pharm_variants`-only module: `chrom` and `start` null in
+the artifact both with and without a covering `resolution.csv`, which ruled out "no
+table was available" and left "this family does not consult it".
 
-Reproduced here twice with a one-row `pharm_variants`-only module: `chrom` and
-`start` are null in the artifact both with and without a `resolution.csv` that
-covers the variant, which rules out "no table was available" and leaves "this
-family does not consult it". The same run demonstrably *read* the file — it
-warned that VRS coverage in `resolution.csv` was 0/1 — while not applying it.
+### What shipped, verified by symbol on 2026-08-20
 
-### What 0.5.3 shipped, and why it is the right half first
+**The fill exists and runs in both paths.** `compiler._apply_positional_resolution`
+joins the injected table onto every *positional* table kind, in `validate_spec` as
+well as `compile_module` — the docstring says it must, because the joinability
+warning is computed from those rows in both and filling on one side only would have
+the pre-flight report a gap the compile had already closed.
 
-`_check_positional_joinability` now warns, per positional table, in both
-`validate` and `compile`. Verified reaching our surface unchanged on the same
-one-row reproduction:
+**The set is derived, not listed.** `compiler._POSITIONAL_TABLE_KINDS` is every
+`_TABLE_KINDS` model carrying both `chrom` and `start`, and evaluates today to
+`heteroplasmy.csv`, `haplotypes.csv`, `pharm_variants.csv`. Five fields are written
+per row — `rsid`, `chrom`, `start`, `ref`, `alts` — by
+`just_dna_compiler.resolution.resolve_positional_rows`.
 
-> `pharm_variants.csv: 1 of 1 row(s) have no chrom+start, so this table joins by
-> rsID only — a VCF whose ID column is empty matches none of them.
-> **resolution.csv can place 1 of them**, and the compiler applies that table to
-> variants.csv only.`
+**`diplotypes.csv` and `pgs.csv` are still unfilled, and this entry was wrong to
+group them with `pharm_variants.csv`.** `DiplotypeRow` and `PgsRow` carry no
+`chrom`, `start`, `alts`, `variant_key` or `authored_ident` **at all** — measured. So
+there is nothing to fill rather than a tier declining to fill it. Different fact,
+different remedy: a consumer joins those two on `rsid` + `genotype`, and no
+enrichment changes it. Not a defect to track.
 
-That second count is the actionable half, and it is exactly the distinction our
-corroboration argued the run already held both facts to make: it separates *this
-module was never enriched* from *the coordinates exist and this tier does not
-apply them here*. An author cannot otherwise tell those apart, and they call for
-opposite actions.
+**The Principle-7 objection this entry recorded was answered rather than waived.**
+The blocker was that `reverse_module` rebuilds the CSV from the parquet, so a filled
+coordinate would return as an *authored* one. Each 0.4-family model gained stamped
+`variant_key` + `authored_ident` naming what the author actually wrote, both
+`Field(exclude=True)`, so the fill stays out of `content_signature`. `alts` landed
+on `PharmVariantRow` and `HaplotypeRow` as data and not identity. There is no
+`resolution.parquet` (confirmed absent from `ARTIFACT_PARQUETS`) — reverse rebuilds
+the lookup from the positional parquets, which is what P7 forces.
 
-Deliberately a warning in both modes and never a `strict` error, which we agree
-with: rsid-only identity is legal by these models' own rule, so escalating would
-have the format tighten a field it left open — and the remedy is a compiler
-change, not an authored edit. Refusing would make a correct module uncompilable
-for something its author cannot clear.
+**The warning text this entry quoted no longer exists.** Only the fragment
+`have no chrom+start` is pinned — `compiler.UNJOINABLE_PHRASE`, substring-matched by
+the registry's facet builder — and the sentence around it was rewritten. It now
+names *why* a row is unplaced, in three branches whose order is load-bearing: the
+fill did not run (`--no-resolve`, or off GRCh38); nothing was enriched (*"run
+`just-dna-enricher enrich` first"*); or the rsID resolves to more than one locus, or
+to one whose alleles contradict the row, and the compiler declines to pick. A
+`<partial note>` appends when a row carries half a coordinate. **Only the third is a
+curation question.**
 
-**What is still open.** The coordinates are not materialized. Upstream's reason
-is worth recording because it is not a scheduling excuse: filling them breaks
-Principle 7, since `reverse_module` rebuilds the CSV from the parquet and a
-filled coordinate returns as an *authored* one. `VariantRow.authored_ident`
-exists to prevent exactly that and no 0.4-family model has an equivalent, so the
-fix needs a new column on an existing parquet — 0.6 work, tracked upstream as
-**RM43** with two smaller constraints alongside (`PharmVariantRow` has no `alts`
-column, and `variant_key` is a property on these models so it is materialized in
-no PGx parquet).
+### Two live residues, neither of them this number
 
-**Our mitigation is now redundant with upstream's warning** but stays, because it
-tells an author what to do rather than what happened:
-`skills/create-module/SKILL.md` says to supply the rsID for these tables and that
-a consumer joins on `rsid` + `genotype`. We still ship no code workaround —
-filling the coordinates ourselves would author a value the compiler did not
-derive, which is the redundancy-bearing mistake the rest of this repo exists to
-prevent.
+- **The fill is skipped off GRCh38**, with its own line citing RM15: the compiler is
+  GRCh38-bound, so the injected table is not joined and those rows keep the
+  coordinates their author typed. That is the open half and it is upstream **RM69**,
+  not RM43.
+- **The stamped fields are `Field(exclude=True)` on the 0.4-family models and are
+  *not* excluded on `VariantRow`** — measured: `VariantRow.authored_ident` and
+  `.variant_key` have `exclude=None`. Grandfathered, and a 1.0-cleanup candidate
+  upstream rather than a defect for us.
 
-**Closes when** RM43 lands.
+**Our text was the stale half, and it is fixed.** `skills/create-module/SKILL.md`
+taught the pre-0.6 rule — that resolution reaches `weights.parquet` only, that a
+`pharm_variants` row's coordinates arrive null, and that the remedy was a compiler
+change rather than an authored edit. Three of those four claims were false and the
+fourth pointed at a release that had already happened. Rewritten 2026-08-20 from the
+code, along with the same file's binning-bounds section and
+`references/SYMPTOMS.md`'s shared-endpoint entry, both of which keyed the rule on
+`measure_kind` where 0.6 keys it on the authorable `measure_tiling`.
+
+We still ship no code workaround, and now need none.
 
 ---
 
@@ -244,6 +260,11 @@ that both halves are done: the full history is in
 **Filed upstream:** **S14**, now in `CONSUMER_SUGGESTIONS_HISTORY.md` ·
 **Status: SETTLED 2026-08-11. The warning had already shipped in 0.5.2 from another
 report; the rename is REFUSED with a reason. Our pin is permanent, not interim.**
+**Independently corroborated by the upstream audit of 2026-08-20**, which reached the
+same reading from the code without this entry: `heteroplasmy.md` now carries a
+⚠️ CHECK correcting its own opposite claim — it had said `compile_module` *pins* the
+parameter, where it is a **default**, and the CLI wires `--resolve/--no-resolve`
+straight to it. Ours is the pin; theirs is not. Nothing here changes.
 
 This one stays in this file precisely because a refusal is an upstream state worth
 keeping, and it is the entry to read before anyone reopens the question:

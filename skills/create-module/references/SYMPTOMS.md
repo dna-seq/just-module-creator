@@ -289,11 +289,19 @@ colliding in a heteroplasmy table, give each its variant identity (`chrom`/`star
 is what the key is for.
 
 **`coverage gap … no bin covers (0.099, 0.1)`** on a fraction or percentile
-The fix is to **make the bounds touch**: write `0.0–0.1` and `0.1–0.3` rather than `0.0–0.099`. On a
-continuous measure two bins may share an endpoint and the higher bin owns it, so a measurement of
-exactly `0.1` selects the second row. Author the top bin **closed** (`0.3–1.0`) — the top of the domain
-is a real measurement. On `repeat_count` / `copy_number` a shared endpoint is still an overlap and still
-an error, because there the bins genuinely both claim that integer.
+The fix is to **make the bounds touch**: write `0.0–0.1` and `0.1–0.3` rather than `0.0–0.099`. Under
+`continuous` tiling two bins may share an endpoint and the higher bin owns it, so a measurement of
+exactly `0.1` selects the second row. Author the top bin **closed** (`0.3–1.0`) — the top of that domain
+is a real measurement, and `allele_fraction` genuinely ends at `1.0`.
+
+The rule is keyed on **`measure_tiling`**, not on the kind: under `quantised` a shared endpoint is still
+an overlap and still an error, because there the bins genuinely both claim that value. The kind only
+supplies the *default* — `continuous` for `allele_fraction`/`prs_percentile`, `quantised` for
+`repeat_count`/`copy_number`, neither for `activity_score`. Two consequences worth knowing before you
+"fix" a gap warning by declaring a tiling: a quantised-default group carrying a **fractional** bound is
+read as `continuous` anyway (and the compiler says it did that), and declaring `quantised` on a bounded
+fractional domain **switches interior gap reporting off entirely** — the warning stops, and nothing was
+repaired.
 
 **`bins with the same lower bound for key (…)`** — an **error**
 Two bins in one group start at the same number, so the shared-endpoint rule has nothing to order and a

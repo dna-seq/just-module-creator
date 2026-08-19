@@ -753,21 +753,35 @@ The duplicate key is `(variant, drug, genotype, phenotype_category, annotation_i
 drug legitimately carry separate efficacy, toxicity and pharmacokinetic rows, and they can disagree.
 This module type carries **no** `variants.csv` and needs **no** `studies.csv`.
 
-**Author the rsID here, not a coordinate.** Resolution is applied to `weights.parquet` only, so a
-`pharm_variants` / `diplotypes` / `pgs` row's `chrom` and `start` arrive **null** in the artifact even
-when `resolution.csv` covers the variant — these tables are materialized verbatim from their authored
-CSV. A consumer joins them on `rsid` + `genotype`, so expect no matches from a VCF whose `ID` column
-is empty.
+**Author the rsID here, not a coordinate — and since format 0.6 the compiler fills the coordinate for
+you.** `resolution.csv` reaches three **positional** tables — `pharm_variants.csv`, `haplotypes.csv`,
+`heteroplasmy.csv` — in `validate` as well as `compile` (RM43). The set is derived, not listed: it is
+every table kind whose model carries both `chrom` and `start` (`compiler._POSITIONAL_TABLE_KINDS`).
+A row you keyed by rsID arrives in the artifact with `rsid` / `chrom` / `start` / `ref` / `alts`
+filled from the resolution table — **those five and no others** — and the fill stays out of
+`content_signature`, because each row also carries `authored_ident` naming what you actually wrote.
 
-`validate` and `compile` now say so per table, and the second number is the one to read:
+`diplotypes.csv` and `pgs.csv` are **not** filled, and for a different reason with a different remedy:
+those models have **no coordinate columns at all**, so there is nothing to fill and a consumer joins
+them on `rsid` + `genotype`. A VCF whose `ID` column is empty matches none of their rows, and no
+enrichment changes that.
 
-> *"pharm_variants.csv: 1 of 1 row(s) have no chrom+start, so this table joins by rsID only … **resolution.csv can place 1 of them**, and the compiler applies that table to variants.csv only."*
+Three things still leave a positional row unplaced, and the warning tells you which:
 
-"`resolution.csv` can place N of them" separates **this module was never enriched** — go and enrich —
-from **the coordinates exist and this tier does not apply them** — nothing you can do in the data,
-and inventing the coordinate yourself would author a value the compiler did not derive. It is a
-warning in both modes and never a strict error, deliberately: rsid-only identity is legal, and the
-remedy is a compiler change rather than an authored edit.
+1. **The fill never ran** — `--no-resolve`, or a non-GRCh38 module. RM15, and it says so on its own
+   line: the compiler is GRCh38-bound, so the injected table is not joined and *"those rows keep the
+   coordinates their author typed"*.
+2. **Nothing was enriched** — *"run `just-dna-enricher enrich` first"*.
+3. **The rsID resolves to more than one locus**, or to one whose alleles contradict the row, and the
+   compiler **declines to pick**.
+
+**Only the third is a curation question**, and its answer is to author the coordinate yourself. Never
+invent one to silence the first two. A row whose authored identity the resolution table disagrees with
+is left **exactly as authored** and warned about separately.
+
+**Grep that warning by the fragment `have no chrom+start`** — that substring is a pinned contract
+(`compiler.UNJOINABLE_PHRASE`, substring-matched downstream); the sentence around it is not, and has
+already been rewritten once.
 
 ### resolution.csv — produced, committed, never hand-edited
 
@@ -1257,8 +1271,14 @@ The house algebra is **three-valued: true / false / unknown**, and `None` is nev
 
 - **A blank cell means "not stated" and is always legitimate.** Do not write `false` to silence a
   reminder.
-- **Every binning table has an `unresolved` sentinel** a consumer selects when the measurement is
-  absent. Never route a missing measurement to the lowest bin.
+- **Every binning table needs an `unresolved` sentinel** — a consumer selects it when the measurement
+  is absent, so never route a missing measurement to the lowest bin. **Author it; nothing makes you.**
+  This is a contract, not an enforced rule, and the two halves disagree about scope: the compile path
+  refuses a **second** sentinel per bin group and refuses **zero** nowhere, so a sentinel-less binning
+  table compiles green under `--strict`. The presence check is an *authoring hint* (reachable through
+  `lint_rows`) and it asks `not any(...)` over the **whole table** — so on a table whose key fragments
+  it into several groups, one sentinel anywhere satisfies the hint while most groups have none. Run the
+  hint, then **count sentinels per group by hand.**
 - **Set `requires_callable=true` (with `callable_from`)** wherever the *absence* of a variant is the
   informative call: a no-call is not a reference call.
 - **On licensing, unknown terms are undetermined, never permitted** — `share_alike` /
@@ -1271,20 +1291,32 @@ The house algebra is **three-valued: true / false / unknown**, and `None` is nev
 - **`measure_max` is inclusive on every kind.** A bounded domain's top value (allele fraction `1.0` is
   homoplasmy, and real) has to be reachable. Use `min == max` for a sharp value and a null bound for
   open-ended.
-- **Whether adjacent bins may share an endpoint depends on the kind, and the two cases are opposite.**
-  - **Dense — `allele_fraction`, `prs_percentile`: bounds must touch**, e.g. `0.0–0.1` then `0.1–0.3`.
-    A shared endpoint is a *boundary*, not an overlap, and the higher bin owns it (lookup selects the
-    row with the greatest `measure_min ≤ x`). A hole between bins warns, because on a continuous
-    measure it can be arbitrarily small.
-  - **Integer — `repeat_count`, `copy_number`: bounds must NOT touch**, e.g. `[27,35]` then `[36,39]`.
-    Adjacent integer bins are already contiguous, so a shared endpoint is a real overlap — both bins
-    claim that integer — and it is refused.
-  - **`activity_score` is in neither set.** It is a consumer-summed value on a coarse grid, so
-    interior holes are not meaningful (no gap warning) and bins do not touch.
+- **Whether adjacent bins may share an endpoint is keyed on `measure_tiling`, not on the kind.** That
+  is an authorable column, constant within a bin group, and its two values are opposite rules:
+  - **`continuous` — bounds must touch**, e.g. `0.0–0.1` then `0.1–0.3`. A shared endpoint is a
+    *boundary*, not an overlap, and the higher bin owns it (lookup selects the row with the greatest
+    `measure_min ≤ x`). Any positive hole is reported, because on a dense measure it can be
+    arbitrarily small.
+  - **`quantised` — bounds must NOT touch**, e.g. `[27,35]` then `[36,39]`. Adjacent bins on a grid are
+    already contiguous, so a shared endpoint is a real overlap — both bins claim that value — and it is
+    refused. A hole narrower than one step is not a hole.
+  - **Leave it empty and the kind's default applies**: `continuous` for `allele_fraction` and
+    `prs_percentile`, `quantised` for `repeat_count` and `copy_number`, and **neither** for
+    `activity_score` — a consumer-summed value on a coarse grid, so interior holes are not meaningful
+    and bins do not touch. Precedence is *declared → inferred → the kind's default*.
+  - **Two things about `quantised` that will surprise you.** A group left empty on a quantised-default
+    kind **is read as `continuous` anyway if it carries a fractional bound** — nothing on a grid of
+    whole numbers can hold one — and the compiler says when it did that. And `quantised` assumes a grid
+    of **whole numbers** with no way to state a finer step, so declaring it on a bounded domain like
+    `allele_fraction` **switches interior gap reporting off entirely.**
 - **Two bins sharing a *lower* bound refuse on every kind** — the boundary rule selects the greatest
   `measure_min ≤ x` and these two are the same, so there is nothing to order.
 - Bins are grouped by the kind's key columns **plus** `trait_efo_id`. If two different variants
   collide in a heteroplasmy table, give each its own variant identity — that is what the key is for.
+- **Nothing checks coverage above the highest bin or below the lowest**, in either tiling. A closed top
+  bin on an unbounded axis strands every measurement above it: such a measurement matches no bin, and
+  it does not match the sentinel either, because a measurement *was* made. **Leave the top bin's
+  `measure_max` blank unless the axis really ends** (`allele_fraction` at `1.0` really does).
 
 ## PGx and star alleles
 
