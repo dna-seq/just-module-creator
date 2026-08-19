@@ -674,6 +674,30 @@ preference: it goes into §10, in their words, with the reason.
 
 *Append-only. Environment, ports, credential layout, host quirks, sibling paths.*
 
+- **This repo IS the authoring tool, so an authoring-workflow gap is ours to BUILD FIRST — but
+  asking upstream is still cheap, just never empty-handed.** The user's read, 2026-08-20, offered
+  explicitly as an impression rather than a ruling: the format tree appears to have in-repo constraints
+  keeping it out of authoring, so it leans on downstream for that half. **Do not harden that into a
+  rule they never stated.** What *is* decided is the order of operations: *"asking them is no big deal;
+  but don't come empty handed — show them the tool."*
+
+  So the working line is **workflow versus contract**, applied to sequencing rather than to permission.
+  A gap in authoring workflow — capture an override, re-derive without losing curation, drive a
+  refresh, triage a handed source — we **build**, and *then* show it and ask whether they want it
+  upstream. A proposal with a running tool attached is a different conversation from a feature request,
+  and it costs them nothing to decline. A gap in the *schema*, the *hashes*, a *check's scope* or the
+  *wire format* is still theirs and is still filed the moment it is found; we own no schema and that
+  has not changed. First case under this: override-preserving sidecar refresh, where upstream's RM83
+  already describes the need — build it, then offer it.
+- **An invented file in a spec directory is silently dropped, so never store our own state there.**
+  `just_dna_registry.specfiles.RECOGNIZED_SPEC_FILES` is what `revalidate` and `upgrade` rebuild a
+  spec from, and a name missing from it is a file lost on the next server-side rebuild — the exact
+  failure that lost `licensing.csv` before registry 0.16.2 and readmes before 0.14. So our own
+  bookkeeping (an override capture, a refresh audit trail) goes to a resolved cache/workspace path
+  through `_shared.resolve_dir`, never beside `module_spec.yaml`. The cost is that it does not travel
+  to a second machine or a second author, which is real and is the honest limit to state rather than
+  to design around.
+
 - Sibling repos live beside this one under `/data/sources/`:
   `../just-dna-format` (hosts format, compiler and enricher, their
   `CONSUMER_SUGGESTIONS.md` intake and its answered half,
