@@ -285,9 +285,10 @@ given number is.
 land, `create-module` carries the procedure for stages 1–8 and is the one canonical copy; this file
 never restates it. The planned split is `module-start`, `module-draft`, `module-curate`,
 `module-enrich`, `module-check`, `module-compile`, `module-close`, `module-publish` for the spine;
-`module-revise`, `module-refresh`, `module-diff` for second and later passes; and `module-weights`,
-`module-consumer` as references the stages load. **`module-tables` is written** and owns the table
-roster, the on-disk shapes and the registry's `derived/` layout.
+`module-refresh` and `module-diff` for the rest of the second-pass half; and `module-weights`,
+`module-consumer` as references the stages load. **Two are written**: `module-tables` owns the table
+roster, the on-disk shapes and the registry's `derived/` layout, and **`module-revise` owns pass two
+and beyond** — load it whenever a module already exists, which is the normal case.
 
 ## What this file deliberately does not contain
 

@@ -1202,21 +1202,34 @@ MCP `compile_module` tool pins that and cannot reach the other branch; the CLI c
 fix that changes an authored allele will not show up until you delete the file first. The table is a
 pin, not a cache.
 
-## A re-draft always changes `artifact.digest`, even when the data is identical
+## A re-draft that appends nothing is inert
 
-`licensing.csv` carries a `fetched_at` timestamp stamped when the row is written, and
-`sources.parquet` is one of the files the digest is a Merkle root over — so two builds of
-byte-identical content, an hour apart, are two different artifacts. Consequences worth planning
-around:
+**This section used to say the opposite** — *"a re-draft always changes `artifact.digest`, even when
+the data is identical"* — on the reasoning that `licensing.csv`'s `fetched_at` is re-stamped every run.
+It is not, and upstream measured it: `merge_sources_csv` is `setdefault`, `stamp_draft_digest` is a
+no-op when no row was appended, and `withdraw_stale_dataset` only fires when rows were actually added.
+Running `record_source_terms` twice against one spec directory produces a **byte-identical file**.
 
-- **Recompiling is reproducible; re-drafting is not.** `compile` twice on an untouched spec gives the
-  same digest every time. That is the property to test.
-- **Do not treat a digest change as evidence that content changed.** Diff the tables.
-- **Digest-based dedup will miss matches** across rebuilds, so `find-by-hash` cannot recognise a
-  module you rebuilt without editing.
+What a re-draft that *does* append moves, in order of how much it means:
 
-If you need a rebuild to be digest-stable, keep the previous `licensing.csv` rather than letting the
-draft re-stamp it.
+| moved | by |
+|---|---|
+| `content_signature` + digest | the appended authored rows — **a real content change** |
+| `source_signature` + digest | `dataset` blanked, because the module now spans two releases; or a source recorded for the first time |
+| digest only | `draft_digest` re-stamped over the newly grown table |
+| **nothing** | a re-draft that appended no row |
+
+`withdraw_stale_dataset` **blanks** `dataset` rather than re-labelling it, because a module carrying
+two releases has no single release to name. Widening a panel from a newer snapshot lands there on
+purpose.
+
+- **A recompile is reproducible.** The same spec twice under a fixed compiler gives the same digest.
+- **What breaks digest-based dedup is a toolchain change, not a rebuild.** Parquet is not
+  byte-deterministic across polars/arrow versions, so the guarantee is scoped to a fixed
+  `compiler_version`. Key `find-by-hash` and any dedup surface on **`content_signature`** for that
+  reason — not because re-drafting churns the digest, which it does not.
+- **Still do not read a digest change as evidence that content changed.** A provenance column moves
+  the digest and no signature. Diff the tables, or read `content_signature`.
 
 ## Coordinates and identity
 
