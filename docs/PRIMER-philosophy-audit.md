@@ -169,3 +169,44 @@ The §2 bullet already carries a 🚩 marker pointing at this. Leave it there un
 Every surface in §5 carries a rule justified **from this layer's own purpose**, with no prohibition
 standing only on "upstream does it that way"; `server.INSTRUCTIONS` and §2 agree with each other; and
 §1's questionnaire on the attestation contradiction has run with its answer recorded in §10.
+
+---
+
+## Night run — the semaphore, and your autonomy
+
+**`docs/NIGHT-RELAY.md` is the semaphore. Read its `STATE:` line before anything else.**
+
+**You are agent A. You start from `READY-FOR-AUDIT` and move it to `AUDIT-RUNNING`.** If you find
+anything else — including `AUDIT-DONE` — **stop immediately, write nothing, and say which state you
+found.** On finish move it to `AUDIT-DONE` and fill the *Agent A — verdicts* section. That section is
+the only thing the builder will read about your work, so write it for someone who was not here.
+
+Claim it by writing your transition into that file *first*, with a UTC timestamp, and commit that
+immediately — a claim nobody can see is not a claim. Fill your section on finish: not a summary of
+what you did, but **what the next role needs decided.**
+
+**A `*-RUNNING` state older than four hours is a dead agent.** Append a note, move the state back one
+step, stop. Do not take over its work.
+
+### Full autonomy for this run
+
+You are running unattended. **Do not stop to ask.** Specifically:
+
+- **Commit as you go**, meaningfully sized, explicit paths. Never `git add -A`. **Never push**, never
+  tag, never touch a branch.
+- **Decide.** Where this session would have asked a question, pick the option you can defend, write
+  the reasoning where it will be read again (`CLAUDE.md` §10 for a rule, the relay file for a
+  handoff), and continue. A blocked night is worth less than a defensible call.
+- **File upstream at discovery**, never batched. Compute the next `S<n>` with
+  `.claude/triage-state.py --next` in the target repo — never from any document, both series move
+  hourly. **Write the note, never commit in their tree.** Leaving it dirty is the expected outcome.
+- **Measure rather than trust.** Every count, every version, every claim about upstream: run it. This
+  session found seven "settled" facts that were false, and every one came from prose.
+- **Verify by symbol, not by version.** `S47`/`S48` are fixed in their tree and absent from what
+  `uv sync` installs.
+- **`uv run pytest`, `uv run ruff check .`, `uv run pyright` must all pass before each commit.** Never
+  bare `python`.
+- **Use absolute paths in git commands.** A leaked `cd` put git commands in the upstream repo this
+  session; the `add` failed by luck.
+- **If you genuinely cannot proceed**, write why into the relay file, move the state back, and stop.
+  A clean stop with a stated reason is a good outcome. A guess committed at 4am is not.
