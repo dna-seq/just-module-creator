@@ -172,6 +172,24 @@ the moment of the mismatch:**
 A row where the module and the archive disagree stays interesting forever; the record says who decided
 and why, it does not make the disagreement go away.
 
+### Standing visibility, and the re-review queue it feeds
+
+**An outranked row is never silent — warn or info, always highlighted.** The reason is time, not
+policy: *"easy to forget as time passes."* The person who wrote the justification understood it; six
+months and two source releases later, nobody remembers whether the retraction that motivated it was
+itself superseded. A row that stopped reporting is a row nobody will revisit, and the module keeps
+asserting a judgement no living person is standing behind.
+
+**So the outranked rows are the FIRST candidates for a re-review**, and that is a concrete deliverable
+rather than a sentiment. A review pass (`module-revise`'s review kind) currently has **no priority
+list** — a reviewer opens a module and picks somewhere to start. The outrank records are that list, and
+they are ranked by construction: a record standing across the most source releases without resolving is
+the one most likely to be stale, and a resolved one can be retired on sight.
+
+This is where the pieces meet: the capture (this item) produces the queue, `module-revise` consumes it
+as the review pass's starting point, and the terminal-state detection above is what keeps the queue from
+growing without bound.
+
 ### Done when
 
 A tool writes `provenance.json`; an override through any tool of ours captures its reason **in response

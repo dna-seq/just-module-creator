@@ -149,6 +149,28 @@ answered it directly:
 append the entry → **re-run the checks** → **close again** → publish. The re-close *is* the review being
 recorded, not a workaround for it.
 
+### Where a reviewer should start
+
+**Read the rows that disagree with a source first.** A row whose authored value contradicts what
+ClinVar, ClinGen or the GWAS Catalog says is either the module being more current than the archive — a
+retraction, a refuting meta-analysis the archive has not absorbed — or somebody's stale knowledge that
+never got caught. **Both look identical in the file**, and only reading the reasoning tells them apart.
+
+They are the highest-value rows in the module and the easiest to forget: whoever wrote the justification
+understood it, and six months later nobody remembers whether the retraction that motivated it was itself
+superseded. So a mismatch that carries a recorded reason **stays visible** — downgraded, never silenced —
+precisely so a later reviewer lands on it.
+
+**And if such a row no longer disagrees, the archive caught up: the override was right, and the record
+can go.** That is the one piece of evidence in the whole format that an authored judgement was later
+vindicated.
+
+🚧 **ROADWORKS — nothing produces this list yet.** Recording the reason an authored value outranks a
+source is our `RM16`; whether a check downgrades the mismatch on finding one is upstream's `S52`, filed
+and unanswered. **Until both land, a reviewer has no queue** — so on a review pass, diff the authored
+tables against what the passes report and read the disagreements by hand. `module-diff` has the
+signature triage; `module-check` has the checks that produce the mismatches.
+
 **The re-close IS visible downstream, and that still does not make it the default.** Both halves
 matter, and the second is the one an agent gets wrong:
 
