@@ -9,6 +9,232 @@ here: it is filed upstream as an `S<n>` and tracked in
 
 ---
 
+## RM14 — `provenance.json` is recognised by the registry and by nothing here
+
+**Absorbed into RM16 on 2026-08-20, the same day it was opened. Not shipped, not dropped —
+re-scoped, because it had been read from the wrong end.**
+
+Opened as a low-severity tidiness item: `provenance.json` is in the registry's
+`RECOGNIZED_SPEC_FILES`, survives a storage round-trip, and no tool or dossier here writes or reads
+one. True, and the wrong frame.
+
+What it actually is: the **missing half of the counterstance**. §2 was corrected the same day to say we
+may write and revise, with the agent owed a discriminator for when editing against a source is right —
+and the hazard there is not vacuity but that **the source lags the edge** (a retraction, a refuting
+meta-analysis). An override may be the module being more current than the archive, and nothing recorded
+that judgement anywhere. `ProvenanceItem.rationale` is exactly the freeform record such a judgement
+needs, and it already exists upstream, AI-aware, unread by any check.
+
+So the item is not "write a file nobody reads". It is "capture the reason an authored value outranks a
+source, at the moment of the override". Re-opened at **high** severity as `RM16`, with the contract half
+— whether a check downgrades a mismatch to INFO when a record exists — filed upstream as `S52`.
+
+## RM12 — `enrich_gwas` is wrapped by no MCP tool
+
+**Shipped:** 2026-08-20, in tree after 0.10.2 (no version bump in that change)
+
+**What shipped.** `enrich_gwas_effects(spec_dir, strict, use, study_facts, offline)` in
+`tools/passes.py`, registered in `register_extended_passes`, returning a new
+`GwasReport`. `gwas_effects.csv` was the last enricher pass an author driving this plugin
+had to shell out for, and the shelling-out was documented as a gap in
+`skills/module-tables/references/gwas_effects.md`.
+
+**Extended, and the cost rule decides it cleanly.** The budget is `1 + 2N` requests for
+a variant with N published associations, because `pmid`, `trait`, `ancestry` and
+`study_accession` all sit behind `_links` — measured upstream at **382 requests and 0
+cache hits** for one real module, since rs1800562's 189 associations each name their own
+study. The size is set by how much has been published about the variant, not by anything
+the caller named, which is the definition CLAUDE.md §5 gives. It sits beside
+`enrich_facts` and `enrich_literature_pass`, and `test_modes_and_auth.EXTENDED_ONLY`
+pins it there.
+
+**Three upstream facts the wrapper had to carry rather than smooth over.**
+
+- **`strict` fires on the usual answer.** It escalates on `unusable` and
+  `p_value_underflows` — never on `missing`, because the Catalog holding nothing for a
+  variant is a fact about the variant and true of most clinically authored ones.
+  `reference_examples/hfe_hemochromatosis`, a shipped flagship, carries **six** p-values
+  the Catalog publishes as `0.0`, so strict refuses it while nothing about it is wrong.
+  The docstring says that in those words, and the failure path says it again on the
+  result. It also escalates *after* the write, so a strict failure leaves the sidecar
+  holding everything `best_effort` would have written — which is the difference between
+  an escalation and a fetch failure, and the message is what tells them apart.
+- **Published betas are not weights, and the tool makes that readable rather than
+  asserted.** `associations_without_effect_allele` and the sorted distinct `effect_units`
+  are computed from the rows upstream returned: `not_found` rows are excluded from the
+  first, because their null `effect_allele` means *no association exists* while a
+  recorded association's null means *the study never established which allele carries
+  the effect*. On one real module those come out at 33 of 186 and 12 distinct units for a
+  single variant. There is no argument on this tool that could write `weight`.
+- **`study_facts=false` is a sticky cut.** It drops two thirds of the budget and leaves
+  `pmid`/`trait`/`trait_efo_id`/`ancestry`/`study_accession` null — and the merge is keyed
+  on `association_id` alone, so a later run with study facts **on** skips those rows
+  rather than backfilling them. Only deleting the file recovers them. Warned on the
+  result and asserted in the test; filed upstream as a doc gap.
+
+**No counter is coalesced to zero.** The five numeric fields are `int | None` and the failure path
+passes `None` for every one. On a strict escalation `0` would be wrong rather than merely absent —
+upstream's message names non-zero counts and the sidecar is already written — and `rows` is `None` on
+an offline no-op as well, since an existing file keeps what it held and nothing counted it.
+
+**No `produced_by`.** RM13 stamps *generated schema answers*; this is a verdict about a
+directory at a moment, which that item explicitly left unstamped, and `SchemaVersions`
+carries the format and compiler versions where a pass answer would need the **enricher's**
+— a stamp naming the wrong package is worse than none.
+
+**One `except` arm on purpose.** `GwasNotFound` is a subclass of `GwasError`, so an arm
+for it would have to come first, but it cannot arrive: `associations_for` catches the
+Catalog's 404 and returns the empty *answer* that becomes a `not_found` row, and `follow`
+catches it so an association whose study record moved keeps null study facts. An arm for
+a type that never arrives reads as if it did.
+
+**The strict ladder now has a test, which upstream still does not have.** `strict`
+appears nowhere in `enricher/tests/test_gwas.py` in either direction, so
+`test_the_gwas_strict_ladder_escalates_on_the_catalogs_shape_after_writing` drives the
+real `enrich_gwas` with an injected transport and asserts what it observably does: one
+underflowing association raises, the row is on disk when it raises, and `best_effort` on
+the same input reports the count and succeeds.
+
+## RM10 — three tool answers restated a schema fact instead of generating it
+
+**Shipped:** 2026-08-20, in tree after 0.10.2 (no version bump in that change)
+
+**Why it was worth a roadmap item at all.** Every one of the three was a *hardcoded schema
+fact*, which §2 forbids — and all three had already gone stale, which is the argument for the
+rule rather than a coincidence.
+
+**1. `keyed_on` named a deprecated column.** `_SUBJECTS["copynumbers.csv"]` said
+`(gene, modifier_gene, modifier_cn)`, and `modifier_cn`'s own field description has read
+*DEPRECATED since 0.6, removed at 1.0 — use modifier_copy_number* since format 0.6 landed. So the
+one surface that tells an author what an append collides on was pointing at a column upstream
+removes at 1.0, while `modifier_copy_number` — which holds the fractional dosages VCF 4.4 §7.2
+allows — went unmentioned.
+
+**The key half stays in `_SUBJECTS`, and that is the decision worth recording.** The
+subject half is the documented exception ("which table?" is about intent, and the schema cannot
+answer it); a key is structure, so the obvious move was to derive it. Nothing public derives it:
+`draft.natural_key` is **row-level** — an instance in, key *values* out, never column names — and
+returns `None` for the four binning kinds on purpose. The two registries that hold the names,
+`compiler._TABLE_DUPE_KEYS` and `MeasureBinRow._KEY_FIELDS`, are both private, one of them as
+lambdas. Removing the field was the other option and it is worse: "what will an append collide on"
+is a real question, and answering it nowhere sends an author to memory.
+
+So the string stays and the drift class is closed by a **test** instead: every token is now an
+exact model field name, and
+`test_every_documented_key_column_is_a_live_undeprecated_field` resolves each one against
+`model_fields` (accepting a property, because `StudyRow.variant_key` is derived rather than
+authored) and fails if any is missing or opens its description with `DEPRECATED`. Run against the
+old map it flags six tokens: `modifier_cn`, plus `variant`, `a`, `b` and two `trait`s that were
+loose prose rather than column names — which is why they were corrected too, since a token that
+does not resolve cannot be checked. Filed upstream as **`S48`**, asking for a public
+`key_fields(csv_name)`.
+
+**2. `list_tables().sidecars` was a literal four and the toolchain has seven.** It named
+`resolution.csv` and the three 0.5 fact tables, so the three format-0.6 ones —
+`gene_validity.csv`, `clinical_assertions.csv`, `gwas_effects.csv` — were missing from the one
+answer that claims to say what a machine writes, while `authoring_reference` in the same module
+described all of them. Now derived from `just_dna_registry.specfiles.FACT_CSVS` + `RESOLUTION_CSV`,
+minus the draftable kinds.
+
+**Why the registry's public roster and not the compiler's authoritative one.**
+`compiler._FACT_TABLES` is the tuple the compiler actually loads and carries the row model too,
+which is exactly what RM11 needed — and it is private. The registry publishes the same roster
+because it has to recognise every file the compiler reads. The cost is real and recorded in the
+code: the roster now comes from a different package than the loader it describes, so a registry
+release lagging a compiler release makes the answer lag too. Filed upstream as **`S47`**. When a
+fact table is added upstream, `sidecars` grows with no edit here; `describe_machine_table` refuses
+the new name explicitly (real, undescribable by this build) and
+`test_the_produced_roster_and_its_models_agree` fails, which is the intended sequence.
+
+**`S47` was answered and fixed in tree within the hour** (their RM112): `hints.DERIVED_TABLE_MODELS`
+and `hints.derived_model_for` are public in their checkout and retire both the map and the
+cross-package roster — in the change that raises our compiler floor, because compiler 0.6.1 is what
+we install and has neither symbol. Answered is not installable; the mitigation stays until it is.
+
+**The `licensing.csv` carve-out is derived, not special-cased.** It is a fact sidecar that a human
+writes, and it is in `draft.DRAFTABLE`; subtracting the draftable kinds removes it from the roster
+and leaves it a table kind with a template and a linter. A table upstream makes hand-authorable
+moves surface with no edit here. It is deliberately **not** listed under `sidecars` even though
+`FACT_CSVS` names it: that field means *do not hand-finish this*, and licensing is the one you do.
+
+**3. `studies.csv` was described in pre-RM47 terms.** Upstream's RM47 relaxed
+`StudyRow.REQUIRED_ANY_OF` from `({rsid}, {chrom})` to `()`: a paper grounding a bin threshold, a
+method or a population is a legal row with no variant identity at all, and `variant_key` may be
+`None`. Our subject read "the evidence for a variant", which would have an author drop exactly the
+row the relaxation was for. The subject now names the relaxation, `_COMPOSITION_NOTE` says a
+binning module may carry `studies.csv` without `variants.csv`, and a test validates such a spec
+strict-green rather than asserting the prose. `create-module/SKILL.md`'s studies section carries the
+same pre-RM47 claim and was **not** edited here — a parallel session owns `skills/`, and it is
+reported to them rather than changed underneath them.
+
+**One upstream defect surfaced by the same probe**: `scaffold.COMPANION_KINDS` still pulls
+`variants.csv` in behind `studies.csv` unconditionally, so a binning module doing the right thing is
+told it owes an empty `variants.csv`. Passed through rather than patched — it is upstream's answer —
+and filed as **`S49`**.
+
+**The resource was fixed in the same change**, since it restated the same roster in prose and read
+`_SUBJECTS` with a bare `.get`, so `sources.csv` rendered two em-dashes in the table an author reads
+to choose a kind.
+
+---
+
+## RM11 — no route answered a machine-produced table's columns
+
+**Shipped:** 2026-08-20, in tree after 0.10.2 (no version bump in that change)
+
+**The hole.** `describe_table` gates on `draft.DRAFTABLE`, which is authored kinds only, so
+`resolution.csv` and the six fact tables answered *"Unknown table kind 'resolution.csv'"* — a
+sentence that is false twice: the file is known, and it is in every enriched module. Meanwhile every
+skill on this surface says *ask the tool, never memory*. The rule therefore had a hole exactly where
+an author is looking at a produced file and deciding whether to touch it, and the only answer was
+prose in a dossier, which is the thing that drifts.
+
+**What shipped: `describe_machine_table`, essentials tier.** One name in, the live column list out —
+type, category, description, vocabulary and pick-list — for `resolution.csv`, `frequencies.csv`,
+`gene_metrics.csv`, `literature.csv`, `gene_validity.csv`, `clinical_assertions.csv` and
+`gwas_effects.csv`. Essentials by the cost rule: one table named, pure model reflection, no network.
+It carries `produced_by: SchemaVersions` like every other generated answer (RM13).
+
+**The columns come from upstream's own assembly, not a second one of ours.**
+`reference.authoring_reference()["models"][ModelName]` already describes every derived model in the
+same shape `hints.describe_table` produces for an authored kind, so the tool projects that rather
+than re-deriving type/category/vocabulary — the drift upstream's own D1-4 was. `vocabulary_notes` is
+merged per column for parity, a no-op today because no produced model carries a noted vocabulary.
+
+**A separate tool rather than a flag on `describe_table`, and this is the design decision.** The
+brief asked for the do-not-author signal to be *structural rather than advisory*. Extending
+`describe_table` would have had to answer three fields whose entire subject is authoring —
+`requirements` (what you must supply), `redundancy_bearing` and `attestation_bearing` (which cells
+you must reason out independently) — with empty values, and an empty `requirements` reads as *no
+requirements* rather than as *the question does not apply*. Worse, `redundancy_bearing` is a global
+map narrowed to a table's columns, so a produced table carrying `chrom` would have been told to
+hand-author it, which is the opposite of true.
+
+So the separation is the signal, in four places at once: a produced table has no template, no
+linter and no requirements answer; its answer model carries `hand_authored: Literal[False]` where
+`TableDescription` now carries `Literal[True]`, so the distinction is in the *schema* an agent reads
+before calling; and the four authoring routes (`describe_table`, `table_requirements`,
+`get_template`, `lint_rows`, plus `scaffold_module`) redirect by name instead of calling the file
+unknown. `refusal` states what a hand-written cell costs: the passes merge rather than overwrite, so
+it survives every later run wearing the source's authority, and no check asks where a value came
+from.
+
+**`licensing.csv` gets none of that treatment, and the exemption is derived.** It is refused by
+`describe_machine_table` — under both spellings — with a pointer back to `describe_table`, because
+it is a fact sidecar that a human writes. The rule is `in the produced roster AND in
+draft.DRAFTABLE`, computed, so nothing has to remember it.
+
+**Deliberately not built.** No write path, no template, no linter for these tables, and no
+`table_requirements` equivalent: requiredness is a question about authoring. Nothing was added to
+`hints`-style refusal wording upstream either — the redirect is ours, in `_shared.known_kind`, which
+every authoring route already funnels through.
+
+**The dossiers in `skills/` now claim the opposite in about eight places** (each fact table's
+reference says `describe_table` refuses it and quotes the old wording). A parallel session owns
+`skills/`; the list was handed to them rather than edited here.
+
+---
+
 ## RM13 — every generated schema answer names the toolchain that produced it
 
 **Shipped:** 2026-08-20, in tree after 0.10.2 (no version bump in that change)

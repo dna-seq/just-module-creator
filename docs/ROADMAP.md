@@ -75,14 +75,69 @@ Freeform, unscheduled, no commitment implied.
 
 ---
 
-## RM14 — `provenance.json` is recognised by the registry and by nothing here
+## RM16 — capture the outrank reason, and write `provenance.json` (absorbs RM14)
 
-**Severity:** low · **Status:** open · **Owner:** unassigned
+**Severity:** high · **Status:** open · **Owner:** unassigned · **Opened** 2026-08-20
 
-In `specfiles.RECOGNIZED_SPEC_FILES`, survives a storage round-trip, and no tool
-or dossier covers it. Named in `module-tables/references/LAYOUT.md` only.
+**Supersedes RM14** (*"`provenance.json` is recognised by the registry and by nothing here"*), which
+was the same gap seen from the wrong end. RM14 read as a tidiness item — a recognised file nothing
+touches. It is actually the missing half of the counterstance.
 
----
+### Why this is high rather than low
+
+§2 now says we may write and revise, and that **the agent needs a discriminator** for when editing
+against a source is right. The hazard is not vacuity, it is that **the source lags the edge**: a
+retraction, a refuting meta-analysis, a reclassification ClinVar has not absorbed. So an override may
+be the module being *more* current than the archive — and today **nothing records that judgement
+anywhere.** The value changes, the cross-check warns, and no one can tell a considered outrank from a
+careless overwrite.
+
+**Outranking cannot be formalized and should not be.** An evidence-grading pyramid exists, but which of
+a retraction, a meta-analysis and a single larger cohort outranks an archive call is a natural-language
+judgement — *"only a natlang agent can really judge here (human or ai or a tandem)"*. So the instrument
+is **a set of recommendations plus a freeform record**, not a vocabulary.
+
+### The substrate exists upstream and is unused
+
+`just_dna_format.manifest.ProvenanceItem` already carries `variant_key`, `rationale` (*"Why this
+annotation was made"*), `reviewer_verdict`, `confidence` and `human_reviewed`, under a header with
+`generator`, `model` (*"Model id, if AI-authored"*) and `agent_version`. It is explicitly AI-aware, it
+is in the registry's `RECOGNIZED_SPEC_FILES` so it survives a rebuild, and it is hashed like a log and
+kept out of `artifact.digest` — so writing one costs no identity.
+
+**Nothing reads it.** `compiler._collect_provenance` validates, copies, hashes and returns a summary;
+from the items it takes `len(doc.items)` and no field. Verified by grep across `compiler/src` and
+`enricher/src`: two hits, the import and one `model_validate_json`.
+
+### Ours to build
+
+1. **Write `provenance.json`** in upstream's existing shape. No tool here writes one today.
+2. **Capture the outrank reason at the moment of the override** — when an agent or author changes a
+   checked value against what a source says, the reason is recorded then, not reconstructed later.
+3. **Log the move** into the `logs/` subtree as well, per §2 part 2: every authoring move that goes
+   through a tool gets logged, and a move made by hand should be routed through a skill so it is.
+4. **Ship the recommendations** — the grading guidance an agent weighs a source against. Skill-side.
+
+### Not ours
+
+Whether a **check changes severity** on the presence of a record — the *"mismatch + outrank reason →
+INFO on the field rather than WARNING"* shape — is a contract question and is filed as format-tree
+**`S52`**. Do not implement a severity change here; we do not own their check. Build the capture
+regardless, because a record read by humans only is still better than a changed value with no record.
+
+### Known open question, inherited from S52
+
+`rationale` is **one string per `variant_key`** and an outrank is naturally **per field** — a row may
+outrank ClinVar on `clin_sig` while its `direction` is ordinary. Three shapes are on the table upstream
+(a per-field map, a `field` on the item, or accepting row-level bluntness) and we asked them to pick,
+since it is their document. **Do not design our writer around a guess** — write what today's schema
+allows, and keep the capture's internal representation per-field so it can be emitted either way.
+
+### Done when
+
+A tool writes `provenance.json`; an override through any tool of ours captures its reason and logs the
+move; the skills carry the grading recommendations; and `S52`'s answer decides whether a severity
+change follows.
 
 ## RM15 — we absorbed the format layer's philosophy wholesale, and it is load-bearing in 19 files
 
