@@ -8,6 +8,7 @@ across the MCP boundary field-for-field instead of flattening it.
 
 from __future__ import annotations
 
+from collections.abc import Container
 from importlib import metadata
 from pathlib import Path
 from typing import Any
@@ -156,16 +157,30 @@ def jsonable(value: Any) -> Any:
     return value
 
 
-def known_kind(csv_name: str, valid: Any) -> str:
-    """Normalize and check a table-kind argument, with a usable error."""
+def known_kind(csv_name: str, valid: Any, machine_produced: Container[str] = ()) -> str:
+    """Normalize and check a table-kind argument, with a usable error.
+
+    ``machine_produced`` is the roster of names that exist in a spec directory but are
+    written by a pass rather than by a person. Passing it turns *"Unknown table kind
+    'resolution.csv'"* — which was false, and sent a reader looking for a typo — into a
+    pointer at the route that does answer. Every caller of this function is an authoring
+    route, so the redirect is the same wherever it fires: the file is real, it is not
+    yours to write, and its columns are answered elsewhere.
+    """
     name = csv_name.strip()
     if not name.endswith(".csv"):
         name = f"{name}.csv"
-    if name not in valid:
+    if name in valid:
+        return name
+    if name in machine_produced:
         raise ToolError(
-            f"Unknown table kind {csv_name!r}. Authorable kinds: {', '.join(sorted(valid))}."
+            f"{name} is a machine-produced table, not an authored one: a pass writes it and the "
+            f"compiler fact-hashes it, so nothing here templates it, lints it or scaffolds it. "
+            f"Call describe_machine_table({name!r}) for its columns — it is yours to read."
         )
-    return name
+    raise ToolError(
+        f"Unknown table kind {csv_name!r}. Authorable kinds: {', '.join(sorted(valid))}."
+    )
 
 
 def schema_versions() -> SchemaVersions:

@@ -22,6 +22,10 @@ from just_module_creator.settings import Settings
 ESSENTIAL_TOOLS = {
     "list_tables",
     "describe_table",
+    # The read-only half of the same rule: an author meets `resolution.csv` and the
+    # fact sidecars in every enriched module, and "ask the tool, never memory" has to
+    # hold for a file they read as much as for one they write (RM11).
+    "describe_machine_table",
     "table_requirements",
     "get_template",
     "scaffold_module",
@@ -49,6 +53,14 @@ EXTENDED_ONLY = {
     "draft_from_clinpgx",
     "enrich_facts",
     "enrich_literature_pass",
+    # `1 + 2N` requests for a variant with N published associations, measured at 382
+    # for one real module: sized by how much has been published, not by what you named.
+    "enrich_gwas_effects",
+    # `refresh_sidecar` runs whichever pass owns the sidecar, up to and including the
+    # GWAS one, so essentials would reach an extended budget by another door — the
+    # rationale its author states in `server.py`'s module docstring, transcribed here
+    # rather than decided here.
+    "refresh_sidecar",
 }
 
 

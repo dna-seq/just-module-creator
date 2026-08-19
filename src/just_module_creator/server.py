@@ -15,6 +15,10 @@ The hybrid registration pattern lives in ``build_server``:
   neither can sit behind a mode flag.
 * ``register_extended``   — ONLY when mode == "extended" (registered on start).
 * ``register_extended_passes`` — extended. PGx drafting and the bulk fact passes.
+* ``register_refresh``    — extended. ``refresh_sidecar``: capture, delete,
+  re-derive, reapply what is provably the author's, report the rest. Extended
+  because it runs whichever pass owns the sidecar, up to and including the
+  GWAS one, so essentials would reach an extended budget by another door.
 
 The server NEVER raises at startup for a missing token (see auth.py): authoring
 a module needs no registry account at all.
@@ -38,6 +42,7 @@ from just_module_creator.tools._shared import schema_versions
 from just_module_creator.tools.advanced import register_extended
 from just_module_creator.tools.authoring import register_essentials
 from just_module_creator.tools.passes import register_extended_passes, register_passes
+from just_module_creator.tools.refresh import register_refresh
 from just_module_creator.tools.registry import register_registry
 from just_module_creator.tools.research import register_research
 
@@ -64,7 +69,10 @@ Three rules this server enforces rather than merely documents:
 
 1. Ask the tool, never memory. Every column list, vocabulary and requirement is
    generated from the live pydantic models, so describe_table /
-   table_requirements cannot drift from what the compiler accepts.
+   table_requirements cannot drift from what the compiler accepts. That holds for
+   the files you only READ too: describe_machine_table answers the columns of
+   resolution.csv and the fact sidecars, and says why they are not yours to
+   finish by hand.
 2. Report, never repair. Lookups show you a value and refuse to write it into an
    authored cell — a later check compares your independent value against that
    same source, so filling it from the source makes the check vacuous. Those
@@ -192,6 +200,7 @@ def build_server(mode: Mode | None = None, settings: Settings | None = None) -> 
     if resolved_mode == "extended":
         register_extended(mcp, settings, services)
         register_extended_passes(mcp, settings, services)
+        register_refresh(mcp, settings, services)
 
     log.info(
         "Server built (mode=%s, offline=%s, registry=%s, polygon=%s)",

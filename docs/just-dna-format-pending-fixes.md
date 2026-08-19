@@ -740,3 +740,162 @@ since the question it answers is one a reader has at that point).
 
 **Not guarded by a test.** There is nothing of ours to assert: the defect is in prose we do not
 ship, and the behaviour we depend on is already what we test against.
+
+## F38 — `--no-study-facts` is a permanent choice on `gwas_effects.csv`, and nothing upstream says so
+
+**Status —** filed 2026-08-20 as format-tree `S50`, against enricher 0.6.4 (installed). Open. **A
+documentation defect only; the code is the merge rule working correctly.**
+
+`ENRICHER.md:2797` and the CLI's own `--no-study-facts` help both describe the flag as "keeping the
+effects and losing the linked metadata", which reads as a per-run trade. It is not one: `_merge_key`
+is `("id", association_id)` alone and `enrich_gwas` skips any association already in the file before
+`_build_row` runs, so a row written without study facts keeps `pmid`, `study_accession`, `ancestry`,
+`trait` and `trait_efo_id` null permanently. A later run with study facts on is a no-op for exactly
+those rows; only deleting `gwas_effects.csv` recovers them.
+
+**Why it reached us.** RM12 wrapped the pass as `enrich_gwas_effects`, and `study_facts` is an
+argument an author sets without being able to read `_merge_key`. The cost asymmetry makes the cheap
+run the likely first choice — the 382-request measurement is loud and is what points an author at
+the flag.
+
+**Mitigation.** `enrich_gwas_effects` warns whenever `study_facts` is off, naming the five columns
+and saying a later run will skip rather than backfill, and the `study_facts` field on `GwasReport`
+carries the same sentence. `tests/test_passes.py::test_study_facts_off_says_the_nulls_it_leaves_are_permanent`
+asserts the three-step sequence — thin run, re-run with study facts (still null), delete and re-derive
+(populated) — against the real pass with an injected transport.
+
+**Closes when** the clause lands in `ENRICHER.md` and the CLI help. The warning stays regardless: it
+is in front of an author at the moment they pass the argument, which upstream prose is not.
+
+---
+
+## F38 — the machine-produced fact tables have no public `(csv → row model)` enumeration
+
+**Status —** filed 2026-08-20 as format-tree `S47`; **accepted and fixed in tree the same day**
+as their `RM112`. `hints.DERIVED_TABLE_MODELS` + `hints.derived_model_for(csv_name)` are public in
+their checkout — keyed on the filename, derived from `_FACT_TABLES`, both licence spellings
+answering, with a set-equality guard of their own. **Not released**: compiler 0.6.1 is what we
+install and has neither symbol (`hasattr(hints, "derived_model_for") is False`), so this is upstream
+state 2 of 3 and the mitigation stays. They also declined to widen `describe_table` — deliberately,
+since a caller relies on its refusal — which leaves our separate read-only route as the shape they
+endorsed.
+
+`compiler._FACT_TABLES` is the authoritative tuple — `(csv, parquet, model)` for the seven fact
+tables — and it is **private**. `hints.model_for` / `draft.DRAFTABLE` cover authored kinds only.
+`specfiles.FACT_CSVS` + `RESOLUTION_CSV` (registry) are public and carry **names only**.
+`ARTIFACT_PARQUETS − LEAD_PARQUETS` was tried and does not isolate them: `annotations.parquet` and
+`studies.parquet` are in neither set. `reference.authoring_reference()["models"]` describes every
+derived model but is keyed by **model name**, and what a tool caller holds is a filename.
+
+**Why it reached us.** RM11 makes a sidecar's columns answerable, which needs the model behind the
+name.
+
+**Mitigation.** The roster is derived from the registry's public pair; the `csv → model` half is a
+seven-entry map in `tools/authoring.py::_PRODUCED_MODELS`, and
+`tests/test_authoring.py::test_the_produced_roster_and_its_models_agree` pins its keys to the
+derived roster so an eighth fact table fails the suite rather than becoming silently
+undescribable. `describe_machine_table` refuses such a name explicitly — real, and undescribable by
+this build — instead of reporting it as unknown.
+
+**Cost of the mitigation, stated because it is real.** The roster now comes from a different package
+than the loader it describes, so a registry release lagging a compiler release makes our answer lag
+too. The test is the guard; there is no version pin that would help.
+
+**Closes when** `_FACT_TABLES` is public, or a `model_for` that covers the machine-produced names
+ships and is installed.
+
+---
+
+## F39 — a table kind's natural-key *columns* are unobtainable, only its key *values*
+
+**Status —** filed 2026-08-20 as format-tree `S48`, against format 0.6.1 / compiler 0.6.1. Open, and
+**being fixed in their tree as this was written** — uncommitted at the time of the note, so no
+`**Status —**` reply exists yet: `hints.key_fields(csv_name) -> TableKey | None` carrying `columns`,
+`rule` (`"equality"` / `"overlap"`, which is the binning distinction) and `stamped`, resolving through
+`model_for` then `derived_model_for` so one route answers both halves, and returning the **authored**
+spelling of a column rather than the grouper's property — i.e. `modifier_copy_number`, the same
+correction made here. Nothing of it is installed (compiler 0.6.1).
+
+`draft.natural_key(row)` is public and row-level: an instance in, a tuple of *values* out, so it
+cannot say which columns they came from, and it returns `None` for the four binning kinds on purpose
+(their rule is overlap, not equality). `compiler._TABLE_DUPE_KEYS` holds the names as **lambdas** and
+is private; `MeasureBinRow._KEY_FIELDS` holds them as strings and is private, and names the
+`effective_modifier_copy_number` *property* rather than the authorable column.
+
+**Why it reached us, and it is our defect first.** `list_tables().keyed_on` is a hand-kept string —
+the only structural claim on this surface that is not generated — and it said
+`(gene, modifier_gene, modifier_cn)` for all of 0.6, after upstream deprecated that column. An author
+was being told to key on a column that is removed at format 1.0.
+
+**Mitigation.** Every token in `_SUBJECTS` is now an exact model field name, and
+`tests/test_authoring.py::test_every_documented_key_column_is_a_live_undeprecated_field` resolves
+each against `model_fields` — accepting a property, since `StudyRow.variant_key` is derived — and
+fails on one whose description opens with `DEPRECATED`. Run against the pre-fix map it flags six
+tokens, `modifier_cn` among them; that was watched, not assumed.
+
+**Closes when** a public `key_fields(csv_name)` (or the key on `describe_table`'s own answer, which
+its docstring already promises) ships and is installed. Until then the guard stays whatever upstream
+does, because it costs one test and catches the whole class.
+
+---
+
+## F40 — `COMPANION_KINDS` pulls `variants.csv` in behind `studies.csv`, which RM47 made wrong
+
+**Status —** filed 2026-08-20 as format-tree `S49`, against compiler 0.6.1. Open. **Upstream's
+constant; we pass it through and patch nothing.**
+
+`scaffold.COMPANION_KINDS["studies.csv"] == ("variants.csv",)`, justified in its own comment by
+"`studies.csv` alone fails with *module has no recognized table*" — true when it is literally alone,
+not when it sits beside a binning table. Probed: `module_spec.yaml` + `copynumbers.csv` (two SMN1
+bins, each citing PMID 9382095) + `studies.csv` (one row, no variant identity) validates
+**strict-green**, which is the shape RM47 exists to allow. So `scaffold_module(kinds=["copynumbers.csv",
+"studies.csv"])` reports that `variants.csv` is owed, and upstream's scaffold would create a stub for
+it — inviting an empty table into a module whose author was doing the right thing, against our own
+composition rule.
+
+**Mitigation.** None in the data: we report `COMPANION_KINDS` verbatim, because restating it is the
+drift we are trying to remove. What changed is the composition note our tools return, which now says
+a binning module may carry `studies.csv` without `variants.csv` —
+`tests/test_authoring.py::test_a_binning_module_may_carry_studies_without_variants` validates such a
+spec rather than asserting the sentence.
+
+**Closes when** the pull becomes conditional on no other recognised table being requested.
+
+---
+
+## F41 — a derived sidecar's *merge key* lives inside its pass, so nothing can reproduce it
+
+**Status —** filed 2026-08-20 as format-tree `S51`, against format 0.6.1 / compiler 0.6.1 /
+enricher 0.6.4. Open. This is `F39` asked of the machine-written tables, where the answer is one step
+further away: an authored kind's key at least *exists* as a lambda in `compiler._TABLE_DUPE_KEYS`; a
+fact sidecar's exists only as a dict-key expression in the body of the pass that writes it.
+
+`enrich_frequencies` builds `existing: dict[tuple[str, str], FrequencyRow]` keyed
+`(row.variant_key, row.population)`. `enrich` builds `existing[variant_key] -> list[ResolutionRow]`,
+so a subject there holds several rows — one per locus of a one-to-many rsID. `gwas_effects.csv` keys
+on `association_id`, which we know only because `S50` states it in prose while explaining something
+else. `draft.natural_key` returns `None` for all of them (they are not authored kinds).
+
+**Why it reached us.** `refresh_sidecar` classifies every row of a sidecar it re-derived against the
+copy it captured, and the whole classification turns on which columns decide that two rows are the
+same row. The *fact* half needed nothing: `integrity.fact_signature` and the eight public
+`<table>_signature` functions and `*_FACT_FIELDS` tuples are exactly right and are used as-is. The
+subject half had no public route at all.
+
+**Mitigation.** The subject is derived as `[f for f in FACT_FIELDS if
+model.model_fields[f].is_required()]` — public pydantic over a public tuple, so it cannot silently
+drift with a schema change — and the tuple it produced is reported on **every call** as
+`subject_fields`, so a caller reads what "same subject" meant rather than assuming it. Measured
+against the four keys above it is exact on five of the eight tables, harmlessly wide on two
+(`dataset` is a constant), and **coarse on `gene_validity.csv` and `clinical_assertions.csv`**, where
+it drops `disease_id` / `variation_id`. Coarse is the safe direction here — a coarse subject reports
+more rows as conflicting and therefore repairs fewer — but it means a gene's second real disease
+assertion is demoted into an ambiguity the author adjudicates by hand, on exactly the table where a
+gene legitimately carries several rows. `tests/test_refresh.py::test_the_subject_key_is_derived_from_the_live_models`
+recomputes the derivation from the models rather than asserting a typed tuple.
+
+**Closes when** a public `key_fields(csv_name)` (whatever shape `F39`/`S48` settles on) answers for
+`resolution.csv` and the seven fact CSVs as well as for the authored kinds, and is installed. The tier
+that ought to own it is the format, beside each table's `*_FACT_FIELDS`, so each pass keys its
+`existing` dict off the published tuple instead of restating it — which is the half that makes the two
+unable to disagree.

@@ -282,6 +282,19 @@ design depends on.
   already writes (scaffold, enrich, compile out-dir), always through
   `_shared.resolve_dir` so `JMC_WORKSPACE` containment holds, and never overwrite
   an authored file.
+- **Never delete a derived sidecar without a verified capture, and never put the
+  capture in the spec directory.** Re-deriving one requires deleting it — every
+  sidecar is merge-not-clobber — and the delete discards hand-curated rows,
+  `resolution.csv`'s `source="manual"` above all. So `refresh_sidecar` copies the
+  file out, **reads the copy back and hashes it**, and only then unlinks; a
+  capture that did not verify means nothing is touched. The copy goes to a
+  resolved cache/workspace path, never beside the spec: an invented file there is
+  not in `specfiles.RECOGNIZED_SPEC_FILES` and a server-side rebuild drops it
+  without saying so, which is how `licensing.csv` was lost before registry 0.16.2.
+  Then **never classify against a partial re-derivation** — an unreachable source,
+  a pass that did nothing, or an empty fresh table restores the captured bytes,
+  because a table that was never filled reports every real row as one the source
+  withdrew.
 - **Never let a per-call argument loosen the offline ceiling.** `JMC_OFFLINE`
   combines with a per-call `offline` by **OR**, via `_shared.offline_for`. Never
   read the two separately.

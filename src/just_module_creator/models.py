@@ -15,7 +15,7 @@ than the upstream models themselves. Two reasons:
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -195,7 +195,12 @@ class TableKind(BaseModel):
     csv: str = Field(description="File name inside the spec directory.")
     model: str = Field(description="Pydantic model backing the rows.")
     subject: str = Field(description="What one row is about — how to choose this kind.")
-    keyed_on: str = Field(description="Columns forming the row's uniqueness key.")
+    keyed_on: str = Field(
+        description="The columns that decide whether two rows are the same row — what an append "
+        "collides on. On a binning kind (a measure with thresholds) it is the GROUP key instead: "
+        "equality is not the duplicate rule there, overlapping ranges are, so two bins can "
+        "conflict while sharing no key and two identical keys are not a duplicate."
+    )
     companions: list[str] = Field(
         default_factory=list,
         description="Kinds that must be present alongside this one (studies.csv <-> variants.csv).",
@@ -218,9 +223,13 @@ class TableList(BaseModel):
 
     tables: list[TableKind] = Field(description="Hand-authored table kinds.")
     sidecars: list[str] = Field(
-        description="Enricher-produced files. Do not hand-author. `licensing.csv` (formerly "
-        "`sources.csv`) used to carry an exception here and is now a table kind in its own "
-        "right, listed above."
+        description="Machine-produced files: an enricher pass writes each one and the compiler "
+        "fact-hashes it. Read them, never hand-finish them — `describe_machine_table` answers the "
+        "columns of any name on this list. Derived from the installed toolchain rather than "
+        "listed, so it grows when upstream adds a fact table. `licensing.csv` (formerly "
+        "`sources.csv`) is "
+        "deliberately NOT here: it is the one fact sidecar a human writes, so it is a table kind "
+        "above, with a template and a linter like any other."
     )
     note: str = Field(description="The composition rule in one line.")
     produced_by: SchemaVersions = Field(description=_PRODUCED_BY_WHY)
@@ -251,6 +260,13 @@ class TableDescription(BaseModel):
 
     csv: str = Field(description="The table kind.")
     model: str = Field(description="Pydantic model backing the rows.")
+    hand_authored: Literal[True] = Field(
+        default=True,
+        description="Always true on this answer, and it is here so the distinction is readable "
+        "without prose: `describe_table` answers only about tables a human writes. A "
+        "machine-produced table is answered by `describe_machine_table`, whose answer carries "
+        "this key as `false`.",
+    )
     columns: list[dict] = Field(description="Per-column type, category and vocabulary.")
     requirements: dict = Field(description="Same content as `table_requirements`.")
     redundancy_bearing: dict[str, str] = Field(
@@ -267,6 +283,41 @@ class TableDescription(BaseModel):
             "passage in this paper' and no lookup can make that true. These also appear in "
             "`redundancy_bearing`; this names the sharper reason to refuse on."
         ),
+    )
+    produced_by: SchemaVersions = Field(description=_PRODUCED_BY_WHY)
+
+
+class MachineTableDescription(BaseModel):
+    """Full generated description of a MACHINE-produced table — read it, never write it.
+
+    A separate model from ``TableDescription`` rather than a flag on it, because the
+    two answers are different questions. ``TableDescription`` carries
+    ``requirements`` (what an author must supply), ``redundancy_bearing`` and
+    ``attestation_bearing`` (which cells an author must reason out independently) —
+    three fields whose whole subject is authoring, and every one of them would have
+    to be filled with an empty value here. An empty ``requirements`` reads as *no
+    requirements*, which is a different claim from *the question does not apply*.
+
+    So the fields that only make sense for an author are absent, and what is left is
+    the columns plus a refusal.
+    """
+
+    csv: str = Field(description="The sidecar's file name inside the spec directory.")
+    model: str = Field(description="Pydantic model backing the rows.")
+    hand_authored: Literal[False] = Field(
+        default=False,
+        description="Always false. This table is written by a machine — an enricher pass — and "
+        "fact-hashed by the compiler. Nothing on this surface offers a template for it or lints "
+        "rows for it, and that is deliberate rather than missing.",
+    )
+    columns: list[dict] = Field(
+        description="Per-column type, category, description and vocabulary, generated from the "
+        "live model. Read these to understand a sidecar the passes produced — several of these "
+        "facts exist nowhere else in the module."
+    )
+    refusal: str = Field(
+        description="Why this table is not yours to finish by hand, and what a hand-written cell "
+        "costs. The columns above are for reading."
     )
     produced_by: SchemaVersions = Field(description=_PRODUCED_BY_WHY)
 
@@ -1123,3 +1174,398 @@ class FactPassReport(BaseModel):
     )
     warnings: list[str] = Field(default_factory=list, description="Advisory notes.")
     note: str = Field(default="", description="How to regenerate.")
+
+
+class GwasReport(BaseModel):
+    """Outcome of the GWAS Catalog pass — published effect sizes in `gwas_effects.csv`.
+
+    One row per published **association**, not per variant: a well-studied
+    variant carries dozens across different traits and papers. Nothing here is
+    an authored cell, and `weight` is not among the columns it fills.
+    """
+
+    success: bool = Field(description="Whether the pass completed.")
+    spec_dir: str = Field(description="The spec directory.")
+    mode: str = Field(
+        description=(
+            "strict | best_effort. Under strict this pass escalates on the CATALOG's shape — "
+            "`unusable` or `p_value_underflows` — never on `missing`, and never on anything "
+            "you authored. A strict failure here is not a verdict on the module."
+        )
+    )
+    offline: bool = Field(description="Whether the offline ceiling was in force.")
+    rows: int | None = Field(
+        default=None,
+        description=(
+            "Rows in gwas_effects.csv after the merge, existing ones included. **`null` means "
+            "nothing counted them**, never zero rows: the pass failed, or it was a no-op offline "
+            "and any existing file kept whatever it already held."
+        ),
+    )
+    covered: list[str] = Field(
+        default_factory=list, description="rsIDs the Catalog served at least one association for."
+    )
+    missing: list[str] = Field(
+        default_factory=list,
+        description=(
+            "rsIDs the Catalog holds nothing for. **Not a shortfall** — no genome-wide "
+            "association has been published for them, which is itself a fact about the variant, "
+            "and each one is written as a `not_found` row rather than left silent. True of most "
+            "clinically authored variants, which is why strict does not escalate on it."
+        ),
+    )
+    requests_made: int | None = Field(
+        default=None,
+        description=(
+            "Requests actually issued against EBI. The budget is `1 + 2N` per variant with N "
+            "associations — measured at 382 for one real module — because pmid, trait, ancestry "
+            "and study accession all sit behind `_links`. This is somebody else's rate limit. "
+            "`null` when the pass failed before anything was counted."
+        ),
+    )
+    requests_saved: int | None = Field(
+        default=None,
+        description=(
+            "Requests a cache hit avoided. Often 0 — associations rarely share studies — and "
+            "`null` when the pass failed before anything was counted."
+        ),
+    )
+    p_value_underflows: int | None = Field(
+        default=None,
+        description=(
+            "Associations whose p-value the Catalog reports below float64's range (it publishes "
+            "0.0), so the queryable number is withheld and the verbatim `p_value` string keeps "
+            "what the source said. The rows are all present. Not an authoring mistake — strict "
+            "escalates on it because the artifact holds less than the Catalog published. `null` "
+            "means the pass failed before anything was counted — read `warnings`, which carries "
+            "upstream's own message and its counts."
+        ),
+    )
+    unusable: int | None = Field(
+        default=None,
+        description=(
+            "Associations the Catalog served without an id this pass can key on, so they are in "
+            "no row. Counted rather than logged, and the other reason strict escalates. `null` "
+            "means nothing counted them, not that there were none."
+        ),
+    )
+    associations_without_effect_allele: int = Field(
+        default=0,
+        description=(
+            "Of the associations recorded (`not_found` rows excluded), how many name no effect "
+            "allele: the Catalog wrote `rs…-?`, meaning the study never established which allele "
+            "carries the effect. Real evidence that has NO direction applicable to a genotype. "
+            "Measured at 33 of 186 on one real module — read it before treating any of these "
+            "effects as a weight."
+        ),
+    )
+    effect_units: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Every distinct `effect_unit` in the table, sorted. Free text, kept verbatim "
+            "including the Catalog's uninformative 'unit'. More than one means these betas are "
+            "on different and possibly uninterpretable scales, so they do not combine — 12 "
+            "distinct values on one real variant. This is why `weight` stays yours."
+        ),
+    )
+    study_facts: bool = Field(
+        default=True,
+        description=(
+            "Whether each association's study and trait links were followed. False drops pmid, "
+            "trait, trait_efo_id, ancestry and study_accession to null for two thirds of the "
+            "request budget — and the merge is keyed on `association_id`, so a later run WILL "
+            "NOT backfill them. Delete the file to re-derive with study facts."
+        ),
+    )
+    declared_use: str = Field(
+        default="unstated",
+        description=(
+            "What was recorded on the licence row. It gates nothing here: EMBL-EBI names no "
+            "licence, so `commercial_use` is written UNKNOWN rather than permitted, and the "
+            "terms of the thousands of publications the Catalog summarizes are not settled by it."
+        ),
+    )
+    skipped_offline: bool = Field(
+        default=False,
+        description=(
+            "True means the pass did NOTHING. This reads the REST API and has no snapshot to "
+            "fall back on, so offline is a no-op rather than a failure; any existing "
+            "gwas_effects.csv is unchanged."
+        ),
+    )
+    warnings: list[str] = Field(
+        default_factory=list, description="Advisory notes, aggregated by reason with a count."
+    )
+    note: str = Field(default="", description="How to regenerate, and what this table is not.")
+
+
+# --------------------------------------------------------------------------- #
+# Refreshing a derived sidecar (refresh.py)
+# --------------------------------------------------------------------------- #
+class SidecarRow(BaseModel):
+    """One row of a derived sidecar, as it was read, with what is known about it.
+
+    Cells travel as the **text they were**, never re-serialized from the parsed
+    model: a float written `1.00` stays `1.00`, so nothing in a report or a
+    reapply can silently reformat a value the author or the pass wrote.
+    """
+
+    subject: str = Field(
+        description=(
+            "The row's subject key — canonical JSON of the columns that decide whether two rows "
+            "are the SAME row. Which columns those are is reported once per call in "
+            "`subject_fields`; read it before reading this."
+        )
+    )
+    fact_key: str = Field(
+        description=(
+            "Canonical JSON of the row's FACT columns with nulls dropped — the same normalization "
+            "`integrity.fact_signature` hashes. Two rows with equal fact keys are the same fact, "
+            "whoever wrote them: provenance (`source`, `status`, `fetched_at`) is outside every "
+            "fact set except `sources.csv`'s, where `source` is the row's own subject."
+        )
+    )
+    source: str | None = Field(
+        default=None,
+        description=(
+            "The row's `source` cell, verbatim. `null` means the column was empty, which is not "
+            "the same as a source named `''`."
+        ),
+    )
+    source_proves_authored: bool | None = Field(
+        default=None,
+        description=(
+            "Whether `source` is a value NO row of the freshly derived table uses — which proves "
+            "the row was not written by this pass, so a human put it there. `false` means the "
+            "value is one the fetcher also writes, which proves nothing either way. **`null` "
+            "means the question could not be put** (the re-derived table named no sources at all), "
+            "and a question that could not be put is not a question answered `false`."
+        ),
+    )
+    cells: dict[str, str] = Field(
+        default_factory=dict,
+        description="The row's cells as text, so it can be read and, if wanted, pasted back.",
+    )
+
+
+class SidecarConflict(BaseModel):
+    """A subject present in both copies whose facts differ. **Not resolvable here.**"""
+
+    subject: str = Field(description="The subject both sides describe.")
+    captured: list[SidecarRow] = Field(
+        description="The rows the captured copy held for this subject."
+    )
+    rederived: list[SidecarRow] = Field(
+        description="The rows the fresh derivation holds for this subject."
+    )
+    differing_fact_fields: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Fact columns whose value set differs between the two sides — where to look first. "
+            "Sorted, so two runs of the same conflict read the same."
+        ),
+    )
+    unresolvable: str = Field(
+        description=(
+            "Why this is left alone. Two data points cannot separate an author's cell edit from an "
+            "upstream revision, so nothing here guesses, prefers a side or merges. Read the two "
+            "lists and decide; the captured copy is on disk at `capture` for as long as you "
+            "keep it."
+        )
+    )
+
+
+class SidecarRefreshReport(BaseModel):
+    """What a non-destructive re-derivation of one sidecar found, kept and refused.
+
+    Three row buckets are three fields on purpose: `only_in_capture`,
+    `only_in_rederived` and `conflicts` answer three different questions, and one
+    list with a type tag would let a reader collapse them into "things that
+    changed" — which is exactly the reading that turns an unresolvable conflict
+    into an assumed upstream update.
+    """
+
+    success: bool = Field(
+        description=(
+            "Whether the cycle completed: captured, re-derived, classified, reapplied. `false` "
+            "leaves the sidecar exactly as it was — see `restored` and `refused`."
+        )
+    )
+    spec_dir: str = Field(description="The spec directory.")
+    sidecar: str = Field(description="Which sidecar was refreshed.")
+    read_from: str | None = Field(
+        default=None,
+        description=(
+            "Where the sidecar actually was. A module may keep it at the spec root or under "
+            "`derived/`, and the file is put back where it came from — a refresh must not migrate "
+            "a module's layout as a side effect."
+        ),
+    )
+    capture: str | None = Field(
+        default=None,
+        description=(
+            "The durable copy of the sidecar as it was BEFORE anything was deleted, outside the "
+            "spec directory. It is crash insurance and an audit trail, not part of the module: an "
+            "invented file inside the spec directory is not in the registry's recognised set and "
+            "would be dropped by a server-side rebuild. Nothing here deletes it — it is yours to "
+            "keep or remove."
+        ),
+    )
+    capture_verified: bool = Field(
+        default=False,
+        description=(
+            "Whether the capture was read back and its bytes hashed equal to the original BEFORE "
+            "the delete. `false` means nothing was deleted: a sidecar with no verified capture is "
+            "not deleted, ever."
+        ),
+    )
+    resumed: bool = Field(
+        default=False,
+        description=(
+            "True when a previous run of this tool died between the delete and the reapply and "
+            "this run continued from the capture it left. The capture is never overwritten while "
+            "it is unfinished, which is what makes a re-run safe rather than a second loss."
+        ),
+    )
+    restored: bool = Field(
+        default=False,
+        description=(
+            "True when the captured bytes were put back verbatim because the re-derivation could "
+            "not be trusted — the source was unreachable, a pass did nothing, or it produced an "
+            "empty table. Classifying against a partial derivation would report every real row as "
+            "one upstream withdrew."
+        ),
+    )
+    refused: str | None = Field(
+        default=None,
+        description=(
+            "Why the cycle stopped, in full. Present whenever `success` is false. A refusal here "
+            "is the tool declining to delete or to classify on evidence it does not have."
+        ),
+    )
+    offline: bool = Field(
+        default=False,
+        description=(
+            "The effective offline ceiling (`JMC_OFFLINE` OR the argument). A refresh needs the "
+            "source: offline it would compare the file against a local cache, which answers a "
+            "different question, so it refuses rather than producing an empty re-derivation that "
+            "reads like 'upstream has nothing'."
+        ),
+    )
+    passes_run: list[str] = Field(
+        default_factory=list,
+        description=(
+            "The upstream pass functions that re-derived the table. More than one where more than "
+            "one writes it: `gene_metrics.csv` is written by the constraint pass AND by the dosage "
+            "pass, so refreshing it without both would re-derive half a table and report the other "
+            "half as withdrawn."
+        ),
+    )
+    declared_use_applied_to: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Which of the passes consumed `use`. The rest read no licence-bearing source, so the "
+            "argument is irrelevant to them — named rather than left looking universal."
+        ),
+    )
+    fact_fields: list[str] = Field(
+        default_factory=list,
+        description=(
+            "The table's fact columns, from the format's own `*_FACT_FIELDS` tuple. Row identity "
+            "here is derived from this and never from a written-down column list."
+        ),
+    )
+    subject_fields: list[str] = Field(
+        default_factory=list,
+        description=(
+            "The columns used as the row's subject: the fact columns the row model marks REQUIRED. "
+            "Derived from the live models, and reported because it is an approximation — each "
+            "pass's own merge key is a local expression inside the pass and is published nowhere "
+            "(filed upstream). Where it is coarser than the real key it reports MORE rows as "
+            "conflicting, which is the direction that repairs less."
+        ),
+    )
+    fact_signature_before: str | None = Field(
+        default=None,
+        description="The table's fact signature as captured, from `integrity.fact_signature`.",
+    )
+    fact_signature_after: str | None = Field(
+        default=None, description="The fact signature of the file this run leaves behind."
+    )
+    signature_moved: bool | None = Field(
+        default=None,
+        description=(
+            "Whether the fact signature changed. **This is the canary**: a moved signature with no "
+            "reapplied row and no conflict means the upstream source changed its answer, which is "
+            "the only drift detector this format has. `null` means one of the two could not be "
+            "computed, and is never a 'no'."
+        ),
+    )
+    rows_before: int | None = Field(
+        default=None, description="Rows in the captured copy. `null` when there was no copy."
+    )
+    rows_rederived: int | None = Field(
+        default=None, description="Rows the pass wrote before anything was put back."
+    )
+    rows_after: int | None = Field(
+        default=None, description="Rows in the file this run leaves behind."
+    )
+    only_in_capture: list[SidecarRow] = Field(
+        default_factory=list,
+        description=(
+            "Rows whose SUBJECT the fresh derivation does not mention at all. Either the author "
+            "added them or the source withdrew them, and `source_proves_authored` is what "
+            "separates the two. The proven ones are in `reapplied`."
+        ),
+    )
+    only_in_rederived: list[SidecarRow] = Field(
+        default_factory=list,
+        description="Rows on subjects the captured copy did not have. The source added these.",
+    )
+    conflicts: list[SidecarConflict] = Field(
+        default_factory=list,
+        description=(
+            "Subjects both copies describe with differing facts. **Nothing here is resolved, "
+            "merged or preferred** — see each entry's `unresolvable`. A `source_proves_authored` "
+            "row inside one narrows what happened and is still not acted on: proving who wrote a "
+            "row does not settle which of two answers about the world is right."
+        ),
+    )
+    reapplied: list[SidecarRow] = Field(
+        default_factory=list,
+        description=(
+            "Rows put back into the refreshed file: exactly the `only_in_capture` rows whose "
+            "`source` proves a human wrote them. Their original cells are appended verbatim, so no "
+            "value is re-rendered. Everything else was reported and left out."
+        ),
+    )
+    withheld: list[SidecarRow] = Field(
+        default_factory=list,
+        description=(
+            "`only_in_capture` rows NOT put back, because nothing proves who wrote them: the "
+            "source may simply have withdrawn the row. They are in the capture if you want them."
+        ),
+    )
+    listing_truncated: bool = Field(
+        default=False,
+        description=(
+            "True when a row list was capped for size. The COUNTS above are always complete; only "
+            "the listings are cut, and `warnings` says by how much."
+        ),
+    )
+    findings: list[LintFinding] = Field(
+        default_factory=list,
+        description=(
+            "Upstream findings, `level` preserved verbatim — a parse error in either copy arrives "
+            "as `error` and is why the cycle refused."
+        ),
+    )
+    warnings: list[str] = Field(
+        default_factory=list, description="Advisory notes, aggregated by reason with a count."
+    )
+    next_step: str = Field(default="", description="What to do with this result.")
+    note: str = Field(
+        default="",
+        description="What this tool does not decide, and what a moved signature means.",
+    )
+    produced_by: SchemaVersions = Field(description=_PRODUCED_BY_WHY)

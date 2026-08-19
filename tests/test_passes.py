@@ -8,6 +8,7 @@ and that upstream's per-row distinctions survive the MCP boundary.
 
 from __future__ import annotations
 
+import csv
 import json
 
 import pytest
@@ -534,3 +535,268 @@ async def test_an_outage_is_reported_apart_from_a_data_failure(
     assert data.failed == {"gene_metrics": "gene_metrics.csv will not parse"}
     assert data.unreachable == {}
     assert data.passes_run == []
+
+
+# ── the GWAS Catalog pass (RM12) ─────────────────────────────────────────────────────
+#
+# The payload shape is the real one the REST API returns, taken from upstream's own
+# recorded fixtures and re-keyed onto `rs4988235`, the rsID the `spec_dir` fixture
+# authors. The client is injected, so these run the real fetching-free parsing, merging
+# and writing code with no network and no sleeping — the offline ceiling still holds
+# because an injected transport is not egress.
+
+_GWAS_NAMED_ALLELE = {
+    "associationId": "13069",
+    "betaNum": 0.05,
+    "betaUnit": "umol/l",
+    "betaDirection": "increase",
+    "range": "[0.03-0.07]",
+    "riskFrequency": "0.15",
+    "pvalue": 7.0e-13,
+    "loci": [{"strongestRiskAlleles": [{"riskAlleleName": "rs4988235-A"}]}],
+    "_links": {
+        "study": {"href": "https://example.test/studies/GCST000001"},
+        "efoTraits": {"href": "https://example.test/traits/13069"},
+    },
+}
+
+#: The Catalog really writes `rs…-?` when a study never established which allele carries the
+#: effect, and `unit` when the beta's scale is not stated. Both are kept verbatim upstream.
+_GWAS_UNKNOWN_ALLELE = {
+    "associationId": "55421052",
+    "betaNum": 0.3017178,
+    "betaUnit": "unit",
+    "betaDirection": "increase",
+    "standardError": 0.0467972,
+    "riskFrequency": "NR",
+    "pvalue": 1.0e-10,
+    "loci": [{"strongestRiskAlleles": [{"riskAlleleName": "rs4988235-?"}]}],
+    "_links": {
+        "study": {"href": "https://example.test/studies/GCST000001"},
+        "efoTraits": {"href": "https://example.test/traits/55421052"},
+    },
+}
+
+#: `pvalue: 0.0` is what the Catalog publishes past float64's subnormal boundary. Six of these
+#: sit in `reference_examples/hfe_hemochromatosis`, which is why strict refuses a shipped module.
+_GWAS_UNDERFLOW = {
+    "associationId": "64192738",
+    "betaNum": 0.1253,
+    "betaUnit": "unit",
+    "betaDirection": "increase",
+    "pvalue": 0.0,
+    "loci": [{"strongestRiskAlleles": [{"riskAlleleName": "rs4988235-A"}]}],
+    "_links": {"study": {"href": "https://example.test/studies/GCST000001"}},
+}
+
+_GWAS_STUDY = {
+    "accessionId": "GCST000001",
+    "publicationInfo": {"pubmedId": 11788828},
+    "ancestries": [{"ancestralGroups": [{"ancestralGroup": "European"}]}],
+}
+
+_GWAS_TRAITS = {
+    "https://example.test/traits/13069": {
+        "_embedded": {"efoTraits": [{"trait": "Lactase persistence", "shortForm": "EFO_0004570"}]}
+    },
+    "https://example.test/traits/55421052": {
+        "_embedded": {"efoTraits": [{"trait": "Milk consumption", "shortForm": "EFO_0009999"}]}
+    },
+}
+
+
+class FakeGwasClient:
+    """Serves recorded payloads and records every call, so the budget is ground truth."""
+
+    def __init__(self, associations):
+        self.associations = list(associations)
+        self.calls: list[str] = []
+
+    def associations_for(self, rsid: str) -> list[dict]:
+        self.calls.append(f"assoc:{rsid}")
+        return list(self.associations)
+
+    def follow(self, url: str) -> dict:
+        self.calls.append(url)
+        if "studies" in url:
+            return dict(_GWAS_STUDY)
+        return dict(_GWAS_TRAITS.get(url, {}))
+
+    def close(self) -> None:
+        raise AssertionError("the pass must not close a client it did not create")
+
+
+def _inject_gwas_client(monkeypatch, client):
+    """Run the REAL `enrich_gwas` with an injected transport, passing our kwargs through.
+
+    Only the network is excluded: the strict ladder, the merge, the licence row and the CSV
+    write are all upstream's own code. Patching our module's binding rather than the
+    enricher's keeps the patch to the one call site under test.
+    """
+    from just_dna_enricher.gwas import enrich_gwas as real_enrich_gwas
+
+    from just_module_creator.tools import passes as module
+
+    def wrapper(spec_dir, **kwargs):
+        return real_enrich_gwas(spec_dir, client=client, dataset="gwas_catalog_test", **kwargs)
+
+    monkeypatch.setattr(module, "enrich_gwas", wrapper)
+
+
+async def test_a_published_effect_is_reported_and_never_becomes_a_weight(
+    monkeypatch, extended_client, spec_dir
+):
+    """The three numbers that make "this beta is not a weight" readable instead of asserted.
+
+    A single real variant carries betas on unrelated scales and a large share of the
+    Catalog's associations name no effect allele at all, so neither has a direction a
+    genotype could be matched against. The tool reports both counts and writes nothing
+    into `weight` — there is no argument on this tool that could.
+    """
+    client = FakeGwasClient([_GWAS_NAMED_ALLELE, _GWAS_UNKNOWN_ALLELE])
+    _inject_gwas_client(monkeypatch, client)
+
+    result = await extended_client.call_tool(
+        "enrich_gwas_effects", {"spec_dir": str(spec_dir), "use": "unstated"}
+    )
+    data = result.data
+
+    assert data.success is True
+    assert data.covered == ["rs4988235"]
+    assert data.missing == []
+    assert data.rows == 2
+    # One of the two is `rs4988235-?`: real evidence with no applicable direction.
+    assert data.associations_without_effect_allele == 1
+    # Two scales, one of them the Catalog's uninformative "unit". Sorted, deterministic.
+    assert data.effect_units == ["umol/l", "unit"]
+    assert any("do not combine" in w for w in data.warnings)
+    assert any("no effect allele" in w for w in data.warnings)
+    assert "NOT weights" in data.note
+
+    # The request budget, derived from the fixture rather than pasted off a run. Every call the
+    # fake served IS a request issued: `_LinkCache` reaches the transport only on a miss, so a
+    # cache hit never appears here and `requests_made` is exactly what the fake was asked.
+    served_follows = [c for c in client.calls if not c.startswith("assoc:")]
+    attempted_follows = sum(
+        len(a["_links"]) for a in (_GWAS_NAMED_ALLELE, _GWAS_UNKNOWN_ALLELE)
+    )
+    assert data.requests_made == len(client.calls) == 1 + len(served_follows)
+    assert data.requests_saved == attempted_follows - len(served_follows)
+    # `1 + 2N`: N associations for the one variant queried, each naming a study and a trait. The
+    # two share a study, so the cache pays exactly once here — on a real module it paid nothing.
+    assert attempted_follows == 2 * len([_GWAS_NAMED_ALLELE, _GWAS_UNKNOWN_ALLELE])
+    assert data.requests_saved == 1
+
+    # `weight` is authored and stays authored: nothing this pass ran touched variants.csv.
+    assert "1.2" in (spec_dir / "variants.csv").read_text()
+
+
+async def test_the_gwas_strict_ladder_escalates_on_the_catalogs_shape_after_writing(
+    monkeypatch, extended_client, spec_dir
+):
+    """`--strict` here fires on the USUAL answer, and it fires after the sidecar is written.
+
+    Upstream covers this ladder in neither direction — `strict` appears nowhere in
+    `enricher/tests/test_gwas.py` — so what it actually does is asserted here rather than
+    taken from its docstring. Observed: one association whose p-value the Catalog publishes
+    as `0.0` is enough to raise, `gwas_effects.csv` is on disk with that row in it when the
+    raise happens, and the same input under `best_effort` reports the count and succeeds.
+    A shipped flagship module (`reference_examples/hfe_hemochromatosis`) carries six of
+    these, so a strict failure here is not a verdict on the module.
+    """
+    client = FakeGwasClient([_GWAS_UNDERFLOW])
+    _inject_gwas_client(monkeypatch, client)
+
+    strict = await extended_client.call_tool(
+        "enrich_gwas_effects", {"spec_dir": str(spec_dir), "strict": True}
+    )
+    assert strict.data.success is False
+    assert strict.data.mode == "strict"
+    # Not zero. The message names non-zero counts and the sidecar is on disk, so a `0` here
+    # would be a wrong answer rather than a missing one.
+    assert strict.data.p_value_underflows is None
+    assert strict.data.unusable is None
+    assert strict.data.rows is None
+    # Upstream's message, verbatim — including its own sentence saying whose fault this is not.
+    assert "strict GWAS enrichment" in strict.data.warnings[0]
+    assert "authoring mistake" in strict.data.warnings[0]
+    assert any("AFTER the write" in w for w in strict.data.warnings)
+
+    # The escalation is raised after the write, so the row is on disk despite success=False.
+    written = spec_dir / "gwas_effects.csv"
+    assert written.is_file()
+    rows = list(csv.DictReader(written.read_text().splitlines()))
+    assert [r["association_id"] for r in rows] == ["64192738"]
+    # The number is withheld and the source's own string is kept — the row is not lost.
+    assert rows[0]["p_value"] == "0.0"
+    assert rows[0]["p_value_num"] == ""
+
+    # Same input, best_effort: the count is reported and the pass completes.
+    lenient = await extended_client.call_tool(
+        "enrich_gwas_effects", {"spec_dir": str(spec_dir), "strict": False}
+    )
+    assert lenient.data.success is True
+    assert lenient.data.p_value_underflows == 1
+    assert lenient.data.unusable == 0
+    assert any("below" in w and "float64" in w for w in lenient.data.warnings)
+    # Merged on association_id, so re-running did not duplicate the row.
+    assert lenient.data.rows == 1
+
+
+async def test_the_gwas_pass_is_a_no_op_offline_rather_than_a_failure(extended_client, spec_dir):
+    """No injected transport and the ceiling down: nothing fetched, nothing written, no error.
+
+    The Catalog publishes a bulk download but this pass reads the REST API, so there is no
+    snapshot to fall back on. A no-op that reported success without saying so would read as
+    "the Catalog holds nothing for this module".
+    """
+    result = await extended_client.call_tool(
+        "enrich_gwas_effects", {"spec_dir": str(spec_dir), "offline": True}
+    )
+    data = result.data
+
+    assert data.success is True
+    assert data.skipped_offline is True
+    # `null`, not 0: nothing counted the file. An existing gwas_effects.csv would still hold
+    # every row it had, so a zero here would assert something this run never looked at.
+    assert data.rows is None
+    assert any("did NOTHING" in w for w in data.warnings)
+    assert not (spec_dir / "gwas_effects.csv").exists()
+
+
+async def test_study_facts_off_says_the_nulls_it_leaves_are_permanent(
+    monkeypatch, extended_client, spec_dir
+):
+    """The cheap mode costs one request per variant and the cut does not heal itself.
+
+    The merge key is `association_id` alone, so a later run with study facts on skips these
+    rows rather than backfilling them. Asserted rather than described: the second run leaves
+    `pmid` empty, and only deleting the file recovers it.
+    """
+    client = FakeGwasClient([_GWAS_NAMED_ALLELE])
+    _inject_gwas_client(monkeypatch, client)
+
+    thin = await extended_client.call_tool(
+        "enrich_gwas_effects", {"spec_dir": str(spec_dir), "study_facts": False}
+    )
+    assert thin.data.success is True
+    assert thin.data.study_facts is False
+    # One request for the variant and no `_links` follows at all.
+    assert thin.data.requests_made == 1
+    assert client.calls == ["assoc:rs4988235"]
+    assert any("will SKIP these rows" in w for w in thin.data.warnings)
+
+    written = spec_dir / "gwas_effects.csv"
+    assert list(csv.DictReader(written.read_text().splitlines()))[0]["pmid"] == ""
+
+    # Re-running with study facts on does NOT backfill: the association id is already there.
+    await extended_client.call_tool(
+        "enrich_gwas_effects", {"spec_dir": str(spec_dir), "study_facts": True}
+    )
+    assert list(csv.DictReader(written.read_text().splitlines()))[0]["pmid"] == ""
+
+    written.unlink()
+    await extended_client.call_tool(
+        "enrich_gwas_effects", {"spec_dir": str(spec_dir), "study_facts": True}
+    )
+    assert list(csv.DictReader(written.read_text().splitlines()))[0]["pmid"] == "11788828"

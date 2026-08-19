@@ -69,6 +69,7 @@ The server **boots with no environment configured** — authoring a module needs
 | `paper_citations` | extended | no | has this finding been replicated — traverses a graph the corpus sizes |
 | `draft_from_cpic`, `draft_from_clinpgx` | extended | no | the PGx tables |
 | `enrich_facts`, `enrich_literature_pass` | extended | no | the sidecars the compile gate reads; rewrite many rows at once |
+| `enrich_gwas_effects` | extended | no | the GWAS Catalog's published effect sizes, **beside** `weight` and never into it. `1 + 2N` requests per variant — the corpus of published associations sizes it |
 | `reverse_module`, `registry_download` | extended | no | read back somebody else's compiled artifact |
 | `registry_validate`, `registry_check` | gated | **yes** | would this publish — server-side, spending no version number. `check` is the full dry run |
 | `registry_whoami`, `registry_claim_namespace`, `registry_publish` | gated | **yes** | registry writes; publish records the stamped identity in `published.json` |

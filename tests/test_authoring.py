@@ -130,6 +130,7 @@ async def test_attestation_bearing_is_narrowed_to_the_table(essentials_client):
     [
         ("list_tables", {}),
         ("describe_table", {"csv_name": "variants.csv"}),
+        ("describe_machine_table", {"csv_name": "resolution.csv"}),
         ("table_requirements", {"csv_name": "variants.csv"}),
         ("get_template", {"csv_name": "variants.csv"}),
     ],
@@ -254,3 +255,244 @@ async def test_lint_normalized_csv_never_invents_a_value(essentials_client):
         # Anything not applied must say why. A bare refusal is unactionable.
         if not alteration.applied:
             assert alteration.refusal
+
+
+# --------------------------------------------------------------------------- #
+# RM10 — three answers restated a schema fact instead of generating it
+# --------------------------------------------------------------------------- #
+def _key_columns(keyed_on: str) -> list[str]:
+    """The column tokens out of a `keyed_on` string like `(gene, repeat_unit)`."""
+    return [token.strip() for token in keyed_on.strip("()").split(",") if token.strip()]
+
+
+async def test_the_sidecar_roster_is_derived_from_the_installed_toolchain(essentials_client):
+    """`sidecars` was a four-item literal and the installed toolchain has seven.
+
+    It named `resolution.csv` and the three 0.5 fact tables, so the three format-0.6
+    ones (`gene_validity.csv`, `clinical_assertions.csv`, `gwas_effects.csv`) were
+    absent from the one answer that claims to list what a machine writes — while
+    `authoring_reference` in the same module described all of them. Computed here from
+    the same public roster the tool derives from, so a fact table added upstream
+    changes both sides at once instead of dating this assertion.
+    """
+    from just_dna_compiler import draft
+    from just_dna_registry import specfiles
+
+    expected = {specfiles.RESOLUTION_CSV, *specfiles.FACT_CSVS} - set(draft.DRAFTABLE)
+    result = await essentials_client.call_tool("list_tables", {})
+    assert set(result.data.sidecars) == expected
+    assert result.data.sidecars == sorted(result.data.sidecars)  # deterministic order
+    # The licensing carve-out, derived rather than special-cased: a fact sidecar that
+    # is also draftable belongs under `tables`, where it has a template and a linter.
+    assert not set(result.data.sidecars) & set(draft.DRAFTABLE)
+
+
+async def test_every_documented_key_column_is_a_live_undeprecated_field(essentials_client):
+    """`keyed_on` is the one hand-kept structural claim on this surface, so it is pinned.
+
+    Upstream publishes no column-level accessor for a kind's natural key
+    (`draft.natural_key` is row-level; the registries holding the names are private —
+    filed as `S48`), so the strings live in `_SUBJECTS`. That is exactly how
+    `copynumbers.csv` went on naming `modifier_cn` across all of 0.6, after upstream
+    deprecated it in favour of `modifier_copy_number` — an author was being told to key
+    on a column that is removed at format 1.0. Nothing generated can drift like that;
+    this one can, so every token is resolved against the live model here.
+    """
+    from just_dna_compiler import draft
+
+    result = await essentials_client.call_tool("list_tables", {})
+    missing: list[str] = []
+    deprecated: list[str] = []
+    for table in result.data.tables:
+        model = draft.DRAFTABLE[table.csv]
+        for column in _key_columns(table.keyed_on):
+            field = model.model_fields.get(column)
+            if field is None:
+                # A key column is not always an authored field: on `studies.csv`,
+                # `variant_key` is a **property** derived from rsid / chrom:start:ref
+                # (and null since RM47 for a row that grounds a threshold rather than a
+                # variant), while on `variants.csv` and `haplotypes.csv` the same name is
+                # a real column. A property counts; anything that resolves to neither is
+                # prose masquerading as a column name, which is what three of these were.
+                if not isinstance(getattr(model, column, None), property):
+                    missing.append(f"{table.csv}:{column}")
+                continue
+            # Upstream's convention is to OPEN a retired column's description with the
+            # marker — `modifier_cn` reads "DEPRECATED since 0.6, removed at 1.0 — use
+            # modifier_copy_number". Anchored at the start rather than searched for,
+            # because its replacement's description mentions the word too ("Replaces the
+            # deprecated integer modifier_cn"), and a substring test flagged the live
+            # column instead of the retired one when this was first written.
+            if (field.description or "").lstrip().upper().startswith("DEPRECATED"):
+                deprecated.append(f"{table.csv}:{column}")
+    assert not missing, f"keyed_on names tokens that are not columns: {missing}"
+    assert not deprecated, f"keyed_on names deprecated columns: {deprecated}"
+
+
+async def test_the_studies_subject_no_longer_says_a_row_must_name_a_variant(essentials_client):
+    """RM47 relaxed `StudyRow`'s identifier rule, and our answer said otherwise.
+
+    `REQUIRED_ANY_OF` went from `({rsid}, {chrom})` to `()`: a paper grounding a bin
+    threshold, a method or a population is a legal `studies.csv` row with no variant
+    identity at all. The subject text still read "the evidence for a variant", which
+    would have an author drop exactly the row RM47 was added to allow. The upstream
+    state is asserted first, so if it is ever tightened again this test says which half
+    moved.
+    """
+    from just_dna_format.spec import StudyRow
+
+    assert StudyRow.REQUIRED_ANY_OF == ()
+    # Ground truth, not prose: the model itself accepts a row with only a pmid.
+    assert StudyRow(pmid="11788828", conclusion="x").variant_key is None
+
+    result = await essentials_client.call_tool("list_tables", {})
+    subject = {t.csv: t.subject for t in result.data.tables}["studies.csv"]
+    assert "no variant" in subject.lower(), subject
+
+
+async def test_a_binning_module_may_carry_studies_without_variants(essentials_client, tmp_path):
+    """The composition note now says this, so the note is checked against a compile.
+
+    Post-RM47 the honest advice to a binning author is *cite your thresholds*, and a
+    study row can now carry that citation without naming a variant. If upstream ever
+    required `variants.csv` beside `studies.csv`, this fails and the note is wrong.
+    """
+    spec = tmp_path / "bins"
+    spec.mkdir()
+    (spec / "module_spec.yaml").write_text(
+        "schema_version: '1.0'\n"
+        "module:\n"
+        "  title: SMN1 copy number (test)\n"
+        "  description: SMN1 dosage bins\n"
+        "  report_title: SMN1\n"
+        "  name: smn1_test\n"
+        "genome_build: GRCh38\n"
+    )
+    (spec / "copynumbers.csv").write_text(
+        "measure_kind,measure_min,measure_max,measure_tiling,direction,conclusion,"
+        "unresolved,gene,pmid\n"
+        "copy_number,0,0,continuous,risk,No SMN1 copies,false,SMN1,9382095\n"
+        "copy_number,1,1,continuous,risk,One SMN1 copy,false,SMN1,9382095\n"
+    )
+    (spec / "studies.csv").write_text(
+        "pmid,conclusion\n9382095,SMN1 deletion and SMA severity\n"
+    )
+
+    result = await essentials_client.call_tool(
+        "validate_module", {"spec_dir": str(spec), "strict": True}
+    )
+    assert result.data.valid, result.data.errors
+    assert not any("variants.csv" in e for e in result.data.errors)
+
+
+# --------------------------------------------------------------------------- #
+# RM11 — the machine-produced tables are answerable, and marked unauthorable
+# --------------------------------------------------------------------------- #
+def test_the_produced_roster_and_its_models_agree():
+    """The hand-kept `csv -> model` map must cover exactly the derived roster.
+
+    Nothing public maps a machine-produced CSV name to its row model (`S47`), so that
+    half is hand-kept while the roster is derived — and a hand-kept list beside a
+    derived one is the RM10 defect waiting to happen. This is the guard: an eighth fact
+    table upstream fails here rather than becoming silently undescribable.
+    """
+    from just_module_creator.tools.authoring import _PRODUCED_CSVS, _PRODUCED_MODELS
+
+    assert set(_PRODUCED_MODELS) == set(_PRODUCED_CSVS)
+
+
+async def test_every_machine_produced_sidecar_answers_its_columns(essentials_client):
+    """The hole RM11 closed: an author reads these files and could not ask what is in them.
+
+    Expected columns come from `reference.authored_field_names`, not from the assembly
+    the tool passes through, so this is a comparison rather than an echo.
+    """
+    from just_dna_format.reference import authored_field_names
+
+    from just_module_creator.tools.authoring import _PRODUCED_MODELS
+
+    listed = (await essentials_client.call_tool("list_tables", {})).data.sidecars
+    assert set(listed) == set(_PRODUCED_MODELS)
+    for csv_name, model in sorted(_PRODUCED_MODELS.items()):
+        result = await essentials_client.call_tool(
+            "describe_machine_table", {"csv_name": csv_name}
+        )
+        assert result.data.csv == csv_name
+        assert result.data.model == model.__name__
+        assert [c["name"] for c in result.data.columns] == list(authored_field_names(model))
+        # Every column carries the model's own description, which is the whole point of
+        # asking rather than remembering.
+        assert all("description" in c for c in result.data.columns)
+        assert result.data.hand_authored is False
+        assert result.data.refusal
+
+
+async def test_a_machine_table_answer_carries_no_authoring_fields(essentials_client):
+    """`hand_authored: false` plus the absence of the three author-only fields.
+
+    Extending `describe_table` would have had to answer `requirements`,
+    `redundancy_bearing` and `attestation_bearing` with empty values, and an empty
+    `requirements` reads as *no requirements* rather than as *the question does not
+    apply*. The separate model is how that stays unsayable.
+    """
+    result = await essentials_client.call_tool(
+        "describe_machine_table", {"csv_name": "frequencies.csv"}
+    )
+    for author_only in ("requirements", "redundancy_bearing", "attestation_bearing"):
+        assert not hasattr(result.data, author_only)
+    assert result.data.hand_authored is False
+    # And the other side of the pair says the opposite, in the same key.
+    authored = await essentials_client.call_tool("describe_table", {"csv_name": "variants.csv"})
+    assert authored.data.hand_authored is True
+
+
+@pytest.mark.parametrize(
+    ("tool", "args"),
+    [
+        ("describe_table", {"csv_name": "resolution.csv"}),
+        ("table_requirements", {"csv_name": "resolution.csv"}),
+        ("get_template", {"csv_name": "resolution.csv"}),
+        ("lint_rows", {"csv_name": "resolution.csv", "csv_text": "variant_key\nrs4988235\n"}),
+        ("scaffold_module", {"spec_dir": "/nonexistent", "kinds": ["resolution.csv"]}),
+    ],
+)
+async def test_an_authoring_route_redirects_a_sidecar_instead_of_calling_it_unknown(
+    essentials_client, tool, args
+):
+    """"Unknown table kind 'resolution.csv'" was false and sent the reader hunting a typo.
+
+    The file is real, it is in every enriched module, and it is simply not authored.
+    Each authoring route now says that and names the route that answers.
+    """
+    from fastmcp.exceptions import ToolError
+
+    with pytest.raises(ToolError) as raised:
+        await essentials_client.call_tool(tool, args)
+    message = str(raised.value)
+    assert "describe_machine_table" in message
+    assert "Unknown" not in message
+
+
+@pytest.mark.parametrize("spelling", ["licensing.csv", "sources.csv"])
+async def test_the_licence_table_is_refused_by_the_machine_route(essentials_client, spelling):
+    """`licensing.csv` must NOT get the do-not-author treatment, under either spelling.
+
+    It is a fact sidecar and it is the one a human writes — the only table the compile
+    licence gate reads. The carve-out is derived from `draft.DRAFTABLE`, so it needs no
+    entry of its own here and cannot fall out of step with the roster.
+    """
+    from fastmcp.exceptions import ToolError
+
+    with pytest.raises(ToolError, match="describe_table"):
+        await essentials_client.call_tool("describe_machine_table", {"csv_name": spelling})
+    answered = await essentials_client.call_tool("describe_table", {"csv_name": spelling})
+    assert {c["name"] for c in answered.data.columns} >= {"source", "layer"}
+    assert answered.data.hand_authored is True
+
+
+async def test_an_unknown_name_is_still_reported_as_unknown(essentials_client):
+    """The redirect must not swallow a genuine typo into a reassuring answer."""
+    from fastmcp.exceptions import ToolError
+
+    with pytest.raises(ToolError, match="Unknown table"):
+        await essentials_client.call_tool("describe_machine_table", {"csv_name": "nonsense.csv"})

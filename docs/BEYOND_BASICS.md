@@ -59,6 +59,12 @@ division as everywhere else — the module is the knowledge, the reader brings t
   the two quote columns, and the [find-evidence skill](../skills/find-evidence/SKILL.md).
 - **Bulk passes.** `enrich_facts` and `enrich_literature_pass` (extended) rewrite the sidecars the
   compile gate reads, across every row at once.
+- **Published effect sizes.** `enrich_gwas_effects` (extended) records what the GWAS Catalog
+  published for your rsIDs into `gwas_effects.csv` — one row per **association**, not per variant. It
+  is extended because the corpus of published associations sizes it: `1 + 2N` requests per variant,
+  measured at 382 for one real module. It does not fill `weight` and nothing on it could: a published
+  beta belongs to its own study's scale, many associations name no effect allele at all, and the tool
+  reports both counts so that is readable rather than assumed.
 
 ## Learning from modules other people published
 

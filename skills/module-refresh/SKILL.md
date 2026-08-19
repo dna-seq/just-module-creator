@@ -5,9 +5,10 @@ description: >-
   Covers merge-not-clobber and why a re-run refreshes nothing, what deleting each sidecar costs table
   by table, writing to the file you read, what a re-draft repairs and what it cannot, and the two
   passes that break on a second run. Load this whenever you are re-running something that already ran.
-  Triggers: "re-run enrich", "why did it not update", "refresh", "newer ClinVar", "delete
-  resolution.csv", "stale sidecar", "re-draft", "source released", "it did not change", "already
-  present", "re-enrich", "newer gnomAD", "why is this still the old value".
+  Triggers: "re-run enrich", "why did it not update", "refresh", "refresh_sidecar", "newer ClinVar",
+  "delete resolution.csv", "stale sidecar", "re-draft", "source released", "it did not change",
+  "already present", "re-enrich", "newer gnomAD", "why is this still the old value", "will I lose my
+  overrides", "re-derive without losing curation".
 ---
 
 # Refresh a source, re-derive a sidecar
@@ -16,19 +17,49 @@ description: >-
 
 ## The one fact that governs everything here
 
-> **A re-run does not refresh anything already recorded. To re-derive a sidecar you delete it first,
-> and deleting it discards every hand-curated row along with the stale ones.**
+> **A re-run does not refresh anything already recorded. To re-derive a sidecar it has to be deleted
+> first — and the delete is what discards hand-curated rows along with the stale ones.**
 
 Every derived sidecar is **merge-not-clobber**: an existing row is authoritative and a re-run *adds*
 to it rather than replacing it. That is not a limitation — it is the rule that makes these tables
 human-overridable, which is the whole reason a curator may correct one.
 
 So the failure mode is silence. You re-run the pass, it reports success, and nothing changed. **If you
-expected a value to move and it did not, you did not delete the file.**
+expected a value to move and it did not, the file is still there.**
+
+### Do not do the delete by hand if you have `refresh_sidecar`
+
+**Extended tier** (`JMC_MODE=extended`). It makes the destructive sequence reversible: it copies the
+sidecar out, **reads the copy back and hashes it**, and only then deletes — so a capture that did not
+verify means nothing is touched. Then it re-derives, classifies every row against the live fact fields,
+**reapplies the rows it can prove a human wrote**, and **reports the rest without picking a side.** It
+also tells you whether the table's fact signature moved, which is the canary in `module-diff`.
+
+**It resumes if it dies mid-sequence** — a capture is never taken over an unfinished one, so a second
+attempt is a repair rather than a second loss.
+
+**Four honest limits, because a tool that hid them would be worse than the manual route:**
+
+- **It refuses offline**, up front, before touching anything. A re-derivation with no egress is not a
+  re-derivation.
+- **It refuses `licensing.csv`.** That sidecar has no producer — a licence row is a side effect of a
+  pass that took data, and a hand-copied row has none — so there is nothing to re-derive it from.
+- **It refuses to classify against a partial re-derivation.** An unreachable source, a pass that did
+  nothing, an empty fresh table → your bytes are restored verbatim. A table that was never filled would
+  otherwise report every real row as one the source withdrew.
+- **A `source="manual"` row is not always reapplied, and this one will surprise you.** An online run
+  that reaches Ensembl writes a `status="not_found"` row for an rsID it cannot resolve. So your manual
+  row's subject *is* present in the fresh table, and it lands in **conflicts** — reported, left on
+  disk in the capture, not put back. When no link ran for that rsID there is no fresh row and the
+  manual row **is** reapplied. Read the report rather than assuming which happened.
+
+The by-hand sequence below is still correct and is what you do in the default tier.
 
 ## What deleting each sidecar costs
 
-Read this before deleting. The cost column is what you will not get back by re-running.
+Read this before deleting **by hand**. The cost column is what a bare `rm` plus a re-run will not give
+you back — `refresh_sidecar` reapplies the provably-authored rows from its capture, and reports the
+rest instead of losing them.
 
 | Sidecar | A re-run… | Delete to re-derive when | Deleting costs |
 |---|---|---|---|

@@ -27,7 +27,11 @@ fetch and then write into a spec directory, which is why they share a module.
 The two PGx drafters and the bulk fact passes are extended — a PGx module is the
 specialist path, `draft_from_clinpgx` needs a snapshot only a CLI-only builder
 produces, and the fact passes rewrite many rows at once rather than answering
-about the one thing you named.
+about the one thing you named. `enrich_gwas_effects` is extended for the sharpest
+version of that cost: its budget is `1 + 2N` requests for a variant with N
+published associations, measured at **382 requests for one real module**, and the
+size is set by how much has been published rather than by anything the caller
+named.
 """
 
 from __future__ import annotations
@@ -57,6 +61,7 @@ from just_dna_enricher.gene_metrics import (
     GeneMetricsUnavailable,
     enrich_gene_metrics,
 )
+from just_dna_enricher.gwas import GwasError, enrich_gwas
 from just_dna_enricher.literature import LiteratureEnrichmentError, enrich_literature
 from just_dna_enricher.pgx_draft import draft_gene
 from mcp.types import ToolAnnotations
@@ -67,6 +72,7 @@ from just_module_creator.models import (
     DraftResult,
     EnrichReport,
     FactPassReport,
+    GwasReport,
     LiteratureReport,
 )
 from just_module_creator.net import NetworkServices
@@ -91,6 +97,24 @@ _REGENERATE = (
 )
 
 _FACT_PASSES = ("frequencies", "gene_metrics", "dosage")
+
+#: `gwas_effects.csv` is the one sidecar an author is actively tempted to mine for an
+#: authored cell, so the regeneration rule travels with the refusal rather than only in
+#: the docstring above the call.
+_GWAS_NOTE = (
+    _REGENERATE
+    + " These effects are NOT weights and no tool writes one from them: a published beta "
+    "belongs to its own study's scale, many of them name no effect allele at all, and "
+    "`weight` stays your model of the finding. The two columns sit side by side and a "
+    "consumer chooses between them wholesale."
+)
+
+#: The Catalog's own marker for a variant it published nothing about, on `GwasEffectRow.status`.
+#: Upstream exports no constant for that vocabulary, so the literal is owned here — and it has to
+#: be, because a `not_found` row's null `effect_allele` means "no association exists" while a
+#: recorded association's null means "the study never established which allele carries the
+#: effect", and counting them together would report the first as if it were the second.
+_GWAS_NOT_FOUND = "not_found"
 
 
 #: Upstream words its errors for its own CLI, so they name flags these tools do
@@ -434,7 +458,7 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
 
 
 def register_extended_passes(mcp: FastMCP, settings: Settings, services: NetworkServices) -> None:
-    """Register the PGx drafters and the sidecar fact passes."""
+    """Register the PGx drafters, the sidecar fact passes and the GWAS Catalog pass."""
 
     @mcp.tool(
         tags={"extended"},
@@ -788,6 +812,202 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
             warnings=warnings,
             note=_REGENERATE,
         )
+
+    @mcp.tool(
+        tags={"extended"},
+        task=True,
+        annotations=ToolAnnotations(
+            title="Fill gwas_effects.csv",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def enrich_gwas_effects(
+        spec_dir: str,
+        strict: bool = False,
+        use: str = "unstated",
+        study_facts: bool = True,
+        offline: bool = False,
+        ctx: Context | None = None,
+    ) -> GwasReport:
+        """Record the GWAS Catalog's published effect sizes for this module's rsIDs.
+
+        One row per published **association**, not per variant — rs1800562 alone
+        carries 189 of them across different traits and papers. Queried by rsID, so a
+        coordinate-only variant row has no subject here and is simply absent.
+
+        **It does not fill `weight`, and the numbers it does record are not candidates
+        for one.** A published beta belongs to its own study's scale: on one real
+        module a single variant carried **12 distinct `effect_unit` values**, several
+        of them the Catalog's uninformative `unit`, and **33 of 186** recorded
+        associations named no effect allele at all — the study never established which
+        allele carries the effect, so the row has no direction a genotype could be
+        matched against. Both counts come back on the result
+        (`effect_units`, `associations_without_effect_allele`) precisely so that is
+        readable rather than assumed. `weight` remains your model of the finding, and
+        these sit beside it.
+
+        **`strict` here is not a correctness gate, and it fails on the usual answer.**
+        It escalates on the Catalog's own shape — associations served without an id to
+        key on, and p-values the Catalog publishes below float64's range — and never on
+        `missing`. Measured: `reference_examples/hfe_hemochromatosis`, a shipped
+        flagship module, carries **six** such underflows, so strict refuses it while
+        nothing about it is wrong. It also escalates *after* the write, so on a strict
+        failure `gwas_effects.csv` holds everything `best_effort` would have written;
+        a fetch failure mid-pass writes nothing. The message says which.
+
+        A variant the Catalog holds nothing for gets a **`not_found` row** rather than
+        silence: no published genome-wide association *is* a fact about the variant,
+        and it is true of most clinically authored ones.
+
+        The budget is `1 + 2N` requests per variant — pmid, trait, ancestry and study
+        accession all sit behind `_links` — measured at 382 for one real module against
+        somebody else's rate limit, which is why this runs as a background task.
+        `study_facts=false` cuts that to one request per variant, and the cut is
+        **sticky**: the merge is keyed on `association_id`, so a later run with study
+        facts on skips those rows and never backfills them. Delete the file to
+        re-derive.
+
+        `offline=true` makes this a **no-op**, not a failure — the Catalog publishes a
+        bulk download but this pass reads the REST API and has no snapshot.
+
+        `use` is recorded on the licence row and gates nothing: EMBL-EBI names no
+        licence, so `commercial_use` is written **unknown** rather than permitted. Do
+        not read that as permission — the terms of the thousands of publications the
+        Catalog summarizes are not settled by its terms page.
+        """
+        target = resolve_dir(spec_dir, settings)
+        eff_offline = offline_for(settings, offline)
+        mode = "strict" if strict else "best_effort"
+        declared = _check_use(use)
+
+        if ctx:
+            await ctx.info(
+                f"Reading the GWAS Catalog for {target.name} (mode={mode}, "
+                f"study_facts={'on' if study_facts else 'off'})"
+            )
+            await ctx.report_progress(progress=1, total=2)
+
+        # ONE arm, and `GwasNotFound` deliberately does not get its own. It is a subclass of
+        # `GwasError`, so an arm for it would have to come first — but it cannot arrive here:
+        # `associations_for` catches the Catalog's 404 and returns the empty ANSWER, which the
+        # pass records as a `not_found` row, and `follow` catches it so an association whose
+        # study record moved keeps null study facts instead of sinking the pass. An except arm
+        # for a type that never arrives is worse than none: it reads as if it did.
+        # `tests/test_passes.py::test_no_except_arm_is_shadowed_by_an_earlier_one` is what stops
+        # a second arm from being added parent-first.
+        try:
+            result = await run_sync(
+                lambda: enrich_gwas(
+                    target,
+                    mode=mode,
+                    offline=eff_offline,
+                    declared_use=declared,
+                    study_facts=study_facts,
+                    write=True,
+                )
+            )
+        except GwasError as exc:
+            warnings: list[str] = [str(exc)]
+            if strict:
+                warnings.append(
+                    "This ran strict, where the ladder escalates on the CATALOG's shape — "
+                    "associations served without an id to key on, p-values below float64's "
+                    "range — and does so AFTER the write. So read the message: an escalation "
+                    "means gwas_effects.csv holds everything best_effort would have written, "
+                    "while a fetch failure means nothing was written. Neither says your module "
+                    "is wrong; re-run with strict=false to record what is holdable."
+                )
+            # Every counter stays `null`. The pass raised before it reported any of them, and
+            # `0` would be a real answer — on a strict escalation a wrong one, since the message
+            # itself names non-zero counts and the sidecar is already on disk. A counter that
+            # nothing counted is not a counter that counted nothing.
+            return GwasReport(
+                success=False,
+                spec_dir=str(target),
+                mode=mode,
+                offline=eff_offline,
+                study_facts=study_facts,
+                declared_use=declared,
+                warnings=warnings,
+                note=_GWAS_NOTE,
+            )
+
+        if ctx:
+            await ctx.report_progress(progress=2, total=2)
+
+        rows = list(getattr(result, "rows", []) or [])
+        published = [r for r in rows if getattr(r, "status", None) != _GWAS_NOT_FOUND]
+        no_allele = sum(1 for r in published if not getattr(r, "effect_allele", None))
+        units = sorted({str(r.effect_unit) for r in published if getattr(r, "effect_unit", None)})
+        skipped = bool(getattr(result, "skipped_offline", False))
+        underflows = int(getattr(result, "p_value_underflows", 0) or 0)
+        unusable = int(getattr(result, "unusable", 0) or 0)
+
+        # Aggregated by reason with a count, one line each — never one per row, which over a
+        # well-studied variant's dozens of associations is a wall nobody reads. Upstream warns
+        # about the first two through `logging`, which goes to stderr and reaches no MCP caller.
+        warnings: list[str] = []
+        if skipped:
+            warnings.append(
+                "Offline: this pass did NOTHING. There is no snapshot of the Catalog's REST API, "
+                "so any existing gwas_effects.csv is unchanged and a missing one is still missing."
+            )
+        if underflows:
+            warnings.append(
+                f"{underflows} association(s) carry a p-value the Catalog publishes below "
+                "float64's range, so `p_value_num` is withheld and the verbatim `p_value` string "
+                "carries what the source said. The rows are all there."
+            )
+        if unusable:
+            warnings.append(
+                f"{unusable} association(s) were served without an id this pass can key on and "
+                "are in no row. Every usable association was still recorded."
+            )
+        if no_allele:
+            warnings.append(
+                f"{no_allele} of {len(published)} recorded association(s) name no effect allele — "
+                "the study never established which one carries the effect. Real evidence with no "
+                "direction a genotype can be matched against, so it cannot become a weight."
+            )
+        if len(units) > 1:
+            warnings.append(
+                f"{len(units)} distinct effect_unit value(s) across this table: "
+                f"{', '.join(units)}. These betas are on different and possibly uninterpretable "
+                "scales and do not combine."
+            )
+        if not study_facts:
+            warnings.append(
+                "study_facts was off, so pmid, trait, trait_efo_id, ancestry and study_accession "
+                "are null on every row this run wrote. The merge is keyed on association_id, so a "
+                "later run with study facts on will SKIP these rows rather than backfill them — "
+                "delete gwas_effects.csv to re-derive them."
+            )
+
+        return GwasReport(
+            success=True,
+            spec_dir=str(target),
+            mode=mode,
+            offline=eff_offline,
+            # On a no-op the pass returns no rows, which says nothing about the file: an existing
+            # gwas_effects.csv keeps whatever it held, so `0` would assert something unchecked.
+            rows=None if skipped else len(rows),
+            covered=[str(c) for c in (getattr(result, "covered", []) or [])],
+            missing=[str(m) for m in (getattr(result, "missing", []) or [])],
+            requests_made=int(getattr(result, "requests_made", 0) or 0),
+            requests_saved=int(getattr(result, "requests_saved", 0) or 0),
+            p_value_underflows=underflows,
+            unusable=unusable,
+            associations_without_effect_allele=no_allele,
+            effect_units=units,
+            study_facts=study_facts,
+            declared_use=declared,
+            skipped_offline=skipped,
+            warnings=warnings,
+            note=_GWAS_NOTE,
+        )
+
 
 
 def _run_pass(name: str, target: Path, mode: str, offline: bool, use: str) -> Any:

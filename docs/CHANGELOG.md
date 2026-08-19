@@ -3,6 +3,246 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — refreshing a derived sidecar stops being a destructive manual sequence (2026-08-20)
+
+New tool `refresh_sidecar`, extended tier, in a new `tools/refresh.py`. No floor moves and no upstream
+version changes: format/compiler 0.6.1, enricher 0.6.4, registry 0.18.2. 204 tests green, `ruff check`
+clean, `pyright` 0 errors. No version bump in this change.
+
+### The only drift detector this format has was also its most destructive operation
+
+Every derived sidecar is merge-not-clobber, which is what lets a hand-corrected number survive a
+re-run and is exactly why a re-run refreshes nothing. So asking a source whether it still says what
+`resolution.csv` says means **deleting the file first** — and that discards the author's rows with the
+stale ones. `source="manual"` rows are the case that is not recoverable by re-running: nothing fetches
+them, because a human worked them out. `module-refresh` teaches the sequence, and the sequence is
+irreversible.
+
+`refresh_sidecar` does it reversibly: copy the file to a durable location **outside** the spec
+directory and read the copy back and hash it *before* deleting anything; re-derive by running the pass
+(or passes) that own the table; classify every row; put back only what is provably the author's; report
+the rest. `signature_moved` is the answer to read first — the fact signature is taken with the same
+`integrity.<table>_signature` function the manifest publishes, so a moved signature with nothing
+reapplied and no conflict is the source having changed its answer.
+
+### What it refuses to do, which is most of the design
+
+- **A conflict is never resolved.** A subject in both copies with differing facts is either a cell the
+  author edited or a revision the source published, and two data points cannot separate those. Neither
+  side is preferred, nothing is merged, and `conflicts[].unresolvable` says so per entry. Where the
+  captured row's `source` is a value no fresh row uses, `source_proves_authored` surfaces that per row
+  — a real narrowing, and still **not acted on**: knowing who wrote a row does not settle which of two
+  answers about the world is right.
+- **A partial re-derivation is never classified against.** Unreachable source, a pass that did nothing,
+  or an empty fresh table: the captured bytes go back verbatim and `restored` says so. Classifying
+  against a table that was never filled would report every real row as one the source withdrew — the
+  exact false negative the tool exists to prevent. `offline` refuses up front with nothing touched, for
+  the same reason.
+- **A sidecar with no verified capture is never deleted**, and a file that does not validate is never
+  deleted either — a table this tool cannot classify is one it will not touch.
+- **`licensing.csv` cannot be refreshed at all.** It is the one derived sidecar with no producer:
+  licence rows are written as a side effect of a pass that *took* data, and a row copied out of a
+  source by hand has no producer. Deleting it would discard the whole declaration the compile gate
+  reads with nothing to rebuild it. Refused with that reason rather than attempted.
+
+### Row identity is derived from the live models, and the half that is not published is filed
+
+The fact half needed nothing written down: `integrity.fact_signature`, the eight public
+`<table>_signature` functions and the eight `*_FACT_FIELDS` tuples are all public — the compiler's
+`_resolution_signature` and its siblings are underscore-*aliased imports* of those, so **no private
+symbol is reached for**. `source` sits outside every fact set except `sources.csv`'s (where it is the
+subject rather than the provenance), which is why a hand-authored and a fetched row with identical
+facts hash equal, and why `source` is the only column that can prove authorship.
+
+The **subject** key has no public route: each pass keys its own `existing` dict on a local expression
+(`(row.variant_key, row.population)` inside `enrich_frequencies`). It is derived as the fact columns
+the row model marks required, reported on every call as `subject_fields`, exact on five of the eight
+tables and coarse on two — and coarse reports *more* rows as conflicting, which repairs fewer. Filed
+upstream the moment it was found as format-tree **`S51`**, tracked as **`F41`**.
+
+### Three decisions worth keeping
+
+- **Extended tier, on cost and not usefulness.** A refresh runs whichever pass owns the sidecar, up to
+  the GWAS one measured at 382 requests for one real module. In essentials the default tier would reach
+  an extended budget through a different door. `resolution.csv` alone would qualify as essentials by
+  the cost rule, and splitting the tool per sidecar to get that is not worth a second `Mode` member.
+- **`gene_metrics.csv` runs BOTH its producers.** `enrich_dosage_sensitivity` writes ClinGen's
+  haploinsufficiency and triplosensitivity onto that same file rather than one of its own, so
+  re-deriving with only the constraint pass would rebuild half a table and then report every dosage row
+  as withdrawn. That is why `use` is required for this sidecar and for `gwas_effects.csv`, and why
+  `declared_use_applied_to` names where it mattered.
+- **`produced_by` is stamped, unlike the other directory answers.** `lint_rows` and `compile_module`
+  are deliberately unstamped because they answer about a directory at a moment. This one *also* returns
+  a generated schema answer — `fact_fields` and `subject_fields` are the identity it classified by — and
+  a stale process would classify against an old fact set with exactly the same confidence. RM13's stamp
+  travels with the derived facts, not with the file report.
+
+### The measured thing that makes the headline case honest
+
+For `resolution.csv`, an online run that reaches Ensembl writes a `status="not_found"` row for an rsID
+it cannot resolve (`enrich`'s `elif genome_build == "GRCh38":` branch). So a `source="manual"` row for
+that variant has its subject present in the fresh table and lands in `conflicts` — reported, not
+reapplied — while one whose rsID no link was able to ask about has no fresh row at all and *is*
+reapplied. The docstring says both, because a tool that claimed to have kept the row either way would
+be laundering its own output.
+
+### Also
+
+- The refreshed file is moved back to **where the module kept it**. With the original deleted,
+  `sidecar_write_path` creates the preferred spelling at the spec root — right for a fresh file, and
+  wrong here, because a module keeping its sidecars under `derived/` would have its layout migrated by
+  a refresh. `resolve_sidecar`'s `SidecarCollision` is caught and reported rather than raised.
+- Reapplied rows keep their **cells as text**, appended with a `csv.DictWriter` and never re-serialized
+  from the parsed model, so a value spelled `1.00` stays `1.00`. They land at the end of the file rather
+  than in the pass's sort order, so `artifact.digest` may move on the next compile for a reason that is
+  not a content change — the note says so, and the fact signature is order-independent.
+- **The skill claim this makes stale:** `module-refresh` teaches delete-first as the only route, and
+  says deleting each sidecar costs the hand-curated rows in it. Both are now conditional on the tier —
+  extended has a reversible route. `skills/` is owned by a parallel session and was not touched.
+
+## Unreleased — the sidecars an author reads are answerable, and three restated facts are generated (2026-08-20)
+
+**RM10 and RM11**, shipped and moved to `ROADMAP_HISTORY.md`. No floor moves and no upstream version
+changes: format/compiler 0.6.1, enricher 0.6.4, registry 0.18.2. 181 tests green, `ruff check` clean,
+`pyright` 0 errors. No version bump in this change.
+
+### `describe_machine_table` — "ask the tool, never memory" now covers the files you only read
+
+`describe_table` gates on `draft.DRAFTABLE`, so `resolution.csv` and the six fact tables answered
+*"Unknown table kind 'resolution.csv'"* — false twice over, since the file is known and is in every
+enriched module. The new essentials-tier tool answers the live column list for all seven, projected
+from `reference.authoring_reference()["models"][…]` so the column dicts are upstream's own assembly
+rather than a second one of ours, with `produced_by` like every generated answer.
+
+**The do-not-author signal is structural, not advisory**, which was the brief's real constraint. A
+separate answer model rather than a flag on `TableDescription`, because extending it would have had
+to fill `requirements`, `redundancy_bearing` and `attestation_bearing` — three fields whose whole
+subject is authoring — with empty values, and an empty `requirements` reads as *no requirements*
+rather than *the question does not apply*. Instead: no template, no linter and no requirements answer
+exists for these tables; `MachineTableDescription.hand_authored` is `Literal[False]` where
+`TableDescription`'s is now `Literal[True]`, so the difference is in the schema an agent reads before
+calling; and the authoring routes redirect by name through `_shared.known_kind` instead of calling a
+real file unknown. `refusal` says what a hand-written cell costs — the passes merge rather than
+overwrite, so it survives every later run wearing the source's authority.
+
+**`licensing.csv` is exempt, and the exemption is derived**: it is refused by the machine route under
+both spellings with a pointer back to `describe_table`, because it is in `draft.DRAFTABLE` — the one
+fact sidecar a human writes. Nothing has to remember that.
+
+### Three answers that restated a schema fact now generate it
+
+- **`list_tables().sidecars` was a literal four; the installed toolchain has seven.** It omitted the
+  format-0.6 fact tables `gene_validity.csv`, `clinical_assertions.csv` and `gwas_effects.csv` while
+  `authoring_reference` in the same module described all three. Derived now from
+  `just_dna_registry.specfiles.FACT_CSVS` + `RESOLUTION_CSV` minus the draftable kinds — the public
+  roster, because `compiler._FACT_TABLES` is the authoritative one and is private (`S47`). The
+  `resource://just-dna/tables` prose restated the same list and is rendered from the same constant.
+- **`keyed_on` for `copynumbers.csv` named `modifier_cn`**, whose own field description has read
+  *DEPRECATED since 0.6, removed at 1.0* for two releases. Now `modifier_copy_number`. The key half
+  stays hand-kept because nothing public derives it — `draft.natural_key` is row-level and the two
+  name registries are private (`S48`) — so the drift class is closed by a test that resolves every
+  token against `model_fields` and rejects one whose description opens with `DEPRECATED`. Run against
+  the old map it flags six tokens; three of them were loose prose (`variant`, `a`/`b`/`trait`,
+  `trait`) and are now real column names, since a token that does not resolve cannot be checked.
+- **`studies.csv` was described in pre-RM47 terms.** Upstream relaxed
+  `StudyRow.REQUIRED_ANY_OF` to `()` in 0.6: a paper grounding a bin threshold, a method or a
+  population is a legal row naming no variant, and `variant_key` may be null. The subject said "the
+  evidence for a variant", which would have an author drop exactly that row. `_COMPOSITION_NOTE` now
+  adds that a binning module may carry `studies.csv` without `variants.csv`, checked by validating
+  such a spec strict-green rather than by asserting prose.
+
+### Three upstream notes, filed the day they were found
+
+`S47` (no public `csv -> row model` map for the fact tables, so a consumer must hand-keep one —
+**accepted and fixed in their tree the same hour** as `hints.derived_model_for`, which retires our map
+the release it installs, and they declined to widen `describe_table` for the reason this change
+assumed),
+`S48` (a kind's natural-key *columns* are unobtainable — `natural_key` returns values, the registries
+are private — which is how `modifier_cn` went stale here), and `S49` (`COMPANION_KINDS` pulls
+`variants.csv` in behind `studies.csv` unconditionally, which RM47 made wrong for a binning module;
+probe attached, strict-green). Tracked here as `F38`, `F39` and `F40`.
+
+### What was NOT edited, on purpose
+
+`skills/` is owned by a parallel session this session, and about eight of its dossiers now claim the
+opposite of what ships — each fact table's reference says `describe_table` refuses it and quotes the
+old *"Unknown table kind"* wording, `module-tables/references/LAYOUT.md:194` restates the four-item
+roster, and `create-module/SKILL.md`'s studies section still gives the pre-RM47 identity rule. The
+list was reported rather than applied; a skill edited underneath its author is a worse outcome than a
+stale line with a known owner.
+
+## Unreleased — the GWAS Catalog pass is wrapped (2026-08-20)
+
+**RM12**, shipped and moved to `ROADMAP_HISTORY.md`. No floor moves and no upstream version changes:
+format/compiler 0.6.1, enricher 0.6.4. 165 tests green, `ruff check` clean, `pyright` 0 errors. No
+version bump in this change.
+
+### `gwas_effects.csv` was the last enricher pass with no route through this surface
+
+`enrich_gwas_effects(spec_dir, strict=False, use="unstated", study_facts=True, offline=False)` in
+`tools/passes.py`, registered in `register_extended_passes`, returning a new `GwasReport`. One row
+per published **association**, not per variant. Before this an author driving the plugin had to shell
+out to `just-dna-enricher gwas <dir>`, which the dossier documented as a gap.
+
+**Extended, decided by cost.** `1 + 2N` requests for a variant with N associations, because `pmid`,
+`trait`, `ancestry` and `study_accession` all sit behind `_links` — measured upstream at **382
+requests and 0 cache hits** on one real module, since rs1800562's 189 associations each name their
+own study. Sized by how much has been published, not by what the caller named.
+
+### What the tool refuses to smooth over
+
+- **`strict` fires on the usual answer.** It escalates on `unusable` and `p_value_underflows` and
+  never on `missing`, because the Catalog holding nothing for a variant is a *fact* about the
+  variant and true of most clinically authored ones — recorded as a `not_found` row.
+  `reference_examples/hfe_hemochromatosis`, a shipped flagship, carries **six** p-values the Catalog
+  publishes as `0.0`, so strict refuses it while nothing about it is wrong. The docstring says so,
+  and the failure path repeats it on the result. It also escalates **after** the write, so a strict
+  failure leaves the sidecar holding everything `best_effort` would have written — a fetch failure
+  writes nothing, and upstream's verbatim message is what distinguishes them.
+- **Published betas are not weights, and that is now readable rather than asserted.**
+  `associations_without_effect_allele` and the sorted distinct `effect_units` are computed from the
+  rows upstream returned. `not_found` rows are excluded from the first: their null `effect_allele`
+  means *no association exists*, while a recorded association's null means *the study never
+  established which allele carries the effect*, and counting them together reports the first as if
+  it were the second. On one real module: **33 of 186** associations name no effect allele, and one
+  variant carries **12 distinct `effect_unit` values**, several of them the Catalog's uninformative
+  `unit`. There is no argument on this tool that could write `weight`.
+- **`study_facts=false` is a sticky cut.** It saves two thirds of the budget and leaves
+  `pmid`/`trait`/`trait_efo_id`/`ancestry`/`study_accession` null — and the merge is keyed on
+  `association_id` alone, so a later run with study facts **on** skips those rows rather than
+  backfilling them. Only deleting the file recovers them. Warned on the result, asserted in the
+  test, and filed the same day as format-tree `S50` / our `F38` — a doc gap, since the code is the
+  merge rule working correctly.
+- **`use` gates nothing here and says so.** EMBL-EBI names no licence, so `commercial_use` is
+  recorded **unknown** rather than permitted; the terms of the thousands of publications the Catalog
+  summarizes are not settled by its terms page.
+
+### Two decisions worth keeping
+
+- **No `produced_by`.** RM13 stamps generated *schema* answers; this is a verdict about a directory
+  at a moment, which RM13 explicitly left unstamped, and `SchemaVersions` carries the format and
+  compiler versions where a pass answer would need the **enricher's**. A stamp naming the wrong
+  package is worse than none.
+- **No counter is coalesced to zero on a failure.** `rows`, `requests_made`, `requests_saved`,
+  `p_value_underflows` and `unusable` are `int | None`, and the failure path passes `None` for all
+  five. On a strict escalation `0` would be a *wrong* answer rather than a missing one: upstream's
+  message names non-zero counts and the sidecar is already on disk. `rows` is `None` on an offline
+  no-op too, because an existing file keeps every row it had and the pass never looked.
+- **One `except` arm on purpose.** `GwasNotFound` is a subclass of `GwasError`, so an arm for it
+  would have to come first — but it cannot arrive: `associations_for` catches the Catalog's 404 and
+  returns the empty *answer* that becomes a `not_found` row, and `follow` catches it so an
+  association whose study record moved keeps null study facts. An arm for a type that never arrives
+  reads as if it did.
+
+### The strict ladder has a test here, and still has none upstream
+
+`strict` appears nowhere in `enricher/tests/test_gwas.py`, in either direction. Four tests drive the
+real `enrich_gwas` with an injected transport (only the network is excluded) and assert what it
+observably does: one underflowing association raises and the row is **on disk** when it raises;
+`best_effort` on the same input reports the count and succeeds without duplicating the row; offline
+is a no-op that says it did nothing; and `study_facts=false` costs exactly one request and does not
+heal on a later run. `test_modes_and_auth.EXTENDED_ONLY` pins the tier.
+
 ## Unreleased — every generated schema answer names the toolchain that produced it (2026-08-20)
 
 **RM13**, shipped and moved to `ROADMAP_HISTORY.md`. No floor moves and no upstream version changes:
