@@ -416,6 +416,22 @@ Deliberate. Two opinions differing is not a factual error, and ClinVar is not tr
 read the primary literature may correctly disagree with a one-star submission. The finding carries
 ClinVar's review-star count so you can weigh it. The allele-function check behaves the same way.
 
+**`N row(s) already in variants.csv identify by rsID alone … this run writes those rsIDs with their full coordinate`**
+Your module was drafted before enricher 0.6.3, when the drafter keyed a site on `ref` and an ordinary
+dup/del mirror pair (`A>AT` beside `ATT>A` at one position) collapsed onto a single rsid-only row —
+the second ClinVar record was dropped, in silence, and which one survived was decided by allele
+spelling rather than by review stars. Re-drafting recovered every dropped record; it did **not**
+retract the collapsed row, because drafting appends and never mutates. So the module now carries both
+the coordinate-keyed replacements and the row they replace, and the stale one is the row that
+resolution expands onto every locus its rsID reaches, wearing the survivor's `clin_sig`, gene and
+condition.
+
+**Action: delete each named row once the coordinate rows cover its records.** The drafter will not do
+it for you and should not — by re-draft time that row is authored material and you may have curated
+its `genotype`, `state` or `conclusion`. Nothing in the file can find these rows on its own (a
+coordinate row carries no `rsid`), so this warning is the only signal; do not filter it. Drafting into
+a fresh directory and reconciling is the cleaner remediation if you have not already re-run in place.
+
 **A wall of near-identical warnings**
 Should not happen; findings aggregate per gene with a count and examples. If you see one, that is a bug
 worth reporting upstream rather than filtering.

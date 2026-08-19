@@ -262,18 +262,28 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
         leave the tool surface. Re-runnable and additive: rows already in the files
         are left exactly as they are.
 
-        **If this module was drafted before enricher 0.6.3, draft into a FRESH
-        directory and reconcile — do not re-run over the file you have.** Below
-        0.6.3 the drafter keyed a site on `ref`, so an ordinary ClinVar dup/del
-        mirror pair collapsed onto one row and the second record was dropped
-        silently (upstream S41). Re-running here *does* recover every dropped
-        record, which is what makes it the tempting move — but "additive" cuts
-        both ways: the collapsed rsid-only rows are not retracted, so the module
-        ends up asserting both the right answer and the wrong one for the same
-        locus. Measured on one gene: 0 records still missing, 31 stale identities
-        left behind. **Nothing in the file distinguishes them** — a coordinate
-        row carries no `rsid`, so no column separates a stale row from a
-        legitimate rsid-only one. A fresh draft is the only clean comparison.
+        **If this module was drafted before enricher 0.6.3, read the superseded-row
+        warning before you do anything else.** Below 0.6.3 the drafter keyed a site
+        on `ref`, so an ordinary ClinVar dup/del mirror pair collapsed onto one row
+        and the second record was dropped silently (upstream S41). Re-running here
+        recovers every dropped record — but "additive" cuts both ways: the collapsed
+        rsid-only rows are not retracted, so the module ends up asserting both the
+        right answer and the wrong one for the same locus. Measured on one gene: 0
+        records still missing, 31 stale identities left behind.
+
+        Since enricher 0.6.4 this run **names them** — *"N row(s) already in
+        variants.csv identify by rsID alone … this run writes those rsIDs with their
+        full coordinate"* — counted, with examples. Nothing deletes them, and that is
+        deliberate: by re-draft time a drafted row is authored material and yours may
+        have been curated since, so removing it is your call. Delete each once its
+        records are covered by the coordinate rows.
+
+        **The warning is the safety net, not the plan.** A file-level check cannot
+        find these rows — a coordinate row carries no `rsid`, so no column separates
+        a stale row from a legitimate rsid-only one, and only the drafting run knows
+        which rsIDs it is deliberately writing by coordinate. Drafting into a
+        **fresh directory** and reconciling against it stays the cleaner
+        remediation; the notice exists for the author who re-ran in place.
 
         **`use` is required.** Pass `unstated`, `non_commercial` or `commercial`.
         There is no default because both possible defaults are wrong: `unstated`

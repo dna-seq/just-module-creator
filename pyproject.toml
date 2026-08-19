@@ -1,6 +1,6 @@
 [project]
 name = "just-module-creator"
-version = "0.10.1"
+version = "0.10.2"
 description = "MCP server + Claude Code skill for authoring and publishing just-dna annotation modules"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -27,9 +27,15 @@ dependencies = [
     # second record as `already_present` (upstream S41 — 725 records over five genes,
     # 187 of them dropping the better-reviewed half). A drafter that quietly writes
     # fewer rows than the source has is the worst kind of floor to leave soft.
+    # 0.6.4 carries the other half of that and is the real floor: re-drafting a
+    # pre-0.6.3 panel recovers the dropped records but cannot retract the collapsed
+    # rows, and below 0.6.4 nothing can find them. `_superseded_rsid_rows` is the only
+    # thing that sees the condition — it holds the rsIDs the run is deliberately
+    # writing by coordinate, which no file-level predicate can reconstruct, because a
+    # coordinate row carries no rsid (upstream S45, our F36).
     "just-dna-compiler>=0.6.1",
     "just-dna-format>=0.6.1",
-    "just-dna-enricher>=0.6.3",
+    "just-dna-enricher>=0.6.4",
     # 0.17.0 is the release that adopts format 0.6, and the floor has to move with ours:
     # its client reads `just_dna_format.layout` and the new manifest blocks unguarded, so a
     # 0.14 client beside a 0.6 format install is an AttributeError waiting inside a download.
