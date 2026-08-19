@@ -90,9 +90,9 @@ The question is **what is the row's subject** — not what data you happen to ha
 | which variants make up a named allele | `haplotypes.csv` | `(haplotype_name, variant, allele)` |
 | what a named allele *does* | `allele_function.csv` | `(gene, allele)` |
 | a **pair** of alleles (a diplotype) | `diplotypes.csv` | `(gene, a, b, trait, drug, clinical_context)` |
-| one variant + one drug | `pharm_variants.csv` | `(variant_key, drug, genotype, category, annotation_id)` |
+| one variant + one drug | `pharm_variants.csv` | `(variant_key, drug, genotype, phenotype_category, annotation_id)` |
 | a metabolizer **activity score** range | `activity_phenotype.csv` | `(gene)` |
-| a **copy number** range | `copynumbers.csv` | `(gene, modifier_gene, modifier_cn)` |
+| a **copy number** range | `copynumbers.csv` | `(gene, modifier_gene, modifier_copy_number)` — `modifier_cn` is the deprecated integer spelling, read until format 1.0; setting both is an error |
 | a **repeat count** range | `repeat_alleles.csv` | `(gene, repeat_unit)` |
 | an mtDNA **heteroplasmy fraction** range | `heteroplasmy.csv` | `(gene, reference_sequence, tissue, variant_key)` |
 | a published polygenic score | `pgs.csv` | `(pgs_id, trait)` |

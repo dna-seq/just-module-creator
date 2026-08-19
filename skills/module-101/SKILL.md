@@ -1,0 +1,297 @@
+---
+name: module-101
+description: >-
+  Start here. What a just-dna annotation module is, what this plugin can and cannot do, how the four
+  packages fit together, the module lifecycle including second and later passes, the minimal
+  authored surface, and what kinds of module are possible. Load this first for any orientation
+  question, then hand off to the stage skill that owns the step — `module-tables` for which table
+  and what a module looks like on disk.
+  Triggers: "what is a module", "what can I do with this", "how do I create a module", "what is
+  just-dna", "where do I start", "what kinds of module", "is this for reading my DNA", "what does
+  this plugin do", "explain modules", "module overview", "getting started", "which skill do I need".
+---
+
+# just-dna modules — the overview
+
+**This is the map, not the procedure.** Every detail lives in a stage skill; this file exists so you
+know what you are looking at, what is possible, and which skill owns the step you are on. If you find
+yourself deciding a column value from this file, you have gone one level too deep — stop and load the
+stage skill, or ask the tool.
+
+## What a module is
+
+**A module is a rulebook.** *If the DNA says X at spot Y, that means Z, and here is who showed it.*
+
+Concretely: a directory of authored CSVs plus `module_spec.yaml`, compiled into a set of parquet
+files with a content-addressed `manifest.json`. It carries **annotation only** — lookup tables
+mapping a genotype, a diplotype or a measured quantity to a phenotype. *What it looks like on disk* —
+below — has the real trees for all four shapes you will meet one in.
+
+## What you can do with this plugin
+
+| You want to | This is possible | Owned by |
+|---|---|---|
+| author a module from a trait and some sources | yes, end to end | the stage skills below |
+| draft rows from a source that publishes them | ClinVar panels, CPIC star alleles, ClinPGx drug response | `module-draft` |
+| find the papers behind a row, and read them | PubMed, Europe PMC, Crossref, preprints, open-access fulltext | `find-evidence` |
+| turn rsIDs into coordinates and mint allele ids | yes, and it catches an off-by-one nothing offline can | `module-enrich` |
+| check what you asserted against what the sources say | reference base, ClinVar call, PMIDs, identifiers, ACMG SF, gene↔locus | `module-check` |
+| record published GWAS effect sizes | yes — **beside** `weight`, never into it | `module-weights` |
+| point at a published polygenic score | yes, as a manifest of PGS Catalog ids | `module-weights` |
+| build and verify the artifact | yes, reproducibly and offline once resolved | `module-compile` |
+| rehearse a publish, then publish | polygon first, then the immutable catalog | `module-publish` |
+| **revise a module that already exists** | yes — and this is the common case | `module-revise` |
+| read back somebody else's published module | yes | `module-diff` |
+
+**What it cannot do, and will not pretend to.** It never opens a VCF, calls a genotype, or gives
+medical advice. It does not lift coordinates between assemblies (it recovers the rsID instead). No
+tool fills `weight` — that is the author's model of the finding. It does not compute a polygenic
+score. And it cannot tell you whether your annotation is medically *correct*: it can only make what
+you claimed legible, attributable and checkable.
+
+**One limit that will surprise you, because it is a gap rather than a refusal: a module with no
+`variants.csv` cannot be found by gene.** `manifest.stats` is computed from `variants.csv` alone and the
+registry's gene index reads `stats.genes`, so a PGx, copy-number or activity-bin module publishes
+`genes: []` and `registry_search(gene=…)` will not return it however many rows carry a `gene` cell.
+Do not repair this with an empty `variants.csv` — name the genes in the README instead. `module-tables`
+carries the guard.
+
+**`--strict` is not a correctness gate.** It means *reproducible*. The compiler never fetches, so it
+holds no reference to check a coordinate against: a module shifted one base passes validate, passes
+strict compile, reports `fully_resolved: true`, and mints allele ids the compiler then reports
+**verified** — a content-addressed id is a correct digest of whatever it is handed. That is not
+hypothetical. Four real modules shipped 3,038 shifted variants through every offline gate because one
+docstring said `start` was 0-based; **`start` is always the 1-based VCF position — paste it, never
+subtract one.**
+
+## The architecture — four packages, one of which fetches
+
+The dependency arrow points inward: **enricher → compiler → format**, plus the registry beside them.
+Most confusion comes from mixing them up.
+
+| Package | Owns | Never |
+|---|---|---|
+| `just-dna-format` | the schema: models, vocabularies, identity, the hashes, signing | fetches; ships a CLI |
+| `just-dna-compiler` | spec → parquet + `manifest.json`; validate, reverse, close, templates, hints | fetches; invents a row |
+| `just-dna-enricher` | resolution, VRS ids, the derived sidecars, the drafters, **every cross-check** | decides what a variant *means*; repairs an authored cell |
+| `just-dna-registry` | accounts, namespaces, publish, search, download, the module card | authors anything |
+
+Two consequences worth holding on to. **The compiler is inject-only** — it consumes a
+`resolution.csv` the enricher produced and will not look a coordinate up for you. And **a check that
+needs a reference can only live in the enricher**: the compiler can catch two rows contradicting each
+other about a reference base, and only the enricher can catch a row contradicting the genome.
+
+`pip install just-dna-enricher` pulls the compiler and the format tier. Python ≥ 3.13. This plugin
+wraps all four as MCP tools; `references/CLI.md` names the few things it deliberately does not wrap.
+
+## The lifecycle
+
+```
+0 origin ─▶ 1 scaffold ─▶ 2 draft ─▶ 3 curate ─▶ 4 enrich ─▶ 5 cross-check ─▶ 6 compile ─▶ 7 rehearse ─▶ 8 publish ─▶ 9 install & join
+            (spec dir)    (if a      (only an                (report only,     verify      (polygon)    (immutable)   (consumer)
+                           source     author can)             never repair)     sign, close
+                           has it)                                                                          │
+   ┌──────────────────── 10 feedback ◀───────────────────────────────────────────────────────────────────────┘
+   └─▶ pass 2+ re-enters at 3 (curate) — usually. Or 2 for a source refresh, 1 to add a table kind,
+       6 to rebuild under a newer toolchain. Never at 0: a second pass never starts from nothing.
+```
+
+Steps 4 and 5 are the only ones that fetch. Once `resolution.csv` and `literature.csv` exist they
+*are* the pin, so every later compile is offline and reproducible.
+
+**Two things about this diagram matter more than the order itself.**
+
+**Curate before you enrich.** A drafted row leaves `<<REPLACE>>` where a human must decide, and that
+placeholder makes every loader refuse the file — deliberately, since resolution is allele-aware and a
+placeholder genotype would skip the allele filter on exactly the rows that need it. You do not need
+to enrich first to see the alleles: the draft report prints the allele pair, and `lookup_variant`
+gives you the same for a row you are writing by hand.
+
+**A second pass is the normal state of a module, and it has six shapes** — prose, review, evidence,
+data, source refresh, rebuild. They compose, they differ in what they invalidate, and the version
+number is *not* how you tell them apart: **there is no versioning contract.** `2.0.0` does not mean
+reviewed, a module may sit at `1.0.0` forever and be fine, and no agent may withhold a publish
+waiting for a milestone that does not exist. What accumulates trust is what the module *records* —
+`authorship` and its `kind`, the checks in `verification.json`, the closure. `module-revise` owns all
+of this.
+
+## What it looks like on disk
+
+**A spec directory is flat**: `module_spec.yaml` plus the CSVs you use plus the sidecars the machine
+wrote, all side by side, because the compiler reads authored and derived tables from **one directory**.
+A compiled artifact is parquets plus `manifest.json` in an `out/` dir you never edit. A module you
+download from the registry is the artifact, optionally plus every input — and under one download flag
+the machine-written half is re-homed under `derived/`, which is a *presentation* rather than a place a
+file lives.
+
+**`module-tables` holds all three trees, file by file**, along with what the registry hoists, renames
+and refuses on the way in. Load it when you need to know where something goes.
+
+## A bundle somebody hands you — the common starting point
+
+**This is the common starting point, not the rare one.** An author arrives with a zip from an outside
+session — CSVs already written, a README already claiming things. Such a bundle typically carries the
+deprecated `sources.csv` spelling, no `verification.json`, no closure, and no coordinates you can
+trust. Triage it before extending it; do not assume the previous author's convention.
+
+The worked case is upstream in `../just-dna-format/data/output/corrected_modules/`: five externally
+authored modules where **every coordinate in four of them was one base too low**, because the author
+converted the GWAS Catalog's position to "0-based" against a docstring that has since been fixed. All
+four passed validate, passed `compile --strict`, reported `fully_resolved: true`, and minted allele ids
+the compiler reported **verified**. What defeated the cross-check as well is worth knowing: each module
+shipped its own hand-built `resolution.csv`, so validate-by-redundancy compared one author's
+convention against itself and agreed.
+
+Three lessons for a handed bundle, all of them cheap:
+
+- **The fifth module was immune, and the reason is a design choice you can copy.** `muscle_lean_mass`
+  authors **rsIDs only** and carries no coordinates, so the whole class could not touch it. Author the
+  rsID and let resolution place it.
+- **Delete a stale sidecar rather than re-running over it.** The repair was `start + 1`, then *delete
+  each `resolution.csv`* and re-enrich — because an existing sidecar is authoritative and merged, so a
+  stale one persists in silence.
+- **Fixing coordinates does not make the module reviewed.** That correction left `weight` values
+  rank-normalized by the original agent, `direction` unknown on most rows, `conclusion` prose unread,
+  and a README asserting allele validation *that had been performed over the shifted coordinates*.
+  Say which of those you did and which you did not; a bundle's own README is a claim, not a receipt.
+
+**There are two jobs, and this plugin only does the first: writing the rulebook, and reading a DNA
+file against it.** A module never contains a sample, a genotype under test or a measured value. The
+consumer brings the measurement at query time. Correct this misconception early and unprompted with a
+non-specialist — their working model is usually "point this at my DNA file and tell me about me", and
+every later step reads as nonsense against it.
+
+For the rest of the beginner vocabulary — variant as street address, genotype as which letters you
+have, every row as a claim with a receipt — see `create-module`'s *Explaining this to someone who is
+not a geneticist*. **And never let a metaphor decide a column**: the moment the question is what a
+cell may contain, ask `describe_table` / `table_requirements`.
+
+
+## For the author: the minimal surface
+
+Almost every module you will meet is **three files plus one**:
+
+| File | What it is | Required? |
+|---|---|---|
+| `module_spec.yaml` | who the module is, which build, what its weights mean | **yes** — the only always-present file |
+| `variants.csv` | one row per (variant, genotype), with the conclusion a reader gets | no, but it is the commonest lead table |
+| `studies.csv` | the receipt for each claim | **iff `variants.csv` is present** |
+| `README.md` | the prose — **and it becomes the catalog card** | no, but a module without one has a blank card |
+
+That is the whole minimal surface. Everything else is optional and additive: **nine** more authored
+table kinds for pharmacogenomics, binning and polygenic scores, a licensing ledger, and **eight**
+machine-produced sidecars you read but never hand-finish.
+
+**A module includes only the tables it uses — `variants.csv` is not mandatory.** A PGx or binning module
+carries no `variants.csv` and therefore no `studies.csv` requirement, which surprises people. **So the
+kinds of module you can build are:** a curated variant panel; a gene panel drafted from ClinVar and then
+curated; a pharmacogenomics module (star alleles, single-variant drug response, or both); a measurement
+module (repeat expansion, copy number, mtDNA heteroplasmy, metabolizer activity, PRS percentile bands); a
+pointer module naming published PGS scores; or a mix.
+
+**Which table a finding belongs in, and every column of every one of them, is `module-tables`.** It
+routes to an exhaustive dossier per table. Do not decide a table from this file.
+
+### Read one before you start
+
+Sixteen worked modules ship in `../just-dna-format/reference_examples/`, each with a README that says
+what it demonstrates and often what it *broke*. Open the one shaped like what you are building.
+
+| If you are building | Read | It is |
+|---|---|---|
+| a curated variant panel | `hfe_hemochromatosis` | 13 rows, one gene, the whole SNP core done by hand |
+| a panel drafted from ClinVar | `pathogenic_clinvar`, `hboc_palb2` | 328 rows drafted then curated; and the one module that exercises every derived producer |
+| star alleles | `cyp2c19_star_alleles`, `apoe_epsilon` | the biggest module here (1190 diplotypes, curated by *subtraction*); and haplotypes named `e2`/`e3`/`e4` rather than `*2` |
+| single-variant drug response | `pgx_slco1b1_simvastatin` | nine rows for one variant and one drug, and the only module with a pinned licence hash |
+| a repeat expansion | `fmr1_cgg_repeat`, `htt_repeat_expansion` | bins with a citation on each; and the same thing left deliberately uncited so the gap stays visible |
+| mtDNA heteroplasmy | `mt_heteroplasmy` | tissue in the key, and VCF pointers that must name their namespace |
+| structural or copy-number | `cyp2d6_structural`, `mt_common_deletion` | symbolic alleles, and a deletion no VRS id will ever name |
+| compound heterozygosity | `hfe_compound_het` | cis and trans as two rows, indistinguishable to a consumer without phase |
+| anything on GRCh37 | `grch37_build`, `cyp2c9_warfarin_grch37` | the non-GRCh38 paths, and the hand-injected `source=manual` resolution rows |
+| anything near a PAR | `par_boundary`, `shox_par1` | pseudoautosomal as a property of the *locus*, never of the gene |
+
+**Four facts from that corpus that will recalibrate what you think a module needs.**
+
+- **Seven of the sixteen carry no `variants.csv` at all**, and six of those carry no `studies.csv`
+  either. `htt_repeat_expansion` is three files total and holds no coordinate anywhere.
+- **`weight` has never been authored.** The column appears in four of the sixteen and is blank in all
+  42 cells. One module declares `weighting:` and it is a *negative* declaration — *"scale: none — this
+  module authors no weights"*, pointing a reader at `gwas_effects.parquet` instead.
+- **Two declare a `version:`; one carries `authorship:`.** Neither is required, and their absence says
+  nothing bad about a module.
+- **All sixteen are closed, and fifteen record zero checks.** A closure says *a human declared these
+  bytes final*; it does not say anything was verified, and `close` drops check records that no longer
+  describe the authored bytes. **A closed module is not a checked module.**
+
+**Never ask an author for what only a reviewer can give.** The person you are working with brings the
+theme and the sources — a trait they care about, three PDFs, a podcast. The triage, the rows, the
+conclusions and the located passages are yours. An author who cannot read a genetics paper cannot
+tell you whether your `state` is right, and asking sends them away to find someone who can — which
+is a later pass, performed by a different person.
+
+## For the agent: the surface beyond the author's
+
+Eight tables are written by a **machine**, not by you: `resolution.csv`, `frequencies.csv`,
+`gene_metrics.csv`, `literature.csv`, `gene_validity.csv`, `clinical_assertions.csv`,
+`gwas_effects.csv` and `verification.json`. You need to know they exist and that they behave unlike
+authored ones — they **merge rather than clobber**, they are hashed **by their facts rather than their
+bytes**, and re-deriving one means deleting it first, which discards hand-curated rows along with stale
+ones. `licensing.csv` is the one of them a human is expected to write.
+
+**`module-tables` carries the roster, who writes each, and a dossier apiece.** The compiled artifact is
+nineteen possible parquets plus `manifest.json`; you never write parquet by hand, and `reverse` is a
+fixed point rather than a backup — it cannot restore `authorship`, the verification record or the
+closure. **The module in your repository is the source of truth.**
+
+## The three rules the tools enforce rather than merely document
+
+1. **Ask the tool, never memory.** Every column list, vocabulary and requirement is generated from
+   the live models, so `describe_table` / `table_requirements` / `authoring_reference` cannot drift
+   from what the compiler accepts. No skill here reproduces them.
+2. **Report, never repair.** A lookup shows you a value and refuses to write it into an authored
+   cell. A later check compares your independently authored value against that same source, so
+   filling it *from* the source makes the check agree with itself — permanently. **The refusals are
+   the feature.**
+3. **A check that could not run is not a check that passed.** `null` and `unknown` never collapse
+   into a pass, a blank cell means *we do not know* and never *no*, and the warnings on a green run
+   are the interesting output.
+
+## "How do I create one?" — the short answer
+
+Say which trait, hand over whatever sources you have, and then, in order: scaffold the spec →
+draft anything a source publishes → curate what only an author can decide → enrich → cross-check →
+compile → close → rehearse on the polygon → publish. Each arrow is a skill, below. Expect the whole
+first pass to be one working session for a small module, and expect a second pass later — that is
+normal, not a sign the first one was wrong.
+
+## Where to go next
+
+| Step or question | Load |
+|---|---|
+| the full authoring procedure, step by step | `create-module` |
+| which table kind a finding belongs in, and every column of it | `module-tables` |
+| what a module looks like on disk, and what `derived/` is | `module-tables` → `references/LAYOUT.md` |
+| a message you do not recognise | `create-module` → `references/SYMPTOMS.md` |
+| the CLI surface, and what is not wrapped | `create-module` → `references/CLI.md` |
+| finding, verifying and reading the literature | `find-evidence` |
+| **"has this already been decided?"** | `../just-dna-format/docs/FAQ.md` — keyed by *question*, one or two sentences and a link, and **a refusal is an answer**. Most of it is a repair somebody proposed that was checked and rejected for a reason worth knowing. Read it before proposing a fix to the format. |
+| the design behind any of it | `../just-dna-format/docs/`: `MODULE_LIFECYCLE.md` (the stages and every later pass), `SCHEMAS.md` (the models), `COMPILER.md` (the transform, and its blind spots), `ENRICHER.md` (the network tier and every check) |
+
+**A message that cites an `RMn` means known and deliberate, not broken.** Leave the data honest, note
+the limitation, and do not invent a workaround — `../just-dna-format/docs/RM_TOC.md` says what any
+given number is.
+
+**The stage skills named throughout this file are the target shape, not all built yet.** Until they
+land, `create-module` carries the procedure for stages 1–8 and is the one canonical copy; this file
+never restates it. The planned split is `module-start`, `module-draft`, `module-curate`,
+`module-enrich`, `module-check`, `module-compile`, `module-close`, `module-publish` for the spine;
+`module-revise`, `module-refresh`, `module-diff` for second and later passes; and `module-weights`,
+`module-consumer` as references the stages load. **`module-tables` is written** and owns the table
+roster, the on-disk shapes and the registry's `derived/` layout.
+
+## What this file deliberately does not contain
+
+No column lists, no vocabularies, no requirement tables — ask the tool. No procedure — that is
+`create-module`. No symptom lookup, no CLI reference, no per-table contracts. If a question is
+answerable only with a specific cell value, a specific flag or a specific warning phrase, it is a
+subskill's question and this file should not have grown to hold it.

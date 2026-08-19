@@ -8,7 +8,7 @@ can carry — read it when the simple one already works.
 `describe_table` gives one kind's columns and vocabularies, `table_requirements` says what is
 required. Those answers come from the live schema; anything written down in prose here would drift.
 The [create-module skill](../skills/create-module/SKILL.md) is the procedure, and
-`references/TABLES.md` beside it is the "which table?" decision.
+The `module-tables` skill is the "which table?" decision, and carries a dossier per table.
 
 ## Rows that are not about a genotype
 

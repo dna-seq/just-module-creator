@@ -254,7 +254,7 @@ docs/
 skills/create-module/
   SKILL.md             the workflow, MCP-first
   references/
-    TABLES.md          which table kind a finding belongs in
+    TABLES.md          a pointer to the module-tables skill (the decision moved there)
     SYMPTOMS.md        message text -> cause -> action
     CLI.md             the full CLI surface, and what is not wrapped
 skills/find-evidence/

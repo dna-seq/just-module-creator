@@ -25,7 +25,7 @@ Three companions ship beside this file:
 
 | Read | When |
 |---|---|
-| `references/TABLES.md` | Choosing which table kind a finding belongs in, or which axes must go in a key. |
+| `module-tables` (skill) | Which table kind a finding belongs in, which axes must go in a key, what the tree looks like on disk, and an exhaustive dossier per table. `references/TABLES.md` is now a pointer to it. |
 | `references/SYMPTOMS.md` | Anything reports a message you do not recognise. Match on the quoted phrase. |
 | `references/CLI.md` | The full CLI surface, what is *not* wrapped by a tool, and the environment. |
 
@@ -187,7 +187,7 @@ carries `pharm_variants.csv` and **no** `variants.csv`.
 
 1. **What is each row's subject?** A variant? A diplotype pair? A measured quantity? That picks the
    table kind, and a module includes **only** the kinds it uses — never an empty `variants.csv` to
-   keep another table company. → `references/TABLES.md`, or `list_tables`.
+   keep another table company. → the `module-tables` skill, or `list_tables`.
 2. **Are the coordinates GRCh38, and are they VCF positions?** Two separate questions, and the
    second has bitten harder. `start` is the **1-based VCF position** — the number Ensembl, dbSNP,
    ClinVar and gnomAD all show you. Paste it; never convert it. On build: anything but GRCh38 falls

@@ -14,8 +14,9 @@ registry and pipelines findings go to `../just-dna-marketplace/docs/CONSUMER_SUG
 keeps its own `S<n>` series. **Both intakes now work the same way**: the registry
 adopted the split inbox/history convention on 2026-08-11, so an answered `S<n>`
 moves to `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS_HISTORY.md` there too,
-and its next id comes from `.claude/triage-state.sh --next` in that repo (`S4` as
-of 2026-08-11, after ours). Check there before filing — a second consumer hitting a known
+and its next id comes from `.claude/triage-state.py --next` in that repo — **`.py`, not the
+`.sh` this file named until 2026-08-20** (it answered `S14` on 2026-08-20, after ours; never
+trust a number written here). Check there before filing — a second consumer hitting a known
 one appends a corroboration rather than opening a new number. Write the note and
 stop; never commit in that repo.
 
@@ -24,9 +25,10 @@ answered `S<n>` moves to `../just-dna-format/docs/CONSUMER_SUGGESTIONS_HISTORY.m
 whose index table carries the verdict and where the fix landed. Its inbox has been
 empty since 2026-08-11 — every one of `S1`–`S18` is answered — so an entry of ours
 that has vanished from it was replied to, not dropped. The registry's intake gained
-the same two-file split on 2026-08-11; its history file exists but is still empty,
-because `S1` was answered in place and not yet archived. So there, for now, read the
-`**Status —**` paragraphs in the inbox itself.
+the same two-file split on 2026-08-11 and **its history file is now populated** — `S1`-`S12`
+are archived there, answered across their 0.13.0-0.16.0 releases. So read both halves the same
+way in both trees; the earlier advice to read `**Status —**` paragraphs in the registry's inbox
+no longer applies.
 
 **Number a new one with the triage script, never from what the inbox shows** — it is
 empty, ids are never reused. **The script is `.claude/triage-state.py` in the format
@@ -678,3 +680,36 @@ it does. The sweep is cheap and correct either way, so it is not urgent to remov
 **Guarded by** `tests/test_modes_and_auth.py::test_building_a_server_cannot_repopulate_the_environment_from_dotenv`
 and `::test_the_dotenv_sweep_actually_finds_the_loader_that_broke_this`, both run against
 the unfixed fixture and watched to fail.
+
+---
+
+## F37 — the registry client's own docstring says a downloaded module gets no derived files, and the function beside it fetches them
+
+**Status —** filed 2026-08-20 as registry `S13`, against `just-dna-registry` 0.18.2 (installed, and
+the same in their checkout). Open. **A documentation defect only; the code is correct.**
+
+`client.py::split_derived`'s closing paragraph reads *"the derived CSVs are stored server-side but
+the manifest attests none of them, so a downloader only receives what
+`artifact.files`/`inputs`/`logs` list"*, and cites a `just-dna-format` `CONSUMER_SUGGESTIONS.md`
+entry that has since been answered. Forty lines further down in the same file,
+`RegistryClient.download` does `names += [e.name for e in manifest.derived or []]` and passes
+`check_derived=True` to `verify_manifest`. `specfiles.py` states the change twice in its own
+comments, both times attributing it to 0.17, and `ModuleManifest` carries `derived` among its 34
+top-level fields at format 0.6.1.
+
+**Why it reached us.** It is the only sentence in the client that says what a downloader actually
+receives, and we were writing the author-facing account of the `derived/` layout from that file.
+Taken at face value it would have had `skills/module-tables` tell an author that `--with-inputs`
+returns no sidecars — the opposite of what 0.17 ships, and a claim they would then design around.
+
+**Mitigation.** The skill's text is written from the code and from `specfiles.py`'s 0.17 comments,
+not from that paragraph: `manifest.derived` attests **bare filenames at the flat root**, the split
+runs *after* `verify_manifest`, and a re-upload is flattened back with `content_signature` unmoved
+because `SIGNATURE_INPUTS` is root-only. No code of ours changed — we call `download` and read
+`manifest.derived`, both of which behave as the code says.
+
+**Closes when** the paragraph is replaced (we argued in `S13` for replacing rather than deleting it,
+since the question it answers is one a reader has at that point).
+
+**Not guarded by a test.** There is nothing of ours to assert: the defect is in prose we do not
+ship, and the behaviour we depend on is already what we test against.

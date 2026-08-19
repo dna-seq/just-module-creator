@@ -39,8 +39,11 @@ know what you must not do. Links carry positive detail only.
 
 | Path | What |
 |---|---|
-| `skills/create-module/SKILL.md` | **The canonical copy of the authoring procedure.** Do not restate it here or in `docs/` — restating a procedure beside its skill is how the two drift. |
-| `skills/create-module/references/TABLES.md` | Which table kind a finding belongs in. |
+| `skills/module-101/SKILL.md` | **The entry point and the map — high level only.** What a module is, what the plugin can and cannot do, the four packages, the lifecycle *including second and later passes*, and the **minimal** authored surface (`module_spec.yaml` + `variants.csv` + `studies.csv` + `README.md`) and nothing beyond it — the table roster, the on-disk shapes and the `derived/` layout are `module-tables`'. It holds no column list, no procedure and no symptom lookup: anything answerable only with a specific cell value, flag or warning phrase belongs in a subskill, and this file growing to hold one is the drift to watch for. |
+| `skills/create-module/SKILL.md` | **The canonical copy of the authoring procedure.** Do not restate it here or in `docs/` — restating a procedure beside its skill is how the two drift. Being split into per-stage skills; until they land this stays the one copy for stages 1–8, and `module-101` links to it rather than summarising it. |
+| `skills/module-tables/SKILL.md` | **Which table, and where every file sits.** The router: table choice keyed on grain, the axes that must go in a key, composition, the three on-disk shapes, and the registry's `derived/` layout. Holds no column list and no procedure. |
+| `skills/module-tables/references/*.md` | 24 per-table dossiers plus `LAYOUT.md` (the tree, and the registry's upload normalisation). Each dossier carries an audit banner, 🚧 ROADWORKS and ⚠️ CHECK markers; **anchor on symbol names, not `file:line`**. |
+| `skills/create-module/references/TABLES.md` | A pointer to `module-tables`; the decision moved there. |
 | `skills/create-module/references/SYMPTOMS.md` | Upstream message text → cause → action. |
 | `skills/create-module/references/CLI.md` | The full CLI surface, and what this server deliberately does **not** wrap. |
 | `.claude-plugin/plugin.json` | Claude plugin manifest; declares the MCP server via `${CLAUDE_PLUGIN_ROOT}`. |
