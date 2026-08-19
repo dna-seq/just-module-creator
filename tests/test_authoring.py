@@ -8,7 +8,16 @@ because we are re-testing just-dna-format.
 
 from __future__ import annotations
 
+import json
+from importlib import metadata
+
 import pytest
+
+# The versions the stamp must report, computed here rather than pasted. A literal
+# would be the very defect these tests guard: a version written down once agrees
+# with itself forever, including inside a process serving a stale toolchain.
+FORMAT_VERSION = metadata.version("just-dna-format")
+COMPILER_VERSION = metadata.version("just-dna-compiler")
 
 
 async def test_list_tables_covers_every_draftable_kind(essentials_client):
@@ -114,6 +123,56 @@ async def test_attestation_bearing_is_narrowed_to_the_table(essentials_client):
     result = await essentials_client.call_tool("describe_table", {"csv_name": "sources.csv"})
     columns = {c["name"] for c in result.data.columns}
     assert not set(result.data.attestation_bearing) - columns
+
+
+@pytest.mark.parametrize(
+    ("tool", "args"),
+    [
+        ("list_tables", {}),
+        ("describe_table", {"csv_name": "variants.csv"}),
+        ("table_requirements", {"csv_name": "variants.csv"}),
+        ("get_template", {"csv_name": "variants.csv"}),
+    ],
+)
+async def test_every_generated_schema_answer_names_its_producing_versions(
+    essentials_client, tool, args
+):
+    """A schema answer must say which toolchain generated it (RM13).
+
+    Every skill tells an agent to ask the tool rather than trust its memory, and a
+    stale serving process — a cached plugin build is the measured case — answers
+    with an old schema and no signal at all: 11 columns where the installed format
+    has 14. The stamp is the only thing in the payload that can be compared.
+    """
+    result = await essentials_client.call_tool(tool, args)
+    assert result.data.produced_by.format_version == FORMAT_VERSION
+    assert result.data.produced_by.compiler_version == COMPILER_VERSION
+
+
+@pytest.mark.parametrize("schemas", [False, True])
+async def test_authoring_reference_stamps_both_payload_forms(essentials_client, schemas):
+    """The whole-DSL dump carries the stamp inside its JSON, in both forms.
+
+    It returns a JSON string rather than a model because the dossiers document the
+    access path ``authoring_reference()["models"][...]``; the stamp therefore goes
+    in as a key, and the documented path has to keep working.
+    """
+    result = await essentials_client.call_tool("authoring_reference", {"schemas": schemas})
+    payload = json.loads(result.data)
+    assert payload["produced_by"] == {
+        "format_version": FORMAT_VERSION,
+        "compiler_version": COMPILER_VERSION,
+    }
+    documented_key = "VariantRow" if schemas else "models"
+    assert documented_key in payload
+
+
+async def test_the_tables_resource_names_its_producing_versions(essentials_client):
+    """The resource is generated from the same models, so it carries the same stamp."""
+    contents = await essentials_client.read_resource("resource://just-dna/tables")
+    text = "\n".join(getattr(c, "text", "") for c in contents)
+    assert f"just-dna-format {FORMAT_VERSION}" in text
+    assert f"just-dna-compiler {COMPILER_VERSION}" in text
 
 
 async def test_template_header_only_vs_stub(essentials_client):

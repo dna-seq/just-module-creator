@@ -104,16 +104,6 @@ in prose; a tool answer would not drift.
 The enricher publishes it; `gwas_effects.csv` is reachable only via the CLI.
 Extended tier by the cost rule — a corpus sizes it.
 
-## RM13 — nothing on a generated answer says which format version produced it
-
-**Severity:** high · **Status:** open · **Owner:** unassigned
-
-A stale plugin cache serves stale schema silently. Measured: the cache at 0.7.0
-serves format 0.5.4, so `describe_table("activity_phenotype.csv")` returned 11
-columns where installed 0.6.1 has 14 — no signal, and every skill says to ask
-the tool. Stamp `format_version` on each answer, compared to `importlib.metadata`
-at call time, so the surface is self-diagnosing.
-
 ## RM14 — `provenance.json` is recognised by the registry and by nothing here
 
 **Severity:** low · **Status:** open · **Owner:** unassigned

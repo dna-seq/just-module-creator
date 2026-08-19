@@ -3,6 +3,60 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — every generated schema answer names the toolchain that produced it (2026-08-20)
+
+**RM13**, shipped and moved to `ROADMAP_HISTORY.md`. No floor moves and no upstream version changes:
+format/compiler stay at 0.6.1. 161 tests green, `ruff check` clean, `pyright` 0 errors. No version
+bump in this change.
+
+### The rule was unreliable in exactly the case it exists for
+
+Every skill says *ask the tool, never memory*, because every column list, vocabulary and requirement
+is generated from the live pydantic models. A stale plugin cache breaks that silently: the cache at
+0.7.0 was serving format 0.5.4, so `describe_table("activity_phenotype.csv")` answered **11 columns
+where the installed 0.6.1 has 14** — a wrong answer, in the same shape and with the same confidence
+as a right one, from the tool the rule points at. Nothing in the payload said which release produced
+it, so a caller had no way to tell.
+
+### What carries the stamp
+
+`_shared.schema_versions()` is the one source, and `produced_by: SchemaVersions` (`format_version`,
+`compiler_version`) is now a **required** field on `list_tables`, `describe_table`,
+`table_requirements` and `get_template` — required so a schema tool added later cannot quietly omit
+it. `authoring_reference` carries the same pair as a `produced_by` key inside its JSON, in the
+summary and the `schemas=True` form alike, and `resource://just-dna/tables` ends with the same
+sentence in prose.
+
+**`server.INSTRUCTIONS` too, and that is the half that needs no tool call.** It opened with a
+hardcoded `(format 0.5)` while the installed format was 0.6.1 — a literal version string, which §2
+forbids for this precise failure, and stale by a minor release. It now names the live format and
+compiler from the same helper. `F19` and `F26` both nominated the instructions as the *stronger* fix
+because they are in front of an agent before the first call; both are updated with what this covers
+and what it does not.
+
+### Three decisions worth keeping
+
+- **The compiler is stamped beside the format.** The table roster, requirement shapes, templates and
+  the redundancy/attestation maps come from `just_dna_compiler.draft` / `hints` / `scaffold`, and
+  since 0.6 the two packages no longer move in lockstep — so one version cannot describe these
+  answers.
+- **Read once at import, and that is correctness rather than speed.** RM13's own text said "at call
+  time"; a per-call read would report the *new* distribution the moment anything upgrades the
+  environment under a live stdio server, while the answers still came from the already-imported old
+  code. The stamp has to describe the code that produced the answer or it is worse than absent.
+- **`authoring_reference` keeps returning a JSON string.** Around thirty dossiers document
+  `authoring_reference()["models"][...]`; a wrapper model would have broken all of them to add one
+  field. The key goes into a shallow copy, and cannot collide in either form — the summary form's
+  keys are fixed, the schemas form's are CamelCase model names.
+
+### What is deliberately not stamped
+
+`lint_rows`, `validate_module` and `compile_module` answer *about a directory at a moment*; they are
+not schema knowledge an agent carries forward, and a compile is already stamped upstream inside
+`manifest.json` (the catalog's one module still reads `just-dna-compiler 0.5.1` off that field).
+`list_tables`' hardcoded `sidecars` literal and `_SUBJECTS` were left alone: they are **RM10**, still
+open, and stamping a restated fact only dates the restatement.
+
 ## 0.10.2 — enricher 0.6.4: the drafter now names what it supersedes (2026-08-19)
 
 Adopts **just-dna-enricher 0.6.4**, released hours after 0.10.1 shipped and carrying the fix for the

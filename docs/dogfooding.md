@@ -168,7 +168,16 @@ is how the two sides of a redundancy check end up produced by one process.
 
 ## F19 — nothing on the tool surface reports the running server's version, and a stale process is invisible
 
-**Found:** 2026-08-11, blocked mid-probe · **Severity:** medium · **Status:** open
+**Found:** 2026-08-11, blocked mid-probe · **Severity:** medium · **Status:** open, partially
+mitigated 2026-08-20
+
+**Partial mitigation (RM13).** Every generated schema answer now carries
+`produced_by.format_version` / `produced_by.compiler_version`, and `server.INSTRUCTIONS` names the
+same pair instead of a hardcoded `(format 0.5)`. That makes a stale *toolchain* visible without
+being asked, which is a strong proxy — a cached plugin build pins its own resolved dependencies. It
+is not the whole finding: what is reported is the toolchain, not our own package version, and a
+missing tool still reports nothing at all, because a tool that is not registered cannot stamp
+anything.
 
 The connected stdio server was missing nine tools the skill lists as **essentials** — `enrich_module`,
 `check_identifiers`, `lookup_identifier`, `lookup_open_access`, `fetch_fulltext`,
@@ -264,7 +273,15 @@ argument as the `registry_register` install-id echo already noted in `UX_TESTER.
 
 ## F26 — a stale plugin build serves an old tool surface, and no result says which build answered
 
-**Found:** 2026-08-12, authoring a longevity module · **Severity:** high · **Status:** open
+**Found:** 2026-08-12, authoring a longevity module · **Severity:** high · **Status:** open,
+partially mitigated 2026-08-20
+
+**Partial mitigation (RM13).** The stronger candidate below shipped: `server.INSTRUCTIONS` now names
+the running `just-dna-format` and `just-dna-compiler`, and the weaker one shipped too — every
+generated schema answer carries the same pair, `authoring_reference` included. The first symptom in
+the table below would now be visible in the answer itself. **The second and third would not**: a
+tool that is absent stamps nothing, and a warning that fires from old code carries no version. So
+the "stale build looks like a regression" trap is narrowed to the tool *roster*, not closed.
 
 **Confirmed 2026-08-12 by `/reload-plugins`.** All three symptoms below cleared at once on 0.7.0:
 `sources.csv` moved from `sidecars` into `tables` with `SourceRow` and `(source, layer)`,

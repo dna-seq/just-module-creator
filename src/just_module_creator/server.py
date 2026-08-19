@@ -34,6 +34,7 @@ from just_module_creator.auth import SessionKeyStore, register_auth
 from just_module_creator.logging_setup import get_logger, setup_logging
 from just_module_creator.net import build_services
 from just_module_creator.settings import Mode, Settings
+from just_module_creator.tools._shared import schema_versions
 from just_module_creator.tools.advanced import register_extended
 from just_module_creator.tools.authoring import register_essentials
 from just_module_creator.tools.passes import register_extended_passes, register_passes
@@ -42,8 +43,15 @@ from just_module_creator.tools.research import register_research
 
 log = get_logger()
 
-INSTRUCTIONS = """\
-Authoring surface for just-dna annotation modules (format 0.5).
+# An f-string, and never a literal version: the header names the toolchain that
+# is actually loaded, so an agent reading the instructions can see at a glance
+# that a stale plugin cache is answering. It said "format 0.5" for two releases
+# while the installed format was 0.6.
+INSTRUCTIONS = f"""\
+Authoring surface for just-dna annotation modules. Every schema answer here is
+generated from just-dna-format {schema_versions().format_version} and
+just-dna-compiler {schema_versions().compiler_version}: if either is older than
+what you installed, a stale process is answering and its column lists are wrong.
 
 A module is a directory of authored CSVs plus module_spec.yaml, compiled into a
 parquet artifact with a content-addressed manifest. Work in this order:

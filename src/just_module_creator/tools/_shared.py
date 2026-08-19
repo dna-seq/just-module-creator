@@ -8,13 +8,30 @@ across the MCP boundary field-for-field instead of flattening it.
 
 from __future__ import annotations
 
+from importlib import metadata
 from pathlib import Path
 from typing import Any
 
 from fastmcp.exceptions import ToolError
 
-from just_module_creator.models import LintAlteration, LintFinding, PublishedVersion
+from just_module_creator.models import (
+    LintAlteration,
+    LintFinding,
+    PublishedVersion,
+    SchemaVersions,
+)
 from just_module_creator.settings import Settings
+
+# Read once, at import, and deliberately: a running process keeps the modules it
+# already imported, so re-reading package metadata per call would report a
+# version this process is not actually executing the moment anything upgrades the
+# environment underneath it (`uv sync` while a stdio server is alive). Read here,
+# the stamp describes the code that produced the answer — which is the whole
+# point of stamping it.
+_SCHEMA_VERSIONS = SchemaVersions(
+    format_version=metadata.version("just-dna-format"),
+    compiler_version=metadata.version("just-dna-compiler"),
+)
 
 
 def resolve_dir(raw: str, settings: Settings, *, must_exist: bool = True) -> Path:
@@ -149,3 +166,14 @@ def known_kind(csv_name: str, valid: Any) -> str:
             f"Unknown table kind {csv_name!r}. Authorable kinds: {', '.join(sorted(valid))}."
         )
     return name
+
+
+def schema_versions() -> SchemaVersions:
+    """The packages that generated a schema answer, for stamping onto it.
+
+    One source for every generated answer, so two tools can never disagree about
+    which release they described. A stale plugin cache is the case this exists
+    for: it serves an old toolchain silently, and every skill tells an agent to
+    ask the tool rather than trust its memory.
+    """
+    return _SCHEMA_VERSIONS

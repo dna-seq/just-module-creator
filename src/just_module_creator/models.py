@@ -154,6 +154,41 @@ class NamespaceAvailability(BaseModel):
 # --------------------------------------------------------------------------- #
 # Schema discovery
 # --------------------------------------------------------------------------- #
+class SchemaVersions(BaseModel):
+    """Which installed packages produced a generated schema answer.
+
+    Stamped on every answer whose content is derived from the upstream pydantic
+    models, so the answer carries the provenance of its own content.
+    """
+
+    format_version: str = Field(
+        description=(
+            "Installed `just-dna-format` version, read from package metadata at import. "
+            "COMPARE IT against the version you expect: every column list, vocabulary and "
+            "requirement on this answer was generated from that release's models, so a "
+            "version older than the one you installed means a stale process is serving the "
+            "answer — a cached plugin build, most often — and the schema it describes is "
+            "not the schema the compiler will apply. Nothing else in the answer reveals that."
+        )
+    )
+    compiler_version: str = Field(
+        description=(
+            "Installed `just-dna-compiler` version, on the same terms. It is here because "
+            "the table roster, the requirement shapes, the templates and the "
+            "redundancy/attestation maps are the compiler's projection of the format's "
+            "models, so a skew in either package moves this answer."
+        )
+    )
+
+
+_PRODUCED_BY_WHY = (
+    "The installed packages whose live models generated this answer. Read it whenever a "
+    "column, vocabulary or requirement here disagrees with what you expected: this answer "
+    "is only as current as the process serving it, and the version is the only thing in it "
+    "that says so."
+)
+
+
 class TableKind(BaseModel):
     """One authorable table kind and what its rows are about."""
 
@@ -188,6 +223,7 @@ class TableList(BaseModel):
         "right, listed above."
     )
     note: str = Field(description="The composition rule in one line.")
+    produced_by: SchemaVersions = Field(description=_PRODUCED_BY_WHY)
 
 
 class TableRequirements(BaseModel):
@@ -207,6 +243,7 @@ class TableRequirements(BaseModel):
         "None, not the default, and fails on type."
     )
     optional: list[str] = Field(description="Columns that may be omitted or blank.")
+    produced_by: SchemaVersions = Field(description=_PRODUCED_BY_WHY)
 
 
 class TableDescription(BaseModel):
@@ -231,6 +268,7 @@ class TableDescription(BaseModel):
             "`redundancy_bearing`; this names the sharper reason to refuse on."
         ),
     )
+    produced_by: SchemaVersions = Field(description=_PRODUCED_BY_WHY)
 
 
 class TemplateResult(BaseModel):
@@ -240,6 +278,7 @@ class TemplateResult(BaseModel):
     content: str = Field(description="CSV text: header only, or header plus stub rows.")
     stub: bool = Field(description="Whether placeholder rows are included.")
     note: str = Field(description="What to do with it.")
+    produced_by: SchemaVersions = Field(description=_PRODUCED_BY_WHY)
 
 
 # --------------------------------------------------------------------------- #

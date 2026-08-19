@@ -8,6 +8,7 @@ egress.
 from __future__ import annotations
 
 import re
+from importlib import metadata
 
 import pytest
 from conftest import offline_settings  # tests/ is on sys.path via pytest rootdir
@@ -75,6 +76,17 @@ async def test_the_taught_workflow_runs_in_the_default_tier(essentials_client, e
 
     assert named, "parsed no tool names out of the taught workflow — the format changed"
     assert named <= await _names(essentials_client)
+
+
+def test_instructions_name_the_running_toolchain():
+    """The header states the loaded format/compiler, and never a literal (RM13).
+
+    It said "format 0.5" for two releases while the installed format was 0.6 — a
+    hardcoded version that a stale build reports just as confidently as a current
+    one. Computed here rather than pasted, for the same reason.
+    """
+    assert f"just-dna-format {metadata.version('just-dna-format')}" in INSTRUCTIONS
+    assert f"just-dna-compiler {metadata.version('just-dna-compiler')}" in INSTRUCTIONS
 
 
 async def test_extended_only_tools_are_absent_by_default(essentials_client):

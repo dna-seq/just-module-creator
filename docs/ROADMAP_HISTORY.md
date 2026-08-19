@@ -9,6 +9,59 @@ here: it is filed upstream as an `S<n>` and tracked in
 
 ---
 
+## RM13 — every generated schema answer names the toolchain that produced it
+
+**Shipped:** 2026-08-20, in tree after 0.10.2 (no version bump in that change)
+
+**Why it was high.** A stale plugin cache serves a stale toolchain silently, and every
+skill on this surface tells an agent to *ask the tool, never memory*. Measured: the
+cache at 0.7.0 was serving format 0.5.4, so `describe_table("activity_phenotype.csv")`
+answered with 11 columns where the installed 0.6.1 has 14 — a wrong answer, delivered
+with the same confidence as a right one, from the tool the rule points at. Nothing in
+the payload distinguished the two, so the rule was unreliable in exactly the case it
+exists for.
+
+**What shipped.** `_shared.schema_versions()` — one source for the whole surface, read
+from `importlib.metadata` — and a `produced_by: SchemaVersions` field carrying
+`format_version` and `compiler_version` on `list_tables`, `describe_table`,
+`table_requirements` and `get_template`. `authoring_reference` carries the same pair as
+a `produced_by` key inside its JSON, in both the summary and the `schemas=True` form.
+The `resource://just-dna/tables` resource ends with the same line in prose.
+
+**The compiler is stamped beside the format, and that is not padding.** The table
+roster, the requirement shapes, the templates and the redundancy/attestation maps all
+come from `just_dna_compiler.draft` / `hints` / `scaffold` — the compiler's projection
+of the format's models. Since 0.6 the two no longer move in lockstep, so a skew in
+either package moves these answers and one version cannot describe them.
+
+**Read once at import, and the cache is correctness rather than speed.** A running
+process keeps the modules it already imported; re-reading package metadata per call
+would report the *new* distribution the moment anything upgrades the environment under
+a live stdio server, while the answers still came from the old imported code. Reading at
+import makes the stamp describe the code that actually produced the answer, which is the
+only thing worth stamping. The RM13 text said "at call time"; that would have made the
+stamp lie in precisely the scenario it is for.
+
+**`authoring_reference` keeps returning a JSON string.** Around thirty dossiers document
+the access path `authoring_reference()["models"][...]`, so a wrapper model would have
+broken every one of them to add a field. The stamp goes in as a top-level key of a
+shallow copy — upstream's dict is not ours to mutate — and cannot collide in either
+form: the summary form's keys are fixed, and the `schemas=True` form's are CamelCase
+model names.
+
+**`server.INSTRUCTIONS` was fixed in the same change**, because it hardcoded
+`(format 0.5)` while the installed format was 0.6.1 — a literal version, which §2
+forbids for this exact reason, and the candidate fix `F19` and `F26` both named as the
+*stronger* one: instructions are in front of an agent before the first call, where a tool field has
+to be asked for. It now names the live format and compiler from the same helper.
+
+**What was deliberately left unstamped.** `lint_rows`, `validate_module` and
+`compile_module` are verdicts about a directory at a moment, not schema knowledge an
+agent carries forward, and a compile is already stamped upstream inside `manifest.json`
+— the catalog's one module still reads `just-dna-compiler 0.5.1` off exactly that field.
+`list_tables`' hardcoded `sidecars` literal and `_SUBJECTS` were left alone too: they are
+**RM10**, still open, and a stamp on a restated fact would only date the restatement.
+
 ## RM8 — the registry client surface is wrapped
 
 **Shipped:** 2026-08-12 in 0.8.0
