@@ -78,6 +78,39 @@ neither. Filed upstream.
 **A provenance column also moves the digest and no signature** — but note that is the *mechanism*
 demonstrated by hand, not what a re-run does. No merge restamps `fetched_at`.
 
+### The trap on the other side: `content_signature` moves and the rows look identical
+
+**Change `genome_build` in `module_spec.yaml` and nothing else.** `content_signature` moves — correctly,
+because the declared build is part of the content: HFE C282Y is `6:26,093,141` on GRCh37 and
+`6:26,092,913` on GRCh38, so identical coordinate rows on two assemblies describe **loci 228 bp apart**.
+Upstream made the signature build-aware for exactly this reason.
+
+**But a row-level comparison reports zero changed rows, in every table.** Measured on
+`pathogenic_clinvar`: `239c81da…` → `5210c3fe…`, and the key lists are character-for-character
+identical across the two builds, because `draft.natural_key` is build-independent. So the two sides
+name the same keys and mean different places, **and the reassuring answer is the dangerous one.**
+
+The realistic way to hit it is not contrived: "lift over" a GRCh37 panel by editing the yaml and not
+the coordinates.
+
+> **So read `genome_build` first, before any row count.** If the declared builds differ, the row
+> comparison is **not comparable** rather than clean — and no count from it means anything.
+
+### Two identity scopes, not one
+
+`content_signature` reads the **authored** tables. `licensing.csv` is authored **and outside it** — a
+licence fact edit leaves `content_signature` at `44ad4449…` on `hfe_hemochromatosis` and moves
+`source_signature` alone. So "authored" and "in `content_signature`" are different sets, and a diff
+that lumps them reports a licence correction as a content change. Label the scope per table.
+
+### Why this is worth doing at all — a measured case
+
+The published catalog contains **an unrecorded change and an unrecorded revert**, both found in one
+command. `big_five_personality_snps` 1.0.1 rewrote `state` on **990 of 990 rows** while its changelog
+names three other columns; 2.0.0 reverted it while saying *"variant set unchanged from 1.0.0"*. Neither
+is visible from the version numbers, the changelog, or the card. **A changelog is a claim; the tables
+are the record.**
+
 ## The canary — an operation, not a signal
 
 Here is the part that catches people. **Merge-not-clobber means a source that quietly revised an
@@ -130,9 +163,13 @@ registry-client download <ns> <name> 2.0.0 ./v2 --with-inputs --layout flat
 diff ./v1/variants.csv ./v2/variants.csv
 ```
 
-**No tool does that second step for you.** It is still the answer, and it is two commands. Diff the
+**No tool does that second step for you yet.** It is still the answer, and it is two commands. Diff the
 **authored** tables — `variants.csv`, `studies.csv`, the table kinds — because those are what
 `content_signature` reads; a derived sidecar will differ for reasons that mean nothing.
+
+*(`docs/DESIGN-version-compare.md` specs two tools that would: `compare_modules` over two local spec
+directories, and `compare_to_published` for "am I ahead of the catalog". Both essentials, both bounded
+by what you named. Until they exist, the two commands are the route.)*
 
 Use `--layout flat` for this, not `split`: a diff is easier when both trees have the same shape, and
 `derived/` is only a presentation. `module-tables` → `references/LAYOUT.md` has the layouts.

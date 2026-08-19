@@ -69,10 +69,16 @@ recommendations. Theirs: whether a check downgrades the mismatch — filed as `S
 
 **`RM6`, `RM9`** — unchanged from before, lower.
 
-**`docs/DESIGN-version-compare.md`** — a design study on whether to build a version-compare tool was
-still running when this was written. **Read it before deciding anything about diffing two versions**;
-it was briefed with a reasoned-refusal option, so "build nothing" is a legitimate answer it may return.
-It is deliberately left untracked.
+**`docs/DESIGN-version-compare.md`** — the version-compare design study came back and says **build it
+now**, 699 lines, committed. Two tools, both **essentials** because both are bounded by what the caller
+named: `compare_modules(left_dir, right_dir)`, a pure function of two local spec directories with no
+network and no compile (0.18 s on the largest reference example), and `compare_to_published(spec_dir)`,
+manifest-only, one or two bounded GETs and no download. Published-vs-published is the first tool applied
+to two downloads, which stays extended. Output is a three-level ladder — signature, table, then rows
+**grouped by the set of columns that changed** — with eight named refusals and a three-valued verdict
+per axis. Nothing is waiting on an upstream release: the in-tree additions (`hints.key_fields`,
+`hints.DERIVED_TABLE_MODELS`, registry 0.19's per-version `content_signature`) are symbol-gated
+improvements rather than prerequisites. **This is the next buildable item after RM15/RM16.**
 
 ## 4. Upstream state — they answer within the hour
 
