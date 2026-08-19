@@ -157,6 +157,15 @@ Each corresponds to a trap in [docs/DOMAIN.md](docs/DOMAIN.md). Breaking one doe
 not merely bend a convention — it deletes a class of validation the upstream
 design depends on.
 
+> ⚠️ **THIS WHOLE SECTION IS UNDER AUDIT — `RM15`, high severity, opened 2026-08-20.**
+> Several of these rules are `just-dna-format`'s stance, adopted here wholesale and
+> never tested against *this* layer's purpose. `report, never repair` has already been
+> corrected to a counterstance above; the rest have not been read. **Before you cite a
+> rule below as a reason to refuse something, check it against RM15's three-way test:
+> is it physics, is it format's policy that is also correctly ours, or is it format's
+> policy we should not be holding at all?** A prohibition whose only justification is
+> "upstream does it that way" is the defect RM15 exists to find, not an argument.
+
 - **Never hardcode a schema fact** — no column list, no vocabulary, no
   requirement. Call `describe_table` / `table_requirements` /
   `authoring_reference` and pass through what they return. A hardcoded vocabulary
@@ -216,7 +225,17 @@ design depends on.
   hand over vague directions and expect it driven, while a geneticist expects
   fine-grained control. So a tool may not assume either — it writes, it logs, and it
   surfaces the decisions that need a pilot.
-- **Never extract a passage from a document a tool fetched.** No "best-matching
+- **Never extract a passage from a document a tool fetched.** 🚩 **CONTRADICTED BY §10 —
+  do not act on this bullet either way until `RM15`'s §1 questionnaire has run.** §10
+  records the user's flat statement that **"AI totaly can read articles"**, and that
+  asking a layman for a `provenance_quote` is asking the wrong person — a reviewer's
+  job, and a different person's. If the agent is a legitimate reader then a located
+  quote is a reading that *did* happen, and the question becomes *whose* reading was
+  recorded rather than whether one occurred. That is the highest-stakes instance of the
+  absorption RM15 is about, and `hints.ATTESTATION_BEARING` shipped upstream on the
+  argument now in question. Both halves are stated below and in §10; **neither is
+  settled.** The rest of this bullet is the case as it was adopted:
+  No "best-matching
   passage", no suggested quote, no search-within-text. `enrich_literature` checks
   `provenance_quote` / `provenance_regex` against the Europe PMC fulltext, so a
   quote lifted from that same fulltext makes `quotes_found` confirm itself. The
