@@ -525,14 +525,19 @@ which is what makes the panel compilable, since a variant row needs grounding ev
 `clinpgx check`'s job to report, not drafting's to fix. Re-run per gene as the module grows;
 `--dry-run` first.
 
-**A ClinVar panel drafted before enricher 0.6.3 is missing rows, and the repair is a fresh
-directory rather than a re-run.** Below 0.6.3 the drafter keyed a site on `ref`, so an ordinary
-dup/del mirror pair (`A>AT` beside `ATT>A` at one position) collapsed onto one row and the second
-ClinVar record was dropped in silence. Because drafting appends, re-running over the file you have
-restores every dropped record *and keeps the collapsed rows*, leaving the module asserting both the
-right answer and the wrong one for the same locus — measured at 0 records still missing and 31
-stale identities left behind, on one gene. No column tells the two apart, since a coordinate row
-carries no `rsid`. Draft into an empty directory and reconcile against that.
+**A ClinVar panel drafted before enricher 0.6.3 is missing rows, and re-running is only half the
+repair.** Below 0.6.3 the drafter keyed a site on `ref`, so an ordinary dup/del mirror pair (`A>AT`
+beside `ATT>A` at one position) collapsed onto one row and the second ClinVar record was dropped in
+silence. Because drafting appends, re-running over the file you have restores every dropped record
+*and keeps the collapsed rows*, leaving the module asserting both the right answer and the wrong one
+for the same locus — measured at 0 records still missing and 31 stale identities left behind, on one
+gene. No column tells the two apart, since a coordinate row carries no `rsid`.
+
+Enricher 0.6.4 names them for you: *"N row(s) already in variants.csv identify by rsID alone …"*,
+counted with examples. It deletes nothing, because your row may have been curated since — **that
+deletion is yours**. Do it once the coordinate rows cover the same records. Drafting into an empty
+directory and reconciling against that is still the cleaner route; the warning is for when you have
+already re-run in place.
 
 **Read the warnings. They are the interesting output**: skipped rows, aggregated counts, and the
 allele pairs you need for step 3. Two you will see on a real ClinVar panel and should not chase:

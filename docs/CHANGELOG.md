@@ -3,6 +3,70 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.10.2 — enricher 0.6.4: the drafter now names what it supersedes (2026-08-19)
+
+Adopts **just-dna-enricher 0.6.4**, released hours after 0.10.1 shipped and carrying the fix for the
+finding 0.10.1 filed. Format, compiler and registry are unchanged at 0.6.1 / 0.6.1 / 0.18.1. One
+floor, three documents, no code. 153 tests green, `ruff` clean, `pyright` 0 errors.
+
+### What we told an author yesterday stopped being true overnight
+
+0.10.1 measured what a re-draft actually does to a module drafted before enricher 0.6.3 — recovers
+every dropped ClinVar record, retracts none of the collapsed ones, 0 missing and 31 stale on `MLH1` —
+and filed it as **S45**. The docstring we shipped with it ended: *"Nothing in the file distinguishes
+them."* True of the file, and upstream accepted it and then removed the premise: **0.6.4's
+`_superseded_rsid_rows` names those rows after the append**, counted and aggregated, because the
+drafting run holds the one thing a file-level predicate cannot reconstruct — the set of rsIDs it is
+deliberately writing by coordinate this time.
+
+Verified through our own surface rather than read off their changelog: a real stale-then-re-draft
+cycle driven through `draft_from_clinvar`, `added=65, already_present=965`, and the notice arriving in
+`warnings` naming **31 rows**, five rsIDs and "and 26 more" —
+
+> 31 row(s) already in variants.csv identify by rsID alone (rs1060500703, rs1553653237, …) — but this
+> run writes those rsIDs with their full coordinate … This run has ADDED the coordinate-keyed rows
+> beside them and has removed nothing: drafting never deletes an authored row, and yours may have
+> been curated since.
+
+`draft_from_clinvar`'s docstring, the skill and `references/SYMPTOMS.md` now say this. The framing
+that matters is that **the warning is the safety net, not the plan**: a fresh directory reconciled
+against the old module is still the cleaner remediation, and the notice is for the author who re-ran
+in place — which is what the shorter instruction told them to do.
+
+### Nothing deletes the stale rows, and that was upheld for our reason
+
+We argued the drafter must name and never remove, because by re-draft time a drafted row is authored
+material and a human may have curated its `genotype`, `state` and `conclusion` — deleting curated work
+to repair a drafting defect is a trade only the author can make. Upstream took that and left the
+deletion with the author. So the action lands in the checklist, not in a tool: **delete each named row
+once the coordinate rows cover its records.**
+
+### The correction to our suggestion is worth more than the fix
+
+We proposed the fix belong in `append_partial_rows`, reasoning it has both halves at merge time. It
+has the *file* but not the *predicate*: it is the compiler's generic drafting helper, shared by every
+provider, and teaching it about rsIDs would put a source's identity rule into the tier that must not
+carry one. It went into `clinvar_draft`, where the source convention already lives. Recorded in `F36`
+because the lesson generalises to the next suggestion we write — **"it has the data" is not "it is the
+right tier"**.
+
+### Also
+
+- **`F36` closed and moved** to `previous_issues.md`, prose intact. Filed, accepted, fixed, released
+  and adopted inside one day.
+- **Our ClinPGx contrast was independently re-run upstream** and confirmed — 18,691 stale rows
+  re-drafting to 18,895 with 0 missing and 0 stale — and **`S44` skipped rows, `S41` wrote them under
+  an identity that has since moved** is now the frame for the whole finding in their ENRICHER.md and
+  changelog. That sentence is what stops the next reader generalising one remediation to both.
+- **One thing left open on our side, by upstream's request.** Neither of us re-measured the downstream
+  label errors — both established only that the rows carrying them survive a re-draft. A module
+  drafted after 0.6.4 with its superseded rows deleted that *still* shows mislabelled expansions is a
+  separate defect, and upstream wants it as its own item.
+- **No test added, deliberately.** Reproducing this needs an upstream private predicate monkeypatched
+  to manufacture the old behaviour — a fixture for someone else's regression, which would break the
+  day they rename the function and would be testing their fix rather than our pass-through. Upstream
+  carries three tests including the MLH1 measurement asserted as a relationship.
+
 ## 0.10.1 — enricher 0.6.3, registry 0.18.1, and a drafter that had been dropping rows (2026-08-19)
 
 Adopts **just-dna-enricher 0.6.3** and **just-dna-registry 0.18.1**; `just-dna-format` and
