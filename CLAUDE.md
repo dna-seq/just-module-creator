@@ -160,16 +160,62 @@ design depends on.
 - **Never hardcode a schema fact** — no column list, no vocabulary, no
   requirement. Call `describe_table` / `table_requirements` /
   `authoring_reference` and pass through what they return. A hardcoded vocabulary
-  is a bug waiting for the next upstream release. The single exception is
-  `authoring._SUBJECTS`, which answers "which table?" — a question about *intent*
-  that the schema cannot answer — and is commented as such.
+  is a bug waiting for the next upstream release. The single exception is the
+  **subject half** of `authoring._SUBJECTS`, which answers "which table?" — a
+  question about *intent* that the schema cannot answer — and is commented as such.
+  **The exception stops there, and RM10 is what it cost to learn that.** The `keyed_on`
+  half of the same entries is structure, and it drifted exactly the way §2 predicts: it
+  named `modifier_cn` for all of 0.6, after upstream deprecated that column in favour of
+  `modifier_copy_number`. It is still hand-kept, because nothing public derives it
+  (`draft.natural_key` is row-level; `compiler._TABLE_DUPE_KEYS` and
+  `MeasureBinRow._KEY_FIELDS` are private — filed as `S48`), so it is pinned instead:
+  every token is an exact model field name and
+  `test_every_documented_key_column_is_a_live_undeprecated_field` fails on one that does
+  not resolve or that opens its description with `DEPRECATED`. **A fact that cannot be
+  generated is guarded by a test, never left to a comment.** The same rule reaches
+  `tools/authoring.py::_PRODUCED_MODELS`, the `csv -> row model` map for the
+  machine-produced sidecars (`S47`), whose keys are pinned to the derived roster.
 - **Never fill a value from the same source that checks it.** A cross-check
   compares an independently authored value against a source; filling it *from*
   that source makes the check compare a convention against itself, and it agrees
   perfectly. Worse, the row moves from honestly unverified to apparently verified.
-- **Never let a tool write a checked value from a lookup result.** Lookups report,
-  the human decides, the linter checks. Preserve `applied: false` and its
-  `refusal` verbatim across the MCP boundary — **the refusal is the feature.**
+- **Report-never-repair is the FORMAT's stance, and we hold a counterstance. Corrected
+  2026-08-20 — this bullet used to forbid writing outright.** *"Report-never-repair is
+  format's stance, correct for that layer: they delegate business decision to us here;
+  we're more high-level user-facing app level, we have a counterstance."* So the rule
+  here is now three parts, and dropping any one of them is what makes it dangerous:
+
+  1. **We may write. Full stop.** *"Yes, we may write, fullstop… we may revise and fix
+     — yes absolutely."* A business decision is delegated to this layer, so a tool of
+     ours filling or correcting a cell is legitimate where the same act in the compiler
+     would not be.
+  2. **Every authoring move goes through the log.** *"Logged — absolutely, yes; there's
+     a whole `logs/` surface for this and I would want to have every authoring move
+     going through any tool logged."* That surface exists and is currently empty — the
+     dossier for it is literally titled *the provenance subtree nobody fills*. It is
+     swept up by every compile and published with no opt-out, so it is the right place
+     and it costs an author nothing. **A move the agent makes by hand is harder to
+     capture, so make it go through a skill** that logs.
+  3. **The agent needs a DISCRIMINATOR, and this is the hard part.** The vacuity
+     argument was never the real risk. The real risk is that **the source lags the
+     edge**: *"why not?? ClinVar lags behind edge, say the article is retracted,
+     metaresearch refutes conclusion etc — validation against ClinVar this way makes
+     the correction done mindlessly, wrong."* So "your row disagrees with ClinVar" is
+     not a defect report. It may be the module being **right and current** while the
+     archive is stale. An agent that silently conforms the row to the source can
+     **degrade** a module, and the check will then agree with itself and call it green.
+     Editing *against* a source needs a reason that outranks the source.
+
+  **What has NOT changed:** when we pass upstream's own answer across the MCP boundary,
+  `applied: false` and its `refusal` are preserved verbatim. That is upstream reporting
+  what *it* did, and rewriting it would be misreporting another layer's act. Our writes
+  are our own, logged as ours, and never laundered as upstream's.
+
+  **Who is flying is unknown until they take the seat.** The direct consumer of this
+  toolset is an *agent*, and that agent may be the Author or the Assistant: a layman may
+  hand over vague directions and expect it driven, while a geneticist expects
+  fine-grained control. So a tool may not assume either — it writes, it logs, and it
+  surfaces the decisions that need a pilot.
 - **Never extract a passage from a document a tool fetched.** No "best-matching
   passage", no suggested quote, no search-within-text. `enrich_literature` checks
   `provenance_quote` / `provenance_regex` against the Europe PMC fulltext, so a

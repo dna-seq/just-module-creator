@@ -835,14 +835,23 @@ It runs as a background task: you get a task id immediately and poll. It runs se
 (Ensembl cache → ClinVar snapshot → live Ensembl → gnomAD) and folds in three checks — ref, clin_sig
 and rsID currency. Snapshots are provisioned from HuggingFace when absent.
 
-The fact passes are CLI-only:
+**The fact passes are wrapped — this said "CLI-only" and had been wrong since 0.6.** `enrich_facts`
+covers frequencies, constraint and dosage; `enrich_literature_pass` covers literature; and
+`enrich_gwas_effects` covers the GWAS Catalog. All are **extended tier** (`JMC_MODE=extended`),
+because a fact pass is sized by how much has been published rather than by what you named — the GWAS
+one measured 382 requests on a single real module.
+
+The CLI equivalents, for driving it directly:
 
 ```bash
 just-dna-enricher frequencies spec/     # → frequencies.csv   (gnomAD, paced ~6s/batch)
 just-dna-enricher gene-metrics spec/    # → gene_metrics.csv  (gnomAD constraint)
 just-dna-enricher dosage spec/          # → ClinGen dosage rows onto gene_metrics.csv
 just-dna-enricher literature spec/      # → literature.csv    (PMID/DOI/quotes)
+just-dna-enricher gwas spec/            # → gwas_effects.csv  (published effect sizes)
 ```
+
+**Two fact passes really are CLI-only**: `gene-validity` and `assertions`.
 
 **An existing sidecar is authoritative and merged, never clobbered.** To regenerate
 `resolution.csv` / `frequencies.csv` / `gene_metrics.csv` after changing the spec you must **delete

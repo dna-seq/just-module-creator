@@ -31,7 +31,8 @@ Install: `pip install just-dna-enricher` pulls the compiler and the format tier.
 | fact passes | `enrich_facts`, `enrich_literature_pass` | `frequencies`, `gene-metrics`, `dosage`, `literature` |
 | **signing** | — | `keygen`, `sign` (and `close --private-key`) |
 | **PGx cross-checks** | — | `pgx`, `clinpgx check`, `check-acmg` |
-| **fact tables from ClinGen / ClinVar / GWAS Catalog** | — | `gene-validity`, `assertions`, `gwas` |
+| **fact tables from ClinGen / ClinVar** | — | `gene-validity`, `assertions` |
+| **published GWAS effect sizes** | `enrich_gwas_effects` (extended) | `gwas` |
 | **which rsID sits at a GRCh37 coordinate** | — | `hint recover` |
 | **snapshot building** | — | `clinvar build`, `clinpgx build`, `acmg build`, `cache pull` |
 
