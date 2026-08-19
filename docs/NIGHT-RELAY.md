@@ -8,9 +8,9 @@ that flip. No overlap, no shared files, no coordination beyond this document.
 ## State
 
 ```
-STATE: READY-FOR-AUDIT
-SINCE: 2026-08-20T03:00Z
-BY: session that wrote the primers
+STATE: AUDIT-RUNNING
+SINCE: 2026-08-19T23:56Z
+BY: agent A — philosophy audit (RM15)
 ```
 
 **Legal transitions, in order. Nothing skips.**
@@ -59,3 +59,10 @@ left undone, and why:
 ---
 
 *Appended history below. Newest last. Never rewrite an earlier entry.*
+
+### 2026-08-19T23:56Z — agent A claims the audit
+
+Found `READY-FOR-AUDIT`, moved to `AUDIT-RUNNING`. Running RM15 per
+`docs/PRIMER-philosophy-audit.md`. Unattended run; the owner is reachable for the first ten minutes
+only, which is being spent on §6's questionnaire (the attestation contradiction) because that is the
+one item the primer forbids deciding alone.
