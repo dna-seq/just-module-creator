@@ -225,34 +225,44 @@ design depends on.
   hand over vague directions and expect it driven, while a geneticist expects
   fine-grained control. So a tool may not assume either — it writes, it logs, and it
   surfaces the decisions that need a pilot.
-- **Never extract a passage from a document a tool fetched.** 🚩 **CONTRADICTED BY §10 —
-  do not act on this bullet either way until `RM15`'s §1 questionnaire has run.** §10
-  records the user's flat statement that **"AI totaly can read articles"**, and that
-  asking a layman for a `provenance_quote` is asking the wrong person — a reviewer's
-  job, and a different person's. If the agent is a legitimate reader then a located
-  quote is a reading that *did* happen, and the question becomes *whose* reading was
-  recorded rather than whether one occurred. That is the highest-stakes instance of the
-  absorption RM15 is about, and `hints.ATTESTATION_BEARING` shipped upstream on the
-  argument now in question. Both halves are stated below and in §10; **neither is
-  settled.** The rest of this bullet is the case as it was adopted:
-  No "best-matching
-  passage", no suggested quote, no search-within-text. `enrich_literature` checks
-  `provenance_quote` / `provenance_regex` against the Europe PMC fulltext, so a
-  quote lifted from that same fulltext makes `quotes_found` confirm itself. The
-  sharper reason is that those columns exist to record *that a curator read the
-  paper and located the claim* — a machine-located quote asserts a reading that
-  never happened, which is a false claim of provenance, not merely a vacuous
-  check. Filed as `S11`, and **released in 0.5.4**: `hints.ATTESTATION_BEARING`
-  holds exactly these two columns, adopting the argument that a quote is an
-  *attestation* rather than a spent comparison, and both are now in
-  `REDUNDANCY_BEARING` too because they qualify under that map's own definition.
-  `describe_table` reports `attestation_bearing` as a **subset** of
-  `redundancy_bearing`, so the sharper reason reaches an agent rather than living
-  only here. **A released constant does not make a machine-located quote honest**,
-  so say the consequence out loud anyway: once a fulltext has been read through
-  `fetch_fulltext`, `quotes_found` on that row is no longer independent evidence —
-  it has degraded to a citation-pairing check, which still catches a quote written
-  against the wrong PMID.
+- **An agent MAY locate and write a `provenance_quote`. Reversed 2026-08-20 — this bullet used to
+  forbid it outright, and the prohibition was a derived false direction.** *"Yes, it is a derived
+  false direction: demolish full force."* The old case: a machine-located quote *"asserts a reading
+  that never happened"*. It does not. The agent reads the article — `fetch_fulltext` hands it over
+  whole — so the reading happens; what the old rule actually protected was a **fiction about who
+  did the reading**, and it protected it by leaving the column empty for the exact audience this
+  plugin exists for. §10 settles that: **"AI totaly can read articles"**, and asking the layman
+  driving the plugin for a quote is *"v2 work from a wrong person"*.
+
+  What replaces it is **attribution, not abstention**:
+
+  1. **Locate it, quote it verbatim, and record who located it.** The honest instrument is a per-row
+     *whodunit*, because real work is mixed: *"example: scientist reads review, agent traverses
+     citations"*. Per-row quote provenance **does not exist in the schema** — we own none — so it is
+     asked of upstream (`S55`, filed 2026-08-20, beside `S54` — the measurement that the old rule produced title-as-quote on 3668 published rows). Until it lands,
+     the signal is module-level `authorship` plus the `logs/` entry the write goes through, and the
+     gap is stated rather than papered over.
+  2. **The human author holds the responsibility regardless.** *"AI is not a subject of right, so the
+     human author holds the full responsibility"* — so attribution honesty is about the **real
+     distribution of roles**, never about moving liability onto a machine. A declared agent-located
+     quote does not dilute an author's accountability for it by one inch.
+  3. **Honesty beats the empty column, which is the whole trade.** *"At least honest highlights of
+     real distribution of roles is 100% better than fake 'I read it all' fingerscrossed confirmation
+     of what never happened to push thru the block; realpolitik so to say."* The old rule did not
+     produce human-read quotes; it produced **no quotes**, and where it was worked around it produced
+     an unmarked one.
+
+  **What survives, and it is physics rather than policy:** a quote lifted from a fulltext is not
+  independently confirmed by a check against that same fulltext. Once the text has been read through
+  `fetch_fulltext`, `quotes_found` on that row is a **citation-pairing check** — it still catches a
+  quote written against the wrong PMID, and it is no longer evidence that the claim is in the
+  literature. **State that consequence; never use it to refuse.** And never write a passage that is
+  not verbatim in the retrieved text: a fabricated quote is a fabricated quote whoever typed it.
+
+  **Upstream carries our old argument.** `hints.ATTESTATION_BEARING` (`{provenance_quote,
+  provenance_regex}`) shipped in format 0.5.4 on the reasoning in `S11` — the reasoning now reversed.
+  The constant may still be right for *their* layer, where nothing can record a reader; the
+  justification we handed them is not ours any more, and `S55` withdraws it.
 - **Never collapse "unknown" into a boolean.** Answers are three-valued: true /
   false / **unknown**, and `None` is never `False`. When unknown, withhold — never
   report, never negate. **A check that could not run is not a check that passed**,
@@ -784,6 +794,20 @@ preference: it goes into §10, in their words, with the reason.
   is necessary and nowhere near sufficient** — a stub occupies the search result a
   real module would have had.
 
+- **A machine-located `provenance_quote` is legitimate; the fake was always the unattributed one.**
+  Decided 2026-08-20, reversing the §2 prohibition outright: *"Yes, it is a derived false direction:
+  demolish full force."* The agent reads the article — `fetch_fulltext` hands it over whole — so the
+  reading is real and the old rule only protected a fiction about **who** read it. What is required
+  instead is a per-row *whodunit*: *"request per-row provenance 'whoddunit' for each quote for mixed
+  ai+man tangos and combined authority from upstream (if not yet): example: scientist reads review,
+  agent traverses citations."* Responsibility does not move with it — *"now AI is not a subject of
+  right, so the human author holds the full responsibility, but at least honest highlights of real
+  distribution of roles is 100% better than fake 'I read it all' fingerscrossed confirmation of what
+  never happened to push thru the block; realpolitik so to say."* Filed upstream as `S55` (the
+  attributor: `StudyRow.curator`, mirroring `VariantRow`'s) with `S54` as its evidence. The
+  combined-authority half already exists upstream and we should not re-ask for it: `Contribution.who`
+  is documented as *"a name, handle, or model id"* and `Contribution.kind` already ladders
+  `{human, human_expert, human_certified}` against `{ai}` + `{agent, team, swarm}`.
 ## 11. Learned workspace facts
 
 *Append-only. Environment, ports, credential layout, host quirks, sibling paths.*
@@ -970,3 +994,15 @@ preference: it goes into §10, in their words, with the reason.
   for a milestone that does not exist**. Curated work is then cherry-picked into a featured catalog
   section by the operator. `authorship` is where the signal actually lives, which is why it is now
   documented in `skills/create-module/SKILL.md` rather than left to the schema.
+
+- **The old no-machine-quote rule produced title-as-quote on 3668 published rows — measured 2026-08-20.**
+  Across every `studies.csv` in `../just-dna-format` (33 files, 44342 rows): the ten
+  `reference_examples/` do not carry the column at all, and the four `data/output/corrected_modules/`
+  — the published `antonkulaga/*` four — carry a `provenance_quote` on **every** row, 3668 of 3668.
+  Exactly **one distinct quote per PMID** in all four (81 PMIDs), 7–17 words, and it is the article
+  **title** verbatim: `pmid 24489884` carries *"Genome-wide association study of proneness to anger."*
+  and `lookup_citation` returns that same string as `title`, trailing period included. A title always
+  appears in its own fulltext, so `quotes_found` equals `quotes_authored` and the module reports full
+  quote coverage while witnessing nothing. **Use this as the calibration case for any rule that
+  refuses rather than attributes**: the refusal did not produce human-read quotes, it produced a
+  green check over metadata. Filed as `S54`.

@@ -899,3 +899,55 @@ recomputes the derivation from the models rather than asserting a typed tuple.
 that ought to own it is the format, beside each table's `*_FACT_FIELDS`, so each pass keys its
 `existing` dict off the published tuple instead of restating it — which is the half that makes the two
 unable to disagree.
+
+## F42 — `quotes_found` is satisfied by the article's own title, so full quote coverage can witness nothing
+
+**Status — filed upstream 2026-08-20 as `S54`, open. Not mitigated here, and the mitigation is
+partly ours to build rather than theirs.**
+
+Measured across every `studies.csv` in `../just-dna-format` (33 files, 44342 rows) while auditing our
+own `S11`. The ten `reference_examples/` do not carry `provenance_quote` at all. The four
+`data/output/corrected_modules/` — the published `antonkulaga/*` modules — carry one on **every** row,
+3668 of 3668, and in all four there is **exactly one distinct quote per PMID** (81 PMIDs, 7–17 words).
+It is the article title, verbatim: `pmid 24489884` carries *"Genome-wide association study of proneness
+to anger."*, which is byte-for-byte what `lookup_citation` returns as `title`, trailing period included.
+
+A title always occurs in its own fulltext, so `_study_quote_found` matches every time, `quotes_found`
+equals `quotes_authored`, and the module reports complete quote coverage without any article having
+been read. The check cannot fail on a title, and the value is obtainable from `esummary` metadata —
+the one thing the column exists to witness is exactly the thing it does not.
+
+**Why this is ours too.** These four modules were authored through the workflow this plugin teaches,
+under a rule of ours that forbade an agent to locate a passage. The rule did not produce human-located
+quotes; it produced this. Our half is `RM15`'s reversal — an agent may now locate and write a real
+passage — plus telling an author what a title in that column means.
+
+**Closes when** upstream can distinguish a quote from article metadata it already holds (`S54`'s
+candidate: compare against `CitationHint.title`, and report one identical quote repeated across every
+row citing a PMID), **and** that is in the version `uv sync` installs.
+
+## F43 — a `provenance_quote` cannot name who located it, so an honest agent-located quote has nowhere to say so
+
+**Status — filed upstream 2026-08-20 as `S55`, open. This is the gap RM15's reversal runs into, and
+it bounds what we can honestly ship.**
+
+`VariantRow.curator` is `str | None`, "Curator override" (`spec.py:513`), and `Defaults.curator`
+defaults to the literal `"ai-module-creator"` (`spec.py:296`). `StudyRow` has **no** `curator` column.
+So a variant row can name who decided it and a study row cannot name who located its passage — the
+wrong way round, given that only one of the two is an attestation.
+
+`Contribution` already models mixed authorship properly: `who` is *"a name, handle, or model id"*,
+`kind` ladders `{human, human_expert, human_certified}` against `{ai}` + `{agent, team, swarm}`, and
+its own docstring says to "route scrutiny by it". That is module-level. Real work is mixed at row
+granularity — a scientist reads a review while an agent traverses its citations, in one pass — and no
+module-level list can say which of the two found row 1400.
+
+**What it costs us right now.** Under the reversal an agent may locate and write a quote provided it
+records who located it. With no column for that, the record can only go to our `logs/` surface, which
+**does not travel with the module** — so a consumer downloading it sees a quote and cannot tell
+whether an agent or a geneticist put it there. That is the honest limit to state to an author, not
+something to design around.
+
+**Closes when** `StudyRow` carries a per-row attributor resolvable against `authorship`, and it is
+installed. A boolean `machine_located` would not close it: it collapses the agent-found/human-confirmed
+case and names neither party.
