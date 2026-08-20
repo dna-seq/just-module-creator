@@ -228,7 +228,8 @@ my_module/
 │
 ├── README.md                author    ← optional, and it becomes the catalog card
 ├── logo.png                 author    ← optional; often agent-drawn, to a house style
-├── provenance.json          author    ← optional, recognised, and nothing here writes or reads it
+├── provenance.json          author or record_override ← why an authored value outranks a source;
+│                                        hashed like a log, outside artifact.digest
 ├── published.json           this plugin ← a LOCAL receipt of a publish. Never uploaded
 └── logs/*.log               the pipeline that authored it ← NOT the enricher, which writes none.
                                         Swept up by every compile and published with no opt-out, so

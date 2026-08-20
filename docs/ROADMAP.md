@@ -144,7 +144,7 @@ from the items it takes `len(doc.items)` and no field. Verified by grep across `
 
 ### Ours to build
 
-1. **Write `provenance.json`** in upstream's existing shape. No tool here writes one today.
+1. ~~**Write `provenance.json`** in upstream's existing shape.~~ **Done** — `record_override`.
 2. **Capture the outrank reason at the moment of the override** — when an agent or author changes a
    checked value against what a source says, the reason is recorded then, not reconstructed later.
 3. **Log the move** into the `logs/` subtree as well, per §2 part 2: every authoring move that goes

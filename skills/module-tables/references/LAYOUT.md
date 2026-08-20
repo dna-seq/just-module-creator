@@ -44,12 +44,16 @@ module_spec.yaml        provenance.json        README.md        verification.jso
 
 **Two names in there deserve attention.**
 
-**`provenance.json` is recognised, and no dossier here covers it.** Optional structured provenance
-authored beside the spec — "shipped and hashed like a log, kept out of `artifact.digest`". It survives
-a storage round-trip. It is deliberately *not* carried by `upgrade` the way `verification.json` is, on
-upstream's own reasoning: provenance describes how the *predecessor* was built, whereas an attestation
-is hash-bound to the authored bytes and invalidates itself if they move. If you author one, know that
-nothing in this plugin writes or reads it.
+**`provenance.json` is recognised, and this plugin now writes it.** Optional structured provenance
+beside the spec — "shipped and hashed like a log, kept out of `artifact.digest`", so it costs no
+identity. It survives a storage round-trip. It is deliberately *not* carried by `upgrade` the way
+`verification.json` is, on upstream's own reasoning: provenance describes how the *predecessor* was
+built, whereas an attestation is hash-bound to the authored bytes and invalidates itself if they move.
+
+**`record_override` writes one item per `(variant_key, field)`** recording why an authored value
+outranks a source, and `review_queue` reads them back — `module-revise` owns the queue. An item that is
+**not** ours is kept and reported, never rewritten. Nothing upstream reads any field of an item:
+`_collect_provenance` validates, copies, hashes and takes `len(doc.items)`.
 
 **`logo.png` is NOT in `RECOGNIZED_SPEC_FILES`** — and it survives anyway, by a different mechanism.
 `upgrade` carries it forward from `manifest.logo` (`upgrade.py:497-507`), described there as
