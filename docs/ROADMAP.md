@@ -245,9 +245,18 @@ grading recommendations; and `S52`'s answer decides whether a severity change fo
 > owner; the attestation contradiction is settled and recorded in §10 — do not re-open it.** Filed
 > upstream as `S54`/`S55`, tracked as `F42`/`F43`.
 >
-> **What is left, and none of it is the philosophy question:**
-> - `docs/DESIGN-version-compare.md`, deliberately untouched (a design study was running against it).
->   It is the **only** surface this item named that has not been read.
+> **The residue is closed, 2026-08-20 later the same night.**
+> `docs/DESIGN-version-compare.md` — the one surface this item named that had not been read — has had
+> the pass. Two sites: §3.6's heading was the retired stance, and the reason a comparator refuses is
+> its own (**pairing two rows is an assertion** that two directory listings cannot support); and the
+> changelog refusal argued by analogy to a machine-located quote, which is now the legitimate act. The
+> refusal survives on a sharper distinction — a located quote is a found passage a check can test, a
+> generated changelog sentence is a claim about **motive** that nothing can test.
+>
+> Three of the four "create-module is stale" dossier claims were resolved when that skill was
+> dismantled: two described a pre-0.6 claim already corrected, and the third is now carried as a
+> ROADWORKS in `module-curate`. **`RM15` may be closed.** The one unreproduced report of
+> `describe_table` returning a 0.5 shape under 0.6.1 still stands and is not this item's.
 >
 > The three delegated files landed and were then swept against the same stance grep: `find-evidence`
 > and `studies.md` were already correct, `literature.md` still carried the reversed proposition live
