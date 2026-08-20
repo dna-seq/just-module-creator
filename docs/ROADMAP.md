@@ -567,6 +567,49 @@ outbound request goes through a `ServiceGate`, while some of them do not.
 
 ---
 
+## RM25 — nothing reads a log before it is published, and the catalog is immutable
+
+**Severity:** medium · **Status:** open · **Owner:** unassigned · **Opened** 2026-08-20
+
+`_collect_logs` runs on **every** compile with no flag and no opt-out: any `*.log` in a spec
+directory is copied into the artifact, hashed into the manifest, and uploaded on publish
+(`gather_spec_files` skips only `.parquet`, `manifest.json` and `WHERE-THIS-CAME-FROM.md`). Our own
+`logs.md` dossier states the consequence and then states the gap in the same breath — *"read a log
+before you publish it — no tool will read it for you"* — and `grep` confirms nothing in
+`tools/registry.py` looks at `logs/` before sending.
+
+**The exposure is unrealized, and that is the point of filing now rather than later.** Measured:
+**zero** of the 16 published versions across the 5 production modules carry a log entry, the polygon
+carries none from anyone else, and none of the 16 reference examples ships a `.log`. Meanwhile the
+registry operator's `data/input/` holds real agent transcripts — gitignored, untracked, never
+published — that contain the full Agno team system prompt, every member model id, and upload paths
+like `data/agent_uploads/40246_2025_Article_772.pdf`. **A published version is immutable**, so the
+first time somebody drops one of those into a spec directory the catalog keeps it, and `yank` delists
+without removing.
+
+**We are the layer that should catch it**, by the workflow-versus-contract line in §11: what gets
+*swept up* is the format's business and is correct as designed — the whole point of `logs/` is that
+it accumulates across versions and travels. What is missing is an authoring-time read, and authoring
+is ours.
+
+**The shape, and it is small:** a pre-publish pass over `logs/**.log` reporting size, and flagging
+what nobody means to publish — an absolute path, an `Authorization`/`Bearer`/`api_key`-shaped string,
+a home directory, a system-prompt-sized block. **Report, never strip.** A log is a provenance record
+and silently editing one is the opposite of what it exists for; the author decides whether to delete
+it, and they cannot decide about a file nobody showed them.
+
+**A worked example of the good case exists in this repo** and should be the fixture:
+`data/interim/rm15_remediation/*/logs/quote-remediation.log`, which travelled to two polygon
+rehearsals. 73 lines, no paths, no credentials, and an honest header — *"who: claude-opus-5,
+unattended … human_confirmation: none — no human read any of these articles in this run"*. That is
+what a published log should look like, and a check that flagged it would be a check with a false
+positive, which is the calibration.
+
+**Do not generalise it into a secret scanner.** The question is narrow: *would the author be
+surprised to see this in the catalog?*
+
+---
+
 ## Owed to `just-dna-lite`, and not yet packaged
 
 Every one of the 24 dossiers carries a `## Blanks for just-dna-lite` section naming, with `path:line`,
