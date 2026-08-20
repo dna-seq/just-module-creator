@@ -197,3 +197,27 @@ def test_the_retired_stance_only_appears_as_something_retired(skill: Path):
             f"{match.start()}. This layer writes; what it owes is the discriminator "
             "and a logged move"
         )
+
+
+def test_claude_md_names_every_skill_that_ships():
+    """`CLAUDE.md`'s asset table is the roster an agent reads before touching anything.
+
+    It had gone stale in the quiet way: `module-status` and `module-symptom` shipped and
+    the table never learned them, so the layout tree's "sixteen skills" was right about
+    the table and wrong about the directory. An agent reading the roster would conclude
+    the two doors do not exist and write a third copy of what they hold — the drift
+    `CLAUDE.md` warns about by name. Nothing failed, because nothing read it.
+
+    Names only. Whether the table *describes* a skill well is a judgement, and a test
+    that tried to hold that would fail on every rewording.
+    """
+    text = (SKILLS.parent / "CLAUDE.md").read_text(encoding="utf-8")
+    table = text.split("### The agent assets this repo ships", 1)[1].split("\n## 1.", 1)[0]
+    # Plain substring, not a backtick span: the map is named through its path
+    # (`skills/module-101/SKILL.md`) while the stage spine is named bare. Both are
+    # the roster naming it, and the test holds the claim rather than the formatting.
+    missing = sorted(name for name in NAMES if name not in table)
+    assert not missing, (
+        f"CLAUDE.md's asset table does not name {missing}. A skill absent from the roster "
+        "is one the next agent rebuilds from scratch"
+    )

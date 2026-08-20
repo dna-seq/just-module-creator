@@ -43,10 +43,14 @@ know what you must not do. Links carry positive detail only.
 | **The stage spine**, one skill per lifecycle stage | `module-start` (0–1: triage, licence, the spec), `module-draft` (2), `module-curate` (3), `module-enrich` (4), `module-check` (5), `module-compile` (6), `module-close` (6b), `module-publish` (7–8). **Each owns its stage's procedure outright — there is no second copy anywhere**, and each ends with the discriminator (what to apply silently, what to put in front of a pilot) rather than a list of refusals. |
 | **The second-pass three** | `module-revise` (which kind of pass, and what it invalidates), `module-refresh` (re-running anything that already ran), `module-diff` (what moved, and the one reading that means an upstream source changed its answer). A second pass is the normal case, not the exception. |
 | **The references the stages load** | `module-weights` (the column everyone fills and nobody declares), `module-consumer` (the far side of the seam), `find-evidence` (search, verify a PMID, read a paper, and what may honestly be quoted). |
+| **The two doors into a module you did not just create** | `module-status` (read the spec directory, work out which stage it is actually at, and hand back the short list of decisions somebody must make next) and `module-symptom` (a message arrived and its meaning is unknown — the door to `SYMPTOMS.md`, and how to tell which layer emitted it). Neither is a stage: they are entered sideways, from an inherited directory or an error, and they route to the stage that owns the work. |
 | `skills/module-tables/SKILL.md` | **Which table, and where every file sits.** The router: table choice keyed on grain, the axes that must go in a key, composition, the three on-disk shapes, and the registry's `derived/` layout. Holds no column list and no procedure. |
 | `skills/module-tables/references/*.md` | 24 per-table dossiers plus `LAYOUT.md` (the tree, and the registry's upload normalisation). Each dossier carries an audit banner, 🚧 ROADWORKS and ⚠️ CHECK markers; **anchor on symbol names, not `file:line`**. |
 | `skills/module-101/references/SYMPTOMS.md` | Upstream message text → cause → action. Read *from* every stage, which is why it sits with the map rather than with one stage. |
 | `skills/module-101/references/CLI.md` | The full CLI surface, and what this server deliberately does **not** wrap. |
+| `.claude-plugin/plugin.json` | Claude plugin manifest; declares the MCP server via `${CLAUDE_PLUGIN_ROOT}`. |
+| `.claude-plugin/marketplace.json` | Lets `/plugin marketplace add ./` work. |
+| `.codex-plugin/plugin.json` | Codex plugin manifest; same skills and server, via `${PLUGIN_ROOT}`. Carries the **second** hand-bumped version string. |
 
 > **`skills/create-module/` was the one canonical copy of the procedure and it no longer exists.**
 > Dismantled 2026-08-20 on the owner's instruction — *"drag away every quote until that doc is empty"* —
@@ -54,9 +58,6 @@ know what you must not do. Links carry positive detail only.
 > session updates in the right place. **Do not recreate it, and do not let a stage skill grow into it.**
 > The rule that replaces "do not restate the procedure beside its skill" is narrower and stricter: **one
 > fact, one home.** If two skills need the same rule, one owns it and the other links.
-| `.claude-plugin/plugin.json` | Claude plugin manifest; declares the MCP server via `${CLAUDE_PLUGIN_ROOT}`. |
-| `.claude-plugin/marketplace.json` | Lets `/plugin marketplace add ./` work. |
-| `.codex-plugin/plugin.json` | Codex plugin manifest; same skills and server, via `${PLUGIN_ROOT}`. Carries the **second** hand-bumped version string. |
 
 ---
 
@@ -377,8 +378,9 @@ design depends on.
 src/just_module_creator/   source (src layout)
 tests/                     pytest suite — in-memory, offline
 docs/                      all markdown except this file and README.md
-skills/<name>/             sixteen skills: the map, the stage spine, the second-pass three,
-                           the references. No skill holds another skill's procedure
+skills/<name>/             one directory per skill — the map, the two doors, the stage spine,
+                           the second-pass three, the references. No skill holds another's
+                           procedure; the roster is the asset table above, and a test pins it
 .claude-plugin/            plugin + marketplace manifests
 assets/                    fixtures that MUST travel — committed
 data/input|interim|output  git-ignored, never travels

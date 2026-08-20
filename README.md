@@ -41,7 +41,7 @@ codex plugin marketplace add dna-seq/dna-seq-claude-marketplace
 codex plugin add just-module-creator@dna-seq
 ```
 
-All sixteen skills appear in Codex's skill and slash-command picker.
+Every skill appears in Codex's skill picker, and the eight commands as slash commands.
 The Codex package uses `${PLUGIN_ROOT}` to start the same source checkout as the Claude plugin.
 
 Needs [`uv`](https://docs.astral.sh/uv/) on PATH and Python ≥ 3.13; dependencies install on first
