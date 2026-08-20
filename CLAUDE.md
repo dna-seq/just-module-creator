@@ -650,6 +650,7 @@ land:**
 |---|---|
 | format, compiler, enricher (one repo) | `../just-dna-format/docs/CONSUMER_SUGGESTIONS.md` |
 | the registry service, its client, or a `just-dna-pipelines` command calling it | `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md` |
+| `just-dna-lite` / `just-dna-pipelines` **itself** — the annotation and consumer side | `../just-dna-lite/docs/CONSUMER_HANDOFF_from_just-module-creator.md`, appended |
 
 **`../just-dna-marketplace` is a stale *directory* name and nothing more.** The
 project, the package and the service are all `just-dna-registry`; only the path on
@@ -659,6 +660,16 @@ registry, and refer to the path only when a path is what you mean.
 Its `S<n>` numbering is a separate series from the format tree's; both start at
 `S1`. If a note is in the wrong file it may as well not be filed, so decide by
 asking who would change code, not which surface you noticed it through.
+
+**The third channel is deliberately unnumbered, and reading it like the other two misleads.**
+`just-dna-lite` has no `CONSUMER_SUGGESTIONS.md` and no triage loop — standing one up in a third
+repo was never ours to do, and nobody there agreed to run it. So there is no `S<n>` to compute, no
+inbox to check for duplicates and nowhere structured for a reply to land: append a **dated
+section** carrying its own evidence inline, and treat silence or *"we are not doing that"* as a
+complete answer to record here. The file is **untracked in their tree**, which is not a defect to
+repair — writing the note is still the whole job, and committing there is still not ours.
+Used 2026-08-20 for the whole `Blanks for just-dna-lite` set, and 2026-08-21 for the missing CLI
+wrapper found while building `module-install-local`.
 
 #### The format tree's intake is split, and the inbox is the empty half
 
