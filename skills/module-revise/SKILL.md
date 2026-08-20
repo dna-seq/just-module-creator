@@ -268,9 +268,9 @@ the decision list.** What follows is the second half of that table, worked throu
 
 ## What this stage cannot do
 
-**Nothing compares two versions of a module.** There is no diff tool, no parent digest, no "what
-changed since v1" report — you compare signatures and read the changelog. `module-diff` owns what
-*can* be read off the identities.
+**Nothing in the artifact or the catalog relates two versions.** No parent digest, no "what changed
+since v1" record, nothing stored. What you *can* do is compare two directories you have with
+`compare_modules`, and read the signatures — `module-diff` owns both.
 
 **No consumer is notified that v2 exists.** There is no upgrade action anywhere in the install path —
 no "update available" badge, no SemVer comparison. A published v2 sits there until someone looks.

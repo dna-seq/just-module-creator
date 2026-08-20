@@ -421,7 +421,26 @@ whole file and you have rebuilt the defect under a better name.
 
 ## RM19 — build `compare_modules` and `compare_to_published`
 
-**Severity:** medium · **Status:** open, and **specified** · **Owner:** unassigned · **Opened** 2026-08-20
+**Severity:** medium · **Status:** **`compare_modules` shipped 2026-08-20 (night run); `compare_to_published` open** · **Owner:** agent B · **Opened** 2026-08-20
+
+> **Shipped: `compare_modules`.** `src/just_module_creator/compare.py` plus `tools/comparison.py`,
+> essentials, offline, with 15 tests built on the `hfe_hemochromatosis` reference example rather than on
+> synthetic rows — the design's decisions were measured on that corpus and invented tables would not
+> reproduce them.
+>
+> The cases where the naive answer is wrong all behave as specified, verified against the real module:
+> a **row reorder** reports `content: same` and 13 unchanged rows; a **licence edit** reports
+> `content: same` with the change under `identity_scope: sources.signature`; a **retyped rsID** reports
+> one added and one removed and **zero changed**; a **changed `genome_build`** reports `frame: moved`
+> with the note that the clean row counts beneath it are *not comparable*; and the deprecated
+> `sources.csv` spelling compares as the same table as `licensing.csv`, reporting each side's spelling.
+>
+> **One defect found by using it rather than by testing it**: an example whose two cells differ past
+> the truncation point rendered as two identical strings, which reads as *the row did not really
+> change*. The window is now centred on the first character where the two diverge.
+>
+> **Still open: `compare_to_published`** — manifest-only, one or two bounded GETs, no download. The
+> design specifies it fully; it was not started rather than half-built.
 
 [DESIGN-version-compare.md](DESIGN-version-compare.md) is a completed design study, 699 lines, and its
 recommendation is **build it now**. This entry exists because the study had no roadmap item, so its

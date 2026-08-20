@@ -11,6 +11,8 @@ The hybrid registration pattern lives in ``build_server``:
 * ``register_registry``   — always listed, token enforced per call.
 * ``register_provenance`` — always. Recording that an authored value outranks a
   source, and the review queue that reads those records back (RM16).
+* ``register_comparison`` — always. ``compare_modules``: two local spec
+  directories, offline, at three grains (RM19).
 * ``register_passes``     — always. The two tools that fetch and then write into
   a spec directory: ``draft_from_clinvar`` (step 2) and ``enrich_module``
   (step 6). Both are named in the workflow INSTRUCTIONS teach, which is why
@@ -43,6 +45,7 @@ from just_module_creator.settings import Mode, Settings
 from just_module_creator.tools._shared import schema_versions
 from just_module_creator.tools.advanced import register_extended
 from just_module_creator.tools.authoring import register_essentials
+from just_module_creator.tools.comparison import register_comparison
 from just_module_creator.tools.passes import register_extended_passes, register_passes
 from just_module_creator.tools.provenance import register_provenance
 from just_module_creator.tools.refresh import register_refresh
@@ -227,6 +230,7 @@ def build_server(mode: Mode | None = None, settings: Settings | None = None) -> 
     register_registry(mcp, settings, store)
     register_passes(mcp, settings, services)
     register_provenance(mcp, settings)
+    register_comparison(mcp, settings)
     if resolved_mode == "extended":
         register_extended(mcp, settings, services)
         register_extended_passes(mcp, settings, services)

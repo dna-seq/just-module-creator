@@ -43,6 +43,7 @@ below — has the real trees for all four shapes you will meet one in.
 | rehearse a publish, then publish | polygon first, then the immutable catalog | `module-publish` |
 | **revise a module that already exists** | yes — and this is the common case | `module-revise` |
 | read back somebody else's published module | yes | `module-diff` |
+| compare two versions row by row | yes, offline, grouped by what changed | `module-diff` |
 
 **What it cannot do, and will not pretend to.** It never opens a VCF, calls a genotype, or gives
 medical advice. It does not lift coordinates between assemblies (it recovers the rsID instead). No
@@ -208,6 +209,7 @@ match.
 | identifier currency, **and gene↔chromosome agreement** | `check_identifiers`, `lookup_identifier` | essentials |
 | declare the authoring finished | `close_module` | essentials |
 | record why an authored value outranks a source, and read the queue back | `record_override`, `review_queue` | essentials |
+| compare two spec directories, at three grains | `compare_modules` | essentials |
 | content signature, artifact integrity | `module_signature`, `verify_artifact` | essentials |
 | the whole generated DSL at once | `authoring_reference` | essentials |
 | see whether a module already exists, and read one | `registry_search`, `registry_get_module` | essentials |

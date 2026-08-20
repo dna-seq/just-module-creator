@@ -6,7 +6,7 @@ description: >-
   way to detect an upstream source revising an answer, how to find what exactly changed when nothing
   computes it, and the honest fact that no tier compares two versions. Triggers: "what changed", "why
   did the digest move", "diff two versions", "canary", "did the source change", "content_signature",
-  "compare modules", "is this stale", "fact signature", "the digest moved and I changed nothing",
+  "compare modules", "compare_modules", "is this stale", "fact signature", "the digest moved and I changed nothing",
   "resolution_signature", "did upstream change its answer".
 ---
 
@@ -151,31 +151,52 @@ what we record, not a principle.
 Deleting the sidecar is also what discards curator overrides — so the drift detector and the override
 problem are one problem, tracked upstream as **RM83**.
 
-## What exactly changed — nothing computes it, and there is still an answer
+## What exactly changed — `compare_modules`
 
-Signatures tell you **what kind** of thing moved. They cannot tell you **what**. Two steps:
-
-| Question | How |
-|---|---|
-| **What kind moved?** | the decision tree above, off the two manifests |
-| **What exactly?** | download both versions with their inputs and diff the authored CSVs directly |
+Signatures tell you **what kind** of thing moved. They cannot tell you **what**. `compare_modules`
+does, offline and in essentials:
 
 ```
-registry-client download <ns> <name> 1.0.0 ./v1 --with-inputs --layout flat
-registry-client download <ns> <name> 2.0.0 ./v2 --with-inputs --layout flat
-diff ./v1/variants.csv ./v2/variants.csv
+compare_modules(left_dir="./v1", right_dir="./v2")
 ```
 
-**No tool does that second step for you yet.** It is still the answer, and it is two commands. Diff the
-**authored** tables — `variants.csv`, `studies.csv`, the table kinds — because those are what
-`content_signature` reads; a derived sidecar will differ for reasons that mean nothing.
+It answers at three grains in one report, because the caller does not yet know which one they need:
+`content` and `frame`, then per-table presence and counts, then **rows grouped by the set of columns
+that changed**. That grouping is the reason the row level is readable at all — 1,190 rows moving in one
+column for one reason is one fact printed 1,190 times, and grouped it is one line.
 
-*(`docs/DESIGN-version-compare.md` specs two tools that would: `compare_modules` over two local spec
-directories, and `compare_to_published` for "am I ahead of the catalog". Both essentials, both bounded
-by what you named. Until they exist, the two commands are the route.)*
+**Read `frame` first.** When the two sides declare different builds the row comparison is *not
+comparable* rather than clean: the natural key is build-independent, so two assemblies produce
+character-identical keys naming loci hundreds of bases apart, and "zero rows changed" is then the
+dangerous answer.
 
-Use `--layout flat` for this, not `split`: a diff is easier when both trees have the same shape, and
+**`tables[].identity_scope` is the field to read second.** It says *which hash your edit will move* —
+and `licensing.csv` is authored and **outside `content_signature`**, so a licence edit that looks
+invisible is not: it moves `sources.signature` alone.
+
+For two published versions, the acquisition is still yours and the comparison is not:
+
+```
+registry_download(ns, name, "1.0.0", "./v1")      # extended
+registry_download(ns, name, "2.0.0", "./v2")
+compare_modules(left_dir="./v1", right_dir="./v2")  # essentials
+```
+
+Use `--layout flat` when downloading: a comparison is easier when both trees have the same shape, and
 `derived/` is only a presentation. `module-tables` → `references/LAYOUT.md` has the layouts.
+
+**What it will not do**, and none of it is "not yet": no write path and no parameter that could become
+one; no verdict on which side is right; **no pairing of rows whose natural key changed** — one removed
+and one added, never one changed, because pairing asserts *this row became that row*; no changelog
+prose; no version-bump suggestion. For the raw cells, run `diff` — it does not reproduce that, badly.
+
+**It cannot perform the canary either.** Detecting that a source revised an answer means deleting a
+sidecar and re-deriving it, and only `refresh_sidecar` knows which side it just derived. A comparator
+sees two recorded files. What it adds is the case refresh cannot serve: two states no single refresh
+run produced — two versions, or a local spec against a downloaded one.
+
+*(`compare_to_published` — "am I ahead of the catalog", manifest-only, no download — is specified in
+`docs/DESIGN-version-compare.md` and is **not built**. `RM19`.)*
 
 ## What needs a pilot, and what you may simply fix
 
@@ -194,10 +215,11 @@ builds differ; downloading both versions `--layout flat` so the two trees have t
 
 ## What this stage cannot do
 
-**Nothing compares two versions of a module.** No diff in any tier, no changelog generation, no parent
-digest in the artifact, no monotonic-stats requirement. The registry records **no content relationship
-between versions at all** — the one cross-version rule is the duplicate-content gate, and it exempts a
-later version of the same module.
+**Nothing relates two versions in the artifact or the catalog.** No changelog generation, no parent
+digest, no monotonic-stats requirement; the registry records **no content relationship between
+versions at all** — the one cross-version rule is the duplicate-content gate, and it exempts a later
+version of the same module. `compare_modules` compares two directories you already have; it does not
+create a relationship, and nothing stores its answer.
 
 **No consumer is notified that a new version exists.** No badge, no SemVer comparison anywhere in the
 install path. Installed-vs-current is exact version-string equality, and a new version replaces the old

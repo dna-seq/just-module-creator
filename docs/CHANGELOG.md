@@ -3,6 +3,38 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.12.0 — `compare_modules`: what moved between two spec directories (2026-08-20)
+
+`RM19`, built from the 699-line design study that had been sitting without a roadmap entry. **Essentials
+and offline** — the cost is bounded by the two directories the caller named, which is the same shape as
+`module_signature` and `compile_module`.
+
+Three grains in one report, because the caller does not yet know which one they need — that is why they
+called. `content` and `frame`; then per-table presence, counts and `identity_scope`; then **rows grouped
+by the set of columns that changed**. The grouping is what makes the row level readable: 1,190 rows
+moving in one column for one reason is one fact printed 1,190 times, and grouped it is one line.
+
+Two rules the implementation turns on, both from the study:
+
+- **Compare the parsed models' `model_dump(mode="json")`**, never the CSV text and never the parquet. It
+  is the same normalization `content_signature` applies, so the row level cannot contradict the
+  signature level, and formatting differences become invisible for free.
+- **Never pair rows whose natural key changed.** One removed and one added, never one changed — pairing
+  asserts *this row became that row*, which two directory listings cannot support.
+
+Verified on `hfe_hemochromatosis` rather than on synthetic rows: a row reorder is `content: same` with
+13 unchanged; a licence edit is `content: same` with the change under `sources.signature`; a retyped
+rsID is `+1 -1 changed 0`; a changed `genome_build` is `frame: moved` with the counts beneath it
+labelled *not comparable*; and `sources.csv` compares as the same table as `licensing.csv`.
+
+`module-diff` and `module-revise` no longer say nothing compares two versions. What they say now is
+narrower and still true: **nothing in the artifact or the catalog relates two versions** — no parent
+digest, no stored record — and a comparison of two directories you already have does not create one.
+
+`compare_to_published` is specified and **not built** (`RM19`).
+
+---
+
 ## 0.11.1 — the review queue stops accusing an author of an edit nobody made (2026-08-20)
 
 `F52`, found by dogfooding 0.11.0's own `review_queue` on `assets/fto_bmi` an hour after it shipped.

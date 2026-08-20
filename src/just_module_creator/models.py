@@ -1646,3 +1646,112 @@ class ReviewQueue(BaseModel):
         description="Provenance items in the file that are not ours. Kept, never rewritten — "
         "another writer's record is not this tool's to discard.",
     )
+
+
+# --------------------------------------------------------------------------- #
+# Comparing two spec directories (RM19)
+# --------------------------------------------------------------------------- #
+class ComparedSide(BaseModel):
+    """One side of a comparison, as it was read."""
+
+    path: str = Field(description="The spec directory.")
+    genome_build: str | None = Field(
+        default=None, description="What it declares. null when no spec file could be read."
+    )
+    tables: int = Field(description="Authored tables found on disk.")
+
+
+class FrameVerdict(BaseModel):
+    """The declared-build comparison. Read this before any row count."""
+
+    left_build: str | None
+    right_build: str | None
+    verdict: str = Field(description="`same` | `moved` | `unknown`.")
+    note: str = Field(
+        description="When the builds differ the row counts below are **not comparable** rather "
+        "than clean: identical coordinate rows on two assemblies describe different loci, and the "
+        "reassuring answer is the dangerous one."
+    )
+
+
+class ChangeGroupOut(BaseModel):
+    """Rows that changed **in the same set of columns** — one fact, once."""
+
+    columns: list[str] = Field(description="The columns that differ, sorted.")
+    rows: int = Field(description="How many rows changed in exactly this set.")
+    examples: list[dict] = Field(
+        description="A few keys with their before/after cells, truncated. For the raw cells, "
+        "run `diff` — this tool deliberately does not reproduce it."
+    )
+
+
+class TableComparison(BaseModel):
+    """One authored table, at the table and row grains."""
+
+    csv: str = Field(description="Preferred spelling.")
+    identity_scope: str = Field(
+        description="Which hash an edit here moves: `content_signature`, or `sources.signature` "
+        "for the licensing table — which is authored and **outside** `content_signature`, so a "
+        "licence edit that looks invisible is not."
+    )
+    presence: str = Field(description="`both` | `left_only` | `right_only` | `unknown`.")
+    spelling_left: str | None = Field(default=None)
+    spelling_right: str | None = Field(default=None)
+    rows_left: int | None = None
+    rows_right: int | None = None
+    row_key: str = Field(description="`keyed` | `unkeyed`. Unkeyed rows are counted, never paired.")
+    key_collisions: int = Field(
+        default=0, description="Rows sharing a natural key. Only the first of each was compared."
+    )
+    unchanged: int | None = None
+    added: int | None = None
+    removed: int | None = None
+    changed: list[ChangeGroupOut] = Field(default_factory=list)
+
+
+class DerivedComparison(BaseModel):
+    """One machine-written sidecar, compared on its **facts** rather than its bytes."""
+
+    csv: str
+    verdict: str = Field(description="`same` | `moved` | `unknown`.")
+    left_signature: str | None = None
+    right_signature: str | None = None
+    signature_source: str = Field(description="`recomputed` here — read from the files on disk.")
+    rows_left: int | None = None
+    rows_right: int | None = None
+
+
+class MetadataDelta(BaseModel):
+    """Something that moved which no identity records."""
+
+    what: str
+    left: str | None = None
+    right: str | None = None
+    in_hash: bool = Field(
+        default=False,
+        description="False throughout: the field exists to say **this moved and no hash will "
+        "tell you**.",
+    )
+
+
+class Unknown(BaseModel):
+    """One thing this report is not telling you, and why. Never a silent omission."""
+
+    subject: str
+    reason: str
+
+
+class ModuleComparison(BaseModel):
+    """What moved between two spec directories. Never which side is right."""
+
+    left: ComparedSide
+    right: ComparedSide
+    frame: FrameVerdict
+    content: str = Field(description="`same` | `moved` | `unknown`, over `content_signature`.")
+    left_content_signature: str | None = None
+    right_content_signature: str | None = None
+    tables: list[TableComparison] = Field(default_factory=list)
+    derived: list[DerivedComparison] = Field(default_factory=list)
+    metadata: list[MetadataDelta] = Field(default_factory=list)
+    unknown: list[Unknown] = Field(default_factory=list)
+    note: str
