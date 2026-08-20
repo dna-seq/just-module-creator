@@ -82,7 +82,11 @@ async def test_the_taught_workflow_runs_in_the_default_tier(essentials_client, e
     instructions hit a tool that was not there. Derived from the text rather than
     restated, so editing the taught order re-checks it.
     """
-    workflow = INSTRUCTIONS.split("Work in this order:")[1].split("Three rules")[0]
+    # Bounded by the blank line that ends the block, not by the prose that
+    # follows it: this read `.split("Three rules")` until renumbering those rules
+    # silently widened the slice to the whole document and reported an unrelated
+    # tool as a tiering bug.
+    workflow = INSTRUCTIONS.split("Work in this order:")[1].split("\n\n")[1]
     every_tool = await _names(extended_client)
     named = {word for word in re.findall(r"[a-z_]{4,}", workflow) if word in every_tool}
 

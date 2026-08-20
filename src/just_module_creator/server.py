@@ -65,7 +65,7 @@ parquet artifact with a content-addressed manifest. Work in this order:
     the table) -> literature_search -> author rows -> lint_rows
     -> validate_module(strict) -> enrich_module -> compile_module(strict)
 
-Three rules this server enforces rather than merely documents:
+Five rules this server enforces rather than merely documents:
 
 1. Ask the tool, never memory. Every column list, vocabulary and requirement is
    generated from the live pydantic models, so describe_table /
@@ -73,15 +73,31 @@ Three rules this server enforces rather than merely documents:
    the files you only READ too: describe_machine_table answers the columns of
    resolution.csv and the fact sidecars, and says why they are not yours to
    finish by hand.
-2. Report, never repair. Lookups show you a value and refuse to write it into an
-   authored cell — a later check compares your independent value against that
-   same source, so filling it from the source makes the check vacuous. Those
-   refusals are the feature.
-3. A check that could not run is not a check that passed. `null` and `unknown`
+2. You may WRITE, and every write is logged. This is the authoring layer and the
+   business decision is delegated here, so filling or correcting a cell is
+   legitimate where the same act inside the compiler would not be. Two kinds of
+   cell are still withheld, and neither is a refusal to write on principle: a
+   value a later check compares against THAT SAME source (filling `doi` from the
+   record that just gave you the PMID makes the check compare PubMed with
+   itself — the value is shown so you can compare it, not paste it), and a value
+   only a pilot can settle (a genotype, a weight, a conclusion, a direction).
+   Where a lookup reports `applied: false` with a `refusal`, that is upstream
+   reporting what IT did and is passed through verbatim; your own writes are
+   yours, logged as yours, never laundered as upstream's.
+3. A mismatch against a source is not a defect report. Archives lag the edge: a
+   paper is retracted, a meta-analysis refutes it, a bigger cohort moves the
+   call. A row that disagrees with ClinVar may be the module being right and
+   current while the archive is stale, so conforming it to the source silently
+   DEGRADES the module — and the check then agrees with itself and reports
+   green. Editing against a source needs a reason that outranks the source, and
+   that reason gets written down. An outranked row keeps warning: "somebody
+   decided this" never means green, because two releases on nobody remembers
+   whether the retraction that motivated it was itself superseded.
+4. A check that could not run is not a check that passed. `null` and `unknown`
    never collapse into a pass, and warnings on a green run are the interesting
    output.
 
-4. Take every PMID from a literature_search result, never from memory. PMIDs are
+5. Take every PMID from a literature_search result, never from memory. PMIDs are
    dense enough that a recalled one is usually a real record for a different
    paper, so existence never settles identity — only a title does. Both
    lookup_citation and literature_search report one; read it and compare it
@@ -159,9 +175,19 @@ Account and namespace names are lowercase-with-hyphens and reject underscores;
 module names are the opposite and take underscores. Both rules are enforced, not
 normalised.
 
-Ask the author, once, near the start: do they want to READ papers (fulltext work
-is what makes provenance_quote honest, since it records a human having read the
-paper), and may their email be used for lookups? NCBI's polite pool and Unpaywall
+A provenance_quote is a passage located in the article, and YOU may locate it:
+fetch_fulltext returns the text so you can read it, and a passage you found there
+is a real reading. Quote it verbatim, for the specific claim the row makes, and
+say who located it. Never the article's TITLE — a title appears in its own
+fulltext, so quotes_found goes green over metadata nobody had to read, which is
+how four published modules came to carry a quote on all 3668 rows with the title
+in every one. Say plainly that a quote you located is not independent evidence of
+the claim once you have read that fulltext: it has become a citation-pairing
+check, which still catches a passage filed against the wrong paper.
+
+Ask the author, once, near the start: do they want the papers read at all (it
+costs requests and time, and some modules do not need it), and may their email be
+used for lookups? NCBI's polite pool and Unpaywall
 meter and contact PER ADDRESS, so unconfigured means their usage shares one budget
 with every other unconfigured install and a problem reaches the project rather
 than them. Ask only when neither JMC_USER_EMAIL nor JUST_DNA_CONTACT_EMAIL is set,
