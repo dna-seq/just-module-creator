@@ -368,8 +368,29 @@ The title comparison is a *second*, stronger signal and needs a network call
 - **It reads the authored file directly.** It must not depend on `literature.csv`, whose counters
   are stale on every module that has the problem (`F49` / `S56`).
 
+### The one thing to settle before writing code, and it is why this was not built the night it was found
+
+**Whose finding is it, in a tool that transports upstream's verbatim?** `validate_module`'s
+`warnings` are upstream's own, carried across the MCP boundary field-for-field by
+`_shared.to_findings` precisely so `error`/`warning`/`info` and `None`-means-unchecked survive.
+Mixing a finding **we** computed into that same list makes it impossible for a caller to tell which
+layer said what — which is the distinction §2 exists to protect, one level up.
+
+Three shapes, none obviously right:
+
+1. **A separate field** — `authored_findings`, beside `warnings`. Honest and additive; costs every
+   caller a second list to read, and invites a second one after it.
+2. **A `source` on `LintFinding`** — `upstream` vs `just-module-creator`. Preserves the ladder and
+   the distinction in one list; changes a model every tool returns.
+3. **`lint_rows` only, and never `validate_module`.** `lint_rows` is already ours end to end, so
+   nothing blurs. Costs the check its reach: the pre-publish path an author actually runs is
+   `validate_module`, and a linter you have to remember to call is the one that does not get called.
+
+The third is tempting and is probably wrong for exactly the reason `F44` exists. Run §1 rather than
+picking one.
+
 ### Done when
 
-`lint_rows` and `validate_module` both report it, a test builds the failing shape from a real module
-copy and watches the finding appear, and `find-evidence` + `studies.md` point at the tool instead of
-at a hand-written group-by.
+`lint_rows` and `validate_module` both report it — with the layer that computed it legible — a test
+builds the failing shape from a real module copy and watches the finding appear, and
+`find-evidence` + `studies.md` point at the tool instead of at a hand-written group-by.
