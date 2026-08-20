@@ -413,7 +413,8 @@ assumed),
 `S48` (a kind's natural-key *columns* are unobtainable — `natural_key` returns values, the registries
 are private — which is how `modifier_cn` went stale here), and `S49` (`COMPANION_KINDS` pulls
 `variants.csv` in behind `studies.csv` unconditionally, which RM47 made wrong for a binning module;
-probe attached, strict-green). Tracked here as `F38`, `F39` and `F40`.
+probe attached, strict-green). Tracked here as `F56` (renumbered from a duplicate `F38` on
+2026-08-20), `F39` and `F40`.
 
 ### What was NOT edited, on purpose
 

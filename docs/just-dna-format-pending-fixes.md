@@ -840,7 +840,13 @@ is in front of an author at the moment they pass the argument, which upstream pr
 
 ---
 
-## F38 — the machine-produced fact tables have no public `(csv → row model)` enumeration
+## F56 — the machine-produced fact tables have no public `(csv → row model)` enumeration
+
+> **Renumbered from `F38` on 2026-08-20.** Two different findings were minted as `F38` hours apart,
+> which is not an id that is load-bearing — it is an id that resolves to two things. The **other**
+> `F38` (`--no-study-facts` / format-tree `S50`) keeps the number, because `CHANGELOG.md` names it
+> beside `S50` and that reference is unambiguous. This one takes the next free id.
+
 
 **Status —** filed 2026-08-20 as format-tree `S47`; **accepted and fixed in tree the same day**
 as their `RM112`. `hints.DERIVED_TABLE_MODELS` + `hints.derived_model_for(csv_name)` are public in
