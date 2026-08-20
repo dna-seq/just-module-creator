@@ -788,6 +788,33 @@ When outdated API knowledge causes a real crash or logic failure, fix the code
 the next agent does not repeat it. The same applies when the user corrects a
 preference: it goes into §10, in their words, with the reason.
 
+### Running two agents across one night: the relay protocol
+
+Used 2026-08-20 for a philosophy audit followed by a skills build, and it worked — no overlap, no
+lost work, and neither agent had to be told what the other was doing. Reuse it rather than reinventing
+it; it costs one file and about forty lines.
+
+**One file, one writer at a time.** A `docs/NIGHT-RELAY.md` holding a `STATE:` line, the legal
+transitions in order, and one append-only section per role.
+
+1. **Read the `STATE:` line before anything else.** If it is not the state your role starts from,
+   **stop immediately and write nothing** — say which state you found and exit. A wrong-state start is
+   the only failure this prevents, and it is worth the whole protocol.
+2. **Claim by writing your transition first**, with a UTC timestamp, and **commit that immediately**. A
+   claim nobody can see is not a claim.
+3. **A `*-RUNNING` state older than four hours is a dead agent**: append a note, move the state back one
+   step, stop. Do **not** take over its work. **Measure that from the newest history entry, never from
+   `SINCE:`** — `SINCE:` records when the state was claimed and never moves, so a live agent with a
+   long-running subagent reads as dead. A live agent appends **proof-of-life** entries.
+4. **Never edit another role's section.** Append to your own.
+5. **On finish, write what the next role needs *decided*** — not a summary of what you did. Then commit.
+
+Two things that made it work beyond the file itself. **The waiting agent should arm a file monitor on
+the `STATE:` line rather than polling**, and should **test that monitor on a dummy file first** — an
+untested wait is how a night is slept through. And **the handoff should name the decisions the writer
+took that the reader may cheaply reverse**, because an unattended run makes calls that would otherwise
+have been questions.
+
 ## 10. Learned user preferences
 
 *Append-only. One line each, in the user's terms, with the why where it is not obvious.*
