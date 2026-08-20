@@ -53,7 +53,7 @@ said so!*").
 | **A blank cell means "we don't know", never "no"** | the three-valued algebra, and why you must not write `false` to tidy a warning |
 | **Those two quote columns mean "someone read this paper and found the sentence" — and that someone may be me** | why I quote the passage word for word, say who found it, and never paste the title |
 | **I write it; if you want a specialist to check it, that becomes a later version with their name on it** | who does what, and why you are not being asked to check the genetics |
-| **On a dial, a shared endpoint is a boundary; on a counter, it is two bins claiming the same number** | why dense bins must touch and integer bins must not |
+| **On a dial, a shared endpoint is a boundary; on a counter, it is two bins claiming the same number** | why the `measure_tiling` column decides whether bins must touch — the measure's kind only sets the default |
 
 **Correct the DNA-reading misconception early and unprompted.** Do not wait to be asked. A beginner's
 working model is usually "point this at my DNA file and it tells me about me", and every later step reads
