@@ -157,14 +157,23 @@ Each corresponds to a trap in [docs/DOMAIN.md](docs/DOMAIN.md). Breaking one doe
 not merely bend a convention — it deletes a class of validation the upstream
 design depends on.
 
-> ⚠️ **THIS WHOLE SECTION IS UNDER AUDIT — `RM15`, high severity, opened 2026-08-20.**
-> Several of these rules are `just-dna-format`'s stance, adopted here wholesale and
-> never tested against *this* layer's purpose. `report, never repair` has already been
-> corrected to a counterstance above; the rest have not been read. **Before you cite a
-> rule below as a reason to refuse something, check it against RM15's three-way test:
-> is it physics, is it format's policy that is also correctly ours, or is it format's
-> policy we should not be holding at all?** A prohibition whose only justification is
-> "upstream does it that way" is the defect RM15 exists to find, not an argument.
+> ✅ **AUDITED — `RM15`, 2026-08-20. Every bullet below has now been read against this
+> layer's purpose rather than inherited.** Three moved: `report, never repair` became a
+> counterstance, the `provenance_quote` prohibition was reversed outright, and
+> "never widen the write surface" was split because two of its three clauses were
+> format's boundary and contradicted the counterstance. The rest stand — most because
+> they are **physics** (a three-valued answer, `all()` over an empty list, except-arm
+> ordering, a determinism gate not being a correctness gate), the remainder because they
+> are format's policy that is **also correctly ours**, now justified from our own reason
+> rather than from theirs.
+>
+> **The test survives the audit, so keep applying it to anything new:** is it physics,
+> is it format's policy that is also correctly ours, or is it format's policy we should
+> not be holding at all? A prohibition whose only justification is "upstream does it
+> that way" is the defect RM15 existed to find, not an argument. And the reverse now has
+> a worked example too: a refusal that produces a *convincing-looking* artifact instead
+> of an honest gap is worse than the thing it refused — see the title-as-quote
+> calibration case in §11.
 
 - **Never hardcode a schema fact** — no column list, no vocabulary, no
   requirement. Call `describe_table` / `table_requirements` /
@@ -184,10 +193,22 @@ design depends on.
   generated is guarded by a test, never left to a comment.** The same rule reaches
   `tools/authoring.py::_PRODUCED_MODELS`, the `csv -> row model` map for the
   machine-produced sidecars (`S47`), whose keys are pinned to the derived roster.
-- **Never fill a value from the same source that checks it.** A cross-check
-  compares an independently authored value against a source; filling it *from*
-  that source makes the check compare a convention against itself, and it agrees
-  perfectly. Worse, the row moves from honestly unverified to apparently verified.
+- **Never fill a value from the same source that checks it.** *(Audited under RM15
+  2026-08-20: **kept**, and it is ours rather than inherited — but it is one cell/source
+  pair, not a licence to read it as "do not write".)* A cross-check compares an
+  independently authored value against a source; filling it *from* that source makes
+  the check compare a convention against itself, and it agrees perfectly. The cost that
+  is specifically **ours** is the second one: the row moves from honestly unverified to
+  **apparently verified**, and we are the layer that hands somebody a module to trust.
+  An unverified row is honest; a falsely verified one is not, and nothing downstream can
+  tell them apart.
+
+  **The same defect arrives from the other direction, so watch for it there too**: a
+  value that satisfies a check *vacuously* is as bad as one copied from the checker.
+  `provenance_quote` set to the article's **title** passes `quotes_found` every time,
+  because a title is always in its own fulltext — 3668 published rows do exactly that
+  (§11, `F42`). Ask of any green check: **could this have failed?** If not, it measured
+  nothing, whoever wrote the value.
 - **Report-never-repair is the FORMAT's stance, and we hold a counterstance. Corrected
   2026-08-20 — this bullet used to forbid writing outright.** *"Report-never-repair is
   format's stance, correct for that layer: they delegate business decision to us here;
@@ -288,10 +309,33 @@ design depends on.
   subclass of the type beside it, so parent-first catches every outage in the parent arm and the
   outage arm goes dead — silently, raising nothing. One tuple is safe; two arms must be
   narrow-first. `tests/test_passes.py` walks the AST for this.
-- **Never widen the write surface.** Tools write only where the upstream API
-  already writes (scaffold, enrich, compile out-dir), always through
-  `_shared.resolve_dir` so `JMC_WORKSPACE` containment holds, and never overwrite
-  an authored file.
+- **Containment never moves; the write surface does. Split under RM15, 2026-08-20 —
+  this bullet used to read "never widen the write surface: tools write only where the
+  upstream API already writes … and never overwrite an authored file", and those two
+  clauses were format's boundary adopted whole.** They contradict the counterstance
+  above outright: *"we may write, fullstop… we may revise and fix — yes absolutely."*
+  A layer that may not touch an authored file is not an authoring layer. So the bullet
+  is now two rules that were tangled into one:
+
+  1. **Containment is absolute and is not under review.** Every path resolves through
+     `_shared.resolve_dir` so `JMC_WORKSPACE` containment holds. This is a security
+     boundary, it is ours, and no argument about authoring reaches it. Nor does it
+     license inventing a file **inside** a spec directory: a name absent from
+     `specfiles.RECOGNIZED_SPEC_FILES` is dropped by the next server-side rebuild, so
+     our own bookkeeping goes to a resolved cache/workspace path (§11).
+  2. **What we may write is decided by the counterstance, not by upstream's surface.**
+     Scaffold, enrich and the compile out-dir are where upstream writes; they are the
+     floor, not the ceiling. Revising an authored cell is legitimate **here** — provided
+     it goes through the log, it respects the discriminator (evident and mechanical
+     applied silently, anything judged or checked surfaced instead), and a write that
+     destroys prior content captures first and **verifies the capture** before
+     destroying anything, which is already the rule for a derived sidecar below and
+     generalises to every overwrite.
+
+  **What is NOT licensed by this**: overwriting an authored value silently, or writing
+  one from the source that checks it, or conforming a row to an archive that disagrees
+  with it. Those are forbidden by the three bullets around this one, each for its own
+  reason, and none of them is "upstream would not do it".
 - **Never delete a derived sidecar without a verified capture, and never put the
   capture in the spec directory.** Re-deriving one requires deleting it — every
   sidecar is merge-not-clobber — and the delete discards hand-curated rows,
