@@ -1,7 +1,7 @@
 # RM15 remediation — replacing title-quotes with what the articles actually say
 
 **Run 2026-08-20, unattended, on `aggression_anger` and then `big_five_personality`.** A dogfooding exercise: the remediation
-was the vehicle, the friction map (`F44`–`F47` in [dogfooding.md](dogfooding.md)) is the deliverable,
+was the vehicle, the friction map (`F44`–`F47`, `F50` and `F51` in [dogfooding.md](dogfooding.md)) is the deliverable,
 and the decision list for the real modules is [HANDOFF-antonkulaga-quotes.md](HANDOFF-antonkulaga-quotes.md).
 
 Working copies live under `data/interim/rm15_remediation/` (git-ignored). The originals in
@@ -221,6 +221,9 @@ read and not found  — fulltext retrieved and read, variant not in it          
 unchecked           — no open-access fulltext; abstract only                  527 rows
 unchecked           — nothing retrievable at all (pmid 31972866)                7 rows
 ```
+
+Every one of the 25 swept fetches reported `truncated: false`, checked across the sweep records
+rather than assumed — the classification of 300 rows as *read and not found* depends entirely on it.
 
 **The relationship is inverse and it is the useful result: the more rows a paper grounds, the less
 likely its text names any of them.** The three biggest contributors returned nothing — `30643256`

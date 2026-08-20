@@ -258,4 +258,5 @@ exercise exists to prevent. Nothing in the published modules was touched at all 
 and they are not ours.
 
 The full run record is in [`RM15-remediation-log.md`](RM15-remediation-log.md), and the friction the
-tooling produced along the way is `F44`–`F47` in [`dogfooding.md`](dogfooding.md).
+tooling produced along the way is `F44`–`F47`, `F50` and `F51` in
+[`dogfooding.md`](dogfooding.md).
