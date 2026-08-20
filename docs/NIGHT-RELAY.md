@@ -237,11 +237,16 @@ checks do on a ref mismatch, which is true of the compiler and is not a rule of 
    2026-08-20 banner saying *"this file says `describe_table` refuses this table… ask
    `describe_machine_table`"* — and their bodies still say the call refuses. The banner was prepended
    and the bodies were never swept. **I fixed only `clinical_assertions.md`**, because its wording was
-   also a stance claim ("the refusal is correct, not a bug"). Five to go.
-2. **Four dossiers say `create-module/SKILL.md` is wrong, and it still says it.** `variants.md:213`
-   (the homozygous/undecided promise), `pharm_variants.md:197`, `pgs.md:222`, `repeat_alleles.md:213`
-   (the pre-0.6 integer-bin rule at `create-module:1279`). Independent self-corrections all pointing
-   at one unedited file.
+   also a stance claim ("the refusal is correct, not a bug"). **All six are now fixed** — the other
+   five landed in a follow-up commit; each says `describe_machine_table` is the route that answers.
+2. **Four dossiers say `create-module/SKILL.md` is wrong.** `variants.md:213` (the
+   homozygous/undecided promise), `pharm_variants.md:197`, `pgs.md:222`, `repeat_alleles.md:213`
+   (the pre-0.6 integer-bin rule). **I checked the fourth and it was mostly a false alarm** —
+   `create-module`'s body keys the bin rule on `measure_tiling` exactly as 0.6 does; only its beginner
+   summary row stated it as a property of the measure's kind. Both are fixed and the dossier's
+   complaint is narrowed. **Take that as the lesson for the other three: verify against live models
+   before believing the dossier over the skill.** A dossier's complaint can itself be stale, and
+   "the skill is wrong" is cheaper to write than to check.
 3. **`activity_phenotype.md:443` claims a live `describe_table` returned the format **0.5** shape
    while `importlib.metadata` reported 0.6.1.** If that reproduces it undercuts rule 1 —
    *ask the tool, never memory* — and is worth an upstream note. I did not reproduce it.
