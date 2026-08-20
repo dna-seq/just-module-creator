@@ -1,6 +1,6 @@
-# RM15 remediation — replacing 69 title-quotes with what the articles actually say
+# RM15 remediation — replacing title-quotes with what the articles actually say
 
-**Run 2026-08-20, unattended, on `aggression_anger` only.** A dogfooding exercise: the remediation
+**Run 2026-08-20, unattended, on `aggression_anger` and then `big_five_personality`.** A dogfooding exercise: the remediation
 was the vehicle, the friction map (`F44`–`F47` in [dogfooding.md](dogfooding.md)) is the deliverable,
 and the decision list for the real modules is [HANDOFF-antonkulaga-quotes.md](HANDOFF-antonkulaga-quotes.md).
 
@@ -12,6 +12,12 @@ Working copies live under `data/interim/rm15_remediation/` (git-ignored). The or
 ## What was published
 
 ```
+test-sheep/test_big_five_personality_snps@1.0.0
+https://module-polygon.just-dna.life
+artifact.digest      sha256:345184b5f78b8ea53c66af2011962e4378b32dd0280e2d4aa4e60f6a2786d0ef
+content_signature    sha256:0bf3caf2924bcec2988082bf5cc1baaa0cbe186962f0f2be1525f0d4ea699bae
+published_at         2026-08-20T01:26:22Z
+
 test-sheep/test_aggression_anger_snps@1.0.0
 https://module-polygon.just-dna.life
 artifact.digest      sha256:b9d2e01d1a9fa828f1606c21c3cbf15df773af3d7b72bd95b3f11090d278eaa0
@@ -24,9 +30,13 @@ the namespace and the module name carry the `test` prefix so the operator's purg
 matches both halves, takes it. The README opens with a banner saying it is a rehearsal and not to
 install it. The server's own compile reproduced the local `artifact.digest` byte for byte.
 
-Read back with `registry_get_module(target="test")`: `manifest.authorship`, `manifest.provenance` and
-`manifest.logs` all survived the publish, and `sources.csv` was normalised to `derived/licensing.csv`
-with the quoted article's CC-BY row surfacing on the card's `licensing.attributions`.
+Both read back with `registry_get_module(target="test")`: `manifest.authorship`,
+`manifest.provenance` and `manifest.logs` all survived the publish, and `sources.csv` was normalised
+to `derived/licensing.csv` with each quoted article's licence row surfacing on the card.
+
+---
+
+# The first module: `aggression_anger`, 69 rows over 3 PMIDs
 
 ## The change
 
@@ -187,14 +197,94 @@ Identical. Nothing on the pre-flight distinguishes a module whose entire evidenc
 metadata from one where 68 cells are honestly empty and one carries a located passage. That is the
 finding.
 
+---
+
+# The second module: `big_five_personality`, 859 rows over 26 PMIDs
+
+Taken once the first was published and every deliverable committed. Same rule, same tools, and it is
+where all the interesting cases are — `aggression_anger` is 1:1 variant-to-row and hides most of them.
+
+```
+before   859 / 859 quoted · 26 distinct strings · one per PMID · each the article's title
+after     21 / 859 quoted · 21 DISTINCT strings · 838 empty on purpose
+```
+
+## The measurement, before any editing
+
+Every one of the 26 cited PMIDs was retrieved with `fetch_fulltext`, every `rsNNNN` token in the
+retrieved text was listed, and the lists were intersected with the rsIDs the module cites to that
+paper. All 859 rows land in four classes:
+
+```
+quotable            — the retrievable text names this row's variant            25 rows
+read and not found  — fulltext retrieved and read, variant not in it          300 rows
+unchecked           — no open-access fulltext; abstract only                  527 rows
+unchecked           — nothing retrievable at all (pmid 31972866)                7 rows
+```
+
+**The relationship is inverse and it is the useful result: the more rows a paper grounds, the less
+likely its text names any of them.** The three biggest contributors returned nothing — `30643256`
+(298 rows), `29500382` (197), `29255261` (69). `29500382`'s fulltext *was* retrieved in full and
+names exactly two rsIDs, neither among the 197 it is cited for.
+
+Two things were not wrong: every module p-value checked against its paper's own table agreed to one
+significant figure, on all 18 rows where both were available, and every PMID named the paper the row
+meant. The citations and the numbers are right; only the quotes were metadata.
+
+## Three situations `aggression_anger` never produced
+
+**1. Named only in a table.** 15 of the 21 quotes are a row of a flattened JATS table, because that
+is the only place the article states the association for that variant. Verbatim, matching, and each
+carries the variant, its alleles, its effect and its p-value — but `provenance_quote` is documented
+as *human-legible*, and a table row is legible only to somebody holding the paper. Written anyway:
+strictly better than empty, enormously better than a title, and it varies per row so it cannot
+recreate the F42 shape. Recorded as an authoring decision the skill does not currently help anyone
+make.
+
+**2. Named, but for a different claim — the finding only locating the quote could produce.**
+`rs34588274`, `rs3742021`, `rs4245154` and `rs527528` cite PMID `34054130` (Bralten J et al.,
+*Genetic underpinnings of sociability in the general population*, Neuropsychopharmacology 2021) for
+trait `EFO_0009589`, *"Worry too long after an embarrassing experience"*, via GWAS Catalog
+`GCST012111`. The article names all four rsIDs — in a table of genome-wide significant hits for
+**sociability**, at `1.01E-13`, `7.43E-09`, `7.17E-09`, `4.02E-10`, against the module's `2e-17`,
+`1e-09`, `9e-09`, `4e-11`. It contains no analysis of that neuroticism item; *worry* appears once, in
+an unrelated sentence.
+
+So a passage naming the variant exists and does not support the row's claim. **Left empty rather than
+quoted** — attaching a real sentence to the wrong assertion is worse than an empty cell — and
+escalated to the handoff's decision list, because `trait_efo_id`, `p_value` and `conclusion` are all
+authored values and none is ours to change. Settling it needs the GWAS Catalog record for
+`GCST012111`, which `enrich_gwas_effects` would fetch and which is extended-tier.
+
+Under the old rule these four rows carried the article's title and looked exactly like the other 855.
+
+**3. Quotable, but with no reuse licence.** `27089181` (Okbay A et al., Nat Genet 2016) is free to
+read with **no** reuse grant on any location — every one came back `other-oa`. The quote was kept and
+its `sources.csv` row records the three rights as **unknown** rather than assuming them. The
+consequence is visible and correct on the published card: `unknown_terms_sources: ["pmid:27089181"]`,
+and the module's own `licensing.commercial_use` and `redistribution` both drop to `null`. One article
+with unclear terms makes the whole module's commercial-use answer unknown, which is the honest
+result and worth knowing before quoting.
+
+## Whodunit, and the collapse made concrete
+
+Same three places, all verified on the published manifest: `authorship` (per version),
+`provenance.json` (735 items, per variant), `logs/quote-remediation.log` (per run).
+
+This module is where `S55`'s argument stops being hypothetical. 95 of its 735 variants are cited by
+more than one paper — 75 by two, 14 by three, 3 by four, 3 by five — and 37 of those by different
+papers for **different traits**. `ProvenanceItem` is keyed on `variant_key` alone while a
+`studies.csv` row is `(variant, pmid)`, so for those 95 the notes for every citing paper are merged
+into one item, spelled out in the rationale text. One row in eight, on a module of ordinary size.
+
 ## Not done, and why
 
-**`big_five_personality` was not remediated.** 859 rows over 26 PMIDs. The decision it needs is the
-same one this module answered, the yield would be dominated by the same catalog-extraction case, and
-the deliverables are worth more finished than a second module is worth started. The handoff carries
-what a maintainer needs to decide it; the first module carries the worked method.
+**No third or fourth module.** `cognitive_intelligence` and `risk_impulsivity` were not touched.** They are the two largest (2045
+and 695 rows) and both are dominated by papers cited for hundreds of variants each, which is the
+class measured above as yielding nothing. The handoff carries the numbers a maintainer needs; a third
+and fourth rehearsal would repeat the method rather than test it.
 
-**`literature.csv` was left exactly as found** — `quotes_authored: 0` on all three rows, beside one
+**`literature.csv` was left exactly as found** in both modules — `quotes_authored: 0` on all three rows, beside one
 authored quote. Correcting it needs `enrich_literature_pass` or `refresh_sidecar`, both of which are
 extended-tier and absent from a default install (`F47`). The module was published with the stale
 sidecar and its log says so. Filed upstream as `S56`, because the compiler holds both files and

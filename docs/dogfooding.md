@@ -743,3 +743,44 @@ already gets one from the same `esummary` response — or say the true thing whe
 *"no open-access locations were looked up, because that needs a DOI; call `lookup_open_access` with
 the DOI or PMID."* The second costs nothing and never issues a request the caller did not ask for,
 which fits the tier rule better.
+
+## F51 — `uv run` answers about whichever repo you are standing in, and both report `just-dna-format 0.6.1`
+
+**Found:** 2026-08-20, checking whether an upstream fix had reached us · **Severity:** high ·
+**Status:** open
+
+`CLAUDE.md` §8's rule for an upstream fix is *"verify state 2 against the installed package, never
+the sibling checkout"*, and it names the exact move: import the symbol and check. That check was run
+and it lied, because `uv run` resolves against the project of the **current working directory** and
+the command happened to be chained after a `cd` into `../just-dna-format`.
+
+```
+cd /data/sources/just-dna-format     && uv run python -c "…'curator' in StudyRow.model_fields"  -> True
+uv run python -c "…'curator' in StudyRow.model_fields"  -> False
+```
+
+Both print `just-dna-format 0.6.1` from `importlib.metadata`. Both resolve `just_dna_format.__file__`
+to a `site-packages` path — a *different* venv, but the path shape is identical and nothing in the
+output says which project answered. So the one discriminator the rule relies on is silently
+working-directory-scoped, and the version string cannot break the tie because upstream develops in
+tree without bumping it.
+
+**It nearly shipped a false status line.** `F43` was seconds from recording `StudyRow.curator` as
+available; it is not, and every mitigation resting on its absence would have come out early. The
+sibling tree is where a fix appears *first*, so this failure mode is most likely at exactly the moment
+it matters most — the hour after upstream answers.
+
+**What actually protects against it, in order of strength.**
+
+1. **Print `__file__` in the same command as the symbol check** and read the venv path, not just the
+   symbol. Two lines, no ambiguity, and it is what caught this.
+2. **Never chain a symbol check after a `cd`.** Run it as its own command from this repository, or
+   use `uv run --project /data/sources/just-module-creator`, which pins the environment regardless of
+   cwd. The agent guidelines already say to use absolute paths in git commands for the same reason;
+   this is the same trap on a different tool.
+3. Do not lean on `importlib.metadata.version` to tell two code states apart. It is right about the
+   release and says nothing about an in-tree change, which is the whole of state 2.
+
+**Why this is ours and not a note upstream.** Nothing is wrong with `uv`; the defect is in a
+verification recipe of ours that assumes a command means the same thing from any directory. The fix
+is the recipe.

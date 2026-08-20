@@ -74,11 +74,62 @@ with the column present and an agent forbidden to fill it honestly, it produced 
 prohibition is reversed. If you are the agent that wrote them, the rule you followed is the thing
 that changed, not your judgement.
 
-## 3. What a correct remediation looks like, measured on a real one
+## 3. What a correct remediation looks like, measured on two real ones
 
-`aggression_anger` was remediated end to end and published to the polygon as
-`test-sheep/test_aggression_anger_snps@1.0.0`. Result: **1 quote of 69**, and 68 deliberately empty.
-That is the honest yield, and it is worth knowing before you budget the work.
+Both `aggression_anger` and `big_five_personality` were remediated end to end and published to the
+polygon, as `test-sheep/test_aggression_anger_snps@1.0.0` and
+`test-sheep/test_big_five_personality_snps@1.0.0`. The yields:
+
+```
+                        rows   quoted after   distinct strings   PMIDs
+aggression_anger          69              1                  1       3
+big_five_personality     859             21                 21      26
+```
+
+**Around 2–3% of rows can carry a variant-level quote.** That is the number to budget against, and it
+is worth knowing before you start rather than after.
+
+### The measurement that explains the number
+
+Every one of `big_five`'s 26 cited PMIDs was retrieved with `fetch_fulltext`, and every `rsNNNN`
+token in the retrieved text was intersected with the rsIDs the module cites to that paper. All 859
+rows fall into four classes:
+
+```
+quotable   — the article's retrievable text names this row's variant           25 rows
+read and not found — fulltext retrieved and read, variant not in it           300 rows
+unchecked  — no open-access fulltext; abstract only                           527 rows
+unchecked  — nothing retrievable at all (pmid 31972866)                         7 rows
+```
+
+**The relationship is inverse, and that is the useful part: the more rows a paper grounds, the less
+likely its text names any of them.** The three biggest contributors yielded nothing — `30643256`
+(298 rows), `29500382` (197) and `29255261` (69). `29500382`'s fulltext *was* retrieved in full and
+names exactly two rsIDs, neither among the 197 it is cited for. A paper cited for hundreds of
+variants is a large GWAS whose hits live in supplementary tables, which is why
+`cognitive_intelligence` (2045 rows, 33 PMIDs) should be expected to behave like `big_five` rather
+than better.
+
+Two things that were *not* wrong: every module p-value checked against its paper's own table agreed
+to one significant figure, on all 18 rows where both were available, and every PMID named the paper
+the row meant. The citations and the numbers are right. Only the quotes were metadata.
+
+### Three situations the current guidance does not cover, all met on `big_five`
+
+1. **Named only in a table.** 15 of the 21 quotes are a row of a flattened JATS table, because that
+   is the only place the article states the association for that variant. They are verbatim, they
+   match, and each carries the variant, its alleles, its effect and its p-value — but the column is
+   documented as "human-legible" and a table row is legible only to somebody holding the paper. It
+   was written anyway: strictly better than empty, enormously better than a title. Your call whether
+   you agree.
+2. **Named, but for a different claim.** See decision 7 below. This is the one that matters.
+3. **Quotable, but with no reuse licence.** `27089181` (Okbay A et al., Nat Genet 2016) is free to
+   read and carries **no** reuse grant on any location — every one came back `other-oa`. The quote
+   was kept and the `licensing.csv` row records its three rights as **unknown** rather than
+   assuming them, which is what puts it in the card's `unknown_terms_sources`. Free to read is not
+   free to reuse, and the annotation layer is where that bites.
+
+### Per-PMID detail from the smaller module
 
 Per PMID:
 
@@ -136,12 +187,13 @@ State that limit in the module's README rather than designing around it.
 
 Nothing below is mechanical. Each needs somebody to pick.
 
-1. **Whether to remediate at all, and in what order.** The yield measured on the smallest module was
-   1 real quote from 69 rows. On `cognitive_intelligence` (2045 rows, 33 PMIDs) the ratio will be
-   worse, because the larger a GWAS module is the more of it comes from catalog extraction. An
-   equally defensible answer is to **empty the column** on the next version and say in the README
-   that these rows are grounded on GWAS Catalog association records rather than on located passages.
-   That is honest, it is cheap, and it removes a green check that means nothing.
+1. **Whether to remediate at all, and in what order.** The measured yield is 1 of 69 and 21 of 859 —
+   call it 2–3%, and expect `cognitive_intelligence` and `risk_impulsivity` to be at the low end,
+   because they are dominated by papers cited for hundreds of variants each. An equally defensible
+   answer is to **empty the column** on the next version and say in the README that these rows are
+   grounded on GWAS Catalog association records rather than on located passages. That is honest, it
+   is cheap, and it removes a green check that means nothing. The case *against* emptying is
+   decision 7, which only surfaced because somebody went looking for the passages.
 
 2. **Whether an emptied column or a title is worse for a consumer.** A title reads as evidence and
    is not. An empty column reads as work not done, on modules where the work genuinely cannot be
@@ -169,6 +221,33 @@ Nothing below is mechanical. Each needs somebody to pick.
    is documented as the study population. Nothing checks it and nothing is wrong on its own terms.
    But an effect estimated in one ancestry frequently does not transfer, and this is the column a
    reader would look at to find out. **Flagged, not touched** — it is an authored value.
+
+7. **Four rows in `big_five_personality` whose cited article reports a different trait. This is the
+   one that needs a person, and it is why remediating beat emptying.**
+
+   `rs34588274`, `rs3742021`, `rs4245154` and `rs527528` cite PMID `34054130` — Bralten J et al.,
+   *Genetic underpinnings of sociability in the general population*, Neuropsychopharmacology 2021 —
+   for trait `EFO_0009589`, *"Worry too long after an embarrassing experience"*, via GWAS Catalog
+   accession `GCST012111`.
+
+   The article names all four rsIDs. It names them in a table of genome-wide significant hits for
+   **sociability**, with p-values `1.01E-13`, `7.43E-09`, `7.17E-09` and `4.02E-10`. The module
+   authored `2e-17`, `1e-09`, `9e-09` and `4e-11` — different numbers — and the article contains no
+   analysis of that neuroticism item at all; the word *worry* appears once, in an unrelated sentence.
+
+   So a passage naming the variant exists and does **not** support the claim the row makes. The rows
+   were left with an empty quote rather than given that passage, because attaching a real sentence to
+   the wrong assertion is worse than an empty cell. Nothing else was touched: `trait_efo_id`,
+   `p_value` and `conclusion` are authored values.
+
+   **What has to be decided:** which of the three is wrong — the trait label, the accession, or the
+   PMID. Checking it needs the GWAS Catalog record for `GCST012111`, which `enrich_gwas_effects`
+   would fetch; that tool is extended-tier, so a default install cannot answer it.
+
+   **Why this is the argument against simply emptying the column.** Under the old rule these four
+   rows carried the article's title and looked exactly like the other 855. Nobody would ever have
+   looked. Going after the passage is what found them, and there is no reason to think four is the
+   total across 3668 rows — it is the total across the 25 that were checkable at all.
 
 ## 6. What was deliberately not done
 

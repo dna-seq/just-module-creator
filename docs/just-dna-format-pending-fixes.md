@@ -902,8 +902,15 @@ unable to disagree.
 
 ## F42 — `quotes_found` is satisfied by the article's own title, so full quote coverage can witness nothing
 
-**Status — filed upstream 2026-08-20 as `S54`, open. Not mitigated here, and the mitigation is
-partly ours to build rather than theirs.**
+**Status — filed upstream 2026-08-20 as `S54`; ACCEPTED and FIXED IN TREE as their `RM118`, the same
+night. Not released, so nothing here changes yet.** Their fix is `LiteratureResult.titles_as_quotes`,
+listing the PMIDs whose every `provenance_quote` is the article's title, printed as a warning and
+never an exit code — the reason being ours: whether a title is an acceptable locator is the author's
+decision, and what the tool can honestly say is that `quotes_found` is not evidence there.
+
+**Our half is `RM17` and is unaffected by any of that.** Their check lives in the literature pass; a
+module whose pass never ran (see `F49`) reaches it with nothing to check. Ours reads `studies.csv`
+directly and needs no network.
 
 Measured across every `studies.csv` in `../just-dna-format` (33 files, 44342 rows) while auditing our
 own `S11`. The ten `reference_examples/` do not carry `provenance_quote` at all. The four
@@ -935,8 +942,16 @@ row citing a PMID), **and** that is in the version `uv sync` installs.
 
 ## F43 — a `provenance_quote` cannot name who located it, so an honest agent-located quote has nowhere to say so
 
-**Status — filed upstream 2026-08-20 as `S55`, open. This is the gap RM15's reversal runs into, and
-it bounds what we can honestly ship.**
+**Status — filed upstream 2026-08-20 as `S55`; ACCEPTED and FIXED IN TREE as their `RM120` within
+the hour — `StudyRow.curator`, "your whole ask, verbatim as you wrote it". NOT RELEASED: the format
+`uv sync` installs is 0.6.1 and its `StudyRow.model_fields` has no `curator`. So everything below
+still describes what an author faces today.**
+
+> **Check this one from THIS repository, not from the sibling checkout.** Both trees answer to
+> `uv run python`, both report `just-dna-format 0.6.1`, and only one of them has the field — see
+> `F51`. The check that tells the truth is
+> `cd /data/sources/just-module-creator && uv run python -c "from just_dna_format.spec import StudyRow; print('curator' in StudyRow.model_fields)"`,
+> which returns `False`.
 
 `VariantRow.curator` is `str | None`, "Curator override" (`spec.py:513`), and `Defaults.curator`
 defaults to the literal `"ai-module-creator"` (`spec.py:296`). `StudyRow` has **no** `curator` column.
@@ -992,21 +1007,40 @@ case and names neither party.
 
 ## F49 — `literature.csv` publishes `quotes_authored: 0` beside a `studies.csv` full of quotes, and the manifest turns it into a confident zero
 
-**Status — filed upstream 2026-08-20 as `S56`. Half of it is already FIXED IN TREE and none of it is
-released.** Two mechanisms, one entry. Our half is `F44` and is separate.
+**Status — filed upstream 2026-08-20 as `S56`; ACCEPTED and BOTH HALVES FIXED IN TREE as their
+`RM119`, the same night. None of it is released.** Our half is `F44` and is separate.
 
-> **Upstream state, checked by symbol the same night rather than by reading their changelog.**
-> `quotes_unchecked: int` now exists on `Literature` in `../just-dna-format`
-> (`schema/src/just_dna_format/manifest.py`), with `_literature_block` computing
-> `sum(1 for r in rows if r.quotes_found is None)` and its docstring citing `S56` — the second
-> mechanism, fixed as proposed, within an hour of the note being written. **The installed package
-> does not have it:** `Literature.model_fields` on format 0.6.1 is nine fields ending at
-> `quotes_found`. That is state 2 of three — *fixed in tree*, not *released* — so nothing here
-> changes and no guard comes out yet.
->
-> The **first** mechanism (nothing compares `literature.quotes_authored` against the quotes in
-> `studies.csv`) had no reply as of that check. It is the half that would have detected the problem
-> on an already-published module, so watch for it separately rather than assuming one landed both.
+Their fix is the first candidate we offered: `_check_quote_counter_is_current` counts the non-empty
+`provenance_quote` / `provenance_regex` cells per PMID at compile and warns when the sidecar
+disagrees, naming both numbers, aggregated to one line. The second candidate — recompute the counter
+when the pass merges — is **not** shipped and they say they still want it, so an
+already-published module keeps reporting zero until somebody re-runs the pass.
+
+> **Upstream state, checked by symbol rather than by reading their changelog.** `quotes_unchecked:
+> int` exists on `Literature` in `../just-dna-format`, with `_literature_block` computing
+> `sum(1 for r in rows if r.quotes_found is None)`. **The installed package does not have it** —
+> from this repository, `Literature.model_fields` on format 0.6.1 is nine fields ending at
+> `quotes_found`. State 2 of three: fixed in tree, not released. Run that check from
+> `/data/sources/just-module-creator`; the sibling tree answers `True` to the same line and reports
+> the same version (`F51`).
+
+**The sharpest reproduction, on a module we published ourselves.** After remediating
+`big_five_personality`'s quotes we published to the polygon and read the manifest back
+(`test-sheep/test_big_five_personality_snps@1.0.0`, compiled by the registry's own server). It says
+both of these, in one document:
+
+```
+"literature": { "row_count": 26, "quotes_authored": 0, "quotes_found": 0, ... }
+"sources":    { "notices": [ "7 passage(s) from this article are quoted verbatim in studies.csv
+                              as provenance_quote. ...", … five more, counting 1, 1, 2, 3, 4 ] }
+```
+
+Eighteen quoted passages counted in the `sources` block of the same manifest that reports zero
+authored quotes in its `literature` block — and 21 rows actually carry one. Neither number is wrong
+on its own terms; the notices are authored `licensing.csv` prose and the counters are a stale
+sidecar's, and nothing looked at both. **Not filed upstream**, deliberately: `S56` was already
+answered and fixed in tree by the time this was measured, and the process rule is that answered prose
+stays byte-for-byte. It is recorded here as the reproduction to point at if the fix ever regresses.
 
 Measured on the four published `antonkulaga/*` modules while remediating one of them:
 
