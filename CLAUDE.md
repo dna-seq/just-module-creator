@@ -260,9 +260,12 @@ design depends on.
   1. **Locate it, quote it verbatim, and record who located it.** The honest instrument is a per-row
      *whodunit*, because real work is mixed: *"example: scientist reads review, agent traverses
      citations"*. Per-row quote provenance **does not exist in the schema** — we own none — so it is
-     asked of upstream (`S55`, filed 2026-08-20, beside `S54` — the measurement that the old rule produced title-as-quote on 3668 published rows). Until it lands,
-     the signal is module-level `authorship` plus the `logs/` entry the write goes through, and the
-     gap is stated rather than papered over.
+     asked of upstream (`S55`, filed 2026-08-20, beside `S54` — the measurement that the old rule
+     produced title-as-quote on 3668 published rows). **Accepted and `StudyRow.curator` added in
+     their tree the same night (`RM120`), and NOT released** — which is exactly §8's state 2, so
+     verify by symbol with the corrected recipe there before relying on it. Until it is what
+     `uv sync` gives us, the signal is module-level `authorship` plus the `logs/` entry the write
+     goes through, and the gap is stated rather than papered over.
   2. **The human author holds the responsibility regardless.** *"AI is not a subject of right, so the
      human author holds the full responsibility"* — so attribution honesty is about the **real
      distribution of roles**, never about moving liability onto a machine. A declared agent-located
