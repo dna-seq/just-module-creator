@@ -752,6 +752,23 @@ gives every `S<n>`, who reported it, the verdict and where it landed. So:
 
 ### Prose style
 
+**Three claim-shapes rot silently, and all three were found repeatedly in upstream's docs and in ours
+during the 2026-08-20 audit. Check anything you write against them:**
+
+1. **A check is only as wide as the table it reads, and naming a check without naming its scope is how
+   a reader over-trusts it.** Six independent instances: `REDUNDANCY_BEARING` keyed on a bare column
+   name; `check_identifiers` reading `variants.csv` only, so a bin row's `gene` is never checked;
+   `enrich-pgx` never opening `diplotypes.csv`; `stats.genes` from `variants.csv` alone; the
+   missing-sentinel hint being table-level where the compile rule is per-group;
+   `_check_genotype_coverage` running only in `validate_spec`.
+2. **A counted claim in prose rots exactly like a hand-kept list.** *"Seven fact signatures"* (eight),
+   *"six derived sidecars"* (seven), *"four causes"* (five), *"twelve names"* (thirteen). **State the
+   rule and let the reader run the call**; where a number must appear, say what was counted and when.
+3. **An enforcement claim needs its surface named.** *Mandatory*, *refused*, *checked* and *warned* are
+   four different strengths and a hint never fails a build. The canonical case is the `unresolved`
+   sentinel: called mandatory in three upstream places, the compile path refuses a **second** and
+   refuses zero nowhere, and the presence half is an authoring hint scoped to the whole table.
+
 Natural, human prose. Avoid AI tells — em-dash pile-ups, filler transitions,
 marketing voice. Never hallucinate documentation or overpromise an unimplemented
 feature. **`README.md` says what this plugin does, and never doubles as a
@@ -883,6 +900,20 @@ preference: it goes into §10, in their words, with the reason.
   combined-authority half already exists upstream and we should not re-ask for it: `Contribution.who`
   is documented as *"a name, handle, or model id"* and `Contribution.kind` already ladders
   `{human, human_expert, human_certified}` against `{ai}` + `{agent, team, swarm}`.
+- **"Eliminate it entirely; drag away every quote until that doc is empty."** Said 2026-08-20 of
+  `skills/create-module/SKILL.md`, the 1431-line canonical procedure, with *"segment, create new
+  skills, change existing skill scope at your discretion: frame yourself as primary consumer of
+  these."* So the unit of a skill is **the step an agent is on**, not the document a human would write,
+  and the rule that replaces "do not restate the procedure beside its skill" is **one fact, one home**:
+  if two skills need the same rule, one owns it and the other links. A skill growing back toward a
+  monolith is the drift to watch for; the ceiling is 500 lines and the reason is that a file loaded
+  whole to answer any question is a file nobody updates in the right place.
+- **"Push to the maximum; defer only items that honestly depend on architectural decisions and
+  questions that came to be after now."** The unattended-run rule, 2026-08-20. A question that already
+  had a written specification is **not** deferrable merely because it was labelled "run §1 first" —
+  decide it, write the reasoning **and a reversal recipe** where it will be read again, and continue.
+  `RM17`'s layer question was settled that way, and its entry in `ROADMAP_HISTORY.md` carries both.
+
 ## 11. Learned workspace facts
 
 *Append-only. Environment, ports, credential layout, host quirks, sibling paths.*
@@ -1081,3 +1112,16 @@ preference: it goes into §10, in their words, with the reason.
   quote coverage while witnessing nothing. **Use this as the calibration case for any rule that
   refuses rather than attributes**: the refusal did not produce human-read quotes, it produced a
   green check over metadata. Filed as `S54`.
+
+- **`cd` leaks between Bash calls, and a leaked one put git commands in an upstream repo.** A
+  `git add` / `git commit` pair ran inside `../just-dna-format` because of an earlier `cd`; the `add`
+  failed on a non-matching path so the commit never executed, which was luck rather than safety. **Use
+  absolute paths in git commands**, and remember every git grant is bounded to this repository.
+- **The polygon carries two remediated rehearsals from the 2026-08-20 quote work**:
+  `test-sheep/test_aggression_anger_snps@1.0.0` and `test-sheep/test_big_five_personality_snps@1.0.0`.
+  Both are `test-`prefixed on both halves, so `purge-test-data` will collect them; they are rehearsals
+  of a remediation, not a correction of anything published. **Nothing in the four production
+  `antonkulaga/*` modules was touched** — a published version is immutable.
+- **`logs/authoring.log` now has a writer, and it publishes.** `record_override` appends to it and every
+  compile sweeps `logs/**.log` up with no opt-out. So never write an absolute path, a token or a
+  transcript fragment into that file: it travels to the catalog verbatim.

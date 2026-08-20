@@ -62,6 +62,30 @@ That released six mitigations at once. **The entries below have been re-verified
 the installed packages, not the sibling checkouts** — which is the check this file
 exists to force, and the reason its status lines name both halves.
 
+
+## Upstream `RM104`–`RM111` — filed from our 2026-08-20 dossier audit, all open
+
+Eight code defects the three-way dossier audit found in `just-dna-format` / `-compiler` / `-enricher`.
+They are **upstream roadmap items, not our `F<n>`** — recorded here so a guard in one of our skills is
+traceable to the thing it guards against, and so nobody re-files them. **All eight were open when this
+was written; every guard stays live until a release says otherwise.**
+
+| Upstream | What | Our guard lives in |
+|---|---|---|
+| `RM104` | `enrich_gene_metrics` raises `UnboundLocalError` on an ordinary idempotent re-run, and it is not a `GeneMetricsEnrichmentError` | `module-refresh`, `references/gene_metrics.md` |
+| `RM105` | `logo.jpeg` wins discovery and is attested, but the publisher allowlist does not carry it | `module-publish`, `references/logo.md` |
+| `RM106` | the `faf95` warning is published twice into `manifest.compilation.warnings` | `module-check`, `module-compile`, `references/frequencies.md` |
+| `RM107` | a duplicate `(source, layer)` row in `licensing.csv` compiles green under `--strict` | `module-start`, `module-check`, `references/licensing.md` |
+| `RM108` | a ClinGen re-curation appends beside the old row with nothing marking it superseded | `module-refresh`, `references/gene_validity.md` |
+| `RM109` | the gene-metrics fetch-suppression key is not derived from the merge key, so an override duplicates | `module-refresh`, `references/gene_metrics.md` |
+| `RM110` | `constraint_flags` has two producers with two encodings — 17,403 of 18,111 snapshot rows carry the truthy literal `"[]"` | `references/gene_metrics.md` |
+| `RM111` | three shipped strings assert a registry override of `license` that nothing performs | `references/literature.md` |
+
+**`RM110` has a consumer-visible edge worth acting on whatever upstream does:** anything writing
+`if row.constraint_flags:` reads 96% of snapshot rows as *flagged*. Compare against the literals and
+treat `"[]"`, `""` and `None` alike as **no flags**.
+
+
 ## Answered items that carry no `F<n>` here
 
 `S11`, `S15`, `S16` and `S17` were filed without an `F<n>` because each shipped a
