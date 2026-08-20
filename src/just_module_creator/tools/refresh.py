@@ -28,13 +28,27 @@ drops it silently — the failure that lost `licensing.csv` before registry 0.16
 and README files before 0.14. It goes to a resolved cache/workspace path, through
 `_shared.resolve_dir`, so `JMC_WORKSPACE` containment still holds.
 
-**A conflict is reported and never resolved.** When a subject is present in both
-copies with differing facts, the fetched row is *either* a cell the author edited
-*or* a revision the source published, and two data points cannot tell those
-apart. Nothing here guesses, prefers a side or merges. Where `source` proves a
-human wrote the row that is surfaced per row, and it is still not acted on:
-knowing *who* wrote a row does not settle *which of two answers about the world*
-is right. **The refusal is the feature.**
+**A conflict is reported and not resolved — and RM15 asked whether that is
+physics or inherited policy. It is physics, but conditionally, and the condition
+is worth knowing.** When a subject is present in both copies with differing
+facts, the fetched row is *either* a cell the author edited *or* a revision the
+source published. With only the captured value and the fresh value, nothing can
+separate those: it is two data points and three explanations. So nothing here
+guesses, prefers a side or merges.
+
+**The condition:** it is two data points because we do not keep a third. An
+authoring log recording that this cell was edited, by whom and why, would settle
+it outright — and CLAUDE.md §2 now requires exactly that of every authoring
+move. The `logs/` surface exists and is empty. So this refusal is honest today
+and is **not permanent**: when the log is filled, a conflict whose edit is
+recorded stops being ambiguous, and this tool should read it rather than keep
+shrugging. Do not harden the current answer into a principle.
+
+Where `source` proves a human wrote the row, that is surfaced per row and is
+still not acted on, for a reason the log does not touch: knowing *who* wrote a
+row does not settle *which of two answers about the world* is right. The source
+may equally be the stale one — an archive lags the edge — so preferring it
+because it is the source would be the mindless correction §2 forbids.
 
 **A partial re-derivation is never classified against.** If a pass is offline, a
 source is unreachable, or the fresh table comes back empty, the captured bytes go
@@ -685,11 +699,15 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
         its answer — the only drift this format can detect at all. An unmoved one
         means the source still says exactly what your file said.
 
-        **It does not resolve a conflict, and cannot.** A subject present in both
-        copies whose facts differ is *either* a cell you edited *or* a revision the
-        source published, and two data points cannot separate those. So nothing
-        here guesses, prefers a side or merges: `conflicts` lists both sides and
-        you decide. Where the captured row's `source` is a value no fresh row uses,
+        **It does not resolve a conflict.** A subject present in both copies whose
+        facts differ is *either* a cell you edited *or* a revision the source
+        published, and the two values alone cannot separate those — two data
+        points, three explanations. So nothing here guesses, prefers a side or
+        merges: `conflicts` lists both sides and you decide. Note this is a limit
+        of the *evidence available*, not a rule against acting: a filled authoring
+        log would settle which cells you edited, and `logs/` is empty today.
+
+        Where the captured row's `source` is a value no fresh row uses,
         `source_proves_authored` says so per row — that narrows what happened and
         is still **not acted on**, because knowing who wrote a row does not settle
         which of two answers about the world is right. The captured copy stays on
