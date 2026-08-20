@@ -1153,3 +1153,58 @@ the same correction upstream. It matters because `S54`'s candidate fix lands ins
 `quotes_authored`, which upstream's own `LITERATURE_FACT_FIELDS` comment already calls derivable from
 `studies.csv`), **and** the manifest can say "unchecked" rather than `0` — and that is in the version
 `uv sync` installs.
+
+## F57 — an author's correction to a derived sidecar has nowhere to live except inside it
+
+**Status —** filed 2026-08-20 as format-tree `S60`, against format 0.6.1 / compiler 0.6.1 /
+enricher 0.6.4 / registry 0.18.2. Open. Asked as a 0.7-sized item, and asked of the **compiler**
+rather than built here — see the last paragraph.
+
+Every derived sidecar is merge-not-clobber, so a hand-corrected cell survives a re-run and a re-run
+therefore refreshes nothing. Asking a source whether it still says what the file says means deleting
+the file and re-deriving it, which discards the author's rows with the stale ones —
+`resolution.csv`'s `source="manual"` rows above all, because nothing fetches them back.
+
+`refresh_sidecar` already makes that sequence reversible and reported (verified capture, delete,
+re-derive, classify, reapply what is provably the author's). It stops at the one thing no wrapper can
+do: a subject present in both copies with a differing fact is **either** a cell the author edited
+**or** a revision the source published, and two data points do not separate them. So it reports and
+refuses to resolve.
+
+**That refusal is a symptom, and the cause is architectural.** An author's judgement is stored inside
+a machine-derived file with nothing marking it as authored. Authored and derived are mixed in one
+table.
+
+**The ask** is a recognized authored overlay — one row per `(table, subject, field)` carrying the
+value, the reason in prose, who decided and when — that lies on top of a derived table and is never
+merged into it. Derived files become `f(source, overlay)`: nothing is hand-edited, so re-derivation
+is non-destructive *by construction* rather than by a wrapper being careful, and a difference between
+two derivations means the source revised, full stop. The three-explanations ambiguity stops existing
+rather than being reported. `RM16`'s terminal-state detection then falls out free — an overlay row
+that no longer changes anything is a source that caught up, which is evidence an authored judgement
+was vindicated and is available nowhere else in this format.
+
+**It depends on `F41` / `S51`.** The overlay's subject must name a derived row exactly, and the
+per-table merge key is not public; we derive it and report the derivation on every call, which is
+fine for classifying and not fine for a persisted key. S51 is a prerequisite, not a nice-to-have.
+
+**It also narrows `F43`/`S52`.** S52 asked upstream to pick a per-field shape for `provenance.json`.
+With an overlay, the overlay carries corrections to **derived** tables and `provenance.json` goes
+back to being the reason-record for an **authored** cell that outranks a source. S60 says we would
+rather have the overlay if only one is possible; the per-field records `record_override` writes today
+re-emit into whatever shape either answer settles on.
+
+**Mitigation.** None beyond `refresh_sidecar`'s capture-and-report, which is the honest floor. We
+deliberately did **not** invent an `overrides.csv` in the spec directory: it is absent from
+`specfiles.RECOGNIZED_SPEC_FILES` (24 entries, no overlay of any kind) and a server-side rebuild
+would drop it silently, the way `licensing.csv` was lost before registry 0.16.2.
+
+**Why we asked rather than built it.** We can apply an overlay at build time ourselves. An overlay is
+**authored input, not a repair** — a compiler reading it is doing what it already does with every
+other authored table, so none of report-never-repair is at stake. If each downstream tool applies its
+own overlay instead, two consumers compiling the same spec directory can disagree about what the
+module says and the artifact stops being a function of the spec. The business decision — whether this
+authored value outranks that source — stays ours and we did not ask them to take it.
+
+**Closes when** an overlay table is recognized by the format, applied by the compiler, and installed
+by `uv sync`.

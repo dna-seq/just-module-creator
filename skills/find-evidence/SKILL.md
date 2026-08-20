@@ -10,7 +10,9 @@ description: >-
   travel inside a published module. Triggers: "find papers", "literature search", "what is the
   evidence for", "PMID for", "is this variant supported", "find the study", "open access",
   "read the paper", "fulltext", "preprint", "bioRxiv", "medRxiv", "arXiv", "cite this",
-  "provenance quote", "studies.csv", "is this citation real", "has this been replicated".
+  "provenance quote", "studies.csv", "is this citation real", "has this been replicated",
+  "paywalled", "how do I get this paper",
+  "request a copy from the author", "interlibrary loan".
 ---
 
 # Finding the evidence behind a row
@@ -365,6 +367,39 @@ row is yours to write and the terms are yours to read.
 
 ---
 
+## When there is no legal copy
+
+`lookup_open_access` came back empty and the article is paywalled. **That is a routing problem, not
+the end of the search** — and it ends in the decision list rather than in a defect report, because
+every route below needs a person and none of them is instant.
+
+Ordered by how fast they actually work:
+
+1. **Check for a preprint first.** bioRxiv, medRxiv and arXiv often carry the same work, and the
+   discovery surface already reaches all three. Read [Preprints](#preprints) below before authoring
+   from one — the preprint and the published version can differ in exactly the numbers you came for.
+2. **Ask the corresponding author.** The address is in the PubMed record. This is ordinary academic
+   practice, it usually works, and for a recent paper it is often the *fastest* route — frequently
+   same-day. Highest yield of anything here.
+3. **Open Access Button** (openaccessbutton.org, run by OA.Works). Give it the DOI: it searches
+   repositories Unpaywall may miss, and when it finds nothing it emails the corresponding author on
+   your behalf and archives whatever comes back. Route 2 with the asking done for you.
+4. **Institutional access or interlibrary loan.** Anyone with a university library account settles it
+   in minutes; ILL document delivery is standard and normally free to the requester. This is the
+   route that needs somebody specific, which is why it belongs in the decision list with the DOI and
+   the citation attached rather than as a task an agent can close.
+
+**What to record while a route is in flight.** Nothing changes in the row: `text_source` stays
+`null`, `quotes_found` stays `null`, and the cell is *unchecked* — kind 2 of the four in rule 3
+above. An unchecked row is honest. Do not downgrade it to "read and not found", which is a different
+and much stronger claim, and do not reach for a quote from the abstract to fill the gap.
+
+**There is no fifth route.** See [What is deliberately not here](#what-is-deliberately-not-here) for
+why a bypass is not one, and do not offer one — the reason is the licence gate this repo is built
+around, not squeamishness.
+
+---
+
 ## Preprints
 
 **Some preprints have a PMID, and the tooling currently says otherwise.** bioRxiv and medRxiv
@@ -414,7 +449,13 @@ a PMID alone. And two further consequences worth planning for:
   snapshot and there will not be one — once `literature.csv` is written it *is* the pin.
 - **Unpaywall reports `queried: false`.** No contact address. Set `JUST_DNA_CONTACT_EMAIL`. It is not
   invented for you, because an invented address misattributes the traffic to a real person.
-- **Semantic Scholar or preprints keep returning 429.** The anonymous pools are shared and small. Set
-  `S2_API_KEY` for Semantic Scholar; for the rest, ask for fewer sources at a time.
+- **Semantic Scholar returns 429.** Measured 2026-08-20: its unauthenticated pool is one pool shared
+  by every anonymous caller worldwide, so the throttle is **other people's traffic, not your pacing**
+  — and it is endpoint-specific, `paper/search` shedding load while a lookup by id answers normally.
+  The response carries **no `Retry-After` and no `X-RateLimit-*`**, so nothing can pace against it;
+  just retry, spaced. `S2_API_KEY` gets you a dedicated 1 req/s and is the real fix.
+- **arXiv returns 429.** Rare now. It had a genuine incident in early 2026 that its maintainers
+  fixed, and this host reads clean since. Honour the 3-second spacing the client already enforces and
+  retry; do not conclude the host is blocked without re-probing, which is the mistake `F6` records.
 - **A PMID resolves but the title is wrong.** That is the failure this skill opens with. Discard it
   and search for the paper properly.

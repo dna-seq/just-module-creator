@@ -3,6 +3,59 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — two untested parsers get real fixtures, and a paywall stops being a dead end
+
+No tool change, so no version bump: tests, fixtures and documents only. Suite **385 → 391**;
+`ruff` clean, `pyright` 0 errors.
+
+**`RM6` closed, and its premise was stale.** `parse_semantic_scholar` and `parse_arxiv` had no
+fixture and no test since 2026-08-11, on the finding that both services 429 this host at IP level.
+Re-probed through `Discovery` itself — the same endpoint, params and pacing the client uses, not a
+curl approximation — **arXiv answers 200** and Semantic Scholar's throttle is intermittent and
+endpoint-specific (`paper/search` sheds load, `paper/{id}` does not). arXiv had a real rate-limit
+incident in late February 2026 which its maintainers acknowledged and fixed; we measured inside that
+window and carried the conclusion for six months without re-probing.
+
+Both fixtures are now committed, each a genuine response to the request the client actually makes:
+
+- `assets/literature/arxiv_query.xml` — `all:population genetics selection`, 5 entries, **3 carrying
+  `arxiv:doi` and 2 not**, so the published-preprint DOI branch is covered in both directions. That
+  branch is load-bearing: a DOI is the only handle that reaches Unpaywall.
+- `assets/literature/semanticscholar_search.json` — `lactase persistence`, 3 records, captured with
+  the full `_S2_FIELDS` list so every field the parser reads is present. Real PMIDs on the trait this
+  repo already fixtures elsewhere.
+
+Six tests, ground truth computed from each payload rather than pasted. `F6` keeps its entry in
+`dogfooding.md` with the diagnosis corrected — the tri-state result it was really about is
+unaffected, and **the lesson is the re-probe**: an environmental verdict is a measurement with a date
+on it, and this one had no expiry.
+
+**`find-evidence` gains "When there is no legal copy".** The skill refused a paywall bypass and then
+said nothing about what to do instead, so the refusal was a dead end. Four routes, ordered by how
+fast they actually work — preprint check, asking the corresponding author (usually the fastest for a
+recent paper), Open Access Button, then institutional access or ILL — plus the rule that matters more
+than any of them: a row waiting on a copy stays **unchecked**, never downgraded to the much stronger
+"read and not found". Triggers extended so it fires on *"paywalled"* and *"how do I get this paper"*.
+The Sci-Hub question was put and answered **no**: shipping the code is the act regardless of what
+triggers it, and it is the opposite of the `declared_use` gate this repo already enforces.
+
+Its 429 troubleshooting entry is corrected to the measured behaviour rather than the assumed one.
+
+**`RM15` closed.** Its last loose thread — one unreproduced report of `describe_table` returning a
+0.5 shape under 0.6.1 — reproduced, and it is not a `describe_table` defect: the plugin cache holds
+two stale servers (`0.2.0` on format 0.5.0, `0.7.0` on format 0.5.4) while the workspace runs 0.6.1,
+so a 0.5 server answered a caller who believed otherwise. `RM13`'s `produced_by: SchemaVersions`
+already guards it.
+
+**Filed upstream: format-tree `S60`** (`F57` here) — an authored **overlay table** so a correction to
+a derived sidecar never has to be written inside it. Asked of their compiler rather than built here,
+because an overlay is authored input rather than a repair; it depends on `S51`.
+
+**Roadmap decisions recorded** for `RM9`, `RM16`, `RM18`, `RM20` and the `just-dna-lite` hand-off,
+plus two new items: **`RM21`** (expose `yank` — the client has it, we wrap it nowhere, and a publish
+that turns out wrong has no route back) and **`RM22`** (the enricher already fetches the ancestry
+`studies.csv`'s `population` wants, and nothing here surfaces it).
+
 ## Unreleased — the skills surface finally has a gate, and three docs stopped saying false things
 
 No tool change, so no version bump: tests and documents only.

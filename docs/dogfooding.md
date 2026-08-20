@@ -17,11 +17,25 @@ is usable, and what is missing.
 ## F6 — two of five literature sources refuse this host, and the tool is right to say so
 
 **Found:** 2026-08-11, capturing fixtures · **Severity:** medium ·
-**Status:** open · **Roadmap:** [RM6](ROADMAP.md#rm6--semantic-scholar-and-arxiv-are-unreachable-from-this-host-so-two-parsers-are-untested)
+**Status:** **RESOLVED 2026-08-20 — and the diagnosis below was wrong.** Both fixtures are
+captured and both parsers are tested; `RM6` is closed in
+[ROADMAP_HISTORY.md](ROADMAP_HISTORY.md). The tri-state finding this entry exists for **stands
+unchanged** and is why it stays here.
 
-Semantic Scholar and arXiv both answer HTTP 429 from this machine regardless of
-user-agent, arXiv on a *first* request with no prior traffic — so it is an IP
-block, not our pacing. Confirmed with plain `curl` outside the client.
+> **Corrected 2026-08-20.** *"IP block"* was the wrong conclusion from a real observation.
+> Re-probed through our own client: **arXiv answers HTTP 200** — six requests, no throttling —
+> and Semantic Scholar's 429 is **intermittent and endpoint-specific**, `paper/search` shedding
+> load while `paper/{id}` answers reliably. arXiv had a genuine rate-limit incident in late
+> February 2026 that its maintainers acknowledged and fixed; we measured it during that window
+> and then carried the conclusion for six months without re-probing. **The lesson is the
+> re-probe, not the block:** an environmental verdict is a measurement with a date on it, and
+> ours had no expiry. `assets/literature/` now holds `arxiv_query.xml` and
+> `semanticscholar_search.json`, captured through `Discovery` itself so each is a real response
+> to the exact request the client makes.
+
+The original observation, which was accurate on the day: Semantic Scholar and arXiv both answered
+HTTP 429 from this machine regardless of user-agent, arXiv on a *first* request with no prior
+traffic. Confirmed with plain `curl` outside the client.
 
 Reported here rather than routed around because it is the best available
 evidence that the tri-state design earns its keep. A live `literature_search`
@@ -31,8 +45,10 @@ Europe PMC answer normally. Had the model used `0`, the same call would have
 read as "no preprints exist on this subject", which is a conclusion an author
 would act on.
 
-The cost is real: `parse_semantic_scholar` and `parse_arxiv` have no committed
-fixture and therefore no test.
+The cost was real while it lasted: `parse_semantic_scholar` and `parse_arxiv` had no committed
+fixture and therefore no test, for six months. Both now have both — six tests, including the
+`arxiv:doi` branch that only fires for a preprint that was later published, which is the branch a
+fixture-less parser was most likely to have got wrong.
 
 ## F7 — a `limit` was spent entirely on whichever source was asked first
 

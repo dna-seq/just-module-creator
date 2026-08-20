@@ -12,11 +12,13 @@ are separated from the clients in the first place.
 from __future__ import annotations
 
 import json
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pytest
 
 from just_module_creator.discovery import (
+    _ATOM,
     EUROPEPMC,
     PREPRINTS,
     PUBMED,
@@ -26,8 +28,10 @@ from just_module_creator.discovery import (
     doi_token,
     known_sources,
     merge,
+    parse_arxiv,
     parse_europepmc,
     parse_pubmed_summaries,
+    parse_semantic_scholar,
     resolve_sources,
 )
 
@@ -36,6 +40,10 @@ ASSETS = Path(__file__).resolve().parent.parent / "assets" / "literature"
 
 def load(name: str) -> dict:
     return json.loads((ASSETS / name).read_text())
+
+
+def load_text(name: str) -> str:
+    return (ASSETS / name).read_text()
 
 
 @pytest.fixture
@@ -118,6 +126,105 @@ def test_a_preprint_has_no_pmid_so_it_cannot_ground_a_studies_row() -> None:
         assert candidate.pmid is None
         # They do carry a DOI, which is how you would reach them at all.
         assert candidate.doi
+
+
+
+# --------------------------------------------------------------------------- #
+# arXiv and Semantic Scholar
+#
+# Both parsers went untested until 2026-08-20 for want of a fixture (`RM6`): the
+# services were believed to block this machine outright. Re-probed through our
+# own client, arXiv answers 200 and the S2 throttle is intermittent and
+# endpoint-specific, so both fixtures below are real captured responses to the
+# exact request `Discovery` makes.
+# --------------------------------------------------------------------------- #
+@pytest.fixture
+def arxiv_records():
+    return parse_arxiv(load_text("arxiv_query.xml"))
+
+
+@pytest.fixture
+def s2_records():
+    return parse_semantic_scholar(load("semanticscholar_search.json"))
+
+
+def test_arxiv_reads_the_doi_of_a_preprint_that_was_later_published(arxiv_records) -> None:
+    """`arxiv:doi` is present only once a posting appears in a journal.
+
+    The branch matters because a DOI is the only handle that reaches Unpaywall,
+    so a published preprint parsed without one is a paper whose full text cannot
+    be looked for.
+    """
+    xml = load_text("arxiv_query.xml")
+    root = ET.fromstring(xml)
+    expected = [
+        (el.text or "").strip() if (el := entry.find("arxiv:doi", _ATOM)) is not None else None
+        for entry in root.findall("atom:entry", _ATOM)
+    ]
+
+    assert [c.doi for c in arxiv_records] == expected
+    # The fixture must exercise both sides, or this test cannot fail.
+    assert any(d for d in expected), "fixture should carry at least one published entry"
+    assert any(d is None for d in expected), "fixture should carry at least one unpublished entry"
+
+
+def test_every_arxiv_result_is_a_preprint_with_no_pmid(arxiv_records) -> None:
+    """The fact that decides whether an arXiv hit may ground a `studies.csv` row.
+
+    `StudyRow.pmid` is required. An arXiv posting outside the NIH pilot has none,
+    however well it matches the query — see `find-evidence`'s Preprints section,
+    where the rule is "check the record, do not assume the class".
+    """
+    assert arxiv_records, "fixture should carry entries"
+    for candidate in arxiv_records:
+        assert candidate.preprint is True
+        assert candidate.pmid is None
+        assert candidate.venue == "arXiv"
+        assert candidate.found_in == [PREPRINTS]
+
+
+def test_arxiv_rank_is_the_feeds_own_order(arxiv_records) -> None:
+    """Rank stays per source and is never merged into a score we invented."""
+    assert [c.rank[PREPRINTS] for c in arxiv_records] == list(range(1, len(arxiv_records) + 1))
+
+
+def test_semantic_scholar_splits_external_ids_into_their_own_columns(s2_records) -> None:
+    """S2 nests every identifier under `externalIds`; downstream wants columns.
+
+    Computed from the payload rather than pasted, so a shape change upstream
+    fails here rather than silently dropping the one field that makes a hit
+    citable.
+    """
+    payload = load("semanticscholar_search.json")
+    external = [r.get("externalIds") or {} for r in payload["data"]]
+
+    assert [c.pmid for c in s2_records] == [e.get("PubMed") for e in external]
+    assert [c.doi for c in s2_records] == [e.get("DOI") for e in external]
+    assert any(c.pmid for c in s2_records), "fixture should carry at least one PMID"
+
+
+def test_semantic_scholar_open_access_is_three_valued(s2_records) -> None:
+    """`None` is never `False` — an unstated flag is not a closed-access verdict."""
+    payload = load("semanticscholar_search.json")
+    expected = [
+        r.get("isOpenAccess") if isinstance(r.get("isOpenAccess"), bool) else None
+        for r in payload["data"]
+    ]
+    assert [c.is_open_access for c in s2_records] == expected
+
+
+def test_semantic_scholar_counts_only_a_real_integer(s2_records) -> None:
+    """`citationCount` is type-guarded, so a string or null becomes None.
+
+    Zero is a real answer and must survive; the guard exists so that "not
+    reported" cannot arrive as `0`.
+    """
+    payload = load("semanticscholar_search.json")
+    expected = [
+        r.get("citationCount") if isinstance(r.get("citationCount"), int) else None
+        for r in payload["data"]
+    ]
+    assert [c.citation_count for c in s2_records] == expected
 
 
 # --------------------------------------------------------------------------- #

@@ -9,6 +9,245 @@ here: it is filed upstream as an `S<n>` and tracked in
 
 ---
 
+## RM6 — two literature parsers have no fixture, so nothing tests them
+
+**Severity:** medium · **Status: CLOSED 2026-08-20 — both fixtures captured, both parsers tested,
+and the premise turned out to be stale.** · **Owner:** unassigned
+
+> **The block was real in February and gone by August, and nobody re-probed.** This item rested on
+> *"both services answer HTTP 429 to this machine's IP regardless of user-agent or pacing — arXiv on
+> a first request with no prior traffic, confirmed with plain curl."* Re-measured through
+> `Discovery` itself, using the exact endpoint, params and pacing the client uses:
+>
+> - **arXiv answers 200.** Six requests, no throttling, no special headers needed. arXiv had a
+>   genuine rate-limit incident starting ~25 February 2026 which its maintainers acknowledged and
+>   fixed; we measured during that window and kept the conclusion for six months.
+> - **Semantic Scholar's 429 is intermittent and endpoint-specific**, not an IP block. `paper/search`
+>   is shed under shared-pool pressure (roughly one attempt in four succeeds); `paper/{id}` answers
+>   reliably. The throttle sends **no `Retry-After` and no `X-RateLimit-*`**, so a client cannot pace
+>   against it — only blind backoff works, which is what the capture used: it succeeded on attempt 2
+>   at 25-second spacing.
+>
+> **Captured, and both are real responses to the request `Discovery` actually makes** — not curl
+> approximations:
+>
+> - `assets/literature/arxiv_query.xml` — `all:population genetics selection`, 5 entries, **3 with
+>   `arxiv:doi` and 2 without**, so the published-preprint DOI branch is exercised in both
+>   directions. That branch matters because a DOI is the only handle that reaches Unpaywall.
+> - `assets/literature/semanticscholar_search.json` — `lactase persistence`, 3 records, captured with
+>   the **full `_S2_FIELDS` list** so `authors`, `venue`, `abstract`, `citationCount`, `isOpenAccess`
+>   and `openAccessPdf` are all present. Real PMIDs (40063818, 41278663, 40880079) on the trait this
+>   repo already uses for its other fixtures.
+>
+> Six tests in `tests/test_discovery.py`, ground truth computed from each payload rather than pasted.
+> Suite 385 → 391.
+>
+> **The standing lesson is the re-probe, not the block.** An environmental verdict is a measurement
+> with a date on it, and this one had no expiry — it hardened into a premise and then into a roadmap
+> item. `F6` in `dogfooding.md` keeps the entry, because the tri-state result it was really about
+> (`results=null` + `rate_limited=true` reading as *unchecked*, never as *no preprints exist*) is
+> unaffected and still the best evidence that design earns its keep.
+>
+> **Still worth doing, and not blocking:** request a Semantic Scholar API key. It gives 1 RPS
+> dedicated instead of a globally shared unauthenticated pool, the client already sends
+> `x-api-key` when `settings.semantic_scholar_key()` is set, and the form is human-only with a
+> historically ~1-month backlog. Insurance for live use, not a prerequisite for anything.
+
+<details>
+<summary>The item as it stood on the roadmap</summary>
+
+**Severity:** medium · **Status:** open · **Owner:** unassigned
+
+`parse_semantic_scholar` and `parse_arxiv` are exercised by nothing. Every other
+parser has a real captured payload under `assets/literature/`; these two do not,
+because both services answer HTTP 429 to this machine's IP regardless of
+user-agent or pacing — arXiv on a first request with no prior traffic, confirmed
+with plain `curl` outside the client.
+
+The block itself is not a defect anywhere and not ours to fix. **The untested
+parser is ours**, and a parser with no test breaks silently when the API shape
+moves.
+
+> **Decided 2026-08-20.** Take the `S2_API_KEY` route for the Semantic Scholar half, and
+> **research the block itself** before conceding the arXiv half — the 429 shape has never been
+> investigated, only worked around. A hand-written payload is not on the table: §2 forbids a
+> fabricated example value in committed code, and every other parser here has a real captured one.
+
+Two ways out, not exclusive: capture the fixtures from a host that is not
+blocked, or set `S2_API_KEY` — Semantic Scholar's keyed pool is not the one being
+throttled — and capture at least that half. Recorded as **F6** in
+[dogfooding.md](dogfooding.md).
+
+</details>
+
+---
+
+## RM15 — we absorbed the format layer's philosophy wholesale, and it is load-bearing in 19 files
+
+**Severity: HIGH** · **Status: CLOSED 2026-08-20** — every "done when" condition met, and the last
+loose thread reproduced and dismissed the same night. · **Owner:** agent A · **Opened** 2026-08-20
+
+> **The loose thread, settled.** This item was held open for one unreproduced report of
+> `describe_table` returning a 0.5 shape under format 0.6.1. **Reproduced, and it is not a
+> `describe_table` defect.** The plugin cache holds two stale servers — `0.2.0` running format
+> **0.5.0** and `0.7.0` running format **0.5.4** — while the workspace venv runs **0.6.1**. So a 0.5
+> server answered while the caller believed they were on 0.6.1; the shape was correct for the code
+> that produced it. It is the same cause `RM13` shipped the fix for, and that fix is live:
+> `produced_by: SchemaVersions` is a **required** field on all five schema tools, so a payload now
+> names the release that made it.
+>
+> **The standing lesson, which is workspace-shaped rather than code-shaped:** *ask the tool, never
+> memory* only beats memory when the tool is current, and a plugin-cache server is a second install
+> that upgrades on its own schedule. Check `produced_by` before trusting a schema answer that looks
+> wrong.
+
+<details>
+<summary>The item as it stood on the roadmap</summary>
+
+**Severity: HIGH** · **Status:** audit complete; narrowed to the residue below · **Owner:** agent A · **Opened** 2026-08-20
+
+> **Done, 2026-08-20 night run.** All three "done when" conditions are met for every surface this item
+> named. `server.INSTRUCTIONS` rewritten (rule 2 replaced; a new rule 3 carries the lag hazard) and it
+> agrees with `CLAUDE.md` §2. All sixteen §2 domain bullets judged — thirteen stand, "never widen the
+> write surface" split, the `provenance_quote` prohibition reversed. Code surfaces re-justified
+> (`models.py`, `_shared.py`, `research.py`, `authoring.py`); `refresh.py` audited as *conditional*
+> physics — it is two data points because we keep no third, and a filled log settles it. Skills swept:
+> `module-101` realigned, the ten scaffold seeds disarmed, `create-module`'s last prohibition removed,
+> seven slogan sites and five "a human read it" sites corrected. **§1's questionnaire ran with the
+> owner; the attestation contradiction is settled and recorded in §10 — do not re-open it.** Filed
+> upstream as `S54`/`S55`, tracked as `F42`/`F43`.
+>
+> **The residue is closed, 2026-08-20 later the same night.**
+> `docs/DESIGN-version-compare.md` — the one surface this item named that had not been read — has had
+> the pass. Two sites: §3.6's heading was the retired stance, and the reason a comparator refuses is
+> its own (**pairing two rows is an assertion** that two directory listings cannot support); and the
+> changelog refusal argued by analogy to a machine-located quote, which is now the legitimate act. The
+> refusal survives on a sharper distinction — a located quote is a found passage a check can test, a
+> generated changelog sentence is a claim about **motive** that nothing can test.
+>
+> Three of the four "create-module is stale" dossier claims were resolved when that skill was
+> dismantled: two described a pre-0.6 claim already corrected, and the third is now carried as a
+> ROADWORKS in `module-curate`. **`RM15` may be closed.** The one unreproduced report of
+> `describe_table` returning a 0.5 shape under 0.6.1 still stands and is not this item's.
+>
+> The three delegated files landed and were then swept against the same stance grep: `find-evidence`
+> and `studies.md` were already correct, `literature.md` still carried the reversed proposition live
+> and is fixed. The six contradicted dossier banners are all fixed; of the four "create-module is
+> stale" claims, one was checked and was largely a false alarm, three remain. One unreproduced report
+> of `describe_table` returning a 0.5 shape under 0.6.1 stands.
+>
+> The **discriminator** this item was blocking is now specified in part: `INSTRUCTIONS` rule 3 and §2
+> state it, upstream `S52` is the mask's schema half, and what remains is the record — RM16's capture.
+> The auto-correct rulebook stays unpopulated on purpose; it is built from real transcripts, not
+> designed.
+
+> **Progress, 2026-08-20.** `server.INSTRUCTIONS` rewritten (rule 2 replaced, a new rule 3 for the
+> lag hazard). All sixteen `CLAUDE.md` §2 bullets judged — thirteen stand, "never widen the write
+> surface" split, the `provenance_quote` prohibition reversed. Code surfaces re-justified
+> (`models.py`, `_shared.py`, `research.py`, `authoring.py`'s `_MACHINE_REFUSAL`), `refresh.py`
+> audited as *conditional* physics. **§1's questionnaire ran with the owner and the attestation
+> contradiction is settled** — recorded in §10; do not re-open it. Filed upstream as `S54`/`S55`,
+> tracked as `F42`/`F43`. The skills sweep landed too, and the verdicts that guided it are absorbed
+> into this entry, `CLAUDE.md` §2/§10/§11 and `CHANGELOG.md`; the relay file they were written in is
+> retired, and stays readable in `git log`.
+
+**This is an audit item, not a code change.** Nothing here is known to be wrong yet. What is known is
+that a stance was adopted without ever being tested against this layer's own purpose, and it then
+propagated into the surface an agent reads first.
+
+### What happened
+
+`report, never repair` is `just-dna-format`'s stance and is **correct for that layer**: the compiler
+cannot record who decided a value, so writing one would launder a machine's guess as an author's
+judgement. This repo adopted it as a **non-negotiable of its own** — §2, `server.INSTRUCTIONS` rule 2,
+and from there into fourteen skills and four table dossiers.
+
+The user's correction, 2026-08-20: *"report-never-repair is format's stance, correct for that layer:
+they delegate business decision to us here; we're more high-level user-facing app level, we have a
+counterstance."* §2 now states the counterstance — we may write, every authoring move is logged, and
+the agent is owed a discriminator.
+
+**Flipping one bullet does not undo the propagation.** The stance is quoted, argued and built on
+across the surface, and each instance has to be read on its own terms.
+
+### The test to apply to each instance
+
+For every rule, refusal and piece of prose below, decide which of three it is:
+
+1. **Physics** — true at any layer, keep. *A check that could not run is not a check that passed.*
+   *A determinism gate is not a correctness gate.* `None` is not `False`.
+2. **Format's policy, correctly ours too** — keep, but say **why it is ours**, not "because upstream
+   does it". A rule whose only justification is another layer's stance is the defect this item is about.
+3. **Format's policy that we should NOT hold** — replace with the counterstance, and follow it through
+   to the tool behaviour, not just the prose.
+
+**And the deeper correction the pivot came with, which changes what "safe" means.** The vacuity
+argument — *fill `clin_sig` from ClinVar, then a check compares the two and agrees with itself* — is
+true but shallow, and reading only it is how the stance survived unexamined. The real hazard is that
+**the source lags the edge**: an article is retracted, meta-research refutes the conclusion. So *"your
+row disagrees with ClinVar"* is not a defect report; it may be the module being right and current while
+the archive is stale, and an agent that silently conforms the row **degrades** the module while the
+check reports green. Every instance below should be re-read against *that* hazard, which several of
+them do not mention at all.
+
+### Surfaces to read, most load-bearing first
+
+- **`src/just_module_creator/server.py` — `INSTRUCTIONS` rule 2.** *"Lookups show you a value and
+  refuse to write it into an authored cell… Those refusals are the feature."* This is the **first thing
+  an agent reads**, before any tool call, and it now contradicts §2.
+- **`CLAUDE.md` §2, "the domain rules this server exists to enforce".** Every bullet, against the
+  three-way test. Named individually because they are not all the same kind:
+  - *never fill a value from the same source that checks it* — the vacuity rule. Physics or policy?
+  - *never let a tool write a checked value from a lookup* — already flipped in §2; check that the
+    flip is coherent with the rest of the section.
+  - *never extract a passage from a document a tool fetched* — **see the contradiction below.**
+  - *never collapse unknown into a boolean*, *never treat a determinism gate as a correctness gate*,
+    *never silently fall back* — these look like physics; confirm rather than assume.
+- **Fourteen skills and four dossiers** carry the stance as instruction to an author or an agent:
+  `module-101`, `create-module`, `module-check`, `module-close`, `module-compile`, `module-consumer`,
+  `module-curate`, `module-draft`, `module-enrich`, `module-publish`, `module-start`, `module-weights`,
+  plus `module-tables/references/{studies,gwas_effects,pharm_variants,repeat_alleles}.md`. Several
+  frame a refusal as a **feature**, which is exactly the framing under review.
+- **`models.py` field descriptions and every lookup tool's docstring.** An agent reads these as the
+  contract. A description that says a tool refuses on principle is a behavioural claim.
+- **`tools/refresh.py`** — written 2026-08-20 *from a brief that cited the old stance*, so it inherited
+  it by construction rather than by decision.
+
+### The contradiction this audit must resolve, and it needs §1
+
+**§2 forbids extracting a passage from a fetched document; §10 records the user saying the opposite
+about who can read a paper.**
+
+- §2: *"Never extract a passage from a document a tool fetched… a machine-located quote asserts a
+  reading that never happened, which is a false claim of provenance."*
+- §10: *"Here you kinda ask v2 work from a wrong person"* — asking a gardener for a
+  `provenance_quote` is a reviewer's job and a different person's — and, flatly, **"AI totaly can
+  read articles."**
+
+Under the pivot these cannot both stand as written. If the agent is a legitimate reader, a located
+quote is a reading that *did* happen, and the attestation question becomes *whose* reading was
+recorded rather than whether one occurred. **Run §1's questionnaire; do not resolve this by
+inference** — it is the highest-stakes instance of exactly the absorption this item is about, and
+`hints.ATTESTATION_BEARING` shipped upstream on the argument now in question.
+
+### What this unblocks
+
+The **discriminator** (§2 part 3) cannot be specified until this read is done — it is the thing that
+tells an evident auto-correction from a judgement call, and its shape depends on which refusals
+survive. The auto-correct rulebook (§10, *to-populate-later*) waits on the same answer.
+
+### Done when
+
+Every surface above carries a rule that is justified **from this layer's own purpose**, with no
+prohibition standing only on "upstream does it that way"; `server.INSTRUCTIONS` and §2 agree; the
+§1 questionnaire on the attestation contradiction has been run and its answer recorded in §10.
+
+---
+
+</details>
+
+---
+
 ## RM17 — nothing on the authored side can see that one quote is repeated across every row citing a paper
 
 **Severity:** high · **Status:** SHIPPED 2026-08-20 (night run) · **Owner:** agent B · **Opened** 2026-08-20

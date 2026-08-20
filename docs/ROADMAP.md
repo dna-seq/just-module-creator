@@ -14,27 +14,6 @@ something and invites a workaround where a note was owed. A probe belongs in
 
 ---
 
-## RM6 — two literature parsers have no fixture, so nothing tests them
-
-**Severity:** medium · **Status:** open · **Owner:** unassigned
-
-`parse_semantic_scholar` and `parse_arxiv` are exercised by nothing. Every other
-parser has a real captured payload under `assets/literature/`; these two do not,
-because both services answer HTTP 429 to this machine's IP regardless of
-user-agent or pacing — arXiv on a first request with no prior traffic, confirmed
-with plain `curl` outside the client.
-
-The block itself is not a defect anywhere and not ours to fix. **The untested
-parser is ours**, and a parser with no test breaks silently when the API shape
-moves.
-
-Two ways out, not exclusive: capture the fixtures from a host that is not
-blocked, or set `S2_API_KEY` — Semantic Scholar's keyed pool is not the one being
-throttled — and capture at least that half. Recorded as **F6** in
-[dogfooding.md](dogfooding.md).
-
----
-
 ## RM9 — a module authored only through this server carries no check attestation
 
 **Severity:** medium · **Status:** open · **Owner:** unassigned
@@ -56,9 +35,16 @@ It is not a missing upstream API: `identifiers.verification_records()` and
 write path works from here. What has to be decided first is a policy question, because
 `tools/research.py` opens by promising that **no tool in it writes to a spec directory**
 — a line that is currently true and load-bearing for how the read-only tier is
-understood. Either the check tools move out of that module, or the promise is narrowed
-to "writes no authored cell", which is upstream's own wording and is the narrower claim
-that actually matters. Do not do this by quietly making the promise false.
+understood.
+
+> **Decided 2026-08-20: the check tools move out.** Not the narrowed promise. A module whose
+> opening sentence is a literal claim keeps it literal, and the boundary then means something a
+> reader can rely on rather than something qualified by an exception. The tier line is cost, not
+> read-versus-write, so nothing about the tiers moves with them — they stay essentials.
+>
+> **Reversal recipe:** if the split ever reads as ceremony, narrow the promise to "writes no
+> authored cell" (upstream's own wording) and move them back. What must not happen either way is
+> the promise quietly becoming false while the sentence stays.
 
 ---
 
@@ -103,14 +89,52 @@ Freeform, unscheduled, no commitment implied.
 >
 > **What is left, and why each is left:**
 >
-> 1. **`refresh_sidecar` reading the records.** The capture is keyed by `(variant_key, field)`, which
->    fits `variants.csv` and not a sidecar keyed by gene or by locus. Mapping a sidecar subject onto a
->    record subject is a design question that only came into existence once the capture did, so it was
->    not settled at 3 a.m. Both docstrings in `refresh.py` now state the narrowed reason rather than the
->    old "the log is empty".
+> 1. **`refresh_sidecar` reading the records.** **Answered 2026-08-20, and the answer was that the
+>    question was wrong — see the architecture note directly below.** The capture is keyed by
+>    `(variant_key, field)`, which fits `variants.csv` and not a sidecar keyed by gene or by locus.
+>    Both docstrings in `refresh.py` state the narrowed reason rather than the old "the log is empty".
 > 2. **The grading recommendations** (item 4 below) — skill-side, and they belong with a real corpus of
 >    overrides rather than invented ahead of one.
 > 3. **`S52`'s answer**, which is upstream's and decides whether a check downgrades a mismatch.
+
+### The architecture changed, 2026-08-20 — an overlay, not a wider key
+
+**The owner's call, and it dissolves the residue rather than answering it:** *"editing the derived
+schemas, although feasible technically, shouldn't be a preferred way of action; I see an authored
+table like 'override masks' that just lies upon any of the derived tables. This separates concern.
+Authored stays authored, derived stays derived, no complex logic, no schema bends, no redraft
+problem, a whole subgenre of bugs — gone."*
+
+**Why the residue was unanswerable as posed.** RM16 demanded one shared representation because it
+treated two different objects as one. The case it was written for — `variants.csv` says Benign,
+ClinVar says Pathogenic — is an **authored** cell, and an authored cell survives re-derivation *by
+construction*: nothing re-derives a table you wrote, which `check_sidecar` refuses outright. That
+case never needed a mask. It needed a **reason**. A mask is only ever needed where a human edits a
+**derived** cell — and the right answer there is that they should not, ever.
+
+**What follows.** Derived tables become `f(source, overlay)`. `refresh_sidecar`'s refusal stops being
+necessary rather than being satisfied: its "two data points and three explanations" has a third
+explanation only because a human may have edited the file, and under an overlay nobody does. So a
+difference between two derivations means the source revised, full stop.
+
+**Filed as format-tree `S60`, tracked here as `F57`, and asked of their COMPILER rather than built
+here** — the owner's call again: *"large yes, 0.7 yes, yet it's their bread."* The argument that makes
+it theirs is that an overlay is **authored input, not a repair**: a compiler reading it does what it
+already does with every other authored table, so report-never-repair is not at stake. If each
+downstream tool applied its own overlay instead, two consumers compiling one spec directory could
+disagree about what the module says and the artifact would stop being a function of the spec.
+
+**`S60` depends on `S51`** (`F41`) — an overlay's subject must name a derived row exactly and the
+per-table merge key is not public. Deriving it is fine for classifying and not fine for a persisted
+key.
+
+**What this repo does meanwhile: nothing new.** `record_override` and `review_queue` stay exactly as
+shipped, narrowed in purpose to the **authored** cell that outranks a source, which is the job
+`provenance.json` reads like it was designed for. We deliberately do **not** invent an
+`overrides.csv` in the spec directory — absent from `specfiles.RECOGNIZED_SPEC_FILES`, so a
+server-side rebuild would drop it silently, the way `licensing.csv` was lost before registry 0.16.2.
+
+---
 
 **Supersedes RM14** (*"`provenance.json` is recognised by the registry and by nothing here"*), which
 was the same gap seen from the wrong end. RM14 read as a tidiness item — a recognised file nothing
@@ -230,154 +254,31 @@ to a reported mismatch** and logs the move; the capture shares one mask represen
 sidecar-refresh work; a resolved outrank is detected and reported as retirable; the skills carry the
 grading recommendations; and `S52`'s answer decides whether a severity change follows upstream.
 
-## RM15 — we absorbed the format layer's philosophy wholesale, and it is load-bearing in 19 files
-
-**Severity: HIGH** · **Status:** audit complete; narrowed to the residue below · **Owner:** agent A · **Opened** 2026-08-20
-
-> **Done, 2026-08-20 night run.** All three "done when" conditions are met for every surface this item
-> named. `server.INSTRUCTIONS` rewritten (rule 2 replaced; a new rule 3 carries the lag hazard) and it
-> agrees with `CLAUDE.md` §2. All sixteen §2 domain bullets judged — thirteen stand, "never widen the
-> write surface" split, the `provenance_quote` prohibition reversed. Code surfaces re-justified
-> (`models.py`, `_shared.py`, `research.py`, `authoring.py`); `refresh.py` audited as *conditional*
-> physics — it is two data points because we keep no third, and a filled log settles it. Skills swept:
-> `module-101` realigned, the ten scaffold seeds disarmed, `create-module`'s last prohibition removed,
-> seven slogan sites and five "a human read it" sites corrected. **§1's questionnaire ran with the
-> owner; the attestation contradiction is settled and recorded in §10 — do not re-open it.** Filed
-> upstream as `S54`/`S55`, tracked as `F42`/`F43`.
->
-> **The residue is closed, 2026-08-20 later the same night.**
-> `docs/DESIGN-version-compare.md` — the one surface this item named that had not been read — has had
-> the pass. Two sites: §3.6's heading was the retired stance, and the reason a comparator refuses is
-> its own (**pairing two rows is an assertion** that two directory listings cannot support); and the
-> changelog refusal argued by analogy to a machine-located quote, which is now the legitimate act. The
-> refusal survives on a sharper distinction — a located quote is a found passage a check can test, a
-> generated changelog sentence is a claim about **motive** that nothing can test.
->
-> Three of the four "create-module is stale" dossier claims were resolved when that skill was
-> dismantled: two described a pre-0.6 claim already corrected, and the third is now carried as a
-> ROADWORKS in `module-curate`. **`RM15` may be closed.** The one unreproduced report of
-> `describe_table` returning a 0.5 shape under 0.6.1 still stands and is not this item's.
->
-> The three delegated files landed and were then swept against the same stance grep: `find-evidence`
-> and `studies.md` were already correct, `literature.md` still carried the reversed proposition live
-> and is fixed. The six contradicted dossier banners are all fixed; of the four "create-module is
-> stale" claims, one was checked and was largely a false alarm, three remain. One unreproduced report
-> of `describe_table` returning a 0.5 shape under 0.6.1 stands.
->
-> The **discriminator** this item was blocking is now specified in part: `INSTRUCTIONS` rule 3 and §2
-> state it, upstream `S52` is the mask's schema half, and what remains is the record — RM16's capture.
-> The auto-correct rulebook stays unpopulated on purpose; it is built from real transcripts, not
-> designed.
-
-> **Progress, 2026-08-20.** `server.INSTRUCTIONS` rewritten (rule 2 replaced, a new rule 3 for the
-> lag hazard). All sixteen `CLAUDE.md` §2 bullets judged — thirteen stand, "never widen the write
-> surface" split, the `provenance_quote` prohibition reversed. Code surfaces re-justified
-> (`models.py`, `_shared.py`, `research.py`, `authoring.py`'s `_MACHINE_REFUSAL`), `refresh.py`
-> audited as *conditional* physics. **§1's questionnaire ran with the owner and the attestation
-> contradiction is settled** — recorded in §10; do not re-open it. Filed upstream as `S54`/`S55`,
-> tracked as `F42`/`F43`. The skills sweep landed too, and the verdicts that guided it are absorbed
-> into this entry, `CLAUDE.md` §2/§10/§11 and `CHANGELOG.md`; the relay file they were written in is
-> retired, and stays readable in `git log`.
-
-**This is an audit item, not a code change.** Nothing here is known to be wrong yet. What is known is
-that a stance was adopted without ever being tested against this layer's own purpose, and it then
-propagated into the surface an agent reads first.
-
-### What happened
-
-`report, never repair` is `just-dna-format`'s stance and is **correct for that layer**: the compiler
-cannot record who decided a value, so writing one would launder a machine's guess as an author's
-judgement. This repo adopted it as a **non-negotiable of its own** — §2, `server.INSTRUCTIONS` rule 2,
-and from there into fourteen skills and four table dossiers.
-
-The user's correction, 2026-08-20: *"report-never-repair is format's stance, correct for that layer:
-they delegate business decision to us here; we're more high-level user-facing app level, we have a
-counterstance."* §2 now states the counterstance — we may write, every authoring move is logged, and
-the agent is owed a discriminator.
-
-**Flipping one bullet does not undo the propagation.** The stance is quoted, argued and built on
-across the surface, and each instance has to be read on its own terms.
-
-### The test to apply to each instance
-
-For every rule, refusal and piece of prose below, decide which of three it is:
-
-1. **Physics** — true at any layer, keep. *A check that could not run is not a check that passed.*
-   *A determinism gate is not a correctness gate.* `None` is not `False`.
-2. **Format's policy, correctly ours too** — keep, but say **why it is ours**, not "because upstream
-   does it". A rule whose only justification is another layer's stance is the defect this item is about.
-3. **Format's policy that we should NOT hold** — replace with the counterstance, and follow it through
-   to the tool behaviour, not just the prose.
-
-**And the deeper correction the pivot came with, which changes what "safe" means.** The vacuity
-argument — *fill `clin_sig` from ClinVar, then a check compares the two and agrees with itself* — is
-true but shallow, and reading only it is how the stance survived unexamined. The real hazard is that
-**the source lags the edge**: an article is retracted, meta-research refutes the conclusion. So *"your
-row disagrees with ClinVar"* is not a defect report; it may be the module being right and current while
-the archive is stale, and an agent that silently conforms the row **degrades** the module while the
-check reports green. Every instance below should be re-read against *that* hazard, which several of
-them do not mention at all.
-
-### Surfaces to read, most load-bearing first
-
-- **`src/just_module_creator/server.py` — `INSTRUCTIONS` rule 2.** *"Lookups show you a value and
-  refuse to write it into an authored cell… Those refusals are the feature."* This is the **first thing
-  an agent reads**, before any tool call, and it now contradicts §2.
-- **`CLAUDE.md` §2, "the domain rules this server exists to enforce".** Every bullet, against the
-  three-way test. Named individually because they are not all the same kind:
-  - *never fill a value from the same source that checks it* — the vacuity rule. Physics or policy?
-  - *never let a tool write a checked value from a lookup* — already flipped in §2; check that the
-    flip is coherent with the rest of the section.
-  - *never extract a passage from a document a tool fetched* — **see the contradiction below.**
-  - *never collapse unknown into a boolean*, *never treat a determinism gate as a correctness gate*,
-    *never silently fall back* — these look like physics; confirm rather than assume.
-- **Fourteen skills and four dossiers** carry the stance as instruction to an author or an agent:
-  `module-101`, `create-module`, `module-check`, `module-close`, `module-compile`, `module-consumer`,
-  `module-curate`, `module-draft`, `module-enrich`, `module-publish`, `module-start`, `module-weights`,
-  plus `module-tables/references/{studies,gwas_effects,pharm_variants,repeat_alleles}.md`. Several
-  frame a refusal as a **feature**, which is exactly the framing under review.
-- **`models.py` field descriptions and every lookup tool's docstring.** An agent reads these as the
-  contract. A description that says a tool refuses on principle is a behavioural claim.
-- **`tools/refresh.py`** — written 2026-08-20 *from a brief that cited the old stance*, so it inherited
-  it by construction rather than by decision.
-
-### The contradiction this audit must resolve, and it needs §1
-
-**§2 forbids extracting a passage from a fetched document; §10 records the user saying the opposite
-about who can read a paper.**
-
-- §2: *"Never extract a passage from a document a tool fetched… a machine-located quote asserts a
-  reading that never happened, which is a false claim of provenance."*
-- §10: *"Here you kinda ask v2 work from a wrong person"* — asking a gardener for a
-  `provenance_quote` is a reviewer's job and a different person's — and, flatly, **"AI totaly can
-  read articles."**
-
-Under the pivot these cannot both stand as written. If the agent is a legitimate reader, a located
-quote is a reading that *did* happen, and the attestation question becomes *whose* reading was
-recorded rather than whether one occurred. **Run §1's questionnaire; do not resolve this by
-inference** — it is the highest-stakes instance of exactly the absorption this item is about, and
-`hints.ATTESTATION_BEARING` shipped upstream on the argument now in question.
-
-### What this unblocks
-
-The **discriminator** (§2 part 3) cannot be specified until this read is done — it is the thing that
-tells an evident auto-correction from a judgement call, and its shape depends on which refusals
-survive. The auto-correct rulebook (§10, *to-populate-later*) waits on the same answer.
-
-### Done when
-
-Every surface above carries a rule that is justified **from this layer's own purpose**, with no
-prohibition standing only on "upstream does it that way"; `server.INSTRUCTIONS` and §2 agree; the
-§1 questionnaire on the attestation contradiction has been run and its answer recorded in §10.
-
----
-
-
----
-
 ## RM18 — the four published modules carry decisions only their owner can make
 
 **Severity:** medium · **Status:** open · **Owner:** **the repo owner, not an agent** · **Opened** 2026-08-20
+
+> **Decided 2026-08-20, and it settles the output form.** *"It's not our item. Its output form is a
+> handout with proposed solutions: reread articles to iron out discrepancy, get fulltexts, and so on.
+> Each item has a more-or-less clear path."* So nothing below is work this repo schedules — the
+> deliverable is **prose for Anton**, one item per row-set, each with its route attached. Three
+> consequences, and none is optional:
+>
+> 1. **The skills get patched so nobody steps on the same landmine.** That is the half that *is* ours,
+>    and it is where the real repair lives — `authorship` undeclared and title-as-quote both came from
+>    a surface that never asked.
+> 2. **Republished versions will carry `authorship`.** Whether to **yank** the old ones is Anton's
+>    call and nobody else's; a published version is immutable and yank does not touch that.
+> 3. **Expose yank in the toolset** — *"if an agent publishes and spots a grave error"*. Tracked as
+>    `RM21` below; the client already has `yank`/`unyank` and we wrap neither.
+>
+> **The quote column, decided:** empty it, keep only the real quotes. The honest reading of a 2–3%
+> yield — a sparse column that means something beats a full one that witnesses nothing. The visible
+> cost is real and is accepted: coverage drops from apparently-complete to nearly empty.
+>
+> **`population`, decided:** it is the studied cohort's ancestry. And the follow-through is a
+> **finding about us**, not about the module — the enricher already fetches ancestry and nothing here
+> surfaces it. Tracked as `RM22`.
 
 Carried out of `docs/HANDOFF-antonkulaga-quotes.md` before that file was deleted. **A published version
 is immutable, so none of this is a repair** — each item is a decision about what a *next* version says,
@@ -486,8 +387,101 @@ decided by an agent on its own — they are about what the surface *is*, not abo
    command-shaped, so the cost is low; the question is whether sixteen commands help or crowd the
    picker.
 
+> **Both answered 2026-08-20.**
+>
+> **1. `find-evidence` keeps its name, and the principle is inverted.** *"Keep it as find-evidence and
+> actually revisit the rest, in terms of not having module-spam."* Applied, the test is **does this
+> task exist without a module?** — searching literature, verifying a PMID and reading a paper all do.
+> Nothing else in the set passes: eight are lifecycle stages, three are second-pass kinds, and
+> `module-101` / `module-tables` / `module-weights` are a module's map, structure and columns. So the
+> inconsistency is the naming working. **One borderline recorded rather than decided:**
+> `module-consumer` documents the far side of the seam — the join contract, the unobservable-allele
+> marker, float32 comparison — and its subject is the consumer's obligations; its own description
+> also says *"what an author can do to make a module readable"*, which is what keeps the prefix.
+>
+> **2. Commands: eight, not sixteen.** *"Up to 8 — find-evidence can be user-requested during the
+> creative process; place yourself in user shoes, but keep the surface clean."* A command is what
+> somebody **deliberately types to start something**, never a stage an agent walks through:
+> `/module-101`, `/module-start`, `/find-evidence`, `/module-tables`, `/module-check`,
+> `/module-compile`, `/module-publish`, `/module-revise`. The eight left out — `draft`, `curate`,
+> `enrich`, `close`, `refresh`, `diff`, `weights`, `consumer` — are reached from inside a session by
+> an agent that already knows where it is. **The one judgement call:** `/module-compile` took the
+> last slot over `/module-diff`; compile is usually an agent step between check and publish, while
+> diff answers a question a user asks out loud. Swap without argument if it reads wrong in use.
+>
+> **3. Two meta-skills to add**, both proposed and both answering a question a *stuck* user asks,
+> where today the only route is already knowing which skill to load:
+> - **`module-status`** — point it at a spec directory, get *where is this module now and what is the
+>   next decision*. The lifecycle is spread across eight stage skills and nothing answers it; an agent
+>   resuming somebody else's module infers it from which files exist. Its output is the **decision
+>   list** §10 asks for, not a diff and not a findings dump.
+> - **`module-symptom`** — paste the message, get cause and action. `references/SYMPTOMS.md` already
+>   holds the mapping and the only door to it is `module-101` plus knowing to look.
+>
+> A `module-doctor` was considered and **rejected**: it would overlap `module-check` and split one
+> job across two surfaces.
+
 **A third question from the same file is answered and recorded**: `create-module` did not survive as a
 thin index — it was deleted, and `CLAUDE.md` says why.
+
+---
+
+## RM21 — a publish that turns out to be wrong has no route back
+
+**Severity:** medium · **Status:** open · **Owner:** unassigned · **Opened** 2026-08-20
+
+*"Expose the yank feature to the toolset if an agent publishes and spots a grave error."* Opened out
+of `RM18`, where the question *"does Anton yank the four?"* had no tool behind it either way.
+
+**Nothing upstream is missing.** `RegistryClient.yank` and `.unyank` both exist and we wrap neither.
+The semantics are already the right ones for this: yank *"drops the version from default listings and
+`latest`, keeps it fetchable"* — so anyone who already installed it keeps verifying, which is exactly
+what an immutable registry should do. It is **not** `delete_version`, which is test-instance-only and
+does not release the name-independent content claim.
+
+**Why it matters more here than a wrapper usually would.** An agent that publishes is an agent that
+can publish a mistake, and right now the discovery of a grave error ends at a dead end with the bad
+version still sitting at `latest`. That is `F12`'s shape — the only route to a fix existing outside
+the surface that created the need for it.
+
+**Tier and gating:** a registry write, so token-gated, tagged `registry_write`, listed in
+`auth.GATED_TOOLS` — no exception applies, since the token is not its output.
+
+**Care to take in the skill, not in the tool.** Yank is not a correction and never repairs anything;
+it stops recommending a version. Publishing the fixed version is a separate act, and an agent must not
+present a yank as having undone the mistake.
+
+---
+
+## RM22 — the enricher fetches the ancestry that `population` wants, and nothing here surfaces it
+
+**Severity:** low · **Status:** open · **Owner:** unassigned · **Opened** 2026-08-20
+
+Opened out of `RM18` item 3, where `population` in every `aggression_anger_snps` row holds a citation
+label rather than a population. The owner's rule decided where it lands: *"file an item into the
+enricher if it doesn't provide ancestry data by id; if it provides but is not wired in our tool, it's
+our bug to fix in MCP + skills."* **It provides.** So this is ours.
+
+**Measured.** `GwasEffectRow.ancestry` exists and is populated — `gwas.py::_study_facts` reads
+`ancestries` out of the GWAS Catalog study payload and `gwas_effect_row` writes it, whenever
+`study_facts` is on. Its description: *"The study population, free text as the Catalog records it
+('European', 'East Asian', 'Hispanic or Latin American')"*, deliberately free rather than a
+vocabulary. `StudyRow.population` is the authored twin, `str | None`, described only as *"Study
+population"*. Nothing in `src/just_module_creator/` joins them; our four mentions of ancestry are all
+docstrings warning that `--no-study-facts` nulls it.
+
+**So an author writing `studies.csv` after a GWAS pass has the answer sitting in their own module,
+in a derived sidecar, and no surface offers it.** The join is `pmid` or `study_accession`, both of
+which sit on `GwasEffectRow` and `pmid` on `StudyRow`.
+
+**Surface it; do not fill it.** `population` is **not** in `hints.REDUNDANCY_BEARING` (checked), so
+filling it would not be vacuous — but a study carries several ancestries and `ancestry` is a joined
+string, so the grain is a judgement and the discriminator says surface. Offer the value, name where
+it came from, let the pilot take it.
+
+**The skill half is the other deliverable**, and it is the one that would have prevented `RM18`
+item 3: `find-evidence`'s *"Population is where modules overreach"* section tells an author what the
+column is not, and cannot yet tell them where the answer already is.
 
 ---
 
@@ -499,3 +493,13 @@ is behind the tables" into a list of individually small asks — and it has neve
 
 Lead with `licensing.csv`: it is read properly, with tests, which is what shows the gap is *"nobody
 asked for the other six"* rather than *"the consumer ignores everything"*.
+
+> **Decided 2026-08-20: one document into their `docs/`, and no intake.** `just-dna-lite` has no
+> `CONSUMER_SUGGESTIONS.md` and setting up a third repo's triage process is not ours to do — the
+> split inbox works in the other two because their maintainers run a loop, and nobody has agreed to
+> run one here. The cost is accepted: no numbered series, so a reply has nowhere structured to land
+> and follow-up happens by conversation.
+>
+> **Note the count before quoting it.** `CLAUDE.md` says 24 dossiers; **25** files carry a
+> `## Blanks for just-dna-lite` section, `LAYOUT.md` among them. State the rule and run the grep
+> rather than repeating either number.

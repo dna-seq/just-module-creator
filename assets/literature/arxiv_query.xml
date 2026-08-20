@@ -1,0 +1,118 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/qjWeYpQ7n4YuDSN7oGn8IDrJg9c</id>
+  <title>arXiv Query: search_query=all:population OR all:genetics OR all:selection&amp;id_list=&amp;start=0&amp;max_results=5</title>
+  <updated>2026-08-20T14:56:36Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=all:population+OR+(all:genetics+OR+all:selection)&amp;start=0&amp;max_results=5&amp;id_list=" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>5</opensearch:itemsPerPage>
+  <opensearch:totalResults>249076</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/1309.0547v3</id>
+    <title>Causes and Consequences of genetic background effects illuminated by integrative genomic analysis</title>
+    <updated>2014-02-01T16:04:28Z</updated>
+    <link href="https://arxiv.org/abs/1309.0547v3" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1309.0547v3" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The phenotypic consequences of individual mutations are modulated by the wild type genetic background in which they occur.Although such background dependence is widely observed, we do not know whether general patterns across species and traits exist, nor about the mechanisms underlying it. We also lack knowledge on how mutations interact with genetic background to influence gene expression, and how this in turn mediates mutant phenotypes. Furthermore, how genetic background influences patterns of epistasis remains unclear. To investigate the genetic basis and genomic consequences of genetic background dependence of the scallopedE3 allele on the Drosophila melanogaster wing, we generated multiple novel genome level datasets from a mapping by introgression experiment and a tagged RNA gene expression dataset. In addition we used whole genome re-sequencing of the parental lines two commonly used laboratory strains to predict polymorphic transcription factor binding sites for SD. We integrated these data with previously published genomic datasets from expression microarrays and a modifier mutation screen. By searching for genes showing a congruent signal across multiple datasets, we were able to identify a robust set of candidate loci contributing to the background dependent effects of mutations in sd. We also show that the majority of background-dependent modifiers previously reported are caused by higher-order epistasis, not quantitative non-complementation. These findings provide a useful foundation for more detailed investigations of genetic background dependence in this system, and this approach is likely to prove useful in exploring the genetic basis of other traits as well.</summary>
+    <category term="q-bio.GN" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="q-bio.PE" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2013-09-02T21:12:14Z</published>
+    <arxiv:comment>Accepted in Genetics</arxiv:comment>
+    <arxiv:primary_category term="q-bio.GN"/>
+    <arxiv:journal_ref>Genetics 2014 196(4):1321-1336</arxiv:journal_ref>
+    <author>
+      <name>Christopher H. Chandler</name>
+    </author>
+    <author>
+      <name>Sudarshan Chari</name>
+    </author>
+    <author>
+      <name>David Tack</name>
+    </author>
+    <author>
+      <name>Ian Dworkin</name>
+    </author>
+    <arxiv:doi>10.1534/genetics.113.159426</arxiv:doi>
+    <link rel="related" href="https://doi.org/10.1534/genetics.113.159426" title="doi"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1301.2694v1</id>
+    <title>Does your gene need a background check? How genetic background impacts the analysis of mutations, genes, and evolution</title>
+    <updated>2013-01-12T15:59:35Z</updated>
+    <link href="https://arxiv.org/abs/1301.2694v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1301.2694v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The premise of genetic analysis is that a causal link exists between phenotypic and allelic variation. Yet it has long been documented that mutant phenotypes are not a simple result of a single DNA lesion, but rather are due to interactions of the focal allele with other genes and the environment. Although an experimentally rigorous approach, focusing on individual mutations and isogenic control strains, has facilitated amazing progress within genetics and related fields, a glimpse back suggests that a vast complexity has been omitted from our current understanding of allelic effects. Armed with traditional genetic analyses and the foundational knowledge they have provided, we argue that the time and tools are ripe to return to the under-explored aspects of gene function and embrace the context-dependent nature of genetic effects. We assert that a broad understanding of genetic effects and the evolutionary dynamics of alleles requires identifying how mutational outcomes depend upon the wild-type genetic background. Furthermore, we discuss how best to exploit genetic background effects to broaden genetic research programs.</summary>
+    <category term="q-bio.GN" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="q-bio.MN" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2013-01-12T15:59:35Z</published>
+    <arxiv:comment>In review at Trends in Genetics</arxiv:comment>
+    <arxiv:primary_category term="q-bio.GN"/>
+    <arxiv:journal_ref>Trends in Genetics 2013 29(6):358-366</arxiv:journal_ref>
+    <author>
+      <name>Chris H. Chandler</name>
+    </author>
+    <author>
+      <name>Sudarshan Chari</name>
+    </author>
+    <author>
+      <name>Ian Dworkin</name>
+    </author>
+    <arxiv:doi>10.1016/j.tig.2013.01.009</arxiv:doi>
+    <link rel="related" href="https://doi.org/10.1016/j.tig.2013.01.009" title="doi"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/q-bio/0410022v3</id>
+    <title>A Unified Model of Codon Reassignment in Alternative Genetic Codes</title>
+    <updated>2005-02-02T19:26:39Z</updated>
+    <link href="https://arxiv.org/abs/q-bio/0410022v3" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/q-bio/0410022v3" rel="related" type="application/pdf" title="pdf"/>
+    <summary>  Many modified genetic codes are found in specific genomes in which one or more codons have been reassigned to a different amino acid from that in the canonical code. We present a model that unifies four possible mechanisms for reassignment, based on the observation that reassignment involves a gain and a loss. The loss could be the deletion or loss of function of a tRNA or release factor. The gain could be the gain of a new type of tRNA for the reassigned codon, or the gain of function of an existing tRNA due to a mutation or a base modification. In the codon disappearance mechanism, the codon disappears from the genome during the period of reassignment. In the other mechanisms, the codon does not disappear. In the ambiguous intermediate mechanism, the gain precedes the loss; in the unassigned codon mechanism, the loss precedes the gain; and in the compensatory change mechanism, the loss and gain spread through the population simultaneously. We present simulations of the gain-loss model and demonstrate that all four mechanisms are possible. The frequencies of the different mechanisms are influenced by selection strengths, number of codons undergoing reassignment, directional mutation pressure and the possibility of selection for reduced genome size.</summary>
+    <category term="q-bio.PE" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2004-10-19T22:12:54Z</published>
+    <arxiv:comment>Latex file, 11 pages including 5 ps figures; revised version; to appear in 'Genetics'</arxiv:comment>
+    <arxiv:primary_category term="q-bio.PE"/>
+    <arxiv:journal_ref>Genetics 170 (2005) 831-840</arxiv:journal_ref>
+    <author>
+      <name>Supratim Sengupta</name>
+    </author>
+    <author>
+      <name>Paul G. Higgs</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/q-bio/0606037v2</id>
+    <title>The propagation of a cultural or biological trait by neutral genetic drift in a subdivided population</title>
+    <updated>2007-01-18T09:49:39Z</updated>
+    <link href="https://arxiv.org/abs/q-bio/0606037v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/q-bio/0606037v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>  We study fixation probabilities and times as a consequence of neutral genetic drift in subdivided populations, motivated by a model of the cultural evolutionary process of language change that is described by the same mathematics as the biological process. We focus on the growth of fixation times with the number of subpopulations, and variation of fixation probabilities and times with initial distributions of mutants. A general formula for the fixation probability for arbitrary initial condition is derived by extending a duality relation between forwards- and backwards-time properties of the model from a panmictic to a subdivided population. From this we obtain new formulae, formally exact in the limit of extremely weak migration, for the mean fixation time from an arbitrary initial condition for Wright's island model, presenting two cases as examples. For more general models of population subdivision, formulae are introduced for an arbitrary number of mutants that are randomly located, and a single mutant whose position is known. These formulae contain parameters that typically have to be obtained numerically, a procedure we follow for two contrasting clustered models. These data suggest that variation of fixation time with the initial condition is slight, but depends strongly on the nature of subdivision. In particular, we demonstrate conditions under which the fixation time remains finite even in the limit of an infinite number of demes. In many cases - except this last where fixation in a finite time is seen - the time to fixation is shown to be in precise agreement with predictions from formulae for the asymptotic effective population size.</summary>
+    <category term="q-bio.PE" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2006-06-26T16:50:11Z</published>
+    <arxiv:comment>17 pages, 8 figures, requires elsart5p.cls; substantially revised and improved version; accepted for publication in Theoretical Population Biology</arxiv:comment>
+    <arxiv:primary_category term="q-bio.PE"/>
+    <arxiv:journal_ref>Theoretical Population Biology (2007) 71 454</arxiv:journal_ref>
+    <author>
+      <name>R A Blythe</name>
+    </author>
+    <arxiv:doi>10.1016/j.tpb.2007.01.006</arxiv:doi>
+    <link rel="related" href="https://doi.org/10.1016/j.tpb.2007.01.006" title="doi"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1005.4601v1</id>
+    <title>Kingman and mathematical population genetics</title>
+    <updated>2010-05-25T15:12:10Z</updated>
+    <link href="https://arxiv.org/abs/1005.4601v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1005.4601v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Mathematical population genetics is only one of Kingman's many research interests. Nevertheless, his contribution to this field has been crucial, and moved it in several important new directions. Here we outline some aspects of his work which have had a major influence on population genetics theory.</summary>
+    <category term="math.PR" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2010-05-25T15:12:10Z</published>
+    <arxiv:comment>26 pages. To appear in Bingham, N. H., and Goldie, C. M. (eds), Probability and Mathematical Genetics: Papers in Honour of Sir John Kingman. London Math. Soc. Lecture Note Series. Cambridge: Cambridge Univ. Press</arxiv:comment>
+    <arxiv:primary_category term="math.PR"/>
+    <author>
+      <name>Warren J. Ewens</name>
+    </author>
+    <author>
+      <name>Geoffrey A. Watterson</name>
+    </author>
+  </entry>
+</feed>
