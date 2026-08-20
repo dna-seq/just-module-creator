@@ -324,3 +324,52 @@ survive. The auto-correct rulebook (§10, *to-populate-later*) waits on the same
 Every surface above carries a rule that is justified **from this layer's own purpose**, with no
 prohibition standing only on "upstream does it that way"; `server.INSTRUCTIONS` and §2 agree; the
 §1 questionnaire on the attestation contradiction has been run and its answer recorded in §10.
+
+---
+
+## RM17 — nothing on the authored side can see that one quote is repeated across every row citing a paper
+
+**Severity:** high · **Status:** open · **Owner:** unassigned · **Opened** 2026-08-20
+
+The measured case is `F44`. `registry_check(target="test", literature=true, strict=true)` returns
+byte-identical output — `verdict: true`, every finding list empty — for a module whose 69
+`provenance_quote` cells are all the article's title and for the same module remediated. `lint_rows`
+on three rows carrying the same title string reports `0 errors, 0 warnings`. `validate_module` and
+`compile_module` say nothing either. Four published modules reached production through this workflow
+carrying 3668 title-quotes.
+
+**Why waiting for upstream is not the plan.** `S54` asks the compiler to compare a quote against
+`CitationHint.title` inside `_study_quote_found`. That is the right fix for their layer and it will
+not fire on the modules that motivated it, because `S56` established that the quote check never ran
+on any of them. Ours is a different check in a different place.
+
+### What to build
+
+A finding over `studies.csv` alone, offline, no pass and no network:
+
+> group the rows by `pmid`; for any `pmid` with more than one row, count the **distinct** non-empty
+> `provenance_quote` values. One distinct value across many rows is reported.
+
+`warning` level, aggregated by reason with a count (never one per row), in **both** `lint_rows` and
+`validate_module`, beside the other authored-table findings. The message should name the PMID, the
+row count and the quote's first few words, because the author needs to recognise which paper it is.
+
+The title comparison is a *second*, stronger signal and needs a network call
+(`lookup_citation(pmid).title`), so it does not belong in the offline linter. It fits
+`registry_check`, where a round trip is already being paid for.
+
+### Decisions already taken, so they are not re-argued
+
+- **Warning, never error.** One quote per PMID is legitimate when a module cites a paper for one
+  row, and a deliberate trait-level grain is a defensible authoring choice — see `find-evidence`'s
+  *what may honestly go in `provenance_quote`*. The signal is one quote across *many* rows.
+- **The grain is the shape, not the string.** A rule that only catches the title would miss the next
+  variant of this, which is one real sentence pasted onto 2000 rows.
+- **It reads the authored file directly.** It must not depend on `literature.csv`, whose counters
+  are stale on every module that has the problem (`F49` / `S56`).
+
+### Done when
+
+`lint_rows` and `validate_module` both report it, a test builds the failing shape from a real module
+copy and watches the finding appear, and `find-evidence` + `studies.md` point at the tool instead of
+at a hand-written group-by.
