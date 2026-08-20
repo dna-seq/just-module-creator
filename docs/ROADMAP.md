@@ -275,8 +275,9 @@ grading recommendations; and `S52`'s answer decides whether a severity change fo
 > (`models.py`, `_shared.py`, `research.py`, `authoring.py`'s `_MACHINE_REFUSAL`), `refresh.py`
 > audited as *conditional* physics. **§1's questionnaire ran with the owner and the attestation
 > contradiction is settled** — recorded in §10; do not re-open it. Filed upstream as `S54`/`S55`,
-> tracked as `F42`/`F43`. Remaining: the skills sweep. Verdicts for the next role are in
-> `docs/NIGHT-RELAY.md`.
+> tracked as `F42`/`F43`. The skills sweep landed too, and the verdicts that guided it are absorbed
+> into this entry, `CLAUDE.md` §2/§10/§11 and `CHANGELOG.md`; the relay file they were written in is
+> retired, and stays readable in `git log`.
 
 **This is an audit item, not a code change.** Nothing here is known to be wrong yet. What is known is
 that a stance was adopted without ever being tested against this layer's own purpose, and it then
