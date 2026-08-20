@@ -992,8 +992,21 @@ case and names neither party.
 
 ## F49 — `literature.csv` publishes `quotes_authored: 0` beside a `studies.csv` full of quotes, and the manifest turns it into a confident zero
 
-**Status — filed upstream 2026-08-20 as `S56`, open. Two mechanisms, one entry, because one fix
-addresses both. Our half is `F44` and is separate.**
+**Status — filed upstream 2026-08-20 as `S56`. Half of it is already FIXED IN TREE and none of it is
+released.** Two mechanisms, one entry. Our half is `F44` and is separate.
+
+> **Upstream state, checked by symbol the same night rather than by reading their changelog.**
+> `quotes_unchecked: int` now exists on `Literature` in `../just-dna-format`
+> (`schema/src/just_dna_format/manifest.py`), with `_literature_block` computing
+> `sum(1 for r in rows if r.quotes_found is None)` and its docstring citing `S56` — the second
+> mechanism, fixed as proposed, within an hour of the note being written. **The installed package
+> does not have it:** `Literature.model_fields` on format 0.6.1 is nine fields ending at
+> `quotes_found`. That is state 2 of three — *fixed in tree*, not *released* — so nothing here
+> changes and no guard comes out yet.
+>
+> The **first** mechanism (nothing compares `literature.quotes_authored` against the quotes in
+> `studies.csv`) had no reply as of that check. It is the half that would have detected the problem
+> on an already-published module, so watch for it separately rather than assuming one landed both.
 
 Measured on the four published `antonkulaga/*` modules while remediating one of them:
 
