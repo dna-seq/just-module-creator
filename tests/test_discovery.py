@@ -19,19 +19,24 @@ import pytest
 
 from just_module_creator.discovery import (
     _ATOM,
+    CROSSREF,
     EUROPEPMC,
+    OPENALEX,
     PREPRINTS,
     PUBMED,
-    SEMANTICSCHOLAR,
+    SEARCHABLE,
     UNPAYWALL,
     doi_refusals,
     doi_token,
     known_sources,
     merge,
     parse_arxiv,
+    parse_crossref,
     parse_europepmc,
+    parse_openalex,
     parse_pubmed_summaries,
     parse_semantic_scholar,
+    reconstruct_abstract,
     resolve_sources,
 )
 
@@ -328,16 +333,23 @@ def test_a_per_call_source_list_narrows_the_ceiling_and_cannot_widen_it() -> Non
 
 
 def test_an_unset_ceiling_allows_every_searchable_source() -> None:
+    """Derived from SEARCHABLE, so adding a source does not need this edited.
+
+    It used to name the four by hand and had to be corrected when OpenAlex and
+    Crossref landed — the hand-kept-list rot §8 warns about, in a test.
+    """
     queried, excluded = resolve_sources(None, None)
-    assert set(queried) == {PUBMED, EUROPEPMC, SEMANTICSCHOLAR, PREPRINTS}
+    assert set(queried) == set(SEARCHABLE)
     assert excluded == []
+    # Unpaywall is deliberately not searchable: it answers about one DOI.
+    assert UNPAYWALL not in SEARCHABLE
 
 
 def test_an_empty_ceiling_is_not_the_same_as_an_unset_one() -> None:
     """`None` means every source; `frozenset()` means the operator switched them off."""
     queried, excluded = resolve_sources(None, frozenset())
     assert queried == []
-    assert len(excluded) == 4
+    assert len(excluded) == len(SEARCHABLE)
     assert all(s.results is None for s in excluded)
 
 
@@ -462,3 +474,144 @@ def test_the_gene_locus_conflict_check_reaches_our_model_three_valued() -> None:
     )
     assert skipped.gene_locus_conflicts == []
     assert skipped.gene_locus_check_skipped is not None
+
+
+# --------------------------------------------------------------------------- #
+# OpenAlex and Crossref (RM23)
+#
+# Ported from `paper-search-mcp` (MIT) — the API knowledge, not the code. Both
+# fixtures are real captured responses to the request `Discovery` actually makes,
+# including our own polite-pool contact rather than the `example.com` literal the
+# upstream sends.
+# --------------------------------------------------------------------------- #
+@pytest.fixture
+def openalex_records():
+    return parse_openalex(load("openalex_works.json"))
+
+
+@pytest.fixture
+def crossref_records():
+    return parse_crossref(load("crossref_works.json"))
+
+
+def test_openalex_rebuilds_the_abstract_from_its_inverted_index() -> None:
+    """OpenAlex publishes positions, not prose, and a word can repeat.
+
+    A naive `" ".join(keys)` would emit each word once and in dictionary order,
+    which reads as an abstract and is not one.
+    """
+    assert reconstruct_abstract({"the": [0, 2], "cat": [1], "mat": [3]}) == "the cat the mat"
+    assert reconstruct_abstract(None) is None
+    assert reconstruct_abstract({}) is None
+    # Junk in the index must not raise; a bad record should lose its abstract only.
+    assert reconstruct_abstract({"a": "not-a-list"}) is None
+
+
+def test_openalex_strips_the_resolver_prefix_from_doi_and_pmid(openalex_records) -> None:
+    """OpenAlex returns both as URLs; every other source here returns bare ids.
+
+    Left as URLs they would never merge with a PubMed hit for the same paper,
+    which is the one thing `merge` exists to do.
+    """
+    payload = load("openalex_works.json")
+    assert any(
+        str(r.get("doi", "")).startswith("http") for r in payload["results"]
+    ), "fixture should carry resolver-style DOIs, or this test proves nothing"
+
+    for candidate in openalex_records:
+        assert candidate.doi is None or not candidate.doi.startswith("http")
+        assert candidate.pmid is None or candidate.pmid.isdigit()
+
+
+def test_openalex_open_access_is_three_valued(openalex_records) -> None:
+    """A missing `is_oa` is unknown, never closed."""
+    payload = load("openalex_works.json")
+    expected = [
+        (r.get("open_access") or {}).get("is_oa")
+        if isinstance((r.get("open_access") or {}).get("is_oa"), bool)
+        else None
+        for r in payload["results"]
+    ]
+    assert [c.is_open_access for c in openalex_records] == expected
+
+
+def test_crossref_says_nothing_about_open_access(crossref_records) -> None:
+    """It does not report OA, so `False` would be a claim it never made."""
+    assert crossref_records
+    assert all(c.is_open_access is None for c in crossref_records)
+
+
+def test_crossref_titles_and_venues_are_readable_not_raw_entities(crossref_records) -> None:
+    """Crossref carries HTML entities in `container-title` as well as in titles.
+
+    Measured on the fixture: a real record's venue arrives as
+    `http://isrctn.org/&gt;`. This was found by using the parser, not by reading it.
+    """
+    raw = json.dumps(load("crossref_works.json"))
+    assert "&gt;" in raw or "&amp;" in raw, "fixture should carry entities"
+
+    for candidate in crossref_records:
+        for field in (candidate.title, candidate.venue, candidate.abstract):
+            if field:
+                assert "&gt;" not in field and "&lt;" not in field and "&amp;" not in field
+
+
+def test_crossref_list_fields_survive_being_empty() -> None:
+    """`title` and `container-title` are lists, and `[0]` on an empty one raises.
+
+    A real Crossref record can carry neither; the fixture has a work with an
+    empty venue already.
+    """
+    records = parse_crossref({"message": {"items": [{"DOI": "10.1000/x"}]}})
+    assert len(records) == 1
+    assert records[0].title is None and records[0].venue is None and records[0].year is None
+
+
+@pytest.mark.parametrize("source", [OPENALEX, CROSSREF])
+def test_both_are_searchable_and_ranked_per_source(source: str) -> None:
+    """Rank stays the source's own position; nothing is merged into one score."""
+    assert source in SEARCHABLE
+    records = (
+        parse_openalex(load("openalex_works.json"))
+        if source == OPENALEX
+        else parse_crossref(load("crossref_works.json"))
+    )
+    assert [c.rank[source] for c in records] == list(range(1, len(records) + 1))
+    assert all(c.found_in == [source] for c in records)
+
+
+def test_the_port_is_attributed() -> None:
+    """MIT requires the notice to travel with the code, so a test holds it there.
+
+    Attribution that lives only in a comment is attribution one refactor away
+    from vanishing, and its disappearance is a licence violation rather than an
+    untidiness. The two facts pinned here are the ones that make the notice
+    *true*: that we ported rather than depended, and that the contact literal was
+    replaced rather than carried.
+    """
+    notice = (Path(__file__).resolve().parent.parent / "NOTICE").read_text(encoding="utf-8")
+
+    assert "paper-search-mcp" in notice
+    assert "MIT License" in notice and "Copyright (c) 2025 OPENAGS" in notice
+    assert "not** a dependency" in notice
+
+    # The claim the notice makes about our code must stay true of our code.
+    source = (
+        Path(__file__).resolve().parent.parent
+        / "src"
+        / "just_module_creator"
+        / "discovery.py"
+    ).read_text(encoding="utf-8")
+    assert "paper-search-mcp" in source, "the ported code should credit its source in place too"
+    # In a QUOTED position, i.e. used as a value. The module docstring names both
+    # addresses in prose to say what was deliberately not carried, and that
+    # sentence is the reason the rule is legible — flagging it would push the
+    # explanation out of the file to satisfy the test.
+    for fabricated in ("openags@example.com", "paper-search@example.org"):
+        for quoted in (f'"{fabricated}"', f"'{fabricated}'"):
+            assert quoted not in source, (
+                "the upstream's hardcoded polite-pool contact must never be carried over as a "
+                "value — an invented address misattributes the traffic to a stranger (§5)"
+            )
+    # And the real chain is what reaches the wire.
+    assert "self.services.contact_email()" in source

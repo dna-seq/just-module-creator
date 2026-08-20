@@ -95,6 +95,8 @@ losing curation: extended.
 | **europepmc** | Search plus abstracts plus open-access full text in one place. Also the preprint index (`SRC:PPR`). | **It cannot say "does not exist."** It omits ids it does not know with no error marker, so a miss is *not retrievable*, never *absent*. |
 | **semanticscholar** | The citation graph — who cited this, what it cited. How you ask whether a finding was replicated. | Coverage is uneven for older clinical literature. |
 | **preprints** | Europe PMC's preprint index plus arXiv. Real for PGS and methods work. | Not peer-reviewed, and **no PMID**. |
+| **openalex** | The broadest index here, 250M+ works, and it returns a PMID, a DOI, open-access status and a citation count in one hit. Good when PubMed's clinical framing is too narrow — population genetics, methods, anything not indexed as clinical. | Its abstracts are reconstructed from an inverted index, so read them as a gist rather than quoting them. Never quote from one. |
+| **crossref** | DOIs, and the registered metadata behind them. Worth asking precisely because it is DOI-first: a DOI is the handle that reaches Unpaywall, so a hit here can become a legal full text that a PMID-only search would never have found. | No full text and **no open-access verdict at all** — `is_open_access` comes back null, which is unknown and not "closed". |
 | **unpaywall** | DOI → legal open-access copies, **and the article's licence**. | Not a search engine — it takes a DOI you already have. |
 
 `sources` narrows which are asked. `JMC_LITERATURE_SOURCES` is the deployment ceiling and a per-call

@@ -70,6 +70,8 @@ EUROPEPMC = "europepmc"
 SEMANTICSCHOLAR = "semanticscholar"
 PREPRINTS = "preprints"
 UNPAYWALL = "unpaywall"
+OPENALEX = "openalex"
+CROSSREF = "crossref"
 
 
 @dataclass(frozen=True)
@@ -122,6 +124,26 @@ SOURCES: dict[str, SourceSpec] = {
     ),
     # Unpaywall requires an email on every request and asks for ~1/second.
     # https://unpaywall.org/products/api (2026-08-11)
+    # OpenAlex asks for the polite pool by contact and publishes 10 req/s with a
+    # daily cap; one request per second is well inside it and matches our others.
+    # https://docs.openalex.org/how-to-use-the-api/rate-limits-and-authentication
+    OPENALEX: SourceSpec(
+        name=OPENALEX,
+        base_url="https://api.openalex.org",
+        min_interval=1.0,
+        requires_contact=True,
+        terms_url="https://openalex.org/terms",
+    ),
+    # Crossref's polite pool is entered by sending a contact; without one you are
+    # in the shared pool with no guarantee at all.
+    # https://api.crossref.org/swagger-ui/index.html
+    CROSSREF: SourceSpec(
+        name=CROSSREF,
+        base_url="https://api.crossref.org",
+        min_interval=1.0,
+        requires_contact=True,
+        terms_url="https://www.crossref.org/documentation/retrieve-metadata/rest-api/",
+    ),
     UNPAYWALL: SourceSpec(
         name=UNPAYWALL,
         base_url="https://api.unpaywall.org/v2",
@@ -135,7 +157,10 @@ SOURCES: dict[str, SourceSpec] = {
 #: it maps a DOI to open-access locations, which is a different question, so
 #: listing it as a search source would make one `sources` value behave unlike the
 #: rest. It is reached through `lookup_open_access` instead.
-SEARCHABLE = (PUBMED, EUROPEPMC, SEMANTICSCHOLAR, PREPRINTS)
+#: The sources a free-text search asks. Order is the order they are queried, and
+#: `merge` interleaves by each source's own rank, so this is not a priority list.
+#: `UNPAYWALL` is absent deliberately — it answers about one DOI, not a query.
+SEARCHABLE = (PUBMED, EUROPEPMC, SEMANTICSCHOLAR, PREPRINTS, OPENALEX, CROSSREF)
 
 
 def known_sources() -> tuple[str, ...]:
@@ -375,6 +400,163 @@ def parse_arxiv(xml_text: str) -> list[LiteratureCandidate]:
     return out
 
 
+
+# --------------------------------------------------------------------------- #
+# OpenAlex and Crossref
+#
+# Ported under `RM23` from `paper-search-mcp` (MIT, https://github.com/openags/
+# paper-search-mcp) — its `academic_platforms/openalex.py` and `crossref.py`. What
+# was worth taking is the **API knowledge**: endpoints, parameter names, and the
+# response shapes below. The code is ours because every one of their calls goes
+# out through `requests` with a hardcoded contact, and both of those are rules
+# here: sockets belong to `net.py`, and a fabricated contact address
+# misattributes the traffic to a stranger. Theirs send `openags@example.com` and
+# `paper-search@example.org`; ours send whatever the three-step chain resolves.
+#
+# We deliberately did **not** take the package as a dependency. Its
+# `download_with_fallback` defaults `use_scihub=True`, against its own README, and
+# a wheel ships every module whether or not it is imported.
+# --------------------------------------------------------------------------- #
+def _mapping(value: object) -> dict:
+    """A dict, or an empty one. These APIs put `null` where a block is absent."""
+    return value if isinstance(value, dict) else {}
+
+
+def _sequence(value: object) -> list:
+    """A list, or an empty one. Crossref returns `title` and `container-title` as lists."""
+    return value if isinstance(value, list) else []
+
+
+def reconstruct_abstract(inverted: dict | None) -> str | None:
+    """OpenAlex publishes an inverted index, not prose. Rebuild the sentence.
+
+    ``{"the": [0, 5], "cat": [1]}`` means position 0 is "the", 1 is "cat". A word
+    may appear many times, so this is a scatter rather than a join, and a gap in
+    the positions leaves a hole rather than shifting everything left.
+    """
+    if not isinstance(inverted, dict) or not inverted:
+        return None
+    positions: dict[int, str] = {}
+    for word, spots in inverted.items():
+        if not isinstance(spots, list):
+            continue
+        for spot in spots:
+            if isinstance(spot, int):
+                positions[spot] = word
+    if not positions:
+        return None
+    return " ".join(positions[i] for i in sorted(positions)) or None
+
+
+def _doi_from_url(value: object) -> str | None:
+    """OpenAlex returns a DOI as a resolver URL; every other source returns a bare one."""
+    text = _text(value)
+    if text is None:
+        return None
+    return text.removeprefix("https://doi.org/").removeprefix("http://dx.doi.org/") or None
+
+
+def parse_openalex(payload: dict) -> list[LiteratureCandidate]:
+    """OpenAlex `works` JSON -> candidates."""
+    out: list[LiteratureCandidate] = []
+    for rank, record in enumerate(payload.get("results") or [], start=1):
+        if not isinstance(record, dict):
+            continue
+        ids = _mapping(record.get("ids"))
+        location = _mapping(record.get("primary_location"))
+        access = _mapping(record.get("open_access"))
+        # `pmid` arrives as a resolver URL here too, and downstream wants the bare id.
+        pmid = _text(ids.get("pmid"))
+        if pmid:
+            pmid = pmid.rstrip("/").rsplit("/", 1)[-1]
+        out.append(
+            LiteratureCandidate(
+                pmid=pmid,
+                doi=_doi_from_url(record.get("doi")),
+                title=_title(record.get("title")),
+                authors=[
+                    name
+                    for a in record.get("authorships") or []
+                    if isinstance(a, dict)
+                    and isinstance(a.get("author"), dict)
+                    and (name := _text(a["author"].get("display_name")))
+                ],
+                year=record.get("publication_year")
+                if isinstance(record.get("publication_year"), int)
+                else None,
+                venue=_text(_mapping(location.get("source")).get("display_name")),
+                abstract=reconstruct_abstract(record.get("abstract_inverted_index")),
+                citation_count=record.get("cited_by_count")
+                if isinstance(record.get("cited_by_count"), int)
+                else None,
+                # Three-valued, like every other source here: a missing `is_oa` is
+                # unknown, never closed.
+                is_open_access=(
+                    access.get("is_oa") if isinstance(access.get("is_oa"), bool) else None
+                ),
+                url=_text(access.get("oa_url"))
+                or _text(location.get("pdf_url"))
+                or _text(location.get("landing_page_url")),
+                found_in=[OPENALEX],
+                rank={OPENALEX: rank},
+            )
+        )
+    return out
+
+
+def parse_crossref(payload: dict) -> list[LiteratureCandidate]:
+    """Crossref `works` JSON -> candidates. Metadata only; it indexes no full text."""
+    message = _mapping(payload.get("message"))
+    out: list[LiteratureCandidate] = []
+    for rank, record in enumerate(message.get("items") or [], start=1):
+        if not isinstance(record, dict):
+            continue
+        # `title` and `container-title` are LISTS in this API, and taking [0] of an
+        # empty one is the shape that breaks on a real record with no title.
+        titles = _sequence(record.get("title"))
+        containers = _sequence(record.get("container-title"))
+        issued = _mapping(record.get("issued"))
+        parts = _sequence(issued.get("date-parts"))
+        year = None
+        if parts and isinstance(parts[0], list) and parts[0] and isinstance(parts[0][0], int):
+            year = parts[0][0]
+        out.append(
+            LiteratureCandidate(
+                doi=_text(record.get("DOI")),
+                title=_title(titles[0]) if titles else None,
+                authors=[
+                    name
+                    for a in record.get("author") or []
+                    if isinstance(a, dict)
+                    and (
+                        name := " ".join(
+                            part
+                            for part in (_text(a.get("given")), _text(a.get("family")))
+                            if part
+                        )
+                        or _text(a.get("name"))
+                    )
+                ],
+                year=year,
+                # `_title` rather than `_text`: Crossref carries HTML entities here
+                # too. A real record in the fixture reads `http://isrctn.org/&gt;`,
+                # which is the same illegibility the Europe PMC parser already fixes.
+                venue=_title(containers[0]) if containers else None,
+                abstract=_title(record.get("abstract")),
+                citation_count=record.get("is-referenced-by-count")
+                if isinstance(record.get("is-referenced-by-count"), int)
+                else None,
+                # Crossref says nothing about open access, and `False` would be a
+                # claim it never made.
+                is_open_access=None,
+                url=_text(record.get("URL")),
+                found_in=[CROSSREF],
+                rank={CROSSREF: rank},
+            )
+        )
+    return out
+
+
 # --------------------------------------------------------------------------- #
 # Merge
 # --------------------------------------------------------------------------- #
@@ -602,6 +784,49 @@ class Discovery:
         )
         return parse_arxiv(text)
 
+    # -- OpenAlex and Crossref (RM23) ------------------------------------ #
+    def openalex(self, query: str, limit: int) -> list[LiteratureCandidate]:
+        """OpenAlex works search. The broadest index here — 250M+ works.
+
+        `mailto` is the polite pool. Ours comes from `contact_email()`, never a
+        literal: an invented address bills the traffic to a stranger, and the
+        upstream this was ported from ships `openags@example.com`.
+        """
+        payload = (
+            self.service(OPENALEX)
+            .get(
+                "works",
+                {
+                    "search": query,
+                    "per_page": str(min(limit, 200)),
+                    "mailto": self.services.contact_email(),
+                },
+            )
+            .json()
+        )
+        return parse_openalex(payload)
+
+    def crossref(self, query: str, limit: int) -> list[LiteratureCandidate]:
+        """Crossref works search. Metadata and DOIs; it indexes no full text.
+
+        Worth asking precisely because it is DOI-first: a DOI is the handle that
+        reaches Unpaywall, so a hit here can become a legal open-access copy that
+        a PMID-only search would never have found.
+        """
+        payload = (
+            self.service(CROSSREF)
+            .get(
+                "works",
+                {
+                    "query": query,
+                    "rows": str(min(limit, 1000)),
+                    "mailto": self.services.contact_email(),
+                },
+            )
+            .json()
+        )
+        return parse_crossref(payload)
+
     # -- Unpaywall ------------------------------------------------------- #
     def unpaywall(self, doi: str) -> dict[str, Any]:
         """DOI -> open-access locations and the *article's* licence.
@@ -778,6 +1003,10 @@ def _run_source(
     """Dispatch to one source. Kept explicit rather than a dict of lambdas."""
     if name == PUBMED:
         return discovery.pubmed(query, limit)
+    if name == OPENALEX:
+        return discovery.openalex(query, limit)
+    if name == CROSSREF:
+        return discovery.crossref(query, limit)
     if name == EUROPEPMC:
         return discovery.europepmc(query, limit)
     if name == SEMANTICSCHOLAR:

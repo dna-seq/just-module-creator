@@ -9,6 +9,166 @@ here: it is filed upstream as an `S<n>` and tracked in
 
 ---
 
+## RM23 — five literature sources where twenty-five exist
+
+**Severity:** medium · **Status: CLOSED 2026-08-20 — shipped in 0.14.0 as a PORT, not a dependency
+and not a fork.**
+
+> **Two sources, 5 → 7, and none of the three costs the other options carried.** OpenAlex and Crossref
+> are now in `discovery.py` and in `SEARCHABLE`, written against `ServiceGate`, `HttpService` and
+> `LiteratureCandidate`. `NOTICE` carries the MIT text **byte-identical to their `LICENSE`**, and a
+> test pins the attribution — attribution that lives only in a comment is one refactor from vanishing,
+> and its disappearance is a licence violation rather than an untidiness.
+>
+> **What was taken is API knowledge**: endpoints, parameter names, the response shapes, and OpenAlex's
+> inverted-index abstract encoding. Not the code — every call of theirs goes out through `requests`
+> with a hardcoded contact, and both are rules here.
+>
+> **Two upstream defects were fixed in the port rather than inherited**, and a test forbids the first
+> coming back:
+> - `openags@example.com` / `paper-search@example.org` as polite-pool contacts. Ours resolve through
+>   the three-step chain; the captured fixtures were fetched with a real address.
+> - `Paper.citations: int = 0`, which types "not reported" as zero. Ours is `int | None`, and
+>   Crossref's absent open-access verdict is `None` rather than `False` — it says nothing about OA,
+>   so `False` would be a claim it never made.
+>
+> **One defect found by using the parser, not by reading it:** Crossref carries HTML entities in
+> `container-title` as well as in titles, so a real fixture record's venue arrived as
+> `http://isrctn.org/&gt;`. Fixed by routing it through `_title`, the same decoder the Europe PMC
+> parser already used, and a test asserts the fixture really contains entities so it cannot pass
+> vacuously.
+>
+> **Fixtures are real captured responses** to the request `Discovery` actually makes, contact
+> included: `assets/literature/openalex_works.json` and `crossref_works.json`, both on
+> `lactase persistence`. Eight tests. Suite 443 → 452.
+>
+> **What we gave up, stated rather than glossed:** seven further sources (CORE, DOAJ, Zenodo, HAL,
+> OpenAIRE, BASE, dblp), and two clients are now ours to maintain. Their tests covered neither of the
+> two we took, so those were ours to write either way.
+>
+> **`RM24` is answered by construction** — a ported client goes through our gate, so there is no
+> unpaced third-party transport to reconcile. It stays deferred only for the sources we did not take.
+>
+> **The Sci-Hub question stopped existing rather than being managed**, which was the whole argument
+> for this shape over the other two.
+
+<details>
+<summary>The item as it stood on the roadmap</summary>
+
+VENDOR TWO.** Licence confirmed MIT in both the PyPI field and the README. · **Owner:** unassigned ·
+**Opened** 2026-08-20
+
+> **Take OpenAlex and Crossref only, vendored with MIT attribution. Not the dependency, not the
+> fork.** Measured on a clone of `main` that is byte-identical to `v0.1.4` for the package tree.
+>
+> **The haul is small at the size that matters.** Package total 10,058 lines. All nine sources we
+> lack: 4,050. **OpenAlex + Crossref + the substrate they need: 661 lines (519 SLOC.)** Substrate is
+> tiny — `paper.py` 58, `base.py` 54, `config.py` 82, `utils.py` 8.
+>
+> **Vendoring is clean, and that is a measurement rather than a hope.**
+> `academic_platforms/__init__.py` is **0 lines**, so importing one platform pulls no sibling, and
+> there are **zero `sci.?hub` matches across all ten platform files and all four substrate files**
+> — verified independently. OpenAlex and Crossref need only `requests`, so none of the
+> `beautifulsoup4` / `lxml` / `pypdf` / `feedparser` bloat comes with them; `lxml` is declared and
+> imported nowhere at all.
+>
+> **The fact that settles the dependency option: `download_with_fallback(..., use_scihub: bool =
+> True)` at `server.py:763` — the default is ON**, contradicting the project's own README, which says
+> Sci-Hub is for "users who explicitly choose to enable it". Verified. There is no extra and no env
+> var; `[project.optional-dependencies]` is `dev` only. A plain `import paper_search_mcp` does not
+> reach it, but **running the server does**, and a wheel ships the whole package regardless.
+>
+> **Three defects we would inherit and that we must fix anyway**, each of which a vendored copy lets
+> us fix and a dependency does not:
+> - **Fabricated polite-pool contacts.** `openalex.py:21` sends `mailto:openags@example.com` and
+>   `crossref.py:19/57/278` send `paper-search@example.org`. Verified. §5 forbids exactly this — an
+>   invented address misattributes the traffic — and our three-step contact chain is the fix.
+> - **`__init__.py` calls `load_env_file()` at import**, mutating `os.environ`. That is our `F35`
+>   arriving from a new direction, and it is the specific thing that once made the suite silently
+>   non-hermetic.
+> - **`Paper.citations: int = 0`** writes the `F6` tri-state loss into the type: "not reported"
+>   becomes zero.
+>
+> **The legal picture, and it is research informing a risk decision rather than legal advice.** Both
+> US judgments are **defaults**, so neither is precedent. **No court anywhere has ordered a software
+> distributor to stop shipping Sci-Hub client code**; GitHub's DMCA archive holds zero Sci-Hub
+> notices and PyPI has never removed such a package. Enforcement has landed on app stores, one blog
+> post and a website host — never on code distribution. Doctrinally **Cox v. Sony (25 March 2026,
+> unanimous)** now requires **inducement or tailoring**, and knowledge alone is not enough; a
+> 25-source client is not tailored, which makes the whole question turn on defaults and framing —
+> and `use_scihub=True` is precisely the framing fact. The most adverse document is the **ACS
+> injunction as amended 28 March 2018**, which added "and other service or software providers", a
+> phrase absent from the 2017 order that secondary coverage quotes.
+>
+> **Why vendoring two still wins even though the legal risk reads low.** It is the only option where
+> the question **stops existing** rather than being managed, and it takes the split NCBI budget, the
+> second HTTP stack, the import-time `.env` mutation, the fabricated contacts and the `F6` tri-state
+> loss out with it. `RM24`'s pacing problem also disappears, because a vendored client is one we
+> rewrite onto `ServiceGate`.
+>
+> **What we give up, stated plainly:** seven further sources (CORE, DOAJ, Zenodo, HAL, OpenAIRE,
+> BASE, dblp), and the maintenance of two clients becomes ours. Their tests do not cover OpenAlex,
+> so we would be writing those either way.
+>
+> Full evaluation, 1010 lines, in the session scratchpad as `paper-search-mcp-evaluation.md`.
+
+`discovery.py` reaches PubMed, Europe PMC, Semantic Scholar, arXiv and Unpaywall.
+[`paper-search-mcp`](https://github.com/openags/paper-search-mcp) (MIT per its README, 2.5k stars,
+active, with tests) reaches 25+ — and the ones we lack are not exotic: **OpenAlex** and **Crossref**
+above all, then CORE, DOAJ, Zenodo, HAL, OpenAIRE, BASE, dblp. All official APIs.
+
+**The objection against bundling, corrected 2026-08-20 — the first draft of this entry led with the
+wrong one.**
+
+*It led with `JMC_OFFLINE`*: a second process has no offline concept, so `JMC_OFFLINE=1` would
+silence our tools while it kept fetching. True, and **not worth what it was being used for**. The
+owner's ruling: *"air-gapped stuff is a very niche usecase, we're handicapping 99.9 in favour of 0.1;
+this is not a security tool"* — and the sharper half, *"offline makes sense annotation-time, not
+author-time."* That is right and it generalises: offline belongs to `just-dna-lite`, where somebody's
+**genome** is being read and privacy is the whole point. Authoring is networked by nature — literature
+search, rsID resolution, identifier checks and publishing are all network steps, and a module cannot
+be written without them. If a genuinely offline authoring build is ever wanted it ships as a separate
+`-offline` entity rather than shaping this one.
+
+The flag itself stays and costs nobody anything: it is **off by default**, and the suite's socket
+ceiling is built on it (`offline_settings()`, seven test files). What it must not do again is **veto
+a broad improvement on behalf of a niche one**, which is what it was doing here.
+
+**The objection that actually stands, on its own:**
+
+- **The NCBI budget would split.** Ours is one budget because `ServiceGate` shares the *same*
+  `PacingGate` instance with the enricher's `EutilsClient`. Two processes is two budgets against one
+  contact address, which overspends somebody's allowance rather than doubling it. That server also
+  declares no contact address at all, where our three-step chain exists so the traffic is
+  attributable to whoever is spending it.
+
+It also ships an optional **Sci-Hub** fallback, which is the thing settled the same day: shipping the
+code is the act, and vendoring somebody else's is the same act at one remove.
+
+**The shape to build instead: depend on the library, not the server.** `academic_platforms/` is one
+module per source, separate from `server.py`, so the clients are importable plainly. Called from
+inside our own tools they inherit our `LiteratureCandidate`, our per-source rank and the
+`results=null` + `rate_limited=true` tri-state that `F6` exists to preserve — which is the reason
+that survives the correction above, because it is about what an author is told rather than about a
+switch nobody sets. **PubMed and
+Europe PMC stay ours** — that is what keeps the NCBI budget whole — and theirs are used only for
+sources we lack.
+
+**Costs to settle before adding it**, none of them disqualifying and none of them ignorable: it is
+**v0.1.4**; PyPI carries **no license metadata** while the README says MIT, which wants resolving
+before we depend on it; and it brings `beautifulsoup4`, `lxml`, `requests`, `pypdf` and `feedparser`
+— a second HTTP stack beside `httpx`, against an install story that is one `uv sync`.
+
+**Fallback if the imports turn out entangled with their config layer:** fork, and move Sci-Hub behind
+a `[scihub]` extra so the install is a user decision that carries its own liability. Deliberately the
+second option — a fork is a 25-client maintenance commitment.
+
+**Blocked on a decision, not on work.** Adding a dependency is the owner's call.
+
+</details>
+
+---
+
 ## RM22 — the enricher fetches the ancestry that `population` wants, and nothing here surfaces it
 
 **Severity:** low · **Status: CLOSED 2026-08-20 — shipped in 0.13.0 as `study_facts`.**

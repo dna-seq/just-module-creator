@@ -3,6 +3,45 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.14.0 — OpenAlex and Crossref, ported rather than depended on
+
+Five literature sources become seven. **452 tests**, ruff clean, pyright 0 errors. Version bumped in
+all three files. No upstream floor moves.
+
+**`RM23` shipped as a port.** The evaluation ranked three shapes — depend on `paper-search-mcp`, fork
+it with a `[scihub]` extra, or port the two sources we actually wanted — and the port won because it
+is the only one where the Sci-Hub question **stops existing** instead of being managed. The fact that
+settled it: `download_with_fallback(..., use_scihub: bool = True)` at their `server.py:763` is
+**default-on**, against their own README, and a wheel ships every module whether imported or not.
+
+What was taken is **API knowledge**: endpoints, parameter names, response shapes, and OpenAlex's
+inverted-index abstract encoding. Not the code — theirs calls `requests` directly with a hardcoded
+contact, and both are rules here. `NOTICE` carries their MIT text byte-identical to their `LICENSE`,
+and a test pins the attribution, because attribution living only in a comment is one refactor from
+vanishing and that is a licence violation rather than an untidiness.
+
+**Two of their defects were fixed in the port rather than inherited.** Their polite-pool contacts are
+the literals `openags@example.com` and `paper-search@example.org`; ours resolve through the three-step
+chain, and a test forbids the literals returning in a quoted position. Their `Paper.citations: int = 0`
+types "not reported" as zero; ours is `int | None`, and Crossref's absent open-access verdict stays
+`None` rather than becoming `False` — Crossref says nothing about OA, so `False` would be a claim it
+never made.
+
+**One defect found by using the parser rather than reading it:** Crossref carries HTML entities in
+`container-title` as well as in titles, so a real record's venue arrived as `http://isrctn.org/&gt;`.
+Routed through `_title`, the decoder the Europe PMC parser already used. The test asserts the fixture
+really contains entities, so it cannot pass vacuously.
+
+Fixtures are real captured responses to the request `Discovery` actually makes, contact included.
+Two tests that hardcoded "four searchable sources" now derive from `SEARCHABLE` — the hand-kept-list
+rot, caught in a test.
+
+**What we gave up:** seven further sources (CORE, DOAJ, Zenodo, HAL, OpenAIRE, BASE, dblp), and two
+clients are ours to maintain. Their suite covered neither of the two we took.
+
+**`RM24` is answered by construction** for these two: a ported client goes through our gate, so there
+is no unpaced third-party transport. It stays deferred for anything not yet taken.
+
 ## Unreleased — logs get read before the catalog keeps them
 
 **`RM25` shipped.** `logscan.py`, a `review_logs` tool, and a warning inside `registry_publish` so it

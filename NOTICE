@@ -1,0 +1,53 @@
+# NOTICE
+
+Third-party attributions for `just-module-creator`.
+
+## paper-search-mcp — MIT
+
+<https://github.com/openags/paper-search-mcp>
+
+The OpenAlex and Crossref support in
+`src/just_module_creator/discovery.py` was **ported** from that project's
+`paper_search_mcp/academic_platforms/openalex.py` and `crossref.py` under
+`RM23`. What was taken is the API knowledge — endpoints, parameter names, and
+the response shapes each service returns, including OpenAlex's inverted-index
+abstract encoding. The implementation is written against this project's own
+`ServiceGate`, `HttpService` and `LiteratureCandidate`.
+
+Two things were changed rather than carried, both because this project has a
+rule about them:
+
+- **The contact address.** The original sends the literals
+  `openags@example.com` (OpenAlex) and `paper-search@example.org` (Crossref) as
+  the polite-pool contact. A fabricated address misattributes the traffic to a
+  stranger, so ours resolves through `JMC_USER_EMAIL` →
+  `JUST_DNA_CONTACT_EMAIL` → the project default.
+- **The transport.** Every outbound request here goes through `net.py`, so the
+  pacing and the shared NCBI budget cannot drift between clients.
+
+No Sci-Hub code was taken, and the package is **not** a dependency of this
+project.
+
+```
+MIT License
+
+Copyright (c) 2025 OPENAGS
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
