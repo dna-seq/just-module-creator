@@ -1120,7 +1120,9 @@ preference: it goes into §10, in their words, with the reason.
 - **The polygon carries two remediated rehearsals from the 2026-08-20 quote work**:
   `test-sheep/test_aggression_anger_snps@1.0.0` and `test-sheep/test_big_five_personality_snps@1.0.0`.
   Both are `test-`prefixed on both halves, so `purge-test-data` will collect them; they are rehearsals
-  of a remediation, not a correction of anything published. **Nothing in the four production
+  of a remediation, not a correction of anything published. Both were published **knowingly carrying a
+  stale `literature.csv`** — correcting it needs extended-tier tools (`F47`), and a rehearsal that
+  waited for that would have measured nothing. **Nothing in the four production
   `antonkulaga/*` modules was touched** — a published version is immutable.
 - **`logs/authoring.log` now has a writer, and it publishes.** `record_override` appends to it and every
   compile sweeps `logs/**.log` up with no opt-out. So never write an absolute path, a token or a

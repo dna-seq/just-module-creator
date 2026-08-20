@@ -194,8 +194,8 @@ and replaced its title-quotes with what the articles actually say, end to end th
 publishing to the polygon as `test-sheep/test_aggression_anger_snps@1.0.0`. Only `provenance_quote`
 was touched. The yield is **1 real quote from 69 rows**, and that is the honest number: 65 rows cite
 a paper whose text names none of their variants, because the associations live in its supplementary
-data, and 3 cite a paywalled paper whose abstract names no rsID. Full account in
-[`RM15-remediation-log.md`](RM15-remediation-log.md).
+data, and 3 cite a paywalled paper whose abstract names no rsID. The three paywalled rows are named in
+[`ROADMAP.md`](ROADMAP.md)'s `RM18`, along with everything else that needs a human.
 
 - **`_NO_PASSAGE_NOTE` still carried the retired rule** and was corrected in the same pass as
   `fetch_fulltext`'s docstring should have been. The tool handed over the article, said in its
@@ -217,10 +217,11 @@ data, and 3 cite a paywalled paper whose abstract names no rsID. Full account in
   never ran on any of them; and `provenance.json`, `logs/` and `authorship` *do* travel with a
   publish, which narrows what `S55` is actually asking for to the `(row, quote)` grain. `F42`, `F43`
   and `F49` record our side.
-- **[`HANDOFF-antonkulaga-quotes.md`](HANDOFF-antonkulaga-quotes.md)** is the decision list for
-  whoever maintains those four modules. Decisions, not a diff: the published versions are immutable,
-  the modules met the rules that existed when they were written, and emptying the column is one of
-  the defensible answers.
+- **The decision list for whoever maintains those four modules is [`ROADMAP.md`](ROADMAP.md)'s
+  `RM18`** — decisions, not a diff: the published versions are immutable, the modules met the rules
+  that existed when they were written, and emptying the column is one of the defensible answers. It
+  was written as a handoff document and moved to the roadmap when that document was deleted, because
+  a decision nobody has taken belongs where open work is listed.
 
 A second module, `big_five_personality`, was then remediated the same way and published as
 `test-sheep/test_big_five_personality_snps@1.0.0` — 859 rows, 21 quoted, 21 distinct strings. It is
