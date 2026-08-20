@@ -347,6 +347,11 @@ normal, not a sign the first one was wrong.
 
 ## Where to go next
 
+**Reading the pointers:** `` `module-tables` → `references/variants.md` `` means *that file, under that
+skill's directory* — `skills/module-tables/references/variants.md`. A `references/` path with no skill
+in front of it belongs to the skill you are reading. Dossiers are files, not skills: read them on
+demand, do not invoke them.
+
 | Step or question | Load |
 |---|---|
 | **start a module — triage, licence, the spec** | `module-start` |
