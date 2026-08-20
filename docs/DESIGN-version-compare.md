@@ -373,10 +373,16 @@ worth knowing so it is not mistaken for a signature of anything.
 round trip through a writer, and the comparison is against derived data rather than against what
 somebody typed.
 
-### 3.6 Report, never repair — the eight refusals, with their reasons, are §4
+### 3.6 Never assert what the two files cannot show — the eight refusals, with their reasons, are §4
 
 Summarised there rather than split across two sections. The load-bearing one for this tool is that it
-must not *pair* rows whose natural key changed, because pairing is itself an assertion.
+must not *pair* rows whose natural key changed, because **pairing is itself an assertion** — it says
+*this row became that row*, which two directory listings cannot establish.
+
+*(This section was headed "Report, never repair" until `RM15`. That was the format layer's stance
+adopted whole, and it is not why this tool refuses: a comparator refuses because it lacks the evidence,
+not because writing is forbidden here. This layer writes — `record_override` and `refresh_sidecar` both
+do. Keep the refusals; they now stand on their own reasons, one per refusal in §4.)*
 
 ### 3.7 Three-valued — where `unknown` lives, and the mechanism that forces it
 
@@ -457,8 +463,14 @@ row identity.
 one, and it must not phrase intent: no "corrected", "improved", "fixed", "cleaned up". The changelog is
 the author's statement of *why*, it lives outside every hash, and it is the only human-readable record
 of a version. A generated sentence pasted unread puts a machine's guess about motive into that record
-permanently. The same argument as a machine-located provenance quote: the artefact exists to record that
-a person decided something.
+permanently.
+
+**The old wording here made the analogy to "a machine-located provenance quote", and that analogy is
+retired** (`RM15`): an agent may locate and write a quote, provided it is verbatim, for the row's own
+claim, and attributed. The two are not the same act. A located quote is a **found passage** that a
+check can test against the article; a generated changelog sentence is a **claim about motive** that
+nothing can test and that only the person who made the decision holds. The refusal here is about the
+second — say what moved, never why somebody moved it.
 
 **5. No version-bump suggestion.** Not "this looks like a major". There is no versioning contract in
 this ecosystem, deliberately, and `1.0.0`/`2.0.0` are not milestones. A tool that mapped a row count
