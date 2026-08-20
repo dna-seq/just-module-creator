@@ -68,7 +68,15 @@ def register_extended(mcp: FastMCP, settings: Settings, services: NetworkService
         direction: str = "citing",
         limit: int = 20,
     ) -> CitationGraph:
-        """Papers citing this one (`citing`) or cited by it (`cited_by`).
+        """Papers that cite this one (`citing`), or the papers it cites (`references`).
+
+        **Read the direction names carefully — one of them is a trap.** Everywhere
+        else in bibliometrics "cited by" labels the citations a paper *received*
+        (Scholar's "Cited by 1,234"), and here the legacy spelling `cited_by`
+        means the opposite: the works in its own bibliography. `references` and
+        `cites` are accepted as unambiguous spellings of that, and `cited_by`
+        still works so nothing scripted against it breaks. If you want "was this
+        replicated", you want **`citing`**.
 
         This is how you ask **whether a finding was replicated**, which is most of
         the `weight` and `state` judgement. One paper reporting an association and
@@ -83,9 +91,23 @@ def register_extended(mcp: FastMCP, settings: Settings, services: NetworkService
         "S2 could not answer" and "nobody cited this" are different facts, and the
         second one is a real finding you would act on.
         """
+        # The argument check comes FIRST, before the offline ceiling — the same
+        # order `registry_publish` uses for its naming refusal and for the same
+        # reason: a bad `direction` is decidable without a network, and answering
+        # "you are offline" to a call that could never have succeeded sends the
+        # caller to fix the wrong thing.
+        # `cited_by` is kept because the surface is a contract, and dropped
+        # spellings break callers silently. The two clear names are what the
+        # docstring leads with; measured live, `cited_by` reads as its own
+        # opposite to anyone who has met the phrase anywhere else.
+        backwards = {"references", "cites", "cited_by"}
+        if direction not in {"citing", *backwards}:
+            raise ToolError(
+                "`direction` must be 'citing' (papers that cite this one) or 'references' "
+                "(the papers it cites; also spelled 'cites' or 'cited_by')."
+            )
+        direction = "cited_by" if direction in backwards else direction
         _require_network("Citation lookup")
-        if direction not in {"citing", "cited_by"}:
-            raise ToolError("`direction` must be 'citing' or 'cited_by'.")
         identifier = (
             f"PMID:{pmid}"
             if pmid

@@ -3,6 +3,43 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — the literature surface was exercised live, end to end
+
+Every literature tool run against real identifiers rather than fixtures. **454 tests.** What follows
+is what the exercise found; the arXiv defect below was the largest.
+
+**Confirmed working, and worth recording because none of it had been shown before:**
+`literature_search` dispatches all six sources and `merge` combines across them — Enattah 2002
+(`11788828`) arrives as **one** candidate carrying pubmed + europepmc + crossref. A Semantic Scholar
+429 is reported `results=null, rate_limited=true` with the *"UNCHECKED, not empty"* warning rather
+than as a zero. `lookup_open_access(pmid=…)` resolves the DOI through Europe PMC first and then asks
+Unpaywall, both reporting `queried=true`, so its `false` is a real answer rather than a silent skip —
+that was checked specifically because a `false` from a source that was never asked would be the
+`F6` failure. `fetch_fulltext` returns `text_source=fulltext` for an open-access paper and
+`text_source=abstract` for a closed one, which is the distinction that keeps an abstract miss from
+reading as a verdict. `lookup_citation` withholds `doi` and publishes the same value as
+`registry_doi`, so the refusal does not hide the number — it keeps it out of the field an agent would
+copy.
+
+**`paper_citations`: the `cited_by` spelling reads as its own opposite.** Everywhere else in
+bibliometrics "cited by" labels the citations a paper *received* — Scholar's "Cited by 1,234" — and
+here it means the works in its own bibliography. The docstring was already correct ("cited by it");
+the token alone was not, and the token is what an agent passes. `references` and `cites` are now
+accepted as unambiguous spellings, **`cited_by` still works** because the tool surface is a contract
+and a dropped spelling breaks a caller silently, and the docstring leads with the trap.
+
+**Argument validation now runs before the offline ceiling** in `paper_citations`. A bad `direction`
+was answered with "the server is configured offline", which sends the caller to fix the wrong thing —
+the same dead end `registry_publish`'s naming refusal already avoids by checking the decidable thing
+first. Found because a test asserting the direction message could not reach it.
+
+**Measured and not a defect:** Semantic Scholar returns **zero** references for Enattah 2002 — its
+own API, HTTP 200, empty. The paper obviously has a bibliography; S2's coverage of older closed
+literature does not. The docstring already says a short list is weak evidence of little citation
+rather than proof of none. And `fetch_fulltext` output opens with ~411 characters of JATS front
+matter (ISSNs, PMC ids) before the title, which only bites a caller passing a small `max_chars`;
+the default is `None`, meaning no limit.
+
 ## Unreleased — the arXiv leg was returning noise, and only a live run showed it
 
 **Found by dogfooding the shipped surface, not by reading it or testing it.** Asked whether the

@@ -462,3 +462,34 @@ def test_the_dotenv_sweep_actually_finds_the_loader_that_broke_this():
     from conftest import _refuse_dotenv
 
     assert locations.load_dotenv is _refuse_dotenv
+
+
+async def test_paper_citations_accepts_an_unambiguous_direction(extended_client):
+    """`cited_by` reads as its own opposite, so two clear spellings were added.
+
+    Everywhere else in bibliometrics "cited by" labels the citations a paper
+    RECEIVED — Scholar's "Cited by 1,234". Here the legacy spelling means the
+    papers in its own bibliography, which is what `citing` is not. Found by
+    running the tool rather than by reading it.
+
+    The legacy spelling stays accepted: the tool surface is the contract, and a
+    dropped spelling breaks a caller silently.
+    """
+    schema = None
+    for tool in await extended_client.list_tools():
+        if tool.name == "paper_citations":
+            schema = tool
+            break
+    assert schema is not None
+
+    described = schema.description or ""
+    assert "trap" in described
+    assert "`citing`" in described and "`references`" in described
+
+    # All three backwards spellings are legal, and a wrong one names the choices.
+    with pytest.raises(ToolError) as caught:
+        await extended_client.call_tool(
+            "paper_citations", {"pmid": "11788828", "direction": "sideways"}
+        )
+    for spelling in ("citing", "references", "cites", "cited_by"):
+        assert spelling in str(caught.value)
