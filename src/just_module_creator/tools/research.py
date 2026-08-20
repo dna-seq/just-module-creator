@@ -672,8 +672,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     async def check_identifiers(spec_dir: str) -> IdentifierReport:
         """Check every gene symbol (HGNC) and trait CURIE (OLS4) in a spec is current.
 
-        Reports, never repairs — rewriting an authored value would destroy the
-        evidence of the upstream change. Writes nothing.
+        Writes nothing, and reports instead of correcting — rewriting an authored
+        value would destroy the evidence that the identifier moved, and a rename
+        is exactly the kind of change an author needs to see rather than inherit.
 
         **`gene_locus_conflicts` is the one to read even when `stale` is empty.**
         It names rows whose gene sits on a different chromosome than the row's own
@@ -826,19 +827,32 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         doi: str | None = None,
         max_chars: int | None = None,
     ) -> FullTextResult:
-        """Retrieve a paper's text so **you** can read it. Returns no passage, ever.
+        """Retrieve a paper's text so **you** can read it — and you may quote it.
 
-        There is no "find the sentence that supports this" here and there will not
-        be. `enrich_literature` checks `provenance_quote` against this same Europe
-        PMC fulltext, so a quote copied out of this response would make
-        `quotes_found` confirm itself — and a machine-located quote asserts a
-        curator reading that never happened, which is a false claim of provenance
-        rather than merely a vacuous check.
+        Reversed 2026-08-20. This tool used to refuse to return a passage on the
+        grounds that a machine-located quote asserts a reading that never
+        happened. It does not: it hands you the article, you read it, and the
+        reading is real. What that rule actually protected was a fiction about
+        *who* read the paper, and it left `provenance_quote` empty for the only
+        reader present. See CLAUDE.md §2.
+
+        So: locate the passage, quote it **verbatim**, and make it the passage
+        that supports **this row's own claim** — its variant, its trait, its
+        direction. Say who located it. A quote that is right for the article but
+        not for the row is not provenance for that row.
+
+        **Never the article's title.** A title occurs in its own fulltext, so
+        `quotes_found` matches it every time and reports full coverage over
+        metadata nobody had to read. Four published modules carry a quote on all
+        3668 rows and every one is the title (`F42`). One identical string across
+        every row citing a PMID is the signature — a real passage varies with the
+        claim.
 
         **The honest cost of using this tool**, stated so you can weigh it: having
         read the fulltext here, `quotes_found` on that row is no longer independent
-        evidence. It has become a citation-pairing check — still useful, since it
-        catches a quote written against the wrong PMID.
+        evidence that the claim is in the paper. It has become a citation-pairing
+        check — still useful, since it catches a quote filed against the wrong
+        PMID. State that; do not let it stop you quoting.
 
         `text_source` says what you actually got: `fulltext`, `abstract` (named as
         a substitute, never passed off as the article), or `null` — which means

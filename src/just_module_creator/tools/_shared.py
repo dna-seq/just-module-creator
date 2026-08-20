@@ -1,9 +1,15 @@
 """Conversion helpers shared by the tool modules.
 
-Everything here exists to keep one promise from CLAUDE.md: *report, never
-repair*, and *preserve three-valued answers*. The upstream dataclasses already
-distinguish error/warning/info and applied/refused; these converters carry that
-across the MCP boundary field-for-field instead of flattening it.
+Everything here exists to carry upstream's own answer across the MCP boundary
+without editing it. The upstream dataclasses distinguish error/warning/info and
+applied/refused; these converters preserve that field-for-field instead of
+flattening it, because an ``applied: false`` records what the *compiler* did and
+restating it as ours would misreport another layer's act. Three-valued answers
+stay three-valued for the separate reason that an unasked question is never a
+passed check.
+
+This says nothing about what *this* layer may write. It may write; see
+CLAUDE.md §2. What it may not do is launder its own writes as upstream's.
 """
 
 from __future__ import annotations

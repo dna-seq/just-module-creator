@@ -8,9 +8,13 @@ than the upstream models themselves. Two reasons:
   the answer is worth. We surface the handful of manifest fields an author acts
   on and point at ``manifest.json`` for the rest.
 * Upstream distinguishes ``error`` / ``warning`` / ``info`` and
-  ``applied`` / ``refusal``. Those distinctions are load-bearing (see CLAUDE.md:
-  "report, never repair" and "withhold rather than assert"), so they are
-  preserved field-for-field here rather than flattened to a boolean.
+  ``applied`` / ``refusal``. Those distinctions are load-bearing, so they are
+  preserved field-for-field here rather than flattened to a boolean. Note what
+  that preservation is *for*: an ``applied: false`` is upstream reporting what
+  **it** did, and rewriting it would misreport another layer's act. It is not a
+  claim that this layer may not write — see CLAUDE.md §2, which says the
+  opposite — and three-valued answers stay three-valued because a check that
+  could not run is not a check that passed.
 """
 
 from __future__ import annotations
@@ -629,8 +633,9 @@ class IdentifierReport(BaseModel):
             "**Read these even when every identifier is current** — the relationship is false "
             "while both halves are individually true, so nothing else catches it. It is the "
             "signature of a generated row: a real gene symbol beside an invented rsID, which "
-            "resolves anyway because dbSNP is dense. Reported, never repaired: which half is "
-            "wrong is not something a lookup can know."
+            "resolves anyway because dbSNP is dense. Reported rather than corrected, and for a "
+            "reason no policy change reaches: **which half is wrong is not something a lookup "
+            "can know.** Fixing the gene and fixing the rsID produce different modules."
         ),
     )
     gene_locus_check_skipped: str | None = Field(
@@ -1057,8 +1062,11 @@ class DraftedTable(BaseModel):
     differs: int = Field(
         description=(
             "Rows where the source DISAGREES with what you authored — **left unchanged and "
-            "reported**. Report, never repair: rewriting your value would destroy the evidence "
-            "that the source and you disagree, and only you know which is right."
+            "reported**. A disagreement is not a defect report: archives lag the edge, so your "
+            "row may be right and current while the source is stale. Conforming it would destroy "
+            "the evidence that the two disagree AND could silently degrade the module, with the "
+            "check then agreeing with itself. Editing against a source needs a reason that "
+            "outranks the source."
         )
     )
     invalid: int = Field(description="Rows the source proposed that failed validation.")
