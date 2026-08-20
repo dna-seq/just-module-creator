@@ -360,6 +360,16 @@ class LintFinding(BaseModel):
     column: str | None = Field(default=None, description="Column, or null if row-wide.")
     level: str = Field(description="error | warning | info.")
     message: str = Field(description="What was found.")
+    source: str = Field(
+        default="upstream",
+        description=(
+            "Which layer computed this finding: `upstream` for the compiler's own, carried "
+            "across field-for-field, or `just-module-creator` for one this authoring layer "
+            "computed itself. Read it before quoting a finding as the compiler's — the two "
+            "have different reach, and an authoring-layer finding does not block a compile "
+            "the way an upstream `error` does."
+        ),
+    )
     line: int | None = Field(
         default=None,
         description=(
@@ -422,6 +432,16 @@ class ValidationReport(BaseModel):
         description="Not refusals — but most known traps arrive here on a green run. Read them."
     )
     info: list[str] = Field(default_factory=list, description="Advisory notes.")
+    authored_findings: list[LintFinding] = Field(
+        default_factory=list,
+        description=(
+            "Findings THIS layer computed over the authored tables, kept out of `errors` / "
+            "`warnings` / `info` so upstream's own strings stay exactly as they arrived. They "
+            "do not move `valid`: the compiler would still build this module. Read them anyway "
+            "— they cover shapes no compiler check can see, such as one identical "
+            "`provenance_quote` across every row citing a paper."
+        ),
+    )
     stats: dict = Field(description="Variant/study/gene counts and table row counts.")
 
 

@@ -133,14 +133,32 @@ The record is only worth what its narrowest claim is worth, and three known case
 **Guard:** when you read a green attestation, ask **could this check have failed?** If not, it measured
 nothing, and that is worth saying in the README rather than leaving for a reviewer to discover.
 
-🚧 **ROADWORKS — nothing on the authored side can see a quote repeated across every row citing a
-paper.** Two spec directories differing *only* in `provenance_quote` — one honestly located, one all
-article titles — come back **byte-identical** from `registry_check(literature=true, strict=true)`:
-`verdict: true`, every finding list empty. `lint_rows`, `validate_module` and `compile_module` say
-nothing either. Four published modules reached production this way carrying **3668** title-quotes.
-**Guard until this lands (`RM17`):** group `studies.csv` by `pmid` yourself and count the **distinct**
-non-empty quotes. One distinct value across many rows is the signature — and it is the *shape* that
-matters, not the string, because the next variant of it is one real sentence pasted onto 2,000 rows.
+### The one check the compiler cannot make, and this layer does
+
+**Nothing upstream can see a quote repeated across every row citing a paper.** Two spec directories
+differing *only* in `provenance_quote` — one honestly located, one all article titles — come back
+**byte-identical** from `registry_check(literature=true, strict=true)`, and `compile_module` says
+nothing either. Four published modules reached production that way carrying **3668** title-quotes.
+
+**So this layer computes it** (`RM17`). `lint_rows` and `validate_module` both report a **warning**
+naming any PMID whose every quoted row carries the same passage, with the row count and the first few
+words so you can recognise the paper. It reads `studies.csv` alone, offline, and deliberately not
+`literature.csv`, whose counters are stale on every module that has the problem.
+
+**It is keyed on the shape, not the string** — the next variant of this is one real sentence pasted
+onto 2,000 rows, and a rule that only caught the title would miss it. Confirming that the repeated
+string *is* the title needs `lookup_citation`, a network call, so it belongs where a round trip is
+already being paid for rather than in the offline linter.
+
+**Read it from `authored_findings`, not from `warnings`.** `validate_module`'s `warnings` transport
+upstream's own strings field-for-field, and mixing a finding *we* computed into that list would make
+it impossible to tell which layer spoke. Every finding carries `source`: `upstream` or
+`just-module-creator`. An authored finding does **not** move `valid` — the compiler would still build
+the module, which is the whole point of it being visible here.
+
+**A blank quote is not the defect.** The remediation that found this located passages for 21 of 859
+rows — a 2–3% yield, *inverse* to row count — so mostly empty cells is the honest result, and the
+check counts only rows that carry a quote.
 
 ## Counting findings honestly
 

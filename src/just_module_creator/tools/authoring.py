@@ -33,6 +33,7 @@ from just_dna_registry import specfiles
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel
 
+from just_module_creator import authored_checks
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
     ClosureResult,
@@ -590,6 +591,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         name = known_kind(csv_name, draft.DRAFTABLE, _PRODUCED_CSVS)
         report = hints.inspect_rows(name, csv_text)
         findings = to_findings(report.findings)
+        # Ours, not upstream's, and each says so in `source`. Appended rather than
+        # merged into upstream's order so the transported half stays untouched.
+        findings += authored_checks.findings_for_csv_text(name, csv_text)
         return LintResult(
             csv=report.csv_name,
             rows_in=report.rows_in,
@@ -626,6 +630,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             errors=list(result.errors),
             warnings=list(result.warnings),
             info=list(result.info),
+            authored_findings=await run_sync(lambda: authored_checks.findings_for_spec_dir(target)),
             stats=jsonable(result.stats),
         )
 

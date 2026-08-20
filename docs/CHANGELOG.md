@@ -3,6 +3,64 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — the skills split completed, and the check the audit's own finding needed (2026-08-20)
+
+The night run after the audit. **`skills/create-module/` is deleted** and `RM17` ships. No floor move:
+format/compiler 0.6.1, enricher 0.6.4, registry 0.18.2. 216 tests green, `ruff` clean, `pyright` 0
+errors.
+
+### One skill per lifecycle stage, and no skill holds another's procedure
+
+`create-module` was 1431 lines loaded whole to answer any question — the shape that guarantees every
+session re-reads it and none updates it in the right place. Every line now sits in the stage that owns
+it, and the file is gone rather than left as a husk:
+
+| Written | Owns |
+|---|---|
+| `module-start` | stage 0–1: triage a handed source, the preprint-currency check, the six-step claim triage, the email asked once, and what to declare at birth — `weighting:`, `authorship:`, the licence position `--use` asserts |
+| `module-draft` | stage 2: the three drafters, `differs` as a decision rather than a defect, the eleven CPIC genes that lose every allele, star-allele filtering |
+| `module-curate` | stage 3: the cells only a pilot settles, the off-by-one essay, genotype spellings, **how many rows is a report** |
+| `module-enrich` | stage 4: the resolver chain, the ref-mismatch report and why its count is a floor, unreachable ≠ absent |
+| `module-check` | stage 5: severity, the skip vocabulary, the attestations that record a check nobody could have run |
+| `module-compile` | stage 6: strict as *reproducible*, the three signatures, the round trip and what it silently costs |
+| `module-close` | stage 6b: the closure, what re-opens a module, the check records closing can drop |
+| `module-publish` | stages 7–8: the two instances, the pre-flights, onboarding, and when to advocate for production |
+| `module-weights`, `module-consumer` | the references the stages load |
+
+`module-101` grew to hold the map-level half — the tool roster and its tiers, the beginner framings,
+the two known gaps — and `SYMPTOMS.md` / `CLI.md` moved to `module-101/references/` with a table of
+contents each, because they are read *from* every stage rather than *by* one. Sixteen skills ship;
+the manifest description and `tests/test_plugin_manifest.py` moved with the count, and the test's
+pinned pair is now `{module-101, module-start}`.
+
+**All sixteen end with the same discriminator section** — what to apply silently, what to put in front
+of a pilot — replacing the "cells no tool fills, with the refusal reasons" framing `RM15` retired.
+
+### `RM17` — the check that can see a quote nobody located
+
+Two spec directories differing *only* in `provenance_quote`, one honestly located and one all article
+titles, came back byte-identical from `registry_check(literature=true, strict=true)`. Nothing in the
+product could tell them apart, which is how four published modules reached production carrying 3668
+title-quotes.
+
+`src/just_module_creator/authored_checks.py` groups `studies.csv` by `pmid` and reports any PMID whose
+every **quoted** row carries the same passage — a `warning`, aggregated per PMID with the row count and
+the first few words. Offline, over the authored file alone; deliberately **not** `literature.csv`,
+whose counters are stale on exactly the modules that have the problem (`F49`).
+
+**The layer question `RM17` left open is answered by making the layer legible rather than by choosing
+a surface.** `LintFinding` gains `source` (`upstream` | `just-module-creator`) and `ValidationReport`
+gains `authored_findings`, kept out of `errors`/`warnings`/`info` so the lists that transport
+upstream's own strings stay untouched. So the rule is one line: **upstream's strings stay where they
+are; anything we computed is a `LintFinding` that says so.** An authored finding does not move `valid`
+— the compiler would still build the module, which is the whole reason it has to be visible here.
+
+Keyed on the **shape, not the string**: a rule that only caught the title would miss the next variant,
+which is one real sentence pasted onto two thousand rows. The title comparison needs
+`lookup_citation`, a network call, so it stays out of the offline linter.
+
+---
+
 ## Unreleased — the philosophy audit: what we may write, and who may say they read a paper (2026-08-20)
 
 `RM15`. No new tool, no floor move: format/compiler 0.6.1, enricher 0.6.4, registry 0.18.2. 204 tests

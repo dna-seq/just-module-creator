@@ -9,6 +9,112 @@ here: it is filed upstream as an `S<n>` and tracked in
 
 ---
 
+## RM17 — nothing on the authored side can see that one quote is repeated across every row citing a paper
+
+**Severity:** high · **Status:** SHIPPED 2026-08-20 (night run) · **Owner:** agent B · **Opened** 2026-08-20
+
+The measured case is `F44`. `registry_check(target="test", literature=true, strict=true)` returns
+byte-identical output — `verdict: true`, every finding list empty — for a module whose 69
+`provenance_quote` cells are all the article's title and for the same module remediated. `lint_rows`
+on three rows carrying the same title string reports `0 errors, 0 warnings`. `validate_module` and
+`compile_module` say nothing either. Four published modules reached production through this workflow
+carrying 3668 title-quotes.
+
+**Why waiting for upstream is not the plan.** `S54` asks the compiler to compare a quote against
+`CitationHint.title` inside `_study_quote_found`. That is the right fix for their layer and it will
+not fire on the modules that motivated it, because `S56` established that the quote check never ran
+on any of them. Ours is a different check in a different place.
+
+### What to build
+
+A finding over `studies.csv` alone, offline, no pass and no network:
+
+> group the rows by `pmid`; for any `pmid` with more than one row, count the **distinct** non-empty
+> `provenance_quote` values. One distinct value across many rows is reported.
+
+`warning` level, aggregated by reason with a count (never one per row), in **both** `lint_rows` and
+`validate_module`, beside the other authored-table findings. The message should name the PMID, the
+row count and the quote's first few words, because the author needs to recognise which paper it is.
+
+The title comparison is a *second*, stronger signal and needs a network call
+(`lookup_citation(pmid).title`), so it does not belong in the offline linter. It fits
+`registry_check`, where a round trip is already being paid for.
+
+### Decisions already taken, so they are not re-argued
+
+- **Warning, never error.** One quote per PMID is legitimate when a module cites a paper for one
+  row, and a deliberate trait-level grain is a defensible authoring choice — see `find-evidence`'s
+  *what may honestly go in `provenance_quote`*. The signal is one quote across *many* rows.
+- **The grain is the shape, not the string.** A rule that only catches the title would miss the next
+  variant of this, which is one real sentence pasted onto 2000 rows.
+- **It reads the authored file directly.** It must not depend on `literature.csv`, whose counters
+  are stale on every module that has the problem (`F49` / `S56`).
+
+### The one thing to settle before writing code, and it is why this was not built the night it was found
+
+**Whose finding is it, in a tool that transports upstream's verbatim?** `validate_module`'s
+`warnings` are upstream's own, carried across the MCP boundary field-for-field by
+`_shared.to_findings` precisely so `error`/`warning`/`info` and `None`-means-unchecked survive.
+Mixing a finding **we** computed into that same list makes it impossible for a caller to tell which
+layer said what — which is the distinction §2 exists to protect, one level up.
+
+Three shapes, none obviously right:
+
+1. **A separate field** — `authored_findings`, beside `warnings`. Honest and additive; costs every
+   caller a second list to read, and invites a second one after it.
+2. **A `source` on `LintFinding`** — `upstream` vs `just-module-creator`. Preserves the ladder and
+   the distinction in one list; changes a model every tool returns.
+3. **`lint_rows` only, and never `validate_module`.** `lint_rows` is already ours end to end, so
+   nothing blurs. Costs the check its reach: the pre-publish path an author actually runs is
+   `validate_module`, and a linter you have to remember to call is the one that does not get called.
+
+The third is tempting and is probably wrong for exactly the reason `F44` exists. Run §1 rather than
+picking one.
+
+### Done when
+
+`lint_rows` and `validate_module` both report it — with the layer that computed it legible — a test
+builds the failing shape from a real module copy and watches the finding appear, and
+`find-evidence` + `studies.md` point at the tool instead of at a hand-written group-by.
+
+### How the open question was settled, and how to reverse it if that was wrong
+
+`RM17` said to run §1 rather than pick one of the three shapes. The owner was unreachable — the night
+brief was explicit that a defensible decision written down beats a blocked night — so it was decided
+and this is the reasoning.
+
+**None of the three shapes was taken whole, because the two surfaces cannot express the same thing.**
+`LintResult.findings` is a list of `LintFinding`; `ValidationReport.warnings` is a list of **bare
+strings**. Option 2 (a `source` on the finding) is unavailable on validate; option 1 (a separate
+field) is redundant on lint; option 3 gives up the surface an author actually runs before publishing,
+which is the reason `F44` happened at all.
+
+So the rule is stated once and each surface expresses it in the only way it can:
+
+> **Upstream's own strings stay in `errors` / `warnings` / `info`, untouched. Anything this layer
+> computed is a `LintFinding` carrying `source`.**
+
+On `lint_rows` that means our findings append to `findings` with `source="just-module-creator"`; on
+`validate_module` it means a new `authored_findings` list, because appending a string to `warnings`
+would be irreversible — a caller could never separate the layers again.
+
+**To reverse:** the whole decision is one field on `LintFinding` and one on `ValidationReport`. Moving
+to option 3 is deleting the `validate_module` line in `tools/authoring.py`; moving to option 1
+everywhere is adding a second list to `LintResult`. Nothing else depends on the shape.
+
+### Shipped
+
+`src/just_module_creator/authored_checks.py`, wired into `lint_rows` and `validate_module`, with
+`tests/test_authored_checks.py` — twelve tests including the discrimination the whole item exists for:
+the honest `studies.csv` and the repeated-quote one produce the same `valid` and a different
+`authored_findings`, which is exactly the pair `registry_check` returned byte-identically.
+
+Left for the network surface, as the item specified: comparing the repeated string against
+`lookup_citation(pmid).title` inside `registry_check`, where a round trip is already paid for. Upstream
+`S54` may also land it in `_study_quote_found`; check before duplicating.
+
+---
+
 ## RM14 — `provenance.json` is recognised by the registry and by nothing here
 
 **Absorbed into RM16 on 2026-08-20, the same day it was opened. Not shipped, not dropped —

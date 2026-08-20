@@ -183,7 +183,9 @@ Ordered by how likely a first-timer is to hit them.
 
    **The detection rule is the shape, not the string.** One identical quote across every row citing
    a PMID is not a located passage whatever it says, because different rows cite the same paper for
-   different findings. Check your own module with a two-line group-by before publishing.
+   different findings. **`lint_rows` and `validate_module` check this for you since `RM17`** — a warning per
+   offending PMID, computed offline over `studies.csv` alone and marked `source:
+   just-module-creator`.
 
    Two consequences worth carrying:
 
@@ -191,7 +193,8 @@ Ordered by how likely a first-timer is to hit them.
      `quotes_authored: 0` and an empty `quotes_found` on every row, because the literature pass ran
      before the quotes were authored and the sidecar is merge-not-clobber. The manifest then
      publishes `quotes_authored: 0, quotes_found: 0` beside 3668 authored quotes — a confident zero
-     over a null (upstream `S56`). So `quotes_found` is not a detector for this; the group-by is.
+     over a null (upstream `S56`). So `quotes_found` is not a detector for this; the
+     authored-side check is.
    - **A catalog-derived row may have no quotable passage at all, and that is the normal case.**
      Where a `studies.csv` row comes from a GWAS Catalog association rather than from the paper's
      prose, the paper frequently never names the variant. Measured across all 26 PMIDs of

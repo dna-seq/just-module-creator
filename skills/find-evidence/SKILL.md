@@ -282,8 +282,11 @@ every quote on it: **unchecked, not refuted**, and not a reason to delete them.
 saw *when it last ran*, and the sidecar is merge-not-clobber, so on a module whose quotes were
 authored after that run it stays at `0` forever — measured at `0` on all four published
 `antonkulaga/*` modules beside 3668 authored quotes, with the manifest summing the nulls into a
-confident zero (`F49` / upstream `S56`). To check your own quotes, group `studies.csv` by `pmid`
-yourself.
+confident zero (`F49` / upstream `S56`). **`lint_rows` and `validate_module` now detect it for you** (`RM17`): both report a
+warning naming any PMID whose every quoted row carries the same passage, with the row count and the
+first few words. It arrives in `validate_module`'s `authored_findings` rather than in `warnings`,
+because that list transports upstream's own strings and this finding is ours; each carries
+`source: just-module-creator` so you can always tell which layer spoke.
 
 > **Upstream calls these columns `ATTESTATION_BEARING` and glosses them "the cell asserts that a
 > HUMAN read something".** That is correct as a *provider* rule — no lookup tool may write these
