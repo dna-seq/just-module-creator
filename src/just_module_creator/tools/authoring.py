@@ -317,8 +317,12 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         from the source that checks it makes the check vacuous.
 
         `attestation_bearing` is the stronger case, and it is a subset: those
-        cells assert that a *human read something*, so filling one from a fetched
-        document states something false rather than merely unverifiable.
+        cells assert that *somebody read something*. Upstream glosses that
+        somebody as a human, which is right for a layer where nothing can record
+        a reader; here an agent reading a fetched article is a reading that
+        happened, so the rule is **quote what you located, verbatim, and record
+        who located it** — never the article's title, and never a passage a tool
+        picked for you. See `fetch_fulltext`.
 
         **Authored kinds only.** A machine-produced sidecar is answered by
         `describe_machine_table`, and asking for one here says so rather than

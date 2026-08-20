@@ -13,9 +13,13 @@ What this module must never do, and the tests enforce all three:
   check compare PubMed with itself. The DOI is returned as an *addressing key*
   and the refusal rides alongside it.
 * **Never extract a passage.** No best-matching sentence, no suggested quote, no
-  search-within-text. `provenance_quote` exists to record that a curator read the
-  paper and found the claim; a machine-located quote asserts a reading that never
-  happened.
+  search-within-text — and the reason is ours rather than inherited. This module
+  retrieves; picking *which* passage supports a row is a relevance judgement about
+  that row's own claim, which nothing here has read. A tool-picked sentence would
+  be pasted unread, which is the failure. Handing the whole document over so the
+  caller reads it and locates the passage themselves is not that failure, and
+  writing what they located is legitimate — see `tools/research.py::fetch_fulltext`
+  and CLAUDE.md §2.
 * **Never render a failure as an absence.** A source that timed out reports
   `results=None`, never `0`. "arXiv could not answer" and "there are no preprints"
   are different facts and an author acts differently on each.
@@ -1032,14 +1036,19 @@ def open_access(
 
 
 #: Said on every fulltext retrieval, because it is the cost of using this tool.
+#:
+#: Reversed 2026-08-20 alongside `fetch_fulltext`'s docstring, which had already been corrected
+#: while this string — the one an agent actually reads at the moment it is deciding — still told
+#: it the opposite. Read the two together before editing either.
 _NO_PASSAGE_NOTE = (
-    "No passage was extracted for you, and none ever will be. `enrich_literature` checks "
-    "provenance_quote against this same Europe PMC fulltext, so a quote copied out of this "
-    "response would make quotes_found confirm itself — and a machine-located quote asserts a "
-    "reading that did not happen. Locate the passage yourself. Note the honest consequence: "
-    "having read this text here, quotes_found on that row is no longer independent evidence. It "
-    "has become a citation-pairing check, which still catches a quote written against the wrong "
-    "PMID."
+    "No passage was extracted for you: which sentence supports a given row is a judgement about "
+    "that row's claim, and only you have read the row. Read the text and locate it yourself, then "
+    "quote it VERBATIM and record who located it. Never the article's title — a title occurs in "
+    "its own fulltext, so quotes_found matches it every time and reports coverage over metadata "
+    "nobody had to read; one identical string across every row citing a PMID is that signature. "
+    "The honest cost, stated rather than used to refuse: having read this text here, quotes_found "
+    "on that row is no longer independent evidence that the claim is in the paper. It has become a "
+    "citation-pairing check, which still catches a quote filed against the wrong PMID."
 )
 
 
