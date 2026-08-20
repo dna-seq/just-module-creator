@@ -971,6 +971,14 @@ or a geneticist put it there.
 > it" was an overstatement, and the ask is narrower than this entry claimed: **the missing thing is
 > the `(row, quote)` grain, not the concept.**
 >
+> **How often that grain actually matters, measured on `big_five_personality`** (859 rows, 735
+> variants, 26 PMIDs): 95 variants are cited by more than one paper — 75 by two, 14 by three, 3 by
+> four, 3 by five — and **37 of them are cited by different papers for different `trait_efo_id`s**.
+> Those 37 are genuinely different findings about one variant, each owed its own located passage from
+> its own article, all mapping onto a single `ProvenanceItem`. One row in eight, on an ordinary
+> module. `aggression_anger` happens to be 1:1 and hides the problem entirely, which is why it was
+> worth measuring a second module before deciding the ask was small.
+>
 > Two carrying limits are real. `provenance.json` and `logs/` are both **deliberately not carried
 > forward** by a registry contract `upgrade` (`services/upgrade.py`: `carry = set(present) -
 > {PROVENANCE_FILE}`, logs never added, commented as *"they describe how the predecessor was built"*).
