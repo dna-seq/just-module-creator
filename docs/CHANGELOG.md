@@ -3,6 +3,41 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — the lookup, check and registry surfaces exercised live
+
+**458 tests.** Everything below was found by running tools against real identifiers and the real
+instances, not by reading code. One defect was ours and shipped; one is upstream's and is filed.
+
+**`check_identifiers` was broken on a real path, and it was mine.** Shipped in 0.13.0 with the "does
+not apply" case *computed and then not acted on*: the underlying call raises `ValueError` on a missing
+`variants.csv`, so a module without one got a raw traceback where it should have got the considered
+answer. Now it returns early, before the call. A malformed-but-present file is a third state and gets
+the row and column (*"variants.csv line 2 [genotype]: Field required"*) rather than a stack trace, and
+neither path writes anything. Verified live in both directions: **0 records → 3** on a real module
+(`gene_locus_agreement` 13 subjects, `gene_symbol_currency` 1, `trait_currency` 0 with
+`skipped=nothing_to_check` — the tri-state doing its job), existing closure preserved, and **no
+`verification.json` created** on the module that never asked.
+
+**Argument checks now precede the offline ceiling** there too, matching `registry_publish`'s naming
+refusal and `paper_citations`: what is decidable without a network is decided first, so nobody is told
+"you are offline" about a call that could never have succeeded.
+
+**Filed upstream as `S61`:** `lookup_variant` returns, in one payload, `loci` carrying the correct
+live coordinate **and** a finding reading *"position remains unset"*. The warning is the cache stage's
+and nothing revisits it after the live lookup fills the gap. On a surface whose discipline is that a
+warning on a green run is the interesting output, a warning that contradicts its own payload teaches
+the reader to discount warnings.
+
+**Confirmed working:** `lookup_variant` resolves `rs4988235` → 2:135851076 G>A and `rs1799945` →
+6:26090951 C>G, `rsid_state: live`. `lookup_identifier` reports `MCM6` approved and `FAM58A` **retired
+→ CCNQ**, a real HGNC rename. Both registry instances answer, serve **0.18.2**, and confirm their own
+mode, so `mode_matches_target` is `True` rather than assumed; the polygon token resolves to account
+`sheep` / namespace `test-sheep`.
+
+**Workspace fact corrected:** production holds **seven** modules, not five — `CLAUDE.md` said five for
+a day, which is precisely the staleness that line warns about. Two are new, and one is from a
+namespace that did not previously exist.
+
 ## Unreleased — the literature surface was exercised live, end to end
 
 Every literature tool run against real identifiers rather than fixtures. **454 tests.** What follows

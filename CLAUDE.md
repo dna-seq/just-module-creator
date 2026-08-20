@@ -1046,7 +1046,15 @@ have been questions.
   auth instead of to register. `JMC_INSTALL_ID` is still there deliberately: it is a
   proof-of-work string rather than an instance credential, it exists nowhere else,
   and destroying it is the user's call, not ours.
-- **Production holds FIVE modules, measured 2026-08-20** with `registry_search()` (defaults to prod).
+- **Production holds SEVEN modules / 18 versions / 5 namespaces, measured 2026-08-21** with
+  `registry_health(target="prod")`, whose `catalog` block answers this in one call and is cheaper than
+  a search. The polygon carries 9 modules / 13 versions / 4 namespaces. Both instances serve registry
+  **0.18.2** and both confirm their own mode, so `mode_matches_target` is `True` on each. New since
+  2026-08-20: `antonkulaga/bodybuilding@1.0.0` and `ksuha-dna/placebo_response_claude@1.0.0` — the
+  second is a namespace that did not exist before, so the catalog is now taking modules from outside
+  the two known authors. **This line said FIVE for a day, which is exactly what it warns about.**
+  Earlier measurement, 2026-08-20, kept because the four `antonkulaga/*` are still the worked
+  examples: measured with `registry_search()` (defaults to prod).
   Four are `antonkulaga/*` at `2.0.0`/`2.1.0` — `aggression_anger_snps` (28 variants),
   `big_five_personality_snps` (330), `cognitive_intelligence` (32), `risk_impulsivity_snps` (474) —
   and `eric-mods/lactose_tolerance` is now at **`1.0.1`**, not the `1.0.0` this file said until today.

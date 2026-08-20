@@ -153,10 +153,11 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
         ran, which is not a pass.
         """
         target = resolve_dir(spec_dir, settings)
-        if settings.offline:
-            raise ToolError(
-                "The server is configured offline (JMC_OFFLINE); this check needs HGNC and OLS4."
-            )
+
+        # Everything decidable WITHOUT a network is decided first, and the offline
+        # ceiling comes after. Same order `registry_publish` uses for its naming
+        # refusal and for the same reason: answering "you are offline" to a call
+        # that could never have succeeded sends the caller to fix the wrong thing.
         if not check_genes and not check_traits:
             raise ToolError(
                 "Both halves are off, so there is no question to put. Enable check_genes or "
@@ -167,7 +168,29 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
         # with no `variants.csv` has no gene or trait for this to have an opinion
         # about, so the check does not apply. Writing a record would create a
         # `verification.json` on a module that never asked for one.
-        applies = (target / "variants.csv").exists()
+        #
+        # **Returned early rather than checked after the call**, which is what the
+        # first version got wrong: `check_identifiers` raises `ValueError` on a
+        # missing file, so computing this and calling anyway produced a raw
+        # traceback instead of the considered answer. Found by running the tool on
+        # a module with no `variants.csv`; the enricher's own CLI returns early here
+        # for the same reason.
+        if not (target / "variants.csv").exists():
+            return IdentifierReport(
+                spec_dir=str(target),
+                genes=[],
+                traits=[],
+                stale=[],
+                gene_locus_conflicts=[],
+                gene_locus_check_skipped=None,
+                attested=False,
+                attestation_note=NOT_APPLICABLE,
+            )
+
+        if settings.offline:
+            raise ToolError(
+                "The server is configured offline (JMC_OFFLINE); this check needs HGNC and OLS4."
+            )
 
         try:
             report = await run_sync(
@@ -175,29 +198,31 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
                     spec_dir=target, check_traits=check_traits, check_genes=check_genes
                 )
             )
+        except ValueError as exc:
+            # A `variants.csv` present but unreadable. Nothing is attested: there are
+            # no bytes for an attestation to bind to and no question was reached,
+            # which is the enricher's own reasoning on this path.
+            raise ToolError(
+                f"The rows could not be read, so no identifier check was put: {exc}"
+            ) from exc
         except IdentifierUnavailable as exc:
             # The run a reader most needs a record for: the report would be empty, and
             # an empty report with no attestation reads exactly like a clean one.
-            if applies:
-                _attest(
-                    unreachable_records(
-                        check_traits=check_traits, check_genes=check_genes, detail=str(exc)
-                    ),
-                    target,
-                )
+            _attest(
+                unreachable_records(
+                    check_traits=check_traits, check_genes=check_genes, detail=str(exc)
+                ),
+                target,
+            )
             raise ToolError(
                 f"The identifier registries did not answer: {exc}. This is unreachable, not "
                 f"absent — nothing about these identifiers has been established."
             ) from exc
 
         genes, traits = _statuses(report)
-        attested, note = (
-            _attest(
-                verification_records(report, check_traits=check_traits, check_genes=check_genes),
-                target,
-            )
-            if applies
-            else (False, NOT_APPLICABLE)
+        attested, note = _attest(
+            verification_records(report, check_traits=check_traits, check_genes=check_genes),
+            target,
         )
 
         stale = [
