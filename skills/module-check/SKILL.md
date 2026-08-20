@@ -16,8 +16,14 @@ description: >-
 
 ## What this skill owns
 
-Reporting, never repairing. The stage that turns an assertion into a checked assertion, and records
-which checks ran so a later reader can tell silence from a pass.
+Turning an assertion into a *checked* assertion, and recording which checks ran so a later reader
+can tell silence from a pass.
+
+**What a check reports is not automatically what to fix.** A mismatch against a source may be the
+module being right and current while the archive is stale — so this stage produces findings and, where
+a human must choose, decisions; it does not conform rows to sources. That is a statement about
+*evidence*, not a rule against writing: this layer may write, and RM15 retired the
+"report, never repair" framing this section used to open with.
 
 ## Write it from these
 
@@ -55,7 +61,12 @@ which checks ran so a later reader can tell silence from a pass.
 
 - **What this stage is for** - one paragraph, and who acts.
 - **The order inside the stage** - what must precede what, and where deviating deadlocks.
-- **What only an author may decide** - the cells no tool fills, with the refusal reasons.
+- **What needs a pilot, and what you may simply fix** - the two sides of the discriminator, with
+  the reason each cell sits on the side it does. Evident and mechanical (a rename, a deprecated
+  spelling, a column that moved) is applied silently; a checked or authored value (`genotype`,
+  `weight`, `clin_sig`, a conclusion, a `provenance_quote`) is surfaced, never written quietly.
+  **Not a list of refusals** - RM15 retired that framing. This layer may write; what it owes is a
+  logged move and an honest split between the two kinds.
 - **What moving through this stage moves** - identities, the attestation, the closure.
 - **Symptoms** - the messages this stage produces. Link `../create-module/references/SYMPTOMS.md`
   rather than copying it.

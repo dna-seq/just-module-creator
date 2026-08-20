@@ -55,7 +55,12 @@ somebody is editing into a module somebody stands behind.
 
 - **What this stage is for** - one paragraph, and who acts.
 - **The order inside the stage** - what must precede what, and where deviating deadlocks.
-- **What only an author may decide** - the cells no tool fills, with the refusal reasons.
+- **What needs a pilot, and what you may simply fix** - the two sides of the discriminator, with
+  the reason each cell sits on the side it does. Evident and mechanical (a rename, a deprecated
+  spelling, a column that moved) is applied silently; a checked or authored value (`genotype`,
+  `weight`, `clin_sig`, a conclusion, a `provenance_quote`) is surfaced, never written quietly.
+  **Not a list of refusals** - RM15 retired that framing. This layer may write; what it owes is a
+  logged move and an honest split between the two kinds.
 - **What moving through this stage moves** - identities, the attestation, the closure.
 - **Symptoms** - the messages this stage produces. Link `../create-module/references/SYMPTOMS.md`
   rather than copying it.

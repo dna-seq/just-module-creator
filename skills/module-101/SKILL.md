@@ -88,8 +88,8 @@ wraps all four as MCP tools; `references/CLI.md` names the few things it deliber
 
 ```
 0 origin ─▶ 1 scaffold ─▶ 2 draft ─▶ 3 curate ─▶ 4 enrich ─▶ 5 cross-check ─▶ 6 compile ─▶ 7 rehearse ─▶ 8 publish ─▶ 9 install & join
-            (spec dir)    (if a      (only an                (report only,     verify      (polygon)    (immutable)   (consumer)
-                           source     author can)             never repair)     sign, close
+            (spec dir)    (if a      (only an                (report; you      verify      (polygon)    (immutable)   (consumer)
+                           source     author can)             decide)           sign, close
                            has it)                                                                          │
    ┌──────────────────── 10 feedback ◀───────────────────────────────────────────────────────────────────────┘
    └─▶ pass 2+ re-enters at 3 (curate) — usually. Or 2 for a source refresh, 1 to add a table kind,
@@ -243,18 +243,36 @@ nineteen possible parquets plus `manifest.json`; you never write parquet by hand
 fixed point rather than a backup — it cannot restore `authorship`, the verification record or the
 closure. **The module in your repository is the source of truth.**
 
-## The three rules the tools enforce rather than merely document
+## The rules the tools enforce rather than merely document
+
+*These mirror `server.INSTRUCTIONS` deliberately — if the two ever disagree, the server is right and
+this is stale.*
 
 1. **Ask the tool, never memory.** Every column list, vocabulary and requirement is generated from
    the live models, so `describe_table` / `table_requirements` / `authoring_reference` cannot drift
    from what the compiler accepts. No skill here reproduces them.
-2. **Report, never repair.** A lookup shows you a value and refuses to write it into an authored
-   cell. A later check compares your independently authored value against that same source, so
-   filling it *from* the source makes the check agree with itself — permanently. **The refusals are
-   the feature.**
-3. **A check that could not run is not a check that passed.** `null` and `unknown` never collapse
+2. **You may write, and every write is logged.** This is the authoring layer — the business decision
+   is delegated here, so filling or correcting a cell is legitimate where the same act inside the
+   compiler would not be. Two kinds of cell are still withheld, and neither is a refusal to write on
+   principle: **a value a later check compares against that same source** (filling it from there
+   makes the check agree with itself, permanently, and moves the row from honestly unverified to
+   *apparently* verified), and **a value only a pilot can settle** — a genotype, a weight, a
+   conclusion, a direction. Where a lookup reports `applied: false` with a `refusal`, that is
+   upstream reporting what *it* did; pass it through untouched and never present your own write as
+   theirs.
+3. **A mismatch against a source is not a defect report.** Archives lag the edge — a retraction, a
+   refuting meta-analysis, a bigger cohort. A row that disagrees with ClinVar may be the module
+   being right and current while the archive is stale, so conforming it silently *degrades* the
+   module and the check then agrees with itself and reports green. Editing against a source needs a
+   reason that outranks the source, and that reason gets written down.
+4. **A check that could not run is not a check that passed.** `null` and `unknown` never collapse
    into a pass, a blank cell means *we do not know* and never *no*, and the warnings on a green run
    are the interesting output.
+
+> **Rule 2 was "Report, never repair" until 2026-08-20, and it was the *format* layer's rule.** The
+> compiler cannot record who decided a value, so writing one there would launder a machine's guess as
+> an author's judgement. Here, that decision is delegated to us. `RM15` is the audit that separated
+> the two; `CLAUDE.md` §2 carries the counterstance in full.
 
 ## "How do I create one?" — the short answer
 
