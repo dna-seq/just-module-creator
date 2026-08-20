@@ -214,12 +214,17 @@ _PRODUCED_MODELS: dict[str, type[BaseModel]] = {
 _MACHINE_REFUSAL = (
     "An enricher pass writes this file and the compiler fact-hashes it into the "
     "artifact. Read it — for several of these facts this sidecar is the only place they "
-    "exist in the module — and do not hand-finish it. The passes MERGE into what is "
-    "already there rather than overwriting, so a value you typed here survives every "
-    "later run wearing the source's authority, and nothing downstream can tell your cell "
-    "from a fetched one. The compile checks these rows for type and coherence; no check "
-    "asks where a value came from. If a row is wrong, fix the input or re-run the pass. "
-    "licensing.csv is the one fact sidecar you DO write, and describe_table answers it."
+    "exist in the module. The hazard in writing here is ATTRIBUTION, not authorship: the "
+    "passes MERGE into what is already there rather than overwriting, so a value you type "
+    "survives every later run, and the compile checks these rows for type and coherence "
+    "while no check asks where a value came from. An unmarked cell of yours is therefore "
+    "indistinguishable from a fetched one and is hashed as though the source had said it. "
+    "So if you do write here, MARK IT: `source` is that marker, and it is upstream's own "
+    "vocabulary — resolution.csv documents `manual` for exactly this, and a row marked "
+    "that way is one refresh_sidecar can recognise and protect. Writing an unmarked cell "
+    "is what to avoid; re-running a pass will not remove one, because the merge keeps it. "
+    "Prefer fixing the input where the input is what is wrong. licensing.csv is the one "
+    "fact sidecar authored outright, and describe_table answers it."
 )
 
 

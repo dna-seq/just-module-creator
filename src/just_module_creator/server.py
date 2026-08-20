@@ -70,9 +70,9 @@ Five rules this server enforces rather than merely documents:
 1. Ask the tool, never memory. Every column list, vocabulary and requirement is
    generated from the live pydantic models, so describe_table /
    table_requirements cannot drift from what the compiler accepts. That holds for
-   the files you only READ too: describe_machine_table answers the columns of
-   resolution.csv and the fact sidecars, and says why they are not yours to
-   finish by hand.
+   the files a pass writes too: describe_machine_table answers the columns of
+   resolution.csv and the fact sidecars, and says what a hand-written cell there
+   costs and how to mark one so it stays distinguishable from a fetched fact.
 2. You may WRITE, and every write is logged. This is the authoring layer and the
    business decision is delegated here, so filling or correcting a cell is
    legitimate where the same act inside the compiler would not be. Two kinds of

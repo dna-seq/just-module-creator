@@ -320,8 +320,9 @@ class MachineTableDescription(BaseModel):
         "facts exist nowhere else in the module."
     )
     refusal: str = Field(
-        description="Why this table is not yours to finish by hand, and what a hand-written cell "
-        "costs. The columns above are for reading."
+        description="What a hand-written cell in a machine-produced sidecar costs, and how to "
+        "write one honestly if you must. Not a bar on writing — an unmarked cell is the "
+        "problem, because nothing downstream can tell it from a fetched fact."
     )
     produced_by: SchemaVersions = Field(description=_PRODUCED_BY_WHY)
 
