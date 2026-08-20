@@ -58,10 +58,13 @@ verification record over these citations) and it is not a provenance ledger (`li
   `lookup_citation` therefore returns PubMed's DOI in `withheld` with
   `applied=false, refusal="redundancy_bearing"` rather than as a cell to paste.
 - `hints.ATTESTATION_BEARING` (`hints.py:72`) is the **subset** `{provenance_quote,
-  provenance_regex}`, and it is a *stronger* refusal, not a duplicate. `hints.py:66-71`: filling a
-  DOI from its registry makes a check **vacuous**; filling a quote from a fulltext a tool just
-  fetched is a **false claim of provenance** — the column means *a curator read this passage in
-  this paper*, and no lookup can make that true.
+  provenance_regex}`. `hints.py:66-71` glosses it as *a curator read this passage in this paper*,
+  and reads that as a human. **Correct for their layer, not the rule here** — an agent reading a
+  fetched article is a reading that happened, so what the column needs is attribution rather than
+  abstention: locate the passage, quote it verbatim, and record who located it. The reasoning we
+  originally supplied for that constant is withdrawn upstream as `S55`. What survives, and it is
+  physics: no *lookup* may write the cell, and the cell must never hold something obtainable without
+  reading the article — see the title gotcha below.
 - **The corollary you must say out loud:** once `fetch_fulltext` has read a PMID in this session,
   `quotes_found` on that row has degraded to a **citation-pairing check** — it still catches a quote
   filed against the wrong PMID, and it no longer shows anyone read the paper (`hints.py:102-106`).
@@ -170,7 +173,33 @@ Baseline: `content_signature sha256:44ad4449…` (matches the value published in
 
 Ordered by how likely a first-timer is to hit them.
 
-1. **A bibliographic string in `pmid` silently cites a different paper.** `PMID_PATTERN` is
+1. **The article's own title passes every quote check there is.** A title occurs in its own
+   fulltext, so `quote_matches` finds it, `quotes_found` counts it, and the module reports quote
+   coverage over a string obtainable from `esummary` without retrieving a word of the article.
+   Measured across the four published `antonkulaga/*` modules: 3668 of 3668 rows carry a
+   `provenance_quote`, 81 PMIDs, and there is **exactly one distinct quote per PMID** — the title,
+   verbatim, trailing period included, byte-for-byte what `lookup_citation` returns as `title`
+   (`F42` / upstream `S54`).
+
+   **The detection rule is the shape, not the string.** One identical quote across every row citing
+   a PMID is not a located passage whatever it says, because different rows cite the same paper for
+   different findings. Check your own module with a two-line group-by before publishing.
+
+   Two consequences worth carrying:
+
+   - **On those four modules the check never even ran.** `literature.csv` records
+     `quotes_authored: 0` and an empty `quotes_found` on every row, because the literature pass ran
+     before the quotes were authored and the sidecar is merge-not-clobber. The manifest then
+     publishes `quotes_authored: 0, quotes_found: 0` beside 3668 authored quotes — a confident zero
+     over a null (upstream `S56`). So `quotes_found` is not a detector for this; the group-by is.
+   - **A catalog-derived row may have no quotable passage at all.** Where a `studies.csv` row comes
+     from a GWAS Catalog association rather than from the paper's prose, the paper frequently never
+     names the variant: measured on `aggression_anger`, none of the 65 rsIDs cited to PMID 29500382
+     appears in that article's retrievable text, because the associations are in its supplementary
+     data. The honest cell there is **empty**, and empty splits into *read and not found* versus
+     *no fulltext retrievable* — see `find-evidence`.
+
+2. **A bibliographic string in `pmid` silently cites a different paper.** `PMID_PATTERN` is
    `\b(\d{1,8})\b` (`spec.py:81`) and it runs over the **whole free-form cell**. Measured on
    format 0.6.1:
 
@@ -197,32 +226,32 @@ Ordered by how likely a first-timer is to hit them.
    > substantive point above, and it stands.
    > **Expected state.** Until that item ships, `extract_pmids` keeps returning every 1–8 digit run
    > in the cell. Write the digits alone, or `[PMID: N]` with no year beside it.
-2. **PMC is not PubMed, and it used to turn on a space (RM50).** `PMC 3110566` once parsed as PMID
+3. **PMC is not PubMed, and it used to turn on a space (RM50).** `PMC 3110566` once parsed as PMID
    3110566, a real record for another paper. Both spellings now refuse, and the message **names the
    id it saw** (`validate_pmid_cell`, `spec.py:134-172`). It **never repairs** — use
    `lookup_citation(pmcid=…)`, which reports the PMID as an advisory. A cell carrying **both**
    (`21551363; PMC3110566`) is accepted and yields the real PMID.
-3. **A reorder moves `artifact.digest` and un-closes the module while `content_signature` stays
+4. **A reorder moves `artifact.digest` and un-closes the module while `content_signature` stays
    identical.** Measured above. Sorting your `studies.csv` "to tidy it up" spends a rebuild and the
    closure, and a registry content-dedup lookup will still say the data is already published.
-4. **A row may name no variant at all (0.6 / RM47) — but never half of one.** `REQUIRED_ANY_OF` is
+5. **A row may name no variant at all (0.6 / RM47) — but never half of one.** `REQUIRED_ANY_OF` is
    `()` (`spec.py:920`). `StudyRow(pmid="12345", conclusion="x")` is accepted and its `variant_key`
    is `None`. But `start` or `ref` with neither `rsid` nor `chrom` **raises** — that is a blank cell
    in the middle of a coordinate, not an absent subject (`spec.py:1066-1105`). Consumers holding a
    negative test broke on this (S40, `docs/CONSUMER_SUGGESTIONS_HISTORY.md:1760-1790`); the
    load-bearing consequence is that **a null `variant_key` in a polars join is a silently smaller
    result, not an error**.
-5. **`chrom` is not validated on a `StudyRow`.** Measured: `StudyRow(pmid="1", chrom="banana",
+6. **`chrom` is not validated on a `StudyRow`.** Measured: `StudyRow(pmid="1", chrom="banana",
    start=1)` is accepted and keys as `banana:1:None`. `spec.py:902-903` says so deliberately (only
    `VariantRow` runs a chrom validator). A typo'd chromosome therefore surfaces only as the
    generic *"Studies reference variants not in variants.csv"* warning.
-6. **The study must carry the *same identity* its variant row got.** Matching is on any shared
+7. **The study must carry the *same identity* its variant row got.** Matching is on any shared
    handle — same rsid, or same `chrom:start:ref` **regardless of alt**
    (`_cross_validate_studies`, `compiler.py:3130-3160`; and
    `reference_examples/pathogenic_clinvar/README.md:137`). Key a variant by coordinate and cite it
    by rsID and it is an orphan. The ClinVar drafter handles this for you (`clinvar_draft.py:428-432`)
    and its comment records that a real panel found it the hard way.
-7. **A ClinVar re-draft after 0.6.3 leaves stale rsid-only rows in `studies.csv`, and nothing names
+8. **A ClinVar re-draft after 0.6.3 leaves stale rsid-only rows in `studies.csv`, and nothing names
    them.** `_superseded_rsid_rows` (`clinvar_draft.py:344-390`) is the S45 repair and it is called
    **once**, over `report.path` — the `variants.csv` report (`clinvar_draft.py:610`). `_study_rows`
    honours the same `ambiguous` set (`clinvar_draft.py:431-432`) and appends coordinate-keyed rows
@@ -241,26 +270,26 @@ Ordered by how likely a first-timer is to hit them.
    > **Guard.** After any ClinVar re-draft of an existing module, diff `studies.csv`'s rsIDs against
    > `variants.csv`'s and delete the stale rows by hand **before** compiling. Do not read that orphan
    > warning as "my citation is wrong" — rule out supersession first.
-8. **`p_value_num` is redundancy-bearing, so do not derive it from `p_value` mechanically and then
+9. **`p_value_num` is redundancy-bearing, so do not derive it from `p_value` mechanically and then
    treat the agreement as a check.** It is one number written twice on purpose; the check catches a
    transcription slip and nothing else.
-9. **A quoted passage from a non-commercial article warns and never gates.** `_check_quoted_article_licenses`
+10. **A quoted passage from a non-commercial article warns and never gates.** `_check_quoted_article_licenses`
    (`compiler.py:5607-5640`) fires only when a study row carries a quote **and** the matching
    `literature.csv` row says `commercial_use is False`. `None` is unknown and withholds. The format
    refuses to arbitrate copyright — that is a decision, not an omission (`SCHEMAS.md:1066-1078`).
-10. **A `strict` compile does not mean the citations are right.** `--strict` means *reproducible*.
+11. **A `strict` compile does not mean the citations are right.** `--strict` means *reproducible*.
     A module citing PMID 1990 for everything compiles green.
-11. **Drafted files are CRLF; hand-written ones are LF.** Measured across the reference corpus: 4 of
+12. **Drafted files are CRLF; hand-written ones are LF.** Measured across the reference corpus: 4 of
     the 10 `studies.csv` files are CRLF (`hboc_palb2`, `hfe_hemochromatosis`, `par_boundary`,
     `shox_par1` — all drafter-written; `csv.DictWriter` defaults to `\r\n`), 6 are LF. RM82 is what
     stops your editor's newline normalization from un-closing the module.
-12. **Most of this table is never used.** Measured over all 10 reference `studies.csv` files: only
+13. **Most of this table is never used.** Measured over all 10 reference `studies.csv` files: only
     **6 of the 18 authored columns appear anywhere** — `pmid` (10 files), `rsid`/`chrom`/`start`/`ref`
     (6), `conclusion` (5), `study_design` (1), `population` (1). Zero instances of `p_value`,
     `p_value_num`, `stat_significance`, `effect_size`, `effect_measure`, `effect_allele`,
     `trait_efo_id`, `doi`, `provenance_quote`, `provenance_regex`. Treat the reference corpus as
     evidence of the *floor*, not of good practice.
-13. **`describe_table` can be stale if the MCP server process is older than the installed
+14. **`describe_table` can be stale if the MCP server process is older than the installed
     packages.** Measured in this workspace: the plugin-cache server at
     `~/.claude/plugins/cache/just-dna/just-module-creator/0.7.0` runs format **0.5.4** and answers
     `any_of: [["rsid"],["chrom"]]` with **no `effect_allele` column**, while

@@ -387,7 +387,8 @@ nothing was measured.
 
 ## What does not exist
 
-- **No `describe_table` / `table_requirements` / `get_template` / draft route.** `gene_metrics.csv` is
+- **No `describe_table` / `table_requirements` / `get_template` / draft route — but there IS a
+  live-schema route: `describe_machine_table("gene_metrics.csv")`, essentials tier.** `gene_metrics.csv` is
   absent from `draft.DRAFTABLE` and `hints.describe_table` raises `DraftError`. Verified against the
   live plugin: `describe_table("gene_metrics.csv")` → *"Unknown table kind 'gene_metrics.csv'.
   Authorable kinds: …"*, and the **thirteen** names it lists do not include it. (That wording is this

@@ -344,8 +344,11 @@ annotation path reads none of it** — by design, since it is not published with
 
 `describe_table("resolution.csv")` and `get_template("resolution.csv")` **do not work** — both go
 through `draft.DRAFTABLE`, which holds authored tables only, and raise
-`'resolution.csv' is not an authored table of this format`. That is correct behaviour, not a bug: you
-do not hand-author this file. The live-schema routes that do work:
+`'resolution.csv' is not an authored table of this format`. That is **routing**, not a verdict that
+the file is unreadable or that its rows are untouchable — `describe_machine_table("resolution.csv")`
+answers it in full, at essentials tier. (Nor is a hand-written row here forbidden: `source` documents
+`manual` for exactly that, and `refresh_sidecar` recognises and protects such rows. What is wrong is an
+**unmarked** cell, which nothing downstream can tell from a fetched fact.) The other live-schema routes:
 
 ```
 authoring_reference()                      # JSON; ["models"]["ResolutionRow"] has every column,

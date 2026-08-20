@@ -464,7 +464,9 @@ annotation half of `just-dna-lite` cannot even locate the file.
 
 ## Ask the live schema
 
-`describe_table` / `table_requirements` / `get_template` / `lint_rows` **all refuse this table** —
+`describe_machine_table("gene_validity.csv")` answers this file in full, at essentials tier. The
+authored-table routes — `describe_table` / `table_requirements` / `get_template` / `lint_rows` —
+**decline it**, which is routing rather than an absence —
 they gate on `draft.DRAFTABLE`, which holds the authored kinds plus `licensing.csv`/`sources.csv`
 only. Verified against format 0.6.1 / compiler 0.6.1:
 `hints.describe_table("gene_validity.csv")` raises
