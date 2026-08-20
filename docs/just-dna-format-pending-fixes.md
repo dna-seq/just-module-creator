@@ -63,6 +63,53 @@ the installed packages, not the sibling checkouts** — which is the check this 
 exists to force, and the reason its status lines name both halves.
 
 
+## F53 — a module without `variants.csv` cannot be found by gene (upstream `S57`)
+
+**Status:** filed 2026-08-20, open upstream. **Not** in any release.
+
+`compiler.variant_stats` derives `stats.genes` from `variants.csv` alone and the registry's gene index
+reads that field, so a PGx, copy-number or activity-bin module publishes `gene_count: 0, genes: []`
+however many rows carry a `gene` cell. Measured on their own `cyp2c19_star_alleles`: `genes: []` beside
+**106 rows** carrying `gene=CYP2C19`. Six independent reproductions, three of our dossiers reaching it
+separately.
+
+**Our guard is prose, and it is deliberate.** `module-101` and `module-tables` both carry it, and both
+say the same thing: **do not add an empty or invented `variants.csv` to fix it** — that trades a
+discoverability gap for a dishonest module, and it makes `studies.csv` required. Name the genes in the
+README and the display prose, where a text search finds them.
+
+The `S57` note asks which of two things `stats` is meant to describe — the module or the table — because
+that decides whether the fix is theirs or the registry's. If they answer "the table", this re-files in
+the registry intake.
+
+## F54 — the binning family annotates nothing end to end (upstream `S58`)
+
+**Status:** filed 2026-08-20, open upstream.
+
+No consumer implements the bin lookup, so `repeat_alleles.csv`, `copynumbers.csv`, `heteroplasmy.csv`
+and `activity_phenotype.csv` produce nothing a reader renders today. Three independent reproductions.
+The format side is complete; what is missing is a normative statement that the lookup is a conforming
+consumer's obligation — `SCHEMAS.md` specifies the genotype join in that detail and specifies nothing
+equivalent for a measure.
+
+**Our guard:** `module-consumer` carries it as a 🚧 and `module-curate` points at it. We tell authors the
+tables are still worth writing — they are correct and publishable — and to say in the README what the
+bins mean, because prose is the only path to a reader right now. **Do not promise an author that a
+heteroplasmy module will produce a report today.**
+
+## F55 — three attestations record a check that could not have failed (upstream `S59`)
+
+**Status:** filed 2026-08-20, open upstream.
+
+`enrich_pgx` grading CPIC's own table; `hints._flag_advisory_columns` naming checkers that never open the
+table quoted; `enrich_facts` collapsing "no constraint published" into "not asked". The record cannot
+carry the distinction between *checked and agreed* and *compared a source with itself*.
+
+**Our guard:** `module-check` states all three and gives the test that catches the next one — **ask of
+any green attestation: could this check have failed?** The note asks upstream to generalise the skip
+reason their ClinVar `panel:` pin already produces, and explicitly does **not** ask for a severity
+change.
+
 ## Upstream `RM104`–`RM111` — filed from our 2026-08-20 dossier audit, all open
 
 Eight code defects the three-way dossier audit found in `just-dna-format` / `-compiler` / `-enricher`.
