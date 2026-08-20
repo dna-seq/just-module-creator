@@ -197,7 +197,63 @@ owns `docs/dogfooding.md` (appending `F44`+), `docs/HANDOFF-antonkulaga-quotes.m
 Its brief: remediate the title-quotes on working copies of two of the four published modules, publish
 the refreshed one to the **polygon** (never production), and map the friction.
 
-Everything else in `skills/` was swept — see the section below, written when the inventory returned.
+### The skills sweep — ~15k lines, inventoried then judged
+
+A read-only agent inventoried every skill and dossier and quoted ~80 passages; **I judged them, it did
+not.** What changed:
+
+- **`module-101` rule 2.** It mirrored `server.INSTRUCTIONS` and so contradicted the server the moment
+  that changed. Now four rules matching the server's five, including the lag hazard, plus a line
+  saying the server wins if they drift. The lifecycle diagram no longer labels cross-check
+  *"report only, never repair"*.
+- **The ten scaffold seeds — the highest-leverage edit of the night.** Every unwritten stage skill
+  carried the identical bullet *"the cells no tool fills, with the refusal reasons"*. That is how the
+  retired stance would have been written into ten skills one at a time, by ten different sessions.
+  Replaced with the discriminator. `module-check` was worse: its *"What this skill owns"* sentence
+  **was** the stance (*"Reporting, never repairing"*).
+- **`create-module`** was already half-reversed (*"you may author these, and you should"*) but still
+  forbade quoting the fulltext `fetch_fulltext` had just handed over, because the check "proves
+  nothing". It proves something — the passage belongs to the paper you cited, which catches the
+  wrong-PMID error. Table now says **yes** on all three rows with the honest cost per row, and the
+  title prohibition replaces it as the one hard rule.
+- **Seven "the refusal is the feature / output / answer / design" sites** — the framing under review,
+  where the slogan was doing the arguing. Each now states its own reason.
+- **Five "the quote columns attest a HUMAN read it" sites** — corrected to attribution.
+  `references/readme.md` held the strongest form (*"which cells no tool may fill: all of them"*).
+- **`module-revise`'s discriminator table is kept verbatim** — it was already right, and it is the
+  canonical statement of the split. Only its subordination to the retired rule changed.
+
+**What I deliberately did NOT change, so you don't redo it:** the recurring dossier heading *"cells no
+tool may fill even though it easily could"* stands. It is accurate — it scopes to redundancy-bearing
+cells and to judgement cells, and it is about a **tool auto-filling**, which is still wrong; it says
+nothing about what an agent may author. Same for three surviving *"reported, never repaired"* uses in
+`SYMPTOMS.md`, `heteroplasmy.md` and `create-module.md:1305`: those describe what the **upstream**
+checks do on a ref mismatch, which is true of the compiler and is not a rule of ours.
+
+### Loose ends the sweep turned up that are NOT RM15, and are yours if you want them
+
+1. **Six dossiers contradict their own correction banners.** `resolution.md`, `frequencies.md`,
+   `gene_metrics.md`, `gene_validity.md`, `clinical_assertions.md`, `gwas_effects.md` each carry a
+   2026-08-20 banner saying *"this file says `describe_table` refuses this table… ask
+   `describe_machine_table`"* — and their bodies still say the call refuses. The banner was prepended
+   and the bodies were never swept. **I fixed only `clinical_assertions.md`**, because its wording was
+   also a stance claim ("the refusal is correct, not a bug"). Five to go.
+2. **Four dossiers say `create-module/SKILL.md` is wrong, and it still says it.** `variants.md:213`
+   (the homozygous/undecided promise), `pharm_variants.md:197`, `pgs.md:222`, `repeat_alleles.md:213`
+   (the pre-0.6 integer-bin rule at `create-module:1279`). Independent self-corrections all pointing
+   at one unedited file.
+3. **`activity_phenotype.md:443` claims a live `describe_table` returned the format **0.5** shape
+   while `importlib.metadata` reported 0.6.1.** If that reproduces it undercuts rule 1 —
+   *ask the tool, never memory* — and is worth an upstream note. I did not reproduce it.
+4. **A false alarm, checked so you don't recheck it:** the inventory flagged `refresh_sidecar` and
+   `describe_machine_table` as possibly not existing. Both exist. `refresh_sidecar` is
+   **extended-only**, which is why an essentials roster does not show it, and `module-refresh`
+   already says "Extended tier". No defect.
+5. **`docs/DESIGN-version-compare.md` carries the stance twice** (a "report, never repair" section
+   heading and a machine-located-quote analogy) and I left it alone — the primer says a design study
+   may still be running against it. It will need the same pass.
+6. **A duplicate `F38`** exists in `docs/just-dna-format-pending-fixes.md` (two different findings
+   share the number). I did not renumber; ids are load-bearing. Next free is **F44**.
 
 ## Agent B — handoff (fill on finish)
 
