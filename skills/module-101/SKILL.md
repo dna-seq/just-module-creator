@@ -207,6 +207,7 @@ match.
 | resolve coordinates, mint ids, catch a ref mismatch | `enrich_module` | essentials |
 | identifier currency, **and gene↔chromosome agreement** | `check_identifiers`, `lookup_identifier` | essentials |
 | declare the authoring finished | `close_module` | essentials |
+| record why an authored value outranks a source, and read the queue back | `record_override`, `review_queue` | essentials |
 | content signature, artifact integrity | `module_signature`, `verify_artifact` | essentials |
 | the whole generated DSL at once | `authoring_reference` | essentials |
 | see whether a module already exists, and read one | `registry_search`, `registry_get_module` | essentials |

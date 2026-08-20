@@ -175,11 +175,19 @@ precisely so a later reviewer lands on it.
 can go.** That is the one piece of evidence in the whole format that an authored judgement was later
 vindicated.
 
-🚧 **ROADWORKS — nothing produces this list yet.** Recording the reason an authored value outranks a
-source is our `RM16`; whether a check downgrades the mismatch on finding one is upstream's `S52`, filed
-and unanswered. **Until both land, a reviewer has no queue** — so on a review pass, diff the authored
-tables against what the passes report and read the disagreements by hand. `module-diff` has the
-signature triage; `module-check` has the checks that produce the mismatches.
+**`review_queue(spec_dir)` produces that list.** It reads the override records in
+`provenance.json` and ranks them worst-first, offline:
+
+| State | Means | What a reviewer does |
+|---|---|---|
+| `still_bound: false` | the authored cell was **edited again** after the reason was recorded, so the reason no longer describes the value it is attached to | read first — the justification and the value have come apart |
+| `standing` | the module and the archive still disagree | read the reason and decide whether it still holds |
+| `resolved` | **the archive caught up**: it now says what the module said | the override was vindicated — the only such evidence this format holds. Retire the record |
+| `unknown` | the question could not be put offline | **not agreement.** Only `clin_sig` has the archive's current answer inside the module, in `clinical_assertions.csv` |
+
+The queue exists because a reviewer previously had nowhere to start. **A record never makes a check
+pass** — whether upstream downgrades a mismatch's severity when a reason is on file is their contract
+question, filed as `S52` and unanswered, and a downgrade would still mean *visible*.
 
 **The re-close IS visible downstream, and that still does not make it the default.** Both halves
 matter, and the second is the one an agent gets wrong:

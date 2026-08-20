@@ -77,7 +77,40 @@ Freeform, unscheduled, no commitment implied.
 
 ## RM16 — capture the outrank reason, and write `provenance.json` (absorbs RM14)
 
-**Severity:** high · **Status:** open · **Owner:** unassigned · **Opened** 2026-08-20
+**Severity:** high · **Status:** **the capture shipped 2026-08-20 (night run); the residue below is open** · **Owner:** agent B · **Opened** 2026-08-20
+
+> **Shipped.** `src/just_module_creator/overrides.py` plus two essentials tools,
+> `record_override` and `review_queue`, with 15 tests.
+>
+> - **`provenance.json` is written in upstream's own shape** — `ProvenanceDoc` / `ProvenanceItem`,
+>   recognised by the registry, outside `artifact.digest`. An item already there that is **not** ours is
+>   kept and reported, never rewritten.
+> - **Per-field, inside a per-row schema.** One item per `(variant_key, field)` — their `items` list has
+>   no uniqueness rule — with the machine fields in a marker appended to `rationale`. So the per-field
+>   record **travels with the module** rather than sitting in a local cache a second author would never
+>   see, and it re-emits into whatever shape `S52` settles on. That was the open question this entry
+>   said not to design around; this designs around *today's schema* instead of around a guess.
+> - **Bound by digest to the value it justifies**, so a later edit to the cell makes the record stale by
+>   construction rather than carrying an old reason onto a new value.
+> - **The move is logged** to `logs/authoring.log`, which is swept up by every compile and published
+>   with no opt-out — the surface §2 requires, and it now has its first writer. Nothing absolute-path or
+>   credential-shaped goes into it, because it publishes verbatim.
+> - **The terminal state is detected** where it can be, offline: `review_queue` reads
+>   `clinical_assertions.csv` and reports `resolved` when the archive has caught up — the only evidence
+>   in this format that an authored judgement was later vindicated. Everything else is `unknown`, which
+>   is **not** agreement, and it says so.
+> - **It produces no pass.** A record downgrades nothing and silences nothing.
+>
+> **What is left, and why each is left:**
+>
+> 1. **`refresh_sidecar` reading the records.** The capture is keyed by `(variant_key, field)`, which
+>    fits `variants.csv` and not a sidecar keyed by gene or by locus. Mapping a sidecar subject onto a
+>    record subject is a design question that only came into existence once the capture did, so it was
+>    not settled at 3 a.m. Both docstrings in `refresh.py` now state the narrowed reason rather than the
+>    old "the log is empty".
+> 2. **The grading recommendations** (item 4 below) — skill-side, and they belong with a real corpus of
+>    overrides rather than invented ahead of one.
+> 3. **`S52`'s answer**, which is upstream's and decides whether a check downgrades a mismatch.
 
 **Supersedes RM14** (*"`provenance.json` is recognised by the registry and by nothing here"*), which
 was the same gap seen from the wrong end. RM14 read as a tidiness item — a recognised file nothing

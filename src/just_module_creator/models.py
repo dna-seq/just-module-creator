@@ -23,6 +23,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from just_module_creator.overrides import OverrideRecord, QueuedOverride
+
 
 # --------------------------------------------------------------------------- #
 # Generic envelopes
@@ -1598,3 +1600,43 @@ class SidecarRefreshReport(BaseModel):
         description="What this tool does not decide, and what a moved signature means.",
     )
     produced_by: SchemaVersions = Field(description=_PRODUCED_BY_WHY)
+
+
+# --------------------------------------------------------------------------- #
+# Overrides — the record behind a value that outranks a source (RM16)
+# --------------------------------------------------------------------------- #
+class OverrideResult(BaseModel):
+    """What was recorded, and where it went. Nothing here makes a check pass."""
+
+    written_to: str = Field(description="The provenance.json this landed in.")
+    logged_to: str = Field(
+        description="The authoring log. It travels with the module and publishes with the compile."
+    )
+    replaced_existing: bool = Field(
+        description="Whether a record for this (variant_key, field) was already on file. "
+        "Replacing one is legitimate — a judgement can be revised — and it is reported "
+        "rather than silent, because the previous reason is gone."
+    )
+    record: OverrideRecord = Field(description="Exactly what was written.")
+    note: str = Field(description="What this does and does not do.")
+
+
+class ReviewQueue(BaseModel):
+    """The overridden rows, ranked worst-first. Offline; the archive half is partial."""
+
+    spec_dir: str = Field(description="The module read.")
+    total: int = Field(description="Records on file.")
+    unbound: int = Field(
+        description="Records whose authored cell has changed since — the reason no longer "
+        "describes the value it is attached to. Read these first."
+    )
+    retirable: int = Field(
+        description="Records whose mismatch has resolved: the archive caught up and the "
+        "override was vindicated. The only such evidence this format holds."
+    )
+    entries: list[QueuedOverride] = Field(description="Ranked; standing and unbound first.")
+    other_provenance: list[str] = Field(
+        default_factory=list,
+        description="Provenance items in the file that are not ours. Kept, never rewritten — "
+        "another writer's record is not this tool's to discard.",
+    )

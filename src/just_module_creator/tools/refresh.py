@@ -39,10 +39,15 @@ guesses, prefers a side or merges.
 **The condition:** it is two data points because we do not keep a third. An
 authoring log recording that this cell was edited, by whom and why, would settle
 it outright — and CLAUDE.md §2 now requires exactly that of every authoring
-move. The `logs/` surface exists and is empty. So this refusal is honest today
-and is **not permanent**: when the log is filled, a conflict whose edit is
-recorded stops being ambiguous, and this tool should read it rather than keep
-shrugging. Do not harden the current answer into a principle.
+move. **Half of that third point now exists**: `record_override` writes a reason
+into `provenance.json` and the move into `logs/authoring.log` (RM16). What it
+does not yet carry is a **sidecar** subject — its records are keyed by
+`variant_key` and a column, which fits `variants.csv` and not `gene_metrics.csv`
+keyed by gene or a `resolution.csv` row keyed by locus. So the refusal below is
+still honest, and it is now honest for a *narrower and nameable* reason: the
+record exists, the subject mapping does not. **Do not harden it into a
+principle** — when the mapping lands, a conflict whose edit is recorded stops
+being ambiguous and this tool should read it.
 
 Where `source` proves a human wrote the row, that is surfaced per row and is
 still not acted on, for a reason the log does not touch: knowing *who* wrote a
@@ -704,8 +709,11 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
         published, and the two values alone cannot separate those — two data
         points, three explanations. So nothing here guesses, prefers a side or
         merges: `conflicts` lists both sides and you decide. Note this is a limit
-        of the *evidence available*, not a rule against acting: a filled authoring
-        log would settle which cells you edited, and `logs/` is empty today.
+        of the *evidence available*, not a rule against acting: a record saying you
+        edited this cell and why would settle it. `record_override` now writes such
+        records, but keyed by `variant_key` + column — a sidecar subject is keyed
+        otherwise, so nothing here can look one up yet. Read `review_queue` beside
+        this report until it can.
 
         Where the captured row's `source` is a value no fresh row uses,
         `source_proves_authored` says so per row — that narrows what happened and

@@ -36,6 +36,42 @@ pinned pair is now `{module-101, module-start}`.
 **All sixteen end with the same discriminator section** — what to apply silently, what to put in front
 of a pilot — replacing the "cells no tool fills, with the refusal reasons" framing `RM15` retired.
 
+### `RM16` — the counterstance gets its record, and a review pass gets a queue
+
+§2 says this layer may write, that every move is logged, and that editing **against** a source needs a
+reason that outranks it. None of that was real: no tool wrote a reason anywhere and `logs/` had no
+writer at all.
+
+`record_override` writes one into **`provenance.json`** — upstream's own file, already carrying
+`variant_key`, `rationale`, `human_reviewed`, already in the registry's `RECOGNIZED_SPEC_FILES`, and
+already outside `artifact.digest`, so the record costs no identity — and appends the move to
+`logs/authoring.log`, which every compile sweeps up and publishes with no opt-out.
+
+Four properties are the design rather than the implementation:
+
+- **The record answers a reported mismatch; it cannot precede one.** A row markable as outranked
+  *before* the check runs would destroy the only signal that catches the other pathway — a
+  hallucination or a stale recollection, where the warning is doing its job. The two are
+  indistinguishable at the moment the check fires, which is exactly why the ordering carries the
+  weight.
+- **It never produces a pass.** Downgraded, still visible, still in the queue.
+- **It is bound by digest to the value it justifies**, so editing that cell again makes the record
+  stale rather than silently attaching an old reason to a new value.
+- **Per-field inside a per-row schema.** An outrank is per field; `ProvenanceItem` is per
+  `variant_key`. Rather than design around a guess at `S52`'s answer, this writes one item per
+  `(variant_key, field)` with the machine fields in a marker on `rationale` — so the per-field record
+  **travels with the module** instead of living in a local cache a second author would never see.
+
+`review_queue` reads them back, ranked worst-first, and is the priority list a review pass has never
+had. `still_bound: false` first (the value moved under the reason), then `standing`, then `resolved` —
+which means the archive caught up and the override was **vindicated**, the only such evidence this
+format holds. `unknown` is honest rather than green: only `clin_sig` has the archive's current answer
+recorded inside the module.
+
+Left open and named in `RM16`: `refresh_sidecar` reading these records, which needs a sidecar-subject
+mapping that only became a question once the capture existed; both docstrings in `refresh.py` now
+state that narrowed reason instead of the retired "the log is empty".
+
 ### `RM17` — the check that can see a quote nobody located
 
 Two spec directories differing *only* in `provenance_quote`, one honestly located and one all article

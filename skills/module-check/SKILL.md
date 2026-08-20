@@ -198,7 +198,13 @@ has edited the calls it covers.
 - **A stale identifier.** A rename is what an author needs to *see*; rewriting it destroys the evidence
   that it moved.
 - **Whether an attestation that could not have failed should be published as one.**
-- **The reason that outranks a source**, whenever you do edit against one.
+- **The reason that outranks a source**, whenever you do edit against one — and once you have
+  decided, **record it**: `record_override(spec_dir, variant_key, field, authored_value, source_name,
+  reason, recorded_by)` writes it into `provenance.json` and logs the move into
+  `logs/authoring.log`. Call it **in response to a reported mismatch, never ahead of one**: a row
+  markable as outranked before the check runs would destroy the only signal that catches the other
+  pathway, which is an ordinary hallucination or a stale recollection. It records; it does not
+  silence. `review_queue` reads the records back, and `module-revise` consumes that queue.
 
 ## What this stage cannot do
 

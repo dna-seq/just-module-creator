@@ -38,7 +38,7 @@ report.** Archives lag the edge — a retraction, a refuting meta-analysis, a bi
 disagrees with ClinVar may be **the module being right and current while the archive is stale**, so
 conforming it silently *degrades* the module, and the check then agrees with itself and reports green.
 Editing against a source needs a reason that outranks the source, **and that reason gets written
-down.**
+down** — `record_override` is where it goes, after the mismatch has been reported and never before.
 
 ## The cells a drafter deliberately leaves
 
