@@ -157,7 +157,14 @@ anywhere. **Guard:** read `classifications` as *everything ever curated*, never 
 call; sort by `classification_date` per `(gene, disease, moi, submitter)` and delete stale rows by hand
 before publishing. Upstream **RM108**.
 
-## What only an author may decide
+## What needs a pilot, and what you may simply fix
+
+**Apply it and say nothing:** deleting a sidecar you are about to re-derive, once the capture is
+verified; writing a refreshed sidecar back to the file and spelling you read it from; re-running a pass
+whose only failure was an outage; deleting a superseded rsid-only study row once the coordinate rows
+demonstrably cover its records.
+
+**Surface it, and let a pilot settle it:**
 
 - **Which side of a `differs` is right.** No tool will pick. The source is not automatically newer or
   better than what you authored.

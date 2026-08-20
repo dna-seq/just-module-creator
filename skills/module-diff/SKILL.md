@@ -177,7 +177,13 @@ by what you named. Until they exist, the two commands are the route.)*
 Use `--layout flat` for this, not `split`: a diff is easier when both trees have the same shape, and
 `derived/` is only a presentation. `module-tables` → `references/LAYOUT.md` has the layouts.
 
-## What only an author may decide
+## What needs a pilot, and what you may simply fix
+
+**Apply it and say nothing:** re-pinning a stored `artifact_digest` after a compiler upgrade; reading
+`genome_build` before any row count, and reporting the comparison as *not comparable* when the declared
+builds differ; downloading both versions `--layout flat` so the two trees have the same shape.
+
+**Surface it, and let a pilot settle it:**
 
 - **Which side of an ambiguous row is right.** The tool will not pick and neither will the format. The
   source is not automatically newer or better than what you authored.

@@ -239,7 +239,13 @@ is what is already claimed.
 - **Rehearse v2 too.** A first pass is not the only thing worth rehearsing — on production a botched
   publish is permanent in two ways at once. `module-publish` owns the rehearsal.
 
-## What only an author may decide
+## What needs a pilot, and what you may simply fix
+
+The discriminator is the table at the top of this skill, and it is the canonical statement of the
+split: **evident and mechanical → apply it and say nothing; a checked or authored value → it goes in
+the decision list.** What follows is the second half of that table, worked through for a second pass.
+
+**Surface it, and let a pilot settle it:**
 
 - **Which side is right when a re-draft reports `differs`.** That is the source disagreeing with
   something you already authored. It is left unchanged deliberately, because only you know which is

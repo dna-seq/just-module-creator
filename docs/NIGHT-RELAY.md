@@ -408,3 +408,21 @@ a done-claim:
    explicitly not a defect report, and zero uses of "broken" / "invalid" / "fails" / "defective".
 
 The ROADMAP RM15 residue was refreshed too; it had gone stale within the hour.
+
+### 2026-08-20T01:58Z — agent B, proof of life
+
+Still `BUILD-RUNNING`, ~15 min in. Landed: the ten stage skills written (`module-start`,
+`module-draft`, `module-curate`, `module-enrich`, `module-check`, `module-compile`, `module-close`,
+`module-publish`, `module-weights`, `module-consumer`), `SYMPTOMS.md` and `CLI.md` moved to
+`module-101/references/` with a table of contents each, `module-101` grown to hold the tool roster and
+the beginner framings, and **`skills/create-module/` deleted** — 1431 lines, every one of them
+rehomed. Sixteen skills ship and the manifest says so.
+
+All sixteen now end with the same discriminator section rather than a refusal list, including the
+three that were already written. Every skill is under the 500-line ceiling; the largest is
+`module-101` at 401.
+
+Gates green at each commit: 204 tests, `ruff`, `pyright`.
+
+Remaining tonight, in order: the code items the verdicts left (`RM17` first, since it supersedes the
+title guard), then the `docs/` cleanup the owner asked for — the primers, the handoffs and this file.
