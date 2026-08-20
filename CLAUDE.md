@@ -229,11 +229,13 @@ design depends on.
      would not be.
   2. **Every authoring move goes through the log.** *"Logged — absolutely, yes; there's
      a whole `logs/` surface for this and I would want to have every authoring move
-     going through any tool logged."* That surface exists and is currently empty — the
-     dossier for it is literally titled *the provenance subtree nobody fills*. It is
-     swept up by every compile and published with no opt-out, so it is the right place
-     and it costs an author nothing. **A move the agent makes by hand is harder to
-     capture, so make it go through a skill** that logs.
+     going through any tool logged."* **That surface finally has a writer**:
+     `record_override` appends to `logs/authoring.log` (`RM16`, 2026-08-20), and its
+     dossier was titled *the provenance subtree nobody fills* until it did. It is swept
+     up by every compile and **published with no opt-out**, so it is the right place, it
+     costs an author nothing, and nothing may write an absolute path or a credential
+     into it. **A move the agent makes by hand is harder to capture, so make it go
+     through a tool or a skill** that logs. Every *new* write surface owes the same.
   3. **The agent needs a DISCRIMINATOR, and this is the hard part.** The vacuity
      argument was never the real risk. The real risk is that **the source lags the
      edge**: *"why not?? ClinVar lags behind edge, say the article is retracted,

@@ -1,4 +1,10 @@
-# `logs/` — the provenance subtree nobody fills
+# `logs/` — the provenance subtree, and the one writer it finally has
+
+> ⚠️ **CHECK — this file was titled *"the subtree nobody fills"* until 2026-08-20, and that is no
+> longer true.** `record_override` appends to `logs/authoring.log` (`RM16`), which is the first
+> writer this plugin has ever pointed at the surface. Everything below about *what happens to* a log
+> — discovered, copied, hashed, never opened, published with no opt-out — is unchanged and now
+> matters more, because a file this repo writes travels to the catalog verbatim.
 
 > **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
 > (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a

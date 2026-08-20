@@ -115,7 +115,7 @@ owns the procedure; these are the properties that make it necessary.
 | [`module_spec.md`](references/module_spec.md) | the one required file: identity, build, and what the weights mean |
 | [`readme.md`](references/readme.md) | the module's prose — and the receipt that is not it |
 | [`logo.md`](references/logo.md) | the picture, and the house style it is drawn in |
-| [`logs.md`](references/logs.md) | the provenance subtree nobody fills |
+| [`logs.md`](references/logs.md) | the provenance subtree — and since `record_override`, one this plugin writes to |
 | **[`LAYOUT.md`](references/LAYOUT.md)** | **the tree itself**: which names are recognised, what is hoisted, renamed or refused on upload, and what `derived/` actually is |
 
 ## Which table — decide on grain, not on subject
