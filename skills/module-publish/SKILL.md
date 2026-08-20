@@ -271,6 +271,7 @@ messages are mostly the registry's:
 
 | You need | Load |
 |---|---|
+| **running it on a genome without publishing at all** | `module-install-local` — a different seam, not a substitute for the polygon |
 | the closure and the record the card projects | `module-close` |
 | publishing a second version | `module-revise` |
 | what the download layouts look like | `module-tables` → `references/LAYOUT.md` |

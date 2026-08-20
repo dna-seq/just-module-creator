@@ -1,6 +1,6 @@
 """The skills are a shipped surface and had no test. This is the guard.
 
-Eighteen skills, ~4,600 lines, loaded by an agent rather than imported by code — so
+Nineteen skills, ~4,800 lines, loaded by an agent rather than imported by code — so
 nothing here failed when a link broke, when a skill named one that no longer
 shipped, or when a file grew past the size where it stops being read properly.
 The 1431-line monolith that was dismantled on 2026-08-20 got that way partly
@@ -62,7 +62,7 @@ NAMES = {p.name for p in ALL}
 
 def test_the_skill_set_is_what_the_manifest_promises():
     """A skill added or removed without the count moving is the drift this catches."""
-    assert len(ALL) == 18, f"skills shipped: {sorted(NAMES)}"
+    assert len(ALL) == 19, f"skills shipped: {sorted(NAMES)}"
     assert "create-module" not in NAMES, (
         "the 1431-line procedure skill was dismantled on 2026-08-20; recreating it is "
         "the drift CLAUDE.md warns about by name"

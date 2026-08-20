@@ -364,6 +364,7 @@ demand, do not invoke them.
 | build the artifact and read the build | `module-compile` |
 | declare the authoring finished | `module-close` |
 | rehearse, then publish | `module-publish` |
+| **run it on a genome here, without publishing** | `module-install-local` |
 | what a `weight` means | `module-weights` |
 | how a reader joins this to a VCF | `module-consumer` |
 | which table kind a finding belongs in, and every column of it | `module-tables` |

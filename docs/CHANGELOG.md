@@ -5,6 +5,42 @@ on our side, so agents in sibling repos are not surprised.
 
 ## Unreleased — the lookup, check and registry surfaces exercised live
 
+**`module-install-local` — the third destination.** Nineteen skills. Until now the shortest honest path
+from *"it compiled"* to *"it matched something real"* ran through a polygon publish, which costs a
+namespace, a token and a name you have to live with. It does not have to: a compiled module can be
+registered into a local `just-dna-lite` install and annotated against a real VCF with no registry
+involved at all. The skill teaches the three routes in, which one preserves the `artifact_digest` you
+tested (only the one that does not recompile), and the two failure modes that are silent.
+
+**Measured, not inferred.** `assets/fto_bmi` compiled through `compile_module` and put in front of
+-lite's own discovery with a scratch `JUST_DNA_MODULES_YAML` and `--no-sync`, so nothing in that tree
+was touched: discovered with `lead = weights`, `_lead_join_strategy` → `('position', 'lead table
+carries coordinates')`, 3 rows scanned, `read_module_provenance` → `('1.0.0', 'sha256:c3d633f0…',
+None)`. **A module this plugin compiles is annotatable as-is.** Also settled a worry that looked real:
+a locally compiled manifest carries `identity.namespace: null`, and local discovery keys on the
+directory name and never reads it, so the missing namespace costs nothing.
+
+**What the skill refuses to sell.** -lite calls `just_dna_format.integrity.verify_manifest` nowhere and
+recomputes no hash on the annotation path — their own spec says so under *"specified, NOT
+implemented"*, and we quote them rather than paraphrase. So the skill states plainly that a local
+install verifies nothing and that a clean annotation run is not evidence the module is correct — the
+same rule as a green compile, in a new place. It also says what it is *not*: the polygon exercises the
+registry seam, this exercises the annotation seam, and neither substitutes for the other.
+
+**Filed with the -lite team**, in the handoff doc that already exists rather than a numbered series
+they never agreed to run: `register_downloaded_module` is the right function and has no CLI wrapper, so
+our skill currently ships a `python -c` that reaches past their CLI into an internal — which we would
+rather not do. Plus two probe-to-learn findings (a partial `manifest.artifact.files` makes a module
+invisible while `list-custom` still lists it; name collisions resolve to the earliest source silently)
+and two stale doc lines.
+
+**The roster guard that caught its own successor.** `CLAUDE.md`'s asset table had never learned
+`module-status` or `module-symptom`, so "sixteen skills" was right about the table and wrong about the
+directory. Fixed, and `tests/test_skills.py` now pins the roster against the directory — it failed on
+`module-install-local` within the hour, which is the whole point. The manifest description had the same
+shape of bug: it named four literature sources while six ship, OpenAlex and Crossref having landed in
+0.14.0, the version the manifest declares. Also guarded now, derived from `discovery.SEARCHABLE`.
+
 **458 tests.** Everything below was found by running tools against real identifiers and the real
 instances, not by reading code. One defect was ours and shipped; one is upstream's and is filed.
 
