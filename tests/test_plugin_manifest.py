@@ -214,3 +214,42 @@ def test_the_commands_are_the_eight_that_were_chosen():
         "module-publish",
         "module-revise",
     }
+
+
+#: Wire name -> the name a human reads in the description. Hand-kept on purpose:
+#: only a person can decide that `preprints` reads as "preprints" and
+#: `semanticscholar` as "Semantic Scholar". What must NOT be hand-kept is the
+#: *set*, which is why the test below fails on a source this map has not been
+#: taught rather than quietly skipping it.
+_SOURCE_PROSE = {
+    "pubmed": "PubMed",
+    "europepmc": "Europe PMC",
+    "semanticscholar": "Semantic Scholar",
+    "preprints": "preprints",
+    "openalex": "OpenAlex",
+    "crossref": "Crossref",
+}
+
+
+def test_the_description_names_every_literature_source_that_ships(manifest):
+    """The description enumerates the search sources, so the list rots when one lands.
+
+    It did: OpenAlex and Crossref shipped in 0.14.0 and the manifest declaring 0.14.0
+    still named the four that preceded them, which is `CLAUDE.md` §8's second
+    claim-shape — a counted claim in prose rotting exactly like a hand-kept list.
+    Derived from `discovery.SEARCHABLE` so the failure arrives with the source, not
+    with the next person who reads the plugin listing.
+    """
+    from just_module_creator.discovery import SEARCHABLE
+
+    untaught = set(SEARCHABLE) - set(_SOURCE_PROSE)
+    assert not untaught, (
+        f"{sorted(untaught)} search the literature but have no reader-facing name here; "
+        "add one and put it in the manifest description"
+    )
+
+    description = manifest["description"]
+    missing = [_SOURCE_PROSE[name] for name in SEARCHABLE if _SOURCE_PROSE[name] not in description]
+    assert not missing, (
+        f"`.claude-plugin/plugin.json` does not mention {missing}, which literature_search asks"
+    )
