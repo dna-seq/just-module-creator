@@ -3,6 +3,33 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — the skills surface finally has a gate, and three docs stopped saying false things
+
+No tool change, so no version bump: tests and documents only.
+
+**`tests/test_skills.py` — 137 checks where there were none.** Sixteen skills and ~4,300 lines that
+nothing ever gated, which is part of how the monolith reached 1431 lines and how tonight's move of
+`SYMPTOMS.md` and `CLI.md` could have broken thirteen pointers with the suite still green. It holds
+portable frontmatter (the six fields that survive outside Claude Code), the published name and
+description limits, the 500-line body ceiling, every named skill actually shipping, every relative link
+resolving, the stage spine being complete, and a long reference opening with a way in.
+
+One of its checks pins `RM15` rather than a style: *"report, never repair"* is **not** banned — three
+skills quote it in order to say it was retired, one of them being the canonical statement of what
+replaced it — so what fails is stating it as **current**.
+
+**Three claims the night made false, corrected where they were made:**
+
+- **`logs/` was "the provenance subtree nobody fills"** in its own dossier title, in `module-tables`'
+  router row and in `CLAUDE.md` §2. `record_override` is its first writer.
+- **`provenance.json` was "recognised, and nothing here writes or reads it"** in the layout dossier,
+  the spec-directory tree and `RM16`'s own build list.
+- **`docs/FOR_DEVELOPERS.md`'s tool table read as the roster and listed 32 of 48.** That is the
+  counted-claim shape `CLAUDE.md` §8 now warns about, so the repair is the one that rule prescribes:
+  say what the table is for and give the call that cannot drift.
+
+---
+
 ## 0.12.0 — `compare_modules`: what moved between two spec directories (2026-08-20)
 
 `RM19`, built from the 699-line design study that had been sitting without a roadmap entry. **Essentials
