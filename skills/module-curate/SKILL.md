@@ -63,7 +63,7 @@ this as where pass two normally re-enters, so it must read well on a module that
   **Not a list of refusals** - RM15 retired that framing. This layer may write; what it owes is a
   logged move and an honest split between the two kinds.
 - **What moving through this stage moves** - identities, the attestation, the closure.
-- **Symptoms** - the messages this stage produces. Link `../create-module/references/SYMPTOMS.md`
+- **Symptoms** - the messages this stage produces. Link `../module-101/references/SYMPTOMS.md`
   rather than copying it.
 - **What this stage cannot do** - the `MODULE_LIFECYCLE.md` §7 absences scoped to here, so an agent
   stops inventing a tool.

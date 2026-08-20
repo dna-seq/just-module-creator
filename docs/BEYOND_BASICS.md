@@ -42,7 +42,7 @@ invisible to that gate, so you add its row yourself.
 `PHARMVAR_API_KEY` is personal under PharmVar's terms — never bake it into a module or a snapshot.
 
 The PGx **cross-checks** are not wrapped as tools; drive them from the CLI
-(`skills/create-module/references/CLI.md`).
+(`skills/module-101/references/CLI.md`).
 
 ## Polygenic scores
 

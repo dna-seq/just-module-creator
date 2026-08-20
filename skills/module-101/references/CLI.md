@@ -1,5 +1,14 @@
 # The CLI surface
 
+| Section | Answers |
+|---|---|
+| [What is wrapped, and what is not](#what-is-wrapped-and-what-is-not) | task → MCP tool → CLI equivalent, and the seven things only the CLI can do |
+| [`just-dna-compiler`](#just-dna-compiler-offline-never-fetches) | scaffold, template, validate, compile, signature, reverse, keygen, sign, close, verify |
+| [`just-dna-enricher`](#just-dna-enricher-the-only-tier-that-fetches) | enrich, the fact passes, the three drafters, the cross-checks, `hint recover`, `vrs mint` |
+| [`registry-client`](#registry-client) | the client commands, which instance it drives, and what the CLI still owns alone |
+| [Environment](#environment) | the variables the enricher reads straight from the process environment |
+| [Python, when neither CLI nor tool is enough](#python-when-neither-cli-nor-tool-is-enough) | the import-only surface, and where the row models live |
+
 The MCP server wraps the authoring loop. Everything else is still CLI-only, and the CLIs remain the
 fallback whenever a tool is unavailable (essentials-only mode, no MCP server configured, a flag the
 wrapper does not expose).

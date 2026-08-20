@@ -242,7 +242,7 @@ Ordered by how likely a first-timer is to hit it.
 `just_module_creator.tools.passes._FACT_PASSES` is `("frequencies", "gene_metrics", "dosage")`
 (`src/just_module_creator/tools/passes.py:93`), so `enrich_facts` cannot run this pass, and
 `describe_table` / `table_requirements` / `get_template` / `lint_rows` all refuse the table because
-they gate on `draft.DRAFTABLE`. `skills/create-module/references/CLI.md:34` already states the
+they gate on `draft.DRAFTABLE`. `skills/module-101/references/CLI.md:34` already states the
 consequence — `gene-validity` is listed under "**fact tables from ClinGen / ClinVar / GWAS
 Catalog**" with an em-dash in the MCP column. Cost: an agent following the taught order has no tool
 that produces this table and must shell out to `just-dna-enricher gene-validity <dir>`. Do that;

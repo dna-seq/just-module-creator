@@ -270,7 +270,7 @@ content claim.
 
 ## Symptoms
 
-Do not guess at a message — `../create-module/references/SYMPTOMS.md` maps upstream text to cause and
+Do not guess at a message — `../module-101/references/SYMPTOMS.md` maps upstream text to cause and
 action. The three you will actually meet on a second pass:
 
 - *"verification.json is stale: the attestation was computed over different module bytes"* — expected

@@ -83,7 +83,7 @@ The server **boots with no environment configured** — authoring a module needs
 
 Plus a resource (`resource://just-dna/tables`) and a prompt (`create_module`).
 
-Not wrapped, and deliberately so — use the CLIs (`skills/create-module/references/CLI.md` has the
+Not wrapped, and deliberately so — use the CLIs (`skills/module-101/references/CLI.md` has the
 full surface): the PGx cross-checks, snapshot building, and signing. Signing stays out because
 **module identity belongs to the registry**, which stamps `namespace`, `owner`, `version` and
 `canonical_id` on publish; author-held Ed25519 signing sits beside that as a prototype, and wrapping

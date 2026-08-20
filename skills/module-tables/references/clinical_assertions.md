@@ -230,7 +230,7 @@ own cross-check does (`compiler.py:5776-5788`). Candidate upstream doc defect �
 `draft.DRAFTABLE`, so `describe_table` / `table_requirements` / `get_template` / `lint_rows` all
 refuse: *"Unknown table kind 'clinical_assertions.csv'. Authorable kinds: activity_phenotype.csv, …"*
 (probed against the installed compiler). **The only route is the enricher CLI**:
-`just-dna-enricher assertions <spec_dir>` (`skills/create-module/references/CLI.md:84`, listed there
+`just-dna-enricher assertions <spec_dir>` (`skills/module-101/references/CLI.md:84`, listed there
 under "no MCP tool"). A module authored end to end through the MCP surface can never acquire one.
 
 **3 — `--strict` on this pass fails on ordinary, correct data.** `mode == "strict"` raises when *any*

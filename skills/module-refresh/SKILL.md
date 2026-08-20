@@ -200,7 +200,7 @@ reading it — see `module-revise` for what a review pass actually is.
 
 ## Symptoms
 
-`../create-module/references/SYMPTOMS.md` maps upstream text to cause and action. The three you will
+`../module-101/references/SYMPTOMS.md` maps upstream text to cause and action. The three you will
 meet here:
 
 - *"Studies reference variants not in variants.csv"* after a re-draft — usually the stale rsid-only

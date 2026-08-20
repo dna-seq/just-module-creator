@@ -206,7 +206,7 @@ mean *reproducible*. A module shifted one base reproduces perfectly.
 
 ## Symptoms
 
-`../create-module/references/SYMPTOMS.md` maps upstream text to cause and action. What you will meet
+`../module-101/references/SYMPTOMS.md` maps upstream text to cause and action. What you will meet
 here is usually not a message but a surprise:
 
 - *the digest moved and I changed nothing* → row 2. Check the three routes, reordering included.
