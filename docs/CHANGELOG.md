@@ -74,6 +74,41 @@ the whole document and reported an unrelated tool as a tiering bug. Bounded on t
 ends the block instead — the docstring always claimed it derived from the text, and now the boundary
 does too.
 
+### The remediation track: one module's quotes made honest, and four findings from doing it
+
+A dogfooding run took `antonkulaga/aggression_anger_snps` — one of the four modules `S54` measured —
+and replaced its title-quotes with what the articles actually say, end to end through this surface,
+publishing to the polygon as `test-sheep/test_aggression_anger_snps@1.0.0`. Only `provenance_quote`
+was touched. The yield is **1 real quote from 69 rows**, and that is the honest number: 65 rows cite
+a paper whose text names none of their variants, because the associations live in its supplementary
+data, and 3 cite a paywalled paper whose abstract names no rsID. Full account in
+[`RM15-remediation-log.md`](RM15-remediation-log.md).
+
+- **`_NO_PASSAGE_NOTE` still carried the retired rule** and was corrected in the same pass as
+  `fetch_fulltext`'s docstring should have been. The tool handed over the article, said in its
+  description that quoting was legitimate, and said in the payload that it was not — the second one
+  arriving attached to the text, at the moment the decision is made. `describe_table`'s
+  `attestation_bearing` gloss and `discovery.py`'s module docstring carried the same claim. `F48`.
+- **`find-evidence`** gains *what may honestly go in `provenance_quote`*: never the article's
+  property, choose and state a grain, an empty cell is a result and there are two kinds, and record
+  who located it — with the three places that record can go and what each survives.
+- **`studies.md` and `literature.md`** carry the measurements as gotchas, so the rule travels with
+  its evidence.
+- **`F44`–`F47`** are the friction, `F44` first: `registry_check(literature=true)` returns
+  byte-identical output for the remediated module and for a baseline whose every quote is the
+  article title. The pre-flight we tell authors to run says nothing about the one column carrying
+  the module's evidence, and the cheap detector — group `studies.csv` by `pmid`, count *distinct*
+  quotes — needs no network at all.
+- **Upstream `S56`, filed on discovery**, plus corrections to `S54` and `S55` from measurement: all
+  four published modules ship `quotes_authored: 0` beside 3668 authored quotes, so the quote check
+  never ran on any of them; and `provenance.json`, `logs/` and `authorship` *do* travel with a
+  publish, which narrows what `S55` is actually asking for to the `(row, quote)` grain. `F42`, `F43`
+  and `F49` record our side.
+- **[`HANDOFF-antonkulaga-quotes.md`](HANDOFF-antonkulaga-quotes.md)** is the decision list for
+  whoever maintains those four modules. Decisions, not a diff: the published versions are immutable,
+  the modules met the rules that existed when they were written, and emptying the column is one of
+  the defensible answers.
+
 ## Unreleased — refreshing a derived sidecar stops being a destructive manual sequence (2026-08-20)
 
 New tool `refresh_sidecar`, extended tier, in a new `tools/refresh.py`. No floor moves and no upstream
