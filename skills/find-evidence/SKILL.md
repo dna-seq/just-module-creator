@@ -24,6 +24,11 @@ Two things this never does. It does not judge whether a paper supports your clai
 returns that verdict, at any tier. And it does not write a cell. It finds and it fetches; the
 reading and the deciding are the authoring work.
 
+**You are a legitimate reader.** `fetch_fulltext` hands you the article, so reading it is a reading
+that happened, and a passage you located in it may be quoted. What is required is not abstention but
+**attribution** — see [what may honestly go in `provenance_quote`](#what-may-honestly-go-in-provenance_quote),
+which is the part of this skill most likely to be got wrong.
+
 ---
 
 ## Read this first: existence is not identity
@@ -66,9 +71,17 @@ cannot tell you the evidence was any good.
 literature_search(gene="MCM6", trait="lactase persistence")   # candidates, with titles
 lookup_open_access(pmid="11788828")                           # where may I read it, on what terms
 fetch_fulltext(pmid="11788828")                               # the document — never a passage
-paper_citations(...)                                          # replicated, or one paper?
-enrich_literature_pass(spec_dir="spec")                       # after you have authored the rows
+paper_citations(...)                                          # EXTENDED. replicated, or one paper?
+enrich_literature_pass(spec_dir="spec")                       # EXTENDED. after you author the rows
 ```
+
+**Two of those five are extended-tier** (`JMC_MODE=extended`) and are simply absent from a default
+install: `paper_citations` and `enrich_literature_pass`. So on a default server the verify step of
+this loop **cannot be run at all**, and `literature.csv` stays at whatever the last run wrote —
+which for a module you did not author yourself may be nothing. The CLI equivalent is
+`just-dna-enricher literature <dir>`; reaching for it is stepping outside the MCP surface, so say so
+when you do. The same applies to `refresh_sidecar`, the tool for re-deriving a sidecar without
+losing curation: extended.
 
 ---
 
@@ -111,7 +124,7 @@ the same NCBI budget the enricher uses. Raise `limit` instead, or narrow the que
 | `population` | The paper's methods section, verbatim. | An assumption that it generalizes. See below. |
 | `study_design`, `p_value`, `effect_size`, `effect_measure` | The paper's results, transcribed. | An abstract's summary when the number is in a table. |
 | `conclusion` | Your own reading, hedged where the biology is. | The abstract's own wording, copied. |
-| `provenance_quote` / `provenance_regex` | The passage **you** located. | Anything a tool handed you. |
+| `provenance_quote` / `provenance_regex` | The passage **you** located, verbatim, for **this row's** claim. | The article's **title**. A passage a tool picked for you. |
 
 ### `effect_measure` and `p_value`
 
@@ -135,30 +148,93 @@ Write the population the study measured. Hedge the `conclusion` to match.
 
 ---
 
-## The quote tautology, in full
+## What may honestly go in `provenance_quote`
 
 `fetch_fulltext` returns a document. It does not return the best-matching passage, a suggested
-quote, or a search within the text — and it never will.
+quote, or a search within the text — and it never will, because *which* sentence supports a row is a
+judgement about that row's claim and only you have read the row.
 
-`enrich_literature_pass` checks `provenance_quote` against the *same* Europe PMC full text a tool
-would have taken it from. So a quote lifted from the tool's output makes `quotes_found` confirm
-itself — it passes by construction and proves nothing.
+Everything after that is yours to write, and there are four rules.
 
-**The axis is where the text came from relative to the checker — not who did the reading.** You are
-an author here, and an agent reading a paper is a reading that happened. What must not happen is
-sourcing the quote and its answer key from the same retrieval.
+### 1. It must be a passage, not a property of the article
+
+**Never the title.** A title occurs in its own fulltext, always, so `quotes_found` matches it every
+time and the module reports quote coverage while establishing nothing. It is also obtainable from
+`esummary` without retrieving a word of the article, which is the one thing the column exists to
+witness.
+
+The general signature, and it is worth checking your own work against: **one identical string
+across every row citing a PMID is not a located passage.** A real passage varies with the claim,
+because different rows cite the same paper for different findings. Measured on the four published
+`antonkulaga/*` modules — 3668 rows, 81 PMIDs, exactly one distinct quote per PMID, and every one of
+them the article's title verbatim (`F42` / upstream `S54`). That is what a rule against
+machine-located quotes produced when it met an author who needed the column filled.
+
+### 2. Choose a grain and hold it
+
+`studies.csv` rows are one per `(rsid, pmid)` at their finest. Before quoting, decide what a quote
+is *for* on this module and write the choice down:
+
+- **per `(pmid, rsid)`** — the passage must identify this row's own variant. Strictest, and the only
+  one that makes the quote evidence *for this row*. Choose it by default.
+- **per `(pmid, trait)`** — a passage supporting the trait-level finding, repeated over the rows
+  sharing it. Weaker, and if a paper contributes rows for one trait only it collapses into rule 1's
+  failure shape. Say so if you use it.
+
+The choice matters most on GWAS. A catalog-derived module cites a paper for a per-variant
+association the paper's *prose* may never state: measured on `aggression_anger`, none of the 65
+rsIDs drawn from PMID 29500382 appears anywhere in that article's retrievable text, because the
+associations live in its supplementary data and downloadable summary statistics. `fetch_fulltext`
+returns the JATS body and no supplementary file, so for those rows there is nothing in reach to
+quote — and the honest cell is empty.
+
+### 3. An empty cell is a result. Two different ones
+
+Do not stretch a passage to fill a row, and do not invent one. Record which kind of empty it is,
+because they are not the same claim:
+
+- **read and not found** — the fulltext was retrieved and the claim is not in it. Says something.
+- **unchecked** — no fulltext was retrievable (`text_source: abstract`, or `null`). Says nothing.
+  An abstract miss is not a verdict.
+
+`quotes_found` mirrors this: `null` when nothing could be checked against, `0` when a text was read
+and the passage was not in it. Neither is a failure and neither is a reason to delete a quote.
+
+### 4. Record who located it — and know where that record does and does not go
+
+There is **no per-row attributor**: `VariantRow` has `curator`, `StudyRow` has nothing (`F43` /
+upstream `S55`). So the whodunit has to go somewhere else, and the three places differ in what they
+survive:
+
+| Where | Grain | Travels with the module? |
+|---|---|---|
+| `module_spec.yaml: authorship` (`Contribution`: `who`, `role`, `kind`) | per **version** | yes — `manifest.authorship` |
+| `provenance.json` (`ProvenanceItem.rationale`, keyed by `variant_key`) | per **variant** | yes — stored, and summarised into `manifest.provenance`; **not** carried by a registry contract `upgrade` |
+| `logs/*.log` | per **run**, free text | yes — `manifest.logs`; **not** carried by an `upgrade` |
+
+Verified by publishing a remediated module and reading the manifest back: all three survive a
+publish. None of them is per `(row, quote)`, which is the grain the work actually has. State that
+limit to the author rather than designing around it.
+
+### The cost of using `fetch_fulltext`, stated rather than used to refuse
+
+`enrich_literature_pass` checks `provenance_quote` against the *same* Europe PMC fulltext this tool
+returns. So once you have read a PMID here, `quotes_found` on that row is no longer independent
+evidence that the claim is in the literature. It has become a **citation-pairing check** — still
+useful, because it catches a quote filed against the wrong PMID.
 
 | you read | quote it? | what `quotes_found` then proves |
 |---|---|---|
 | a PDF or copy the author supplied | **yes** | the passage is in the paper that PMID names |
 | a copy you obtained outside this session's `fetch_fulltext` | **yes** | same |
-| `fetch_fulltext` output for that same PMID | **no** | nothing |
+| `fetch_fulltext` output for that same PMID | **yes** | citation pairing only — say so |
 
-**The honest cost, worth weighing before calling `fetch_fulltext` at all:** once you have read the
-full text through this tool, `quotes_found` on that row is no longer independent evidence. It has
-degraded to a citation-pairing check — still useful, since it catches a quote written against the
-wrong PMID, but it no longer tells anyone the claim is in the paper. If you want the stronger thing,
-read the paper somewhere else and write the quote from that reading.
+Say the consequence out loud in the module's log or README. Never use it as a reason not to quote:
+the alternative that rule actually produced was 3668 titles.
+
+**And never write a passage that is not verbatim in the retrieved text.** A fabricated quote is a
+fabricated quote whoever typed it. `quote_matches` is whitespace- and case-insensitive literal
+containment, so ordinary reflowing is fine and a paraphrase is not.
 
 **Then read the counters as three-valued.** `quotes_found` is `null` when no full text could be
 retrieved and `0` when one was read and the passage was not in it. A preprint with no OA full text
@@ -169,8 +245,10 @@ a phrase absent from a 200-word abstract says nothing about the body.
 > **Upstream calls these columns `ATTESTATION_BEARING` and glosses them "the cell asserts that a
 > HUMAN read something".** That is correct as a *provider* rule — no lookup tool may write these
 > cells, and none does — and it is not the authorship rule, in a product whose `Contribution` model
-> ships an `ai` author kind and whose `curator` field routinely holds an agent id. Filed upstream.
-> Until it is answered: never fill these from a lookup, and do write what you read.
+> ships an `ai` author kind and whose `curator` field routinely holds an agent id. The reasoning we
+> originally handed upstream for that constant is withdrawn (`S55`); the constant may still be right
+> for their layer. Here: never fill these from a lookup, do write what you located, and record who
+> located it.
 
 ### `quotes_unchecked` is not a failure
 
@@ -209,9 +287,14 @@ an error**, so a module ships without one unnoticed. The file was called `source
 0.6; both spellings still read, only the new one is created, and a module carrying **both** is
 refused rather than merged.
 
-Every literature result carries a `licensing` block naming what you now owe. Nothing writes those
-rows for you, on purpose: `declared_use` is a licence position only you can take, and a fabricated
-licence string would be worse than the missing warning.
+**Only `literature_search` carries a `licensing` block** naming what you now owe — and it is the one
+tool in the chain you may never call. `lookup_citation`, `lookup_open_access` and `fetch_fulltext`
+return no such block, so an author who starts from a PMID they already hold gets **no reminder at
+any point**, including at the moment they copy a passage out of a fetched article. Watch for that
+yourself; it is the shape of the miss (`F46`).
+
+Nothing writes those rows for you, on purpose: `declared_use` is a licence position only you can
+take, and a fabricated licence string would be worse than the missing warning.
 
 Two rows, not one, when you quote:
 

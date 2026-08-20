@@ -272,26 +272,48 @@ Ordered by how likely a first-timer is to hit them.
    `checks: []`. The entire quote-matching and attestation half of this table has **no corpus
    coverage** — it is pinned by unit fixtures only. Do not treat a green reference example as evidence
    that quote checking works on your module.
-7. **`--offline` is a no-op that keeps the pin, and it may still write the file.** It fetches nothing,
+
+7. **`quotes_authored: 0` also happens beside a `studies.csv` full of quotes, and nothing compares
+   the two files.** Measured on the four published `antonkulaga/*` modules (2026-08-20): every
+   `literature.csv` row carries `quotes_authored=0`, an empty `quotes_found` and an empty
+   `quote_source`, while their `studies.csv` files carry a `provenance_quote` on **3668 of 3668**
+   rows. The mechanism is gotcha 1 doing its job — the literature pass ran while the column was
+   still empty, wrote what was true then, and merge-not-clobber means no later run revisits it.
+
+   Three things follow, and the third is the one that bites:
+
+   - **The published manifest reports a confident zero.** `_literature_block` guards the per-row
+     null correctly, but summing over rows that are *all* null gives `0`, and
+     `manifest.literature.quotes_found` is `int` with `default=0` and has no `quotes_unchecked`
+     beside it. So the manifest says `quotes_authored: 0, quotes_found: 0` for a module with 859
+     authored quotes. Filed as upstream `S56`.
+   - **These counters are therefore not a detector** for a module whose quotes are worthless — see
+     `studies.md` gotcha 1 on the title case. Group `studies.csv` by `pmid` and count *distinct*
+     quotes instead; that reads the authored file directly and needs no pass.
+   - **Correcting it needs the pass, which is extended-tier.** `enrich_literature_pass` and
+     `refresh_sidecar` are both `JMC_MODE=extended`, so on a default install there is no way to
+     bring the counters up to date at all. The CLI is `just-dna-enricher literature <dir>`, and
+     using it is stepping outside this plugin's surface.
+8. **`--offline` is a no-op that keeps the pin, and it may still write the file.** It fetches nothing,
    re-examines nothing, warns, and rewrites the existing rows sorted by PMID (`enricher/literature.py:784-801`).
    If a pinned row covers every current citation it records **no verification record at all** —
    deliberately: "a record of having said nothing is worse than silence" (`enricher/literature.py:1188-1192`).
-8. **Quoting a non-commercial article warns and never gates.** `_check_quoted_article_licenses`
+9. **Quoting a non-commercial article warns and never gates.** `_check_quoted_article_licenses`
    (`compiler.py:5607`) is keyed on the **quote**, not the citation: naming a PMID costs nothing under
    any licence, while a `provenance_quote` copies publisher text into `studies.csv`, which is authored
    content the module ships — and `studies.csv` sits in the *annotation* layer, where the licence gate
    bites. Aggregated by licence string, one line each. Refusing "would make the format arbitrate a
    copyright question".
-9. **`pmid` here is digits only; the free-form form lives in `studies.csv`.** The validator refuses
+10. **`pmid` here is digits only; the free-form form lives in `studies.csv`.** The validator refuses
    anything else and names `spec.extract_pmids` (`format/literature.py:216-224`). And PMC ids are one letter
    away from a real PMID: `PMC 3110566` used to extract as PMID **3110566**, a real record for an
    unrelated article (RM50). `_pmcid_conflicts` catches the spelling the schema cannot refuse —
    `21551363 (PMC3110567)` carries a valid PMID while the two halves name different papers.
-10. **Existence is not identity (S12).** PMIDs are densely allocated, so a recalled eight-digit number
+11. **Existence is not identity (S12).** PMIDs are densely allocated, so a recalled eight-digit number
    is usually a real record for a *different* article — `exists=True` can never catch a fabricated
    citation. Read the **title** from `lookup_citation` / `literature_search` before writing a PMID; it
    comes from `literature.bibliographic(summary)`, the same `esummary` response, at no extra request.
-11. **`regex` matching runs under a wall-clock bound in a child process, and a timeout is recorded as
+12. **`regex` matching runs under a wall-clock bound in a child process, and a timeout is recorded as
     NOT CHECKED** — never as not-found (`enricher/literature.py:630`, `DEFAULT_REGEX_TIMEOUT = 5.0` at `:99`).
 
 ## What does not exist
