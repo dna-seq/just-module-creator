@@ -45,6 +45,24 @@ The server **boots with no environment configured** — authoring a module needs
 
 ## The tools
 
+**This table is the ones worth a note, not the roster.** It listed 32 of 48 while reading as complete,
+which is the shape of claim this repo now warns about in `CLAUDE.md` §8 — a counted list in prose rots
+exactly like a hardcoded one. **Ask the server instead**, which cannot drift:
+
+```bash
+uv run fastmcp dev fastmcp.json     # the Inspector lists every tool in the mode you started
+```
+
+Both tiers in one call, from Python:
+
+```python
+from fastmcp import Client
+from just_module_creator.server import build_server
+
+async with Client(transport=build_server(mode="extended")) as client:
+    names = sorted(tool.name for tool in await client.list_tools())
+```
+
 | Tool | Tier | Token? | Notes |
 |---|---|---|---|
 | `list_tables` | essentials | no | which table kind a finding belongs in |
@@ -74,6 +92,11 @@ The server **boots with no environment configured** — authoring a module needs
 | `paper_citations` | extended | no | has this finding been replicated — traverses a graph the corpus sizes |
 | `draft_from_cpic`, `draft_from_clinpgx` | extended | no | the PGx tables |
 | `enrich_facts`, `enrich_literature_pass` | extended | no | the sidecars the compile gate reads; rewrite many rows at once |
+| `record_override` | essentials | no | why an authored value outranks a source. **In response to a reported mismatch, never ahead of one** — a row markable as outranked before the check runs destroys the signal that catches a hallucination. Writes `provenance.json` and `logs/authoring.log` |
+| `review_queue` | essentials | no | those records, ranked worst-first. `still_bound` is three-valued; `resolved` means the archive caught up and the override was vindicated |
+| `compare_modules` | essentials | no | two spec directories, three grains, rows grouped by the set of columns that changed. No write path, no verdict on which side is right, and it never pairs rows whose key changed |
+| `refresh_sidecar` | extended | no | capture, verify, delete, re-derive, reapply what is provably authored, report the rest. Refuses offline and refuses `licensing.csv` |
+| `describe_machine_table` | essentials | no | the live columns of the machine-written tables, and what a hand-written cell there costs |
 | `enrich_gwas_effects` | extended | no | the GWAS Catalog's published effect sizes, **beside** `weight` and never into it. `1 + 2N` requests per variant — the corpus of published associations sizes it |
 | `reverse_module`, `registry_download` | extended | no | read back somebody else's compiled artifact |
 | `registry_validate`, `registry_check` | gated | **yes** | would this publish — server-side, spending no version number. `check` is the full dry run |
