@@ -3,6 +3,77 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — the philosophy audit: what we may write, and who may say they read a paper (2026-08-20)
+
+`RM15`. No new tool, no floor move: format/compiler 0.6.1, enricher 0.6.4, registry 0.18.2. 204 tests
+green, `ruff check` clean, `pyright` 0 errors. **No version bump in this change** — the next one must
+touch all three files (`pyproject.toml` and both plugin manifests), and `server.INSTRUCTIONS` changed,
+which is user-facing text.
+
+### The stance we were holding was the format's, and this is not that layer
+
+`report, never repair` is correct for `just-dna-format`: the compiler cannot record *who* decided a
+value, so writing one would launder a machine's guess as an author's judgement. This repo adopted it
+as a non-negotiable of its own and never asked whether it belonged here. The owner's correction: they
+delegate the business decision to us, so **we may write, revise and fix** — provided the move is
+logged and the agent respects a discriminator.
+
+Every surface that carried the stance was re-read against a three-way test: is it *physics*, is it
+format's policy that is *also correctly ours*, or is it format's policy *we should not hold*. Most
+bullets are physics and stand unchanged. What moved:
+
+- **`server.INSTRUCTIONS` rule 2** said *"Report, never repair… those refusals are the feature."* It
+  now says the writes are ours and logged, and names the two cells still withheld — one a check
+  compares against that same source, one only a pilot can settle.
+- **A new rule 3**, which was nowhere in the instructions and is the one an agent can do most damage
+  by not knowing: **a mismatch against a source is not a defect report.** Archives lag the edge — a
+  retraction, a refuting meta-analysis, a bigger cohort. A row disagreeing with ClinVar may be the
+  module being right and current while the archive is stale, so silently conforming it *degrades* the
+  module and the check then agrees with itself and reports green.
+- **`CLAUDE.md` §2's "never widen the write surface"** bundled a security boundary with format's
+  authoring boundary. Split: containment through `resolve_dir` is ours and absolute; "tools write only
+  where the upstream API already writes" and "never overwrite an authored file" are gone, because a
+  layer that may not touch an authored file is not an authoring layer.
+- **The machine-sidecar refusal** (`_MACHINE_REFUSAL`, `describe_machine_table`) said a produced
+  sidecar is "not yours to finish by hand". The hazard is real — passes merge, no check asks where a
+  value came from, so an unmarked cell is hashed as though the source said it — but the remedy was
+  wrong and contradicted our own `refresh_sidecar`, which exists to protect hand-curated
+  `source="manual"` rows that upstream's vocabulary documents. Now: mark it, don't avoid it.
+- **`models.py` / `_shared.py`** cited the slogan as the reason for carrying upstream's
+  `applied`/`refusal` across the boundary. The behaviour is right and the reason is different: an
+  `applied: false` records what the *compiler* did, and restating it as ours misreports another
+  layer's act. Says so, and says it implies nothing about what this layer may write.
+- **`refresh.py`'s conflict refusal** is physics, but conditionally — see above.
+
+### An agent may locate a `provenance_quote`, and the old rule cost more than it bought
+
+The rule said never extract a passage from a fetched document, because "a machine-located quote
+asserts a reading that never happened". It does not: `fetch_fulltext` hands the agent the whole
+article, so the reading is real. What the rule protected was a fiction about **who** read it, and it
+left the column empty for the only reader present. Reversed: locate the passage, quote it verbatim for
+the row's own claim, and **say who located it**.
+
+Measured what the prohibition actually produced, across every `studies.csv` upstream (33 files, 44342
+rows): the ten reference examples do not carry the column at all, and the four published
+`antonkulaga/*` modules carry a quote on **all 3668 rows** — with exactly **one distinct string per
+PMID** across 81 PMIDs, and that string is the article's **title**, verbatim from `esummary`. A title
+always appears in its own fulltext, so `quotes_found` matches every one and the modules report
+complete quote coverage while witnessing nothing. The refusal did not produce human-read quotes; it
+produced a green check over metadata.
+
+Filed upstream the same night: **`S54`** (the check cannot fail on a title — compare against
+`CitationHint.title`, and flag one identical quote repeated across every row citing a PMID) and
+**`S55`** (we withdraw S11's reasoning, and ask for the per-row attributor it was missing:
+`StudyRow` has no `curator` while `VariantRow` does). Tracked here as `F42` / `F43`.
+
+### Also
+
+`tests/test_modes_and_auth.py::test_the_taught_workflow_runs_in_the_default_tier` sliced the taught
+workflow on the literal string `"Three rules"`. Renumbering those rules silently widened the slice to
+the whole document and reported an unrelated tool as a tiering bug. Bounded on the blank line that
+ends the block instead — the docstring always claimed it derived from the text, and now the boundary
+does too.
+
 ## Unreleased — refreshing a derived sidecar stops being a destructive manual sequence (2026-08-20)
 
 New tool `refresh_sidecar`, extended tier, in a new `tools/refresh.py`. No floor moves and no upstream
@@ -27,8 +98,11 @@ reapplied and no conflict is the source having changed its answer.
 
 ### What it refuses to do, which is most of the design
 
-- **A conflict is never resolved.** A subject in both copies with differing facts is either a cell the
-  author edited or a revision the source published, and two data points cannot separate those. Neither
+- **A conflict is not resolved — and RM15 checked whether that is physics or inherited policy.** A
+  subject in both copies with differing facts is either a cell the author edited or a revision the
+  source published, and the two values alone cannot separate those. It is physics *conditionally*: it
+  is two data points because we keep no third, and a filled authoring log would settle it. `logs/` is
+  empty, so the refusal is honest today and is explicitly **not permanent**. Neither
   side is preferred, nothing is merged, and `conflicts[].unresolvable` says so per entry. Where the
   captured row's `source` is a value no fresh row uses, `source_proves_authored` surfaces that per row
   — a real narrowing, and still **not acted on**: knowing who wrote a row does not settle which of two
