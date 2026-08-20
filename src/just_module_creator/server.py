@@ -4,6 +4,9 @@ The hybrid registration pattern lives in ``build_server``:
 
 * ``register_essentials`` — always. The offline authoring loop, the schema dump
   and the integrity checks. Touches no network.
+* ``register_checks``     — always. ``check_identifiers``: puts a question to HGNC
+  and OLS4 and records in ``verification.json`` that it was put. Split out of
+  ``research.py`` under RM9 so that module's no-writes claim stays literal.
 * ``register_research``   — always. Read-only lookups: variants, citations,
   literature, identifiers, papers, registry reads. No token, network-tier.
 * ``register_auth``       — always. ``registry_register`` (mints a token, so it
@@ -45,6 +48,7 @@ from just_module_creator.settings import Mode, Settings
 from just_module_creator.tools._shared import schema_versions
 from just_module_creator.tools.advanced import register_extended
 from just_module_creator.tools.authoring import register_essentials
+from just_module_creator.tools.checks import register_checks
 from just_module_creator.tools.comparison import register_comparison
 from just_module_creator.tools.passes import register_extended_passes, register_passes
 from just_module_creator.tools.provenance import register_provenance
@@ -225,6 +229,7 @@ def build_server(mode: Mode | None = None, settings: Settings | None = None) -> 
     services = build_services(settings)
 
     register_essentials(mcp, settings)
+    register_checks(mcp, settings)
     register_research(mcp, settings, services)
     register_auth(mcp, settings, store)
     register_registry(mcp, settings, store)

@@ -643,7 +643,11 @@ class IdentifierStatus(BaseModel):
 
 
 class IdentifierReport(BaseModel):
-    """Currency of every gene symbol and trait CURIE in a spec. Writes nothing."""
+    """Currency of every gene symbol and trait CURIE in a spec.
+
+    Writes no authored cell. It does write `verification.json` — an attestation
+    that the question was put, never a value. See `tools/checks.py`.
+    """
 
     spec_dir: str = Field(description="The spec directory.")
     genes: list[IdentifierStatus] = Field(description="Gene symbol verdicts.")
@@ -667,6 +671,24 @@ class IdentifierReport(BaseModel):
             "Why the gene/chromosome comparison did not run, or null when it did. An empty "
             "`gene_locus_conflicts` means 'nothing disagreed' ONLY when this is null — "
             "otherwise it means the comparison never happened, which is not a pass."
+        ),
+    )
+    attested: bool = Field(
+        default=False,
+        description=(
+            "Whether this run wrote a record into `verification.json`. The record says the "
+            "checks RAN and over how many rows — it is not a verdict, and a module carrying "
+            "one is not thereby a module whose identifiers are current. False is never a "
+            "failure on its own: read `attestation_note` for which of the two reasons it is."
+        ),
+    )
+    attestation_note: str | None = Field(
+        default=None,
+        description=(
+            "Why no record was written, or null when one was. Two different facts arrive "
+            "here and a caller must not merge them: the check did not APPLY (no variants.csv, "
+            "so there was no gene or trait to have an opinion about — not a skip), or the "
+            "check ran and only the write failed, in which case the findings above stand."
         ),
     )
 
@@ -1755,3 +1777,117 @@ class ModuleComparison(BaseModel):
     metadata: list[MetadataDelta] = Field(default_factory=list)
     unknown: list[Unknown] = Field(default_factory=list)
     note: str
+
+
+# --------------------------------------------------------------------------- #
+# Study facts already in the module (RM22)
+# --------------------------------------------------------------------------- #
+class StudyFact(BaseModel):
+    """What the GWAS pass already recorded about one study, for authoring `studies.csv`."""
+
+    pmid: str | None = Field(default=None, description="PubMed id, as the Catalog reported it.")
+    study_accession: str | None = Field(
+        default=None, description="GWAS Catalog accession, e.g. GCST006941."
+    )
+    ancestry: str | None = Field(
+        default=None,
+        description=(
+            "The studied cohort's ancestry, free text exactly as the GWAS Catalog records it "
+            "('European', 'East Asian', 'Hispanic or Latin American'). This is what "
+            "`studies.csv`'s `population` is asking for. Null means the pass ran with "
+            "`study_facts` off, or the Catalog published none — NOT that the cohort is unknown "
+            "to anyone, and never a reason to write a citation label into the column instead."
+        ),
+    )
+    trait: str | None = Field(default=None, description="Reported trait, as the Catalog names it.")
+    trait_efo_id: str | None = Field(default=None, description="EFO CURIE for that trait.")
+    rows: int = Field(description="How many `gwas_effects.csv` rows carry this study.")
+
+
+class StudyFacts(BaseModel):
+    """Per-study facts read out of a module's own `gwas_effects.csv`. Writes nothing.
+
+    Surfaced rather than filled. `population` is not redundancy-bearing, so writing
+    it from here would not make any check vacuous — but a study carries several
+    ancestries and `ancestry` is a joined string, so which of them belongs in a
+    given row is a judgement, and the discriminator says surface it.
+    """
+
+    spec_dir: str = Field(description="The spec directory read.")
+    studies: list[StudyFact] = Field(
+        default_factory=list, description="One entry per distinct study."
+    )
+    with_ancestry: int = Field(description="How many of them carry an ancestry.")
+    note: str = Field(description="What was read, and what it does and does not settle.")
+
+
+# --------------------------------------------------------------------------- #
+# Comparison against a published version (RM19)
+# --------------------------------------------------------------------------- #
+class FileDelta(BaseModel):
+    """One authored file, local bytes against the bytes the published manifest recorded."""
+
+    name: str = Field(description="The authored file, as the manifest names it.")
+    verdict: str = Field(
+        description=(
+            "`same` | `moved` | `unknown`. **Subordinate to `content`, always.** Byte equality "
+            "is decisive — an identical hash is an identical file. Byte INEQUALITY means almost "
+            "nothing on its own: a CRLF, a reordered column, a reordered row and `1.00` written "
+            "as `1.0` each move this and leave `content_signature` exactly where it was. Use "
+            "this to decide which files to look at, never to claim a content change."
+        )
+    )
+    local_sha256: str | None = Field(default=None, description="Local digest, or null if absent.")
+    published_sha256: str | None = Field(
+        default=None,
+        description="What the published manifest recorded, or null if it carried none.",
+    )
+
+
+class PublishedComparison(BaseModel):
+    """This spec directory against one published version's manifest. No download.
+
+    One or two bounded GETs and nothing else: `resolve_version` when the version
+    is `latest`, then the manifest. It never fetches the published module's
+    authored rows, so it can say *whether* content differs and never *which rows*
+    — the handover for that is named in `next_step`.
+    """
+
+    spec_dir: str = Field(description="The local spec directory.")
+    canonical_id: str = Field(description="namespace/name@version, as resolved.")
+    target: str = Field(description="Which registry instance answered.")
+    content: str = Field(
+        description=(
+            "`same` | `moved` | `unknown` on `content_signature` — the exact content verdict, "
+            "and the first thing to read. `same` means every authored row matches what was "
+            "published, whatever the per-file hashes below say."
+        )
+    )
+    local_content_signature: str | None = Field(default=None)
+    published_content_signature: str | None = Field(default=None)
+    frame: FrameVerdict = Field(
+        description=(
+            "Declared genome build on each side. When these differ, nothing below is comparable."
+        )
+    )
+    files: list[FileDelta] = Field(
+        default_factory=list, description="Per-authored-file byte comparison. Read `content` first."
+    )
+    facts: list[DerivedComparison] = Field(
+        default_factory=list,
+        description=(
+            "Each fact-signature block the published manifest carries, against this spec's own. "
+            "A moved fact signature with unchanged content is the canary: a source revised an "
+            "answer under you."
+        ),
+    )
+    metadata: list[MetadataDelta] = Field(
+        default_factory=list,
+        description="What differs outside every hash — readme, closure, compiler version.",
+    )
+    unknown: list[Unknown] = Field(
+        default_factory=list,
+        description="What could not be compared, and why. Never a silent omission.",
+    )
+    next_step: str = Field(description="How to get row-level detail, if the verdict warrants it.")
+    note: str = Field(description="What this report does and does not claim.")

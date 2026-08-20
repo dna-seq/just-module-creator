@@ -148,6 +148,18 @@ for most of the world's genomes, and nothing in the compile gate will catch it.
 
 Write the population the study measured. Hedge the `conclusion` to match.
 
+**If a GWAS pass has run, the answer is already in the module.** `gwas_effects.csv` carries the
+Catalog's own `ancestry` per study, and `study_facts(spec_dir)` reports it joined by `pmid` — so
+`population` rarely needs to be reconstructed from the paper by hand. It is surfaced and never
+written for you, because the Catalog frequently answers with several cohorts at once
+(*"African American or Afro-Caribbean, European, Hispanic or Latin American"*) and which of them
+applies to a given row is yours to decide.
+
+**What must not go in the column is a citation.** A published module carries
+`"Nagel M et al. — GWAS Catalog GCST006941"` in every `population` cell — a provenance breadcrumb
+written where an ancestry belongs, by an author who had the ancestry in the next file over. The
+accession belongs in `studies.csv`'s own identifier columns; `population` is the cohort.
+
 ---
 
 ## What may honestly go in `provenance_quote`

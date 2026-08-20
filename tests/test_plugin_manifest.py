@@ -15,6 +15,7 @@ instead. They read files and import nothing over the network.
 from __future__ import annotations
 
 import json
+import re
 from importlib.metadata import version
 from pathlib import Path
 
@@ -139,3 +140,77 @@ def test_the_codex_mcp_config_launches_this_checkout(codex_manifest):
     assert server["command"] == "uv"
     assert "${PLUGIN_ROOT}" in server["args"]
     assert "just-module-creator" in server["args"]
+
+
+# --------------------------------------------------------------------------- #
+# Commands (RM20)
+# --------------------------------------------------------------------------- #
+COMMANDS = REPO / "commands"
+COMMAND_FILES = sorted(COMMANDS.glob("*.md"))
+
+
+def test_both_manifests_declare_the_commands_directory():
+    """A command surface nothing points at is a directory, not a feature."""
+    for path in (MANIFEST, CODEX_MANIFEST):
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        assert "commands" in manifest, f"{path.name} does not declare commands"
+        declared = REPO / manifest["commands"].lstrip("./").rstrip("/")
+        assert declared.is_dir(), f"{path.name} points at {declared}, which is not a directory"
+
+
+@pytest.mark.parametrize("command", COMMAND_FILES, ids=lambda p: p.stem)
+def test_every_command_routes_to_a_skill_that_ships(command: Path):
+    """The whole design of the command layer: it routes, and the skill is the procedure.
+
+    A command naming a skill that does not exist sends a user into nothing, and a
+    command that stopped naming one has quietly become a second copy of the
+    procedure — the drift `CLAUDE.md` calls out by name.
+    """
+    body = command.read_text(encoding="utf-8")
+    skills = {p.name for p in (REPO / "skills").iterdir() if (p / "SKILL.md").is_file()}
+
+    named = {name for name in skills if f"`{name}`" in body}
+    assert named, f"{command.name} names no skill in backticks, so it routes nowhere"
+    assert named <= skills
+
+
+def _front_and_body(path: Path) -> tuple[dict, str]:
+    """Frontmatter as plain key/value, and the body. No YAML dependency needed here."""
+    match = re.match(r"^---\n(.*?)\n---\n(.*)$", path.read_text(encoding="utf-8"), re.DOTALL)
+    assert match, f"{path} has no frontmatter"
+    front = dict(
+        (k.strip(), v.strip())
+        for line in match.group(1).splitlines()
+        if ":" in line
+        for k, v in [line.split(":", 1)]
+    )
+    return front, match.group(2)
+
+
+@pytest.mark.parametrize("command", COMMAND_FILES, ids=lambda p: p.stem)
+def test_a_command_stays_thin(command: Path):
+    """The ceiling is what keeps a command from growing into the skill it points at.
+
+    Generous on purpose — this fails on a command that has started carrying a
+    procedure, not on one that got a paragraph longer.
+    """
+    front, body = _front_and_body(command)
+    assert front.get("description"), f"{command.name} has no description"
+    assert len(body.splitlines()) <= 30, (
+        f"{command.name} is {len(body.splitlines())} lines; a command routes to a skill "
+        "and the skill owns the procedure"
+    )
+
+
+def test_the_commands_are_the_eight_that_were_chosen():
+    """Sixteen skills, eight commands. A command per skill is the crowding RM20 refused."""
+    assert {p.stem for p in COMMAND_FILES} == {
+        "module-101",
+        "module-start",
+        "find-evidence",
+        "module-tables",
+        "module-check",
+        "module-compile",
+        "module-publish",
+        "module-revise",
+    }

@@ -485,6 +485,88 @@ column is not, and cannot yet tell them where the answer already is.
 
 ---
 
+## RM23 — five literature sources where twenty-five exist
+
+**Severity:** medium · **Status:** open, decision pending · **Owner:** unassigned · **Opened** 2026-08-20
+
+`discovery.py` reaches PubMed, Europe PMC, Semantic Scholar, arXiv and Unpaywall.
+[`paper-search-mcp`](https://github.com/openags/paper-search-mcp) (MIT per its README, 2.5k stars,
+active, with tests) reaches 25+ — and the ones we lack are not exotic: **OpenAlex** and **Crossref**
+above all, then CORE, DOAJ, Zenodo, HAL, OpenAIRE, BASE, dblp. All official APIs.
+
+**The objection against bundling, corrected 2026-08-20 — the first draft of this entry led with the
+wrong one.**
+
+*It led with `JMC_OFFLINE`*: a second process has no offline concept, so `JMC_OFFLINE=1` would
+silence our tools while it kept fetching. True, and **not worth what it was being used for**. The
+owner's ruling: *"air-gapped stuff is a very niche usecase, we're handicapping 99.9 in favour of 0.1;
+this is not a security tool"* — and the sharper half, *"offline makes sense annotation-time, not
+author-time."* That is right and it generalises: offline belongs to `just-dna-lite`, where somebody's
+**genome** is being read and privacy is the whole point. Authoring is networked by nature — literature
+search, rsID resolution, identifier checks and publishing are all network steps, and a module cannot
+be written without them. If a genuinely offline authoring build is ever wanted it ships as a separate
+`-offline` entity rather than shaping this one.
+
+The flag itself stays and costs nobody anything: it is **off by default**, and the suite's socket
+ceiling is built on it (`offline_settings()`, seven test files). What it must not do again is **veto
+a broad improvement on behalf of a niche one**, which is what it was doing here.
+
+**The objection that actually stands, on its own:**
+
+- **The NCBI budget would split.** Ours is one budget because `ServiceGate` shares the *same*
+  `PacingGate` instance with the enricher's `EutilsClient`. Two processes is two budgets against one
+  contact address, which overspends somebody's allowance rather than doubling it. That server also
+  declares no contact address at all, where our three-step chain exists so the traffic is
+  attributable to whoever is spending it.
+
+It also ships an optional **Sci-Hub** fallback, which is the thing settled the same day: shipping the
+code is the act, and vendoring somebody else's is the same act at one remove.
+
+**The shape to build instead: depend on the library, not the server.** `academic_platforms/` is one
+module per source, separate from `server.py`, so the clients are importable plainly. Called from
+inside our own tools they inherit our `LiteratureCandidate`, our per-source rank and the
+`results=null` + `rate_limited=true` tri-state that `F6` exists to preserve — which is the reason
+that survives the correction above, because it is about what an author is told rather than about a
+switch nobody sets. **PubMed and
+Europe PMC stay ours** — that is what keeps the NCBI budget whole — and theirs are used only for
+sources we lack.
+
+**Costs to settle before adding it**, none of them disqualifying and none of them ignorable: it is
+**v0.1.4**; PyPI carries **no license metadata** while the README says MIT, which wants resolving
+before we depend on it; and it brings `beautifulsoup4`, `lxml`, `requests`, `pypdf` and `feedparser`
+— a second HTTP stack beside `httpx`, against an install story that is one `uv sync`.
+
+**Fallback if the imports turn out entangled with their config layer:** fork, and move Sci-Hub behind
+a `[scihub]` extra so the install is a user decision that carries its own liability. Deliberately the
+second option — a fork is a 25-client maintenance commitment.
+
+**Blocked on a decision, not on work.** Adding a dependency is the owner's call.
+
+---
+
+## RM24 — a third-party client cannot be paced by our gate
+
+**Severity:** low · **Status:** open, tech debt · **Owner:** unassigned · **Opened** 2026-08-20
+
+Falls out of `RM23` and is worth its own line because it survives whichever shape that takes.
+
+**Never open a socket outside `net.py`** exists so pacing, User-Agent and the shared NCBI budget
+cannot drift between clients. A borrowed client that calls `requests` internally does not pass
+through `ServiceGate`, so its requests are unpaced by us however well-behaved they are on their own
+terms. Their own documented mitigations are per-source and ad hoc — Semantic Scholar wants a key,
+CORE backs off exponentially, OpenAIRE retries three times — where ours is one gate with one policy.
+
+**Three ways out, and the first is what to try:** an injectable client or session parameter on their
+side, which is the ask to make of them and costs them little; routing the sources we care about
+through our own thin clients and taking only the ones we do not pace; or accepting the drift
+explicitly and saying so where an operator reads it, rather than letting the `net.py` rule quietly
+become untrue.
+
+**What must not happen is the silent version** — the rule in `CLAUDE.md` §2 stating that every
+outbound request goes through a `ServiceGate`, while some of them do not.
+
+---
+
 ## Owed to `just-dna-lite`, and not yet packaged
 
 Every one of the 24 dossiers carries a `## Blanks for just-dna-lite` section naming, with `path:line`,

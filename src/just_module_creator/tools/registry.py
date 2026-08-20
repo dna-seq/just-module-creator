@@ -904,6 +904,135 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
     # Polygon-only cleanup — what makes a rehearsal repeatable
     # ----------------------------------------------------------------- #
     #
+    # `yank` is the production answer to "we published something wrong", and it
+    # was reachable from the client and from nowhere on this surface until RM21.
+    # An agent that can publish is an agent that can publish a mistake, and the
+    # discovery of one ended at a dead end with the bad version still at `latest`
+    # — the `F12` shape, where the only route to a fix lives outside the surface
+    # that created the need for it.
+    #
+    # It is NOT a repair and the wording everywhere below says so. Yank stops a
+    # version being recommended; it does not correct anything, it does not
+    # release the content claim, and publishing the fixed version is a separate
+    # act that still has to happen.
+
+    @mcp.tool(
+        tags={GATED_TAG},
+        annotations=ToolAnnotations(
+            title="Yank a published version",
+            readOnlyHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def registry_yank(
+        namespace: str,
+        name: str,
+        version: str,
+        ctx: Context,
+        target: RegistryTarget = DEFAULT_WRITE_TARGET,
+    ) -> OpResult:
+        """Stop recommending a published version. It stays fetchable for anyone pinned to it.
+
+        The production answer to a bad publish. The version drops out of default
+        listings and out of `latest`, so nobody new resolves it — and anyone who
+        already installed it keeps verifying, which is what an immutable registry
+        owes them.
+
+        **This is not a repair, and it fixes nothing on its own.** It stops the
+        version being handed out. The corrected module is a separate publish that
+        still has to happen, and a yank with no replacement leaves consumers on
+        whatever the previous good version was. Say that out loud rather than
+        reporting a yank as though the mistake were undone.
+
+        **It does not release the content claim.** The authored data stays claimed
+        by its name-independent content hash, so the same rows cannot be published
+        under a different name afterwards. On the polygon,
+        `registry_delete_version` is the verb that frees both; production has no
+        such verb by design.
+
+        Reversible with `registry_unyank` — which is exactly why it is the right
+        first move when something looks wrong and you are not yet certain.
+        """
+        token = require_key(ctx, settings, store, target)
+        if token is None:
+            return unauthenticated_result(settings, target)
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        try:
+            await run_sync(lambda: _client(token, target).yank(namespace, name, version))
+        except RegistryError as exc:
+            return OpResult(
+                success=False,
+                message=(
+                    f"{describe(target, settings)} refused the yank: {exc}{instance_note(exc)}"
+                ),
+                data={"target": target},
+            )
+        log.info("Yanked %s/%s@%s on %s", namespace, name, version, target)
+        return OpResult(
+            success=True,
+            message=(
+                f"Yanked {namespace}/{name}@{version} on {describe(target, settings)}. It is "
+                "out of default listings and out of `latest`, and still fetchable for anyone "
+                "pinned to it. Nothing is corrected by this — publish the fixed version "
+                "separately, and until you do, new installs land on the previous good version. "
+                "The content claim is NOT released. Reverse with `registry_unyank`."
+            ),
+            data={"target": target, "yanked": f"{namespace}/{name}@{version}"},
+        )
+
+    @mcp.tool(
+        tags={GATED_TAG},
+        annotations=ToolAnnotations(
+            title="Un-yank a version",
+            readOnlyHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def registry_unyank(
+        namespace: str,
+        name: str,
+        version: str,
+        ctx: Context,
+        target: RegistryTarget = DEFAULT_WRITE_TARGET,
+    ) -> OpResult:
+        """Put a yanked version back into listings and `latest` eligibility.
+
+        For a yank made in haste, or one whose reason turned out not to hold. It
+        restores nothing about the module itself — the bytes never changed, which
+        is why this is safe.
+        """
+        token = require_key(ctx, settings, store, target)
+        if token is None:
+            return unauthenticated_result(settings, target)
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        try:
+            await run_sync(lambda: _client(token, target).unyank(namespace, name, version))
+        except RegistryError as exc:
+            return OpResult(
+                success=False,
+                message=(
+                    f"{describe(target, settings)} refused the un-yank: {exc}{instance_note(exc)}"
+                ),
+                data={"target": target},
+            )
+        log.info("Un-yanked %s/%s@%s on %s", namespace, name, version, target)
+        return OpResult(
+            success=True,
+            message=(
+                f"Un-yanked {namespace}/{name}@{version} on {describe(target, settings)}. It is "
+                "listed again and eligible for `latest`."
+            ),
+            data={"target": target, "unyanked": f"{namespace}/{name}@{version}"},
+        )
+
+    # ----------------------------------------------------------------- #
+    #
     # These are the reason the polygon exists. A published version is immutable
     # and its authored data is claimed by a name-independent content hash that
     # `yank` does NOT release, so without a hard delete every rehearsal
@@ -924,10 +1053,10 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
             message=(
                 f"Nothing was deleted. Hard deletion is a polygon verb: production does not "
                 f"mount it (405) because a published {what} is immutable and consumers are "
-                "entitled to keep resolving it. What production offers instead is `yank`, which "
-                "delists a version while leaving it fetchable — not wrapped here, so use "
-                "`registry-client` or ask the operator. Note that a yank does NOT release the "
-                "content claim, so the authored data stays unpublishable under any other name."
+                "entitled to keep resolving it. What production offers instead is "
+                "`registry_yank`, which delists a version while leaving it fetchable. Note "
+                "that a yank does NOT release the content claim, so the authored data stays "
+                "unpublishable under any other name."
             ),
             data={"target": target},
         )

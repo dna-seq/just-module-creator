@@ -13,6 +13,7 @@ does not have is a rule that gets ignored.
 
 from __future__ import annotations
 
+import csv
 import json
 
 from anyio.to_thread import run_sync
@@ -42,6 +43,8 @@ from just_module_creator.models import (
     MachineTableDescription,
     ScaffoldResult,
     SignatureResult,
+    StudyFact,
+    StudyFacts,
     TableDescription,
     TableKind,
     TableList,
@@ -257,6 +260,94 @@ def _machine_kind(name: str) -> str:
 
 def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     """Register the always-on authoring tools, a resource, and a prompt."""
+
+    # ----------------------------------------------------------------- #
+    # What the module already knows about its own studies (RM22)
+    # ----------------------------------------------------------------- #
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Study facts already in this module", readOnlyHint=True, idempotentHint=True
+        )
+    )
+    def study_facts(spec_dir: str) -> StudyFacts:
+        """Per-study facts the GWAS pass already wrote into this module's `gwas_effects.csv`.
+
+        **Answers `population` without leaving the module.** `studies.csv`'s
+        `population` is the studied cohort's ancestry, and when a GWAS pass has
+        run with study facts on, the Catalog's own answer is already sitting in
+        `gwas_effects.csv` under `ancestry` — joined by `pmid` or
+        `study_accession`. Until this tool existed nothing surfaced it, and the
+        measured consequence is a published module carrying
+        `"Nagel M et al. — GWAS Catalog GCST006941"` in every `population` cell:
+        a citation label written into a column that wanted an ancestry, by an
+        author who had the ancestry in the next file over.
+
+        **Surfaced, never written.** `population` is not redundancy-bearing, so
+        filling it from here would make no check vacuous — that is not the
+        reason. The reason is that a study carries several ancestries and
+        `ancestry` is a joined string, so *which* of them belongs in a given row
+        is a judgement. Take the value, or take part of it, or disagree with it.
+
+        A null `ancestry` means the pass ran with `study_facts` off or the
+        Catalog published none. It is not a statement that the cohort is unknown,
+        and it is never a reason to put something else in the column.
+        """
+        target = resolve_dir(spec_dir, settings)
+        path = target / "gwas_effects.csv"
+        if not path.is_file():
+            return StudyFacts(
+                spec_dir=str(target),
+                studies=[],
+                with_ancestry=0,
+                note=(
+                    "No gwas_effects.csv in this module, so there is nothing to read. That is "
+                    "not a defect: the file exists only after a GWAS pass has run. `population` "
+                    "still wants the studied cohort's ancestry, from the paper itself."
+                ),
+            )
+
+        # Keyed on the study rather than the association: `studies.csv` has one row
+        # per (paper, variant) and the ancestry is a property of the study, so
+        # collapsing here is what makes the answer usable at the grain it is wanted.
+        seen: dict[tuple[str | None, str | None], dict] = {}
+        with path.open(encoding="utf-8", newline="") as handle:
+            for row in csv.DictReader(handle):
+                key = (row.get("pmid") or None, row.get("study_accession") or None)
+                entry = seen.setdefault(
+                    key,
+                    {
+                        "pmid": key[0],
+                        "study_accession": key[1],
+                        "ancestry": row.get("ancestry") or None,
+                        "trait": row.get("trait") or None,
+                        "trait_efo_id": row.get("trait_efo_id") or None,
+                        "rows": 0,
+                    },
+                )
+                entry["rows"] += 1
+                # First non-null wins per field rather than last: a later row that
+                # happens to be blank must not erase an answer an earlier one gave.
+                for field in ("ancestry", "trait", "trait_efo_id"):
+                    if entry[field] is None and row.get(field):
+                        entry[field] = row[field]
+
+        studies = [
+            StudyFact(**entry)
+            # Deterministic, and never from dict iteration order.
+            for _, entry in sorted(seen.items(), key=lambda kv: (kv[0][0] or "", kv[0][1] or ""))
+        ]
+        with_ancestry = sum(1 for s in studies if s.ancestry)
+        return StudyFacts(
+            spec_dir=str(target),
+            studies=studies,
+            with_ancestry=with_ancestry,
+            note=(
+                f"{len(studies)} distinct studies in gwas_effects.csv, {with_ancestry} carrying an "
+                "ancestry. Join to studies.csv on pmid. These are the Catalog's answers, not "
+                "verdicts: a study spanning several cohorts arrives as one joined string, and "
+                "which part applies to a given row is yours to decide."
+            ),
+        )
 
     # ----------------------------------------------------------------- #
     # Schema discovery

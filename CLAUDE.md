@@ -943,6 +943,26 @@ have been questions.
   decide it, write the reasoning **and a reversal recipe** where it will be read again, and continue.
   `RM17`'s layer question was settled that way, and its entry in `ROADMAP_HISTORY.md` carries both.
 
+- **"Offline makes sense annotation-time, not author-time."** Stated 2026-08-20, and it settles how
+  much weight `JMC_OFFLINE` may carry in a design argument: *"air-gapped stuff is a very niche
+  usecase, we're handicapping 99.9 in favour of 0.1%. This is not a security tool. Frankly I'd get
+  rid of it altogether and ship an `-offline` version of the plugin as a separate entity if it is
+  ever needed."* The distinction generalises and is worth holding: **offline belongs to the
+  annotation side**, where somebody's genome is being read and privacy is the entire point — that is
+  `just-dna-lite`'s problem. **Authoring is networked by nature**: literature search, rsID
+  resolution, identifier checks and publishing are all network steps and a module cannot be written
+  without them. The flag stays, because it is off by default and the suite's socket ceiling is built
+  on it. What it may **not** do is veto a broad improvement on behalf of a niche one — it did exactly
+  that in `RM23`'s first draft, where it was the lead argument against adopting a 25-source
+  literature library, and the objection that actually stood was the shared NCBI budget. §2's "never
+  let a per-call argument loosen the offline ceiling" is unchanged: it is about not *lying* about the
+  ceiling, never about the ceiling deserving a veto.
+- **Do not let a third-party evaluation turn into NIH.** Same conversation. The reflex to defend our
+  own five literature clients was wrong; the source list is genuinely a bicycle and *"leeching the
+  code is yikes"* — the honest routes are a dependency with attribution or a fork, not copying. What
+  is **not** a bicycle is the gate: one `ServiceGate`, one contact chain, one budget shared with the
+  enricher by passing the same `PacingGate` instance.
+
 ## 11. Learned workspace facts
 
 *Append-only. Environment, ports, credential layout, host quirks, sibling paths.*

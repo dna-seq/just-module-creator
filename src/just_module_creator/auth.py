@@ -66,6 +66,12 @@ GATED_TOOLS = [
     # is genuinely repairable rather than permanent.
     "registry_amend_readme",
     "registry_claim_namespace",
+    # The production answer to a bad publish (RM21). Not a repair: it stops a
+    # version being recommended and corrects nothing, and it does not release the
+    # content claim. `registry_unyank` reverses it, which is what makes yank the
+    # right first move when something looks wrong and certainty has not arrived.
+    "registry_yank",
+    "registry_unyank",
     "registry_delete_version",
     "registry_delete_module",
 ]

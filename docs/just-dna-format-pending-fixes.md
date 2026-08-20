@@ -972,7 +972,18 @@ gene legitimately carries several rows. `tests/test_refresh.py::test_the_subject
 recomputes the derivation from the models rather than asserting a typed tuple.
 
 **Closes when** a public `key_fields(csv_name)` (whatever shape `F39`/`S48` settles on) answers for
-`resolution.csv` and the seven fact CSVs as well as for the authored kinds, and is installed. The tier
+`resolution.csv` and the seven fact CSVs as well as for the authored kinds, and is installed.
+
+> **Answered upstream 2026-08-20 as their `RM115`, cut as 0.6.5 — and NOT installable, so this stays
+> open.** PyPI's newest is 0.6.1 for all three packages, verified against `.venv` rather than their
+> checkout. When it lands, `hints.key_fields` replaces the derivation and **four of our seven tables
+> move**: `frequencies.csv` drops `dataset`, `gene_validity.csv` becomes `(assertion_id)` with a
+> five-column fallback, `clinical_assertions.csv` becomes `(variant_key, variation_id)`, and
+> `gwas_effects.csv` becomes `(association_id)` alone. Read `rule` and `fallback`, not just
+> `columns`: `resolution.csv`'s key is a **subject** rather than a uniqueness constraint, so one
+> `variant_key` legitimately spans several rows. **Until then the derivation is knowingly coarse on
+> more tables than this entry originally measured**, which is safe in the direction it already
+> states — coarse reports more rows as conflicting and therefore repairs fewer. The tier
 that ought to own it is the format, beside each table's `*_FACT_FIELDS`, so each pass keys its
 `existing` dict off the published tuple instead of restating it — which is the half that makes the two
 unable to disagree.
@@ -1156,9 +1167,34 @@ the same correction upstream. It matters because `S54`'s candidate fix lands ins
 
 ## F57 — an author's correction to a derived sidecar has nowhere to live except inside it
 
-**Status —** filed 2026-08-20 as format-tree `S60`, against format 0.6.1 / compiler 0.6.1 /
-enricher 0.6.4 / registry 0.18.2. Open. Asked as a 0.7-sized item, and asked of the **compiler**
-rather than built here — see the last paragraph.
+**Status — ACCEPTED the same night as their `RM124`, scheduled for 0.7, and it unblocks their
+`RM83`.** Filed 2026-08-20 as format-tree `S60`. Our tier argument was accepted and is not among
+their open questions. Nothing here changes until 0.7 ships.
+
+> **Their reply names three open questions and one discharged prerequisite**, and the prerequisite
+> matters to us right now:
+>
+> - **`S51` shipped as their `RM115` and was cut as 0.6.5.** `hints.key_fields` now answers for
+>   `resolution.csv` and all seven fact CSVs. Against our measured derivation it moves **four of the
+>   seven**: `frequencies.csv` is `(variant_key, population)` not `(…, dataset)`; `gene_validity.csv`
+>   is `(assertion_id)` with a five-column fallback; `clinical_assertions.csv` is
+>   `(variant_key, variation_id)`; `gwas_effects.csv` is `(association_id)` alone. **Not adopted:
+>   0.6.5 is not on PyPI** — 0.6.1 is the newest published, verified against the installed package
+>   rather than their tree — so this is §8's *fixed in tree, not released* state and `F41`'s
+>   derivation stays until `uv sync` gives us the symbol.
+> - **`resolution.csv`'s key is a `rule="subject"`**, not a uniqueness constraint: one `variant_key`
+>   resolves onto several loci and a pass replaces the group whole. So a `(table, subject, field)`
+>   overlay cannot say *which locus* it corrects — on precisely the table whose `source="manual"`
+>   rows we called the unrecoverable case.
+> - **Their `S52` shipped `ProvenanceItem.outranks: dict[str, str]`**, so the split we proposed
+>   (overlay for derived, `provenance.json` for authored) is one they think may erode: an author
+>   explaining why their `clin_sig` beats ClinVar *and* why their `chrom` beats Ensembl would have to
+>   learn which of two files each belongs in.
+> - **Whether merge-not-clobber survives** is the real prize and the real cost, and is why this is
+>   0.7 rather than a minor.
+
+Asked as a 0.7-sized item, and asked of the **compiler** rather than built here — see the last
+paragraph.
 
 Every derived sidecar is merge-not-clobber, so a hand-corrected cell survives a re-run and a re-run
 therefore refreshes nothing. Asking a source whether it still says what the file says means deleting

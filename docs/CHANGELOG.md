@@ -3,6 +3,75 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.13.0 — four roadmap items ship, and the skill surface gets a front door
+
+Version bumped in all three files (`pyproject.toml` and both plugin manifests). **431 tests**,
+`ruff` clean, `pyright` 0 errors. No upstream floor moves: format/compiler stay 0.6.1, enricher
+0.6.4, registry 0.18.2.
+
+**`RM9` — the check tools moved out, rather than the promise being narrowed.** `tools/research.py`
+opens with *"no tool in this module writes to a spec directory"*, which was true and quietly costing
+something: `check_identifiers` lived there and therefore left no trace, so a module authored entirely
+through this server showed nothing where a CLI-driven author's showed a record. The alternative was to
+soften the sentence to "writes no authored cell" — upstream's own wording — and it was **rejected**: a
+module whose opening line is a literal claim keeps it literal. New `tools/checks.py` writes the
+attestation and says so in its first line.
+
+What it writes is an attestation, never a value, and it follows the enricher's own three rules rather
+than inventing any: a module with **no `variants.csv` gets no record** (the check does not *apply*,
+which is not a skip, and writing one would mine a nonce onto a module that never asked); an
+**outage is attested too**, because that is the run where the report is empty and an empty report
+with no record reads exactly like a clean one; and **one call for every record**, since the
+proof-of-work binds the whole document. `check_genes` / `check_traits` are now arguments and are
+recorded, so narrowing a run narrows what the record claims. Tier unchanged — the tier line is cost,
+not read-versus-write.
+
+**`RM19` — `compare_to_published`.** One or two bounded GETs, no download: `resolve_version` when the
+version is `latest`, then the manifest. It compares `content_signature`, per-file digests, every
+fact-signature block, and the metadata outside every hash, and it **hands over** rather than
+escalating — `registry_download` + `compare_modules` for row detail.
+
+One defect found by testing rather than by reading: the design specified `compiler.file_entries` for
+the per-file layer, and the publisher actually hashes through `authored_input_entries`, which
+**normalizes newlines**. Measured on the HFE reference example, the raw hasher disagrees with the
+published entry on two of three files — so the first implementation would have reported a byte
+difference on every module authored on a machine whose newlines differ, forever. Upstream states the
+reason that function is public: *"two tiers must agree on it byte for byte."*
+
+**`RM21` — `registry_yank` / `registry_unyank`.** The client had both and we wrapped neither, so an
+agent that published a mistake had no route back and the bad version stayed at `latest`. Token-gated
+like every registry write, defaulting to the polygon like every other one — an unaimed yank that
+silently delisted a production version would be the same class of mistake the tool exists to recover
+from. The wording refuses to let it read as a fix: it stops a version being recommended, corrects
+nothing, does not release the content claim, and the fixed publish is a separate act.
+
+**`RM22` — `study_facts`.** The enricher already fetches the GWAS Catalog's `ancestry` into
+`gwas_effects.csv`, and nothing surfaced it, so `studies.csv`'s `population` was being written from
+memory — a published module carries `"Nagel M et al. — GWAS Catalog GCST006941"` in every
+`population` cell, a citation label in a column that wanted a cohort, by an author who had the cohort
+in the next file over. Surfaced and never filled: the Catalog frequently answers with several
+ancestries at once, so which applies to a row is a judgement. `find-evidence` now says where the
+answer is.
+
+**Two new skills and eight commands (`RM20`).** `module-status` answers *where is this module and
+what is the next decision* — the lifecycle was spread across eight stage skills and nothing answered
+it. `module-symptom` is the front door to `SYMPTOMS.md`, which previously required loading
+`module-101` and knowing to look. Eight commands, not sixteen: a command is what somebody
+deliberately types to start something, never a stage an agent walks through. A test pins the set and
+another keeps a command thin enough to stay a router.
+
+**Upstream: `S60` was answered the same night** — accepted as their **RM124 for 0.7**, and it
+unblocks their RM83. They also report `S51` shipped as RM115 and cut as **0.6.5**, which would make
+our derived sidecar subject keys stale on four of seven tables. **Not adopted: 0.6.5 is not on PyPI**
+(0.6.1 is the newest published), so this is §8's *fixed in tree, not released* state and our
+derivation stays.
+
+**`RM23` / `RM24` filed** on adopting a 25-source literature library, and `RM23`'s first draft was
+corrected the same day: it led with `JMC_OFFLINE` as the objection to bundling, and that was a niche
+capability vetoing a broad improvement. Offline belongs to annotation-time, where a genome is being
+read — not to author-time, which is networked by nature. The objection that stands on its own is the
+shared NCBI budget.
+
 ## Unreleased — two untested parsers get real fixtures, and a paywall stops being a dead end
 
 No tool change, so no version bump: tests, fixtures and documents only. Suite **385 → 391**;

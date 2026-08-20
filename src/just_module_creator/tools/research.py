@@ -17,18 +17,14 @@ authored value against the same source, so filling it from that source would
 make the check vacuous — and for an rsid-only row the coordinate check would not
 run at all, moving the row from honestly unverified to apparently verified.
 
-No tool in this module writes to a spec directory.
+**No tool in this module writes to a spec directory, and the claim is literal.**
+It was true and quietly costing something until `RM9`: ``check_identifiers`` lived
+here and therefore left no trace, so a module authored entirely through this server
+showed nothing where a CLI-driven author's showed a record. The fix was to move the
+tool rather than to narrow the sentence — see ``tools/checks.py``, which writes an
+attestation and says so in its first line. A boundary a reader can rely on beats one
+qualified by an exception.
 
-That is still true on format 0.6, and it now costs something worth naming. The
-enricher's `check-identifiers` / `check-acmg` **CLI commands** record that the
-question was put — a `verification.json` entry, unconditionally and with no flag,
-so that "not run" and "ran and found nothing" stop reading alike. The underlying
-functions this module calls do not; the write lives in those commands. So a
-module authored entirely through this server carries no attestation for these
-checks, and a registry rendering its `verification` block shows nothing where a
-CLI-driven author's module shows a record. Tracked as RM9 in `docs/ROADMAP.md`. Until it is built,
-say so rather than implying the checks left a trace: `close_module` is the only
-thing here that writes into `verification.json`.
 """
 
 from __future__ import annotations
@@ -38,7 +34,6 @@ from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 from just_dna_compiler import compiler
 from just_dna_enricher import lookup as enricher_lookup
-from just_dna_enricher.identifiers import check_identifiers as _check_identifiers
 from just_dna_registry import RegistryError
 from mcp.types import ToolAnnotations
 
@@ -48,7 +43,6 @@ from just_module_creator.models import (
     CitationLookup,
     DuplicateCheck,
     FullTextResult,
-    IdentifierReport,
     IdentifierStatus,
     InstanceHealth,
     LiteratureSearchResult,
@@ -661,74 +655,6 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     # ----------------------------------------------------------------- #
     # Identifiers — is the symbol or CURIE you wrote still current
     # ----------------------------------------------------------------- #
-    @mcp.tool(
-        annotations=ToolAnnotations(
-            title="Check identifiers",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
-        ),
-    )
-    async def check_identifiers(spec_dir: str) -> IdentifierReport:
-        """Check every gene symbol (HGNC) and trait CURIE (OLS4) in a spec is current.
-
-        Writes nothing, and reports instead of correcting — rewriting an authored
-        value would destroy the evidence that the identifier moved, and a rename
-        is exactly the kind of change an author needs to see rather than inherit.
-
-        **`gene_locus_conflicts` is the one to read even when `stale` is empty.**
-        It names rows whose gene sits on a different chromosome than the row's own
-        variant — a relationship that is false while both halves are individually
-        true, so no per-identifier check can catch it. That pairing is what a
-        machine-written summary produces: a real symbol beside an invented rsID
-        that resolves anyway. And an empty list only means "nothing disagreed"
-        while `gene_locus_check_skipped` is null; otherwise the comparison never
-        ran, which is not a pass.
-        """
-        target = resolve_dir(spec_dir, settings)
-        if settings.offline:
-            raise ToolError(
-                "The server is configured offline (JMC_OFFLINE); this check needs HGNC and OLS4."
-            )
-        report = await run_sync(lambda: _check_identifiers(spec_dir=target))
-
-        genes = [
-            IdentifierStatus(
-                identifier=g.symbol,
-                kind="gene",
-                state=g.state,
-                current=g.current,
-                label=g.hgnc_id,
-            )
-            for g in getattr(report, "genes", []) or []
-        ]
-        traits = [
-            IdentifierStatus(
-                identifier=t.curie,
-                kind="trait",
-                state=t.state,
-                current=t.replaced_by,
-                label=t.label,
-            )
-            for t in getattr(report, "traits", []) or []
-        ]
-        stale = [
-            f"{s.kind} {s.identifier}: {s.state}" + (f" -> {s.current}" if s.current else "")
-            for s in genes + traits
-            if s.state not in {"approved", "current"}
-        ]
-        return IdentifierReport(
-            spec_dir=str(target),
-            genes=genes,
-            traits=traits,
-            stale=stale,
-            # `str(conflict)` is upstream's own sentence, which already says which
-            # chromosome each half claims and what to do about it. Reformatting it
-            # here would put a second wording in front of one finding.
-            gene_locus_conflicts=[str(c) for c in getattr(report, "gene_loci", []) or []],
-            gene_locus_check_skipped=getattr(report, "gene_loci_not_checked", None),
-        )
-
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Look up a gene or trait",

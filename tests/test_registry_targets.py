@@ -20,7 +20,15 @@ from __future__ import annotations
 import pytest
 from conftest import offline_settings
 
-from just_module_creator.auth import SessionKeyStore, resolve_api_key, unauthenticated_result
+#: Everything that speaks to a registry, and which instance it must default to.
+#: Writes rehearse; catalog reads ask the published world. `authenticate` is a
+#: write in this sense — it stores a credential *for* an instance.
+from just_module_creator.auth import (
+    GATED_TOOLS,
+    SessionKeyStore,
+    resolve_api_key,
+    unauthenticated_result,
+)
 from just_module_creator.settings import (
     DEFAULT_POLYGON_URL,
     DEFAULT_REGISTRY_URL,
@@ -35,9 +43,6 @@ from just_module_creator.targets import (
     prod_refusal,
 )
 
-#: Everything that speaks to a registry, and which instance it must default to.
-#: Writes rehearse; catalog reads ask the published world. `authenticate` is a
-#: write in this sense — it stores a credential *for* an instance.
 REGISTRY_TOOL_DEFAULTS = {
     "registry_register": "test",
     "authenticate": "test",
@@ -47,6 +52,12 @@ REGISTRY_TOOL_DEFAULTS = {
     "registry_publish": "test",
     "registry_delete_version": "test",
     "registry_delete_module": "test",
+    # Yank is the one write whose real audience is production — a bad publish there is
+    # what it exists for. It still defaults to the polygon like every other write: an
+    # unaimed yank that silently delisted a production version would be the mistake this
+    # tool exists to recover from, committed by the tool itself.
+    "registry_yank": "test",
+    "registry_unyank": "test",
     # The pre-flights follow the publish they precede: rehearse against the polygon,
     # because a dry run aimed at the wrong instance answers about the wrong catalog —
     # `published_as` is per-instance, so a production duplicate is invisible from the
@@ -631,3 +642,48 @@ async def test_amend_readme_names_the_exact_filename_it_reads(make_client, tmp_p
                     "spec_dir": str(spec),
                 },
             )
+
+
+# --------------------------------------------------------------------------- #
+# Yank (RM21)
+# --------------------------------------------------------------------------- #
+async def test_yank_is_gated_and_reversible_and_says_it_repairs_nothing(make_client):
+    """The three properties that make yank safe to hand an agent.
+
+    It is a registry write, so it needs a token like every other one. It is
+    listed in both directions, because a yank nobody can reverse is a worse
+    first move than no yank at all. And its own description must not let an
+    agent report it as a fix: the mistake is still published, still fetchable,
+    and the corrected module is a separate publish that has not happened yet.
+    """
+    async with make_client("essentials", offline_settings()) as client:
+        tools = {t.name: t for t in await client.list_tools()}
+
+        assert {"registry_yank", "registry_unyank"} <= set(tools)
+        assert {"registry_yank", "registry_unyank"} <= set(GATED_TOOLS)
+
+        # Without a token it reports rather than raises — an agent that has just
+        # found a grave error must not meet a traceback.
+        result = await client.call_tool(
+            "registry_yank", {"namespace": "ns", "name": "m", "version": "1.0.0"}
+        )
+        assert result.data.success is False
+        assert "registry token" in result.data.message
+
+        described = tools["registry_yank"].description or ""
+        assert "not a repair" in described.lower()
+        # The content claim is the fact an author is most likely to assume wrong:
+        # a yank looks like an undo, and the authored data stays claimed.
+        assert "content claim" in described
+
+
+async def test_yank_defaults_to_the_polygon_like_every_other_write(make_client):
+    """Production is where a yank matters and still not where it points by default.
+
+    An unaimed yank that silently delisted a production version would be the
+    same class of mistake the tool exists to recover from.
+    """
+    async with make_client("essentials", offline_settings()) as client:
+        schemas = {t.name: t.inputSchema for t in await client.list_tools()}
+        for name in ("registry_yank", "registry_unyank"):
+            assert schemas[name]["properties"]["target"]["default"] == "test"

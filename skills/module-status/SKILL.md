@@ -1,0 +1,161 @@
+---
+name: module-status
+description: >-
+  Work out where a module actually stands from what is on disk, and turn that reading into the short
+  list of decisions somebody has to make next. Covers the files that mark each lifecycle stage and
+  what each one does and does not prove, the gap between a pass that ran once and a pass that is
+  current, and which stage skill owns the next step. Load this whenever you meet a spec directory you
+  did not create, or come back to one.
+  Triggers: "where am I", "what next", "what stage is this module at", "resume", "pick up where I left
+  off", "somebody handed me a spec directory", "what is left to do", "is this module finished", "is it
+  ready to publish", "what still needs deciding", "status", "did this ever get enriched", "has this
+  been closed", "what is missing", "I inherited this module", "look at this module".
+---
+
+# Where a module stands, and what has to be decided next
+
+**This is a reading, not a stage.** Nothing here authors, checks or repairs anything. It answers one
+question — *what state is this spec directory in, and what does a human have to choose before the next
+step can run* — and then hands off to the skill that owns that step.
+
+You need it because the lifecycle is spread across eight stage skills and a spec directory carries no
+progress marker. The state is only inferable from which files exist and what they contain, and the
+inference goes wrong in a specific way: **a file existing proves a pass ran once, never that its answer
+is still the current one.**
+
+## Read it in four passes, cheapest first
+
+1. **The names on disk.** Which files are there at all. That alone brackets the stage.
+2. **What `module_spec.yaml` declares.** The module kind, `genome_build`, `weighting:`,
+   `authorship:`, the licence position. These are declared once at birth and never re-asked
+   (`module-start`), so an absence here is an absence for the module's whole life.
+3. **`verification.json`.** Which checks ran, which were skipped and why, and whether a closure
+   survives.
+4. **One `validate_module`.** Cheap, offline, and it is the only step that reads the rows rather than
+   the filenames. Do this last, because the three passes above usually explain whatever it reports.
+
+Do not run `enrich_module`, `compile_module` or any registry call to find out where you are. A status
+read is free; those are not, and two of them change the directory.
+
+**The roster of names a spec directory may legitimately carry is not ours to write down.** It is
+`just_dna_registry.specfiles.RECOGNIZED_SPEC_FILES`, and `module-tables` →
+`references/LAYOUT.md` explains what each roster governs. Read it from there rather than from memory —
+and note the consequence for anything you find that is *not* on it: an unrecognised name is tolerated by
+the compiler and dropped by the next server-side rebuild, so a file somebody invented beside the spec is
+a file that will not survive a re-publish.
+
+## What each file marks, and what it does not prove
+
+| On disk | The stage it marks | What it does **not** prove |
+|---|---|---|
+| `module_spec.yaml` | scaffolded (1) | that the declarations are right, or that `weighting:` / `authorship:` were ever considered — both are commonly just absent |
+| an authored table CSV | rows exist (2–3) | that they are curated. Grep for `<<REPLACE>>`: a drafted row is a stub with a placeholder where a human must decide |
+| `studies.csv` | claims have receipts (3) | that anyone read the papers. A `provenance_quote` that is the article title passes every check there is |
+| `resolution.csv` | enrichment ran once (4) | that it is current, or that it was machine-derived — a hand-injected `source="manual"` row looks the same |
+| any other machine-written sidecar | that pass ran once (4) | same. These merge rather than clobber, so a re-run adds and never replaces |
+| `licensing.csv` / `sources.csv` | a licence position was taken (0–1) | anything about which spelling is preferred — read `layout.preferred_spelling`, do not decide it here |
+| `verification.json` with checks | cross-checking ran (5) | that anything passed. Read the `skipped` reasons before the findings |
+| `verification.json` with a closure | a human declared the bytes final (6b) | that the module was checked. A closure and a check record are different claims |
+| `README.md` | the catalog card is not blank | that its claims match the data. A handed bundle's README is a claim, not a receipt |
+| `out/manifest.json` | it compiled (6) | correctness. `--strict` means reproducible |
+| `published.json` | this plugin published it at least once (7–8) | the registry's current state. It is a local receipt and is never uploaded; ask `registry_get_module` |
+| `provenance.json` | somebody recorded why an authored value outranks a source | that the override is still right. Read them back with `review_queue` |
+| `logs/*.log` | the authoring pipeline left a trail | that it is safe to publish unread — logs are swept into every compile with no opt-out |
+
+Two absences say as much as any presence. **No `studies.csv` beside a `variants.csv` is a hole**, not a
+choice. **No `variants.csv` at all is usually correct** — a PGx, binning or pointer module carries none,
+and adding an empty one to tidy the picture is the repair `module-tables` warns against by name.
+
+## Presence is not currency
+
+Four ways a directory that looks finished is not, each with the skill that owns it:
+
+- **A sidecar that is present is authoritative and will not be refreshed by re-running the pass.** If
+  you expected a value to move and it did not, the file is still there. → `module-refresh`
+- **A closure is dropped the moment the authored bytes move.** So a module with edits after its last
+  close reads as closed in the file and open to the compiler. → `module-close`
+- **A green strict compile is a determinism result.** The compiler never fetches, so nothing in it can
+  contradict a coordinate. → `module-compile`
+- **A check that could not run is not a check that passed.** `skipped`, `unverifiable` and `null` are
+  not passes, and they are the readings most likely to be summarised away. → `module-check`
+
+## The output is a decision list
+
+**Not a diff, not a findings dump, not a summary of what you read.** If a human has to choose, it goes
+in the list. If nothing has to be chosen, it does not appear at all — the noise about work nobody had
+to do is what buries the two or three items that mattered.
+
+Each entry says three things and stops:
+
+1. **What has to be chosen** — in the author's terms, not the schema's.
+2. **What turns on it** — which step is blocked, or what a consumer would see either way.
+3. **Where the choice gets made** — the stage skill, or the tool call.
+
+Shaped like this, and this short:
+
+> - **Fourteen rows in `variants.csv` still carry `<<REPLACE>>` in `genotype`.** Every loader refuses
+>   the file until they are decided, so nothing downstream can run. → `module-curate`
+> - **`weighting:` is undeclared and four rows carry a `weight`.** A reader cannot tell what the
+>   numbers mean. Declare the scale, or declare that the module authors none. → `module-weights`
+> - **The licence is unstated and the rows came from a PGx source.** The compile gate reads
+>   `licensing.csv` and nothing else. → `module-start`
+
+**Everything evident and mechanical is applied silently and never listed.** A rename, a deprecated
+spelling, a column that moved: no judgement exists to exercise, so exercising one is noise. Anything
+**checked or authored** — a genotype, a `weight`, a `clin_sig`, a conclusion, a `provenance_quote` —
+goes in the list untouched. `module-revise` carries that discriminator as a table and owns it; when you
+cannot tell which side a case falls on, surface it, because over-surfacing is recoverable and a silent
+wrong write is not.
+
+### The voice
+
+**A module that is behind the current release is out of date, not defective.** It usually met the
+requirements that existed when it was written, and those are different claims about somebody's work.
+Never *broken*, *invalid* or *failing* about a module being brought forward — say **"this needs these
+decisions to work in the latest"** and then list them. Failure language is reserved for a module wrong
+on its own terms: a shifted coordinate, a quote that is not in the paper.
+
+**A published module is not behind either.** It is a module whose next version has decisions waiting,
+and there is no schedule it is late for. There is no versioning contract, no milestone a module owes
+anybody, and no agent may withhold a publish or a bump waiting for one. `module-revise` has the whole
+argument.
+
+## Two readings that change everything and are easy to skip
+
+**Is this the module's first pass, or its twenty-fifth?** A directory with a closure, an `authorship:`
+block or a `published.json` is somebody's finished work, and the correct entry point is `module-revise`
+rather than the spine. Almost every real session is a second pass.
+
+**Was this authored here, or handed over?** A bundle from an outside session typically arrives with the
+deprecated sidecar spelling, no attestation, no closure and coordinates nobody has checked. Triage it
+before extending it, and do not assume the previous author's convention — `module-start` owns the
+triage and carries the case where four modules shipped thousands of shifted coordinates through every
+offline gate.
+
+## Where to go next
+
+| The reading says | Load |
+|---|---|
+| nothing exists yet, or a bundle needs triage | `module-start` |
+| a source publishes rows nobody drafted | `module-draft` |
+| placeholders, or cells only a pilot can settle | `module-curate` |
+| no coordinates, no ids, or a stale sidecar | `module-enrich` |
+| assertions nobody compared against a source | `module-check` |
+| rows are settled and nothing is built | `module-compile` |
+| built, but no closure and no methodology | `module-close` |
+| finished and unpublished, or rehearsing | `module-publish` |
+| the module already exists and something moved | `module-revise` |
+| a pass has to be re-run over what it already wrote | `module-refresh` |
+| you need to know what actually changed between two states | `module-diff` |
+| where a file may sit, and the full name roster | `module-tables` → `references/LAYOUT.md` |
+| a message you do not recognise | `module-symptom` |
+
+## Symptoms
+
+`../module-101/references/SYMPTOMS.md` maps upstream message text to cause and action. Two readings
+belong to this skill rather than to a stage, because they are what a status pass turns up:
+
+- *"This module records no closure"* — the authoring was never declared finished, or a later edit moved
+  the hash and dropped it. Not a defect; a decision about whether the module is done.
+- *"`sources.csv` is the deprecated spelling of this table"* — evident and mechanical. Rename it, say
+  nothing, and do not finish the rename into `sources.parquet` or `manifest.sources`.
