@@ -371,3 +371,111 @@ prohibition standing only on "upstream does it that way"; `server.INSTRUCTIONS` 
 
 ---
 
+
+---
+
+## RM18 — the four published modules carry decisions only their owner can make
+
+**Severity:** medium · **Status:** open · **Owner:** **the repo owner, not an agent** · **Opened** 2026-08-20
+
+Carried out of `docs/HANDOFF-antonkulaga-quotes.md` before that file was deleted. **A published version
+is immutable, so none of this is a repair** — each item is a decision about what a *next* version says,
+or about whether one is worth cutting at all. Nothing below was touched.
+
+**The rows, most specific first:**
+
+1. **Four rows of `big_five_personality_snps` cite a paper that does not support them.**
+   `rs34588274`, `rs3742021`, `rs4245154` and `rs527528` cite PMID `34054130` via GWAS Catalog
+   `GCST012111` for `EFO_0009589` (a neuroticism item). The article names all four rsIDs — in a table of
+   hits for **sociability**. So exactly one of three is wrong: the trait label, the accession, or the
+   PMID. Settling it needs the `GCST012111` record. **This is the finding that justifies the whole
+   attestation reversal**: under the retired rule those four rows carried the article's title and looked
+   exactly like the other 855, and only going after the actual passage surfaced it.
+2. **Three rows of `aggression_anger_snps` are behind a paywall.** `rs11838918`, `rs16891867`,
+   `rs7950811` cite PMID `20585324`, whose abstract names only `C1QTNF7` and no rsID. Somebody with
+   journal access settles all three in ten minutes; nobody without it can.
+3. **`population` holds a citation label rather than a population** in every `aggression_anger_snps`
+   row — *"Nagel M et al. — GWAS Catalog GCST006941"*. Flagged and not touched: it is an authored cell
+   and the fix is a judgement about what the column is for.
+4. **None of the four declares `authorship`.** They are AI-authored and say so nowhere, which is the one
+   failure mode a later reviewer cannot detect from the artifact. A prose-only amend cannot fix it —
+   `authorship` is inside the spec — so it costs a version.
+5. **Whether a quote change is a version at all**, and **whether emptying the column beats leaving a
+   title in it.** Both are defensible; the second is the honest reading of a 2–3% yield, and the cost is
+   that a module goes from apparently-complete coverage to visibly sparse.
+
+**The two untouched modules, with their budget:** `cognitive_intelligence` (2045 rows, 33 PMIDs) and
+`risk_impulsivity` (695 rows, 19 PMIDs). Expect the **low** end of the 2–3% yield on both, because both
+are dominated by papers cited for hundreds of variants at once — the three papers grounding the most
+rows in the remediated pair named none of them.
+
+**One positive result worth keeping**, and it is stated nowhere else: on all **18** rows where both were
+available, every module p-value agreed with its paper's own table to one significant figure.
+
+**The grain decision, if a later pass redoes this:** quote per `(pmid, rsid)`, not per `(pmid, trait)`.
+The second degenerates on a single-trait module — every row shares the trait, so one quote covers the
+whole file and you have rebuilt the defect under a better name.
+
+---
+
+## RM19 — build `compare_modules` and `compare_to_published`
+
+**Severity:** medium · **Status:** open, and **specified** · **Owner:** unassigned · **Opened** 2026-08-20
+
+[DESIGN-version-compare.md](DESIGN-version-compare.md) is a completed design study, 699 lines, and its
+recommendation is **build it now**. This entry exists because the study had no roadmap item, so its
+ranking lived only in a primer that has been deleted.
+
+**Both essentials**, because both are bounded by what the caller named. `compare_modules(left_dir,
+right_dir)` is a pure function of two local spec directories — no network, no compile, no parquet;
+measured at 0.18 s on the largest reference example. `compare_to_published(spec_dir)` is manifest-only:
+one or two bounded GETs and no download, ending by **handing over** the `registry_download` +
+`compare_modules` pair rather than escalating to a tier of its own.
+
+**Build `compare_modules` first** — it is useful alone, and the other without it is a signature
+comparison with no way to look inside.
+
+Output is a three-level ladder — signature, then table, then rows **grouped by the set of columns that
+changed** — with eight named refusals and a three-valued verdict per axis. **Read `genome_build` before
+any row count**: when the declared builds differ the comparison is *not comparable* rather than clean,
+and the reassuring answer is the dangerous one.
+
+**Nothing waits on an upstream release.** The in-tree additions the study names (`hints.key_fields`,
+`hints.DERIVED_TABLE_MODELS`, registry 0.19's per-version `content_signature`) are symbol-gated
+improvements, not prerequisites.
+
+**Why it matters beyond convenience:** `module-diff` currently teaches a two-command download-and-diff
+recipe that an author in a chat session cannot run without shelling out, and
+`test_the_taught_workflow_runs_in_the_default_tier` exists precisely because a tier that teaches a step
+it cannot run is the failure mode to watch for.
+
+---
+
+## RM20 — two questions about the skill surface that nobody has answered
+
+**Severity:** low · **Status:** open · **Owner:** unassigned · **Opened** 2026-08-20
+
+Carried out of `docs/HANDOFF-skills-split.md`. Both are cheap, both are reversible, and neither should be
+decided by an agent on its own — they are about what the surface *is*, not about what it says.
+
+1. **Does `find-evidence` become `module-evidence`?** Fifteen of the sixteen skills share a `module-`
+   prefix and this one does not. Against renaming: the name is the clearest trigger in the set and it
+   predates the family. For: an agent scanning a listing groups by prefix.
+2. **Do the stage skills also become slash commands (`commands/`)?** This was *the original ask that
+   started the split*, and nothing has been added to either manifest. The scaffolds were written
+   command-shaped, so the cost is low; the question is whether sixteen commands help or crowd the
+   picker.
+
+**A third question from the same file is answered and recorded**: `create-module` did not survive as a
+thin index — it was deleted, and `CLAUDE.md` says why.
+
+---
+
+## Owed to `just-dna-lite`, and not yet packaged
+
+Every one of the 24 dossiers carries a `## Blanks for just-dna-lite` section naming, with `path:line`,
+each read site that exists and each that does not. **That set is the hand-off** — it turns "annotation
+is behind the tables" into a list of individually small asks — and it has never been packaged as one.
+
+Lead with `licensing.csv`: it is read properly, with tests, which is what shows the gap is *"nobody
+asked for the other six"* rather than *"the consumer ignores everything"*.
