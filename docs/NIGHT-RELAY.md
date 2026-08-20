@@ -8,9 +8,9 @@ that flip. No overlap, no shared files, no coordination beyond this document.
 ## State
 
 ```
-STATE: BUILD-RUNNING
-SINCE: 2026-08-20T01:43Z
-BY: agent B — the skills build
+STATE: BUILD-DONE
+SINCE: 2026-08-20T02:35Z
+BY: agent B — the skills build, complete
 ```
 
 **Legal transitions, in order. Nothing skips.**
@@ -266,13 +266,65 @@ checks do on a ref mismatch, which is true of the compiler and is not a rule of 
 6. **A duplicate `F38`** exists in `docs/just-dna-format-pending-fixes.md` (two different findings
    share the number). I did not renumber; ids are load-bearing. Next free is **F44**.
 
-## Agent B — handoff (fill on finish)
+## Agent B — handoff
 
-```
-built:
-skills written:
-left undone, and why:
-```
+**built**
+
+- **The skills split is finished and `skills/create-module/` is deleted.** Sixteen skills, one per
+  lifecycle stage plus the second-pass three and the references. Every one of its 1431 lines has exactly
+  one home; the mapping is in the commit that removed it. `SYMPTOMS.md` and `CLI.md` moved to
+  `module-101/references/` with a table of contents each. All sixteen end with the same discriminator
+  section rather than a refusal list, including the three that were already written.
+- **`RM17`** — `authored_checks.py`, wired into `lint_rows` and `validate_module`. Verified on the
+  corpus that motivated it: **68 of 81 PMIDs flagged** across the four published modules, one distinct
+  quote per PMID on all four, and the thirteen it leaves are cited on a single row each.
+- **`RM16`'s capture** — `record_override` and `review_queue`, writing upstream's `provenance.json` and
+  the first `logs/authoring.log` this repo has ever produced.
+- **`0.11.0` then `0.11.1`**, tagged and pushed. The second exists because dogfooding 0.11.0 found `F52`
+  an hour after tagging it.
+- **Upstream `S57`–`S59` filed**, tracked here as `F53`–`F55`. Three findings the 2026-08-19 gather
+  marked "none filed yet" and nobody had; they were about to be deleted with the handoff that recorded
+  them.
+- **`docs/` cleaned**: six transient documents deleted, their durable half rehomed first.
+
+**skills written**
+
+`module-start`, `module-draft`, `module-curate`, `module-enrich`, `module-check`, `module-compile`,
+`module-close`, `module-publish`, `module-weights`, `module-consumer` — and `module-101` grown to hold
+the tool roster, the beginner framings and the two known gaps. Largest is 401 lines, ceiling is 500.
+
+**left undone, and why**
+
+1. **`RM19` — `compare_modules` / `compare_to_published`.** Fully specified, nothing waiting on
+   upstream, and the largest remaining item. Not started rather than half-built: an unfinished
+   comparator is worse than none, and the design study is intact.
+2. **`refresh_sidecar` reading the override records** (`RM16`'s residue). The capture is keyed by
+   `(variant_key, field)`; a sidecar subject is keyed by gene or by locus. That mapping is a question
+   that **only came into existence once the capture did**, which is the one class the night brief said
+   to defer. Both docstrings in `refresh.py` now state the narrowed reason rather than the retired "the
+   log is empty".
+3. **`RM18` — the four published modules.** Carried out of the deleted handoff and into the roadmap,
+   owned by you rather than by an agent: four rows citing a sociability table for a neuroticism item,
+   three paywalled rows, `population` holding a citation label, and no `authorship` on any of the four.
+4. **`RM20` — two questions I would not decide alone**: whether `find-evidence` becomes
+   `module-evidence`, and whether the stage skills also become slash commands. Both are about what the
+   surface *is*.
+5. **The auto-correct rulebook stays unpopulated**, as agent A's verdicts instruct. It is built from
+   real transcripts, not designed.
+
+**decisions I took that you may want to reverse, each cheap**
+
+- **`RM17`'s layer question**, which the roadmap said to settle with §1. None of its three shapes fit
+  both surfaces — `LintResult` carries findings, `ValidationReport` carries bare strings — so the rule
+  is *upstream's strings stay untouched; anything we computed is a `LintFinding` carrying `source`*, and
+  each surface expresses it the only way it can. The reversal recipe is in `ROADMAP_HISTORY.md`.
+- **`create-module` deleted outright** rather than kept as a thin index. Your instruction, executed
+  literally.
+- **`docs/UX_TESTER.md` kept.** It is a live role's working memory rather than a session handoff, and it
+  says in its own opening that everything durable is filed elsewhere. Delete it if you disagree.
+- **The duplicate `F38` renumbered.** The previous session left it on "ids are load-bearing"; a
+  duplicate id resolves to two things and the changelog referenced it twice meaning two different
+  findings.
 
 ---
 
@@ -426,3 +478,16 @@ Gates green at each commit: 204 tests, `ruff`, `pyright`.
 
 Remaining tonight, in order: the code items the verdicts left (`RM17` first, since it supersedes the
 title guard), then the `docs/` cleanup the owner asked for — the primers, the handoffs and this file.
+
+---
+
+### 2026-08-20T02:35Z — agent B finishes; BUILD-RUNNING -> BUILD-DONE
+
+Both roles are done and the relay has served its purpose. Gates green at every commit: **233 tests**,
+`ruff`, `pyright`, tree clean, `main` pushed, `v0.11.0` and `v0.11.1` tagged and pushed.
+
+**This file is deleted in the commit after this one.** It is the paper towel the owner asked to clear,
+and its durable half is already elsewhere: agent A's verdicts in `ROADMAP.md`'s `RM15` and `CLAUDE.md`
+§2/§10/§11, mine in `CHANGELOG.md` and `RM18`–`RM20`. The **protocol** — the four states, claim-first,
+the four-hour rule, proof-of-life entries — moves to `CLAUDE.md` so the next relay does not reinvent it.
+Everything here stays readable in `git log`.
