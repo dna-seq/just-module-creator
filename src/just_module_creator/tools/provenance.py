@@ -171,9 +171,12 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
           in `clinical_assertions.csv`; without that sidecar, or for any other field,
           nothing here can say.
 
-        `still_bound: false` is the one to read first: the authored cell was edited
-        again after the record was written, so the reason on file no longer describes
-        the value it is attached to.
+        `still_bound` is three-valued and `null` is not `false`. **`false` is the one to
+        read first**: the authored cell was edited again after the record was written, so
+        the reason on file no longer describes the value it is attached to. **`null` means
+        there is no such cell to compare** — the row is gone, or `variants.csv` does not
+        carry that column — so nobody edited anything and the question could not be put.
+        Those are counted separately, as `unbound` and `subject_absent`.
         """
         target = resolve_dir(spec_dir, settings)
         queued = await run_sync(lambda: overrides.review_queue(target))
@@ -181,7 +184,8 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
         return ReviewQueue(
             spec_dir=str(target),
             total=len(queued),
-            unbound=sum(1 for q in queued if not q.still_bound),
+            unbound=sum(1 for q in queued if q.still_bound is False),
+            subject_absent=sum(1 for q in queued if q.still_bound is None),
             retirable=sum(1 for q in queued if q.mismatch_state == "resolved"),
             entries=queued,
             other_provenance=list(foreign),

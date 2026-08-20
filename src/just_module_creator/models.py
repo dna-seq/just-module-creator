@@ -1627,8 +1627,14 @@ class ReviewQueue(BaseModel):
     spec_dir: str = Field(description="The module read.")
     total: int = Field(description="Records on file.")
     unbound: int = Field(
-        description="Records whose authored cell has changed since — the reason no longer "
+        description="Records whose authored cell has **changed** since — the reason no longer "
         "describes the value it is attached to. Read these first."
+    )
+    subject_absent: int = Field(
+        default=0,
+        description="Records whose cell could not be found at all: the row is gone, or "
+        "`variants.csv` does not carry that column. **Not the same as unbound** — nobody edited "
+        "anything, the question simply could not be put, and `still_bound` is null on these.",
     )
     retirable: int = Field(
         description="Records whose mismatch has resolved: the archive caught up and the "

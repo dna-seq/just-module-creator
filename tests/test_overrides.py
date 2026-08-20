@@ -132,11 +132,35 @@ def test_editing_the_cell_again_makes_the_record_stale(module: Path):
     assert entry.current_value == "pathogenic"
 
 
-def test_an_unbound_record_ranks_ahead_of_a_bound_one(module: Path):
+def test_a_record_for_a_column_the_table_does_not_carry_is_unknown_not_unbound(module: Path):
+    """Found by dogfooding on `assets/fto_bmi`, whose `variants.csv` has no `clin_sig`.
+
+    The queue said `still_bound: false`, which reads as *somebody edited this cell after
+    the reason was written* — an accusation about an edit nobody made. There is no cell,
+    so the question could not be put, and `null` is the only honest answer. §2: never
+    collapse unknown into a boolean.
+    """
+    (module / "variants.csv").write_text(
+        "rsid,genotype,state,conclusion,gene\nrs1801133,C/T,risk,Reduced MTHFR activity,MTHFR\n"
+    )
     overrides.upsert(module, _record())
-    overrides.upsert(module, _record(variant_key="rs1801131", authored_value="not_in_the_file"))
+    entry = overrides.review_queue(module)[0]
+    assert entry.still_bound is None
+    assert entry.current_value is None
+
+
+def test_a_record_for_a_row_that_is_gone_is_also_unknown(module: Path):
+    overrides.upsert(module, _record(variant_key="rs1801131", authored_value="benign"))
+    entry = overrides.review_queue(module)[0]
+    assert entry.still_bound is None, "the row is absent, so nothing was edited"
+
+
+def test_the_queue_ranks_broken_bindings_first_then_unanswerable_then_live(module: Path):
+    overrides.upsert(module, _record())  # bound
+    overrides.upsert(module, _record(variant_key="rs1801131", authored_value="gone"))  # absent
+    overrides.upsert(module, _record(field="state", authored_value="stale"))  # edited since
     queue = overrides.review_queue(module)
-    assert [q.still_bound for q in queue] == [False, True]
+    assert [q.still_bound for q in queue] == [False, None, True]
 
 
 # --------------------------------------------------------------------------- #

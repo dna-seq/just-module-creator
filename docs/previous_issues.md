@@ -8,6 +8,32 @@ are not copied.
 
 ---
 
+## F52 — the review queue accused an author of an edit nobody made
+
+**Found:** 2026-08-20, dogfooding `review_queue` on `assets/fto_bmi` · **Resolved:** same session
+
+`record_override` was recorded against `rs1421085`'s `clin_sig`, and `review_queue` came back
+`still_bound: false` — which reads as *the authored cell was edited again after the reason was
+written*. Nobody had edited anything. `fto_bmi/variants.csv` **carries no `clin_sig` column at all**,
+so there was no cell to compare, and the boolean had collapsed "no value" into "a different value".
+
+That is the failure `CLAUDE.md` §2 names in its own words — *never collapse "unknown" into a boolean;
+`None` is never `False`* — committed by the very tool written to satisfy §2's other half. It shipped in
+0.11.0 and was found an hour later by using the surface rather than by testing it, which is exactly the
+split §7 describes: the tests asserted the two states the author of the tool had in mind, and a real
+module had a third.
+
+`QueuedOverride.still_bound` is now `bool | None`: `true` the reason still describes the value, `false`
+the value moved under it, **`null` there is no such cell — the row is gone or the column does not
+exist**. `ReviewQueue` counts them apart as `unbound` and `subject_absent`, and the ranking puts a
+broken binding first, an unanswerable one second, a live one last.
+
+Pointer: `src/just_module_creator/overrides.py`, `QueuedOverride` / `review_queue`;
+`tests/test_overrides.py::test_a_record_for_a_column_the_table_does_not_carry_is_unknown_not_unbound`
+reproduces the `fto_bmi` shape.
+
+---
+
 ## F3 — a strict compile failed with no indication of which step was missing
 
 **Found:** 2026-08-11, first end-to-end run · **Resolved:** 2026-08-11

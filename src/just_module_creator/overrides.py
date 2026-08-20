@@ -295,10 +295,17 @@ class QueuedOverride(BaseModel):
     """One record, with everything that can be decided about it offline."""
 
     record: OverrideRecord
-    still_bound: bool = Field(
-        description="Whether the authored cell still hashes to what the record justifies. "
-        "False means the value was edited again, so the reason no longer describes it — "
-        "stale by construction, exactly like a verification record over moved bytes."
+    still_bound: bool | None = Field(
+        description=(
+            "Whether the authored cell still hashes to what the record justifies. "
+            "**Three-valued, and `null` is not `false`.** `true`: the reason still "
+            "describes the value. `false`: the value was edited again, so the two have "
+            "come apart — stale by construction, exactly like a verification record over "
+            "moved bytes. `null`: there is no such cell to compare, because the row is "
+            "gone or `variants.csv` does not carry that column at all, so the question "
+            "could not be put. Reporting that as `false` would accuse an author of an "
+            "edit nobody made."
+        )
     )
     current_value: str | None = Field(
         default=None, description="What the cell says now, or null if the row is gone."
@@ -338,7 +345,8 @@ def review_queue(spec_dir: Path) -> list[QueuedOverride]:
         values = by_field.setdefault(record.field, authored_values(spec_dir, record.field))
         current = values.get(record.variant_key) or set()
         one = sorted(current)[0] if len(current) == 1 else None
-        bound = any(record.bound_to(value) for value in current)
+        # Three-valued: no cell to compare is `unknown`, never `false`.
+        bound = any(record.bound_to(value) for value in current) if current else None
         state = "unknown"
         if record.field == "clin_sig" and record.variant_key in archive:
             said = archive[record.variant_key]
@@ -354,10 +362,12 @@ def review_queue(spec_dir: Path) -> list[QueuedOverride]:
                 age_days=_days_since(record.recorded_at),
             )
         )
+    # Worst-first: a broken binding, then one nobody can check, then a live record.
+    binding = {False: 0, None: 1, True: 2}
     order = {"standing": 0, "unknown": 1, "resolved": 2}
     queued.sort(
         key=lambda q: (
-            q.still_bound,
+            binding[q.still_bound],
             order.get(q.mismatch_state, 1),
             -(q.age_days or 0),
             q.record.variant_key,

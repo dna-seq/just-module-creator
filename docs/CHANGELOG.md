@@ -3,6 +3,19 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.11.1 — the review queue stops accusing an author of an edit nobody made (2026-08-20)
+
+`F52`, found by dogfooding 0.11.0's own `review_queue` on `assets/fto_bmi` an hour after it shipped.
+The module carries no `clin_sig` column, so there was no cell to compare a record against — and
+`still_bound` reported `false`, which reads as *somebody edited this after the reason was written*.
+
+`QueuedOverride.still_bound` is now `bool | None` and `ReviewQueue` counts `unbound` and
+`subject_absent` apart. `null` means the question could not be put; it is not a `false`. That is
+`CLAUDE.md` §2's own rule — *never collapse unknown into a boolean* — broken by the tool written to
+satisfy §2's other half, and caught by using the surface rather than by testing it.
+
+---
+
 ## 0.11.0 — the skills split completed, and two checks the audit's own findings needed (2026-08-20)
 
 The night run after the audit. **`skills/create-module/` is deleted** and `RM17` ships. No floor move:
