@@ -390,3 +390,21 @@ a dummy first.
 
 Commit as I go, explicit paths, gates green before each. Push granted **for this session only**.
 
+
+### 2026-08-20T01:45Z — agent A, post-flip corrections (append-only, no section edited)
+
+Three things checked after flipping, because a done-claim resting on unverified delegated work is not
+a done-claim:
+
+1. **The three delegated files were swept against the same stance grep.** `find-evidence` and
+   `studies.md` were already correct. **`literature.md` was a genuine miss** — it still said the
+   column means *a curator read this paper*, that quoting a fetched fulltext "states something false",
+   and that "nothing establishes a human ever looked". Fixed in `4ee7797`. RM15's done-when names
+   `studies.md` explicitly, so this gap would have made the completion claim false.
+2. **`docs/PRIMER-successor.md` is clean** — it already carries the counterstance and points at RM15.
+   Its one stale line is tense: it describes `RM15` as auditing the 19 sites. **That audit is done;
+   where the primer and the verdicts above disagree, the verdicts win.**
+3. **`docs/HANDOFF-antonkulaga-quotes.md` read and checked against §10's voice rule** — decision list,
+   explicitly not a defect report, and zero uses of "broken" / "invalid" / "fails" / "defective".
+
+The ROADMAP RM15 residue was refreshed too; it had gone stale within the hour.
