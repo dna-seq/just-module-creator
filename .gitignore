@@ -61,6 +61,12 @@ cover/
 
 # Django stuff:
 *.log
+# ...except the RM25 calibration fixture. It is a real log that really travelled to
+# two polygon rehearsals, and the log scanner's whole guarantee is that it returns
+# zero findings on it — a check that flags an honest run log is one everybody learns
+# to ignore. Committed deliberately, and read before committing: no paths, no
+# credentials, 73 lines.
+!assets/logs/*.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal

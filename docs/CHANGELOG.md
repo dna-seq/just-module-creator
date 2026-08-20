@@ -3,6 +3,44 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — logs get read before the catalog keeps them
+
+**`RM25` shipped.** `logscan.py`, a `review_logs` tool, and a warning inside `registry_publish` so it
+fires at the one moment the decision can still be made. **443 tests**, ruff clean, pyright 0 errors.
+
+`_collect_logs` runs on every compile with no flag and no opt-out, so any `*.log` in a spec directory
+is hashed into the manifest and uploaded — and a published version is immutable, with `yank`
+delisting rather than removing. That sweep is correct as designed; what was missing was anyone
+looking first.
+
+**Calibrated on real data in both directions, which is the part worth keeping.** The true negative is
+`assets/logs/quote-remediation.log` — a real log that really travelled to two polygon rehearsals —
+and it returns **zero** findings. The true positive is a real submitted bundle's transcript
+(`chd_depression_v1.zip`, 450 KB): **16** findings, three absolute paths shaped like
+`/tmp/module_spec_szu7uiko` and thirteen lines up to **8304 characters**, the embedded-system-prompt
+signature. The clean fixture tops out at 92 characters, so neither is a close call.
+
+The one measured false positive was designed out before the code was written: the fixture contains
+*"every rsID token"*, so credential detection matches a **shape** — a name, an assignment, a value of
+real length — and never a wordlist. A finding also never reprints the whole line, because this output
+is read by an agent whose transcript is itself retained.
+
+**It reports and never strips, and it refuses nothing.** A log is a provenance record; publishing a
+flagged one is often right and is the author's call.
+
+**Five roadmap items closed to history** with their verdicts: `RM9`, `RM19`, `RM20`, `RM21`, `RM22`.
+`RM24` deferred by the owner — timing, not substance; do not open the upstream issue without asking.
+
+**`RM23` evaluated, and the recommendation changed.** Licence confirmed MIT. The finding that decides
+it: `download_with_fallback(..., use_scihub: bool = True)` — **default on**, contradicting that
+project's own README. Verified independently, as were the other two load-bearing claims: zero
+`sci.?hub` references across all ten platform modules and all four substrate files, so vendoring is
+clean; and fabricated polite-pool contacts (`mailto:openags@example.com`,
+`paper-search@example.org`) that §5 forbids outright. Recommendation is now **vendor OpenAlex and
+Crossref only** — 661 lines, MIT-attributed, rewritten onto `ServiceGate` — which is the one option
+where the Sci-Hub question stops existing rather than being managed, and which takes the split NCBI
+budget, the second HTTP stack, an import-time `.env` mutation and an `F6` tri-state loss out with it.
+
 ## 0.13.0 — four roadmap items ship, and the skill surface gets a front door
 
 Version bumped in all three files (`pyproject.toml` and both plugin manifests). **431 tests**,

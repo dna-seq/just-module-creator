@@ -28,6 +28,7 @@ from just_dna_format.identity import is_valid_version, validate_namespace
 from just_dna_registry import RegistryError
 from mcp.types import ToolAnnotations
 
+from just_module_creator import logscan
 from just_module_creator.auth import (
     GATED_TAG,
     SessionKeyStore,
@@ -817,6 +818,28 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
                 data={"errors": list(pre.errors), "warnings": list(pre.warnings)},
             )
 
+        # The log pre-flight (RM25). Every `*.log` in the spec is swept into the
+        # artifact with no opt-out, and a published version is immutable — so the
+        # one moment this can still be acted on is here, before the upload. It
+        # never refuses: publishing a flagged log is a legitimate decision and it
+        # is the author's. It only ensures nobody publishes a file unseen.
+        log_note = ""
+        swept = logscan.logs_in(spec)
+        if swept:
+            flagged = {
+                str(path.relative_to(spec)): flags
+                for path in swept
+                if (flags := logscan.scan_file(path))
+            }
+            if flagged:
+                kinds = sorted({f.kind for flags in flagged.values() for f in flags})
+                log_note = (
+                    f" NOTE: {len(swept)} log(s) travelled with this module, and "
+                    f"{len(flagged)} carry something worth having seen ({', '.join(kinds)}) — "
+                    f"{', '.join(sorted(flagged))}. `review_logs` shows the lines. A published "
+                    f"version is immutable, so this is a thing to know now rather than later."
+                )
+
         # The dedup pre-flight. `content_signature` is computed locally from the
         # authored rows — no upload, no recompile — and the registry gates
         # `409 duplicate_content` on that same value. Worth asking BEFORE the
@@ -896,6 +919,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
             message=f"Published {canonical} to {describe(target, settings)}. {note}"
             + rehearsal
             + duplicate_note
+            + log_note
             + (f" {naming}" if naming else ""),
             data={**receipt, "receipt_file": str(spec / RECEIPTS_FILE)},
         )

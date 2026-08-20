@@ -1891,3 +1891,43 @@ class PublishedComparison(BaseModel):
     )
     next_step: str = Field(description="How to get row-level detail, if the verdict warrants it.")
     note: str = Field(description="What this report does and does not claim.")
+
+
+# --------------------------------------------------------------------------- #
+# Logs, read before they are published (RM25)
+# --------------------------------------------------------------------------- #
+class LogFinding(BaseModel):
+    """One thing in one log the author may not mean to publish."""
+
+    log: str = Field(description="The log file, relative to the spec directory.")
+    kind: str = Field(
+        description=(
+            "`absolute_path` | `credential_shaped` | `very_long_line` | `large_file`. Named "
+            "rather than scored: this is not a secret scanner and the question is narrow — "
+            "would the author be surprised to see this in the catalog?"
+        )
+    )
+    line: int | None = Field(
+        default=None, description="1-based line, or null for a whole-file finding."
+    )
+    detail: str = Field(description="What was found, and why it is worth a second look.")
+
+
+class LogReview(BaseModel):
+    """Every log a compile would sweep up, and what is in them. Changes nothing.
+
+    **Report, never strip.** A log is a provenance record and silently editing one
+    is the opposite of what it exists for. Nothing here is a refusal: publishing a
+    flagged log is a legitimate decision, and it is the author's.
+    """
+
+    spec_dir: str = Field(description="The spec directory read.")
+    logs: list[str] = Field(
+        default_factory=list,
+        description="Every file a compile would collect — `logs/**/*.log` plus top-level `*.log`.",
+    )
+    total_bytes: int = Field(description="What would travel to the catalog, in bytes.")
+    findings: list[LogFinding] = Field(
+        default_factory=list, description="Ordered by log, then line."
+    )
+    note: str = Field(description="What this does and does not claim.")

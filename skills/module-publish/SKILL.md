@@ -201,8 +201,16 @@ result is a manifest attesting bytes the published repo does not carry, which
 **Guard: ship exactly one logo, named `logo.png`.** Upstream **RM105**.
 
 **A stray `*.log` publishes silently.** `logs/` is swept up by every compile and published **with no
-opt-out**, and real bundles carry system prompts and local paths — up to 4 MB of them. Check the
-directory before you publish; it is the one subtree whose paths are kept verbatim.
+opt-out**, and real bundles carry system prompts and local paths — a measured submitted transcript
+runs to 450 KB with single lines past 8000 characters. It is the one subtree whose contents are kept
+verbatim, and a published version is immutable: `yank` delists without removing.
+
+**`review_logs(spec_dir)` shows you what would travel**, and `registry_publish` appends the same
+warning to its own result, so nothing publishes a log unseen. It **reports and never strips** — a log
+is a provenance record, and publishing a flagged one is often the right call. The question it asks is
+narrow: *would you be surprised to see this in the catalog?* An honest hand-written run log comes back
+clean; the calibration case is `assets/logs/quote-remediation.log`, which really did travel to two
+rehearsals and flags nothing.
 
 **Two modules differing only in `weighting:` are `409 duplicate_content`**, because that block sits
 outside `content_signature`. Declare it at scaffold time — `module-start`.

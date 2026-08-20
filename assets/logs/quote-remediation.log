@@ -1,0 +1,73 @@
+# provenance_quote remediation — run log
+# Written by hand. No tool in just-module-creator writes an authored cell, so this
+# log is the only record that the edit happened, and it was typed rather than emitted.
+
+run_started_at        2026-08-20T00:30:00Z
+run_finished_at       2026-08-20T01:10:00Z
+who                   claude-opus-5 (Claude Code agent), unattended
+role                  edited
+kind                  ai, agent
+human_confirmation    none — no human read any of these articles in this run
+source_module         antonkulaga/aggression_anger_snps 2.1.0 (production), read-only copy
+tooling               just-module-creator MCP: lookup_citation, lookup_open_access,
+                      fetch_fulltext, describe_table, validate_module, enrich_module,
+                      compile_module, registry_publish
+
+## What was changed
+Only studies.csv:provenance_quote. Nothing else in any row was touched — not
+conclusion, weight, effect_size, direction, clin_sig, population or p_value.
+
+before  69 / 69 rows carried a provenance_quote; exactly 3 distinct strings, one per
+        PMID, and each was the article's own title verbatim as PubMed esummary
+        returns it. A title occurs in its own fulltext, so quotes_found matched
+        every row and the module reported complete quote coverage.
+after   1 / 69 rows carries a provenance_quote. 68 are empty, deliberately.
+
+## The granularity rule applied
+A provenance_quote must be a passage that identifies THIS ROW's own variant and
+its association with THIS ROW's trait. One passage repeated across every row
+citing a PMID is the exact shape of the defect being repaired, so a trait-level
+passage was not written even where one exists.
+
+## Per PMID
+
+24489884  Mick E et al., "Genome-Wide Association Study of Proneness to Anger",
+          PLoS One 2014. cc-by (publisher, published version). Fulltext retrieved
+          via Europe PMC (PMC3905014), read in full, not truncated.
+          1 row: rs2148710.
+          quote WRITTEN, located by claude-opus-5:
+            "The most statistically significant association in the current study
+             was with rs2148710 and the Angry Temperament score in FYN."
+          Discussion section, verbatim. Names the row's variant and its trait.
+          The row's effect_allele (T), beta (0.22) and p (2.9E-08) are in Table 1,
+          which this sentence does not carry; the quote locates the claim, it does
+          not restate the numbers.
+
+29500382  Nagel M et al., "Item-level analyses reveal genetic heterogeneity in
+          neuroticism", Nat Commun 2018. cc-by. Fulltext retrieved via Europe PMC
+          (PMC5834468), 58257 chars, truncated=false, read in full.
+          65 rows.
+          quote EMPTY on all 65. Class: READ AND NOT FOUND.
+          The article text names exactly two rsIDs (rs3130618, rs45510500) and
+          neither is one of these 65. The associations these rows assert come from
+          the GWAS Catalog's extraction (GCST006941) of the study's summary
+          statistics; the article points at 50 Supplementary Data files and at
+          downloadable sumstats at https://ctg.cncr.nl/ . fetch_fulltext returns
+          the JATS body and no supplementary file, so there is nothing in reach to
+          quote. Not refuted — the claim is in the study, just not in its prose.
+
+20585324  Dick DM et al., "Genome-wide association study of conduct disorder
+          symptomatology", Mol Psychiatry 2011. NOT open access.
+          3 rows: rs11838918, rs16891867, rs7950811.
+          quote EMPTY on all 3. Class: UNCHECKED.
+          fetch_fulltext returned text_source=abstract with the warning that an
+          abstract miss is not a verdict. The abstract states four markers reached
+          genome-wide significance and names the gene C1QTNF7, but names no rsID,
+          so no variant-level passage could be located from what is reachable.
+          A human with journal access could settle all three.
+
+## What this log cannot record, and why it is here anyway
+StudyRow has no per-row attributor (F43 / upstream S55), so "who located this
+quote" has no column. provenance.json carries it per variant_key instead, and
+module_spec.yaml:authorship carries it per version. Neither is per (row, quote),
+which is the grain the work actually has.

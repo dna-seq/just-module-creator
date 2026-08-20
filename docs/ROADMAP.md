@@ -14,53 +14,6 @@ something and invites a workaround where a note was owed. A probe belongs in
 
 ---
 
-## RM9 — a module authored only through this server carries no check attestation
-
-**Severity:** medium · **Status:** open · **Owner:** unassigned
-
-Format 0.6 made `verification.json` a real surface: the registry projects a
-`verification` block onto the module page, and a record says *the question was put*
-rather than *the answer was clean*. The enricher writes those records from its
-**CLI commands** — `check-identifiers` and `check-acmg` do it unconditionally, with
-no flag, precisely so that "not run" and "ran and found nothing" stop reading alike.
-
-The underlying functions do not, and the functions are what we call. So `close_module`
-is the only thing on this surface that writes into `verification.json`, and a module
-authored entirely through these tools shows nothing where a CLI-driven author's module
-shows two records. That is the `F33` shape again — our own pin being what keeps an
-author off a surface that exists.
-
-It is not a missing upstream API: `identifiers.verification_records()` and
-`verification.merge_records()` are both public, and `close_module` already proves the
-write path works from here. What has to be decided first is a policy question, because
-`tools/research.py` opens by promising that **no tool in it writes to a spec directory**
-— a line that is currently true and load-bearing for how the read-only tier is
-understood.
-
-> **Decided 2026-08-20: the check tools move out.** Not the narrowed promise. A module whose
-> opening sentence is a literal claim keeps it literal, and the boundary then means something a
-> reader can rely on rather than something qualified by an exception. The tier line is cost, not
-> read-versus-write, so nothing about the tiers moves with them — they stay essentials.
->
-> **Reversal recipe:** if the split ever reads as ceremony, narrow the promise to "writes no
-> authored cell" (upstream's own wording) and move them back. What must not happen either way is
-> the promise quietly becoming false while the sentence stays.
-
----
-
-## Idea book
-
-Freeform, unscheduled, no commitment implied.
-
-- A `module_diff` tool: two spec directories in, the authored rows that differ
-  out. `module_signature` answers *whether* two specs differ but not *where*, and
-  "diff the tables" is the standing advice whenever a digest moves without an
-  intended content change.
-- Surfacing `hints.REDUNDANCY_BEARING` as a resource rather than only as a field
-  on `describe_table`, so an agent can read the whole list once instead of per table.
-
----
-
 ## RM16 — capture the outrank reason, and write `provenance.json` (absorbs RM14)
 
 **Severity:** high · **Status:** **the capture shipped 2026-08-20 (night run); the residue below is open** · **Owner:** agent B · **Opened** 2026-08-20
@@ -320,174 +273,65 @@ whole file and you have rebuilt the defect under a better name.
 
 ---
 
-## RM19 — build `compare_modules` and `compare_to_published`
-
-**Severity:** medium · **Status:** **`compare_modules` shipped 2026-08-20 (night run); `compare_to_published` open** · **Owner:** agent B · **Opened** 2026-08-20
-
-> **Shipped: `compare_modules`.** `src/just_module_creator/compare.py` plus `tools/comparison.py`,
-> essentials, offline, with 15 tests built on the `hfe_hemochromatosis` reference example rather than on
-> synthetic rows — the design's decisions were measured on that corpus and invented tables would not
-> reproduce them.
->
-> The cases where the naive answer is wrong all behave as specified, verified against the real module:
-> a **row reorder** reports `content: same` and 13 unchanged rows; a **licence edit** reports
-> `content: same` with the change under `identity_scope: sources.signature`; a **retyped rsID** reports
-> one added and one removed and **zero changed**; a **changed `genome_build`** reports `frame: moved`
-> with the note that the clean row counts beneath it are *not comparable*; and the deprecated
-> `sources.csv` spelling compares as the same table as `licensing.csv`, reporting each side's spelling.
->
-> **One defect found by using it rather than by testing it**: an example whose two cells differ past
-> the truncation point rendered as two identical strings, which reads as *the row did not really
-> change*. The window is now centred on the first character where the two diverge.
->
-> **Still open: `compare_to_published`** — manifest-only, one or two bounded GETs, no download. The
-> design specifies it fully; it was not started rather than half-built.
-
-[DESIGN-version-compare.md](DESIGN-version-compare.md) is a completed design study, 699 lines, and its
-recommendation is **build it now**. This entry exists because the study had no roadmap item, so its
-ranking lived only in a primer that has been deleted.
-
-**Both essentials**, because both are bounded by what the caller named. `compare_modules(left_dir,
-right_dir)` is a pure function of two local spec directories — no network, no compile, no parquet;
-measured at 0.18 s on the largest reference example. `compare_to_published(spec_dir)` is manifest-only:
-one or two bounded GETs and no download, ending by **handing over** the `registry_download` +
-`compare_modules` pair rather than escalating to a tier of its own.
-
-**Build `compare_modules` first** — it is useful alone, and the other without it is a signature
-comparison with no way to look inside.
-
-Output is a three-level ladder — signature, then table, then rows **grouped by the set of columns that
-changed** — with eight named refusals and a three-valued verdict per axis. **Read `genome_build` before
-any row count**: when the declared builds differ the comparison is *not comparable* rather than clean,
-and the reassuring answer is the dangerous one.
-
-**Nothing waits on an upstream release.** The in-tree additions the study names (`hints.key_fields`,
-`hints.DERIVED_TABLE_MODELS`, registry 0.19's per-version `content_signature`) are symbol-gated
-improvements, not prerequisites.
-
-**Why it matters beyond convenience:** `module-diff` currently teaches a two-command download-and-diff
-recipe that an author in a chat session cannot run without shelling out, and
-`test_the_taught_workflow_runs_in_the_default_tier` exists precisely because a tier that teaches a step
-it cannot run is the failure mode to watch for.
-
----
-
-## RM20 — two questions about the skill surface that nobody has answered
-
-**Severity:** low · **Status:** open · **Owner:** unassigned · **Opened** 2026-08-20
-
-Carried out of `docs/HANDOFF-skills-split.md`. Both are cheap, both are reversible, and neither should be
-decided by an agent on its own — they are about what the surface *is*, not about what it says.
-
-1. **Does `find-evidence` become `module-evidence`?** Fifteen of the sixteen skills share a `module-`
-   prefix and this one does not. Against renaming: the name is the clearest trigger in the set and it
-   predates the family. For: an agent scanning a listing groups by prefix.
-2. **Do the stage skills also become slash commands (`commands/`)?** This was *the original ask that
-   started the split*, and nothing has been added to either manifest. The scaffolds were written
-   command-shaped, so the cost is low; the question is whether sixteen commands help or crowd the
-   picker.
-
-> **Both answered 2026-08-20.**
->
-> **1. `find-evidence` keeps its name, and the principle is inverted.** *"Keep it as find-evidence and
-> actually revisit the rest, in terms of not having module-spam."* Applied, the test is **does this
-> task exist without a module?** — searching literature, verifying a PMID and reading a paper all do.
-> Nothing else in the set passes: eight are lifecycle stages, three are second-pass kinds, and
-> `module-101` / `module-tables` / `module-weights` are a module's map, structure and columns. So the
-> inconsistency is the naming working. **One borderline recorded rather than decided:**
-> `module-consumer` documents the far side of the seam — the join contract, the unobservable-allele
-> marker, float32 comparison — and its subject is the consumer's obligations; its own description
-> also says *"what an author can do to make a module readable"*, which is what keeps the prefix.
->
-> **2. Commands: eight, not sixteen.** *"Up to 8 — find-evidence can be user-requested during the
-> creative process; place yourself in user shoes, but keep the surface clean."* A command is what
-> somebody **deliberately types to start something**, never a stage an agent walks through:
-> `/module-101`, `/module-start`, `/find-evidence`, `/module-tables`, `/module-check`,
-> `/module-compile`, `/module-publish`, `/module-revise`. The eight left out — `draft`, `curate`,
-> `enrich`, `close`, `refresh`, `diff`, `weights`, `consumer` — are reached from inside a session by
-> an agent that already knows where it is. **The one judgement call:** `/module-compile` took the
-> last slot over `/module-diff`; compile is usually an agent step between check and publish, while
-> diff answers a question a user asks out loud. Swap without argument if it reads wrong in use.
->
-> **3. Two meta-skills to add**, both proposed and both answering a question a *stuck* user asks,
-> where today the only route is already knowing which skill to load:
-> - **`module-status`** — point it at a spec directory, get *where is this module now and what is the
->   next decision*. The lifecycle is spread across eight stage skills and nothing answers it; an agent
->   resuming somebody else's module infers it from which files exist. Its output is the **decision
->   list** §10 asks for, not a diff and not a findings dump.
-> - **`module-symptom`** — paste the message, get cause and action. `references/SYMPTOMS.md` already
->   holds the mapping and the only door to it is `module-101` plus knowing to look.
->
-> A `module-doctor` was considered and **rejected**: it would overlap `module-check` and split one
-> job across two surfaces.
-
-**A third question from the same file is answered and recorded**: `create-module` did not survive as a
-thin index — it was deleted, and `CLAUDE.md` says why.
-
----
-
-## RM21 — a publish that turns out to be wrong has no route back
-
-**Severity:** medium · **Status:** open · **Owner:** unassigned · **Opened** 2026-08-20
-
-*"Expose the yank feature to the toolset if an agent publishes and spots a grave error."* Opened out
-of `RM18`, where the question *"does Anton yank the four?"* had no tool behind it either way.
-
-**Nothing upstream is missing.** `RegistryClient.yank` and `.unyank` both exist and we wrap neither.
-The semantics are already the right ones for this: yank *"drops the version from default listings and
-`latest`, keeps it fetchable"* — so anyone who already installed it keeps verifying, which is exactly
-what an immutable registry should do. It is **not** `delete_version`, which is test-instance-only and
-does not release the name-independent content claim.
-
-**Why it matters more here than a wrapper usually would.** An agent that publishes is an agent that
-can publish a mistake, and right now the discovery of a grave error ends at a dead end with the bad
-version still sitting at `latest`. That is `F12`'s shape — the only route to a fix existing outside
-the surface that created the need for it.
-
-**Tier and gating:** a registry write, so token-gated, tagged `registry_write`, listed in
-`auth.GATED_TOOLS` — no exception applies, since the token is not its output.
-
-**Care to take in the skill, not in the tool.** Yank is not a correction and never repairs anything;
-it stops recommending a version. Publishing the fixed version is a separate act, and an agent must not
-present a yank as having undone the mistake.
-
----
-
-## RM22 — the enricher fetches the ancestry that `population` wants, and nothing here surfaces it
-
-**Severity:** low · **Status:** open · **Owner:** unassigned · **Opened** 2026-08-20
-
-Opened out of `RM18` item 3, where `population` in every `aggression_anger_snps` row holds a citation
-label rather than a population. The owner's rule decided where it lands: *"file an item into the
-enricher if it doesn't provide ancestry data by id; if it provides but is not wired in our tool, it's
-our bug to fix in MCP + skills."* **It provides.** So this is ours.
-
-**Measured.** `GwasEffectRow.ancestry` exists and is populated — `gwas.py::_study_facts` reads
-`ancestries` out of the GWAS Catalog study payload and `gwas_effect_row` writes it, whenever
-`study_facts` is on. Its description: *"The study population, free text as the Catalog records it
-('European', 'East Asian', 'Hispanic or Latin American')"*, deliberately free rather than a
-vocabulary. `StudyRow.population` is the authored twin, `str | None`, described only as *"Study
-population"*. Nothing in `src/just_module_creator/` joins them; our four mentions of ancestry are all
-docstrings warning that `--no-study-facts` nulls it.
-
-**So an author writing `studies.csv` after a GWAS pass has the answer sitting in their own module,
-in a derived sidecar, and no surface offers it.** The join is `pmid` or `study_accession`, both of
-which sit on `GwasEffectRow` and `pmid` on `StudyRow`.
-
-**Surface it; do not fill it.** `population` is **not** in `hints.REDUNDANCY_BEARING` (checked), so
-filling it would not be vacuous — but a study carries several ancestries and `ancestry` is a joined
-string, so the grain is a judgement and the discriminator says surface. Offer the value, name where
-it came from, let the pilot take it.
-
-**The skill half is the other deliverable**, and it is the one that would have prevented `RM18`
-item 3: `find-evidence`'s *"Population is where modules overreach"* section tells an author what the
-column is not, and cannot yet tell them where the answer already is.
-
----
-
 ## RM23 — five literature sources where twenty-five exist
 
-**Severity:** medium · **Status:** open, decision pending · **Owner:** unassigned · **Opened** 2026-08-20
+**Severity:** medium · **Status:** open — **evaluated 2026-08-20, and the recommendation changed to
+VENDOR TWO.** Licence confirmed MIT in both the PyPI field and the README. · **Owner:** unassigned ·
+**Opened** 2026-08-20
+
+> **Take OpenAlex and Crossref only, vendored with MIT attribution. Not the dependency, not the
+> fork.** Measured on a clone of `main` that is byte-identical to `v0.1.4` for the package tree.
+>
+> **The haul is small at the size that matters.** Package total 10,058 lines. All nine sources we
+> lack: 4,050. **OpenAlex + Crossref + the substrate they need: 661 lines (519 SLOC.)** Substrate is
+> tiny — `paper.py` 58, `base.py` 54, `config.py` 82, `utils.py` 8.
+>
+> **Vendoring is clean, and that is a measurement rather than a hope.**
+> `academic_platforms/__init__.py` is **0 lines**, so importing one platform pulls no sibling, and
+> there are **zero `sci.?hub` matches across all ten platform files and all four substrate files**
+> — verified independently. OpenAlex and Crossref need only `requests`, so none of the
+> `beautifulsoup4` / `lxml` / `pypdf` / `feedparser` bloat comes with them; `lxml` is declared and
+> imported nowhere at all.
+>
+> **The fact that settles the dependency option: `download_with_fallback(..., use_scihub: bool =
+> True)` at `server.py:763` — the default is ON**, contradicting the project's own README, which says
+> Sci-Hub is for "users who explicitly choose to enable it". Verified. There is no extra and no env
+> var; `[project.optional-dependencies]` is `dev` only. A plain `import paper_search_mcp` does not
+> reach it, but **running the server does**, and a wheel ships the whole package regardless.
+>
+> **Three defects we would inherit and that we must fix anyway**, each of which a vendored copy lets
+> us fix and a dependency does not:
+> - **Fabricated polite-pool contacts.** `openalex.py:21` sends `mailto:openags@example.com` and
+>   `crossref.py:19/57/278` send `paper-search@example.org`. Verified. §5 forbids exactly this — an
+>   invented address misattributes the traffic — and our three-step contact chain is the fix.
+> - **`__init__.py` calls `load_env_file()` at import**, mutating `os.environ`. That is our `F35`
+>   arriving from a new direction, and it is the specific thing that once made the suite silently
+>   non-hermetic.
+> - **`Paper.citations: int = 0`** writes the `F6` tri-state loss into the type: "not reported"
+>   becomes zero.
+>
+> **The legal picture, and it is research informing a risk decision rather than legal advice.** Both
+> US judgments are **defaults**, so neither is precedent. **No court anywhere has ordered a software
+> distributor to stop shipping Sci-Hub client code**; GitHub's DMCA archive holds zero Sci-Hub
+> notices and PyPI has never removed such a package. Enforcement has landed on app stores, one blog
+> post and a website host — never on code distribution. Doctrinally **Cox v. Sony (25 March 2026,
+> unanimous)** now requires **inducement or tailoring**, and knowledge alone is not enough; a
+> 25-source client is not tailored, which makes the whole question turn on defaults and framing —
+> and `use_scihub=True` is precisely the framing fact. The most adverse document is the **ACS
+> injunction as amended 28 March 2018**, which added "and other service or software providers", a
+> phrase absent from the 2017 order that secondary coverage quotes.
+>
+> **Why vendoring two still wins even though the legal risk reads low.** It is the only option where
+> the question **stops existing** rather than being managed, and it takes the split NCBI budget, the
+> second HTTP stack, the import-time `.env` mutation, the fabricated contacts and the `F6` tri-state
+> loss out with it. `RM24`'s pacing problem also disappears, because a vendored client is one we
+> rewrite onto `ServiceGate`.
+>
+> **What we give up, stated plainly:** seven further sources (CORE, DOAJ, Zenodo, HAL, OpenAIRE,
+> BASE, dblp), and the maintenance of two clients becomes ours. Their tests do not cover OpenAlex,
+> so we would be writing those either way.
+>
+> Full evaluation, 1010 lines, in the session scratchpad as `paper-search-mcp-evaluation.md`.
 
 `discovery.py` reaches PubMed, Europe PMC, Semantic Scholar, arXiv and Unpaywall.
 [`paper-search-mcp`](https://github.com/openags/paper-search-mcp) (MIT per its README, 2.5k stars,
@@ -546,7 +390,9 @@ second option — a fork is a 25-client maintenance commitment.
 
 ## RM24 — a third-party client cannot be paced by our gate
 
-**Severity:** low · **Status:** open, tech debt · **Owner:** unassigned · **Opened** 2026-08-20
+**Severity:** low · **Status: DEFERRED 2026-08-20** — owner's call, and it stays here rather than
+moving to history because nothing was decided about the substance, only about the timing. Do not open
+the upstream issue without asking again. · **Owner:** unassigned · **Opened** 2026-08-20
 
 Falls out of `RM23` and is worth its own line because it survives whichever shape that takes.
 
@@ -569,7 +415,30 @@ outbound request goes through a `ServiceGate`, while some of them do not.
 
 ## RM25 — nothing reads a log before it is published, and the catalog is immutable
 
-**Severity:** medium · **Status:** open · **Owner:** unassigned · **Opened** 2026-08-20
+**Severity:** medium · **Status: SHIPPED 2026-08-20** — `logscan.py`, the `review_logs` tool, and a
+warning inside `registry_publish`. Kept open until the calibration has met a second real transcript;
+one is not a corpus. · **Owner:** unassigned · **Opened** 2026-08-20
+
+> **Shipped, and calibrated against real data in both directions rather than against invented logs:**
+>
+> - **True negative.** `assets/logs/quote-remediation.log` — a real log that really travelled to two
+>   polygon rehearsals — returns **zero** findings. That was the requirement this entry set, and a
+>   test asserts it, because a check that flags an honest run log teaches everyone to ignore it.
+> - **True positive.** A real submitted bundle's transcript (`chd_depression_v1.zip`, 450 KB) returns
+>   **16** findings: three absolute paths of the shape `/tmp/module_spec_szu7uiko`, and thirteen
+>   lines up to **8304 characters** — the embedded-system-prompt signature. The clean fixture tops out
+>   at 92 characters, so the threshold sits far from both and neither is a close call.
+> - **The measured false positive was designed out.** The fixture contains *"every rsID token"*, so
+>   credential detection is on **shape** — a name, an assignment and a value of real length — never on
+>   a wordlist.
+> - **It reports and never strips**, and it never refuses a publish. The `registry_publish` note
+>   fires at the one moment the decision can still be made, which is what makes it a check rather
+>   than the advice the dossier already carried and that changed nothing.
+> - **A finding never reprints the whole line.** This output is read by an agent whose transcript is
+>   itself retained, so echoing a credential in full would copy it somewhere new.
+>
+> **What is deliberately not built:** a secret scanner. The question stays *would the author be
+> surprised to see this in the catalog?*
 
 `_collect_logs` runs on **every** compile with no flag and no opt-out: any `*.log` in a spec
 directory is copied into the artifact, hashed into the manifest, and uploaded on publish

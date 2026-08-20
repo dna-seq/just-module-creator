@@ -34,12 +34,14 @@ from just_dna_registry import specfiles
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel
 
-from just_module_creator import authored_checks
+from just_module_creator import authored_checks, logscan
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
     ClosureResult,
     CompileReport,
     LintResult,
+    LogFinding,
+    LogReview,
     MachineTableDescription,
     ScaffoldResult,
     SignatureResult,
@@ -260,6 +262,66 @@ def _machine_kind(name: str) -> str:
 
 def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     """Register the always-on authoring tools, a resource, and a prompt."""
+
+    # ----------------------------------------------------------------- #
+    # Logs, read before the catalog keeps them forever (RM25)
+    # ----------------------------------------------------------------- #
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Review the logs before publishing", readOnlyHint=True, idempotentHint=True
+        )
+    )
+    def review_logs(spec_dir: str) -> LogReview:
+        """Show what is in this module's logs, because publishing them is permanent.
+
+        `_collect_logs` runs on **every** compile with no flag and no opt-out: any
+        `*.log` in a spec directory is copied into the artifact, hashed into the
+        manifest and uploaded. A published version is immutable and `yank` delists
+        without removing, so the first log nobody read stays in the catalog.
+
+        That sweep is correct as designed — `logs/` exists to travel and to
+        accumulate across versions. What was missing is anyone looking first.
+
+        **It reports and never strips.** A log is a provenance record; editing one
+        silently is the opposite of what it is for. A flagged log is often fine to
+        publish, and that call is the author's.
+
+        The question is deliberately narrow — *would the author be surprised to see
+        this in the catalog?* — not "is this a secret". Real agent transcripts carry
+        the full team system prompt, every model id and local upload paths; a
+        hand-written run log carries none of that and comes back clean.
+        """
+        target = resolve_dir(spec_dir, settings)
+        paths = logscan.logs_in(target)
+        findings: list[LogFinding] = []
+        total = 0
+        for path in paths:
+            total += path.stat().st_size
+            findings.extend(
+                LogFinding(
+                    log=str(path.relative_to(target)),
+                    kind=flag.kind,
+                    line=flag.line,
+                    detail=flag.detail,
+                )
+                for flag in logscan.scan_file(path)
+            )
+        return LogReview(
+            spec_dir=str(target),
+            logs=[str(p.relative_to(target)) for p in paths],
+            total_bytes=total,
+            findings=findings,
+            note=(
+                "No logs found — nothing would be swept into the artifact."
+                if not paths
+                else (
+                    f"{len(paths)} log(s), {total} bytes, all of which travel to the catalog on "
+                    f"publish. {len(findings)} finding(s). Nothing was changed and nothing is "
+                    "refused: a flagged log may still be the right thing to publish, and an "
+                    "unflagged one is not thereby approved — only a person can decide that."
+                )
+            ),
+        )
 
     # ----------------------------------------------------------------- #
     # What the module already knows about its own studies (RM22)
