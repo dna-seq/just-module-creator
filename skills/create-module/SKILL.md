@@ -51,7 +51,7 @@ said so!*").
 | **The module is the knowledge; whoever runs it brings the measurement** | why nothing here opens a VCF |
 | **Every row is a claim with a receipt.** `conclusion` is the claim, `pmid` is the receipt | why `studies.csv` is required whenever `variants.csv` exists |
 | **A blank cell means "we don't know", never "no"** | the three-valued algebra, and why you must not write `false` to tidy a warning |
-| **Those two quote columns mean "somebody read this paper and found the sentence"** — and a checker later looks for it | why you must not lift one from the fulltext that same checker will use |
+| **Those two quote columns mean "someone read this paper and found the sentence" — and that someone may be me** | why I quote the passage word for word, say who found it, and never paste the title |
 | **I write it; if you want a specialist to check it, that becomes a later version with their name on it** | who does what, and why you are not being asked to check the genetics |
 | **On a dial, a shared endpoint is a boundary; on a counter, it is two bins claiming the same number** | why dense bins must touch and integer bins must not |
 
@@ -598,9 +598,11 @@ authored value against a source, so filling it from that source makes the check 
 an rsid-only row the coordinate check does not run at all, so the row moves from honestly unverified
 to apparently verified.
 
-`lookup_variant` shows you the value and refuses to apply it — it comes back in `withheld` with
-`applied: false`, a `refusal` and a `note`. **That refusal is the feature, not a limitation.**
-`describe_table` names the same columns under `redundancy_bearing`.
+`lookup_variant` shows you the value and does not apply it — it comes back in `withheld` with
+`applied: false`, a `refusal` and a `note`. **That is not a general bar on writing; this layer writes.**
+It is this one pairing: the value arrives so you can *compare* against it, because a cell filled from
+the source that later checks it leaves the row apparently verified by a check that could not have
+failed. `describe_table` names the same columns under `redundancy_bearing`.
 
 ### The mistake nothing offline can catch
 
@@ -721,29 +723,43 @@ Required: `pmid`. Identity: `rsid` **or** `chrom` (+`start`, `ref`).
 `quotes_found` checks the passage against Europe PMC's fulltext — so a quote you wrote is a *testable*
 claim, and one of the few places a module can be checked against the outside world at all.
 
-**The one thing that is forbidden is quoting a fulltext the checker will use as its own answer key.**
-Extract a passage from what `fetch_fulltext` just handed you and `quotes_found` compares Europe PMC
-against Europe PMC: it passes by construction and proves nothing. That is the rule — *not* a rule
-about who did the reading.
+**Quoting the fulltext `fetch_fulltext` handed you is allowed. Say what it costs.** Corrected
+2026-08-20 (`RM15`); this section used to forbid it outright. Quote from that text and `quotes_found`
+compares Europe PMC against Europe PMC, so it is no longer independent evidence that the claim is in
+the literature — but it is not worthless either: it still catches a passage filed against the **wrong
+PMID**, which is a real and common mistake. Disclose the degradation; do not let it stop you quoting.
+Forbidding it does not produce better quotes, it produces none — or worse, a title (below).
 
 | you read | may you quote it | what `quotes_found` then proves |
 |---|---|---|
-| a PDF or copy the author supplied | **yes** | the passage is in the paper that PMID names — a real check |
+| a PDF or copy the author supplied | **yes** | the passage is in the paper that PMID names — a real, independent check |
 | a paper you obtained yourself, outside this session's `fetch_fulltext` | **yes** | same |
-| the output of `fetch_fulltext` on that same PMID | **no** | nothing; the check is vacuous |
+| the output of `fetch_fulltext` on that same PMID | **yes** | citation pairing only: the quote belongs to the paper you cited |
+
+**Never the article's title, and this is the one hard rule left here.** A title occurs in its own
+fulltext, so `quotes_found` matches it every time and reports complete coverage over metadata nobody
+had to read. It is not hypothetical: four published modules carry a quote on all 3668 rows and every
+one is the title — one identical string per PMID, which is the signature to check for. A real passage
+varies with the claim, because different rows cite the same paper for different findings. Quote
+**verbatim**, for **this row's** claim, and if you cannot find one, leave the cell empty and say so.
+An honest empty cell beats a green check that measured nothing.
 
 Then run the literature pass and **read the two counters, which are three-valued**: `quotes_found`
 comes back `null` when no fulltext could be retrieved and `0` when one was read and the passage was
 not in it. A preprint with no OA fulltext yields `null` for every quote — unchecked, not refuted, and
 not a reason to delete the quotes.
 
-> **Upstream disagrees with this section, deliberately noted.** `just_dna_compiler.hints`
+> **Upstream carries an older argument of ours, and we have withdrawn it.** `just_dna_compiler.hints`
 > lists both columns in `ATTESTATION_BEARING`, glossed as "the cell asserts that a **HUMAN** read
-> something". That gloss is right about *providers* — no lookup tool may write these cells, and none
-> does — and wrong as a claim about authorship in a product whose `Contribution` model ships an `ai`
-> author kind, whose `curator` field routinely holds an agent id, and whose whole first layer is
-> AI-written. Filed upstream; until it is answered, the provider refusal stands and the authorship
-> claim does not.
+> something" — a gloss that shipped in format 0.5.4 on reasoning *we* supplied as `S11`. It is right
+> about *providers*: no lookup tool writes these cells, and none should, because a provider filling
+> one from the source that checks it is the vacuity above. It is wrong as a claim about authorship in
+> a product whose `Contribution.who` is documented as "a name, handle, **or model id**", whose `kind`
+> already ladders `{human, human_expert, human_certified}` against `{ai}`, and whose `Defaults.curator`
+> is literally `"ai-module-creator"`. `S55` withdraws our reasoning and asks for the piece that is
+> actually missing: a **per-row attributor** on `StudyRow`, so a quote can name who located it.
+> `VariantRow` has `curator`; `StudyRow` does not. Until it lands, say who found the passage in the
+> module's `authorship` and in the log — and know it does not travel with the row (`F43`).
 
 ### pharm_variants.csv (drug response)
 
@@ -869,8 +885,9 @@ just-dna-enricher pgx spec/                          # function_status vs PharmV
 just-dna-enricher clinpgx check spec/ --snapshot cp/ # pharm_variants.csv vs the ClinPGx snapshot
 ```
 
-Every check **reports, never repairs** — rewriting an authored value would destroy the evidence of
-the upstream mistake. `--strict` escalates a finding to a refusal; `--best-effort` (the default)
+Every check **reports rather than rewrites** — an authored value is left alone because rewriting it
+destroys the evidence that the two disagree, and because the source may be the stale one. Neither is
+a bar on writing in general; see `module-revise` for which corrections are yours to apply silently. `--strict` escalates a finding to a refusal; `--best-effort` (the default)
 warns and carries on. Two deliberately never escalate — the `clin_sig` and allele-function
 cross-checks — because failing would make the format arbitrate between expert panels.
 
