@@ -778,7 +778,11 @@ class Discovery:
             self.service(PREPRINTS)
             .get(
                 "query",
-                {"search_query": f"all:{query}", "start": "0", "max_results": str(limit)},
+                {
+                    "search_query": arxiv_query(query),
+                    "start": "0",
+                    "max_results": str(limit),
+                },
             )
             .text
         )
@@ -926,6 +930,36 @@ def _licensing_notes(sources_used: list[str]) -> list[SourceLicenseNote]:
             )
         )
     return notes
+
+
+#: A PubMed date clause, e.g. `2019:3000[dp]`. arXiv's `search_query` has no
+#: equivalent field, so it is dropped rather than sent as literal text.
+_PUBMED_DATE = re.compile(r"\s*AND\s*\d{4}:\d{4}\[dp\]\s*$")
+
+#: One `(term)` group of the shared query string.
+_QUERY_GROUP = re.compile(r"\(([^()]+)\)")
+
+
+def arxiv_query(query: str) -> str:
+    """Translate the shared search string into arXiv's own syntax.
+
+    **Found by running a live search, and it had been wrong since the arXiv leg
+    was written.** The shared string is PubMed-flavoured — `(a) AND (b)` plus a
+    `2019:3000[dp]` date clause — and it was being sent to arXiv verbatim after a
+    bare `all:` prefix. arXiv splits an unquoted `all:` value on whitespace and
+    ORs the words, so `all:lactase persistence` returns topology and statistics
+    papers about *persistence*: measured, four of four hits, zero about lactase.
+    Every multi-word query was returning noise, and a fixture test could not catch
+    it because the fixture was captured with a query somebody chose.
+
+    So each term becomes its own quoted phrase, joined with arXiv's `AND`.
+    """
+    stripped = _PUBMED_DATE.sub("", query.strip())
+    groups = [g.strip() for g in _QUERY_GROUP.findall(stripped) if g.strip()]
+    terms = groups or ([stripped] if stripped else [])
+    # A quote inside a term would close the phrase early and change the search.
+    cleaned = [term.replace('"', "").strip() for term in terms]
+    return " AND ".join(f'all:"{term}"' for term in cleaned if term)
 
 
 def _query_string(terms: list[str], year_from: int | None) -> str:

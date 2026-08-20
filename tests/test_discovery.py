@@ -26,6 +26,7 @@ from just_module_creator.discovery import (
     PUBMED,
     SEARCHABLE,
     UNPAYWALL,
+    arxiv_query,
     doi_refusals,
     doi_token,
     known_sources,
@@ -615,3 +616,36 @@ def test_the_port_is_attributed() -> None:
             )
     # And the real chain is what reaches the wire.
     assert "self.services.contact_email()" in source
+
+
+def test_the_arxiv_query_is_translated_not_forwarded() -> None:
+    """arXiv gets its own syntax, because it does not speak the shared one.
+
+    **Found by running a live search, not by reading code, and it had been wrong
+    since the arXiv leg was written.** The shared query string is
+    PubMed-flavoured — parenthesised groups joined by `AND`, plus a
+    `2019:3000[dp]` date clause — and it was sent to arXiv behind a bare `all:`
+    prefix. arXiv splits an unquoted `all:` value on whitespace and ORs the
+    words, so `all:lactase persistence` returned four topology and statistics
+    papers about *persistence* and nothing about lactase.
+
+    No fixture test could have caught it: the fixture was captured with a query
+    chosen by whoever wrote the test.
+    """
+    assert arxiv_query("lactase persistence") == 'all:"lactase persistence"'
+
+    # Each group becomes its own phrase; ORing the words is the defect.
+    assert (
+        arxiv_query("(lactase persistence) AND (rs4988235)")
+        == 'all:"lactase persistence" AND all:"rs4988235"'
+    )
+
+    # The PubMed date clause has no arXiv equivalent, so it is dropped rather
+    # than sent as literal text to be matched against paper contents.
+    assert arxiv_query("(MCM6) AND 2019:3000[dp]") == 'all:"MCM6"'
+    assert "[dp]" not in arxiv_query("(a) AND (b) AND 2019:3000[dp]")
+
+    # A quote inside a term would close the phrase early and silently change the
+    # search into something the caller did not ask for.
+    assert arxiv_query('lactase "persistence"') == 'all:"lactase persistence"'
+    assert arxiv_query("") == ""

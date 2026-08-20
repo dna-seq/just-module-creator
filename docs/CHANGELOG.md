@@ -3,6 +3,36 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — the arXiv leg was returning noise, and only a live run showed it
+
+**Found by dogfooding the shipped surface, not by reading it or testing it.** Asked whether the
+literature features had been exercised with live queries, they had not — parsers were validated
+against real payloads and raw calls made to capture fixtures, but `literature_search` itself had
+never been run end to end. Running it returned, among lactase-persistence hits, a **particle-physics
+paper**: *"Observation of the rare B⁰ₛ→μ⁺μ⁻ decay"*.
+
+**Cause.** The shared query string is PubMed-flavoured — parenthesised groups joined by `AND`, plus a
+`2019:3000[dp]` date clause — and it was handed to arXiv behind a bare `all:` prefix. arXiv splits an
+unquoted `all:` value on whitespace and ORs the words, so `all:lactase persistence` matched on
+*persistence* alone. Measured directly: four of four hits were topology and statistics papers, none
+about lactase. **Every multi-word query had been returning noise since the arXiv leg was written.**
+
+**No fixture test could have caught this**, and that is the part worth keeping: the fixture was
+captured with a query chosen by whoever wrote the test, so it agreed with itself. The defect lived in
+the *request*, and every test here checked the *response*.
+
+**Fix.** `arxiv_query()` translates rather than forwards: each parenthesised group becomes its own
+quoted phrase joined with arXiv's `AND`, the PubMed date clause is dropped because arXiv has no
+equivalent field, and an embedded quote is stripped so it cannot close the phrase early and silently
+change the search. Measured after: the same query returns a population-genetics preprint on IBD tracts
+and runs of homozygosity, and the query that produced the physics paper now returns **zero** preprint
+hits — which is the honest answer, arXiv having little on lactase.
+
+Live end-to-end run also confirms the rest of the surface behaves: all six sources dispatch, `merge`
+combines correctly across them (Enattah 2002 arrives as one candidate carrying pubmed + europepmc +
+crossref), and a Semantic Scholar 429 is reported as `results=null, rate_limited=true` with the
+*"UNCHECKED, not empty"* warning rather than as a zero.
+
 ## 0.14.0 — OpenAlex and Crossref, ported rather than depended on
 
 Five literature sources become seven. **452 tests**, ruff clean, pyright 0 errors. Version bumped in
