@@ -64,13 +64,18 @@ follows this order.
 
 Step 3 is where a module is won or lost. Four rules the tools enforce rather than merely suggest:
 
-- **Look-ups report, they never fill a cell in.** A later check compares what you wrote against the
-  same source. If the source filled it in, the check compares that source with itself and always
-  agrees. Those refusals are the feature.
+- **A look-up shows you a value; it does not paste it in for you.** A later check compares what you
+  wrote against the same source, so if the source had filled it in, the check would be comparing that
+  source with itself and would always agree. You get the value to compare against, and the reason
+  it was not written.
 - **Unknown is not "no".** A check that could not run is not a check that passed, and nothing here
   quietly turns a failed lookup into a zero.
-- **Nobody quotes a paper they did not read.** There are two columns that mean *a person read this
-  article and found the sentence*. No tool will fill them from a document it fetched for you.
+- **Nobody quotes a paper nobody read — and it is fine for the reader to be the AI.** Two columns
+  mean *someone read this article and found the sentence in it*. The assistant can genuinely do
+  that: it fetches the paper, reads it, and quotes the passage word for word, and the module should
+  say who found it. What is not allowed is a quote nobody located — pasting the article's **title**
+  into that column passes every automatic check while proving nothing, because a title is always
+  somewhere in its own article.
 - **Drop what you cannot support.** A source that lists seven variants often supports one. See
   `assets/fto_bmi/README.md` for a real case where six of seven were dropped, and why.
 

@@ -212,13 +212,25 @@ coordinate check then does not run at all, so the row moves from honestly
 unverified to apparently verified.
 
 `hints.REDUNDANCY_BEARING` is the authoritative list. The lookup tools show the
-value and **refuse to apply it** — `applied: false` with a `refusal` and a
-`note`. **That refusal is the feature, not a limitation, and our MCP tools must
-preserve it.** A convenience tool here that auto-fills a redundancy-bearing cell
-does not bend a convention; it deletes a whole validation class.
+value and **do not apply it** — `applied: false` with a `refusal` and a `note` —
+and our MCP tools preserve that. A convenience tool that auto-fills a
+redundancy-bearing cell does not bend a convention; it deletes a whole validation
+class, and it moves the row from honestly unverified to *apparently* verified,
+which is the half that matters at this layer because we are what hands somebody a
+module to trust.
 
-Corollary for this repo: **no tool we expose may write an authored cell from a
-lookup result.** Lookups report; the human decides; `lint_rows` checks.
+**The corollary is narrower than it used to be stated here, and RM15 corrected it
+on 2026-08-20.** It read *"no tool we expose may write an authored cell from a
+lookup result"*, which was format's stance adopted whole. This layer **may**
+write — the business decision is delegated to us, and a tool of ours filling or
+correcting a cell is legitimate where the same act in the compiler would not be.
+What survives is the specific pairing: **do not fill a cell from the very source
+that later checks it.** Everything else is a question of logging the move and of
+telling an evident correction from a judgement call. See `CLAUDE.md` §2.
+
+And watch the same defect from the other side: a value that satisfies a check
+*vacuously* is as bad as one copied from the checker. Ask of any green check —
+**could it have failed?**
 
 ### The two columns the list is missing, and why they are worse
 
@@ -228,16 +240,34 @@ PMC fulltext to produce `quotes_found`. By the list's own definition they belong
 on it: a quote extracted from that same fulltext makes the check agree with
 itself.
 
-They are worse than the others, though, and it is worth being precise about why.
-The other redundancy-bearing columns lose a *check* when auto-filled. These lose a
-*fact about the world*. `provenance_quote` exists to record that a curator read
-the paper and located the claim in it; a passage a machine pulled out of a
-document the machine fetched asserts a reading that never happened. That is a
-false claim of provenance, not a vacuous check.
+They differ from the others, and RM15 corrected what that difference *is*
+(2026-08-20). This passage used to say the column records **that a curator read
+the paper**, so a machine-located passage "asserts a reading that never happened".
+That was wrong, and it was the format layer's frame imported whole. The agent
+does read the paper — `fetch_fulltext` hands over the entire article — so the
+reading is real. What the old rule protected was a fiction about **who** read it,
+and it left the column empty for the only reader present.
 
-So no tool in this repo extracts a passage — no best-matching passage, no
-suggested quote, no search-within-text. `fetch_fulltext` returns the document and
-nothing else. Filed upstream; ours to hold until it lands.
+What the column actually needs is **attribution**: a located passage, and a record
+of who located it. So an agent here may locate and write a `provenance_quote` —
+verbatim, for the row's own claim, and saying who found it. Responsibility does
+not move with the attribution: an AI is not a subject of right, so the human
+author holds it entirely.
+
+Two things remain true and are not softened by the reversal:
+
+- **Never the article's title.** A title occurs in its own fulltext, so
+  `quotes_found` matches it every time and reports complete coverage over metadata
+  nobody had to read. Measured: four published modules carry a quote on all 3668
+  rows and every one is the title — one identical string per PMID, which is the
+  structural signature. See `F42`.
+- **A quote you located is not independent evidence of the claim.** Once the
+  fulltext has been retrieved, `quotes_found` on that row has degraded to a
+  **citation-pairing** check — still worth having, since it catches a passage filed
+  against the wrong paper. State that; it is not a reason to leave the cell empty.
+
+There is still no per-row column naming *who* located a quote (`StudyRow` has no
+`curator` while `VariantRow` does). Asked upstream as `S55`; tracked as `F43`.
 
 The honest consequence, which the tool and the skill both state: **once a fulltext
 has been read through `fetch_fulltext`, `quotes_found` on that row is no longer

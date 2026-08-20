@@ -14,10 +14,15 @@ merely documented:
 - **Ask the tool, never memory.** Every column list, vocabulary and requirement is generated from
   the live pydantic models in `just-dna-format`, so `describe_table` and `table_requirements`
   cannot drift from what the compiler accepts.
-- **Report, never repair.** `lookup_variant` and `literature_search` show you a value and *refuse*
-  to write it into an authored cell, with the reason attached. Those cells are redundancy-bearing: a
-  later check compares your independent value against the same source, so filling it from that
-  source deletes a whole validation class.
+- **You may write; don't write a cell from the source that checks it.** This is the authoring
+  layer, so revising and correcting is the job. What `lookup_variant` and `literature_search`
+  withhold is narrower: those particular cells are redundancy-bearing, and a later check compares
+  your independent value against the same source — so filling one from that source deletes a whole
+  validation class and leaves the row *apparently* verified. The value is shown so you can compare
+  it, not paste it, and the reason travels with it.
+- **A mismatch against a source is not a defect report.** Archives lag: a paper is retracted, a
+  bigger cohort moves the call. A row that disagrees may be right and current while the source is
+  stale, so conforming it silently degrades the module — and the check then agrees with itself.
 - **A check that could not run is not a check that passed.** `null` and `unknown` never collapse
   into a boolean pass. A literature source that timed out reports `results: null`, never `0`.
 
