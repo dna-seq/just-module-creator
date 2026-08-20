@@ -143,7 +143,10 @@ classifies every row, reapplies what is provably yours, and **reports what it ca
 is *either* your cell edit *or* upstream's revision, and **two data points cannot say which.** Nothing
 distinguishes them unless `source` was changed too — which is exactly why `source` sits **outside**
 every fact-field set, and why marking an override honestly is worth doing at the time you make it. A
-tool that guessed here would be inventing a verdict; the report is the correct output.
+tool that guessed here would be inventing a verdict, so the report is the honest output **for as long
+as `source` is the only marker there is** — a filled authoring log would settle it outright, and
+`CLAUDE.md` §2 now requires every authoring move to go through one. The ambiguity is a consequence of
+what we record, not a principle.
 
 Deleting the sidecar is also what discards curator overrides — so the drift detector and the override
 problem are one problem, tracked upstream as **RM83**.

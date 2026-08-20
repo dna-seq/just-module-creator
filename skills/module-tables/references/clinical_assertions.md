@@ -450,10 +450,12 @@ from just_dna_enricher.clinvar_build import review_stars, _REVIEW_STARS
 from just_dna_format.manifest import ClinicalAssertions
 ```
 
-These MCP calls **will refuse** and the refusal is correct, not a bug:
+These MCP calls decline, because this table is not hand-authored — **ask `describe_machine_table`
+instead**, which answers it:
 `describe_table("clinical_assertions.csv")`, `table_requirements("clinical_assertions.csv")`,
 `get_template("clinical_assertions.csv")`, `lint_rows(csv_name="clinical_assertions.csv", …)` — all
-answer *"Unknown table kind … Authorable kinds: …"*.
+answer *"Unknown table kind … Authorable kinds: …"*. That is routing, not a refusal on principle: the
+banner at the top of this file has said so since 2026-08-20 and this paragraph had not caught up.
 
 These MCP calls **do** apply:
 - `list_tables()` — confirms the authorable set this table is deliberately outside of.

@@ -63,14 +63,17 @@ And its neighbour:
 - **nobody, ever** — there is no field in `module_spec.yaml` for prose and no plan to add one. The
   file is the field.
 
-**Which cells no tool may fill.** All of them. This is the strongest form of the report-never-repair
-rule in the whole spec directory, and it is worth naming the two adjacent refusals so nobody
-proposes routing around them:
+**Which cells no tool may fill.** None, and the reason is narrower than this section used to claim.
+It read *"all of them — the strongest form of the report-never-repair rule in the whole spec
+directory"*, corrected 2026-08-20 under `RM15`. A readme is prose an agent may write; what it must
+not do is **assert a judgement nobody made**, and that is a rule about the content, not the typist.
 
-- `hints.ATTESTATION_BEARING` (`provenance_quote`, `provenance_regex` on `studies.csv`) exists
-  because a quote records *that a curator read the paper*. A readme is the same kind of object one
-  level up: it records that somebody decided what this module is for. A generated readme asserts a
-  judgement nobody made.
+- `hints.ATTESTATION_BEARING` (`provenance_quote`, `provenance_regex` on `studies.csv`) used to be
+  glossed here as existing *because a quote records that a **curator** read the paper*. That gloss is
+  withdrawn (`S55`): an agent that reads the article is a real reader, and what the column needs is
+  **attribution** — who located the passage — not abstention. A readme is the same kind of object one
+  level up: it records what somebody decided this module is *for*. So write one, and let `authorship`
+  say who wrote it; the thing to avoid is a readme that invents a purpose nobody chose.
 - **`enrich_literature` will happily check a readme's claims against nothing at all.** There is no
   lint for prose. `validate_spec` never opens the file — measured: rewriting `README.md` to
   `"# totally new prose\nclaims galore\n"` changed no finding, no signature and no digest.

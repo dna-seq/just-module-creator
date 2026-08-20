@@ -57,14 +57,15 @@ authoring it: unlike `variants.csv`, nothing arrives pre-filled and nothing can 
 | `unresolved` | **author.** `scaffold_module` stubs one `true` row for you (measured below). |
 | `direction`, `phenotype`, `trait_efo_id` | **author.** Intent-bearing: only the author knows which trait these bins are about. |
 | `clin_sig` | **author, and no tool may fill it** — `hints.REDUNDANCY_BEARING["clin_sig"] = "enricher.clinical.verify_clin_sig (authored call vs ClinVar's)"`. Filling it from ClinVar makes that comparison compare ClinVar with itself. |
-| `pmid` | **author, and no tool may fill it** — `hints.REDUNDANCY_BEARING["pmid"] = "enricher.literature (authored pmid vs PubMed's record: LiteratureRow.exists)"`. `lookup_citation` reports a PMID with `applied: false`; the refusal is the feature. |
+| `pmid` | **author, and no tool may fill it** — `hints.REDUNDANCY_BEARING["pmid"] = "enricher.literature (authored pmid vs PubMed's record: LiteratureRow.exists)"`. `lookup_citation` reports a PMID with `applied: false`; carry that through as the provider's own answer. |
 | `source_field`, `source_element` | **author.** Declarative pointers, not derivable — see the gotchas. |
 | `module` (parquet only) | **compiler-stamped** at build (`compiler._build_table:461`, `{"module": module_name, …}`). Not an authored column; it exists so `reverse_module` can recover the module name from any parquet. |
 | anything registry-owned | **n/a** — no `normalize.IDENTITY_AUTHORITY_KEYS` column lands on this table; identity lives in `module_spec.yaml`. |
 
 `hints.ATTESTATION_BEARING` is `{provenance_quote, provenance_regex}` and **neither column exists on
 this model** — those live on `StudyRow`. So this table carries a citation *pointer* and never an
-attestation: it can say *which paper*, never *that a human read it*. `describe_table` confirms the
+attestation: it can say *which paper*, never *that anybody read it*. (Who the reader was is
+`authorship`'s business, and may be an agent — `RM15`, 2026-08-20.) `describe_table` confirms the
 split, reporting `redundancy_bearing` on `clin_sig` and `pmid` and `null` on the other thirteen
 columns (run it; measured against format 0.6.1).
 
@@ -258,7 +259,7 @@ Ordered by how likely a first-timer is to hit them.
 - **No `bin_evidence.csv` join table.** Refused: it would have to key on the thresholds, and they are
   floats — "re-authoring `40` as `40.0` orphans the evidence with nothing able to notice."
 - **`StudyRow`'s provenance columns will not be copied here one at a time.** Refused: it would restate
-  the bin inside its own evidence. So a bin can name a paper and can never attest a reading of it.
+  the bin inside its own evidence. So a bin can name a paper and never attests a reading of it.
 - **No sixth `measure_kind` for a continuous repeat count.** Refused as the wrong axis (P5) — tiling
   and kind are independent questions, and folding them is a product rather than a sum.
 - **`measure_tiling` cannot be derived from the rows with no column.** Refused: absence of a fractional

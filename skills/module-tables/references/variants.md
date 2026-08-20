@@ -94,7 +94,8 @@ three grouping columns default to `""`, not null, in `annotations`.
 `ATTESTATION_BEARING` holds no `variants.csv` column; it is `provenance_quote` /
 `provenance_regex`, which live in `studies.csv`. A `lookup_variant` / `lookup_identifier` result that
 would fill one of the above comes back `applied: false` with the `refusal` string — pass both
-through verbatim; the refusal is the output.
+through verbatim: an `applied: false` records what the *provider* did, and rewriting it would
+misreport another layer's act. It is not a statement that this layer may not write.
 
 ## What moving this table moves
 

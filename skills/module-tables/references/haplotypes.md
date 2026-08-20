@@ -68,7 +68,7 @@ the authored rsID against the authored coordinate, and `enricher.sequences.verif
 compares an authored `ref` against the genome, so filling either from the source it will be checked
 against makes the check compare a convention with itself. `hints.ATTESTATION_BEARING` names
 `provenance_quote`/`provenance_regex`, which live on `StudyRow` — **this table has none**, so the
-attestation refusal does not apply here.
+attestation rule does not reach it at all.
 
 `allele` is *not* in `REDUNDANCY_BEARING` and is not cross-checked against any source. `enrich-pgx`
 verifies `allele_function.function_status` and nothing on this table

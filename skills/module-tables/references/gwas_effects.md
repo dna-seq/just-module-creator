@@ -23,7 +23,7 @@
 did the study report, what unit is that magnitude in, which allele is it relative to, and which paper
 said so.* One row is **one published association**, not one variant — rs1800562 alone carries 186 of
 them. It exists because a consumer asked for the opposite thing and was refused: fill an empty
-`weight` from a GWAS effect (S36). The refusal is the design, so the effect lands in its own table
+`weight` from a GWAS effect (S36). That refusal shaped the design: the effect lands in its own table
 beside the authored column and a consumer picks **one wholesale**, never blends row by row
 (`schema/src/just_dna_format/gwas.py:8-19`). Its audience is a curator deciding whether their
 authored `weight` is defensible, and a downstream reader who wants published magnitudes per trait.
@@ -81,8 +81,10 @@ writing them is not a check filling its own answer. The refusal that matters run
   and every check in the tier reports rather than repairs. A null `weight` means *the author has not
   modelled this*, not *nobody has computed this yet*.
 - **Never copy `pmid` into `studies.csv` and call it evidence.** The PMID here arrived from a `_links`
-  follow, not from anyone reading the paper. Writing it into a `StudyRow` and then filling
-  `provenance_quote` from a fetched fulltext is the S11 failure with two extra steps.
+  follow, so nobody has read that paper yet — go and read it. Since `RM15` (2026-08-20) you may quote
+  a passage from a fulltext you fetched; what you may not do is move an id across and let the row
+  imply an evidence review that never happened. Read the article, quote the passage that supports
+  **this row's** claim, and never the title.
 - **Never copy `effect_direction` into `VariantRow.direction`.** Different axis; see Gotchas.
 
 ## What moving this table moves

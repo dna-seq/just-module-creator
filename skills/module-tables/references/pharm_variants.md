@@ -402,7 +402,7 @@ describe_table("pharm_variants.csv")         # columns, types, vocabularies, red
 table_requirements("pharm_variants.csv")     # always-required, any_of groups, defaulted, optional
 get_template("pharm_variants.csv", stub=True)# header, and <<REPLACE>> in the cells you must decide
 lint_rows("pharm_variants.csv", csv_text)    # findings + alterations; preserve `applied:false` and
-                                             #   its `refusal` verbatim — the refusal is the answer
+                                             #   its `refusal` verbatim — that is upstream's answer, not ours to restate
 authoring_reference(schemas=True)            # the whole surface in one call
 ```
 

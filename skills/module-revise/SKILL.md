@@ -33,17 +33,27 @@ work.** It usually met the requirements that existed when it was written. So:
 - **Fix the evident silently.** A rename, a deprecated spelling, a column that moved — apply it and
   say nothing.
 
-**And the line that governs that last one, because it is one step from a serious mistake.** Silent
-correction is *not* an exception to report-never-repair. The two split on **judgement**:
+**And the line that governs that last one, because it is one step from a serious mistake.** This
+layer **may** write — `RM15` retired "report, never repair" as our rule on 2026-08-20, and the
+business decision is delegated here. What replaces it is not permission to rewrite anything: the two
+split on **judgement**, and this table is the discriminator itself.
 
 | | |
 |---|---|
 | evident, mechanical — no judgement exists to exercise | **apply it, say nothing** |
 | a checked or authored value — `genotype`, `weight`, `clin_sig`, `conclusion`, `provenance_quote` | **never touch it. It goes in the decision list** |
 
-Writing one of the second kind silently is the redundancy-bearing mistake the whole design exists to
-prevent: a later check would compare a source against itself and agree. **When you cannot tell which
-side a case falls on, surface it** — over-surfacing is recoverable and a silent wrong write is not.
+Writing one of the second kind silently fails twice over. A later check would compare a source
+against itself and agree — and worse, **the source may be the stale one**: an archive lags a
+retraction or a bigger cohort, so conforming a row to it can *degrade* a module that was right, with
+the check then reporting green. Editing against a source needs a reason that outranks the source, and
+that reason gets written down. **When you cannot tell which side a case falls on, surface it** —
+over-surfacing is recoverable and a silent wrong write is not.
+
+A `provenance_quote` is on the never-touch side for the same reason as the rest: it is an authored
+value. That is **not** a bar on writing one where none exists — since `RM15` an agent may read the
+article and locate the passage itself. Adding a missing quote is authoring; overwriting somebody's
+existing one is a decision for the list.
 
 **The question is never "what version does this deserve."** It is these four, in order:
 

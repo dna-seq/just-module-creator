@@ -72,7 +72,8 @@ parsing left to a human, because guessing a bound from `≥3.0` means inventing 
 
 **`attestation_bearing` is empty here.** `hints.ATTESTATION_BEARING` is exactly
 `{provenance_quote, provenance_regex}` (`hints.py:72`), and neither column exists on this model —
-those live on `StudyRow`. Nothing in this table asserts that a human read something.
+those live on `StudyRow`. Nothing in this table asserts that anybody read anything — and on
+`StudyRow`, where it does, the reader may be an agent provided the module says so (`RM15`).
 
 **One enricher pass *reads* it and writes nothing to it:** the literature pass loads every binning
 table through `compiler.load_binning_rows` (`compiler.py:1779`, called at
