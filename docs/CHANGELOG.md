@@ -3,7 +3,7 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## Unreleased — the skills split completed, and the check the audit's own finding needed (2026-08-20)
+## 0.11.0 — the skills split completed, and two checks the audit's own findings needed (2026-08-20)
 
 The night run after the audit. **`skills/create-module/` is deleted** and `RM17` ships. No floor move:
 format/compiler 0.6.1, enricher 0.6.4, registry 0.18.2. 216 tests green, `ruff` clean, `pyright` 0
@@ -97,12 +97,11 @@ which is one real sentence pasted onto two thousand rows. The title comparison n
 
 ---
 
-## Unreleased — the philosophy audit: what we may write, and who may say they read a paper (2026-08-20)
+## 0.11.0 — the philosophy audit: what we may write, and who may say they read a paper (2026-08-20)
 
 `RM15`. No new tool, no floor move: format/compiler 0.6.1, enricher 0.6.4, registry 0.18.2. 204 tests
-green, `ruff check` clean, `pyright` 0 errors. **No version bump in this change** — the next one must
-touch all three files (`pyproject.toml` and both plugin manifests), and `server.INSTRUCTIONS` changed,
-which is user-facing text.
+green, `ruff check` clean, `pyright` 0 errors. **Released as 0.11.0** together with the night run below it — all three files bumped
+(`pyproject.toml` and both plugin manifests), which is what `server.INSTRUCTIONS` changing required.
 
 ### The stance we were holding was the format's, and this is not that layer
 
