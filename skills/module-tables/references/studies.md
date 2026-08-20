@@ -192,12 +192,22 @@ Ordered by how likely a first-timer is to hit them.
      before the quotes were authored and the sidecar is merge-not-clobber. The manifest then
      publishes `quotes_authored: 0, quotes_found: 0` beside 3668 authored quotes — a confident zero
      over a null (upstream `S56`). So `quotes_found` is not a detector for this; the group-by is.
-   - **A catalog-derived row may have no quotable passage at all.** Where a `studies.csv` row comes
-     from a GWAS Catalog association rather than from the paper's prose, the paper frequently never
-     names the variant: measured on `aggression_anger`, none of the 65 rsIDs cited to PMID 29500382
-     appears in that article's retrievable text, because the associations are in its supplementary
-     data. The honest cell there is **empty**, and empty splits into *read and not found* versus
-     *no fulltext retrievable* — see `find-evidence`.
+   - **A catalog-derived row may have no quotable passage at all, and that is the normal case.**
+     Where a `studies.csv` row comes from a GWAS Catalog association rather than from the paper's
+     prose, the paper frequently never names the variant. Measured across all 26 PMIDs of
+     `big_five_personality`, 859 rows: **25 quotable**, 300 read-and-not-found, 527 unchecked
+     (abstract only), 7 unchecked (nothing retrievable). The relationship is inverse — the more rows
+     a paper grounds, the less likely its text names any of them; the three biggest contributors
+     (298, 197 and 69 rows) yielded nothing. So expect **2–3% of rows** to carry a variant-level
+     quote, and expect empty to be the honest answer everywhere else. `find-evidence` has the four
+     kinds of empty and what each one claims.
+
+   - **Going after the passage is also how you find a row citing the wrong paper.** Four rows of
+     `big_five_personality` cite PMID 34054130 for a neuroticism item; that article names all four
+     rsIDs — in a table of hits for **sociability**, at p-values orders of magnitude from the rows'.
+     Under a title-in-the-column rule they were indistinguishable from the other 855. Do not quote
+     the passage: an article that names your variant while reporting a different trait is a decision
+     for a human, not a cell to fill.
 
 2. **A bibliographic string in `pmid` silently cites a different paper.** `PMID_PATTERN` is
    `\b(\d{1,8})\b` (`spec.py:81`) and it runs over the **whole free-form cell**. Measured on

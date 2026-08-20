@@ -188,17 +188,54 @@ associations live in its supplementary data and downloadable summary statistics.
 returns the JATS body and no supplementary file, so for those rows there is nothing in reach to
 quote — and the honest cell is empty.
 
-### 3. An empty cell is a result. Two different ones
+### 3. An empty cell is a result, and there are four kinds
 
 Do not stretch a passage to fill a row, and do not invent one. Record which kind of empty it is,
 because they are not the same claim:
 
-- **read and not found** — the fulltext was retrieved and the claim is not in it. Says something.
+- **read and not found** — the fulltext was retrieved and the variant is not in it. Says something.
 - **unchecked** — no fulltext was retrievable (`text_source: abstract`, or `null`). Says nothing.
   An abstract miss is not a verdict.
+- **named, but for a different claim** — see rule 3b. Says a great deal, and it is not about quoting.
+- **quotable, but the licence is unclear** — a judgement call; see the licensing section below. The
+  measured case kept the quote and recorded the rights as unknown.
 
-`quotes_found` mirrors this: `null` when nothing could be checked against, `0` when a text was read
-and the passage was not in it. Neither is a failure and neither is a reason to delete a quote.
+`quotes_found` mirrors the first two: `null` when nothing could be checked against, `0` when a text
+was read and the passage was not in it. Neither is a failure and neither is a reason to delete a
+quote.
+
+### 3b. If the article names the variant but reports a different trait, STOP
+
+This is the most valuable thing looking for a passage can produce, and it is worth going slowly when
+it happens. The article names your row's variant — so the row looks well-cited — but the passage is
+about a different phenotype, and the numbers in it do not match the numbers in your row.
+
+The measured case: four rows citing PMID `34054130` for *"Worry too long after an embarrassing
+experience"*. The article names all four rsIDs, in a table of hits for **sociability**, at p-values
+that differ from the module's by orders of magnitude, and contains no analysis of that item at all.
+
+**Do not quote it.** Attaching a real sentence to an assertion the article does not make is worse
+than an empty cell: it converts an unverified row into an apparently-witnessed wrong one. Leave the
+quote empty, record what you found, and put the row in the decision list — `trait_efo_id`, `p_value`
+and `conclusion` are authored values and none of them is yours to change on this evidence.
+
+Then read the cheap tell: **compare your row's `p_value` against the paper's own number.** Agreement
+to one significant figure is a good sign the row and the passage are about the same result; an order
+of magnitude apart usually means the row came from a different analysis, a different accession, or a
+different paper.
+
+### 3c. When the variant is named only inside a table
+
+Common on GWAS papers, and the flattened JATS text keeps tables as runs of whitespace-separated
+cells. A single table row is a legitimate `provenance_quote`: it is verbatim, it matches, it varies
+per row so it cannot recreate the repeated-string shape, and it carries the variant, its alleles, its
+effect and its p-value — which is more than most prose sentences do.
+
+The honest cost is that the column is documented as *human-legible*, and a table row is legible only
+to somebody holding the paper. Say so in the module's README or log. It is still far better than an
+empty cell and incomparably better than a title. **Extract it with a regex against the retrieved
+text rather than retyping it** — these tables are full of non-breaking spaces and en-dashes, and a
+retyped span is a fabricated one.
 
 ### 4. Record who located it — and know where that record does and does not go
 
@@ -275,7 +312,18 @@ This is the part nothing else in the toolchain covers, and it decides whether a 
   **sell** is a problem, and it is a problem in your module's *annotation* layer, where
   `commercial_use=false` actually bites.
 - **`null` (bronze)** — free to read on the publisher's site, with **no reuse grant at all**. The
-  most common trap: it looks open and is not.
+  most common trap: it looks open and is not. `other-oa` on *every* location is the same thing
+  wearing a label — measured on `27089181` (Okbay A et al., Nat Genet 2016), where all five
+  locations came back `other-oa` and none carried a licence.
+
+**What to do when it happens, measured rather than theorised.** The quote was kept and the
+`licensing.csv` row recorded `license` empty with `share_alike`, `commercial_use` and
+`redistribution` all **left blank — UNKNOWN, never false**. The consequence is visible on the
+published card, which is the point of doing it that way: `unknown_terms_sources` lists that article,
+and **the module's own `licensing.commercial_use` and `redistribution` drop to `null`**. One article
+with unclear terms makes the whole module's commercial-use answer unknown. Weigh that before quoting
+from a bronze article into a module you intend to sell; the alternative is to leave the cell empty
+and say why.
 
 A short located quote is a pointer to where a claim lives. A copied abstract pasted into
 `conclusion` is a reproduction of someone's text. Write your own sentence.

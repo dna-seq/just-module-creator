@@ -109,6 +109,36 @@ data, and 3 cite a paywalled paper whose abstract names no rsID. Full account in
   the modules met the rules that existed when they were written, and emptying the column is one of
   the defensible answers.
 
+A second module, `big_five_personality`, was then remediated the same way and published as
+`test-sheep/test_big_five_personality_snps@1.0.0` — 859 rows, 21 quoted, 21 distinct strings. It is
+where the interesting cases live, because `aggression_anger` is 1:1 variant-to-row and hides them:
+
+- **The yield is 2–3% and the relationship is inverse.** All 26 cited PMIDs were retrieved and every
+  rsID in their text intersected with the rsIDs cited to them: 25 rows quotable, 300 read-and-not-
+  found, 527 unchecked (abstract only), 7 unchecked (nothing retrievable). The more rows a paper
+  grounds the less likely its text names any of them — the three biggest, at 298, 197 and 69 rows,
+  yielded nothing.
+- **Four rows cite an article that names their variant and reports a different trait.** A sociability
+  GWAS cited for a neuroticism item, p-values orders of magnitude apart. Left empty and escalated,
+  because attaching a real sentence to an assertion the article does not make is worse than an empty
+  cell. Under the old rule they carried the title and were indistinguishable from the other 855 —
+  which is the argument against simply emptying the column, and it only appeared because somebody
+  went looking for the passage.
+- **One article is free to read with no reuse grant**, so its rights are recorded UNKNOWN and the
+  module's own `licensing.commercial_use` drops to `null` on the published card. `find-evidence` and
+  `studies.md` carry all three cases, plus the table-row question: 15 of the 21 quotes are a
+  flattened JATS table row, which is verbatim and varies per row but is not the "human-legible"
+  passage the column documents.
+- **`F51`** nearly cost a false status line: `uv run` answers about whichever repo you are standing
+  in, both trees report `just-dna-format 0.6.1`, and a symbol check chained after a `cd` into the
+  sibling reported an upstream field as installed. It is not.
+- **Upstream accepted and fixed all three notes the same night** — `RM118` (`titles_as_quotes`),
+  `RM119` (the sidecar comparison plus `quotes_unchecked`) and `RM120` (`StudyRow.curator`, our whole
+  ask verbatim). **None of it is released**, so every mitigation and every honest limitation stated
+  in the skills stays exactly as it is until `uv sync` carries them. `RM17` is unaffected either way:
+  upstream's title check lives in the literature pass, and the modules that have the problem never
+  ran it.
+
 ## Unreleased — refreshing a derived sidecar stops being a destructive manual sequence (2026-08-20)
 
 New tool `refresh_sidecar`, extended tier, in a new `tools/refresh.py`. No floor moves and no upstream
