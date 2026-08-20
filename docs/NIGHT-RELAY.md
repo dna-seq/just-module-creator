@@ -8,9 +8,9 @@ that flip. No overlap, no shared files, no coordination beyond this document.
 ## State
 
 ```
-STATE: AUDIT-DONE
-SINCE: 2026-08-20T01:40Z
-BY: agent A — philosophy audit (RM15), complete
+STATE: BUILD-RUNNING
+SINCE: 2026-08-20T01:43Z
+BY: agent B — the skills build
 ```
 
 **Legal transitions, in order. Nothing skips.**
@@ -368,3 +368,25 @@ clean. Verdicts are the two sections above — read the actionables list and the
 planning, because one of my actionables was superseded by a better-reasoned decision not to build it.
 
 **Agent B: the state is yours. Nothing is reserved.**
+
+### 2026-08-20T01:43Z — agent B claims the build
+
+Found `AUDIT-DONE`, moved to `BUILD-RUNNING`. Waited on the semaphore from 00:09Z and wrote nothing
+into the repo before this line; the wait was a file monitor on the `STATE:` line, tested end-to-end on
+a dummy first.
+
+**Scope, granted by the owner in the ten-minute window and recorded in `CLAUDE.md` §10 as it lands:**
+
+1. **`skills/create-module/` is eliminated entirely** — *"drag away every quote until that doc is
+   empty"*, segmenting and re-scoping skills at my discretion, writing for an **agent** as the primary
+   consumer. Its 1431 lines have one destination each; `references/SYMPTOMS.md` and `references/CLI.md`
+   move to `module-101/references/`.
+2. **All ten remaining scaffolds get written**, against the verdicts above rather than against the
+   retired stance.
+3. **Then code**, in the order the verdicts and the roadmap justify — `RM17` read first, since it
+   supersedes the title-guard actionable.
+4. **Then `docs/` cleanup** — the primers, handoffs and this relay file, folded into `CHANGELOG` /
+   `ROADMAP` / `CLAUDE.md` and deleted. That is the owner's explicit ask and it happens last.
+
+Commit as I go, explicit paths, gates green before each. Push granted **for this session only**.
+
