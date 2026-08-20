@@ -7,9 +7,11 @@ below, and a wrapper that quietly breaks one is worse than no wrapper.
 
 Distilled from two independent write-ups of real module-creation experience,
 made against different surfaces so that each reached traps the other missed.
-Both are unified into `skills/create-module/`, which is the canonical copy of
-the authoring *procedure* — this file carries the *facts* the procedure rests
-on, and does not restate it.
+Both were unified into a single procedure skill, which was dismantled on
+2026-08-20 into one skill per lifecycle stage — `module-start` through
+`module-publish`, with `module-101` as the map. Each stage owns its own
+procedure outright; this file carries the *facts* the procedure rests on, and
+does not restate any of it.
 
 **Prohibitions derived from this file live in `CLAUDE.md`, in full.** Nothing
 here is the only statement of a `don't`.

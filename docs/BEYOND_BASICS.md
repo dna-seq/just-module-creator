@@ -7,7 +7,7 @@ can carry — read it when the simple one already works.
 **Ask the tools for the details.** `list_tables` names the table kinds that exist right now,
 `describe_table` gives one kind's columns and vocabularies, `table_requirements` says what is
 required. Those answers come from the live schema; anything written down in prose here would drift.
-The [create-module skill](../skills/create-module/SKILL.md) is the procedure, and
+The [module-101 skill](../skills/module-101/SKILL.md) is the map and names the stage skill that owns each step, and
 The `module-tables` skill is the "which table?" decision, and carries a dossier per table.
 
 ## Rows that are not about a genotype

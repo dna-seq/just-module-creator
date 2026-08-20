@@ -212,9 +212,9 @@ Ordered by how likely a first-timer is to hit them.
    `None`, so a wrong hom genotype at an indel produces **no warning and no strict error**. At a
    substitution locus it is `False` (`hosting_verdict("T/T","G","A")`). Also `None`: either side
    symbolic, or same-length different-content. And a resolution row with no `alts` returns `True`
-   unconditionally (step 1). **`skills/create-module/SKILL.md` currently promises "a warning normally,
-   an error under strict" for any genotype not drawn from `{ref} ∪ alts` — that is wrong for the
-   homozygous and undecided cases.**
+   unconditionally (step 1). The blanket promise of "a warning normally, an error under
+   strict" for any genotype not drawn from `{ref} ∪ alts` **was wrong for the homozygous and undecided
+   cases; corrected 2026-08-20** — `module-curate` now carries the hole and the by-hand guard.
 
    > 🚧 **ROADWORKS — the genotype/allele cross-check has a hole you cannot see from its output.**
    > **Current state.** Re-confirmed: `hosting_verdict` withholds — returns `None`, so no warning and

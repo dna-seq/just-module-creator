@@ -40,12 +40,20 @@ know what you must not do. Links carry positive detail only.
 | Path | What |
 |---|---|
 | `skills/module-101/SKILL.md` | **The entry point and the map — high level only.** What a module is, what the plugin can and cannot do, the four packages, the lifecycle *including second and later passes*, and the **minimal** authored surface (`module_spec.yaml` + `variants.csv` + `studies.csv` + `README.md`) and nothing beyond it — the table roster, the on-disk shapes and the `derived/` layout are `module-tables`'. It holds no column list, no procedure and no symptom lookup: anything answerable only with a specific cell value, flag or warning phrase belongs in a subskill, and this file growing to hold one is the drift to watch for. |
-| `skills/create-module/SKILL.md` | **The canonical copy of the authoring procedure.** Do not restate it here or in `docs/` — restating a procedure beside its skill is how the two drift. Being split into per-stage skills; until they land this stays the one copy for stages 1–8, and `module-101` links to it rather than summarising it. |
+| **The stage spine**, one skill per lifecycle stage | `module-start` (0–1: triage, licence, the spec), `module-draft` (2), `module-curate` (3), `module-enrich` (4), `module-check` (5), `module-compile` (6), `module-close` (6b), `module-publish` (7–8). **Each owns its stage's procedure outright — there is no second copy anywhere**, and each ends with the discriminator (what to apply silently, what to put in front of a pilot) rather than a list of refusals. |
+| **The second-pass three** | `module-revise` (which kind of pass, and what it invalidates), `module-refresh` (re-running anything that already ran), `module-diff` (what moved, and the one reading that means an upstream source changed its answer). A second pass is the normal case, not the exception. |
+| **The references the stages load** | `module-weights` (the column everyone fills and nobody declares), `module-consumer` (the far side of the seam), `find-evidence` (search, verify a PMID, read a paper, and what may honestly be quoted). |
 | `skills/module-tables/SKILL.md` | **Which table, and where every file sits.** The router: table choice keyed on grain, the axes that must go in a key, composition, the three on-disk shapes, and the registry's `derived/` layout. Holds no column list and no procedure. |
 | `skills/module-tables/references/*.md` | 24 per-table dossiers plus `LAYOUT.md` (the tree, and the registry's upload normalisation). Each dossier carries an audit banner, 🚧 ROADWORKS and ⚠️ CHECK markers; **anchor on symbol names, not `file:line`**. |
-| `skills/create-module/references/TABLES.md` | A pointer to `module-tables`; the decision moved there. |
-| `skills/create-module/references/SYMPTOMS.md` | Upstream message text → cause → action. |
-| `skills/create-module/references/CLI.md` | The full CLI surface, and what this server deliberately does **not** wrap. |
+| `skills/module-101/references/SYMPTOMS.md` | Upstream message text → cause → action. Read *from* every stage, which is why it sits with the map rather than with one stage. |
+| `skills/module-101/references/CLI.md` | The full CLI surface, and what this server deliberately does **not** wrap. |
+
+> **`skills/create-module/` was the one canonical copy of the procedure and it no longer exists.**
+> Dismantled 2026-08-20 on the owner's instruction — *"drag away every quote until that doc is empty"* —
+> because a 1431-line file loaded whole to answer any question is a file every session re-reads and no
+> session updates in the right place. **Do not recreate it, and do not let a stage skill grow into it.**
+> The rule that replaces "do not restate the procedure beside its skill" is narrower and stricter: **one
+> fact, one home.** If two skills need the same rule, one owns it and the other links.
 | `.claude-plugin/plugin.json` | Claude plugin manifest; declares the MCP server via `${CLAUDE_PLUGIN_ROOT}`. |
 | `.claude-plugin/marketplace.json` | Lets `/plugin marketplace add ./` work. |
 | `.codex-plugin/plugin.json` | Codex plugin manifest; same skills and server, via `${PLUGIN_ROOT}`. Carries the **second** hand-bumped version string. |
@@ -367,7 +375,8 @@ design depends on.
 src/just_module_creator/   source (src layout)
 tests/                     pytest suite — in-memory, offline
 docs/                      all markdown except this file and README.md
-skills/create-module/      the plugin's skill (canonical authoring procedure)
+skills/<name>/             sixteen skills: the map, the stage spine, the second-pass three,
+                           the references. No skill holds another skill's procedure
 .claude-plugin/            plugin + marketplace manifests
 assets/                    fixtures that MUST travel — committed
 data/input|interim|output  git-ignored, never travels
@@ -842,7 +851,7 @@ preference: it goes into §10, in their words, with the reason.
   plainly meant *somewhere my friends can see it* and not *the immutable catalog*.
   The rule is a rule about the **conversation**, not the argument — `target`
   already defaults to `test`, so the exposure is an agent volunteering
-  `target="prod"` to be helpful. It lives in `skills/create-module/SKILL.md` §7 and
+  `target="prod"` to be helpful. It lives in `skills/module-publish/SKILL.md` and
   in `server.INSTRUCTIONS`, and it carries a corollary: prefix the **module** name
   as well as the namespace on a first rehearsal, because `purge-test-data` matches
   both halves and a first-timer will not come back to delete litter.
@@ -1059,7 +1068,7 @@ preference: it goes into §10, in their words, with the reason.
   curate from the first version or never, and **no agent may withhold a publish or a bump waiting
   for a milestone that does not exist**. Curated work is then cherry-picked into a featured catalog
   section by the operator. `authorship` is where the signal actually lives, which is why it is now
-  documented in `skills/create-module/SKILL.md` rather than left to the schema.
+  documented in `skills/module-start/SKILL.md` rather than left to the schema.
 
 - **The old no-machine-quote rule produced title-as-quote on 3668 published rows — measured 2026-08-20.**
   Across every `studies.csv` in `../just-dna-format` (33 files, 44342 rows): the ten

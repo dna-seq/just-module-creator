@@ -295,7 +295,7 @@ wrong:
 It cannot tell you a column's type, its vocabulary or whether it is required — **ask the tool.** It
 cannot tell you what value to *write*: a weight is `module-weights`, a conclusion and a genotype are
 `module-curate`, a coordinate is `module-enrich`. It does not hold the procedure for any stage, and it
-does not decode a message you got back — that is `create-module` → `references/SYMPTOMS.md`.
+does not decode a message you got back — that is `module-101` → `references/SYMPTOMS.md`.
 
 And no table here reads a sample. A module never contains a genotype under test or a measured value;
 the consumer brings the measurement at query time, and `module-consumer` owns that seam.

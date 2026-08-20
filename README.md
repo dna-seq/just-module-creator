@@ -41,7 +41,7 @@ codex plugin marketplace add dna-seq/dna-seq-claude-marketplace
 codex plugin add just-module-creator@dna-seq
 ```
 
-The `create-module` and `find-evidence` skills appear in Codex's skill and slash-command picker.
+All sixteen skills appear in Codex's skill and slash-command picker.
 The Codex package uses `${PLUGIN_ROOT}` to start the same source checkout as the Claude plugin.
 
 Needs [`uv`](https://docs.astral.sh/uv/) on PATH and Python ≥ 3.13; dependencies install on first
@@ -183,7 +183,8 @@ that.
 |---|---|
 | [**What more can be done**](./docs/BEYOND_BASICS.md) | drug response and star alleles, polygenic scores, repeat counts and other measured quantities, digging into replication, learning from published modules |
 | [**For developers**](./docs/FOR_DEVELOPERS.md) | running the server standalone, the full tool list, modes, auth, configuration, deployment |
-| [`skills/create-module`](./skills/create-module/SKILL.md) | the authoring procedure in full — the agent reads this |
+| [`skills/module-101`](./skills/module-101/SKILL.md) | start here — what a module is, the tool roster, and which stage skill owns your step |
+| [`skills/module-start`](./skills/module-start/SKILL.md) | begin one: triage the sources, take the licence position, write the spec |
 | [`skills/find-evidence`](./skills/find-evidence/SKILL.md) | finding, verifying and legally reusing the literature |
 | [`docs/DOMAIN.md`](./docs/DOMAIN.md) | what a just-dna module is, and the traps that shaped these tools |
 | [`CLAUDE.md`](./CLAUDE.md) | house rules for agents working *on* this repo |

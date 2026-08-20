@@ -17,7 +17,7 @@ description: >-
 
 This skill covers getting from a question — *what is known about this variant?* — to citations and
 numbers you can defend. Authoring the module around them is
-[create-module](../create-module/SKILL.md); this is the step in the middle of its **curate** phase,
+[module-curate](../module-curate/SKILL.md); this is the step in the middle of that stage,
 where `state`, `weight`, `effect_size`, `conclusion` and every `studies.csv` row get decided.
 
 Two things this never does. It does not judge whether a paper supports your claim — no tool here
@@ -380,7 +380,7 @@ What remains true, and is the part that matters: **a preprint is not peer review
 on one is legitimate and must be said out loud in the `conclusion`, because a reader cannot tell from
 a PMID alone. And two further consequences worth planning for:
 
-- **Check for a published version before you author from it** — see the create-module skill's "is the
+- **Check for a published version before you author from it** — see `module-start`'s "is the
   copy you were handed still the current one?". Review changes numbers and sometimes conclusions.
 - **Expect `quotes_found: null`.** A preprint frequently has no retrievable OA full text even when it
   has a PMCID, so quotes on it come back unchecked rather than confirmed. That is not a failure and

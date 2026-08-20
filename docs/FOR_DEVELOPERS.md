@@ -257,12 +257,17 @@ docs/
 .claude-plugin/
   plugin.json          manifest; declares the MCP server via ${CLAUDE_PLUGIN_ROOT}
   marketplace.json     so `/plugin marketplace add ./` works
-skills/create-module/
-  SKILL.md             the workflow, MCP-first
+skills/module-101/
+  SKILL.md             the map: what a module is, the tool roster, which stage owns your step
   references/
-    TABLES.md          a pointer to the module-tables skill (the decision moved there)
     SYMPTOMS.md        message text -> cause -> action
     CLI.md             the full CLI surface, and what is not wrapped
+skills/module-{start,draft,curate,enrich,check,compile,close,publish}/
+  SKILL.md             one lifecycle stage each; no skill restates another's procedure
+skills/module-{revise,refresh,diff}/
+  SKILL.md             the second-pass half: which kind of pass, re-running, what moved
+skills/module-{tables,weights,consumer}/
+  SKILL.md             the references the stages load
 skills/find-evidence/
   SKILL.md             search, appraise, and what a paper's licence lets you reuse
 src/just_module_creator/

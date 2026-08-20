@@ -212,9 +212,9 @@ Ordered by how likely a first-timer is to hit them.
    `[40,∞)` refuses with *"both select a phenotype for a measurement in the overlap"*. Since 0.6 that
    is a default and not a law — `measure_tiling: continuous` flips it, and the group is *read* as
    continuous without being asked if it carries any fractional bound. Any doc that states "integer
-   bins must not touch" flatly is describing the pre-0.6 rule. **Checked 2026-08-20:**
-   `create-module`'s body is correct and keys the rule on `measure_tiling` as 0.6 does; only its
-   beginner summary row stated it flatly, and that row now names the column too.
+   bins must not touch" flatly is describing the pre-0.6 rule. **Checked 2026-08-20:** the skill's body was correct and keyed the
+   rule on `measure_tiling` as 0.6 does; only its beginner summary row stated it flatly, and that row
+   was fixed before the skill was split. `module-curate` and this dossier now agree.
 9. **A fractional bound silently changes the rules for the whole group, and then invents gaps.**
    Measured: change one bound to `35.5` and the module still compiles, but you get *"tiling inferred
    … so this group was read as continuous"* plus **three new coverage-gap warnings** for

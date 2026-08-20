@@ -219,10 +219,12 @@ Ordered by how likely a first-timer is to hit them.
     absolute risk", while `just-prs` ships `absolute_risk.py` and `just-prs-mcp` exposes absolute-risk
     tools, and neither has ever seen a module. **Cost:** an author can set `research_only` and believe a
     guard exists. It is a note to a future consumer, not a switch.
-11. **This repo's own skill misdescribes the table.** `skills/create-module/SKILL.md:756-758` lists a
+11. **The skill that misdescribed this table is gone, and the replacement is right.** It listed a
     "`pharm_variants` / `diplotypes` / `pgs` row's `chrom` and `start`" as arriving null. `PgsRow` has no
-    `chrom` and no `start`, so there is nothing to arrive null and no rsID to author instead. Ignore that
-    sentence for this table.
+    `chrom` and no `start`, so there is nothing to arrive null and no rsID to author instead — a
+    different fact with a different remedy. **Resolved 2026-08-20:** `module-enrich` and `module-curate`
+    now state the split (three positional tables are filled; `diplotypes.csv` and `pgs.csv` have no
+    coordinate columns at all, so a consumer joins them on `rsid` + `genotype`).
 
 ## What does not exist
 

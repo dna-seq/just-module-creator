@@ -288,4 +288,4 @@ action. The three you will actually meet on a second pass:
 | the table you are about to edit, in full | `module-tables` |
 | rehearsing and promoting v2 | `module-publish` |
 | the closure and the attestation in detail | `module-tables` → `references/verification.md` |
-| the whole first-pass procedure | `create-module` |
+| the first pass, stage by stage | `module-101` names the spine; start at `module-start` |

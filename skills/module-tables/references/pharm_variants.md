@@ -199,10 +199,10 @@ Ordered by how likely a first-timer is to hit them.
    validated, published, and carried a null coordinate on every row; the consumer who found out had a
    1,482-row module and read the parquet to discover it (`compiler.py:1253-1259`, S31). RM43 fixed it.
    Measured now on the reference example: `12 / 21178615 / T / A,C` on all nine rows,
-   `positional_rows_placed == positional_rows == 9`. **`skills/create-module/SKILL.md:756-773` still
-   states the old behaviour** — "resolution is applied to `weights.parquet` only … expect no matches
-   from a VCF whose `ID` column is empty" — and so does the warning text it quotes. Treat that
-   section as stale.
+   `positional_rows_placed == positional_rows == 9`. **Resolved 2026-08-20:** the skill that stated the old
+   behaviour — "resolution is applied to `weights.parquet` only" — was corrected and then dismantled;
+   `module-enrich` now names the three positional tables and the three reasons a row is left unplaced,
+   and pins the grep fragment `have no chrom+start` rather than the sentence around it.
 2. **`alts` reaches parquet as a comma-joined *string*, where `weights.parquet` uses `List(Utf8)`.**
    Measured: `pharm_variants.parquet.alts` is `String` with value `'A,C'`. This is the `genotype`
    asymmetry (S30 / RM81) repeated on a **new** column, and it is already breaking a consumer — see

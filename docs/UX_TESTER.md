@@ -34,7 +34,7 @@ the old one still identifies you), token saved in `.env` as `JMC_TEST_API_KEY`. 
 paragraphs below about it are all still current.
 
 State only. **How to obtain and save a token is the skill's job**, not this file's:
-`skills/create-module/SKILL.md` §7 covers registering, what the two secrets are, and why
+`skills/module-publish/SKILL.md` covers registering, what the two secrets are, and why
 the install-id has to be kept. Read it there; do not restate it here, or the two drift.
 
 **The `test-creator` account and its `test-modules` namespace are gone from production**
