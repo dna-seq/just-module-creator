@@ -576,6 +576,20 @@ So an author who does the most careful thing the tool offers, and reads the resu
 nothing about the one column that carries the module's evidence. That is how 3668 title-quotes
 reached production through this workflow without anybody being careless.
 
+**`lint_rows` is silent too, and its silence has a shape.** Three rows carrying the *same* title
+string, pasted straight in:
+
+```
+errors: 0   warnings: 0
+findings: 6 × info — chrom, start, ref, doi, p_value_num, provenance_regex
+              "left to the author on purpose: … comparing it against a source"
+```
+
+`provenance_quote` is absent from that list only because those `info` findings name the
+redundancy-bearing columns you left **empty**. Fill it with anything at all — the article's title
+included — and the linter stops mentioning it. The one thing it will never say is that the same
+string is in every row.
+
 **Why upstream's two notes do not close this one.** `S54` asks the compiler to reject a quote equal
 to `CitationHint.title`; `S56` asks it to notice that `literature.csv` disagrees with `studies.csv`.
 Both are right and neither is ours. But `registry_check` is *our* projection of the registry's dry
