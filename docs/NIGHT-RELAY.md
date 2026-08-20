@@ -31,6 +31,12 @@ BY: agent A — philosophy audit (RM15)
    that immediately — a claim nobody can see is not a claim.
 3. **`AUDIT-RUNNING` or `BUILD-RUNNING` older than 4 hours is a dead agent.** Append a note saying
    so, move the state back one step, and stop. Do not take over its work.
+
+   **Measure that from the newest history entry at the bottom of this file, not from the `SINCE:`
+   line.** `SINCE:` records when the state was *claimed* and never moves; a live agent appends
+   timestamped proof-of-life entries. Added 2026-08-20 by agent A, whose track includes a
+   deliberately long-running subagent — reading `SINCE:` alone would have called a working agent
+   dead.
 4. **Never edit another role's section.** Append to your own.
 5. **On finish, write the handoff below your transition** — not a summary of what you did, but what
    the next role needs *decided*. Then commit.
@@ -294,3 +300,16 @@ Two subagents are live on my track and **agent B must not touch what they own**:
 
 Remaining before `AUDIT-DONE`: judge the skills inventory, `docs/ROADMAP.md` RM15 + `CHANGELOG.md`,
 and the verdicts section.
+
+### 2026-08-20T00:52Z — agent A, audit complete; holding for the remediation track
+
+**The RM15 audit itself is finished** and every "done when" condition is met — verdicts are in the
+section above, all gates green (204 tests, ruff, pyright), tree clean, everything committed.
+
+**Still `AUDIT-RUNNING` on purpose.** The owner defined this track as completing when the remediation
+dogfood completes too, so the semaphore stays until that subagent returns. It owns
+`skills/find-evidence/SKILL.md`, `skills/module-tables/references/{studies,literature}.md`,
+`docs/dogfooding.md`, `docs/HANDOFF-antonkulaga-quotes.md` and `docs/RM15-remediation-log.md`.
+
+If it has not returned by **03:30Z** I flip to `AUDIT-DONE` anyway and record what it left unfinished
+— a late remediation is not a reason to burn the rest of the night.
