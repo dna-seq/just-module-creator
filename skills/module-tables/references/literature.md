@@ -95,14 +95,23 @@ is machine-produced by construction. The refusals live on the **authored** side 
   therefore returns the resolved id as an advisory with `applied=False`,
   `refusal="redundancy_bearing"`.
 - `provenance_quote` / `provenance_regex` — in **both** `REDUNDANCY_BEARING` and
-  `ATTESTATION_BEARING` (`hints.py:72`). The sharper refusal: the column means *a curator read this
-  passage in this paper*, so extracting it from a fulltext a tool has just fetched "states something
-  false" rather than merely spending a comparison.
+  `ATTESTATION_BEARING` (`hints.py:72`). Upstream glosses the latter as *a curator read this passage
+  in this paper*, reading "curator" as a human, and on that reading extracting a passage from a
+  fetched fulltext "states something false". **That gloss is correct for their layer and is not the
+  rule here — reversed 2026-08-20 under `RM15`.** An agent that reads the article is a real reader,
+  so the column needs **attribution, not abstention**: locate the passage, quote it verbatim for the
+  row's own claim, and record who located it. The reasoning we originally supplied for that constant
+  is withdrawn upstream as `S55`, which asks for the per-row attributor instead (accepted and added to
+  `StudyRow` in their tree as `RM120`; **not released**, so `F43` stays open). What survives is
+  physics: no *lookup* may write the cell, and the cell must never hold something obtainable **without
+  reading the article** — a title, above all.
 
-**And the honest consequence, which a released constant does not repair:** once a machine has
-retrieved the fulltext (our `fetch_fulltext`, or the pass itself), `quotes_found` on that row has
-degraded to a **citation-pairing check** — it still catches a passage filed against the wrong PMID,
-but nothing establishes a human ever looked (`docs/ENRICHER.md:1704-1714`).
+**And the honest consequence, which no constant repairs:** once a machine has retrieved the fulltext
+(our `fetch_fulltext`, or the pass itself), `quotes_found` on that row has degraded to a
+**citation-pairing check** — it still catches a passage filed against the wrong PMID, and it no longer
+shows that the claim is in the literature (`docs/ENRICHER.md:1704-1714`). **State that; never use it to
+refuse.** The alternative is not a better quote, it is an empty column — or a title, which passes the
+check while witnessing nothing (`F42`).
 
 ## What moving this table moves
 

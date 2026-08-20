@@ -213,12 +213,14 @@ grading recommendations; and `S52`'s answer decides whether a severity change fo
 > upstream as `S54`/`S55`, tracked as `F42`/`F43`.
 >
 > **What is left, and none of it is the philosophy question:**
-> - three files delegated to the remediation dogfood and in flight at hand-off —
->   `skills/find-evidence/SKILL.md`, `skills/module-tables/references/{studies,literature}.md`;
-> - `docs/DESIGN-version-compare.md`, deliberately untouched (a design study was running against it);
-> - the loose ends listed in `docs/NIGHT-RELAY.md` — five dossiers whose correction banners their own
->   bodies contradict, four dossiers that say `create-module` is stale, and one unreproduced report of
->   `describe_table` returning a 0.5 shape under 0.6.1.
+> - `docs/DESIGN-version-compare.md`, deliberately untouched (a design study was running against it).
+>   It is the **only** surface this item named that has not been read.
+>
+> The three delegated files landed and were then swept against the same stance grep: `find-evidence`
+> and `studies.md` were already correct, `literature.md` still carried the reversed proposition live
+> and is fixed. The six contradicted dossier banners are all fixed; of the four "create-module is
+> stale" claims, one was checked and was largely a false alarm, three remain. One unreproduced report
+> of `describe_table` returning a 0.5 shape under 0.6.1 stands.
 >
 > The **discriminator** this item was blocking is now specified in part: `INSTRUCTIONS` rule 3 and §2
 > state it, upstream `S52` is the mask's schema half, and what remains is the record — RM16's capture.

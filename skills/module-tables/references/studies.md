@@ -49,7 +49,7 @@ verification record over these citations) and it is not a provenance ledger (`li
 | registry-stamped | **none.** The registry stamps identity onto `module_spec.yaml`, never onto a data row |
 | nobody, ever | no column is permanently unwritten — but see the corpus measurement in *Gotchas* |
 
-**Cells no tool may fill, and why the refusal is the feature**
+**Cells no *lookup* may fill, and why — which is narrower than a rule against writing**
 
 - `hints.REDUNDANCY_BEARING` (`compiler/src/just_dna_compiler/hints.py:81-109`) names nine of this
   table's columns: `rsid`, `chrom`, `start`, `ref`, `pmid`, `doi`, `p_value_num`,
