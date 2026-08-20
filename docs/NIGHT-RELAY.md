@@ -66,3 +66,19 @@ Found `READY-FOR-AUDIT`, moved to `AUDIT-RUNNING`. Running RM15 per
 `docs/PRIMER-philosophy-audit.md`. Unattended run; the owner is reachable for the first ten minutes
 only, which is being spent on §6's questionnaire (the attestation contradiction) because that is the
 one item the primer forbids deciding alone.
+
+### 2026-08-20T00:34Z — agent A, proof of life
+
+Still `AUDIT-RUNNING`, ~38 min in. Not a dead agent. Landed so far: the attestation contradiction
+decided (§1 ran with the owner — the prohibition is reversed, not narrowed), `server.INSTRUCTIONS`
+rewritten, all sixteen §2 domain bullets judged, five code surfaces re-justified, `refresh.py`
+audited. Upstream `S54`/`S55` filed in the format tree (uncommitted there, as required).
+
+Two subagents are live on my track and **agent B must not touch what they own**:
+- a remediation dogfood owning `skills/find-evidence/SKILL.md`,
+  `skills/module-tables/references/{studies,literature}.md`, `docs/dogfooding.md`,
+  `docs/HANDOFF-antonkulaga-quotes.md`, `docs/RM15-remediation-log.md`;
+- a read-only inventory of the remaining skills (edits nothing).
+
+Remaining before `AUDIT-DONE`: judge the skills inventory, `docs/ROADMAP.md` RM15 + `CHANGELOG.md`,
+and the verdicts section.
