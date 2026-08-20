@@ -8,9 +8,9 @@ that flip. No overlap, no shared files, no coordination beyond this document.
 ## State
 
 ```
-STATE: AUDIT-RUNNING
-SINCE: 2026-08-19T23:56Z
-BY: agent A — philosophy audit (RM15)
+STATE: AUDIT-DONE
+SINCE: 2026-08-20T01:40Z
+BY: agent A — philosophy audit (RM15), complete
 ```
 
 **Legal transitions, in order. Nothing skips.**
@@ -313,3 +313,58 @@ dogfood completes too, so the semaphore stays until that subagent returns. It ow
 
 If it has not returned by **03:30Z** I flip to `AUDIT-DONE` anyway and record what it left unfinished
 — a late remediation is not a reason to burn the rest of the night.
+
+## Agent A — the remediation track (addendum to the verdicts)
+
+The dogfood returned. Its own findings are `F44`–`F51` in `docs/dogfooding.md`, `RM17` on the roadmap,
+and `docs/HANDOFF-antonkulaga-quotes.md`. Three things from it change what **you** should do:
+
+1. **`F44` is the defect that let this happen, and it is deliberately NOT built.** Two spec dirs
+   differing *only* in `provenance_quote` — one honest, one all titles — come back byte-identical from
+   `registry_check(literature=true, strict=true)`: `verdict: true`, nothing blocking, nothing
+   unchecked. `validate_module`, `compile_module` and `lint_rows` are equally silent. **Nothing in the
+   product can tell them apart.** The detector needs no network — group `studies.csv` by `pmid`, count
+   *distinct* quotes. It was left unbuilt for a real reason: `validate_module`'s warnings are
+   upstream's, carried verbatim, and mixing a finding *we* computed into that list destroys the layer
+   distinction `_shared.to_findings` exists to keep. **That is a §1 question, not a 2 a.m. choice** —
+   `RM17` states it. This supersedes the title-guard actionable in my list above; read `RM17` first.
+2. **`F51` corrected a rule of mine, and I have fixed `CLAUDE.md` §8.** `uv run` resolves against
+   whichever project you stand in, so a symbol check chained after a `cd ../just-dna-format` answers
+   about *their working tree*. **The version string is no guard**: both report `just-dna-format 0.6.1`
+   while `StudyRow.curator` is `True` there and `False` in our venv. Print `__file__` beside the
+   answer and pass `--project`. I re-verified every upstream claim in these verdicts that way.
+3. **Upstream accepted `S54`, `S55` and the dogfood's `S56` and fixed all three in tree the same
+   night** — `RM118`/`RM119`/`RM120`; `S55` got `StudyRow.curator` verbatim, which I confirmed by
+   symbol in their tree. **None is released.** `F42`/`F43` stay open and every mitigation stays.
+
+**The finding that justifies the whole reversal**, and worth reading before you touch this area: four
+rows of `big_five_personality` cite PMID `34054130` for a *neuroticism* item; the article names all
+four rsIDs — in a table of hits for **sociability**. Only going after the actual passage could surface
+that. Under the old rule those four carried the article title and looked exactly like the other 855.
+They were left empty and escalated, not repaired.
+
+Yield was **2–3%** (21 located passages in 859 rows) and *inverse* to row count — the three papers
+grounding the most rows named none of them. So the honest output of this work is mostly **empty
+cells**, and that is the correct result, not a failure.
+
+### Ownership released
+
+Everything is committed and the tree is clean. **No file is reserved any more** — the three skills I
+had delegated (`find-evidence`, `references/{studies,literature}.md`) landed, and the dogfood also
+touched `src/just_module_creator/{discovery.py,tools/authoring.py}`, `docs/ROADMAP.md` (RM17),
+`docs/CHANGELOG.md` (inside my Unreleased entry), `docs/previous_issues.md` and
+`docs/just-dna-format-pending-fixes.md`.
+
+Still untouched and still needing the same pass: **`docs/DESIGN-version-compare.md`** (the primer
+fenced it off; it carries the stance twice).
+
+---
+
+### 2026-08-20T01:40Z — agent A finishes; AUDIT-RUNNING -> AUDIT-DONE
+
+RM15 complete: all three "done when" conditions met, §1 ran with the owner and its answer is in
+`CLAUDE.md` §10, `server.INSTRUCTIONS` and §2 agree. 204 tests, `ruff`, `pyright` all green; tree
+clean. Verdicts are the two sections above — read the actionables list and the `RM17` note before
+planning, because one of my actionables was superseded by a better-reasoned decision not to build it.
+
+**Agent B: the state is yours. Nothing is reserved.**
