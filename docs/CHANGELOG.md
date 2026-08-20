@@ -108,6 +108,13 @@ Keyed on the **shape, not the string**: a rule that only caught the title would 
 which is one real sentence pasted onto two thousand rows. The title comparison needs
 `lookup_citation`, a network call, so it stays out of the offline linter.
 
+**Measured on the corpus that motivated it**: across the four externally authored modules, every one of
+3,668 study rows carries a quote and each has **exactly one distinct quote per PMID** — 3, 26, 33 and 19
+quotes for 3, 26, 33 and 19 PMIDs. The check flags 68 of those 81 PMIDs; the thirteen it leaves are
+cited on a single row each, which is one quote and legitimately so. The fifth module reports nothing
+because it carries no quote column at all — an absence, not a pass, and the same module that was immune
+to the coordinate-shift class.
+
 ---
 
 ## 0.11.0 — the philosophy audit: what we may write, and who may say they read a paper (2026-08-20)

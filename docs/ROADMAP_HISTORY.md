@@ -102,6 +102,28 @@ would be irreversible — a caller could never separate the layers again.
 to option 3 is deleting the `validate_module` line in `tools/authoring.py`; moving to option 1
 everywhere is adding a second list to `LintResult`. Nothing else depends on the shape.
 
+### Measured against the corpus that motivated it, 2026-08-20
+
+Run over the five externally authored modules in
+`../just-dna-format/data/output/corrected_modules/`:
+
+| Module | studies rows | rows quoted | distinct PMIDs | distinct quotes | flagged |
+|---|---|---|---|---|---|
+| `aggression_anger` | 69 | 69 | 3 | **3** | 2 |
+| `big_five_personality` | 859 | 859 | 26 | **26** | 24 |
+| `cognitive_intelligence` | 2045 | 2045 | 33 | **33** | 28 |
+| `risk_impulsivity` | 695 | 695 | 19 | **19** | 14 |
+| `muscle_lean_mass` | 11 | 0 | 0 | 0 | 0 |
+
+**One distinct quote per PMID, exactly, on all four** — the `F42` signature, reproduced by counting
+rather than by trusting the earlier measurement. The check flags **68 of the 81** PMIDs; the thirteen
+it does not are cited on a **single row each**, which is legitimately one quote and is the decision
+`RM17` recorded in advance.
+
+**`muscle_lean_mass`'s zero is not a discrimination** and should not be read as one: its `studies.csv`
+has no `provenance_quote` column at all. It is the same module that was immune to the coordinate-shift
+class, for the same reason — it authors the least it can get away with.
+
 ### Shipped
 
 `src/just_module_creator/authored_checks.py`, wired into `lint_rows` and `validate_module`, with
