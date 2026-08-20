@@ -670,11 +670,30 @@ gives every `S<n>`, who reported it, the verdict and where it landed. So:
   2. *fixed in tree* — the symbol exists in `../just-dna-format` but the version we
      install does not have it. **This is the common case and the easy mistake.**
   3. *released* — on PyPI and in our lockfile.
-- **Verify state 2 against the installed package, never the sibling checkout.**
-  Import the symbol and check, e.g. `hasattr(hints, "ATTESTATION_BEARING")`. A
-  mitigation of ours stays until the release that carries the fix is what
-  `uv sync` gives us, and dropping one because the upstream tree looks fixed
-  breaks the plugin for everyone who installs from PyPI.
+- **Verify state 2 against the installed package, never the sibling checkout — and
+  `hasattr` alone does NOT do that.** A mitigation of ours stays until the release
+  carrying the fix is what `uv sync` gives us; dropping one because the upstream tree
+  looks fixed breaks the plugin for everyone installing from PyPI.
+
+  **The recipe used to be `hasattr(hints, "ATTESTATION_BEARING")` and that is not
+  sufficient. Corrected 2026-08-20 after it nearly shipped a false status line.**
+  `uv run` resolves against whichever project you are standing in, so a symbol check
+  chained after a `cd ../just-dna-format` answers about **their working tree**, not our
+  venv. **The version string does not save you** — both said `just-dna-format 0.6.1`
+  while `StudyRow.curator` was `True` in their tree and `False` in ours, because they
+  had added it hours earlier. Same number, opposite answer. So:
+
+  ```bash
+  uv run --project /data/sources/just-module-creator python -c "
+  import just_dna_format; from just_dna_format.spec import StudyRow
+  print(just_dna_format.__file__)                     # MUST contain .venv/site-packages
+  print('curator' in StudyRow.model_fields)"
+  ```
+
+  **Print `__file__` beside the answer, every time**, and pass `--project` rather than
+  trusting the shell's cwd. A path under `.venv/lib/.../site-packages/` is the installed
+  package; a path under `/data/sources/just-dna-format/schema/src/` is their source and
+  proves nothing about what our users have.
 - **A refusal is an answer too, and it is load-bearing.** Upstream refused half of
   `S14` with a reason: the compiler has **no** network branch, so a `--no-ensembl`
   flag would assert something false. That makes our pin permanent rather than
