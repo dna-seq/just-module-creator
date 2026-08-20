@@ -199,7 +199,16 @@ grading recommendations; and `S52`'s answer decides whether a severity change fo
 
 ## RM15 — we absorbed the format layer's philosophy wholesale, and it is load-bearing in 19 files
 
-**Severity: HIGH** · **Status:** open · **Owner:** unassigned · **Opened** 2026-08-20
+**Severity: HIGH** · **Status:** in progress (night run, 2026-08-20) · **Owner:** agent A · **Opened** 2026-08-20
+
+> **Progress, 2026-08-20.** `server.INSTRUCTIONS` rewritten (rule 2 replaced, a new rule 3 for the
+> lag hazard). All sixteen `CLAUDE.md` §2 bullets judged — thirteen stand, "never widen the write
+> surface" split, the `provenance_quote` prohibition reversed. Code surfaces re-justified
+> (`models.py`, `_shared.py`, `research.py`, `authoring.py`'s `_MACHINE_REFUSAL`), `refresh.py`
+> audited as *conditional* physics. **§1's questionnaire ran with the owner and the attestation
+> contradiction is settled** — recorded in §10; do not re-open it. Filed upstream as `S54`/`S55`,
+> tracked as `F42`/`F43`. Remaining: the skills sweep. Verdicts for the next role are in
+> `docs/NIGHT-RELAY.md`.
 
 **This is an audit item, not a code change.** Nothing here is known to be wrong yet. What is known is
 that a stance was adopted without ever being tested against this layer's own purpose, and it then
