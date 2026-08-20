@@ -490,3 +490,40 @@ upstream private predicate to manufacture the old behaviour — a fixture for so
 regression, which would fail the day they rename the function and would be testing their fix
 rather than our wrapper. Upstream carries three tests for it, including the MLH1 measurement
 asserted as a relationship. Ours is the pass-through, and the warning list is already covered.
+
+---
+
+## F48 — a reversed rule reached the docstring and not the message the agent reads while acting
+
+**Found:** 2026-08-20, remediating a real module's quotes · **Resolved:** 2026-08-20, `fdbc5f9`
+
+`CLAUDE.md` §2 reversed the machine-located-quote prohibition, and `211dac5` corrected
+`fetch_fulltext`'s docstring to match: *"Retrieve a paper's text so you can read it — and you may
+quote it."* The **finding emitted on every retrieval** was not corrected. `discovery._NO_PASSAGE_NOTE`
+still read *"a machine-located quote asserts a reading that did not happen. Locate the passage
+yourself."*
+
+So the tool handed over the article, told the caller in its description that quoting was
+legitimate, and told the same caller in the payload that it was not — the second one arriving
+attached to the text itself, at the moment the decision is actually made. Found by being that
+caller.
+
+Two smaller sites carried the same inherited claim: `describe_table`'s gloss that
+`attestation_bearing` cells *"assert that a **human** read something, so filling one from a fetched
+document states something false"*, and `discovery.py`'s own module docstring, whose *never extract a
+passage* rule is still correct behaviour and rested on the retired reason.
+
+Fixed in `fdbc5f9`. The note now carries what survives — locate it yourself because relevance to a
+row is a judgement about a row nothing here has read; never the article's title, with the
+one-string-per-PMID signature named; and the pairing-check cost stated rather than used to refuse.
+`discovery.py`'s prohibition keeps its behaviour and gets a reason that is ours: a tool-picked
+sentence would be pasted unread, and that is the actual failure.
+
+**The general lesson, and it is not fixed.** A policy reversal reaches docstrings because docstrings
+are where a reviewer looks. It does not reach constants like `_NO_PASSAGE_NOTE`, `SourceLicenseNote.note`
+or a `Field(description=...)`, which is where an agent reads it under time pressure. Nothing pins the
+two against each other, and a grep for the retired sentence was what found this — cheap, and worth
+running after any §2 change.
+
+Pointer: `src/just_module_creator/discovery.py`, `_NO_PASSAGE_NOTE` and the module docstring;
+`src/just_module_creator/tools/authoring.py`, `describe_table`.

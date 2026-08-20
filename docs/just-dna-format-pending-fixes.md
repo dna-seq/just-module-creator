@@ -912,10 +912,17 @@ own `S11`. The ten `reference_examples/` do not carry `provenance_quote` at all.
 It is the article title, verbatim: `pmid 24489884` carries *"Genome-wide association study of proneness
 to anger."*, which is byte-for-byte what `lookup_citation` returns as `title`, trailing period included.
 
-A title always occurs in its own fulltext, so `_study_quote_found` matches every time, `quotes_found`
-equals `quotes_authored`, and the module reports complete quote coverage without any article having
-been read. The check cannot fail on a title, and the value is obtainable from `esummary` metadata —
-the one thing the column exists to witness is exactly the thing it does not.
+A title always occurs in its own fulltext, so `_study_quote_found` matches every time. The check
+cannot fail on a title, and the value is obtainable from `esummary` metadata — the one thing the
+column exists to witness is exactly the thing it does not.
+
+> **Corrected 2026-08-20 by measurement — see `F49`.** This paragraph used to continue *"`quotes_found`
+> equals `quotes_authored`, and the module reports complete quote coverage"*. It does not. All four
+> modules ship `literature.csv` with `quotes_authored: 0` and an empty `quotes_found`, because the
+> literature pass ran before the quotes were authored: **the check never ran on any of these 3668
+> rows.** The title measurement above is unaffected. The consequence is that `S54`'s candidate fix —
+> compare the quote against `CitationHint.title` inside `_study_quote_found` — would not fire on the
+> modules that motivated it, which is why `F49` / `S56` exists.
 
 **Why this is ours too.** These four modules were authored through the workflow this plugin teaches,
 under a rule of ours that forbade an agent to locate a passage. The rule did not produce human-located
@@ -943,11 +950,74 @@ granularity — a scientist reads a review while an agent traverses its citation
 module-level list can say which of the two found row 1400.
 
 **What it costs us right now.** Under the reversal an agent may locate and write a quote provided it
-records who located it. With no column for that, the record can only go to our `logs/` surface, which
-**does not travel with the module** — so a consumer downloading it sees a quote and cannot tell
-whether an agent or a geneticist put it there. That is the honest limit to state to an author, not
-something to design around.
+records who located it. With no column for that, the record can only go beside the rows rather than on
+them, and a consumer downloading the module sees a quote without being able to tell whether an agent
+or a geneticist put it there.
+
+> **Measured correction, 2026-08-20 — "does not travel with the module" was wrong, and the truth is
+> more useful.** This entry said the record could only go to `logs/`, which does not travel. Both
+> halves are false. Verified by publishing a remediated module to the polygon and reading the
+> manifest back (`test-sheep/test_aggression_anger_snps@1.0.0`): **three** records survive a publish.
+>
+> | Where | Grain | On the published manifest |
+> |---|---|---|
+> | `module_spec.yaml: authorship` | per version | `manifest.authorship` — `{who, role, kind, at}` verbatim |
+> | `provenance.json` (`ProvenanceItem.rationale`, keyed by `variant_key`) | per **variant** | `manifest.provenance` — `{generator, model, agent_version, item_count, sha256}` |
+> | `logs/*.log` | per run, free text | `manifest.logs` — name, sha256, size |
+>
+> `provenance.json` is the closest existing thing to what `S55` asks for: a per-row free-text field
+> that travels. It is not sufficient — it is keyed on `variant_key`, so a variant cited by two papers
+> collapses into one item, and a `studies.csv` row is `(variant, pmid)`. But "there is nowhere to put
+> it" was an overstatement, and the ask is narrower than this entry claimed: **the missing thing is
+> the `(row, quote)` grain, not the concept.**
+>
+> Two carrying limits are real. `provenance.json` and `logs/` are both **deliberately not carried
+> forward** by a registry contract `upgrade` (`services/upgrade.py`: `carry = set(present) -
+> {PROVENANCE_FILE}`, logs never added, commented as *"they describe how the predecessor was built"*).
+> That is a documented decision and correct for build metadata — but a quote's attribution is row
+> provenance, not build metadata, so an upgraded version keeps the quotes and loses who found them.
+> Worth saying in `S55` rather than filing separately.
 
 **Closes when** `StudyRow` carries a per-row attributor resolvable against `authorship`, and it is
 installed. A boolean `machine_located` would not close it: it collapses the agent-found/human-confirmed
 case and names neither party.
+
+## F49 — `literature.csv` publishes `quotes_authored: 0` beside a `studies.csv` full of quotes, and the manifest turns it into a confident zero
+
+**Status — filed upstream 2026-08-20 as `S56`, open. Two mechanisms, one entry, because one fix
+addresses both. Our half is `F44` and is separate.**
+
+Measured on the four published `antonkulaga/*` modules while remediating one of them:
+
+```
+module                    studies rows   rows with a quote   lit rows   quotes_authored   quotes_found   quote_source
+aggression_anger                    69                  69          3           0             ""             ""
+big_five_personality               859                 859         26           0             ""             ""
+cognitive_intelligence            2045                2045         33           0             ""             ""
+risk_impulsivity                   695                 695         19           0             ""             ""
+```
+
+**First mechanism: the sidecar predates the quotes and nothing revisits it.** The literature pass ran
+while `provenance_quote` was still empty, wrote what was true then, and `literature.csv` is
+merge-not-clobber — an existing row is authoritative, so a later run never moves the counter. The
+compiler reads both files, joined on `pmid`, and does not compare them. So the sidecar can be stale
+in exactly the way that matters and look identical to a current one.
+
+**Second mechanism: the aggregate collapses null into zero.** `_literature_block`'s docstring is
+right and its per-row guard works — *"folding that into zero would report an unchecked quote as a
+missing one — the single most misleading thing this block could say"*. What it cannot express is a
+total over rows that are **all** null: `sum(...)` over an empty selection is `0`,
+`manifest.Literature.quotes_found` is `int` with `default=0`, and there is no `quotes_unchecked`
+beside it. The published manifest therefore says `quotes_authored: 0, quotes_found: 0` for a module
+carrying 859 authored quotes.
+
+**This corrects `F42`.** That entry states that `quotes_found` equals `quotes_authored` and the
+modules report full quote coverage. They do not — the quote check **never ran** on any of those 3668
+rows. The title measurement in `F42` stands; its consequence paragraph does not, and `S54` carries
+the same correction upstream. It matters because `S54`'s candidate fix lands inside
+`_study_quote_found`, a code path these modules never reach.
+
+**Closes when** the compiler reports the disagreement between the two files (or recomputes
+`quotes_authored`, which upstream's own `LITERATURE_FACT_FIELDS` comment already calls derivable from
+`studies.csv`), **and** the manifest can say "unchecked" rather than `0` — and that is in the version
+`uv sync` installs.

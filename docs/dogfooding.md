@@ -305,6 +305,15 @@ consistent — with a surface that shipped months ago.
 | the `S23` literature exemption never fires | 0.2.0 pins `just-dna-compiler>=0.5.3`; its resolved compiler predates the exemption |
 | the skill's advice was wrong on all three | the skill was right; the server was old |
 
+**Third instance, 2026-08-20, and the window was twenty minutes.** A dogfooding session loaded
+`fetch_fulltext`'s schema and got the docstring from *before* `211dac5`, which had reversed it
+twenty minutes earlier in the same tree. Nothing said so; the description simply read as the current
+contract, and it said the opposite of the policy the session was working under. The narrower
+symptom this time is that the surface goes stale **against a commit made in the same session by
+another agent**, so "reload after installing" is not the whole discipline — a long-running server is
+stale against every edit made while it runs, and only the two version strings `RM13` added would
+show it, neither of which moves on a docstring change.
+
 **Second instance, 2026-08-12, and it is not the same one.** A later session authoring
 `assets/longevity_2026` found `registry_check`, `registry_validate`, `registry_health` and
 `registry_is_published` **absent from the tool surface** while `pyproject.toml`, the manifest and
@@ -535,3 +544,164 @@ another session, with the upstream number on it. This session found the same def
 `S7` against the registry, and got it closed as a duplicate of `S5`. The rule that would have caught it
 — *"check whether it is already filed first"* — is in `CLAUDE.md` §8 and neither session ran it. Filing
 fast is right; filing without reading `docs/` first is how the same note gets written twice.
+
+## F44 — the full network pre-flight cannot tell a module whose every quote is the article's title from one where the quotes are honest
+
+**Found:** 2026-08-20, remediating `aggression_anger`'s quotes on the polygon · **Severity:** high ·
+**Status:** open · **Upstream:** `S54` (the title passes) and `S56` (the counters never ran) are both
+filed; this entry is the part that is about *our* pre-flight reporting neither.
+
+**The probe.** Two spec directories, identical except for `studies.csv:provenance_quote`:
+
+- `baseline_original` — the module as published: 69 of 69 rows quoted, 3 distinct strings, one per
+  PMID, each the article's own title.
+- `aggression_anger` — remediated: 1 row carries a passage located in the article's Discussion that
+  names that row's variant, 68 are empty on purpose.
+
+Both were put through `registry_check(target="test", literature=true, strict=true)` — the most
+expensive check on the surface, the one that runs the literature pass over the network, ~20 s each.
+
+**What came back, both times:**
+
+```
+verdict: true      blocking: []      non_blocking: []      unchecked: []
+```
+
+Byte-for-byte the same answer. The literature pass ran (the elapsed time says so) and produced no
+finding, no counter and no mention of quotes in either direction. `validate_module(strict=true)` and
+`compile_module(strict=true)` are equally silent — their warnings on the remediated module were the
+deprecated `sources.csv` spelling and the missing closure, and nothing else.
+
+So an author who does the most careful thing the tool offers, and reads the result honestly, learns
+nothing about the one column that carries the module's evidence. That is how 3668 title-quotes
+reached production through this workflow without anybody being careless.
+
+**Why upstream's two notes do not close this one.** `S54` asks the compiler to reject a quote equal
+to `CitationHint.title`; `S56` asks it to notice that `literature.csv` disagrees with `studies.csv`.
+Both are right and neither is ours. But `registry_check` is *our* projection of the registry's dry
+run, it is what the skill tells an author to run before publishing, and its docstring says it
+"checks what nothing offline can". A pre-flight that says `verdict: true` and nothing else, on a
+module whose entire evidence layer is metadata, is a green light we issued.
+
+**The cheap detector needs no pass at all**, which is the part that makes this ours to build: group
+`studies.csv` by `pmid`, count *distinct* non-empty `provenance_quote` values, and report any PMID
+with exactly one across many rows. That is offline arithmetic over an authored file. It belongs in
+`lint_rows` and in `validate_module`, beside the other authored-table findings, at `warning` — a
+repeated quote is a signal, not a malformed module.
+
+**Two candidate repairs that are wrong.**
+
+- *Wait for upstream.* `S54`'s fix lands inside `_study_quote_found`, which — per `S56` — never runs
+  on the modules that have the problem. Our check reads the authored file directly and does not
+  care whether any pass ran.
+- *Refuse the publish.* One quote per PMID is legitimate when a module cites a paper for one row.
+  The signal is one quote across *many* rows citing it, and even then a warning is the honest level:
+  the author may have chosen a trait-level grain deliberately and said so.
+
+**What was done meanwhile.** Nothing in code — this is the finding, not the fix. The skill half
+shipped: `find-evidence` now carries "what may honestly go in `provenance_quote`" with the shape
+detector in it, and `studies.md` carries the measurement as its first gotcha.
+
+## F45 — no tool writes an authored cell, so no authoring move can go through the log that policy requires
+
+**Found:** 2026-08-20, editing 69 `provenance_quote` cells · **Severity:** high · **Status:** open
+
+`CLAUDE.md` §2's counterstance has three parts, and the second is *"every authoring move goes
+through the log… there's a whole `logs/` surface for this and I would want to have every authoring
+move going through any tool logged"*, with the corollary *"a move the agent makes by hand is harder
+to capture, so make it go through a skill that logs"*.
+
+**There is no such tool and no such skill.** The write surface is `scaffold_module`, the drafters,
+the enrich passes, `compile_module` and `close_module`. Not one of them writes a cell an author
+chose. So the central authoring act — deciding what goes in a cell and putting it there — happens
+entirely outside the product, and therefore outside anything that could log it.
+
+**Measured by doing it.** Replacing the quotes meant `uv run python` with a `csv.DictWriter`, driven
+by hand. Per §7 that is the exercise stopping: I stepped outside the product, and I am recording it
+rather than presenting the script as a method. The log entry the policy asks for
+(`logs/quote-remediation.log`) I then *typed*, which is exactly the "harder to capture" case the
+corollary predicts — nothing verified it against what actually changed, and nothing would have
+noticed if I had written a different number.
+
+**What a fix looks like, and the ordering matters.** The smallest honest thing is not a general cell
+writer. It is a tool per *decided* authoring move, each of which appends its own log line: for this
+case, something like `write_provenance_quote(spec_dir, rsid, pmid, quote|null, located_by, reason)`
+that verifies the quote is verbatim in the retrieved text before writing, refuses a string equal to
+the article's title, and appends to `logs/`. That is small, it is auditable, and the log becomes a
+record of what happened rather than a note about it.
+
+**Why the general version is wrong.** A `write_cell(table, row, column, value)` tool would put the
+same tooling behind a `weight`, a `clin_sig` and a `conclusion` — the values §10 says an agent must
+put in the decision list rather than write. The write surface should widen one *decision* at a
+time, not one *column* at a time.
+
+## F46 — the licensing obligation is announced only by the one tool in the chain you need not call
+
+**Found:** 2026-08-20, adding the article licence row after quoting a paper · **Severity:** medium ·
+**Status:** open
+
+Quoting an article's text into `studies.csv` puts publisher text in the module's **annotation**
+layer, which is the layer where `commercial_use=false` actually bites. `licensing.csv` needs a row
+carrying **that article's** terms — not the service's, because the terms are per article.
+
+The product says so, once, in the right words: `discovery._licensing_notes` builds a
+`SourceLicenseNote` whose text ends *"If you copy a passage from an article into studies.csv, that
+is a SECOND row at layer='annotation' carrying the ARTICLE's licence, not this service's — use
+lookup_open_access to read it, because those terms are per-article."*
+
+**It rides on `LiteratureSearchResult` and nothing else.** `lookup_citation`, `lookup_open_access`
+and `fetch_fulltext` carry no `licensing` field at all. So:
+
+- the tool that *knows* the article's licence (`lookup_open_access`) says nothing about owing a row;
+- the tool that hands you the text you are about to quote (`fetch_fulltext`) says nothing either;
+- the only tool that mentions it is `literature_search`, and an author working from a PMID they
+  already hold — a remediation, a hand-off, a module somebody else started — never calls it.
+
+**Measured by being that author.** This whole session ran `lookup_citation` → `lookup_open_access` →
+`fetch_fulltext`, three tools, six calls, and received not one licensing note. The `sources.csv` row
+for the quoted CC-BY article got written because I re-read the skill, not because anything asked.
+
+And a missing `licensing.csv` row is a **warning, not an error**, so the module publishes green.
+
+**The fix is small and the right shape is a question.** Attaching `licensing` to
+`OpenAccessResult` is one line of model plus one call to the existing builder — but the note it
+would carry is per *service*, and what is owed here is per *article*. `lookup_open_access` is the
+one tool that holds the article's own `license` string, so it can say the true thing:
+*"you now owe a `licensing.csv` row at `layer=annotation` for `pmid:24489884` carrying `cc-by`"*.
+That is more useful than the generic note and it is only available there.
+
+**A candidate that is wrong: writing the row.** `declared_use` is a licence position only the author
+can take, and a fabricated licence string is worse than the missing warning. Name the obligation,
+name the licence you read, and stop.
+
+## F47 — a skill can teach an extended-tier step, and the guard that catches this only reads `server.INSTRUCTIONS`
+
+**Found:** 2026-08-20, trying to refresh `literature.csv` from a default-tier session ·
+**Severity:** medium · **Status:** open
+
+`find-evidence`'s loop ends with `enrich_literature_pass(spec_dir="spec")` as the verify step, and
+`paper_citations` sits in the same code block. Both are **extended** (`register_extended_passes`),
+so on a default install neither exists. Nothing in that skill said so — the only mention of a tier
+anywhere near this topic was one parenthesis in `literature.md`.
+
+**This is the exact failure `CLAUDE.md` §5 names** — *"a tier that teaches a step it cannot run is
+the failure mode to check for"* — and the guard written for it,
+`test_the_taught_workflow_runs_in_the_default_tier`, parses the tool names out of
+`server.INSTRUCTIONS`. It does not read the skills, which are the other half of the taught workflow
+and much the larger half.
+
+**What it cost in this session.** `literature.csv` needed re-deriving (`quotes_authored: 0` beside
+authored quotes — see `F44` / upstream `S56`). The two tools for that, `enrich_literature_pass` and
+`refresh_sidecar`, are both extended. On a default server there is no route at all: the module was
+published with the sidecar as found, and the log says so.
+
+**Candidate fix.** A test that extracts `name(` call sites from every `skills/**/*.md` fenced block,
+resolves them against the essentials roster, and requires an `EXTENDED` marker on the line for any
+that is not. That is mechanical, it cannot drift, and it would have caught this the day
+`enrich_literature_pass` moved behind the flag.
+
+**A candidate that is wrong: moving the passes into essentials.** The tier line is cost, and a pass
+that rewrites every row of a corpus is squarely extended. The defect is the silence, not the tier.
+
+**What was done meanwhile.** `find-evidence` now marks both tools `EXTENDED` in the loop, names the
+CLI equivalent, and says that reaching for it is stepping outside the MCP surface.
