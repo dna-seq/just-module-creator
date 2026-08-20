@@ -236,11 +236,17 @@ the alternative that rule actually produced was 3668 titles.
 fabricated quote whoever typed it. `quote_matches` is whitespace- and case-insensitive literal
 containment, so ordinary reflowing is fine and a paraphrase is not.
 
-**Then read the counters as three-valued.** `quotes_found` is `null` when no full text could be
-retrieved and `0` when one was read and the passage was not in it. A preprint with no OA full text
-returns `null` for every quote on it: **unchecked, not refuted**, and not a reason to delete them.
-`quote_source` says how far the search reached — a phrase found in an abstract is in the paper, while
-a phrase absent from a 200-word abstract says nothing about the body.
+**One more counter to read three-valued**, beyond `quotes_found` in rule 3 above. `quote_source` says
+how far the search reached — a phrase found in an abstract is in the paper, while a phrase absent from
+a 200-word abstract says nothing about the body. A preprint with no OA full text returns `null` for
+every quote on it: **unchecked, not refuted**, and not a reason to delete them.
+
+**And do not read `quotes_authored` as a check on any of this.** It records what the literature pass
+saw *when it last ran*, and the sidecar is merge-not-clobber, so on a module whose quotes were
+authored after that run it stays at `0` forever — measured at `0` on all four published
+`antonkulaga/*` modules beside 3668 authored quotes, with the manifest summing the nulls into a
+confident zero (`F49` / upstream `S56`). To check your own quotes, group `studies.csv` by `pmid`
+yourself.
 
 > **Upstream calls these columns `ATTESTATION_BEARING` and glosses them "the cell asserts that a
 > HUMAN read something".** That is correct as a *provider* rule — no lookup tool may write these
