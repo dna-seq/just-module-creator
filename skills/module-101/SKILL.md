@@ -1,14 +1,15 @@
 ---
 name: module-101
 description: >-
-  Start here. What a just-dna annotation module is, what this plugin can and cannot do, how the four
-  packages fit together, the module lifecycle including second and later passes, the minimal
-  authored surface, and what kinds of module are possible. Load this first for any orientation
-  question, then hand off to the stage skill that owns the step — `module-tables` for which table
-  and what a module looks like on disk.
-  Triggers: "what is a module", "what can I do with this", "how do I create a module", "what is
-  just-dna", "where do I start", "what kinds of module", "is this for reading my DNA", "what does
-  this plugin do", "explain modules", "module overview", "getting started", "which skill do I need".
+  Start here, and start here to write one. What a just-dna annotation module is, what this plugin can
+  and cannot do, the tool roster and its tiers, how the four packages fit together, the lifecycle
+  including second and later passes, and which stage skill owns the step you are on. Load this first
+  for any orientation question and for "create a module", then hand off — `module-start` to begin one,
+  `module-tables` for which table and what a module looks like on disk.
+  Triggers: "what is a module", "create a just-dna module", "write a module", "author a module", "how
+  do I create a module", "what can I do with this", "what is just-dna", "where do I start", "what
+  kinds of module", "is this for reading my DNA", "what does this plugin do", "explain modules",
+  "module overview", "getting started", "which skill do I need", "which tool do I use".
 ---
 
 # just-dna modules — the overview
@@ -161,10 +162,71 @@ consumer brings the measurement at query time. Correct this misconception early 
 non-specialist — their working model is usually "point this at my DNA file and tell me about me", and
 every later step reads as nonsense against it.
 
-For the rest of the beginner vocabulary — variant as street address, genotype as which letters you
-have, every row as a claim with a receipt — see `create-module`'s *Explaining this to someone who is
-not a geneticist*. **And never let a metaphor decide a column**: the moment the question is what a
-cell may contain, ask `describe_table` / `table_requirements`.
+### The framings that landed on a real beginner
+
+Tested in a real session with someone who had never seen a VCF. The conversation changed the moment
+"module" became **rulebook** — *"a module is a rulebook, you should've said so!"*
+
+| Say this | It explains |
+|---|---|
+| **A module is a rulebook.** "If the DNA says X at spot Y, that means Z, and here is who showed it" | what a module *is*. Lead with this one; it does more work than the rest combined |
+| **A variant is a street address.** `rs4988235` names one specific spot where people differ | `rsid` |
+| **Your genotype is which letters you have at that address** | `genotype` |
+| **There are two jobs: writing the rulebook, and reading a DNA file against it. This only writes** | the misconception that wastes the most time |
+| **The module is the knowledge; whoever runs it brings the measurement** | why nothing here opens a VCF |
+| **Every row is a claim with a receipt.** `conclusion` is the claim, `pmid` is the receipt | why `studies.csv` is required whenever `variants.csv` exists |
+| **A blank cell means "we don't know", never "no"** | the three-valued algebra, and why you must not write `false` to tidy a warning |
+| **Those two quote columns mean "someone read this paper and found the sentence" — and that someone may be me** | why a quote is verbatim, says who located it, and is never the title |
+| **I write it; if you want a specialist to check it, that becomes a later version with their name on it** | who does what, and why they are not being asked to check the genetics |
+| **On a dial, a shared endpoint is a boundary; on a counter, it is two bins claiming the same number** | why `measure_tiling` decides whether bins must touch — the measure's kind only sets the default |
+
+**And never let a metaphor decide a column.** "Rulebook" is the right way to *explain* a module and the
+wrong basis for choosing a column, a vocabulary member or a table kind. The instant the question is what
+a cell may contain, stop explaining and ask `describe_table` / `table_requirements`. A metaphor that
+starts answering schema questions has become a second source of truth.
+
+## The tools, and which tier they are in
+
+Prefer these over shelling out: they return structured results, their schema answers are generated from
+the live models, and they cannot reach the one compiler flag that silently produces a module no VCF can
+match.
+
+| Do this | Tool | Tier |
+|---|---|---|
+| choose a table kind, learn its columns, its requirements | `list_tables`, `describe_table`, `table_requirements` | essentials |
+| the columns of a table a *pass* writes | `describe_machine_table` | essentials |
+| a CSV header or a stub | `get_template` | essentials |
+| create the spec directory | `scaffold_module` | essentials |
+| check rows **before** writing them | `lint_rows` | essentials |
+| pre-flight, then build | `validate_module`, `compile_module` | essentials |
+| find the alleles for a genotype | `lookup_variant` | essentials |
+| **find the papers behind a row** | `literature_search` | essentials |
+| check a PMID/DOI and read the title back | `lookup_citation` | essentials |
+| where may I read this paper, and read it | `lookup_open_access`, `fetch_fulltext` | essentials |
+| draft variants + studies from ClinVar | `draft_from_clinvar` | essentials |
+| resolve coordinates, mint ids, catch a ref mismatch | `enrich_module` | essentials |
+| identifier currency, **and gene↔chromosome agreement** | `check_identifiers`, `lookup_identifier` | essentials |
+| declare the authoring finished | `close_module` | essentials |
+| content signature, artifact integrity | `module_signature`, `verify_artifact` | essentials |
+| the whole generated DSL at once | `authoring_reference` | essentials |
+| see whether a module already exists, and read one | `registry_search`, `registry_get_module` | essentials |
+| get an account and a token | `registry_register` | **always** |
+| draft the PGx tables | `draft_from_cpic`, `draft_from_clinpgx` | extended |
+| has this finding been replicated | `paper_citations` | extended |
+| fill the fact sidecars | `enrich_facts`, `enrich_literature_pass`, `enrich_gwas_effects` | extended |
+| re-derive a sidecar without losing curation | `refresh_sidecar` | extended |
+| turn an artifact back into a spec, or download one | `reverse_module`, `registry_download` | extended |
+| ask whether it would publish, cost-free | `registry_check`, `registry_validate` | gated |
+| publish, or rehearse a publish | `authenticate` → `registry_whoami` → `registry_claim_namespace` → `registry_publish` | gated |
+
+**The default tier runs the whole procedure**, scaffold to publish. The tiers split on **cost**:
+essentials is everything bounded by what you named — one identifier, one paper, one spec directory —
+and `JMC_MODE=extended` adds only what a *corpus* sizes, plus reading back somebody else's artifact.
+`registry_register` is ungated because it is what mints the token; gating it would be a cycle.
+
+**Every registry tool takes a `target`.** Writes default to the polygon, catalog reads to production.
+`references/CLI.md` names the few things no tool wraps — signing, the PGx cross-checks,
+snapshot building, `hint recover`.
 
 
 ## For the author: the minimal surface
@@ -286,33 +348,54 @@ normal, not a sign the first one was wrong.
 
 | Step or question | Load |
 |---|---|
-| the full authoring procedure, step by step | `create-module` |
+| **start a module — triage, licence, the spec** | `module-start` |
+| draft rows from a source that publishes them | `module-draft` |
+| **write the cells only a pilot can settle** | `module-curate` |
+| resolve coordinates and mint ids | `module-enrich` |
+| cross-check what you asserted | `module-check` |
+| build the artifact and read the build | `module-compile` |
+| declare the authoring finished | `module-close` |
+| rehearse, then publish | `module-publish` |
+| what a `weight` means | `module-weights` |
+| how a reader joins this to a VCF | `module-consumer` |
 | which table kind a finding belongs in, and every column of it | `module-tables` |
 | what a module looks like on disk, and what `derived/` is | `module-tables` → `references/LAYOUT.md` |
-| a message you do not recognise | `create-module` → `references/SYMPTOMS.md` |
-| the CLI surface, and what is not wrapped | `create-module` → `references/CLI.md` |
+| a message you do not recognise | `references/SYMPTOMS.md` |
+| the CLI surface, and what is not wrapped | `references/CLI.md` |
 | finding, verifying and reading the literature | `find-evidence` |
 | **"has this already been decided?"** | `../just-dna-format/docs/FAQ.md` — keyed by *question*, one or two sentences and a link, and **a refusal is an answer**. Most of it is a repair somebody proposed that was checked and rejected for a reason worth knowing. Read it before proposing a fix to the format. |
 | the design behind any of it | `../just-dna-format/docs/`: `MODULE_LIFECYCLE.md` (the stages and every later pass), `SCHEMAS.md` (the models), `COMPILER.md` (the transform, and its blind spots), `ENRICHER.md` (the network tier and every check) |
 
 **A message that cites an `RMn` means known and deliberate, not broken.** Leave the data honest, note
 the limitation, and do not invent a workaround — `../just-dna-format/docs/RM_TOC.md` says what any
-given number is.
+given number is. The two you will actually meet:
 
-**The stage skills named throughout this file are the target shape, not all built yet.** Until they
-land, `create-module` carries the procedure for stages 1–8 and is the one canonical copy; this file
-never restates it. The planned split is `module-start`, `module-draft`, `module-curate`,
-`module-enrich`, `module-check`, `module-compile`, `module-close`, `module-publish` for the spine;
-and `module-weights`, `module-consumer` as references the stages load. **The whole second-pass half is
-written**: **`module-revise`** owns pass two and beyond — load it whenever a module already exists,
-which is the normal case; **`module-refresh`** owns re-running anything that already ran, which is
-where merge-not-clobber stops being a footnote; and **`module-diff`** owns reading what moved off the
-signatures, including the one reading that means an upstream source changed its answer. `module-tables`
-owns the table roster, the on-disk shapes and the registry's `derived/` layout.
+- **RM5 — symbolic and structural alleles are outside the grammar.** `<DEL>`, 5-HTTLPR, ClinPGx
+  `del`/`ins`, CPIC's `x≥3` and `DELTCT` are not `^[ACGT]+$`, so the PGx passes skip such rows and count
+  them rather than coercing them. Distinct from IUPAC ambiguity codes (`R`, `Y`, `N`), which record an
+  uncertainty that was never expressible and **must never be expanded** into the alleles they could
+  stand for.
+- **RM15 — multi-build support.** GRCh38 is the only assembly with a refget table, so VRS minting and
+  rsID resolution are GRCh38-only. Off GRCh38, expect less and say so in the README.
+
+**The split is complete, and there is no longer a single skill that carries the whole procedure.** That
+was `create-module`, 1431 lines loaded whole to answer any question; it was dismantled on 2026-08-20 and
+every line of it now sits in the stage that owns it. **Load the stage you are in**, not a monolith:
+
+- **The spine, in lifecycle order** — `module-start` (0–1), `module-draft` (2), `module-curate` (3),
+  `module-enrich` (4), `module-check` (5), `module-compile` (6), `module-close` (6b),
+  `module-publish` (7–8).
+- **The second-pass half**, which is the normal case rather than the exception — `module-revise` (which
+  kind of pass, and what it invalidates), `module-refresh` (re-running anything that already ran) and
+  `module-diff` (what moved, and the one reading that means an upstream source changed its answer).
+- **The references the stages load** — `module-tables` (which table, and the tree on disk),
+  `module-weights`, `module-consumer`, `find-evidence`.
 
 ## What this file deliberately does not contain
 
-No column lists, no vocabularies, no requirement tables — ask the tool. No procedure — that is
-`create-module`. No symptom lookup, no CLI reference, no per-table contracts. If a question is
-answerable only with a specific cell value, a specific flag or a specific warning phrase, it is a
-subskill's question and this file should not have grown to hold it.
+No column lists, no vocabularies, no requirement tables — **ask the tool.** No procedure — that is the
+stage skills. No per-table contracts — that is `module-tables` and its dossiers. The symptom lookup and
+the CLI surface live in `references/` here rather than in the body, because they are read *from* every
+stage rather than *by* this one. If a question is answerable only with a specific cell value, a specific
+flag or a specific warning phrase, it is a subskill's question and this file should not have grown to
+hold it.

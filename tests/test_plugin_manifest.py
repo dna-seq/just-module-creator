@@ -94,10 +94,13 @@ def test_the_declared_skill_directory_holds_the_skills_the_description_promises(
     skills_dir = REPO / manifest["skills"].removeprefix("./")
     shipped = {p.name for p in skills_dir.iterdir() if (p / "SKILL.md").is_file()}
 
-    # `module-101` is the declared entry point and `create-module` is the one canonical copy
-    # of the procedure; CLAUDE.md, the server instructions and module-101 itself all point at
-    # them by name, so their absence is a broken link rather than a smaller surface.
-    assert {"module-101", "create-module"} <= shipped
+    # `module-101` is the declared entry point and `module-start` is where it sends anyone
+    # actually beginning a module; CLAUDE.md, the server instructions and module-101 itself
+    # all point at them by name, so their absence is a broken link rather than a smaller
+    # surface. This pin named `create-module` until 2026-08-20, when the 1431-line procedure
+    # skill was dismantled into the ten stage skills and deleted — the entry point moved, so
+    # the pin moved with it.
+    assert {"module-101", "module-start"} <= shipped
 
     promised = _SKILL_COUNT_WORDS[len(shipped)]
     assert f"{promised} skills" in manifest["description"], (
@@ -127,7 +130,7 @@ def test_the_codex_manifest_matches_the_package_and_skills(codex_manifest, manif
     assert codex_dir.resolve() == claude_dir.resolve()
 
     shipped = {p.name for p in codex_dir.iterdir() if (p / "SKILL.md").is_file()}
-    assert {"module-101", "create-module"} <= shipped
+    assert {"module-101", "module-start"} <= shipped
 
 
 def test_the_codex_mcp_config_launches_this_checkout(codex_manifest):
