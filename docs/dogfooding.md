@@ -719,3 +719,27 @@ that rewrites every row of a corpus is squarely extended. The defect is the sile
 
 **What was done meanwhile.** `find-evidence` now marks both tools `EXTENDED` in the loop, names the
 CLI equivalent, and says that reaching for it is stepping outside the MCP surface.
+
+## F50 — "Try the locations below" when there are none, because the fallback needs a DOI the caller did not pass
+
+**Found:** 2026-08-20, chasing an author manuscript by PMCID · **Severity:** low · **Status:** open
+
+`fetch_fulltext(pmcid="PMC10508260")` on an embargoed author manuscript returns, correctly,
+`retrieved: false` and `text_source: null` — and this warning:
+
+> Nothing was retrieved. `text_source` is null, which means UNCHECKED — not that the paper has no
+> text. Try the locations below.
+
+`locations` is `[]`. The reason is one line above the return: `if doi: locations =
+open_access(...).locations`. Called with a `pmcid` and no `doi`, the branch never runs, so the advice
+points at a list the same call declined to populate.
+
+The three-valued half of that message is exactly right and is the reason the message exists —
+`null` is unchecked, not "no text". It is the last sentence that spends the caller's trust: an
+instruction that cannot be followed reads as a defect in the caller's own request.
+
+**Candidate fix.** Either resolve the DOI first when only a `pmcid` was given — `lookup_citation`
+already gets one from the same `esummary` response — or say the true thing when the list is empty:
+*"no open-access locations were looked up, because that needs a DOI; call `lookup_open_access` with
+the DOI or PMID."* The second costs nothing and never issues a request the caller did not ask for,
+which fits the tier rule better.
