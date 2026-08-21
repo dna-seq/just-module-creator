@@ -19,8 +19,10 @@ here is the only statement of a `don't`.
 ## What this repo is
 
 
-An MCP server **plus** a Claude Code skill that together help an agent author
-just-dna annotation modules. We are the *authoring surface*; we own no schema.
+An MCP server **plus** the skills that teach the workflow those tools serve, shipped
+as one plugin to **both Claude Code and Codex** — two manifests, the same server,
+the same skills. Together they help an agent author just-dna annotation modules.
+We are the *authoring surface*; we own no schema.
 Every column list, vocabulary and requirement is generated from the live pydantic
 models in `just-dna-format`, so it cannot drift from what the compiler accepts.
 

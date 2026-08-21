@@ -1,10 +1,13 @@
 # Agent Guidelines — just-module-creator
 
-A **Claude Code plugin** shipping two halves: an MCP server that wraps the
-just-dna toolchain with agent-shaped tools, and a skill that teaches the
-workflow those tools serve. It is an **application, not a published library** —
-the contract is the MCP tool surface and the skill, not Python imports, so
-internals are free to change and no `__all__` is curated.
+A plugin for **Claude Code and Codex** — two manifests, one server, one skill set —
+shipping two halves: an MCP server that wraps the just-dna toolchain with
+agent-shaped tools, and the skills that teach the workflow those tools serve. It is
+an **application, not a published library** — the contract is the MCP tool surface
+and the skills, not Python imports, so internals are free to change and no
+`__all__` is curated. **Neither host is the primary one**: a change to the tool
+surface or the skill set owes the same to both, which is why the version bump
+touches two manifests rather than one.
 
 It is **not** a format, a schema or an annotation engine. We own no schema:
 every column list, vocabulary and requirement comes from the live pydantic
