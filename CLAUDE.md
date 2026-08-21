@@ -1217,6 +1217,15 @@ have been questions.
   refuses rather than attributes**: the refusal did not produce human-read quotes, it produced a
   green check over metadata. Filed as `S54`.
 
+- **`git add -u <dir>` swept a concurrent session's edits into three of my commits — 2026-08-21.**
+  Another agent was editing this repo at the same time (making `target` a required argument on the
+  catalog reads). `git add -u skills/` stages every modified file under a path, so their prose landed
+  in commits whose message is about something else, while the code it describes is still in the
+  working tree. Nothing was lost and nothing was overwritten — the string-replacement scripts assert
+  on the old text, so a passage they had already edited fails loudly instead of being clobbered — but
+  **a directory is not an explicit path**. Stage the files you actually wrote, by name. §2's
+  "never blind-stage" is the same rule at a coarser grain and did not stop this; `git status --short`
+  before every commit is what does.
 - **`cd` leaks between Bash calls, and a leaked one put git commands in an upstream repo.** A
   `git add` / `git commit` pair ran inside `../just-dna-format` because of an earlier `cd`; the `add`
   failed on a non-matching path so the commit never executed, which was luck rather than safety. **Use

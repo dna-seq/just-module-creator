@@ -93,7 +93,7 @@ guards stay live.**
 The `lookup_variant` snapshot-miss strings lost their trailing clause and `position remains unset` is
 its own finding now (`S61`), so `SYMPTOMS.md` carries all three phrases and says which to grep for.
 
-## Unreleased — three quarters of the server's instructions were never reaching the model
+### Also in 0.16.0 — three quarters of the server's instructions were never reaching the model
 
 **`Server instructions truncated from 9220 to 2048 chars`.** Found in Claude Code's own MCP debug log
 while diagnosing an unrelated startup timeout. Nothing on our side raises, so this had been true for
