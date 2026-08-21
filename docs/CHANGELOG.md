@@ -3,6 +3,96 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.16.0 — 0.6.6 adopted: four restatements retire, and one of ours contradicted itself
+
+**Format / compiler / enricher 0.6.1–0.6.4 → 0.6.6, floors raised, adopted 2026-08-21.** The three
+moved back into lockstep at 0.6.5 and 0.6.6 is the patch round after it. Nine `F<n>` of ours close on
+it — `S47`, `S48`, `S49`, `S50`, `S51`, `S54`, `S55`, `S56`, `S57` — which is what filing at the
+moment of discovery buys: every one was written in a single day's work five days earlier.
+
+### Four maps we restated are now generated, and the fourth had teeth
+
+- **`hints.DERIVED_TABLE_MODELS`** (`S47`) replaces `_PRODUCED_MODELS` *and* the roster, which had been
+  borrowed from the registry so it could grow by itself while the models stayed by hand. One source
+  now, and it is the compiler's own loader tuple. The `describe_machine_table` arm for a table that is
+  real and undescribable by this build is gone with it: the two halves can no longer disagree.
+- **`hints.key_fields`** (`S48`) replaces the `keyed_on` half of `_SUBJECTS` — the hand-kept string
+  that named `modifier_cn` for all of 0.6 after upstream deprecated it, which is what the report was
+  about. `list_tables` gains `key_rule` and both `describe_table` and `describe_machine_table` carry
+  the whole `key` block, because `equality`, `overlap` and `subject` are three different claims about
+  what a repeated key means and one string could only imply one of them.
+- **`scaffold.companions_for`** (`S49`) applies the conditional half of the companion mapping and is
+  what `scaffold_module` itself uses, so our answer and the act cannot disagree. Scaffolding a binning
+  module beside `studies.csv` no longer invites an empty `variants.csv` that compiles strict-green
+  while asserting nothing.
+- **`hints.key_fields` again, for `refresh_sidecar`** (`S51`), and this is the one that changed
+  behaviour rather than tidying it. Row identity there approximated each pass's merge key and was
+  *different* on the two tables where one subject carries several rows: `clinical_assertions.csv` was
+  keyed `(variant_key, dataset)` against a real key of `(variant_key, variation_id)`, so two ClinVar
+  assertions on one variant collapsed into one subject and were **reported as a conflict**; and
+  `gene_validity.csv` on `(gene, dataset)` against `assertion_id`, whose two-level fallback we had no
+  way to express at all.
+
+### `compare_modules` reported thirteen changed rows and no content change, in one payload
+
+`authored_tables` read each CSV directly and never folded the spec's `defaults:` block. A `curator`
+written on every row in one version and declared once under `defaults:` in the next is the same
+content — `content_signature` says so — and the report came back `content: same` beside thirteen rows
+changed on `curator` and `method`. Measured on a pair built from `hfe_hemochromatosis`: identical
+digest, thirteen rows moved.
+
+That is the defect we filed against upstream's `lookup_variant` the day before (`S61`), on our side of
+the boundary this time: a finding that contradicts the data teaches the reader to discount findings.
+`compiler.spec_tables` (`S53`) returns the folded rows, which is exactly what this needed and had no
+public way to get — the fold lives in two private symbols and reimplementing it is what produces the
+wrong answer.
+
+### The one new authored column in the whole range
+
+**`StudyRow.curator`** (`S55`) — who located this row's quote, on the table where the attestation
+lives. `find-evidence` and the `studies.csv` dossier tell an author to fill it and say the two things
+that keep it honest: it is free text resolvable against `authorship` rather than a `machine_located`
+boolean, and **nothing checks it**, because it is legible to a reviewer routing scrutiny and not to a
+gate. Responsibility stays with the human author however the cell is filled.
+
+**`ProvenanceItem.outranks`** (`S52`) is written by `record_override`, so the column a row disagrees
+with is legible to a reader who is not us. The marker stays and is not a duplicate: it carries the
+digest binding the record to the cell, which source was disagreed with, when and by whom. The *check*
+half — whether a mismatch is downgraded on the strength of a record — did not ship and is not assumed:
+a record still downgrades nothing and passes nothing.
+
+**`titles_as_quotes`** (`S54`) is surfaced on `LiteratureReport` with a warning naming the PMIDs. Ours
+and theirs both stay: theirs runs in the pass and answers for a pinned sidecar row, ours runs in
+`lint_rows` and `validate_module` before any pass has. The four modules that provoked the finding have
+every row pinned, so a check living in the fetch loop would have fired on none of the 3668 quotes it
+was written for.
+
+### Three behaviours changed for anyone recompiling
+
+Stated in the skills where they land, because none of them reaches an already-published module — a
+manifest is written at compile time.
+
+- **A duplicate `(source, layer)` row in `licensing.csv` is an error** in validate and compile both
+  (RM107). An inherited module carrying one stops compiling, which is the pair being noticed rather
+  than the module breaking; `merge_sources_csv` keeps the **last** row under the key, so it is the
+  wrong tool exactly where the two rows disagree.
+- **`manifest.stats` describes the module** (RM121), so a recompiled PGx, copy-number or binning
+  module becomes findable by gene. Thirteen passages across nine files said otherwise. A `pgs`-led
+  module is the one shape it does not reach — `PgsRow` has no `gene` column to contribute.
+- **The `faf95` warning is published once** (RM106), so a recompile publishes one fewer warning with
+  no text changed.
+
+Five other guards come out — `RM104` (the gene-metrics re-run raised `UnboundLocalError`), `RM105`
+(`logo.jpeg` was attested and never uploaded; **re-publish a module that shipped one**), `RM109` (a
+`source="manual"` row now suppresses the fetch, though a duplicate pair written earlier is still in
+the file), `RM111` (three strings claiming a registry override of `license`, two of them
+`Field(description=…)` that reach authors through our own tools) and `RM123` (a redundancy advisory
+now says when its checker cannot see your table). **`RM108` and `RM110` stay open as minors and their
+guards stay live.**
+
+The `lookup_variant` snapshot-miss strings lost their trailing clause and `position remains unset` is
+its own finding now (`S61`), so `SYMPTOMS.md` carries all three phrases and says which to grep for.
+
 ## Unreleased — three quarters of the server's instructions were never reaching the model
 
 **`Server instructions truncated from 9220 to 2048 chars`.** Found in Claude Code's own MCP debug log

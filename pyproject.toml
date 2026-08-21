@@ -1,6 +1,6 @@
 [project]
 name = "just-module-creator"
-version = "0.15.0"
+version = "0.16.0"
 description = "MCP server and skills for authoring and publishing just-dna annotation modules; a Claude Code and Codex plugin"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -33,9 +33,9 @@ dependencies = [
     # thing that sees the condition — it holds the rsIDs the run is deliberately
     # writing by coordinate, which no file-level predicate can reconstruct, because a
     # coordinate row carries no rsid (upstream S45, our F36).
-    "just-dna-compiler>=0.6.1",
-    "just-dna-format>=0.6.1",
-    "just-dna-enricher>=0.6.4",
+    "just-dna-compiler>=0.6.6",
+    "just-dna-format>=0.6.6",
+    "just-dna-enricher>=0.6.6",
     # 0.17.0 is the release that adopts format 0.6, and the floor has to move with ours:
     # its client reads `just_dna_format.layout` and the new manifest blocks unguarded, so a
     # 0.14 client beside a 0.6 format install is an AttributeError waiting inside a download.

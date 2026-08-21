@@ -195,17 +195,25 @@ design depends on.
   **subject half** of `authoring._SUBJECTS`, which answers "which table?" — a
   question about *intent* that the schema cannot answer — and is commented as such.
   **The exception stops there, and RM10 is what it cost to learn that.** The `keyed_on`
-  half of the same entries is structure, and it drifted exactly the way §2 predicts: it
-  named `modifier_cn` for all of 0.6, after upstream deprecated that column in favour of
-  `modifier_copy_number`. It is still hand-kept, because nothing public derives it
-  (`draft.natural_key` is row-level; `compiler._TABLE_DUPE_KEYS` and
-  `MeasureBinRow._KEY_FIELDS` are private — filed as `S48`), so it is pinned instead:
-  every token is an exact model field name and
-  `test_every_documented_key_column_is_a_live_undeprecated_field` fails on one that does
-  not resolve or that opens its description with `DEPRECATED`. **A fact that cannot be
-  generated is guarded by a test, never left to a comment.** The same rule reaches
-  `tools/authoring.py::_PRODUCED_MODELS`, the `csv -> row model` map for the
-  machine-produced sidecars (`S47`), whose keys are pinned to the derived roster.
+  half of the same entries was structure, and it drifted exactly the way this rule
+  predicts: it named `modifier_cn` for all of 0.6, after upstream deprecated that column
+  in favour of `modifier_copy_number`. **It is generated now** — `hints.key_fields(csv)`
+  since 0.6.5 (`S48`), returning columns, the collision `rule`, the stamped columns and a
+  second-level `fallback`, for authored kinds and machine-produced sidecars alike, read
+  off each model's own `_KEY_FIELDS` — as are the sidecar roster and its models
+  (`hints.DERIVED_TABLE_MODELS`, `S47`), the companion pull (`scaffold.companions_for`,
+  `S49`) and the defaults-folded rows behind `content_signature` (`compiler.spec_tables`,
+  `S53`). Four restatements, one release; **that is what filing costs and what it buys.**
+
+  **The rule the four leave behind is about the interval, not the exception.** A fact you
+  cannot generate is guarded by a **test**, never by a comment — and the test's subject
+  moves when the fact starts being generated rather than the test being deleted: the
+  `keyed_on` guard now asks whether the *generated* answer resolves on a live,
+  undeprecated field, because that drift can still arrive from upstream and an author
+  reading a retired key column is misled either way. Where a hand-kept map is replaced,
+  prefer a guard that compares two **independent** producers (the compiler's fact roster
+  against the registry's, which ship on different cadences) over one that compares a
+  derivation with itself.
 - **Never fill a value from the same source that checks it.** *(Audited under RM15
   2026-08-20: **kept**, and it is ours rather than inherited — but it is one cell/source
   pair, not a licence to read it as "do not write".)* A cross-check compares an
@@ -276,11 +284,13 @@ design depends on.
      *whodunit*, because real work is mixed: *"example: scientist reads review, agent traverses
      citations"*. Per-row quote provenance **does not exist in the schema** — we own none — so it is
      asked of upstream (`S55`, filed 2026-08-20, beside `S54` — the measurement that the old rule
-     produced title-as-quote on 3668 published rows). **Accepted and `StudyRow.curator` added in
-     their tree the same night (`RM120`), and NOT released** — which is exactly §8's state 2, so
-     verify by symbol with the corrected recipe there before relying on it. Until it is what
-     `uv sync` gives us, the signal is module-level `authorship` plus the `logs/` entry the write
-     goes through, and the gap is stated rather than papered over.
+     produced title-as-quote on 3668 published rows). **`StudyRow.curator` shipped in format 0.6.5
+     and is installed**: free text — a name, a handle or a model id — resolvable against
+     `authorship`, row-level because the work is mixed at row granularity, and deliberately **not** a
+     `machine_located` boolean. Fill it on every row whose quote was located, and know that **nothing
+     checks it**: it is legible to a reviewer routing scrutiny, not to a gate, which is the point
+     rather than a shortcoming. `authorship` and the `logs/` entry still carry what kind of
+     contributor an identity is; the pairing is the record and neither half means much alone.
   2. **The human author holds the responsibility regardless.** *"AI is not a subject of right, so the
      human author holds the full responsibility"* — so attribution honesty is about the **real
      distribution of roles**, never about moving liability onto a machine. A declared agent-located
@@ -1085,14 +1095,34 @@ have been questions.
   currently 404s and the client falls back to REST — expected, not a defect.
 - A transitive dependency ships a top-level `tests` package that shadows this
   repo's, so test helpers import as `from conftest import ...`.
-- **Format 0.6.1 / compiler 0.6.1 / enricher 0.6.4 / registry 0.18.2 — adopted 2026-08-19, registry
-  re-measured 0.18.2 on 2026-08-20 (our
-  0.10.2; 0.6.3 and our 0.10.1 lasted hours).** 0.6 is the line where the format-tier three stop moving in lockstep: format and compiler
-  sit at 0.6.1 while the enricher takes patches alone (0.6.2 for RM101's exception contract, 0.6.3 for
-  the ClinVar and ClinPGx drafter fixes). Verify by symbol, never by this line:
-  `just_dna_format.layout`, `compiler.ARTIFACT_PARQUETS`, `compiler.close_module`,
-  `frequencies.FrequencyUnavailable`, the `(chrom, start, ref, alt)` event key inside
-  `clinvar_draft.multi_allelic_rsids` (0.6.3), and `clinvar_draft._superseded_rsid_rows` (0.6.4).
+- **Format 0.6.6 / compiler 0.6.6 / enricher 0.6.6 / registry 0.18.2 — adopted 2026-08-21 (our
+  0.16.0).** The three moved back into lockstep at 0.6.5, the aligned number, and 0.6.6 is the patch
+  round after it; the split era below is what 0.6.1–0.6.4 were. Verify by symbol, never by this line —
+  and pass `--project /data/sources/just-module-creator` so the answer is about our venv:
+  `StudyRow.curator` (0.6.5), `hints.key_fields` / `hints.DERIVED_TABLE_MODELS` (0.6.5),
+  `compiler.compiler.spec_tables` / `compiler.compiler.module_stats`, `scaffold.companions_for`, and
+  `hints.REDUNDANCY_BEARING_TABLES` (0.6.6). **`scaffold` and `hints` live in the COMPILER, not in
+  format** — importing `just_dna_format.scaffold` fails and it is an easy minute to lose.
+
+  **Three behaviours changed, not just symbols.** A duplicate `(source, layer)` row in
+  `licensing.csv` is now an **error** in validate and compile both, so an inherited module carrying
+  one stops compiling; the `faf95` warning is published once rather than twice, so a recompiled
+  module publishes one fewer warning with no text changed; and `manifest.stats` takes its gene facets
+  over every authored table, so a recompiled PGx or binning module becomes findable by gene where it
+  was not. **A published version keeps what its own compile wrote** — all three reach a module only
+  through a recompile.
+
+  **The previous line was: format 0.6.1 / compiler 0.6.1 / enricher 0.6.4, adopted 2026-08-19.** 0.6.1
+  through 0.6.4 is the stretch where the three did *not* move together — format and compiler sat at
+  0.6.1 while the enricher took patches alone (0.6.2 for RM101's exception contract, 0.6.3 for the
+  ClinVar and ClinPGx drafter fixes, 0.6.4 for S45).
+- **Both live registry instances still serve `format: 0.6.1` while we compile with 0.6.6, and that is
+  fine — measured 2026-08-21, not assumed.** The contract check is scoped to **major.minor** below
+  1.0, so every 0.6.x interoperates: `assert_compatible()` passes against prod and the polygon with a
+  0.6.6 client, and `curl -s <url>/api/v1/version` returns
+  `{"registry":"0.18.2","format":"0.6.1","compiler":"0.6.1"}` on both. **A 0.7 client against a 0.6
+  server is the case that would refuse**, so re-probe at the next minor rather than reading this line
+  as a general permission.
 - **Both live registry instances now serve `format: 0.6.1` / `registry: 0.18.x`, verified 2026-08-19,
   and the 0.5.4 contract block is over.** The installed client is **0.18.2** as of 2026-08-20 — this
   line said 0.18.1 for a day. Every version-guarded call works again — a `download` of

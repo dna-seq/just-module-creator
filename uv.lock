@@ -908,7 +908,7 @@ wheels = [
 
 [[package]]
 name = "just-module-creator"
-version = "0.15.0"
+version = "0.16.0"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
@@ -938,9 +938,9 @@ requires-dist = [
     { name = "anyio", specifier = ">=4" },
     { name = "fastmcp", extras = ["tasks"], specifier = ">=3.4.7" },
     { name = "httpx", specifier = ">=0.28" },
-    { name = "just-dna-compiler", specifier = ">=0.6.1" },
-    { name = "just-dna-enricher", specifier = ">=0.6.4" },
-    { name = "just-dna-format", specifier = ">=0.6.1" },
+    { name = "just-dna-compiler", specifier = ">=0.6.6" },
+    { name = "just-dna-enricher", specifier = ">=0.6.6" },
+    { name = "just-dna-format", specifier = ">=0.6.6" },
     { name = "just-dna-registry", specifier = ">=0.18.1" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pydantic-settings", specifier = ">=2" },
