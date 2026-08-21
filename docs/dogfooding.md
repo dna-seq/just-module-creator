@@ -571,7 +571,8 @@ PMIDs) and warns when a stale quote counter disagrees with `studies.csv`.
 **What is still open is this entry's own subject: the pre-flight.** `registry_check` runs the
 literature pass on the *server*, and what comes back is a verdict, not the pass's warnings — so the
 new signal reaches an author who runs `enrich_literature_pass` locally and not one who runs the most
-expensive check on the surface. `RM17`'s local check is what covers the second author today, from the
+expensive check on the surface — twice over, since both live instances were still serving
+`format: 0.6.1` on 2026-08-21 and the server runs its own pass, not ours. `RM17`'s local check is what covers the second author today, from the
 authored file and with no network. The measurement below is the pre-0.6.5 behaviour and is kept as
 the record of it.
 
