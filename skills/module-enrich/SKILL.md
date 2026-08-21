@@ -188,8 +188,11 @@ operation.
 land here:
 
 - *"ref mismatch: N row(s) — coordinate shifted 1 base"* — above; read it as being about `start`.
-- *"not in the injected Ensembl snapshot, position remains unset"* — the local snapshot lacks it, **not**
-  a claim that Ensembl does.
+- *"<rsid>: not in the injected Ensembl snapshot"* (and the ClinVar twin) — the local snapshot lacks
+  it, **not** a claim that the source does. It is no longer a claim about the position either: the
+  trailing *"position remains unset"* was split off in enricher 0.6.6, because the live leg had not run
+  yet when the line was written. `lookup_variant` says *"<rsid>: position remains unset"* once, at the
+  end, when nothing placed the variant.
 - *"cannot host the authored genotype … The event sizes differ"* — a real contradiction, and decidable:
   a different variant sharing the rsID.
 - *"could not be decided here … the same size but different content"* — **not** a contradiction; the

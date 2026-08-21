@@ -255,19 +255,34 @@ retyped span is a fabricated one.
 
 ### 4. Record who located it — and know where that record does and does not go
 
-There is **no per-row attributor**: `VariantRow` has `curator`, `StudyRow` has nothing (`F43` /
-upstream `S55`). So the whodunit has to go somewhere else, and the three places differ in what they
-survive:
+**`studies.csv` has a `curator` column since format 0.6.5** — our `F43` / upstream `S55`, the field
+`VariantRow` always had, put on the table where the attestation lives. Optional free text: a name, a
+handle or a model id, resolvable against the module's `authorship`. **Fill it on every row whose quote
+you located**, with whatever identifies you as the one who did the reading.
+
+It is row-level because real work is mixed at row granularity — a human reads a review while an agent
+traverses its citations, in one module, in one pass — and it records the distribution of labour so a
+reviewer can route scrutiny. It does **not** move responsibility: the human author holds that
+regardless of who typed the cell. It is deliberately not a `machine_located` boolean, so do not write
+`true`, `ai` or `agent` into it as though it were one; write the identity, and let `authorship` say
+what kind of contributor that identity is.
+
+Nothing checks the value, and that is worth saying: `curator` is not redundancy-bearing, so an honest
+entry and a careless one look the same to every check. It is legible to a **reviewer**, which is its
+whole purpose.
+
+The three other records still exist and still answer different questions:
 
 | Where | Grain | Travels with the module? |
 |---|---|---|
+| `studies.csv: curator` | per **row** | yes — it is authored content, inside `content_signature` |
 | `module_spec.yaml: authorship` (`Contribution`: `who`, `role`, `kind`) | per **version** | yes — `manifest.authorship` |
-| `provenance.json` (`ProvenanceItem.rationale`, keyed by `variant_key`) | per **variant** | yes — stored, and summarised into `manifest.provenance`; **not** carried by a registry contract `upgrade` |
+| `provenance.json` (`ProvenanceItem.rationale` + `outranks`, keyed by `variant_key`) | per **variant** | yes — stored, and summarised into `manifest.provenance`; **not** carried by a registry contract `upgrade` |
 | `logs/*.log` | per **run**, free text | yes — `manifest.logs`; **not** carried by an `upgrade` |
 
-Verified by publishing a remediated module and reading the manifest back: all three survive a
-publish. None of them is per `(row, quote)`, which is the grain the work actually has. State that
-limit to the author rather than designing around it.
+Verified by publishing a remediated module and reading the manifest back: all three of the latter
+survive a publish. Name the identity in `curator` and let `authorship` carry what kind of contributor
+it is — that pairing is the whole record, and neither half means much alone.
 
 ### The cost of using `fetch_fulltext`, stated rather than used to refuse
 
@@ -296,9 +311,14 @@ every quote on it: **unchecked, not refuted**, and not a reason to delete them.
 
 **And do not read `quotes_authored` as a check on any of this.** It records what the literature pass
 saw *when it last ran*, and the sidecar is merge-not-clobber, so on a module whose quotes were
-authored after that run it stays at `0` forever — measured at `0` on all four published
-`antonkulaga/*` modules beside 3668 authored quotes, with the manifest summing the nulls into a
-confident zero (`F49` / upstream `S56`). **`lint_rows` and `validate_module` now detect it for you** (`RM17`): both report a
+authored after that run it stays at `0` — measured at `0` on all four published `antonkulaga/*`
+modules beside 3668 authored quotes, with the manifest summing the nulls into a confident zero (`F49`
+/ upstream `S56`). Format 0.6.5 warns when the counter disagrees with `studies.csv`, naming both
+numbers, and publishes `quotes_unchecked` beside the other two so the zero is no longer confident —
+but **it still does not rewrite the sidecar**, and a version published earlier keeps the counters its
+own compile wrote. **`lint_rows` and `validate_module` detect the title case for you** (`RM17`), as
+does the literature pass itself since 0.6.5 (`titles_as_quotes`, decided from the citation's metadata
+rather than the string's shape): all report a
 warning naming any PMID whose every quoted row carries the same passage, with the row count and the
 first few words. It arrives in `validate_module`'s `authored_findings` rather than in `warnings`,
 because that list transports upstream's own strings and this finding is ours; each carries

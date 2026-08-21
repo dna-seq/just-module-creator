@@ -25,7 +25,7 @@ on production a botched publish is permanent in two ways at once.**
 | `test-` namespaces / `test_` module names | accepted | `422 test_data_on_prod`, at the claim as well as the publish |
 | deleting what you published | `registry_delete_version` / `registry_delete_module` | not possible — `yank` delists and does **not** free the content claim |
 | default for writes | **yes** | only when you ask |
-| default for catalog reads | no | **yes** (`registry_search`, `registry_get_module`, `registry_download`) |
+| default for catalog reads | **none — `target` is required** (`registry_search`, `registry_get_module`, `registry_download`, `registry_is_published`) | **none — `target` is required** |
 
 **Nothing is shared between them.** Separate databases, so an account, a token and a namespace exist on
 one instance only, and promoting a rehearsal means **publishing again** with `target="prod"`.
@@ -41,7 +41,7 @@ would land on production refuses before spending anything.
 ## Three pre-flights that cost nothing
 
 ```
-registry_is_published(spec_dir="spec")                    # already out there, under ANY name?
+registry_is_published(target="prod", spec_dir="spec")     # already out there, under ANY name?
 registry_check(namespace="test-ns", name="m", spec_dir="spec", target="test")
 registry_validate(...)                                    # the same call without the network tier
 ```
@@ -164,8 +164,9 @@ and no agent may withhold a publish or a bump waiting for a milestone that does 
 The default is against **assuming**, not against **advocating**. When both halves below are true, raise
 production yourself rather than waiting to be asked.
 
-**Half one — the catalog is actually missing it.** Not a guess; a call. `registry_search(gene=…)` and
-`registry_search(query=…)` default to production, so ask them. If something overlapping exists, read it
+**Half one — the catalog is actually missing it.** Not a guess; a call. `registry_search(target="prod",
+gene=…)` and `registry_search(target="prod", query=…)` — the reads take no default, so production is
+something you state. If something overlapping exists, read it
 with `registry_get_module` — the honest options are then extending it or saying why yours differs, not
 publishing a near-duplicate.
 

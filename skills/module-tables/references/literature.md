@@ -49,7 +49,7 @@ this row?*; `literature.csv` is a verification record **over** those citations; 
 | Fact signature | `integrity.literature_signature` over `literature.LITERATURE_FACT_FIELDS` = **4 of 17 fields** — `pmid`, `doi`, `pmcid`, `exists` (`format/literature.py:70-76`, `format/integrity.py:305`) → `manifest.literature.signature` |
 | In `content_signature`? | **No.** Not in `_INPUT_FILES` (`compiler.py:267`). Measured: no edit here moved it |
 | In `artifact.digest`? | **Yes**, via its parquet — and only over the **kept** rows (RM79). Also byte-hashed into `manifest.derived[]`, transport only |
-| Manifest block | `manifest.literature` = `{signature, sources, row_count, resolved_count, missing_count, open_access_count, abstract_only_count, quotes_authored, quotes_found}` (`manifest.py:580`, built at `compiler.py:5102`); absent when the module carries no sidecar |
+| Manifest block | `manifest.literature` = `{signature, sources, row_count, resolved_count, missing_count, open_access_count, abstract_only_count, quotes_authored, quotes_found, quotes_unchecked}` (`manifest.py`, built in `compiler.py`); `quotes_unchecked` arrived in format 0.6.5 (upstream RM119) and is what separates *nothing was checkable* from *nothing was found*; absent when the module carries no sidecar |
 | Location | root or `derived/literature.csv`, resolved through `licensing.sidecar_path` (`enricher/literature.py:748`). Both at once is a `SidecarCollision` error, never a merge |
 | Vocabularies | `quote_source` → `vocab.VALID_QUOTE_SOURCE` = `{fulltext, abstract}`; `status` → `vocab.VALID_RESOLUTION_STATUS` = `{resolved, not_found, ambiguous}` |
 
@@ -289,16 +289,27 @@ Ordered by how likely a first-timer is to hit them.
    rows. The mechanism is gotcha 1 doing its job — the literature pass ran while the column was
    still empty, wrote what was true then, and merge-not-clobber means no later run revisits it.
 
+   **Both halves are fixed in 0.6.5** (upstream RM119): `_check_quote_counter_is_current` warns when
+   `literature.csv`'s counter disagrees with the quotes actually in `studies.csv`, naming both
+   numbers, and `manifest.literature.quotes_unchecked` exists so a block summed over all-null rows
+   stops publishing a confident zero. **What it does not do is rewrite the sidecar** — merge-not-clobber
+   is unchanged, so a module carrying stale counters keeps them until the pass runs again.
+
    Three things follow, and the third is the one that bites:
 
-   - **The published manifest reports a confident zero.** `_literature_block` guards the per-row
-     null correctly, but summing over rows that are *all* null gives `0`, and
-     `manifest.literature.quotes_found` is `int` with `default=0` and has no `quotes_unchecked`
-     beside it. So the manifest says `quotes_authored: 0, quotes_found: 0` for a module with 859
-     authored quotes. Filed as upstream `S56`.
+   - **The published manifest reported a confident zero before 0.6.5.** `_literature_block` guarded the
+     per-row null correctly, but summing over rows that are *all* null gives `0`, and
+     `manifest.literature.quotes_found` is `int` with `default=0` and had no `quotes_unchecked`
+     beside it. So the manifest said `quotes_authored: 0, quotes_found: 0` for a module with 859
+     authored quotes. Filed as upstream `S56`, fixed as their RM119. **A version published before
+     that release still carries the zero** — a manifest is written at compile time.
    - **These counters are therefore not a detector** for a module whose quotes are worthless — see
      `studies.md` gotcha 1 on the title case. Group `studies.csv` by `pmid` and count *distinct*
-     quotes instead; that reads the authored file directly and needs no pass.
+     quotes instead; that reads the authored file directly and needs no pass. The pass has its own
+     detector since 0.6.5 — `LiteratureResult.titles_as_quotes`, which our `enrich_literature_pass`
+     surfaces as a warning — and it decides from the citation's **metadata**, not from the string's
+     shape, because length cannot separate a 17-word title from a 17-word sentence. It answers for a
+     **pinned** row too, which is what makes it useful on exactly the modules that provoked it.
    - **Correcting it needs the pass, which is extended-tier.** `enrich_literature_pass` and
      `refresh_sidecar` are both `JMC_MODE=extended`, so on a default install there is no way to
      bring the counters up to date at all. The CLI is `just-dna-enricher literature <dir>`, and

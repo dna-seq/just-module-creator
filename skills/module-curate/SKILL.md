@@ -94,12 +94,13 @@ honest; a falsely verified one is not, and nothing downstream can tell them apar
 
 `describe_table` names the same columns under `redundancy_bearing`.
 
-⚠️ **CHECK — a redundancy advisory can name a checker that never sees your table.**
-`hints.REDUNDANCY_BEARING` is keyed on a **bare column name** with no model attached, so the `clin_sig`
-advisory prints on binning tables and the `clin_sig` / `evidence_level` advisories on `diplotypes.csv`,
-while the checkers it names are driven from `variants.csv` and the PGx annotation tables. The advice
-stays right — author those cells yourself — but **a green run is not evidence they agree with
-anything.**
+**A redundancy advisory can name a checker that never sees your table, and `describe_table` says so.**
+`hints.REDUNDANCY_BEARING` is keyed on a **bare column name**, so the `clin_sig` advisory reaches
+binning tables and `clin_sig` / `evidence_level` reach `diplotypes.csv`, while the checkers are driven
+from `variants.csv` and the PGx annotation tables. Since 0.6.6 the entry carries the scope — *that
+checker does not read this table; it loads X only* — so you can tell the two cases apart. The advice is
+the same in both and the stakes are higher in the second: **a green run there is not evidence of
+agreement with anything**, and your own independent reading is all that stands behind the cell.
 
 ## The mistake nothing offline can catch
 

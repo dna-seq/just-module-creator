@@ -85,16 +85,18 @@ two-row fixture; both came back as `Finding(row=None, level="info")`:
   vacuous"*.
 - `evidence_level` — same sentence, checker `enricher.clinpgx` (authored level vs the ClinPGx snapshot).
 
-> ⚠️ **CHECK — both of those advisories name a check that never sees a diplotype row.**
-> **Current state.** `hints.REDUNDANCY_BEARING` is keyed on a **bare column name** with no model
-> attached, so `_flag_advisory_columns` prints the advisory on any table carrying that column.
-> Neither named checker reads this file: `verify_clin_sig` is driven from `variants.csv`, and the
-> ClinPGx leg keys on `(variant_key, drug, genotype, phenotype_category, annotation_id)` out of the
-> PGx annotation tables. Combined with gotcha 12 below — `enrich-pgx` never opens `diplotypes.csv` —
-> **nothing cross-examines either cell**.
-> **Expected state.** The advice is still right (author both yourself), but the *reason* the hint
-> gives is not operative here. Do not read a green enrich as agreement with ClinVar or ClinPGx on
-> this table; nothing compared them.
+⚠️ **Neither of those checkers sees a diplotype row, and `describe_table` says so as of 0.6.6.**
+`hints.REDUNDANCY_BEARING` is keyed on a **bare column name**, so the advisory printed wherever the
+column appeared: `verify_clin_sig` is driven from `variants.csv` and the ClinPGx leg keys out of the
+PGx annotation tables. `REDUNDANCY_BEARING_TABLES` (upstream RM123) scopes the *explanation* — the
+refusal stays column-keyed on purpose, since whether a provider should start filling `clin_sig` on a
+diplotype row is a separate decision nobody has taken. Our `describe_table` appends the scope to the
+entry, so the reason no longer outruns the checker.
+
+**The advice is unchanged and it matters more here, not less:** author both cells yourself. Combined
+with gotcha 12 below — `enrich-pgx` never opens `diplotypes.csv` — **nothing cross-examines either
+cell**, so an independent reading is the only thing standing behind them, and a green enrich is not
+agreement with ClinVar or ClinPGx.
 
 `hints.ATTESTATION_BEARING` is `{provenance_quote, provenance_regex}` (`hints.py:72`) — **neither column
 exists on this table**, so nothing here is attestation-bearing. This table carries no citation and no

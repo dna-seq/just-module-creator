@@ -82,9 +82,18 @@ emit and every table is drafted to that set (`*1` is kept automatically). Six al
 
 ## Resolution and enrichment
 
-**`not in the injected Ensembl snapshot, position remains unset`**
-The local snapshot does not contain it — **not** a claim that Ensembl does not. Online, the live link
-runs next. Offline, that is the end of the road and the row stays unresolved.
+**`<rsid>: not in the injected Ensembl snapshot`** / **`<rsid>: not in the injected ClinVar snapshot`**
+The local snapshot does not contain it — **not** a claim that the source does not. Online, the live
+link runs next. Offline, that is the end of the road and the row stays unresolved. Knowing a cache is
+incomplete is what tells you whether to warm it, which is why the line stays on the record even when
+the lookup then succeeds.
+
+**Both strings lost a trailing `, position remains unset` in enricher 0.6.6, and that clause is now its
+own finding** (upstream RM125, our `S61`). It said something the cache link could not know: a leg that
+had not run yet may still answer, so at that moment whether the position stays unset is *unknown*
+rather than false. `lookup_variant` — the one caller that sees both halves — states
+**`<rsid>: position remains unset`** once at the end, and only when nothing placed the variant. If you
+grep for the old composite phrase, grep for these three instead.
 
 **`cannot host the authored genotype … The event sizes differ`**
 A real contradiction, and a decidable one: re-anchoring an indel never changes how many bases it adds or

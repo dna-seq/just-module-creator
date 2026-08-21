@@ -274,15 +274,16 @@ All 27 submitted bundles in `/data/sources/just-dna-registry/data/input/*.zip` w
 - **No SPDX validation on `license:`.** Any string is accepted. The compiler compares it to
   `licensing.csv` for *equality* and nothing more; an SPDX compatibility matrix was refused as
   *"world-knowledge that would go stale, and the compiler is not the tier that should hold it"*.
-- **No registry override of `license:` either — despite three upstream docstrings saying there is.**
-  `manifest.py:1288-1292` (*"the marketplace overrides on publish"*), `spec.py:353-355`
-  (*"Advisory and registry-overridable, exactly like `module.version`"*) and `compiler.py:5220-5221`
-  all assert it. The registry never assigns `manifest.license`: `_finalize` stamps six fields
-  (`publish.py:574-585`) and that is not one of them; the only references are reads into a DB column
-  and a facet (`repository.py:599,611`, `repository.py:1001`). Verified by grep in both directions.
-  **So whatever an author writes becomes a public exact-match facet unchallenged** — the guard is the
-  compiler's soft warning against `licensing.csv`, nothing else. Write it as if nobody will correct it,
-  because nobody will. (This looks like a genuine upstream documentation defect; it is not filed.)
+- **No registry override of `license:` either.** Three upstream strings used to say there was — two
+  of them `Field(description=…)`, which reach an author through `describe_table` and
+  `authoring_reference` — and all three were corrected in 0.6.6 (upstream **RM111**), so the
+  descriptions you read from those tools now say what the compiler actually does: warn when the
+  declaration contradicts the annotation-layer sources. The registry never assigns `manifest.license`:
+  `_finalize` stamps six fields on publish and that is not one of them; the only other references are
+  reads into a DB column and a facet. Verified by grep in both directions, and by upstream's own
+  correction afterwards. **So whatever an author writes becomes a public exact-match facet
+  unchallenged** — the guard is the compiler's soft warning against `licensing.csv`, nothing else.
+  Write it as if nobody will correct it, because nobody will.
 - **No precedence field inside `weighting:`.** A typed rule saying "use the GWAS effect where `weight`
   is null" was considered and **refused**: *"That would put two methodologies in one summable column,
   which is the defect the report is about"* (`manifest.py:1226-1231`). A consumer chooses a table

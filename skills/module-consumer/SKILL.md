@@ -88,16 +88,24 @@ consumer reading the flat cell as if it carried the archive's review depth is ov
 author copying the archive's call into the flat cell has made the module's own check vacuous —
 `module-curate` owns that rule.
 
-## 🚧 ROADWORKS — nothing implements the bin lookup
+## 🚧 ROADWORKS — the bin lookup is specified, and nothing implements it
 
 The binning family — `repeat_alleles.csv`, `copynumbers.csv`, `heteroplasmy.csv`,
 `activity_phenotype.csv` — needs a consumer that takes a **measured quantity** and selects the row whose
 `[measure_min, measure_max]` contains it. **No consumer implements that lookup today**, so those four
-table kinds annotate nothing downstream, however correct they are.
+table kinds annotate nothing downstream, however correct they are. `just-dna-lite` touches all four
+kinds in exactly two places and both count rows.
 
-One lookup fixes all four, and the format side is complete: bounds are inclusive, `min == max` is a
-sharp value, a null bound is open-ended, and under `continuous` tiling the higher bin owns a shared
-endpoint (the row with the greatest `measure_min ≤ x`).
+**What changed in 0.6.6 is that the rule is now normative rather than inferable** (our `S58`, upstream
+RM122): `SCHEMAS.md` carries the **measure lookup** beside the genotype join contract — scope to the
+group, select the row whose inclusive range contains the value, greatest `measure_min` on a shared
+endpoint, compare in float32, `unresolved` on a missing measurement and withhold on no match, and
+`trait_efo_id` multiplies the answer rather than disambiguating it. A family specified ahead of its
+consumers is deliberate, and it is upstream's own framing.
+
+**What it means for you as an author:** the bins have one right reading now, so **write what they mean
+into the README** — the reader who eventually implements this has your prose and the spec, and nothing
+else says what a bin is *for*.
 
 **Guard for an author:** the tables are still worth writing — they are correct, publishable and will be
 read the day the lookup lands — but **do not promise an author that a heteroplasmy module will produce a
@@ -145,7 +153,7 @@ naming the module's genes in the README when it carries no `variants.csv`.
 **Nothing validates a consumer.** The obligations above are normative and unenforced; a non-conforming
 reader produces confident wrong answers and no part of this toolchain sees it.
 
-**Nothing renders a bin today.** See the 🚧 above.
+**Nothing renders a bin today**, though the lookup is specified. See the 🚧 above.
 
 ## Where to go next
 

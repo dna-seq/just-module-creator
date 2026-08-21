@@ -177,8 +177,8 @@ invisible is not: it moves `sources.signature` alone.
 For two published versions, the acquisition is still yours and the comparison is not:
 
 ```
-registry_download(ns, name, "1.0.0", "./v1")      # extended
-registry_download(ns, name, "2.0.0", "./v2")
+registry_download(target="prod", namespace=ns, name=name, version="1.0.0", dest="./v1")  # extended
+registry_download(target="prod", namespace=ns, name=name, version="2.0.0", dest="./v2")
 compare_modules(left_dir="./v1", right_dir="./v2")  # essentials
 ```
 

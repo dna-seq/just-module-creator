@@ -161,16 +161,13 @@ the "moves the digest and no signature" row that derived sidecars have has no in
 - **`clin_sig`** — closed VEP vocabulary, redundancy-bearing. Rarely the right column on a
   metabolizer bin; `phenotype` + `direction` usually carry the meaning.
 
-  > ⚠️ **CHECK — the redundancy advisory on `clin_sig` names a check that cannot run here.**
-  > **Current state.** `hints.REDUNDANCY_BEARING` is keyed on a **bare column name**, with no model
-  > attached, so `_flag_advisory_columns` prints the `clin_sig` advisory on every table that happens
-  > to have that column — including this one. The checker it names,
-  > `enricher.clinical.verify_clin_sig`, is driven from `variants.csv`: it walks `VariantRow`s and a
-  > bin row is never handed to it. So the cell is advertised as cross-examined and is in fact
-  > **never** compared with anything.
-  > **Expected state.** Authoring it by hand is still right — the advisory's advice holds — but do
-  > not treat a green compile as evidence that your `clin_sig` agrees with ClinVar on a binning table.
-  > It was not checked. The same is true of `clin_sig`/`ref` advisories on the PGx tables.
+  ⚠️ **The `clin_sig` checker cannot run here, and `describe_table` now says which tables it does
+  read.** `hints.REDUNDANCY_BEARING` is keyed on a **bare column name**, so the advisory printed on
+  every table carrying the column; `enricher.clinical.verify_clin_sig` walks `VariantRow`s and a bin
+  row is never handed to it. Upstream scoped the explanation in 0.6.6 (`REDUNDANCY_BEARING_TABLES`,
+  their RM123) and our `describe_table` appends it to the entry. **Author the cell yourself as before,
+  and do not read a green compile as agreement with ClinVar on a binning table** — nothing compared
+  them. The same holds for the `clin_sig` advisories on the PGx tables.
 
 ## Gotchas
 

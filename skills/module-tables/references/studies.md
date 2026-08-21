@@ -61,10 +61,16 @@ verification record over these citations) and it is not a provenance ledger (`li
   provenance_regex}`. `hints.py:66-71` glosses it as *a curator read this passage in this paper*,
   and reads that as a human. **Correct for their layer, not the rule here** — an agent reading a
   fetched article is a reading that happened, so what the column needs is attribution rather than
-  abstention: locate the passage, quote it verbatim, and record who located it. The reasoning we
-  originally supplied for that constant is withdrawn upstream as `S55`. What survives, and it is
-  physics: no *lookup* may write the cell, and the cell must never hold something obtainable without
-  reading the article — see the title gotcha below.
+  abstention: locate the passage, quote it verbatim, and record who located it **in `curator`**, the
+  column format 0.6.5 added to this table for exactly that (`S55`, upstream RM120 — the field
+  `VariantRow` always had). The reasoning we originally supplied for `ATTESTATION_BEARING` is
+  withdrawn upstream with it. What survives, and it is physics: no *lookup* may write the cell, and
+  the cell must never hold something obtainable without reading the article — see the title gotcha
+  below.
+- **`curator` is free text and nothing checks it** — a name, a handle or a model id, resolvable
+  against `authorship`. Not a `machine_located` boolean and not to be used as one: write the identity,
+  and let `authorship` say what kind of contributor it is. Being uncheckable is the point — it is
+  legible to a reviewer deciding where to look, not to a gate.
 - **The corollary you must say out loud:** once `fetch_fulltext` has read a PMID in this session,
   `quotes_found` on that row has degraded to a **citation-pairing check** — it still catches a quote
   filed against the wrong PMID, and it no longer shows anyone read the paper (`hints.py:102-106`).

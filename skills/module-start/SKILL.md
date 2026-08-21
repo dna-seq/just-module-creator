@@ -48,7 +48,7 @@ module is not GRCh38.
 
 | Start | How | Good for |
 |---|---|---|
-| **A gap in the catalog** | `registry_search(gene=…)` / `registry_search(query=…)` — these read **production** by default | knowing the work is wanted before doing it |
+| **A gap in the catalog** | `registry_search(target="prod", gene=…)` / `registry_search(target="prod", query=…)` — `target` is required, so production is something you state | knowing the work is wanted before doing it |
 | **A source that publishes the table** | `draft_from_clinvar` for a gene panel; `draft_from_cpic` / `draft_from_clinpgx` for drug response | the fastest route to real rows — then curate what it stubs |
 | **A paper the author actually read** | `literature_search` to pin the PMID and read the title back | one well-grounded finding, which is a legitimate module |
 | **Something the author was told** — a video, a podcast, a blog, an AI summary | **triage first**, below | by far the most common in practice, and the only one that starts by *removing* claims |
@@ -195,7 +195,7 @@ complete answer and the default handles it.
 Check first whether the module already exists:
 
 ```
-registry_search(query="lactose")   /   registry_search(gene="MCM6")
+registry_search(target="prod", query="lactose")   /   registry_search(target="prod", gene="MCM6")
 ```
 
 Then scaffold. It never overwrites, so re-run it with different `kinds` to add a table later:
