@@ -51,12 +51,12 @@ tool fills `weight` — that is the author's model of the finding. It does not c
 score. And it cannot tell you whether your annotation is medically *correct*: it can only make what
 you claimed legible, attributable and checkable.
 
-**One limit that will surprise you, because it is a gap rather than a refusal: a module with no
-`variants.csv` cannot be found by gene.** `manifest.stats` is computed from `variants.csv` alone and the
-registry's gene index reads `stats.genes`, so a PGx, copy-number or activity-bin module publishes
-`genes: []` and `registry_search(gene=…)` will not return it however many rows carry a `gene` cell.
-Do not repair this with an empty `variants.csv` — name the genes in the README instead. `module-tables`
-carries the guard.
+**One thing worth knowing about a module you did not just compile: `manifest.stats` describes the
+whole module only since compiler 0.6.6.** Before that the gene facets came from `variants.csv` alone,
+so a PGx, copy-number or activity-bin module published `genes: []` and `registry_search(gene=…)` would
+not return it however many rows carried a `gene` cell. A manifest is written at compile time, so a
+version published earlier still carries the old numbers — recompiling and publishing again is what
+moves them. Never repair it with an empty `variants.csv`. `module-tables` carries the detail.
 
 **`--strict` is not a correctness gate.** It means *reproducible*. The compiler never fetches, so it
 holds no reference to check a coordinate against: a module shifted one base passes validate, passes

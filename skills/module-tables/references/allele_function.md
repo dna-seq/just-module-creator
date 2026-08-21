@@ -355,21 +355,21 @@ Nothing anywhere reads a value out of `allele_function.parquet`. That is the fin
   `POST /{ns}/{name}/check?pgx=true` runs `enrich_pgx(write=False)` and surfaces conflicts as
   `PgxCheck.conflicts`. Gated on `declared_use`: `unstated` (the server default) skips every PGx source
   without asking, `commercial` is `422 license_refused`. Never moves `would_publish`.
-- **Not read anywhere else.** In particular `manifest.stats.genes` — the *only* thing that populates the
-  catalog's `version_genes` index (`db/repository.py:663`) and the card's gene chips
-  (`services/catalog.py:247`) — comes from `variant_stats` over `variants.csv`
-  (`compiler.py:3792,5187`). Measured on `cyp2c19_star_alleles`: `"gene_count": 0, "genes": []`, on a
-  module whose 36 rows all say `CYP2C19`.
+- **Read by `manifest.stats.genes` as of compiler 0.6.6**, which is what populates the catalog's
+  `version_genes` index (`db/repository.py:663`) and the card's gene chips
+  (`services/catalog.py:247`). It came from `variant_stats` over `variants.csv` before that, measured
+  `"gene_count": 0, "genes": []` on `cyp2c19_star_alleles`, whose 36 rows all say `CYP2C19`.
+  **Fixed in compiler 0.6.6** (upstream **RM121**): `module_stats` takes the gene facets over every authored table, `variant_stats` keeps its `variants.csv` promise, and a module already published carries the stats its compile wrote — recompile and re-publish to be findable by gene. Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`.
 
 **just-prs / just-prs-mcp** — zero references. Expected.
 
 ## Blanks for just-dna-lite
 
-- **A gene stated only in a PGx table is invisible to catalog search.** `manifest.stats.genes` is
-  `variants.csv`-only, so `registry_search(gene="CYP2C19")` misses every star-allele module — measured
-  `genes: []` on the corpus's own CYP2C19 example. *Ask:* have the compiler union `gene` from
-  `allele_function.csv` / `haplotypes.csv` / `diplotypes.csv` / `pharm_variants.csv` into
-  `Stats.genes`, or have the registry index the PGx tables' `gene` column directly. Today a
+- **A gene stated only in a PGx table was invisible to catalog search, and is not any more**
+  (compiler 0.6.6). `manifest.stats.genes` was `variants.csv`-only, so `registry_search(gene="CYP2C19")`
+  missed every star-allele module — measured `genes: []` on the corpus's own CYP2C19 example. The
+  compiler now unions `gene` over every gene-bearing authored table. **A module published before that
+  release still carries the old stats.** Under the old behaviour a
   pharmacogenomics module is unfindable by the one facet anyone would search it with.
 - **Nothing turns a diplotype call into an activity sum.** `hf_logic` classifies this family
   `unsupported` and skips it; there is no star-allele caller and no consumer of `activity_value`.

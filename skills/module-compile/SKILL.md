@@ -102,10 +102,11 @@ Several are **unclearable by any authored edit**, and chasing them is wasted wor
 - **`This module records no closure`** — a true statement about a module still being written. Do not
   run `close_module` to clear it. `module-close` owns why.
 
-⚠️ **CHECK — deduplicate warnings before you count them.** The `faf95` arithmetic warning is published
-**twice** into `manifest.compilation.warnings`: the check runs in `validate_spec` and again in the
-compile-side `_frequency_checks` with no filter, while `_literature_checks` eleven lines away does
-filter. Measured on one module: 15 warnings, 14 distinct. Upstream **RM106**.
+**A warning count moved in compiler 0.6.6, and no text did.** The `faf95` arithmetic warning was
+published **twice** into `manifest.compilation.warnings` — the check runs in `validate_spec` and again
+on the compile side, and only the compile side lacked the dedup filter its neighbour carries. Fixed
+(upstream **RM106**), measured at 15 warnings and 14 distinct beforehand. A recompile under 0.6.6
+publishes one fewer warning on such a module; if something of yours pins a count, that is why.
 
 **A wall of near-identical warnings should not happen** — findings aggregate per gene with a count and
 examples. If you see one, that is a bug worth reporting upstream rather than filtering.

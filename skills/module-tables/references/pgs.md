@@ -190,8 +190,9 @@ Ordered by how likely a first-timer is to hit them.
    nothing, since the content identity was already order-independent.
 6. **A `pgs`-led module gets an all-zero registry card.** Measured `manifest.stats` on a pgs-only module:
    `variant_count 0, weights_rows 0, study_count 0, gene_count 0, genes [], categories []`. That is not a
-   bug in the compile — `variant_stats` reads `variants.csv` and only `variants.csv`
-   (`compiler.py:3792-3812`), and `PgsRow` has no gene column to contribute. **Cost:** the registry
+   bug in the compile, and compiler 0.6.6's `module_stats` does not change it either: **`PgsRow` has
+   no `gene` column to contribute**, so a `pgs`-led module is the one shape RM121 does not reach.
+   **Cost:** the registry
    projects `version_genes` / `version_categories` from those lists (`repository.py:663-668`), and
    `search_modules` accepts `gene=` and `category=` but nothing PGS-shaped (`repository.py:933-955`), so
    the module is findable by name, `q` and namespace only. Put the trait and the score names in the

@@ -330,12 +330,10 @@ comments. `just-prs` and `just-prs-mcp` do not mention the table at all.
   could report *four* states (bin matched / no bin matched / measurement absent / measurement spans
   bins) rather than three. What breaks today: no consumer exists to get this wrong yet — which is
   exactly why the state should be in the report-card shape from the start rather than retrofitted.
-- **Project a binning module's genes onto the catalog card.** `manifest.stats.genes` is derived from
-  `variants.csv` alone (`compiler.variant_stats:3799-3806`), and the shipped HTT manifest reads
-  `gene_count: 0, genes: []` — verified in `data/interim/allcheck/htt_repeat_expansion/manifest.json`.
-  The registry's `version_genes` facet is fed from that field, so `registry_search(gene="HTT")` cannot
-  find the HTT module. Fixing it is upstream's (`variant_stats` would have to union the binning
-  tables' `gene`), but the consumer is where the symptom shows.
+- **A binning module's genes reach the catalog card as of compiler 0.6.6.** `manifest.stats.genes`
+  came from `variants.csv` alone until then, and the shipped HTT manifest reads `gene_count: 0,
+  genes: []` — verified in `data/interim/allcheck/htt_repeat_expansion/manifest.json`, so
+  `registry_search(gene="HTT")` cannot find *that published version*. **Fixed in compiler 0.6.6** (upstream **RM121**): `module_stats` takes the gene facets over every authored table, `variant_stats` keeps its `variants.csv` promise, and a module already published carries the stats its compile wrote — recompile and re-publish to be findable by gene. Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`.
 - **Check bin `pmid`s at revalidation.** `registry/services/revalidate.py:130-141` (`gather_pmids`)
   reads `studies.csv` only. Since 0.6 a threshold's citation may live *only* on the bin row — the
   case `fmr1_cgg_repeat`'s README says it probed — and such a module's PMIDs are never verified by

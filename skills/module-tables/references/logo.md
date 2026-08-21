@@ -292,20 +292,15 @@ Ordered by how likely a first-timer is to hit them.
    pre-existing instance of that same skew, left alone here because widening it is not this item's
    decision." Publish a `.jpeg` logo to HF and the manifest attests a file the repo does not carry.
 
-   > 🚧 **ROADWORKS — `logo.jpeg` compiles, is attested, and never publishes. Do not use it.**
-   > **Current state.** Independently confirmed on both halves. Discovery sorts
-   > `LOGO_EXTENSIONS` and takes the first hit, so **`jpeg` beats `jpg` beats `png`** and a spec dir
-   > holding two logos silently ships the jpeg — the loser is not even copied. The enricher's
-   > publisher allowlist holds `logo.png` and `logo.jpg` and **not** `logo.jpeg`, by an explicit
-   > deferral in its own comment. The result is a manifest attesting bytes the published repo does
-   > not carry, and the publisher's self-check cannot catch it because it derives its allowlist from
-   > the artifact's file list rather than from `LOGO_EXTENSIONS`. `verify_manifest(check_logo=True)`
-   > will not catch it either — an absent file is not a failure there.
-   > **Expected state.** One shared constant behind discovery and the allowlist. It is named in the
-   > format repo's CHANGELOG and in a code comment that defers it, and no `RMn` owns it.
-   > **Guard.** Name your file **`logo.png`** — and keep exactly one logo in the spec dir. If you
-   > have inherited a `logo.jpeg`, rename it to `logo.jpg` before compiling; the extension is the
-   > whole of the problem.
+   **Fixed in enricher 0.6.6** (upstream **RM105**): the publisher's logo allowlist now derives from
+   `LOGO_EXTENSIONS`, the way the readme half already derived from `README_CANDIDATES`, so the
+   spelling the compiler *prefers* is no longer the one the upload dropped. **If you published a
+   module carrying a `logo.jpeg` before that release, re-publish it** — the manifest attested bytes
+   the repository did not carry, and nothing in `verify_manifest(check_logo=True)` catches an absent
+   file. Discovery order is deliberately unchanged: it still sorts `LOGO_EXTENSIONS`, so **`jpeg`
+   beats `jpg` beats `png`** and a spec directory holding two logos still ships the jpeg and does not
+   even copy the loser. **Keep exactly one logo in the spec directory** — that half was never the
+   bug and is not fixed.
    The registry does not share this hole — `gather_spec_files` uploads everything that is not a
    parquet.
 6. **`amend_logo` renames your file.** Upload `heart-v3.png` and it is stored as `logo.png`

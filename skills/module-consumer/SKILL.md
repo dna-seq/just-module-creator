@@ -119,10 +119,12 @@ bytes that produced it**, and nothing can answer *"which of my saved results are
 place: two versions of one module cannot coexist locally, and nothing notifies anybody that a newer one
 exists.
 
-**A module with no `variants.csv` cannot be found by gene.** `manifest.stats` is computed from
-`variants.csv` alone and the registry's gene index reads `stats.genes`, so a PGx, copy-number or
-activity-bin module publishes `genes: []`. **Do not add an empty `variants.csv` to fix it** — name the
-genes in the README and in the display prose, where a text search finds them.
+**A module compiled before compiler 0.6.6 cannot be found by gene unless it has a `variants.csv`.**
+`manifest.stats` took its gene facets from `variants.csv` alone until then and the registry's gene
+index reads `stats.genes`, so a PGx, copy-number or activity-bin module published `genes: []`. The
+compiler now takes them over every gene-bearing authored table, but a published manifest is immutable —
+what is in the catalog today is what its own compile wrote. **Never add an empty `variants.csv` to fix
+it**; name the genes in the README and in the display prose, where a text search finds them.
 
 ## What needs a pilot, and what you may simply fix
 

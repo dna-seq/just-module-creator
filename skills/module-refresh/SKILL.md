@@ -65,7 +65,7 @@ rest instead of losing them.
 |---|---|---|---|
 | `resolution.csv` | skips every `variant_key` already covered | an identity column changed, or a locus resolved wrongly | **hand-authored `source=manual` rows** — real, and not reproducible. `reference_examples/cyp2c9_warfarin_grch37` carries three |
 | `frequencies.csv` | merges; existing rows win | the variant set changed, or you want a newer gnomAD | normally nothing hand-written |
-| `gene_metrics.csv` | merges | the gene set changed | curator overrides — **and see the 🚧 below: the override mechanism does not currently do what it promises, so check what you have before relying on it** |
+| `gene_metrics.csv` | merges, and a `source="manual"` row suppresses the fetch for its `(gene, dataset)` since enricher 0.6.6 | the gene set changed | curator overrides |
 | `literature.csv` | refetches nothing, and **will not back-fill** the 0.6 licence columns onto older rows | you need the licence columns, or a `doi_checked` verdict re-put | a curator's deliberate **blank**, which merge cannot distinguish from an absent value |
 | `gene_validity.csv`, `clinical_assertions.csv` | merge, on the same governing rule | the source cut a newer release | curator overrides |
 | `licensing.csv` | never clobbers a row — **except** `withdraw_stale_dataset` blanking `dataset` when rows were actually added, and `draft_digest` being re-stamped | rarely; those two machine-owned columns maintain themselves | the curator's hand-written **terms** — which is exactly what never-clobber exists to protect |
@@ -133,21 +133,20 @@ the stale rows before compiling.
 
 ## Two passes that break on a second run
 
-🚧 **ROADWORKS — `enrich_gene_metrics` cannot be re-run at all.** `reference` is bound only inside
-`if wanted:` and read unconditionally below it, so the **ordinary idempotent re-run** — every gene
-already carrying a `gnomad*` row — raises `UnboundLocalError` straight out of the pass. So does any
-module with **no `variants.csv`**. It is not a subclass of `GeneMetricsEnrichmentError`, so the
-`except …EnrichmentError` contract does not hold for it. **Guard:** run the pass once, on a module that
-has a `variants.csv`; to re-run, delete `gene_metrics.csv` first; catch `Exception` at that call site
-until it is fixed. Upstream **RM104**.
+**`enrich_gene_metrics` re-runs cleanly as of enricher 0.6.6** (upstream **RM104**). It used to raise
+`UnboundLocalError` out of the pass on the **ordinary idempotent re-run** — every gene already carrying
+a `gnomad*` row — and on any module with no `variants.csv`, because `reference` was bound inside
+`if wanted:` and read below it. It was outside `GeneMetricsEnrichmentError`, so the one `except` that
+exists for this caller did not hold. If you are on an older enricher, run the pass once and catch
+`Exception` at that call site.
 
-🚧 **ROADWORKS — a curator override on `gene_metrics.csv` duplicates instead of overriding.** The merge
-key is `(gene, dataset)`; the *fetch-suppression* key is a `gnomad`-prefix scan over `source`. So an
-honest `source="manual"` correction does **not** suppress the fetch and lands *beside* the fetched row —
-two rows sharing the key, contradicting each other, with **zero compiler warnings**, because fact tables
-have no duplicate check. `clingen.py` in the same package derives its suppression set from its merge key
-and is right. **Guard:** edit the cell and leave `source` as the fetched one, or delete the fetched row
-in the same edit. Upstream **RM109**.
+**A `source="manual"` correction on `gene_metrics.csv` now suppresses the fetch** (upstream **RM109**,
+enricher 0.6.6): the suppression set is derived from the merge key `(gene, dataset)` rather than from a
+`gnomad`-prefix scan over `source`, so an honest override no longer lands *beside* the fetched row as a
+second row under one key, contradicting it with zero compiler warnings. The scoping is deliberate — a
+ClinGen dosage row for the same gene carries a different `dataset`, so it is a different key and does
+not suppress anything. **Check an inherited `gene_metrics.csv` for pairs written before 0.6.6**;
+nothing removes them, because the merge keeps what is already there.
 
 🚧 **ROADWORKS — a ClinGen re-curation appends beside the old row with nothing marking it superseded.**
 ClinGen's `assertion_id` embeds the curation timestamp, so a re-curated assertion misses the merge key.
@@ -213,7 +212,7 @@ meet here:
 - *"Studies reference variants not in variants.csv"* after a re-draft — usually the stale rsid-only
   study row above, not a bad citation.
 - `already_present` / `differs` — inert, and a decision, respectively.
-- `UnboundLocalError` out of a gene-metrics re-run — the 🚧 above, not your module.
+- `UnboundLocalError` out of a gene-metrics re-run — an enricher older than 0.6.6, not your module.
 
 ## Where to go next
 

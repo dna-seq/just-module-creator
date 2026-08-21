@@ -249,12 +249,12 @@ Ordered by how likely a first-timer is to hit them.
     `pharm_variants`/`haplotypes`/`heteroplasmy` (`manifest.py:324`). `table_rows` exists in
     `ValidationResult.stats` (`compiler.py:3779`) and does **not** reach `Stats`.
 
-13. **`gene` on this table does not reach the catalog.** `manifest.stats.genes` is
-    `variant_stats(variants)` and runs only `if variants:` (`compiler.py:3780, 3792-3812`). Measured:
-    a module whose 106 haplotype rows all say `gene=CYP2C19` publishes `genes: []` and
-    `gene_count: 0`, and the registry indexes `manifest.stats.genes` into `version_genes`
-    (`just-dna-registry/src/just_dna_registry/db/repository.py:664`). **A star-allele module is
-    invisible to a gene search.** Genuine upstream defect; see the summary.
+13. **`gene` on this table reaches the catalog as of compiler 0.6.6.** `manifest.stats.genes` used to
+    be `variant_stats(variants)`, running only `if variants:`, so a module whose 106 haplotype rows
+    all say `gene=CYP2C19` published `genes: []` and `gene_count: 0` — invisible to a gene search,
+    since the registry indexes that field into `version_genes`
+    (`just-dna-registry/src/just_dna_registry/db/repository.py:664`).
+    **Fixed in compiler 0.6.6** (upstream **RM121**): `module_stats` takes the gene facets over every authored table, `variant_stats` keeps its `variants.csv` promise, and a module already published carries the stats its compile wrote — recompile and re-publish to be findable by gene. Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`.
 
 ## What does not exist
 

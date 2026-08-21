@@ -294,10 +294,10 @@ check, so write the row yourself.**
   `licensing.csv`; write to whichever one an inherited module already carries; **never let a module
   carry both** — that is an error naming both paths rather than a merge.
 
-⚠️ **CHECK — a duplicate `(source, layer)` row compiles green under `--strict`**, even one carrying the
-opposite `commercial_use`. `SourceRow` is in the drafter's dupe map and absent from the compiler's.
-**Guard:** after any hand edit, sort on `(source, layer)` and check for repeats yourself. Upstream
-**RM107**.
+**A duplicate `(source, layer)` row is refused** — `licensing.csv: duplicate row for key
+('<source>', '<layer>')`, from `validate` and `compile` both, since compiler 0.6.6. One source at two
+layers is fine; the same pair twice is two claims about one thing, and where they disagree on
+`commercial_use` picking the survivor is yours to do rather than a merge's.
 
 ## What needs a pilot, and what you may simply fix
 

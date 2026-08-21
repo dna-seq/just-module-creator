@@ -240,28 +240,22 @@ Ordered by how likely a first-timer is to hit them.
    human-overridable, so two copies are two legitimate claims. The realistic route in is a
    `derived/`-split downloaded module plus a pass that wrote the flat preferred spelling; **always go
    through `layout.sidecar_write_path`** (`layout.py:154`), never `spec_dir / "licensing.csv"`.
-4. **A duplicate `(source, layer)` row compiles green under `--strict`, and even a contradictory one
-   does.** Measured on `hboc_palb2`: appending an exact copy of row 2 gave `strict compile ok: True`,
-   **no duplicate warning of any kind**, `manifest.sources.row_count` **7**, `sources.parquet` height
-   **7**, and a **moved** `source_signature` (`8ed72a5b…` → `b260669e…`) — so two byte-identical
-   claims do not hash the same as one. A duplicate carrying the *opposite* `commercial_use` also
-   compiled green. Every other writer treats `(source, layer)` as a key —
-   `licensing.merge_sources_csv` merges on it, `draft._CORE_DUPE_KEYS` refuses to append over it —
-   but the compiler does not check it. **A hand-edited licence table is unguarded here.**
+4. **A duplicate `(source, layer)` row is an ERROR as of compiler 0.6.6**, in `validate` and
+   `compile`, in both modes: `licensing.csv: duplicate row for key ('clinvar', 'annotation')`,
+   re-measured against the installed release on `hfe_hemochromatosis`. Until 0.6.1 it compiled green
+   under `--strict` — measured on `hboc_palb2`, appending an exact copy of row 2 gave
+   `strict compile ok: True`, **no duplicate warning of any kind**, `manifest.sources.row_count`
+   **7**, and a **moved** `source_signature` (`8ed72a5b…` → `b260669e…`), so two byte-identical
+   claims never did hash the same as one; a duplicate carrying the *opposite* `commercial_use`
+   compiled green too. `SourceRow` was in the drafter's dupe map and absent from the compiler's,
+   which is the one file the compile licence gate reads (upstream **RM107**).
 
-   > 🚧 **ROADWORKS — `SourceRow` is missing from `_TABLE_DUPE_KEYS`.**
-   > **Current state.** Re-confirmed: the compiler's duplicate-row map has no `SourceRow` entry, so
-   > `(source, layer)` — the key every other writer in the ecosystem enforces — is unchecked at
-   > compile, in both modes. Two rows carrying opposite `commercial_use` for the same source
-   > therefore publish together, and the compile gate keys on this file.
-   > **Expected state.** A `_TABLE_DUPE_KEYS[SourceRow] = ("source", "layer")` entry, matching
-   > `draft._CORE_DUPE_KEYS`. It does not exist, and no `RMn` owned it at the time of this audit.
-   > **Guard.** After any hand edit, sort `licensing.csv` on `(source, layer)` and check for repeats
-   > yourself — a one-line check nothing in the toolchain will run for you. Prefer
-   > `licensing.merge_sources_csv`, which does merge on that key, over appending rows by hand.
-
-   (See
-   *What does not exist*; this looks like a genuine upstream gap.)
+   **What this means for a module you inherit.** It may carry a pair, and it will stop compiling on
+   the first run under this toolchain. That is the pair being noticed, not the module breaking — and
+   the repair is a decision rather than a merge. `licensing.merge_sources_csv` does merge on
+   `(source, layer)` and keeps the **last** row under the key, so where the two rows disagree — the
+   case worth catching — it discards a claim without asking. Read both and choose. One source at two
+   layers is unaffected, which is why the key is a pair.
 5. **`None` is not `False`, and the module-wide verdict is most-restrictive-first.** Measured on
    `hfe_hemochromatosis`: two rows, `clinvar/annotation` (public domain, `commercial_use=true`) and
    `gwas_catalog/gwas_effect` (terms not established, `commercial_use` blank). Result:

@@ -300,17 +300,10 @@ Ordered by how likely a first-timer is to hit them.
   integer *errors* are not duplicated (compile aborts first). `manifest.compilation.warnings` is a
   published field (RM44), so the duplicate is published.
 
-  > 🚧 **ROADWORKS — the `faf95` warning is published twice.**
-  > **Current state.** Independently confirmed on a clean run: `_check_frequency_arithmetic` runs on
-  > both the validate and the compile side, and only the literature checks three lines away carry the
-  > dedup filter — with a comment naming this exact hazard. The duplicate reaches
-  > `manifest.compilation.warnings`, a published field.
-  > **Expected state.** One `if w not in all_warnings` filter, matching the literature checks. The
-  > same defect shape has already shipped a fix once elsewhere in the compiler, so the pattern is
-  > settled; this site was missed.
-  > **Guard.** If you count warnings — in CI, in a report, in a dashboard — **deduplicate on the
-  > message string first**. A module with one arithmetic problem publishes two warnings, and a
-  > consumer reading the count will overstate what is wrong.
+  **Fixed in compiler 0.6.6** (upstream **RM106**): the compile side carries the same filter its
+  neighbour did, and the warning is published once. The text did not change, so a module recompiled
+  under 0.6.6 publishes **one fewer warning** than the same module compiled under 0.6.1 — worth
+  knowing if anything of yours pins a count, and it is the count that was wrong before, not now.
 
 ## Consumption today
 

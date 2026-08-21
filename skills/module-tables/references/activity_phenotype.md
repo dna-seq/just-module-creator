@@ -403,13 +403,12 @@ ecosystem knows exactly how to **write** `activity_phenotype.csv` and has no cod
   four tables plus `lead`. A binning module gets a `lead_url` and no reader. **What breaks today:**
   `get_module_table_url()` (`:513-547`) cannot even name the table, so a consumer that wanted to
   read it has no accessor to call.
-- **Index gene-keyed tables into `manifest.stats.genes`.** `compiler.py:3801` computes
-  `genes = sorted({v.gene for v in variants if v.gene})` — **from `variants.csv` alone**. Measured:
-  an `activity_phenotype`-only CYP2D6 module publishes `gene_count: 0, genes: []`. The registry
+- **Gene-keyed tables are indexed into `manifest.stats.genes` as of compiler 0.6.6.** Until then the
+  gene set came **from `variants.csv` alone**, so an `activity_phenotype`-only CYP2D6 module published
+  `gene_count: 0, genes: []` and `registry_search(gene="CYP2D6")` could not find it — the registry
   indexes `version_genes` straight off that field
-  (`just-dna-registry/src/just_dna_registry/db/repository.py:664`), so
-  `registry_search(gene="CYP2D6")` cannot find it. **This is a format-side fix with a registry-side
-  symptom**, and it also affects `copynumbers.csv`, `repeat_alleles.csv`, `allele_function.csv`,
+  (`just-dna-registry/src/just_dna_registry/db/repository.py:664`). **Fixed in compiler 0.6.6** (upstream **RM121**): `module_stats` takes the gene facets over every authored table, `variant_stats` keeps its `variants.csv` promise, and a module already published carries the stats its compile wrote — recompile and re-publish to be findable by gene. Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`. It affected
+  `copynumbers.csv`, `repeat_alleles.csv`, `allele_function.csv`,
   `haplotypes.csv` and `diplotypes.csv`.
 - **Draft the bins from CPIC instead of leaving them hand-typed.** The CPIC snapshot's
   `diplotypes.parquet` carries `(gene, diplotype, phenotype, activity_score)`

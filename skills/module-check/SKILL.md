@@ -53,10 +53,12 @@ name with a real-but-unrelated rsID: both halves pass their own check, and only 
 false. If `gene_locus_check_skipped` is non-null the comparison never ran, which is not a pass.
 
 ⚠️ **CHECK — a check is only as wide as the table it reads.** `check_identifiers` reads
-`variants.csv`, so a binning row's `gene` or `trait_efo_id` is **never checked for currency**. The same
-shape recurs across the toolchain — `enrich-pgx` never opening `diplotypes.csv`, `stats.genes` computed
-from `variants.csv` alone, a redundancy advisory keyed on a bare column name. **Naming a check without
-naming its scope is how a reader over-trusts it.**
+`variants.csv`, so a binning row's `gene` or `trait_efo_id` is **never checked for currency**. The
+shape recurs across the toolchain and two instances of it closed in 0.6.6 — `stats.genes` now reads
+every gene-bearing table, and a redundancy advisory now says when its checker cannot see your table —
+while `enrich-pgx` still never opens `diplotypes.csv`. **Naming a check without naming its scope is how
+a reader over-trusts it**, and the fix for the reader is the same either way: ask what the checker
+loads before reading a green run as agreement.
 
 ## Severity, and the two that never escalate
 
@@ -162,13 +164,19 @@ check counts only rows that carry a quote.
 
 ## Counting findings honestly
 
-⚠️ **CHECK — deduplicate before you count.** The `faf95` arithmetic warning reaches
-`manifest.compilation.warnings` **twice**, because the check runs in `validate_spec` and again in the
-compile-side `_frequency_checks` with no filter. Measured: 15 warnings, 14 distinct. Upstream **RM106**.
+**The `faf95` arithmetic warning used to reach `manifest.compilation.warnings` twice** — the check
+runs in `validate_spec` and again on the compile side, and the compile side had no filter. Fixed in
+compiler 0.6.6 (upstream **RM106**), so a module recompiled under it publishes one fewer warning with
+no text changed. If you pinned a warning count against an older artifact, that is why it moved.
 
-⚠️ **CHECK — a duplicate `(source, layer)` row in `licensing.csv` compiles green under `--strict`**,
-even one carrying the opposite `commercial_use`. `SourceRow` is in the drafter's dupe map and absent
-from the compiler's. **Guard:** sort on `(source, layer)` after any hand edit. Upstream **RM107**.
+**A duplicate `(source, layer)` row in `licensing.csv` is an ERROR** since compiler 0.6.6 (upstream
+**RM107**), in `validate` and in `compile` alike, in both modes:
+`licensing.csv: duplicate row for key ('clinvar', 'annotation')`. It used to pass silently, even
+carrying the opposite `commercial_use`, so an inherited module may carry one and stop compiling on the
+first run under this toolchain — that is the pair being noticed, not the module breaking. Which of the
+two rows is right is a decision, not a merge: `licensing.merge_sources_csv` keeps the LAST row under
+the key, which is exactly the wrong tool where the two disagree. One source at two layers is
+untouched, which is why the key is a pair.
 
 **Findings aggregate by reason with a count**, never one per row. A wall of near-identical warnings is a
 bug worth reporting upstream rather than filtering.

@@ -278,10 +278,10 @@ Ordered by how likely a first-timer is to hit it.
     `positional_rows: 106` (all from `haplotypes.csv`), `vrs_alleles: 57`, and
     `resolution_subjects: 0` with `fully_resolved: true` — the empty-`all()` trap. Read
     `fully_resolved` only together with `resolution_subjects`.
-11. **A diplotype-only module publishes with `genes: []`.** Measured: `manifest.stats` for
-    `cyp2c19_star_alleles` is `gene_count: 0, genes: [], variant_count: 0`, because
-    `compiler.variant_stats` derives the gene list from `variants.csv` alone (`compiler.py:3792-3812`)
-    while all 1190 rows carry `gene=CYP2C19`. Flagged below.
+11. **A diplotype-only module published `genes: []` before compiler 0.6.6.** `manifest.stats` for
+    `cyp2c19_star_alleles` was `gene_count: 0, genes: [], variant_count: 0` while all 1190 rows carry
+    `gene=CYP2C19`. **Fixed in compiler 0.6.6** (upstream **RM121**): `module_stats` takes the gene facets over every authored table, `variant_stats` keeps its `variants.csv` promise, and a module already published carries the stats its compile wrote — recompile and re-publish to be findable by gene. Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`. `variant_count` is still 0 there, and correctly so — it counts
+    what `variants.csv` holds.
 12. **The drafter and the enricher never verify a single cell of this table.** `enrich-pgx` reads
     `haplotypes.csv` and `allele_function.csv` and cross-checks `function_status` against PharmVar and
     CPIC; it does not open `diplotypes.csv` (grepped: zero occurrences of `diplotype` in
@@ -395,9 +395,9 @@ is stale.
   unphased genotype, opposite conclusions — will either manufacture an at-risk finding or suppress
   one, silently. Note the two warning classes are different asks: one is resolved by phasing, one
   cannot be resolved at all.
-- **Ask: surface `genes` for a table-kind-led module.** Unread because it is unwritten:
-  `manifest.stats.genes` is `variants.csv`-only, so `registry_search(gene="CYP2C19")` cannot find a
-  CYP2C19 star-allele module. The gene is right there on every row.
+- **Shipped: `genes` is surfaced for a table-kind-led module** (compiler 0.6.6, upstream RM121). It
+  was `variants.csv`-only, so `registry_search(gene="CYP2C19")` could not find a CYP2C19 star-allele
+  module while the gene sat on every row. A module published before that release needs a recompile.
 
 ## Ask the live schema
 

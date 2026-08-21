@@ -193,12 +193,13 @@ block that does not say an agent wrote it. Each ships a module that *looks* chec
 
 ## What publishes that you did not intend
 
-🚧 **ROADWORKS — never name a logo `logo.jpeg`.** Discovery sorts `LOGO_EXTENSIONS`, so **`jpeg` beats
-`jpg` beats `png`**, and a spec directory holding two logos silently ships the jpeg — the loser is not
-even copied. The publisher allowlist holds `logo.png` and `logo.jpg` and **not** `logo.jpeg`, so the
-result is a manifest attesting bytes the published repo does not carry, which
-`verify_manifest(check_logo=True)` will not catch either, because an absent file is not a failure there.
-**Guard: ship exactly one logo, named `logo.png`.** Upstream **RM105**.
+**Keep exactly one logo in the spec directory.** Discovery sorts `LOGO_EXTENSIONS` and takes the
+first hit, so **`jpeg` beats `jpg` beats `png`** — a directory holding two ships the jpeg and does not
+even copy the loser. A `logo.jpeg` used to be attested and never uploaded, so the manifest named bytes
+the published repository did not carry; enricher 0.6.6 derives the publisher's allowlist from
+`LOGO_EXTENSIONS` and fixes that half (upstream **RM105**). **A module published with a `logo.jpeg`
+before 0.6.6 should be re-published**, since `verify_manifest(check_logo=True)` will not report the
+gap — an absent file is not a failure there.
 
 **A stray `*.log` publishes silently.** `logs/` is swept up by every compile and published **with no
 opt-out**, and real bundles carry system prompts and local paths — a measured submitted transcript

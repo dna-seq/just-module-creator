@@ -145,10 +145,10 @@ each table's natural key. Use it rather than the tuples any prose gives you.
   `variant_key` (the same fraction means different things in blood and muscle, and keying on the gene
   alone makes a second real variant in that gene uncompilable).
 
-⚠️ **CHECK — `list_tables` reports a deprecated key for `copynumbers.csv`.** It gives
-`(gene, modifier_gene, modifier_cn)`. `modifier_cn` has been **deprecated since format 0.6** in favour of
-`modifier_copy_number`, which holds the fractional dosages VCF 4.4 §7.2 allows; both are read, setting
-both is an **error**, and the old one is removed at 1.0. Author `modifier_copy_number`.
+**`list_tables` generates every key it reports** — `keyed_on` and `key_rule` both come from the model's
+own declaration since format 0.6.5, so the deprecated `modifier_cn` it used to name for
+`copynumbers.csv` cannot recur. Author `modifier_copy_number`, which holds the fractional dosages
+VCF 4.4 §7.2 allows; both are read, setting both is an **error**, and the old one is removed at 1.0.
 
 ### Axes that look interchangeable and are not
 
@@ -197,14 +197,18 @@ ran, so no pass will write the row — and the compile licence gate reads that f
 all, and six of those carry no `studies.csv` either. Adding an empty `variants.csv` to a PGx module to
 make it look complete is the mistake this rule exists to prevent.
 
-🚧 **ROADWORKS — a module with no `variants.csv` cannot be found by gene.** `manifest.stats` is computed
-from `variants.csv` **alone**, and the registry's gene index is fed from `stats.genes`. So a star-allele,
-copy-number or activity-bin module publishes `gene_count: 0, genes: []` and `registry_search(gene=…)`
-misses it — even when every row carries a `gene` cell. Three dossiers reached this independently
-(`copynumbers.md`, `diplotypes.md`, `allele_function.md`). **Guard:** do **not** add an empty or
-invented `variants.csv` to fix it — that trades a discoverability gap for a dishonest module. Name the
-genes in `README.md` and in the module's `display` prose, where a text search will find them, and say
-in the readme which genes the module covers.
+**`manifest.stats` describes the module, and since compiler 0.6.6 it is taken over every authored
+table** (upstream **RM121**). Until then `stats.genes` came from `variants.csv` alone, so a star-allele,
+copy-number or activity-bin module published `gene_count: 0, genes: []` however many rows named a gene
+— and the registry's gene index is fed from that field, so `registry_search(gene=…)` missed it.
+Re-measured on `cyp2c19_star_alleles`, which carries no `variants.csv`: `gene_count: 1,
+genes: ['CYP2C19']`.
+
+**A module published before that release still carries the old stats**, because a manifest is written
+at compile time — recompile and re-publish if being findable by gene matters. Naming the genes in
+`README.md` is still worth doing: it is what a text search reads, and the readme becomes the catalog
+card. What has never been the answer is adding an empty or invented `variants.csv` — that trades a
+discoverability gap for a dishonest module.
 
 ## What it looks like on disk
 
