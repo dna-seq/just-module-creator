@@ -20,7 +20,9 @@ from pathlib import Path
 import pytest
 from conftest import offline_settings
 from fastmcp.exceptions import ToolError
+from just_dna_compiler import hints
 from just_dna_enricher.enrich import EnrichmentError
+from just_dna_format.gene_validity import GeneValidityRow
 from just_dna_format.integrity import resolution_signature
 from just_dna_format.layout import DERIVED_SUBDIR, preferred_spelling
 from just_dna_format.resolution import RESOLUTION_FACT_FIELDS, ResolutionRow
@@ -39,6 +41,7 @@ from just_module_creator.tools.refresh import (
     check_sidecar,
     check_use,
     subject_fields,
+    subject_of,
 )
 
 # --------------------------------------------------------------------------- #
@@ -187,23 +190,49 @@ def patch_resolution_pass(monkeypatch, run) -> None:
 # --------------------------------------------------------------------------- #
 # Row identity is derived, not written down
 # --------------------------------------------------------------------------- #
-def test_the_subject_key_is_derived_from_the_live_models() -> None:
-    """A written-down column list is what §2 forbids, and what would go stale.
+def test_the_subject_key_is_the_one_the_writing_pass_merges_on() -> None:
+    """Row identity is upstream's merge key since 0.6.5, not an approximation of it.
 
-    Recomputed here the same way the tool does, from the format's own fact tuple
-    and the model's own required-ness, so this fails if either moves rather than
-    asserting a tuple somebody typed.
+    What stood here recomputed the format's fact tuple narrowed to the required columns,
+    which is what `S51` was filed about: it was *different* on the two tables where one
+    subject legitimately carries several rows. Both are asserted by name because both
+    were wrong in a way that changed what the tool reported — `clinical_assertions.csv`
+    keyed on `dataset` collapsed two ClinVar assertions on one variant into one subject
+    and called them a conflict, and `gene_validity.csv` keyed on `(gene, dataset)` did the
+    same to two ClinGen curations of one gene.
     """
-    sidecar = ROSTER["resolution.csv"]
-    expected = tuple(
-        name
-        for name in RESOLUTION_FACT_FIELDS
-        if ResolutionRow.model_fields[name].is_required()
-    )
-    assert subject_fields(sidecar) == expected
-    assert expected, "a table with no required fact column has no derivable subject"
-    # And the subject is a strict narrowing of the facts, never something else.
-    assert set(expected) <= set(sidecar.fact_fields)
+    for csv_name in ROSTER:
+        key = hints.key_fields(csv_name)
+        assert key is not None, f"{csv_name} declares no merge key"
+        assert subject_fields(ROSTER[csv_name]) == tuple(key.columns)
+
+    assert subject_fields(ROSTER["clinical_assertions.csv"]) == ("variant_key", "variation_id")
+    assert subject_fields(ROSTER["gene_validity.csv"]) == ("assertion_id",)
+
+
+def test_a_two_level_key_falls_back_rather_than_making_every_row_one_subject() -> None:
+    """`gene_validity.csv` keys on `assertion_id` and a hand-written row has none.
+
+    Reducing such a row over the absent column alone leaves `{}` — every id-less
+    curation the same subject, so the first one captured would answer for all of them.
+    The fallback level is upstream's own (`TableKey.fallback`), and this is the row shape
+    it exists for.
+    """
+    key = hints.key_fields("gene_validity.csv")
+    assert key is not None and key.fallback
+    rows = [
+        GeneValidityRow(
+            gene=gene,
+            disease_id="MONDO:0007739",
+            classification="definitive",
+            dataset="clingen",
+            source="clingen",
+        )
+        for gene in ("HFE", "MLH1")
+    ]
+    assert all(row.assertion_id is None for row in rows)
+    subjects = {subject_of(row, key) for row in rows}
+    assert len(subjects) == 2, "two id-less curations of different genes are two subjects"
 
 
 def test_provenance_moves_no_fact_signature_which_is_why_source_is_the_only_proof() -> None:

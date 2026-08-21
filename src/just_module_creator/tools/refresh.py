@@ -81,6 +81,7 @@ from typing import Any
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
+from just_dna_compiler import hints
 from just_dna_compiler.compiler import load_csv_rows
 from just_dna_enricher.assertions import ClinicalAssertionError, enrich_clinical_assertions
 from just_dna_enricher.clingen import ClinGenError, ClinGenUnavailable, enrich_dosage_sensitivity
@@ -389,26 +390,44 @@ UNREFRESHABLE[LICENSING_CSV] = UNREFRESHABLE[SOURCES_CSV]
 # --------------------------------------------------------------------------- #
 # Row identity, derived from the live models
 # --------------------------------------------------------------------------- #
-def subject_fields(sidecar: Sidecar) -> tuple[str, ...]:
-    """The columns that decide whether two rows are the same row.
+def subject_key(sidecar: Sidecar) -> hints.TableKey | None:
+    """The merge key the writing pass itself keys on, or None if the kind declares none.
 
-    Derived, never written down: the table's own ``*_FACT_FIELDS`` tuple narrowed
-    to the columns its row model marks **required**. That reproduces each pass's
-    merge key on five of the seven tables and is *coarser* on the other two, and
-    coarser is the safe direction — a coarse subject reports more rows as
-    conflicting, and a conflict is never auto-resolved.
+    **Upstream's, as of 0.6.5** — our `S51`, their RM115. `hints.key_fields` reads the
+    row model's own `_KEY_FIELDS`, and every pass keys its `existing` map through
+    `base.merge_key`, which reads the same declaration: the two cannot drift by
+    construction rather than by agreement.
 
-    The exact key exists nowhere public: each pass keys its own `existing` dict on
-    a local expression (`(row.variant_key, row.population)` inside
-    `enrich_frequencies`, and so on). Filed upstream as `S51`; until it lands this
-    derivation is reported on every call rather than assumed.
+    What stood here before was an approximation — the table's `*_FACT_FIELDS` narrowed
+    to the required columns — and it was exact on three of the seven, coarser on two and
+    simply *different* on the two where one subject legitimately carries several rows.
+    It keyed `clinical_assertions.csv` on `(variant_key, dataset)` where the pass keys
+    `(variant_key, variation_id)`, so two ClinVar assertions on one variant collapsed
+    into one subject and were reported as a conflict; and it keyed `gene_validity.csv`
+    on `(gene, dataset)` against a real key of `assertion_id`, which is the two-level
+    case `subject_of` below exists for.
     """
-    fields = sidecar.model.model_fields
-    return tuple(
-        name
-        for name in sidecar.fact_fields
-        if name in fields and fields[name].is_required()
-    )
+    return hints.key_fields(sidecar.csv)
+
+
+def subject_fields(sidecar: Sidecar) -> tuple[str, ...]:
+    """The merge key's columns, for the report. Empty when the kind declares no key."""
+    key = subject_key(sidecar)
+    return tuple(key.columns) if key is not None else ()
+
+
+def subject_of(row: BaseModel, key: hints.TableKey) -> str:
+    """One row reduced to its merge key, dropping to the second level where there is one.
+
+    `gene_validity.csv` is keyed on `assertion_id` and falls back to
+    `(gene, disease_id, moi, submitter, dataset)` on a row that carries none — a real
+    shape, since a hand-written ClinGen row has no assertion id to give. Reducing such a
+    row over the absent column alone would make every one of them the same subject.
+    """
+    columns = key.columns
+    if key.fallback and any(getattr(row, name, None) in (None, "") for name in key.columns):
+        columns = key.fallback
+    return canonical(row, columns)
 
 
 def canonical(row: BaseModel, fields: Sequence[str]) -> str:
@@ -463,7 +482,7 @@ def read_table(path: Path, sidecar: Sidecar) -> tuple[Table | None, list[str]]:
 def to_sidecar_rows(
     table: Table,
     sidecar: Sidecar,
-    subjects: Sequence[str],
+    key: hints.TableKey,
     fetcher_sources: frozenset[str] | None,
 ) -> list[SidecarRow]:
     """Project a table's rows for the report, one `SidecarRow` per line.
@@ -483,7 +502,7 @@ def to_sidecar_rows(
         )
         out.append(
             SidecarRow(
-                subject=canonical(row, subjects),
+                subject=subject_of(row, key),
                 fact_key=canonical(row, sidecar.fact_fields),
                 source=source,
                 source_proves_authored=proves,
@@ -753,6 +772,7 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
         declared = check_use(chosen, use)
         eff_offline = offline_for(settings, offline)
         mode = "strict" if strict else "best_effort"
+        key = subject_key(chosen)
         subjects = subject_fields(chosen)
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
 
@@ -772,12 +792,12 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
             base.update(fields)
             return SidecarRefreshReport(**base)
 
-        if not subjects:
+        if key is None:
             return report(
                 success=False,
                 refused=(
-                    f"{chosen.csv}'s row model marks none of its fact columns required, so this "
-                    "release gives no derivable subject key and two rows cannot be told apart. "
+                    f"{chosen.csv} declares no merge key in this release, so two rows cannot be "
+                    "told apart and nothing here can classify one as yours or as the source's. "
                     "Nothing was touched. Refresh it by hand, or upgrade the toolchain."
                 ),
             )
@@ -986,9 +1006,9 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
             str(s) for s in (getattr(row, "source", None) for row in fresh.rows) if s
         )
         available: frozenset[str] | None = fetched_sources or None
-        fresh_rows = to_sidecar_rows(fresh, chosen, subjects, available)
+        fresh_rows = to_sidecar_rows(fresh, chosen, key, available)
         captured_rows = (
-            to_sidecar_rows(captured, chosen, subjects, available) if captured else []
+            to_sidecar_rows(captured, chosen, key, available) if captured else []
         )
 
         fresh_by_subject: dict[str, list[SidecarRow]] = {}
@@ -1155,11 +1175,11 @@ _UNRESOLVABLE = (
 )
 
 _NOTE = (
-    "Row identity here is DERIVED: `fact_fields` is the format's own fact tuple and "
-    "`subject_fields` is that tuple narrowed to the columns the row model marks required. Each "
-    "pass's real merge key is a local expression inside the pass and is published nowhere, so on "
-    "two of the seven tables the subject used here is coarser than the real one — which reports "
-    "MORE rows as conflicting and therefore repairs fewer. `fact_signature_*` comes from the same "
+    "Row identity here is UPSTREAM's: `subject_fields` is the merge key the writing pass keys on, "
+    "read from the row model's own declaration (`hints.key_fields`), so a row this reports as the "
+    "same row is a row the pass would have merged. Where a kind has a second-level key it is used "
+    "on a row that lacks the first. `fact_fields` is the format's own fact tuple. "
+    "`fact_signature_*` comes from the same "
     "function the manifest publishes, so it is comparable with what a compile recorded. It is a "
     "content identity and not a correctness gate: an unmoved signature means the source still "
     "says what your file said, never that the file is right. `artifact.digest` may move on the "

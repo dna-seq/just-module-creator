@@ -203,13 +203,29 @@ class TableKind(BaseModel):
     subject: str = Field(description="What one row is about — how to choose this kind.")
     keyed_on: str = Field(
         description="The columns that decide whether two rows are the same row — what an append "
-        "collides on. On a binning kind (a measure with thresholds) it is the GROUP key instead: "
-        "equality is not the duplicate rule there, overlapping ranges are, so two bins can "
-        "conflict while sharing no key and two identical keys are not a duplicate."
+        "collides on. Generated from the model's own key declaration, so it is the same answer "
+        "the compiler's duplicate check uses. Read it beside `key_rule`: on a binning kind these "
+        "columns are the GROUP, not a uniqueness key. A kind carrying a second-level key shows "
+        "it here too, as the fallback used on a row that lacks the first."
+    )
+    key_rule: str | None = Field(
+        default=None,
+        description="What a collision on those columns MEANS, and the three answers are not "
+        "interchangeable. `equality` — two rows with the same key are the same row, and a second "
+        "one is a duplicate. `overlap` — the key is a bin group and rows conflict by overlapping "
+        "ranges within it, so two identical keys are legal and two different ones can still "
+        "clash. `subject` — one subject legitimately carries several rows (one rsID resolving to "
+        "several loci), so a repeat is not a duplicate at all. `null` when the kind declares no "
+        "key; withheld rather than guessed.",
     )
     companions: list[str] = Field(
         default_factory=list,
-        description="Kinds that must be present alongside this one (studies.csv <-> variants.csv).",
+        description="Kinds that must be present alongside this one. `variants.csv` pulls "
+        "`studies.csv` unconditionally — a variant claim needs grounding evidence however the "
+        "module is composed — while `studies.csv` pulls `variants.csv` in only when it is the "
+        "only recognised table asked for: beside a binning table a study row grounds the "
+        "thresholds and the module needs no variant. Never add an empty table to keep another "
+        "company.",
     )
     deprecated: bool = Field(
         default=False,
@@ -275,19 +291,35 @@ class TableDescription(BaseModel):
     )
     columns: list[dict] = Field(description="Per-column type, category and vocabulary.")
     requirements: dict = Field(description="Same content as `table_requirements`.")
+    key: dict = Field(
+        default_factory=dict,
+        description="What makes two rows of this kind the same row: the key `columns`, the "
+        "`rule` that decides what a collision means (`equality` / `overlap` / `subject`), the "
+        "columns the compiler `stamped` for you, and a `fallback` key where the kind has a "
+        "second level. This is what a second pass appends against — read it before re-running "
+        "anything that writes here.",
+    )
     redundancy_bearing: dict[str, str] = Field(
         default_factory=dict,
-        description="column -> the check that later cross-examines it. Filling one from the "
-        "source that checks it makes the check vacuous.",
+        description="column -> the check that later cross-examines it, and where the checker "
+        "cannot see THIS table the entry says so. Filling one from the source that checks it "
+        "makes the check compare that source with itself: it agrees perfectly, and the row moves "
+        "from honestly unverified to apparently verified, which is the state nothing downstream "
+        "can tell from a real one.",
     )
     attestation_bearing: list[str] = Field(
         default_factory=list,
         description=(
-            "Columns whose content asserts that a HUMAN read something. A stronger refusal "
-            "than redundancy: filling one from a document a tool just fetched states something "
-            "FALSE rather than merely unverifiable, because the cell means 'a curator read this "
-            "passage in this paper' and no lookup can make that true. These also appear in "
-            "`redundancy_bearing`; this names the sharper reason to refuse on."
+            "Columns whose content asserts that somebody READ something — the sharper case "
+            "inside `redundancy_bearing`. The rule is attribution, not abstention: quote what "
+            "you actually located, verbatim, from text you actually retrieved, and record who "
+            "located it in `curator` on the same row. An agent reading a fetched article is a "
+            "reading that happened; a passage never retrieved, or the article's own title used "
+            "as a quote, is not — a title is always inside its own fulltext, so it passes the "
+            "quote check while witnessing nothing. What a located quote costs is the "
+            "independence of one check: verifying it against the same fulltext it came from "
+            "pairs the quote with its citation and no longer evidences the claim. State that; "
+            "never use it to leave the column empty."
         ),
     )
     produced_by: SchemaVersions = Field(description=_PRODUCED_BY_WHY)
@@ -320,6 +352,15 @@ class MachineTableDescription(BaseModel):
         description="Per-column type, category, description and vocabulary, generated from the "
         "live model. Read these to understand a sidecar the passes produced — several of these "
         "facts exist nowhere else in the module."
+    )
+    key: dict = Field(
+        default_factory=dict,
+        description="The key the writing pass MERGES on — the question to ask before re-running "
+        "anything that writes here, because a row whose key matches yours is a row the pass "
+        "updates and one whose key does not is a row it appends beside yours. `rule` says what a "
+        "collision means: `equality` (same key, same row), or `subject` (one subject legitimately "
+        "carries several rows — one rsID resolving to several loci — so a repeat is not a "
+        "duplicate). `fallback` is a second-level key used on a row that lacks the first.",
     )
     refusal: str = Field(
         description="What a hand-written cell in a machine-produced sidecar costs, and how to "

@@ -15,22 +15,15 @@ from __future__ import annotations
 
 import csv
 import json
+from dataclasses import asdict
 
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from just_dna_compiler import compiler, draft, hints, scaffold
 from just_dna_format import layout, reference
-from just_dna_format.assertions import ClinicalAssertionRow
-from just_dna_format.frequency import FrequencyRow
-from just_dna_format.gene_metrics import GeneMetricsRow
-from just_dna_format.gene_validity import GeneValidityRow
-from just_dna_format.gwas import GwasEffectRow
 from just_dna_format.integrity import IntegrityError, verify_manifest
-from just_dna_format.literature import LiteratureRow
 from just_dna_format.manifest import read_manifest
-from just_dna_format.resolution import ResolutionRow
-from just_dna_registry import specfiles
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel
 
@@ -67,78 +60,51 @@ from just_module_creator.tools._shared import (
 
 log = get_logger()
 
-# What one row of each kind is *about*, and what makes two rows the same row.
+# What one row of each kind is *about*. The key half used to live here too, and does not
+# any more.
 #
 # **The subject half is the one deliberate exception to "never hardcode a schema
 # fact"**: it answers "which table?", a question the schema cannot answer because it
 # is about intent rather than structure. Column lists, vocabularies and requirements
 # all still come from the models.
 #
-# **The key half is structure, and it is here under protest** (RM10, upstream `S48`).
-# A key is derivable in principle and nothing public derives it: `draft.natural_key`
-# is row-level — it takes an instance and returns key *values*, never the column names
-# — and the two registries that hold the names, `compiler._TABLE_DUPE_KEYS` and
-# `MeasureBinRow._KEY_FIELDS`, are both private, one of them as lambdas. §2 forbids
-# reaching into either. Removing the key from the answer was the alternative and it is
-# worse: "what will an append collide on" is the question an author asks before a
-# second pass, and answering it nowhere sends them to memory, which is what this whole
-# surface exists to stop.
+# **The key half is GENERATED as of upstream 0.6.5** — our `S48`, their RM113.
+# `hints.key_fields(csv)` returns a `TableKey`: the columns two rows collide on, the
+# `rule` that decides what a collision even is, the columns the compiler stamps, and a
+# fallback key for the one kind that has two levels. It answers for the machine-produced
+# sidecars too, so `describe_machine_table` gets the same route, and it reads each
+# model's own `_KEY_FIELDS` — the same source `draft.natural_key` reads, so the two
+# cannot drift by construction rather than by agreement.
 #
-# So it stays, with the drift closed by a test instead of by hope: every token below is
-# an exact field name on the kind's model, and
-# `tests/test_authoring.py::test_every_documented_key_column_is_a_live_undeprecated_field`
-# resolves each one against `model_fields` and fails if any is missing or carries
-# DEPRECATED in its own description. That guard is what `modifier_cn` needed — it was
-# deprecated in favour of `modifier_copy_number` when 0.6 landed and this map went on
-# naming it, so an author was told to key on a column upstream removes at 1.0. Three
-# more entries were loose prose (`variant`, `a`/`b`/`trait`, `trait`) and are now the
-# real column names, because a token that does not resolve cannot be checked.
-#
-# On the four binning kinds the tuple is the bin GROUP key rather than a uniqueness
-# key: upstream declines to give those an equality key at all (`natural_key` returns
-# None for them on purpose), because two bins conflict by overlapping ranges within a
-# group, not by being equal. `TableKind.keyed_on` says so.
-_SUBJECTS: dict[str, tuple[str, str]] = {
-    "variants.csv": ("one variant + one genotype", "(variant_key, genotype)"),
+# The hand-kept tuple that stood here under RM10 is what the report was about: it named
+# `modifier_cn` for all of 0.6, after upstream deprecated that column at 0.6.0. Its
+# guard (`test_every_documented_key_column_is_a_live_undeprecated_field`) retires with
+# it, subsumed by upstream's own.
+_SUBJECTS: dict[str, str] = {
+    "variants.csv": "one variant + one genotype",
     "studies.csv": (
         "one paper and what it says — about a variant, or about a threshold or the "
-        "module itself, since 0.6 lets a study row name no variant at all",
-        "(variant_key, pmid)",
+        "module itself, since 0.6 lets a study row name no variant at all"
     ),
-    "haplotypes.csv": (
-        "which variants make up a named allele",
-        "(haplotype_name, variant_key, allele)",
-    ),
-    "allele_function.csv": ("what a named allele does", "(gene, allele)"),
-    "diplotypes.csv": (
-        "a pair of alleles (in trans)",
-        "(gene, haplotype_a, haplotype_b, trait_efo_id, drug, clinical_context)",
-    ),
-    "pharm_variants.csv": (
-        "one variant + one drug",
-        "(variant_key, drug, genotype, phenotype_category, annotation_id)",
-    ),
-    "activity_phenotype.csv": ("a metabolizer activity-score range", "(gene)"),
-    "copynumbers.csv": (
-        "a copy-number range",
-        "(gene, modifier_gene, modifier_copy_number)",
-    ),
-    "repeat_alleles.csv": ("a repeat-count range", "(gene, repeat_unit)"),
-    "heteroplasmy.csv": (
-        "an mtDNA heteroplasmy-fraction range",
-        "(gene, reference_sequence, tissue, variant_key)",
-    ),
-    "pgs.csv": ("a published polygenic score", "(pgs_id, trait_efo_id)"),
+    "haplotypes.csv": "which variants make up a named allele",
+    "allele_function.csv": "what a named allele does",
+    "diplotypes.csv": "a pair of alleles (in trans)",
+    "pharm_variants.csv": "one variant + one drug",
+    "activity_phenotype.csv": "a metabolizer activity-score range",
+    "copynumbers.csv": "a copy-number range",
+    "repeat_alleles.csv": "a repeat-count range",
+    "heteroplasmy.csv": "an mtDNA heteroplasmy-fraction range",
+    "pgs.csv": "a published polygenic score",
     # Draftable as of upstream 0.5.4: the one fact sidecar a human writes, and the
     # only table the compile licence gate reads. `licensing.csv` is its 0.6 spelling;
     # `sources.csv` is the deprecated one and inherits this entry rather than
     # repeating it, so the two can never describe themselves differently.
-    "licensing.csv": ("the terms one source's data came under", "(source, layer)"),
+    "licensing.csv": "the terms one source's data came under",
 }
 
 
-def _subject_for(name: str) -> tuple[str, str]:
-    """Subject and key for a table kind, following a deprecated spelling to its own.
+def _subject_for(name: str) -> str:
+    """What one row of this kind is about, following a deprecated spelling to its own.
 
     `draft.DRAFTABLE` lists both `sources.csv` and `licensing.csv` in 0.6 and backs
     them with one model, so answering "which table?" twice would be answering it
@@ -146,8 +112,25 @@ def _subject_for(name: str) -> tuple[str, str]:
     which is upstream's fact, read from `layout`, not restated here.
     """
     canonical = layout.preferred_spelling(name)
-    fallback = ("(see describe_table)", "(see describe_table)")
-    return _SUBJECTS.get(canonical, _SUBJECTS.get(name, fallback))
+    return _SUBJECTS.get(canonical, _SUBJECTS.get(name, "(see describe_table)"))
+
+
+def _key_for(name: str) -> tuple[str, str | None]:
+    """What an append collides on, rendered, and the rule that decides a collision.
+
+    Both halves come from `hints.key_fields`. `None` — a kind that declares no key —
+    is passed through as "no declared key" rather than guessed at, and the rule is
+    returned beside the columns because on a binning kind the columns are a GROUP key
+    and equality is not the duplicate rule at all.
+    """
+    key = hints.key_fields(name)
+    if key is None:
+        return "(no declared key)", None
+    columns = f"({', '.join(key.columns)})"
+    if key.fallback:
+        columns += f", or ({', '.join(key.fallback)}) on a row that has no {key.columns[0]}"
+    return columns, key.rule
+
 
 _COMPOSITION_NOTE = (
     "A module composes from optional table kinds: module_spec.yaml is the only "
@@ -166,56 +149,31 @@ _COMPOSITION_NOTE = (
 
 # The machine-produced tables: the fact sidecars plus `resolution.csv`.
 #
-# **Derived, and from the public roster rather than the authoritative one.**
-# `just_dna_compiler.compiler._FACT_TABLES` is the tuple the compiler actually loads
-# and it carries the row model too, which is exactly what the map below needs — and it
-# is private, so §2 rules it out. `just_dna_registry.specfiles` publishes the same
-# roster (`FACT_CSVS` + `RESOLUTION_CSV`) because the registry has to recognise every
-# file the compiler reads. Filed upstream as `S47`, asking for the compiler tuple or a
-# `model_for` that covers these names.
+# **Derived from the compiler's own loader roster**, as of upstream 0.6.5 — our `S47`,
+# their RM112. `hints.DERIVED_TABLE_MODELS` is `compiler._FACT_TABLES` published rather
+# than restated, keyed on the filename and carrying the row model, and
+# `hints.derived_model_for(csv)` is its lookup. So a fact table upstream adds arrives
+# here with its model attached and needs no edit, which is what the hand-kept map this
+# replaces could not do: it went stale as a four-item literal while 0.6 shipped three
+# new fact tables, and the roster then had to be borrowed from a *third* package
+# (`just_dna_registry.specfiles`) to grow by itself while the models stayed by hand.
+# One source now, and it is the loader's.
 #
-# **What happens when upstream adds a fact table.** `FACT_CSVS` grows, so `sidecars`
-# below grows with it and needs no edit here — that is the whole point of deriving it,
-# and it is the half that went stale as a four-item literal while 0.6 shipped three new
-# fact tables. `_PRODUCED_MODELS` does *not* grow by itself, so `describe_machine_table`
-# refuses the new name explicitly (naming it as real and undescribable by this build
-# rather than as unknown), and `test_the_produced_roster_and_its_models_agree` fails the
-# moment the two disagree. One further cost, accepted knowingly: the roster now comes
-# from a different package than the loader it describes, so a registry release lagging a
-# compiler release makes this answer lag too. The test is the guard, not the version pin.
-#
-# **The licensing carve-out is derived, not special-cased.** `licensing.csv` /
-# `sources.csv` is a fact sidecar that a human writes, and it is in `draft.DRAFTABLE`;
-# subtracting the draftable kinds takes it out of this roster and leaves it a table kind
-# with a template and a linter, which is what it is.
-_PRODUCED_CSVS: tuple[str, ...] = tuple(
-    sorted({specfiles.RESOLUTION_CSV, *specfiles.FACT_CSVS} - set(draft.DRAFTABLE))
-)
-
-#: `csv name -> row model` for the tables above. Hand-kept because nothing public maps
-#: the two in the installed toolchain (`S47`); every model here is public and imported
-#: from where it lives.
-#:
-#: **This map and `_PRODUCED_CSVS` above both retire together, and not yet.** `S47` was
-#: accepted and fixed upstream the same day it was filed (their RM112): `hints.DERIVED_TABLE_MODELS`
-#: and `hints.derived_model_for(csv_name)` are public **in their tree**, keyed on the
-#: filename, derived from `_FACT_TABLES` rather than restated, and answering both
-#: spellings of the licence table. Verified against what we install rather than against
-#: their checkout, which is the rule: compiler 0.6.1 has **neither** symbol
-#: (`hasattr(hints, "derived_model_for") is False`), so dropping this map now would break
-#: the plugin for everyone installing from PyPI. Retire both — and the roster's
-#: cross-package hop — in the change that raises the compiler floor to the release
-#: carrying that symbol, together with `test_the_produced_roster_and_its_models_agree`,
-#: which upstream's own set-equality guard then subsumes.
+# **The licensing carve-out is derived, not special-cased.** Upstream's map answers both
+# spellings of the licence table with `SourceRow`, because the compiler fact-hashes it
+# like any other sidecar. Here it is a table kind: it is in `draft.DRAFTABLE`, a human
+# writes it, and it has a template and a linter — so subtracting the draftable kinds
+# takes it out of this roster, and a table upstream makes hand-authorable moves across
+# the same way without an edit.
 _PRODUCED_MODELS: dict[str, type[BaseModel]] = {
-    "resolution.csv": ResolutionRow,
-    "frequencies.csv": FrequencyRow,
-    "gene_metrics.csv": GeneMetricsRow,
-    "literature.csv": LiteratureRow,
-    "gene_validity.csv": GeneValidityRow,
-    "clinical_assertions.csv": ClinicalAssertionRow,
-    "gwas_effects.csv": GwasEffectRow,
+    csv_name: model
+    for csv_name, model in sorted(hints.DERIVED_TABLE_MODELS.items())
+    if csv_name not in draft.DRAFTABLE
 }
+
+#: The same roster as names, for the surfaces that list it rather than describe it.
+_PRODUCED_CSVS: tuple[str, ...] = tuple(_PRODUCED_MODELS)
+
 
 _MACHINE_REFUSAL = (
     "An enricher pass writes this file and the compiler fact-hashes it into the "
@@ -241,12 +199,6 @@ def _machine_kind(name: str) -> str:
         csv_name = f"{csv_name}.csv"
     if csv_name in _PRODUCED_MODELS:
         return csv_name
-    if csv_name in _PRODUCED_CSVS:
-        raise ToolError(
-            f"{csv_name} is a machine-produced table of the installed toolchain that this build "
-            "cannot describe: it has no row model registered here. That is our gap, not yours — "
-            "upgrade just-module-creator, and read the file itself meanwhile."
-        )
     if csv_name in draft.DRAFTABLE:
         raise ToolError(
             f"{csv_name} is YOURS to author, not machine-produced — call "
@@ -433,15 +385,16 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         """
         tables = []
         for name in sorted(draft.DRAFTABLE):
-            subject, keyed_on = _subject_for(name)
+            keyed_on, key_rule = _key_for(name)
             canonical = layout.preferred_spelling(name)
             tables.append(
                 TableKind(
                     csv=name,
                     model=draft.DRAFTABLE[name].__name__,
-                    subject=subject,
+                    subject=_subject_for(name),
                     keyed_on=keyed_on,
-                    companions=list(scaffold.COMPANION_KINDS.get(name, ())),
+                    key_rule=key_rule,
+                    companions=scaffold.companions_for([name]),
                     deprecated=layout.is_deprecated_spelling(name),
                     preferred=canonical if canonical != name else None,
                 )
@@ -492,11 +445,29 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             for c in described.get("columns", [])
             if isinstance(c, dict) and c.get("name")
         }
-        redundancy = {
-            str(col): str(why)
-            for col, why in getattr(hints, "REDUNDANCY_BEARING", {}).items()
-            if str(col) in present
-        }
+        # A check is only as wide as the table it reads, and `REDUNDANCY_BEARING` is
+        # keyed on a bare column name — so `clin_sig` on a binning kind used to be
+        # answered with the reason `verify_clin_sig` gives, and that checker takes
+        # `list[VariantRow]` and never sees the row. Right advice, false reason, and a
+        # false reason implies a green run was an agreement. `REDUNDANCY_BEARING_TABLES`
+        # (upstream 0.6.6, our `S59` / their RM123) scopes the EXPLANATION; an absent key
+        # means unscoped, which is the honest answer for more columns than not. The
+        # advice itself does not soften: nothing cross-examines the cell, so an
+        # independently authored value is more load-bearing here, not less.
+        scopes = getattr(hints, "REDUNDANCY_BEARING_TABLES", {})
+        redundancy = {}
+        for col, why in getattr(hints, "REDUNDANCY_BEARING", {}).items():
+            if str(col) not in present:
+                continue
+            reads = scopes.get(col)
+            note = str(why)
+            if reads is not None and name not in reads:
+                note = (
+                    f"{note} — but that checker does not read {name}: it loads "
+                    f"{', '.join(sorted(reads))} only. Nothing cross-examines this column here, "
+                    "so an independent reading is the ONLY thing standing behind the cell."
+                )
+            redundancy[str(col)] = note
         attestation = sorted(
             str(col)
             for col in getattr(hints, "ATTESTATION_BEARING", frozenset())
@@ -507,6 +478,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             model=str(described.get("model", "")),
             columns=jsonable(described.get("columns", [])),
             requirements=jsonable(described.get("requirements", {})),
+            key=jsonable(described.get("key", {})),
             redundancy_bearing=redundancy,
             attestation_bearing=attestation,
             produced_by=schema_versions(),
@@ -566,10 +538,16 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             # drift upstream's own D1-4 was.
             if isinstance(column, dict) and column.get("vocabulary") in notes:
                 column["notes"] = jsonable(notes[column["vocabulary"]])
+        # The merge key, from the same accessor `describe_table` renders for an authored
+        # kind — it answers for the machine-produced tables too since 0.6.5 (`S51`), which
+        # is the half that matters here: these files are merge-not-clobber, so the key is
+        # what decides whether a re-run updates your row or appends beside it.
+        key = hints.key_fields(name)
         return MachineTableDescription(
             csv=name,
             model=model.__name__,
             columns=columns,
+            key=jsonable(asdict(key)) if key is not None else {},
             refusal=_MACHINE_REFUSAL,
             produced_by=schema_versions(),
         )
@@ -691,11 +669,16 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         created = [str(p) for p in plan.created]
         refused = [f"{p}: {why}" for p, why in plan.refused]
 
+        # `companions_for` applies the conditional half of the mapping upstream 0.6.5
+        # made public (our `S49`, their RM114): `studies.csv` pulls `variants.csv` in
+        # only when nothing else recognised was asked for, so scaffolding a binning
+        # module beside its evidence no longer invites an empty `variants.csv` that
+        # would compile strict-green while asserting nothing. `scaffold_module` uses the
+        # same function, so this warning cannot contradict what the run did.
         missing_companion = [
-            f"{k} needs {c}"
-            for k in requested
-            for c in scaffold.COMPANION_KINDS.get(k, ())
-            if c not in requested and not (target / c).exists()
+            f"{c} is needed beside {', '.join(requested)}"
+            for c in scaffold.companions_for(requested)
+            if not (target / c).exists()
         ]
         spelling_notes = [
             f"created {swap} instead: that is the current spelling, and the one you asked for "
@@ -1029,15 +1012,15 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             "",
             _COMPOSITION_NOTE,
             "",
-            "| CSV | Row subject | Keyed on |",
-            "|---|---|---|",
+            "| CSV | Row subject | Keyed on | Collides by |",
+            "|---|---|---|---|",
         ]
         for name in sorted(draft.DRAFTABLE):
             # `_subject_for`, not a bare `.get`: a deprecated spelling follows the
             # canonical one to its entry, so `sources.csv` describes itself rather than
             # rendering two em-dashes in a table an author is reading to choose a kind.
-            subject, key = _subject_for(name)
-            lines.append(f"| `{name}` | {subject} | `{key}` |")
+            key, rule = _key_for(name)
+            lines.append(f"| `{name}` | {_subject_for(name)} | `{key}` | {rule or "—"} |")
         lines += [
             "",
             "Machine-produced sidecars (read them, never hand-finish them): "

@@ -221,6 +221,78 @@ async def test_scaffold_warns_when_a_companion_is_missing(essentials_client, tmp
     assert any("studies.csv" in w for w in result.data.warnings)
 
 
+async def test_scaffolding_a_binning_module_beside_studies_invites_no_empty_variants_csv(
+    essentials_client, tmp_path
+):
+    """`studies.csv` pulls `variants.csv` in only when it is asked for alone (`S49`).
+
+    RM47 made a study row legal with no variant identity precisely so a binning module
+    can ground its thresholds through `pmid`, so the unconditional pull contradicted the
+    composition rule this same surface teaches — never add an empty table to keep another
+    company — and an empty `variants.csv` compiles strict-green while asserting nothing.
+    `companions_for` applies the condition; asserted through the tool, on disk, because
+    the warning and the file are two claims that can disagree.
+    """
+    spec = tmp_path / "bins"
+    result = await essentials_client.call_tool(
+        "scaffold_module",
+        {"spec_dir": str(spec), "name": "m", "kinds": ["repeat_alleles.csv", "studies.csv"]},
+    )
+    assert result.data.written
+    assert not (spec / "variants.csv").exists()
+    assert not any("variants.csv" in w for w in result.data.warnings)
+    # The unconditional direction is untouched: a variant claim still needs its evidence.
+    alone = await essentials_client.call_tool(
+        "scaffold_module",
+        {"spec_dir": str(tmp_path / "vars"), "name": "m", "kinds": ["variants.csv"]},
+    )
+    assert (tmp_path / "vars" / "studies.csv").exists()
+    assert any("studies.csv" in w for w in alone.data.warnings)
+
+
+async def test_a_redundancy_reason_says_when_its_checker_cannot_see_this_table(
+    essentials_client,
+):
+    """`REDUNDANCY_BEARING` is keyed on a bare column, so the reason outran the checker.
+
+    `clin_sig` is a column on `variants.csv`, on `diplotypes.csv` and on all four binning
+    kinds; `verify_clin_sig` takes `list[VariantRow]` and never sees the others. Naming
+    the ClinVar cross-examination on a binning row is right advice with a false reason,
+    and a false reason implies a green run was an agreement. Upstream scoped the
+    explanation in 0.6.6 (`S59`); this asserts we carry the scope rather than the bare
+    reason, on both sides of it.
+    """
+    scoped = await essentials_client.call_tool(
+        "describe_table", {"csv_name": "copynumbers.csv"}
+    )
+    assert "clin_sig" in scoped.data.redundancy_bearing
+    assert "does not read copynumbers.csv" in scoped.data.redundancy_bearing["clin_sig"]
+
+    unscoped = await essentials_client.call_tool("describe_table", {"csv_name": "variants.csv"})
+    assert "does not read" not in unscoped.data.redundancy_bearing["clin_sig"]
+
+
+async def test_describe_table_answers_what_an_append_collides_on(essentials_client):
+    """The `key` block upstream's `describe_table` has promised since 0.5, passed through.
+
+    A second pass appends, so "what will this collide with" is the question before
+    re-running anything — and the three rules are not interchangeable: two `overlap` rows
+    with identical keys are legal, two `equality` ones are a duplicate.
+    """
+    from just_dna_compiler import hints
+
+    for csv_name in ("variants.csv", "repeat_alleles.csv"):
+        described = await essentials_client.call_tool("describe_table", {"csv_name": csv_name})
+        key = hints.key_fields(csv_name)
+        assert key is not None
+        assert described.data.key["columns"] == list(key.columns)
+        assert described.data.key["rule"] == key.rule
+    listed = await essentials_client.call_tool("list_tables", {})
+    rules = {t.csv: t.key_rule for t in listed.data.tables}
+    assert rules["repeat_alleles.csv"] == "overlap"
+    assert rules["variants.csv"] == "equality"
+
+
 async def test_lint_catches_unsorted_genotype(essentials_client):
     result = await essentials_client.call_tool(
         "lint_rows",
@@ -288,15 +360,16 @@ async def test_the_sidecar_roster_is_derived_from_the_installed_toolchain(essent
 
 
 async def test_every_documented_key_column_is_a_live_undeprecated_field(essentials_client):
-    """`keyed_on` is the one hand-kept structural claim on this surface, so it is pinned.
+    """`keyed_on` is generated now, and this asks whether the generated answer is usable.
 
-    Upstream publishes no column-level accessor for a kind's natural key
-    (`draft.natural_key` is row-level; the registries holding the names are private —
-    filed as `S48`), so the strings live in `_SUBJECTS`. That is exactly how
+    It was written when the strings were hand-kept (`S48`), and that is exactly how
     `copynumbers.csv` went on naming `modifier_cn` across all of 0.6, after upstream
-    deprecated it in favour of `modifier_copy_number` — an author was being told to key
-    on a column that is removed at format 1.0. Nothing generated can drift like that;
-    this one can, so every token is resolved against the live model here.
+    deprecated it in favour of `modifier_copy_number`: an author was being told to key on
+    a column that is removed at format 1.0. `hints.key_fields` answers it since 0.6.5, so
+    the drift this caught cannot recur from our side — it can still arrive from theirs,
+    and an author reading a deprecated key column is misled either way. So the assertion
+    stays and its subject moves: every column we surface must resolve on the live model
+    and must not be retired.
     """
     from just_dna_compiler import draft
 
@@ -388,17 +461,28 @@ async def test_a_binning_module_may_carry_studies_without_variants(essentials_cl
 # --------------------------------------------------------------------------- #
 # RM11 — the machine-produced tables are answerable, and marked unauthorable
 # --------------------------------------------------------------------------- #
-def test_the_produced_roster_and_its_models_agree():
-    """The hand-kept `csv -> model` map must cover exactly the derived roster.
+def test_the_produced_roster_agrees_with_the_registry_that_recognises_the_same_files():
+    """Two packages enumerate the machine-produced tables, and they must not disagree.
 
-    Nothing public maps a machine-produced CSV name to its row model (`S47`), so that
-    half is hand-kept while the roster is derived — and a hand-kept list beside a
-    derived one is the RM10 defect waiting to happen. This is the guard: an eighth fact
-    table upstream fails here rather than becoming silently undescribable.
+    The roster and its models both come from `hints.DERIVED_TABLE_MODELS` since 0.6.5
+    (`S47`), which is the compiler's own loader tuple published rather than restated —
+    so asserting the map against itself would measure nothing. The registry publishes the
+    same roster independently, because it has to recognise every file the compiler reads,
+    and it is a *different* package on a *different* release cadence. That is the
+    comparison worth making: a fact table that reaches one and not the other is a file an
+    author can be handed and cannot be told about.
     """
+    from just_dna_compiler import draft, hints
+    from just_dna_registry import specfiles
+
     from just_module_creator.tools.authoring import _PRODUCED_CSVS, _PRODUCED_MODELS
 
     assert set(_PRODUCED_MODELS) == set(_PRODUCED_CSVS)
+    assert set(_PRODUCED_CSVS) == {specfiles.RESOLUTION_CSV, *specfiles.FACT_CSVS} - set(
+        draft.DRAFTABLE
+    )
+    for csv_name, model in _PRODUCED_MODELS.items():
+        assert hints.derived_model_for(csv_name) is model
 
 
 async def test_every_machine_produced_sidecar_answers_its_columns(essentials_client):
@@ -407,6 +491,7 @@ async def test_every_machine_produced_sidecar_answers_its_columns(essentials_cli
     Expected columns come from `reference.authored_field_names`, not from the assembly
     the tool passes through, so this is a comparison rather than an echo.
     """
+    from just_dna_compiler import hints
     from just_dna_format.reference import authored_field_names
 
     from just_module_creator.tools.authoring import _PRODUCED_MODELS
@@ -423,8 +508,21 @@ async def test_every_machine_produced_sidecar_answers_its_columns(essentials_cli
         # Every column carries the model's own description, which is the whole point of
         # asking rather than remembering.
         assert all("description" in c for c in result.data.columns)
+        # And the key the pass merges on: these files are merge-not-clobber, so an
+        # author asking what is in one is one question away from asking what a re-run
+        # will do to a row they wrote.
+        key = hints.key_fields(csv_name)
+        assert key is not None
+        assert result.data.key["columns"] == list(key.columns)
+        assert result.data.key["rule"] == key.rule
         assert result.data.hand_authored is False
         assert result.data.refusal
+    # `resolution.csv` is the one whose rule is neither equality nor overlap: one rsID
+    # legitimately resolves to several loci, so a repeated subject is not a duplicate.
+    resolution = await essentials_client.call_tool(
+        "describe_machine_table", {"csv_name": "resolution.csv"}
+    )
+    assert resolution.data.key["rule"] == "subject"
 
 
 async def test_a_machine_table_answer_carries_no_authoring_fields(essentials_client):
