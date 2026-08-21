@@ -1372,3 +1372,76 @@ decision list rather than a repair.
 **Closes when** the three fields carry field descriptions in a release `uv sync` installs. Nothing of
 ours comes out then — the point-of-write repetition is still worth having, because the model's field
 description does not reach an agent replacing a `<<REPLACE>>` in a YAML file.
+
+## F59 — display metadata is inside the attestation binding (format `S64`, registry `S16`)
+
+**Status: filed 2026-08-21 against format/compiler 0.6.6 and registry 0.18.2, both open. Nothing of ours
+can mitigate it — the field, the binding and the card all sit upstream.**
+
+**This supersedes half of what `F58` assumed.** `F58` recorded that shortening a published description
+"costs a version". It costs a version **and the closure record**, in exchange for changing nothing a
+consumer can measure. That is a materially different claim and it is the one to quote.
+
+### The measurement, which is the whole note
+
+`assets/fto_bmi` copied twice; in one copy only `module.description` was edited, 44 words to 11, `diff`
+over the rest of the file empty. Both compiled strict under compiler 0.6.6:
+
+| | 44 words | 11 words |
+|---|---|---|
+| `content_signature` | `sha256:d519efda…fbfe` | **identical** |
+| `artifact.digest` | `sha256:c3d633f0…aa09` | **identical** |
+| `resolution_signature` | `sha256:63ab1af5…fd59` | **identical** |
+| `inputs["module_spec.yaml"].sha256` | `sha256:4a010e53…aba0` | `sha256:8ee80caf…7799` |
+| `verification` | closure block — `closed_at`, `closed_by`, `module_hash`, `signature` | **`null`** |
+| `compilation.warnings` | `[]` | *"verification.json is stale…"*, *"This module records no closure…"* |
+
+`manifest.inputs` was `["module_spec.yaml", "variants.csv", "studies.csv"]` — **`README.md` is not in
+it**, it has its own `manifest.readme` entry outside the binding, which is exactly why `amend_readme`
+exists and is safe. The shortest fixable prose in the system is the only prose that cannot be fixed.
+
+### Why we think it is a defect
+
+Format already partitions these fields as display and says so twice: `integrity.py:215-218` excludes the
+*"identity and display half of `module_spec.yaml`"* from `content_signature` because *"a metadata edit
+or a registry strip does not change it"*, and the manifest block holding them is named `Display`. Only
+the attestation binding still treats display as provenance. Meanwhile the registry's `amend_readme`
+docstring defines its amendable family as *"out-of-digest metadata … no version bump is needed"*, which
+the table above shows `description` satisfies byte-for-byte — so the refusal is format's binding
+overriding the registry's own rule from a layer below.
+
+### The two shelves, and the ordering between them
+
+**Format `S64` — justify or split.** Either name what the binding buys by covering the six `Display`
+fields, which we will then teach as a cost worth paying, or draw the binding along the line
+`content_signature` already uses. We named the real cost of the split ourselves: the binding stops being
+"any byte of an authored file" and starts having to hash a parse, inheriting every canonicalization
+question, and two hashes that disagree about what counts as display would give an author two answers to
+"did my edit count". **A justification closes this; we are not pushing for the split.**
+
+**Format `S64`, second half — a `short_description` with a character `max_length`** (~120, the band our
+owner named; `lactose_tolerance` is 71 chars and fits). We asked upstream **not** to bound `description`
+in `S63` one day earlier and the distinction is load-bearing: a bound on a *new optional* field
+invalidates nothing published and is the field's definition rather than a taste judgement applied after
+the prose was written. It must land on the amendable side of whatever `S64` decides, or it reproduces
+the problem in a new place.
+
+**Registry `S16` — read the bounded field for the card, and an amend endpoint once `S64` lands.** We
+suggested `amend_display` over a description-only endpoint since all six fields share the status, and
+said explicitly that it **cannot ship first**: rewriting a stored `module_spec.yaml` puts it out of
+agreement with `manifest.inputs` and a downloaded spec would fail `verify_manifest`, while an amend that
+also rewrites the inputs entry yields a manifest that is no longer what the compiler wrote. Only the
+card-preference half — `ModuleCard.description` preferring `short_description` when present — is theirs
+to do independently.
+
+### What we argued against in both notes
+
+Render-time truncation or folding: it hides prose the author chose to write, leaves the spec as wrong as
+it was, and gives the author no signal. A bound at the schema is what protects the grid; a clamp at the
+renderer only protects the pixels. And no retroactive fix to the seven published modules — they met the
+requirements that existed, and shortening one costs its author a version and their closure, which is a
+decision for each of them.
+
+**Closes when** either a justification we can quote lands in an upstream reply, or the binding is split
+and a release `uv sync` installs carries it. The `short_description` half closes separately, when the
+field exists with its bound *and* the registry's card reads it.

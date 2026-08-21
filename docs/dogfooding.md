@@ -876,6 +876,13 @@ existing assertions are sharpened to agree with it rather than left as independe
 - **The registry clamping or folding the card.** Rendering is theirs, and clamping hides content the
   author chose to write — the description would still be a paragraph, just an invisible one. Not filed
   in their intake for that reason.
-- **Amending the four long ones.** `description` lives in `module_spec.yaml`, inside the content
-  identity, so unlike the README it is not amendable — it costs a new version. That is the module
+- **Amending the four long ones.** `description` lives in `module_spec.yaml`, inside the attestation
+  binding, so unlike the README it is not amendable — it costs a new version. That is the module
   author's call and not ours, and it is a decision for their list rather than a repair for ours.
+
+**Sharpened the next day, and the correction matters.** Measuring it rather than reasoning about it
+showed the cost is *worse* than a version: editing only `module.description` leaves `content_signature`,
+`artifact.digest` and `resolution_signature` byte-identical and **wipes `manifest.verification` to
+`null`** — a closed module becomes one that "records no closure". So the sentence to quote is *costs a
+version and the closure record, in exchange for changing nothing measurable*. That is `F59`, filed as
+format `S64` and registry `S16`; the decision-list framing above is unchanged, only its price tag.
