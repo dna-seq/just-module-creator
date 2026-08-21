@@ -32,7 +32,8 @@
         "stdio"
       ],
       "env": {
-        "JMC_MODE": "essentials"
+        "JMC_MODE": "essentials",
+        "UV_LINK_MODE": "copy"
       }
     }
   }

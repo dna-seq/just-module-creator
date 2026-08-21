@@ -3,6 +3,34 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — three quarters of the server's instructions were never reaching the model
+
+**`Server instructions truncated from 9220 to 2048 chars`.** Found in Claude Code's own MCP debug log
+while diagnosing an unrelated startup timeout. Nothing on our side raises, so this had been true for
+every release that grew the text: the cut landed mid-rule-3, leaving the surviving instructions ending
+on *"A mismatch against a source is not a defect report. Archi"*, and **every registry rule was absent**
+— the polygon default, the irreversibility of production, the explicit-yes before promoting. A surface
+whose entire job is to carry those rules was not carrying them.
+
+**Dried to 2020 characters, and the rules are all still there.** The fix was not fewer rules but moving
+the *procedure* out to the skills that already owned it — `module-publish` holds the two instances,
+`find-evidence` the PMID and quote rules, `module-start` the email consent, `module-curate` the
+1-based trap. Each fact was checked to have a home before it was cut. What is left is the map, the
+taught order, and the six rules no skill may soften, ending in a pointer to `module-101`.
+`test_the_instructions_fit_in_what_the_host_will_actually_keep` holds the budget with 24 characters
+held back, because the text interpolates two version numbers and `0.10.12` is longer than `0.6.1`.
+
+**Cold-start timeout, diagnosed and documented.** A first launch on a fresh install has to create the
+venv and build the package; that overran a 30 s connect limit by 4 ms, and the retry connected in
+3180 ms. Both manifests now set `UV_LINK_MODE=copy`, which is read by the `uv` we spawn — the plugin
+cache and uv's cache sit on different filesystems, so uv was attempting a hardlink, failing, warning,
+and falling back to a full copy. The README says how to warm the environment after an install, where
+the MCP logs live, and that **`MCP_TIMEOUT` is read from the client's environment and cannot be set per
+server in a manifest** — so we do not pretend to set it.
+
+**Three places still called this a Claude-only plugin with one skill**: `pyproject.toml`'s packaging
+summary, `docs/DOMAIN.md`, and `CLAUDE.md`'s own opening sentence. README prose was already dual.
+
 ## 0.15.0 — a module can run on a genome without a registry
 
 **465 tests. Nineteen skills.** Everything below was already written up in the three sections that

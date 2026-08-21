@@ -493,3 +493,36 @@ async def test_paper_citations_accepts_an_unambiguous_direction(extended_client)
         )
     for spelling in ("citing", "references", "cites", "cited_by"):
         assert spelling in str(caught.value)
+
+
+#: Claude Code truncates MCP server instructions to this and reports it only in its
+#: own debug log — `Server instructions truncated from 9220 to 2048 chars`, seen on
+#: 2.1.238. Nothing on our side raises, so the failure is invisible from here.
+_INSTRUCTIONS_CEILING = 2048
+
+#: Held back from the ceiling because the text interpolates two version numbers that
+#: grow: `0.6.1` becomes `0.10.12` and the string is four characters longer for a
+#: reason no edit to this file caused. A test that passed at exactly the ceiling
+#: would start failing on somebody else's release.
+_VERSION_SLACK = 24
+
+
+def test_the_instructions_fit_in_what_the_host_will_actually_keep():
+    """0.14.0 shipped 9220 characters into a 2048 window and nobody could tell.
+
+    Three quarters of the server's own instructions never reached the model. The cut
+    landed mid-rule-3, so the surviving text ended on *"A mismatch against a source is
+    not a defect report. Archi"* and every registry rule — the polygon default, the
+    irreversibility of production, the explicit-yes requirement — was silently absent
+    from a surface whose whole job is to carry them.
+
+    The fix was not a shorter list of rules but moving the *procedure* into the skills
+    that already owned it, leaving the map plus what no skill may soften. So this
+    asserts the budget, not the wording.
+    """
+    budget = _INSTRUCTIONS_CEILING - _VERSION_SLACK
+    assert len(INSTRUCTIONS) <= budget, (
+        f"{len(INSTRUCTIONS)} chars, and the host keeps {_INSTRUCTIONS_CEILING}. "
+        f"Everything past that is dropped without an error. Move detail into a skill "
+        f"— the tail is where the registry rules live, and the tail is what is lost"
+    )

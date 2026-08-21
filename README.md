@@ -47,6 +47,28 @@ The Codex package uses `${PLUGIN_ROOT}` to start the same source checkout as the
 Needs [`uv`](https://docs.astral.sh/uv/) on PATH and Python ≥ 3.13; dependencies install on first
 use. Nothing else to configure — you only need an account when you decide to publish.
 
+### If the first launch times out
+
+**Expected once, on a cold install, and it fixes itself on reconnect.** `uv` has to create the
+environment and build the package the first time the server starts, and a host that allows 30 seconds
+for an MCP server to come up can lose the race — the connection then succeeds on the retry, in about
+three seconds, because the environment is warm.
+
+Warm it yourself right after installing or upgrading and it never happens:
+
+```bash
+uv sync --project ~/.claude/plugins/cache/dna-seq/just-module-creator/<version>
+```
+
+If you would rather raise the limit, `MCP_TIMEOUT` is read from **Claude Code's own environment**, not
+from the plugin manifest — `MCP_TIMEOUT=120000 claude`. A timeout cannot be set per server in the
+manifest, so nothing here can do it for you.
+
+The logs that show which of the two happened live in
+`~/.cache/claude-cli-nodejs/<project-slug>/mcp-logs-<server>/*.jsonl`, and `/mcp` reports current
+status. A cold start looks like `Creating virtual environment` on stderr followed by
+`Connection timeout triggered`; anything else is a real failure worth reporting.
+
 ## How a module gets made
 
 Just say what you want: *"make me a module about FTO and body weight from this paper"*. The agent
