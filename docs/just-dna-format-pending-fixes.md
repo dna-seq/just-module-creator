@@ -1335,3 +1335,40 @@ authored value outranks that source — stays ours and we did not ask them to ta
 
 **Closes when** an overlay table is recognized by the format, applied by the compiler, and installed
 by `uv sync`.
+
+## F58 — the three required `ModuleInfo` fields carry no `Field(description=…)` (upstream `S63`)
+
+**Status: filed 2026-08-21 against format 0.6.6, open. Our side is mitigated and does not wait on it.**
+
+`module.title`, `module.description` and `module.report_title` are the three fields an author must
+replace before a spec validates, and the only three in `ModuleInfo` whose `Field` carries no
+description — while `icon`, `icon_set`, `color`, `name` and `version` beside them all do. So the model
+tells an author what `icon_set` accepts and says nothing about the field that becomes their catalog
+card's subtitle.
+
+Measured on the live production catalog: six of seven published `description`s run 25–79 words, two to
+five sentences, rendered whole. Only `eric-mods/lactose_tolerance` at 8 words is inside the readable
+band. Four of the five reference specs end with the byte-identical *"Curated from the GWAS Catalog
+(GRCh38), allele/strand-validated against dbSNP with a gnomAD r4 second witness."* — the field's one
+differentiating job spent on a sentence four cards share.
+
+**What we asked for:** a `Field(description=…)` on the three, naming the band and saying that
+methodology belongs in `weighting:` / `authorship:` / `README.md`.
+
+**What we argued against, in the note itself:** a `max_length` or a validator. It refuses a merely
+verbose spec, refuses it at validate time after the prose is written, and makes six published modules
+retroactively invalid — a false claim about work that met every requirement that existed. We also did
+**not** file a card-clamp suggestion in the registry's intake: rendering is theirs, and clamping hides
+content the author chose to write. The repair belongs where the prose is authored, which is here.
+
+**Mitigation, and it is complete on our side.** The norm has one home
+(`skills/module-tables/references/module_spec.md`) and is repeated at the single point an author meets
+the field — `scaffold_module`'s `next_step`, the string an agent reads immediately before replacing the
+`<<REPLACE>>`. The two pre-existing *"description is one sentence"* assertions
+(`registry_amend_readme`'s docstring, the readme dossier) now agree with it and name what overrunning
+costs: `description` sits inside the attestation binding, so on a published module it is a line for the
+decision list rather than a repair.
+
+**Closes when** the three fields carry field descriptions in a release `uv sync` installs. Nothing of
+ours comes out then — the point-of-write repetition is still worth having, because the model's field
+description does not reach an agent replacing a `<<REPLACE>>` in a YAML file.

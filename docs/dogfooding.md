@@ -813,7 +813,10 @@ is the recipe.
 ## F58 — nothing tells an author how long a `description` should be, and six of seven published cards are paragraphs
 
 **Found:** 2026-08-21, from the owner reading `antonkulaga/cognitive_intelligence`'s catalog card ·
-**Severity:** medium · **Status:** open here, filed upstream as format-tree `S63`
+**Severity:** medium · **Status:** mitigated here in `8fb2825` — the norm is homed in
+`skills/module-tables/references/module_spec.md` and repeated at `scaffold_module`'s `next_step`. The
+upstream half is open as format-tree `S63` and is tracked in `docs/just-dna-format-pending-fixes.md`;
+the tool-surface prose change rides into the CHANGELOG at the next bump.
 
 The card's description ran to fourteen rows. The owner's read: *"Although there is no restriction I'd
 say 5-15 words length is optimum otherwise it looks bloated."*
