@@ -564,8 +564,16 @@ fast is right; filing without reading `docs/` first is how the same note gets wr
 ## F44 — the full network pre-flight cannot tell a module whose every quote is the article's title from one where the quotes are honest
 
 **Found:** 2026-08-20, remediating `aggression_anger`'s quotes on the polygon · **Severity:** high ·
-**Status:** open · **Upstream:** `S54` (the title passes) and `S56` (the counters never ran) are both
-filed; this entry is the part that is about *our* pre-flight reporting neither.
+**Status:** open, and narrowed 2026-08-21 · **Upstream:** `S54` and `S56` both **released in 0.6.5**
+— the pass reports `titles_as_quotes` (which we surface on `LiteratureReport` as a warning naming the
+PMIDs) and warns when a stale quote counter disagrees with `studies.csv`.
+
+**What is still open is this entry's own subject: the pre-flight.** `registry_check` runs the
+literature pass on the *server*, and what comes back is a verdict, not the pass's warnings — so the
+new signal reaches an author who runs `enrich_literature_pass` locally and not one who runs the most
+expensive check on the surface. `RM17`'s local check is what covers the second author today, from the
+authored file and with no network. The measurement below is the pre-0.6.5 behaviour and is kept as
+the record of it.
 
 **The probe.** Two spec directories, identical except for `studies.csv:provenance_quote`:
 
