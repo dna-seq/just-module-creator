@@ -102,6 +102,13 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
         a new value. Written into `provenance.json` — upstream's own file, recognised
         by the registry, outside `artifact.digest` — and logged into
         `logs/authoring.log`, which travels with the module.
+
+        **`reason` and `recorded_by` are PUBLISHED, verbatim.** Every compile sweeps
+        `logs/**.log` in with no opt-out and a published version is immutable, so
+        deleting the file afterwards takes nothing back. Write a reason, never a
+        paste: no credential, no absolute path (it names the machine and usually its
+        operator), no transcript fragment. Where a path is genuinely part of the
+        reason, give it relative to the spec directory.
         """
         target = resolve_dir(spec_dir, settings)
         record = overrides.OverrideRecord(

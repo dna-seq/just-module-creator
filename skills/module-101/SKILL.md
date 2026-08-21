@@ -212,6 +212,25 @@ essentials is everything bounded by what you named — one identifier, one paper
 and `JMC_MODE=extended` adds only what a *corpus* sizes, plus reading back somebody else's artifact.
 `registry_register` is ungated because it is what mints the token; gating it would be a cycle.
 
+**Switching extended on, and the way that looks right and is not.** An MCP surface has no *switched
+off* state — a tool in the other tier is simply **absent**, and absence is indistinguishable from
+never built, so check this table before telling anyone the plugin cannot do something.
+
+| How the server was started | How to widen it |
+|---|---|
+| plugin (`/plugin install`, `--plugin-dir`) | edit `JMC_MODE` in `.claude-plugin/plugin.json` — `.codex-plugin/plugin.json` for Codex — then reconnect |
+| project MCP server (`.mcp.json` in a checkout) | edit `JMC_MODE` there, then reconnect |
+| standalone CLI | `--mode extended`, or `JMC_MODE` in the shell or `.env` |
+
+**Editing `.env` cannot switch a plugin-launched server, and that is the trap.** The manifest exports
+`JMC_MODE` into the subprocess, and `.env` is loaded with `override=False`, so a variable that is
+already set wins and your edit is read as nothing happening. It is the only setting this bites,
+because it is the only one the manifests pin.
+
+**Never substitute a shell recipe or a raw HTTP call for a tool that is merely switched off.** You
+lose whatever the tool does beyond fetching — for `registry_download` that is the digest
+verification, which is the entire point of it.
+
 **Every registry tool takes a `target`.** Writes default to the polygon; **catalog reads have no
 default and refuse to guess** — reading the instance you did not just write to is what makes a fresh
 publish look like a broken catalog.

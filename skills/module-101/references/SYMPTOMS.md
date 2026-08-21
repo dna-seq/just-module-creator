@@ -6,8 +6,15 @@
 | [Resolution and enrichment](#resolution-and-enrichment) | ref mismatch and the off-by-one, hosting verdicts, expansion, the PAR, a sidecar that did not change | `module-enrich`, `module-refresh` |
 | [Validation and compile](#validation-and-compile) | validate-then-compile disagreements, VRS ids, bins, ploidy, the licence gate, the closure warning | `module-compile`, `module-close` |
 | [Checks](#checks) | ACMG SF, the `clin_sig` cross-check and its two skip reasons, ClinVar citation ids, a re-draft's superseded rows | `module-check`, `module-refresh` |
+| [This server](#this-server-not-the-toolchain) | the workspace boundary, the offline ceiling, a missing token, a contract or target mismatch, a tool that is switched off | none — the repair is configuration, not data |
 
 Real message text, matched on the distinctive phrase. Most of these cost someone a day.
+
+**Work out which layer spoke before you search.** The first four sections are the toolchain —
+compiler, enricher, registry — reporting on your module, and the fix is in the data or in a decision.
+The last is **this plugin** reporting on its own configuration, where no edit to the module will
+change anything. A message naming a row, a column or an `RMn` is the toolchain; one naming an
+environment variable, a token or a `target` is this server.
 
 Messages are quoted as the CLIs print them. The MCP tools surface the same text: compiler findings
 arrive in `validate_module`/`compile_module`'s `errors` and `warnings`, row-level findings in
@@ -459,3 +466,64 @@ a fresh directory and reconciling is the cleaner remediation if you have not alr
 **A wall of near-identical warnings**
 Should not happen; findings aggregate per gene with a count and examples. If you see one, that is a bug
 worth reporting upstream rather than filtering.
+
+## This server, not the toolchain
+
+Everything above is a message the compiler, the enricher or the registry produced and this plugin
+passed through. **These are the plugin's own**, and telling them apart matters because nothing about
+the module will change any of them: they are configuration, credentials or a target, and the repair
+is in the environment rather than in the data. The tell is that no `RMn`, no row and no column is
+named.
+
+**`<path> is outside the configured workspace <root>. Set JMC_WORKSPACE to widen it, or pass a path
+inside it.`**
+`JMC_WORKSPACE` is a **containment boundary**, not a convenience — an MCP server reachable over HTTP
+would otherwise compile into any path the process can write. It is **unset by default**, which is
+right for stdio, so seeing this at all means somebody set it deliberately. Pass a path inside the
+root, or ask whoever deployed the server to widen it. **Do not route around it** by writing somewhere
+else and moving the files afterwards; the boundary is the one rule here that no argument about
+authoring reaches.
+
+**`<path> is not an existing directory.`**
+A spec directory is expected to exist already — only `scaffold_module` and a compile out-dir create
+one. Usually a typo or a relative path resolved against a different working directory than you
+assumed.
+
+**`The server is configured offline (JMC_OFFLINE)…`** — with a tail naming what needed the network:
+*"so the registry cannot be reached"*, *"this check needs HGNC and OLS4"*, *"Literature search needs
+the network"*.
+`JMC_OFFLINE` is a **ceiling, combined by OR** with any per-call `offline`: a per-call `offline=false`
+cannot lift it, and the message says so — *"`offline=true` here clamps the…"*. Nothing is wrong with
+the module. Two of the eleven lifecycle steps fetch (enrich and cross-check) plus literature and the
+registry; everything else runs offline once `resolution.csv` and `literature.csv` exist. **A check
+that could not run is not a check that passed** — record it as skipped, never as clear.
+
+**`This tool needs a registry token for <instance>, and none was found.`**
+The message names all three ways to supply one — `authenticate(token, target=…)` for the session, an
+HTTP header, or the environment variable it names. **A token is issued by one instance and is not
+valid on the other**, so a token that works against the polygon says nothing about production. If you
+have no account at all, `registry_register` is ungated in every mode precisely because it is what
+mints the token.
+
+**`Registry error: … This is the instance, not your module.`**
+A registry serves **one `just-dna-format` contract** and refuses a client on a different `0.x` minor
+in either direction, because compiled artifacts and their digests do not interoperate across one.
+Below 1.0 the check is scoped to major **and** minor, so every `0.6.x` client and server interoperate
+and a `0.7` client against a `0.6` server refuses. **Nothing about the spec will change the answer and
+recompiling will not either** — either the deployment is upgraded, or the registry is driven from a
+checkout pinned to the contract it serves. An operator's call, not an author's.
+
+**`Registry error: … That is a refusal to act on an instance other than the one you named.`**
+The guard working. Every registry tool declares a `target` and the server verifies it against the
+instance's reported mode before acting. Check which one you named: **the polygon and production share
+no database**, so a call aimed at one and answered by the other is never harmless. Catalog reads take
+no default at all for this reason — they refuse to guess rather than answer confidently about the
+wrong world.
+
+**A tool you are certain exists, and it is not on the surface.**
+Nine tools are hidden unless `JMC_MODE=extended` — the PGx drafters, the bulk fact passes,
+`refresh_sidecar`, `paper_citations`, `reverse_module` and `registry_download`. An MCP surface has no
+"switched off" state, only absence, so a missing tool looks exactly like one that was never built.
+`module-101`'s tool table marks the tier on every row. **Do not substitute a raw HTTP call or a shell
+recipe for a tool that is merely switched off** — you lose what the tool does beyond fetching, which
+for `registry_download` is the digest verification that is the entire point.

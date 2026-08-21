@@ -13,8 +13,10 @@ description: >-
 
 # A message you do not recognise
 
-**The lookup is `../module-101/references/SYMPTOMS.md`.** Real message text → cause → action, in four
-sections: authoring and loading, resolution and enrichment, validation and compile, and the checks. It
+**The lookup is `../module-101/references/SYMPTOMS.md`.** Real message text → cause → action, in five
+sections: authoring and loading, resolution and enrichment, validation and compile, the checks, and
+this server's own. The first four are the toolchain reporting on your module; the fifth is the plugin
+reporting on its configuration, where no edit to the module changes anything. It
 sits with the map rather than with a stage because every stage reads from it. Go there first; this file
 exists to get you there with the right search string and to tell you how to read what you find.
 
@@ -42,7 +44,14 @@ can change the answer at all. Four packages plus us, and the tells are reliable:
 | **compiler** | a finding with a level and a row, talking about tables, bins, ploidy, vocabularies, spellings, the licence gate or the closure | it read only your module. It can catch two of your rows contradicting each other; it holds no reference, so it can never tell you a coordinate is wrong |
 | **enricher** | coordinates, alleles, the reference base, the PAR, VRS ids, a sidecar, or a cross-check against an archive | the only tier that fetches. *"Could not"* here is often the network or a snapshot, not your rows — and a mismatch is a finding, not a defect report |
 | **registry** | publishing, namespaces, tokens, versions, a contract or an instance | it arrives from a `registry_*` tool. Ask which `target` you were on before anything else; the two instances share no database |
-| **us** | a path outside the workspace, an offline refusal, a tool that is not in this tier, an unauthenticated result | a setting, never a row. Nothing in your CSVs will fix it |
+| **us** | a path outside the workspace, an offline refusal, a missing token, a `target` that was refused, a tool that is not in this tier | a setting, never a row. Nothing in your CSVs will fix it — see SYMPTOMS' *This server* section |
+
+**The one that arrives as silence rather than a message: a tool you are sure exists is simply not
+there.** Nine are hidden unless `JMC_MODE=extended`, and an MCP surface has no *switched off* state —
+only absence, which is indistinguishable from never built. Check `module-101`'s tool table, which
+marks the tier on every row, before concluding the plugin cannot do something. **Reaching for a shell
+recipe or a raw HTTP call instead is how you lose what the tool did beyond fetching**, and for
+`registry_download` that is the digest verification the tool exists for.
 
 Two consequences worth holding on to. **A message about a coordinate being wrong can only have come
 from the enricher**, so if a strict compile is green that is not evidence the coordinates are right.

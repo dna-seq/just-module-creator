@@ -38,6 +38,25 @@ examples ships a `.log`. Meanwhile 11 of the 27 submitted bundles in
 `/data/sources/just-dna-registry/data/input/` carry 17.6 MB of real agent transcripts that never
 reached the catalog.
 
+## What must never go in one
+
+**`logs/**.log` is swept into every compile with no opt-out and travels to the catalog verbatim**, so
+a log is a **publishing surface**, not scratch space. Nothing redacts it, nothing reviews it, and a
+published version is immutable — a secret written here cannot be taken back by deleting the file
+afterwards.
+
+So never write into one:
+
+- **a credential** — a registry token, an API key, anything from `.env`;
+- **an absolute path** — it names the machine, the operator's home directory and often their real
+  name, and it is meaningless to every reader but you;
+- **a transcript fragment** — a prompt, a system prompt, or a user's own words, none of which the
+  author agreed to publish when they agreed to publish a module.
+
+`record_override` is the writer to route an authoring move through, and the same rule binds what you
+hand it: a reason, not a paste. If a move genuinely needs a path recorded, record it **relative to
+the spec directory**.
+
 ## Identity card
 
 | | |
