@@ -24,11 +24,14 @@ something and invites a workaround where a note was owed. A probe belongs in
 > - **`provenance.json` is written in upstream's own shape** — `ProvenanceDoc` / `ProvenanceItem`,
 >   recognised by the registry, outside `artifact.digest`. An item already there that is **not** ours is
 >   kept and reported, never rewritten.
-> - **Per-field, inside a per-row schema.** One item per `(variant_key, field)` — their `items` list has
->   no uniqueness rule — with the machine fields in a marker appended to `rationale`. So the per-field
->   record **travels with the module** rather than sitting in a local cache a second author would never
->   see, and it re-emits into whatever shape `S52` settles on. That was the open question this entry
->   said not to design around; this designs around *today's schema* instead of around a guess.
+> - **Per-field, and the schema is per-field too since 0.6.5.** `S52` was answered with
+>   `ProvenanceItem.outranks` — `{column: why}`, per column because a row may outrank an archive on
+>   `clin_sig` while its `direction` is unjustified, and per *variant* because `Provenance.item_count`
+>   is a published number meaning *variants carrying a record*. `record_override` writes it, so the
+>   column is legible to a reader who is not us. The marker stays and is not a duplicate of it: it
+>   carries the digest binding the record to the cell, which source was disagreed with, when and by
+>   whom — none of which upstream's schema holds. Still one item per `(variant_key, field)`, since
+>   their `items` list has no uniqueness rule.
 > - **Bound by digest to the value it justifies**, so a later edit to the cell makes the record stale by
 >   construction rather than carrying an old reason onto a new value.
 > - **The move is logged** to `logs/authoring.log`, which is swept up by every compile and published
@@ -48,7 +51,11 @@ something and invites a workaround where a note was owed. A probe belongs in
 >    Both docstrings in `refresh.py` state the narrowed reason rather than the old "the log is empty".
 > 2. **The grading recommendations** (item 4 below) — skill-side, and they belong with a real corpus of
 >    overrides rather than invented ahead of one.
-> 3. **`S52`'s answer**, which is upstream's and decides whether a check downgrades a mismatch.
+> 3. **Whether a check downgrades a mismatch on the strength of a record.** `S52`'s *field* shipped
+>    in 0.6.5; the check half is open as their `RM117`, for two stated reasons — the pre-emption guard
+>    is a convention the code cannot see, and a record is not yet bound to the value it justifies on
+>    their side. Nothing here assumes it will land: a record downgrades nothing, silences nothing and
+>    passes nothing, which was true before the field existed and is still the design.
 
 ### The architecture changed, 2026-08-20 — an overlay, not a wider key
 
@@ -77,9 +84,12 @@ already does with every other authored table, so report-never-repair is not at s
 downstream tool applied its own overlay instead, two consumers compiling one spec directory could
 disagree about what the module says and the artifact would stop being a function of the spec.
 
-**`S60` depends on `S51`** (`F41`) — an overlay's subject must name a derived row exactly and the
-per-table merge key is not public. Deriving it is fine for classifying and not fine for a persisted
-key.
+**`S60` depended on `S51`** (`F41`), and that dependency is discharged: `hints.key_fields` shipped in
+0.6.5, so a derived row's merge key is public and an overlay's subject can name one exactly rather than
+being derived approximately. Upstream's `RM124` reply names the sharp remaining question, and it is one
+only `RM115` could expose — `(table, subject, field)` cannot key `resolution.csv`, whose published rule
+is `subject`: one rsID legitimately resolves to several loci, so the subject alone does not identify a
+row.
 
 **What this repo does meanwhile: nothing new.** `record_override` and `review_queue` stay exactly as
 shipped, narrowed in purpose to the **authored** cell that outranks a source, which is the job

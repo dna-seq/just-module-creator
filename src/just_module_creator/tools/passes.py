@@ -623,6 +623,12 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
         retrievable to check against, and an abstract miss is not a verdict: the
         claim may still be in the full paper.
 
+        **`titles_as_quotes` is the opposite reading and the more dangerous one.**
+        A `provenance_quote` that is the article's own title passes the quote
+        check every time — a title is inside its own fulltext — so the row counts
+        as covered while witnessing nothing about the claim. Ask of any green
+        check whether it could have failed.
+
         **`doi_conflicts` are reported, never rewritten.** Your authored DOI and
         the registry's disagree for that PMID, which means one of the two
         citations is the wrong paper — and only you know which.
@@ -676,6 +682,16 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
             warnings.append(
                 f"{len(result.missing)} citation(s) did not resolve — do not ship these."
             )
+        titles_as_quotes = [str(pmid) for pmid in getattr(result, "titles_as_quotes", ())]
+        if titles_as_quotes:
+            warnings.append(
+                f"{len(titles_as_quotes)} row(s) quote the article's own TITLE. That quote is "
+                "always inside its own fulltext, so the check cannot fail on it and the coverage "
+                "figure above witnesses nothing: "
+                f"{', '.join(titles_as_quotes[:5])}"
+                f"{' …' if len(titles_as_quotes) > 5 else ''}. Replace each with a passage that "
+                "states the finding, and record who located it in `curator`."
+            )
         return LiteratureReport(
             success=True,
             spec_dir=str(target),
@@ -686,6 +702,7 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
             quotes_authored=result.quotes_authored,
             quotes_found=result.quotes_found,
             quotes_unchecked=result.quotes_unchecked,
+            titles_as_quotes=titles_as_quotes,
             coverage=str(getattr(result, "coverage", "") or ""),
             skipped_offline=skipped,
             warnings=warnings,

@@ -77,6 +77,31 @@ def test_a_record_round_trips_through_upstreams_own_file(module: Path):
     assert got.value_sha256 == value_digest("risk_factor")
 
 
+def test_the_column_is_written_where_a_reader_who_is_not_us_can_find_it():
+    """`ProvenanceItem.outranks` answered `S52` in 0.6.5; the record uses it.
+
+    Before it existed the column name lived only inside our own marker, so the file
+    travelled with the module and the one fact a second tool most needs from it — WHICH
+    column disagrees with the source — was legible to our regex alone. The marker is not
+    a duplicate of it: it carries the digest that binds the record to the cell, the
+    source disagreed with, when and by whom, none of which upstream's schema holds.
+    """
+    record = _record()
+    item = overrides.to_items([record])[0]
+
+    assert item.outranks == {
+        "clin_sig": (
+            "ClinVar's benign call rests on a 2015 submission; the 2021 meta-analysis "
+            "(PMID 33417889) restores the association in the folate-replete stratum. "
+            "Source said: benign."
+        )
+    }
+    # Round-tripping still goes through the marker, which is what carries the binding.
+    back, foreign = overrides.from_items([item])
+    assert not foreign
+    assert back[0].field == "clin_sig"
+    assert back[0].value_sha256 == value_digest("risk_factor")
+
 def test_the_file_validates_as_upstreams_provenance_document(module: Path):
     """It must be *their* file, not a lookalike: the registry recognises this name."""
     overrides.write_records(module, [_record()])

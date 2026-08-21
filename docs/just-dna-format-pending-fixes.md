@@ -43,6 +43,15 @@ filed* (an upstream `RMn`, still open) → *fixed in tree* (the symbol exists in
 lockfile). Every status line below names both halves, because "open upstream" said
 neither and was wrong on every entry in this file until 2026-08-11.
 
+**Format 0.6.6 / compiler 0.6.6 / enricher 0.6.6 RELEASED and adopted on 2026-08-21**, with the
+registry at 0.18.2. `uv sync` installs those and the floors say so. The three moved back into lockstep
+at 0.6.5, which is the aligned number (schema, compiler and enricher all moved in it); 0.6.6 is the
+patch round that followed. Verified by symbol in the **installed** packages, not the sibling checkout:
+`StudyRow.curator`, `hints.DERIVED_TABLE_MODELS`, `hints.key_fields`, `hints.REDUNDANCY_BEARING_TABLES`,
+`compiler.compiler.spec_tables`, `compiler.compiler.module_stats`, `scaffold.companions_for` — note
+`scaffold` lives in the **compiler**, not in format. That release retired nine entries in this file at
+once. The paragraph below is the previous adoption and is kept as the record of it.
+
 **Format 0.6.1 / enricher 0.6.2 / registry 0.17.0 RELEASED and adopted on 2026-08-18.**
 `uv sync` installs those, and the floors say so. 0.6 is the first release where the
 three do **not** move in lockstep: format and compiler stop at 0.6.1 and the enricher
@@ -65,7 +74,17 @@ exists to force, and the reason its status lines name both halves.
 
 ## F53 — a module without `variants.csv` cannot be found by gene (upstream `S57`)
 
-**Status:** filed 2026-08-20, open upstream. **Not** in any release.
+**Status: CLOSED 2026-08-21 — released in compiler 0.6.6 as their `RM121`, installed, and adopted
+here.** They answered the question the note asked — `stats` describes the **module**, and `Stats`'s own
+docstring already said "derived from the spec", so it was an unimplemented sentence rather than a
+scoping choice. `module_stats` ships **beside** `variant_stats` (renaming it would be a major), with the
+gene-bearing kinds derived from the table roster and the derived fact sidecars structurally excluded.
+Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`.
+
+**One thing does not close with it, and it is not a defect:** a `pgs`-led module still publishes
+`genes: []`, because `PgsRow` carries no `gene` column to contribute. And a module **published** before
+0.6.6 keeps the stats its own compile wrote — a manifest is immutable, so being findable by gene needs a
+recompile and a new version. Both are stated where the guard used to be.
 
 `compiler.variant_stats` derives `stats.genes` from `variants.csv` alone and the registry's gene index
 reads that field, so a PGx, copy-number or activity-bin module publishes `gene_count: 0, genes: []`
@@ -84,7 +103,18 @@ the registry intake.
 
 ## F54 — the binning family annotates nothing end to end (upstream `S58`)
 
-**Status:** filed 2026-08-20, open upstream.
+**Status: HALF ANSWERED, and the half that mattered — released in 0.6.6 as their `RM122`.**
+`SCHEMAS.md` now carries the normative **measure lookup** beside the genotype join contract: scope to
+the group, select the row whose inclusive range contains the value, greatest `measure_min` on a shared
+endpoint, compare in float32, `unresolved` on a missing measurement, withhold on no match, and
+`trait_efo_id` multiplies the answer rather than disambiguating it. That was the ask — a normative
+statement a conforming consumer can be held to.
+
+**Still true, and why this entry stays open:** no consumer implements it. `just-dna-lite` touches all
+four binning kinds in exactly two places and both count rows. Upstream's `RM122` remains open for the
+question we did not ask — whether the rule should also be a public function — and waits on a consumer to
+fix a signature against. Their own framing is that the family is specified *ahead of* its consumers,
+deliberately.
 
 No consumer implements the bin lookup, so `repeat_alleles.csv`, `copynumbers.csv`, `heteroplasmy.csv`
 and `activity_phenotype.csv` produce nothing a reader renders today. Three independent reproductions.
@@ -99,7 +129,26 @@ heteroplasmy module will produce a report today.**
 
 ## F55 — three attestations record a check that could not have failed (upstream `S59`)
 
-**Status:** filed 2026-08-20, open upstream.
+**Status: TWO OF THREE released in 0.6.6 as their `RM123`; the third did not reproduce.**
+
+- **`enrich_pgx` grading CPIC's own table** — `_function_check_record`'s *answered* branch built
+  `detail` from the answered legs alone, so a CPIC-drafted module with PharmVar answering published a
+  clean two-authority comparison with no sign that half of it was a copy against itself. Both branches
+  now sort by source, since `verification.json` is a hashed input.
+- **`hints._flag_advisory_columns` naming checkers that never open the table** — scoped by
+  `REDUNDANCY_BEARING_TABLES`. The **explanation** only: the provider refusal stays column-keyed,
+  because whether a drafter should start filling `clin_sig` on a binning row is a separate decision
+  nobody has taken, and making it fillable as a side effect of fixing a message is not a repair. Six
+  columns are deliberately unscoped and each absence is a checked claim.
+- **`enrich_facts` collapsing "no constraint published" into "not asked"** — **did not reproduce**.
+  Read as the gene-constraint pass, the two states have been separate since their RM98 in **0.6.1**: a
+  looked-up gene gnomAD publishes nothing for gets a `not_found` row, while a gene reachable through
+  neither route gets no row at all and lands in `unconsulted` with its own warning. We were running
+  enricher 0.6.4 and the report named no symbol.
+
+**The test the note gave survives all of it and is the durable half** — ask of any green attestation:
+*could this check have failed?* Their reply put it better: a check that could not have failed should
+record why rather than record a zero.
 
 `enrich_pgx` grading CPIC's own table; `hints._flag_advisory_columns` naming checkers that never open the
 table quoted; `enrich_facts` collapsing "no constraint published" into "not asked". The record cannot
@@ -110,23 +159,28 @@ any green attestation: could this check have failed?** The note asks upstream to
 reason their ClinVar `panel:` pin already produces, and explicitly does **not** ask for a severity
 change.
 
-## Upstream `RM104`–`RM111` — filed from our 2026-08-20 dossier audit, all open
+## Upstream `RM104`–`RM111` — filed from our 2026-08-20 dossier audit; six shipped in 0.6.6
 
 Eight code defects the three-way dossier audit found in `just-dna-format` / `-compiler` / `-enricher`.
 They are **upstream roadmap items, not our `F<n>`** — recorded here so a guard in one of our skills is
-traceable to the thing it guards against, and so nobody re-files them. **All eight were open when this
-was written; every guard stays live until a release says otherwise.**
+traceable to the thing it guards against, and so nobody re-files them. **Six shipped in 0.6.6 and their
+guards came out on 2026-08-21; `RM108` and `RM110` are open as minors and their guards stay live.**
 
-| Upstream | What | Our guard lives in |
-|---|---|---|
-| `RM104` | `enrich_gene_metrics` raises `UnboundLocalError` on an ordinary idempotent re-run, and it is not a `GeneMetricsEnrichmentError` | `module-refresh`, `references/gene_metrics.md` |
-| `RM105` | `logo.jpeg` wins discovery and is attested, but the publisher allowlist does not carry it | `module-publish`, `references/logo.md` |
-| `RM106` | the `faf95` warning is published twice into `manifest.compilation.warnings` | `module-check`, `module-compile`, `references/frequencies.md` |
-| `RM107` | a duplicate `(source, layer)` row in `licensing.csv` compiles green under `--strict` | `module-start`, `module-check`, `references/licensing.md` |
-| `RM108` | a ClinGen re-curation appends beside the old row with nothing marking it superseded | `module-refresh`, `references/gene_validity.md` |
-| `RM109` | the gene-metrics fetch-suppression key is not derived from the merge key, so an override duplicates | `module-refresh`, `references/gene_metrics.md` |
-| `RM110` | `constraint_flags` has two producers with two encodings — 17,403 of 18,111 snapshot rows carry the truthy literal `"[]"` | `references/gene_metrics.md` |
-| `RM111` | three shipped strings assert a registry override of `license` that nothing performs | `references/literature.md` |
+| Upstream | What | State | Our text lives in |
+|---|---|---|---|
+| `RM104` | `enrich_gene_metrics` raised `UnboundLocalError` on an ordinary idempotent re-run, outside `GeneMetricsEnrichmentError` | **released 0.6.6** | `module-refresh`, `references/gene_metrics.md` |
+| `RM105` | `logo.jpeg` won discovery and was attested, but the publisher allowlist did not carry it | **released 0.6.6** — re-publish a module that shipped one | `module-publish`, `references/logo.md` |
+| `RM106` | the `faf95` warning was published twice into `manifest.compilation.warnings` | **released 0.6.6** — a recompile publishes one fewer warning | `module-check`, `module-compile`, `references/frequencies.md` |
+| `RM107` | a duplicate `(source, layer)` row in `licensing.csv` compiled green under `--strict` | **released 0.6.6, and it TIGHTENS** — now an error in validate and compile both | `module-start`, `module-check`, `references/licensing.md` |
+| `RM108` | a ClinGen re-curation appends beside the old row with nothing marking it superseded | **open** — needs a currency notion decided first | `module-refresh`, `references/gene_validity.md` |
+| `RM109` | the gene-metrics fetch-suppression key was not derived from the merge key, so an override duplicated | **released 0.6.6** — a pair written earlier is still in the file | `module-refresh`, `references/gene_metrics.md` |
+| `RM110` | `constraint_flags` has two producers with two encodings — 17,403 of 18,111 snapshot rows carry the truthy literal `"[]"` | **open** — normalizing moves `gene_metrics.signature` for every module holding snapshot rows | `references/gene_metrics.md` |
+| `RM111` | three shipped strings asserted a registry override of `license` that nothing performs | **released 0.6.6** — two were `Field(description=…)`, so the text `describe_table` returns changed | `references/module_spec.md` |
+
+**`RM107` is the one that can stop a build.** An inherited module carrying a duplicate pair compiles
+today and will not under this toolchain. That is the pair being noticed rather than the module breaking,
+and the repair is a decision: `licensing.merge_sources_csv` merges on the key but keeps the **last** row,
+which discards a claim silently exactly where the two disagree.
 
 **`RM110` has a consumer-visible edge worth acting on whatever upstream does:** anything writing
 `if row.constraint_flags:` reads 96% of snapshot rows as *flagged*. Compare against the literals and
@@ -814,8 +868,10 @@ ship, and the behaviour we depend on is already what we test against.
 
 ## F38 — `--no-study-facts` is a permanent choice on `gwas_effects.csv`, and nothing upstream says so
 
-**Status —** filed 2026-08-20 as format-tree `S50`, against enricher 0.6.4 (installed). Open. **A
-documentation defect only; the code is the merge rule working correctly.**
+**Status: CLOSED 2026-08-21 — the clause landed in enricher 0.6.5's `ENRICHER.md` and CLI help,
+which is what this asked for.** No `RMn`: the merge rule was correct throughout and the prose read as
+a per-run trade. **Our warning stays**, and deliberately — it is in front of an author at the moment
+they pass the argument, which upstream prose is not.
 
 `ENRICHER.md:2797` and the CLI's own `--no-study-facts` help both describe the flag as "keeping the
 effects and losing the linked metadata", which reads as a per-run trade. It is not one: `_merge_key`
@@ -848,14 +904,13 @@ is in front of an author at the moment they pass the argument, which upstream pr
 > beside `S50` and that reference is unambiguous. This one takes the next free id.
 
 
-**Status —** filed 2026-08-20 as format-tree `S47`; **accepted and fixed in tree the same day**
-as their `RM112`. `hints.DERIVED_TABLE_MODELS` + `hints.derived_model_for(csv_name)` are public in
-their checkout — keyed on the filename, derived from `_FACT_TABLES`, both licence spellings
-answering, with a set-equality guard of their own. **Not released**: compiler 0.6.1 is what we
-install and has neither symbol (`hasattr(hints, "derived_model_for") is False`), so this is upstream
-state 2 of 3 and the mitigation stays. They also declined to widen `describe_table` — deliberately,
-since a caller relies on its refusal — which leaves our separate read-only route as the shape they
-endorsed.
+**Status: CLOSED 2026-08-21 — released in compiler 0.6.5 as their `RM112`, installed, and adopted
+here.** `hints.DERIVED_TABLE_MODELS` + `hints.derived_model_for(csv_name)` are public: keyed on the
+filename, derived from `_FACT_TABLES` rather than restated, and answering both licence spellings.
+`_PRODUCED_MODELS` and `_PRODUCED_CSVS` now both read that map, minus the draftable kinds, so the
+licensing carve-out stays derived and the cross-package hop below is gone. They declined to widen
+`describe_table` — deliberately, since a caller relies on its refusal — which leaves our separate
+read-only route as the shape they endorsed.
 
 `compiler._FACT_TABLES` is the authoritative tuple — `(csv, parquet, model)` for the seven fact
 tables — and it is **private**. `hints.model_for` / `draft.DRAFTABLE` cover authored kinds only.
@@ -867,31 +922,34 @@ derived model but is keyed by **model name**, and what a tool caller holds is a 
 **Why it reached us.** RM11 makes a sidecar's columns answerable, which needs the model behind the
 name.
 
-**Mitigation.** The roster is derived from the registry's public pair; the `csv → model` half is a
-seven-entry map in `tools/authoring.py::_PRODUCED_MODELS`, and
-`tests/test_authoring.py::test_the_produced_roster_and_its_models_agree` pins its keys to the
-derived roster so an eighth fact table fails the suite rather than becoming silently
-undescribable. `describe_machine_table` refuses such a name explicitly — real, and undescribable by
-this build — instead of reporting it as unknown.
+**What the mitigation was.** The roster came from the registry's public pair
+(`specfiles.FACT_CSVS` + `RESOLUTION_CSV`) and the `csv → model` half was a seven-entry hand-kept map,
+with a test pinning the two to each other. Its real cost was that the roster came from a *different
+package* than the loader it described, so a registry release lagging a compiler release made our
+answer lag too — that is gone with it, and the arm in `describe_machine_table` for a name that is real
+and undescribable by this build is gone as well, because the two halves can no longer disagree.
 
-**Cost of the mitigation, stated because it is real.** The roster now comes from a different package
-than the loader it describes, so a registry release lagging a compiler release makes our answer lag
-too. The test is the guard; there is no version pin that would help.
-
-**Closes when** `_FACT_TABLES` is public, or a `model_for` that covers the machine-produced names
-ships and is installed.
+**The test that replaced the pin is the one worth keeping**: the roster is now compared against the
+registry's independent enumeration, which is a different package on a different cadence. A fact table
+that reaches one and not the other is a file an author can be handed and cannot be told about.
 
 ---
 
 ## F39 — a table kind's natural-key *columns* are unobtainable, only its key *values*
 
-**Status —** filed 2026-08-20 as format-tree `S48`, against format 0.6.1 / compiler 0.6.1. Open, and
-**being fixed in their tree as this was written** — uncommitted at the time of the note, so no
-`**Status —**` reply exists yet: `hints.key_fields(csv_name) -> TableKey | None` carrying `columns`,
-`rule` (`"equality"` / `"overlap"`, which is the binning distinction) and `stamped`, resolving through
-`model_for` then `derived_model_for` so one route answers both halves, and returning the **authored**
-spelling of a column rather than the grouper's property — i.e. `modifier_copy_number`, the same
-correction made here. Nothing of it is installed (compiler 0.6.1).
+**Status: CLOSED 2026-08-21 — released in compiler 0.6.5 as their `RM113`, installed, and adopted
+here.** `hints.key_fields(csv_name) -> TableKey | None` carries `columns`, `rule` and `stamped`, plus a
+`fallback` for the one kind with two levels, resolving through `model_for` then `derived_model_for` so
+one route answers authored and machine-produced kinds alike. It returns the **authored** spelling of a
+column rather than the grouper's property — `modifier_copy_number`, the same correction we had made by
+hand. `rule` gained a third member on the way, `subject`, for a table where one subject legitimately
+carries several rows; eight models now declare `_KEY_FIELDS` and both dupe-key dicts derive from it,
+so `key_fields` and `natural_key` cannot drift.
+
+`list_tables` reports `keyed_on` and a new `key_rule` from it, `describe_table` and
+`describe_machine_table` both carry the whole `key` block, and the `keyed_on` half of `_SUBJECTS` is
+gone. **The subject half stays**, and stays the one deliberate exception: it answers *which table?*,
+which is about intent and not structure.
 
 `draft.natural_key(row)` is public and row-level: an instance in, a tuple of *values* out, so it
 cannot say which columns they came from, and it returns `None` for the four binning kinds on purpose
@@ -904,22 +962,26 @@ the only structural claim on this surface that is not generated — and it said
 `(gene, modifier_gene, modifier_cn)` for all of 0.6, after upstream deprecated that column. An author
 was being told to key on a column that is removed at format 1.0.
 
-**Mitigation.** Every token in `_SUBJECTS` is now an exact model field name, and
-`tests/test_authoring.py::test_every_documented_key_column_is_a_live_undeprecated_field` resolves
-each against `model_fields` — accepting a property, since `StudyRow.variant_key` is derived — and
-fails on one whose description opens with `DEPRECATED`. Run against the pre-fix map it flags six
-tokens, `modifier_cn` among them; that was watched, not assumed.
-
-**Closes when** a public `key_fields(csv_name)` (or the key on `describe_table`'s own answer, which
-its docstring already promises) ships and is installed. Until then the guard stays whatever upstream
-does, because it costs one test and catches the whole class.
+**The guard stays and its subject moves.**
+`test_every_documented_key_column_is_a_live_undeprecated_field` was written to pin a hand-kept map;
+run against the pre-fix map it flagged six tokens, `modifier_cn` among them, which was watched rather
+than assumed. The drift it caught can no longer arrive from our side — but it can still arrive from
+theirs, and an author reading a deprecated key column is misled either way, so it now asks whether the
+**generated** answer resolves on the live model and is not retired. One test, whole class, unchanged
+cost.
 
 ---
 
 ## F40 — `COMPANION_KINDS` pulls `variants.csv` in behind `studies.csv`, which RM47 made wrong
 
-**Status —** filed 2026-08-20 as format-tree `S49`, against compiler 0.6.1. Open. **Upstream's
-constant; we pass it through and patch nothing.**
+**Status: CLOSED 2026-08-21 — released in compiler 0.6.5 as their `RM114`, installed, and adopted
+here.** `scaffold.companions_for(kinds)` applies the conditional half and is what `scaffold_module`
+itself uses, so the answer and the act cannot disagree. `variants.csv` still pulls `studies.csv`
+unconditionally — that direction has no condition, since a variant claim needs grounding evidence
+however the module is composed — while `studies.csv` pulls `variants.csv` only when nothing else
+recognised was asked for. Both our sites route through it, and
+`test_scaffolding_a_binning_module_beside_studies_invites_no_empty_variants_csv` asserts it on disk
+rather than in the warning text.
 
 `scaffold.COMPANION_KINDS["studies.csv"] == ("variants.csv",)`, justified in its own comment by
 "`studies.csv` alone fails with *module has no recognized table*" — true when it is literally alone,
@@ -942,10 +1004,21 @@ spec rather than asserting the sentence.
 
 ## F41 — a derived sidecar's *merge key* lives inside its pass, so nothing can reproduce it
 
-**Status —** filed 2026-08-20 as format-tree `S51`, against format 0.6.1 / compiler 0.6.1 /
-enricher 0.6.4. Open. This is `F39` asked of the machine-written tables, where the answer is one step
-further away: an authored kind's key at least *exists* as a lambda in `compiler._TABLE_DUPE_KEYS`; a
-fact sidecar's exists only as a dict-key expression in the body of the pass that writes it.
+**Status: CLOSED 2026-08-21 — released in compiler 0.6.5 as their `RM115`, installed, and adopted
+here.** This was `F39` asked of the machine-written tables, where the answer was one step further
+away: an authored kind's key at least *existed* as a lambda in `compiler._TABLE_DUPE_KEYS`; a fact
+sidecar's existed only as a dict-key expression in the body of the pass that wrote it. Now the seven
+fact models declare a key like any other, **every pass keys its `existing` map through
+`base.merge_key`**, which reads the same declaration — that is what stops the two drifting — and
+`KEY_RULES` gained `subject` for `resolution.csv`, where one rsID resolving to several loci would
+otherwise report a legal file as duplicated.
+
+**Our approximation was coarse on two tables and simply different on two others**, which is what the
+note predicted and understated. `refresh_sidecar` keyed `clinical_assertions.csv` on
+`(variant_key, dataset)` against a real key of `(variant_key, variation_id)`, so two ClinVar assertions
+on one variant collapsed into one subject and were reported as a conflict; and `gene_validity.csv` on
+`(gene, dataset)` against `assertion_id`, whose two-level fallback we had no way to express. Both now
+come from `hints.key_fields`, fallback included.
 
 `enrich_frequencies` builds `existing: dict[tuple[str, str], FrequencyRow]` keyed
 `(row.variant_key, row.population)`. `enrich` builds `existing[variant_key] -> list[ResolutionRow]`,
@@ -990,15 +1063,23 @@ unable to disagree.
 
 ## F42 — `quotes_found` is satisfied by the article's own title, so full quote coverage can witness nothing
 
-**Status — filed upstream 2026-08-20 as `S54`; ACCEPTED and FIXED IN TREE as their `RM118`, the same
-night. Not released, so nothing here changes yet.** Their fix is `LiteratureResult.titles_as_quotes`,
+**Status: CLOSED 2026-08-21 — released in enricher 0.6.5 as their `RM118`, installed, and surfaced
+here.** `enrich_literature_pass` carries `titles_as_quotes` on `LiteratureReport` and warns naming the
+PMIDs, so the check reaches an author through the tool and not only through the CLI. Their fix is
+`LiteratureResult.titles_as_quotes`,
 listing the PMIDs whose every `provenance_quote` is the article's title, printed as a warning and
 never an exit code — the reason being ours: whether a title is an acceptable locator is the author's
 decision, and what the tool can honestly say is that `quotes_found` is not evidence there.
 
-**Our half is `RM17` and is unaffected by any of that.** Their check lives in the literature pass; a
-module whose pass never ran (see `F49`) reaches it with nothing to check. Ours reads `studies.csv`
-directly and needs no network.
+**Our half is `RM17` and is unaffected by any of that, so both stay.** Their check lives in the
+literature pass, which needs the network; ours reads `studies.csv` directly and runs inside `lint_rows`
+and `validate_module`, before any pass has run. Theirs answers for a **pinned** sidecar row, which is
+the case ours cannot see from the authored file alone — and those four modules have every row pinned,
+so a check living in the fetch loop would have fired on none of the 3668 quotes it was written for.
+Two checks, two reaches; keeping both is deliberate.
+
+**The discriminator is the metadata, not the string's shape**, which is the thing a re-implementation
+gets wrong: length cannot separate a 17-word title from a 17-word sentence.
 
 Measured across every `studies.csv` in `../just-dna-format` (33 files, 44342 rows) while auditing our
 own `S11`. The ten `reference_examples/` do not carry `provenance_quote` at all. The four
@@ -1030,16 +1111,20 @@ row citing a PMID), **and** that is in the version `uv sync` installs.
 
 ## F43 — a `provenance_quote` cannot name who located it, so an honest agent-located quote has nowhere to say so
 
-**Status — filed upstream 2026-08-20 as `S55`; ACCEPTED and FIXED IN TREE as their `RM120` within
-the hour — `StudyRow.curator`, "your whole ask, verbatim as you wrote it". NOT RELEASED: the format
-`uv sync` installs is 0.6.1 and its `StudyRow.model_fields` has no `curator`. So everything below
-still describes what an author faces today.**
+**Status: CLOSED 2026-08-21 — released in format 0.6.5 as their `RM120` (`StudyRow.curator`,
+"your whole ask, verbatim as you wrote it"), installed, and adopted here.** Verified from **this**
+repository, which is the check that tells the truth — both trees answered to `uv run python` and
+reported the same version while only one had the field (`F51`):
+`uv run --project /data/sources/just-module-creator python -c "import just_dna_format; from just_dna_format.spec import StudyRow; print(just_dna_format.__file__); print('curator' in StudyRow.model_fields)"`
+now prints a `site-packages` path and `True`.
 
-> **Check this one from THIS repository, not from the sibling checkout.** Both trees answer to
-> `uv run python`, both report `just-dna-format 0.6.1`, and only one of them has the field — see
-> `F51`. The check that tells the truth is
-> `cd /data/sources/just-module-creator && uv run python -c "from just_dna_format.spec import StudyRow; print('curator' in StudyRow.model_fields)"`,
-> which returns `False`.
+**Adopted where an author meets it**: `find-evidence` tells them to fill it on every row whose quote
+they located, the `studies.csv` dossier says what it is and what it is not — free text resolvable
+against `authorship`, never a `machine_located` boolean — and both say the part that keeps it honest:
+**nothing checks it**. It is legible to a reviewer routing scrutiny, not to a gate, and responsibility
+stays with the human author however the cell is filled.
+
+Everything below describes what an author faced before that release.
 
 `VariantRow.curator` is `str | None`, "Curator override" (`spec.py:513`), and `Defaults.curator`
 defaults to the literal `"ai-module-creator"` (`spec.py:296`). `StudyRow` has **no** `curator` column.
@@ -1095,8 +1180,16 @@ case and names neither party.
 
 ## F49 — `literature.csv` publishes `quotes_authored: 0` beside a `studies.csv` full of quotes, and the manifest turns it into a confident zero
 
-**Status — filed upstream 2026-08-20 as `S56`; ACCEPTED and BOTH HALVES FIXED IN TREE as their
-`RM119`, the same night. None of it is released.** Our half is `F44` and is separate.
+**Status: CLOSED 2026-08-21 for both halves — released in 0.6.5 as their `RM119`, installed, and
+adopted here.** `_check_quote_counter_is_current` warns naming both numbers, and
+`manifest.literature.quotes_unchecked` exists, so a block summed over all-null rows no longer publishes
+a confident zero. Our half is `F44` and is separate.
+
+**What did NOT ship is the half an author feels:** the pass still does not recompute the counter when
+it merges, and upstream says they still want that. So a module whose quotes were authored after its
+last literature run keeps reporting zero until somebody re-runs the pass, and a **published** version
+keeps it, since a manifest is written at compile time. Said plainly in `references/literature.md` and
+in `find-evidence` rather than smoothed over.
 
 Their fix is the first candidate we offered: `_check_quote_counter_is_current` counts the non-empty
 `provenance_quote` / `provenance_regex` cells per PMID at compile and warns when the sidecar
@@ -1105,12 +1198,10 @@ when the pass merges — is **not** shipped and they say they still want it, so 
 already-published module keeps reporting zero until somebody re-runs the pass.
 
 > **Upstream state, checked by symbol rather than by reading their changelog.** `quotes_unchecked:
-> int` exists on `Literature` in `../just-dna-format`, with `_literature_block` computing
-> `sum(1 for r in rows if r.quotes_found is None)`. **The installed package does not have it** —
-> from this repository, `Literature.model_fields` on format 0.6.1 is nine fields ending at
-> `quotes_found`. State 2 of three: fixed in tree, not released. Run that check from
-> `/data/sources/just-module-creator`; the sibling tree answers `True` to the same line and reports
-> the same version (`F51`).
+> int` is on `Literature` in the **installed** format 0.6.6 — ten fields, with `_literature_block`
+> computing `sum(1 for r in rows if r.quotes_found is None)`. It was state 2 of three (fixed in tree,
+> not released) for exactly one day, while both trees reported `just-dna-format 0.6.1` and only one
+> had the field (`F51`).
 
 **The sharpest reproduction, on a module we published ourselves.** After remediating
 `big_five_personality`'s quotes we published to the polygon and read the manifest back

@@ -1212,6 +1212,15 @@ class LiteratureReport(BaseModel):
         default=0,
         description="**Not failures** — nothing retrievable to check them against.",
     )
+    titles_as_quotes: list[str] = Field(
+        default_factory=list,
+        description="PMIDs whose `provenance_quote` IS the article's own title. A title is always "
+        "inside its own fulltext, so the quote check on such a row CANNOT fail: it counts toward "
+        "`quotes_found`, the module reports full quote coverage, and nothing about any claim has "
+        "been witnessed. Warning-only, and the verdict comes from the citation's metadata rather "
+        "than from the string's shape — length cannot separate a 17-word title from a 17-word "
+        "sentence. Replace each with a passage that states the finding.",
+    )
     coverage: str = Field(default="", description="Upstream's own prose summary.")
     skipped_offline: bool = Field(
         default=False,

@@ -30,12 +30,22 @@ carries `variant_key`, `rationale`, `reviewer_verdict`, `confidence` and
 server-side rebuild, and it is hashed like a log and kept out of `artifact.digest`
 — so writing one costs no identity.
 
-**An outrank is per field and their schema is per row.** Upstream is being asked to
-pick a shape (`S52`); until they do, this writes **one item per (variant_key,
-field)** — their `items` list has no uniqueness rule — and carries the field in a
-machine-readable marker appended to `rationale`. That keeps the per-field record
-travelling *with the module* rather than in a local cache a second author would
-never see, and it re-emits into whatever shape `S52` settles on.
+**An outrank is per field, and since 0.6.5 their schema is too.** `S52` was answered
+with `ProvenanceItem.outranks` — `{column: why}`, per column because a row may outrank
+an archive on `clin_sig` while its `direction` is unjustified, and per *variant* because
+`Provenance.item_count` is a published number meaning *variants carrying a record*. So
+the column is written where a reader who is not us can find it: the registry, another
+tool, or a person reading the file.
+
+The marker stays, and it is not a second copy of the column. It carries what `outranks`
+has no room for and what makes a record *checkable* — the digest binding it to the cell,
+which source was disagreed with, when, and by whom — none of which upstream's schema
+holds. One item per `(variant_key, field)`, since their `items` list has no uniqueness
+rule.
+
+**Whether a check downgrades a mismatch on the strength of one of these is still open
+upstream (their RM117), and nothing here assumes it will.** A record downgrades nothing,
+silences nothing, and passes nothing.
 """
 
 from __future__ import annotations
@@ -133,6 +143,10 @@ def to_items(records: Iterable[OverrideRecord]) -> list[ProvenanceItem]:
                 variant_key=record.variant_key,
                 rationale=f"{record.reason.rstrip()}{said}{_marker(record)}",
                 human_reviewed=record.human_reviewed,
+                # Upstream's own per-column slot (0.6.5). The prose is the reason a
+                # human reads; the key's presence is what a tool may read, and it is
+                # what stops the column name being legible only to our own regex.
+                outranks={record.field: f"{record.reason.rstrip()}{said}".strip()},
             )
         )
     return items
