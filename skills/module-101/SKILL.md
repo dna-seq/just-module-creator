@@ -212,7 +212,9 @@ essentials is everything bounded by what you named — one identifier, one paper
 and `JMC_MODE=extended` adds only what a *corpus* sizes, plus reading back somebody else's artifact.
 `registry_register` is ungated because it is what mints the token; gating it would be a cycle.
 
-**Every registry tool takes a `target`.** Writes default to the polygon, catalog reads to production.
+**Every registry tool takes a `target`.** Writes default to the polygon; **catalog reads have no
+default and refuse to guess** — reading the instance you did not just write to is what makes a fresh
+publish look like a broken catalog.
 `references/CLI.md` names the few things no tool wraps — signing, the PGx cross-checks,
 snapshot building, `hint recover`.
 

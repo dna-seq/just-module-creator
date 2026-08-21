@@ -248,7 +248,7 @@ async def test_registry_token_falls_back_to_the_toolchain_variable(monkeypatch):
 async def test_offline_settings_block_the_registry(make_client):
     async with make_client("essentials", offline_settings()) as client:
         with pytest.raises(ToolError, match="offline"):
-            await client.call_tool("registry_search", {"query": "lactose"})
+            await client.call_tool("registry_search", {"target": "prod", "query": "lactose"})
 
 
 async def test_offline_settings_block_every_literature_tool(make_client):

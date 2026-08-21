@@ -3,6 +3,41 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.18.0 — the catalog reads stop guessing which registry they are talking about
+
+**`target` is now a REQUIRED argument on `registry_search`, `registry_get_module`,
+`registry_download` and `registry_is_published`.** It used to default to `prod`, on the reasoning
+that the published world is what such a question is about. That was right about the common case and
+wrong about the common **mistake**: somebody rehearses a publish on the polygon, reads it straight
+back without noticing that the read has a different default from the write, gets nothing, and
+concludes the catalog is broken. Two instances that share no database cannot be disambiguated by a
+tool — so it asks, and the schema's enum puts both options at the call site.
+
+`DEFAULT_CATALOG_TARGET` is gone. `DEFAULT_WRITE_TARGET` stays and stays `test`, for the reason it
+always had: a forgotten `target` on a write costs nothing on the polygon and is irreversible against
+production.
+
+**This is a wire-contract change.** A caller that omitted `target` on one of those four tools now
+gets a validation error instead of a confident answer about the wrong instance, which is the point.
+
+### One leftover, and two documents that still described the old rule
+
+The change was written and tested on 2026-08-21 and left uncommitted when its session ended, so its
+last mile was never walked:
+
+- **`registry_search`'s docstring still promised the default its own signature had just removed** —
+  *"`target` defaults to **production** — unlike the write tools"*. An agent reads the docstring, so
+  the tool was arguing with itself at exactly the call site this change exists to clarify.
+- **`module-101` and `CLAUDE.md` §11 both still said "catalog reads to production."** The claim is
+  now stated where the enforcement is: the reads take no default, and the four tools are named.
+
+### The server's map line follows the router
+
+`server.INSTRUCTIONS` said *"Load `module-101` for the procedure"* — one hop indirect since 0.17.0,
+and `module-101` was never the procedure. It now reads *"Load `create-module` to route."* The
+instructions sit at 2012 characters against the host's 2048-character truncation, which is why the
+line got shorter rather than more explicit.
+
 ## 0.17.0 — `/create-module` comes back as a router, and `module-101` gives up the flowchart
 
 **The name was load-bearing and the split took it away with the file.** `create-module` was the

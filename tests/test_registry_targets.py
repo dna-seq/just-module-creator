@@ -67,13 +67,16 @@ REGISTRY_TOOL_DEFAULTS = {
     # A write, so it rehearses like the others — and it is per-instance anyway: the
     # module it amends exists on one registry only.
     "registry_amend_readme": "test",
-    # And this one asks about the published world, like every other catalog read: the
-    # question is "has anyone published this data", and production is where that
-    # matters — a polygon duplicate is deletable.
-    "registry_is_published": "prod",
-    "registry_search": "prod",
-    "registry_get_module": "prod",
-    "registry_download": "prod",
+    # The catalog reads have NO default, and `None` here means exactly that. They
+    # defaulted to production until 2026-08-21, which was right about the common case
+    # and wrong about the common mistake: rehearse a publish on the polygon, read it
+    # straight back, get a 404 from a *different* instance than you just wrote to, and
+    # conclude the catalog is broken. A read cannot know which world was meant, so it
+    # asks — the enum makes both options visible where the call is written.
+    "registry_is_published": None,
+    "registry_search": None,
+    "registry_get_module": None,
+    "registry_download": None,
     # Health follows the write default so the common case — "confirm I am pointed at
     # the polygon before I rehearse" — needs no argument.
     "registry_health": "test",
@@ -224,14 +227,27 @@ async def test_every_registry_tool_takes_a_target(make_client):
         assert "target" in schemas[name]["properties"], f"{name} cannot be aimed at an instance"
 
 
-async def test_writes_rehearse_and_catalog_reads_ask_production(make_client):
-    """The asymmetry is the design. A flip here is the accident it prevents."""
+async def test_writes_rehearse_and_catalog_reads_refuse_to_guess(make_client):
+    """The asymmetry is the design. A flip here is the accident it prevents.
+
+    Writes default to the polygon because a forgotten target there costs nothing.
+    Catalog reads default to nothing at all, because the cheap-vs-irreversible
+    argument does not apply to them and a wrong-instance read is what makes somebody
+    think the catalog is broken. `None` in the map means "required", and it is
+    asserted twice: no default in the schema, and named in `required`.
+    """
     async with make_client(mode="extended") as client:
         schemas = await _schemas(client)
 
     for name, expected in REGISTRY_TOOL_DEFAULTS.items():
-        actual = schemas[name]["properties"]["target"].get("default")
+        schema = schemas[name]
+        actual = schema["properties"]["target"].get("default")
         assert actual == expected, f"{name} defaults to {actual!r}, expected {expected!r}"
+        if expected is None:
+            assert "target" in schema.get("required", []), (
+                f"{name} has no default target but does not require one either, so an "
+                "agent can still omit it and be answered about a world it did not name"
+            )
 
 
 async def test_the_delete_verbs_refuse_production_before_sending_anything(make_client):

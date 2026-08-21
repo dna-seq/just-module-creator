@@ -77,40 +77,41 @@ _FMT = schema_versions().format_version
 _COMP = schema_versions().compiler_version
 
 INSTRUCTIONS = f"""\
-Authoring surface for just-dna annotation modules. Schema answers are generated
-from just-dna-format {_FMT} and just-dna-compiler {_COMP}; older than yours means a
-stale process is answering.
+Authoring surface for just-dna annotation modules. Schema answers come from
+just-dna-format {_FMT} and just-dna-compiler {_COMP}; older than yours means a stale
+process.
 
 A module is authored CSVs plus module_spec.yaml, compiled to a parquet artifact
-and a content-addressed manifest. Work in this order:
+and manifest. Work in this order:
 
-  list_tables -> scaffold_module -> draft_from_clinvar (if published)
-    -> literature_search -> author rows -> lint_rows
-    -> validate_module(strict) -> enrich_module -> compile_module(strict)
+  list_tables -> scaffold_module -> draft_from_clinvar -> literature_search
+    -> author rows -> lint_rows -> validate_module(strict) -> enrich_module
+    -> compile_module(strict)
 
-Load `module-101` for the procedure. Rules no skill softens:
+Load `create-module` to route. Rules no skill softens:
 
 1. Ask the tool, never memory. describe_table / table_requirements /
    describe_machine_table generate every column, vocabulary and requirement.
-2. You MAY write, and every write is logged. Two cells are withheld: one a later
-   check compares against THAT SAME source, and one only a pilot settles: genotype,
-   weight, conclusion, direction. `applied: false` with a `refusal` is
-   upstream reporting what IT did; pass it through verbatim.
-3. A mismatch against a source is not a defect report: archives lag the edge, so
-   conforming a row to a stale one DEGRADES it and the check agrees with itself.
-   Editing against one needs a written reason.
-4. A check that could not run is not a check that passed. `null` and `unknown`
-   never collapse into a pass; warnings on a green run are the real output.
+2. You MAY write — and YOU log it: nothing logs a hand edit, so call
+   `record_override` (it appends to logs/authoring.log). Two cells stay withheld:
+   one a later check compares against THAT SAME source, and one only a pilot
+   settles — genotype, weight, conclusion, direction.
+3. A mismatch means CHECK BOTH SIDES: the row may be wrong, and so may the
+   source — archives lag the edge. A source is evidence, never authority: conform
+   to a stale one and the check agrees with itself. Decide on what you verified,
+   and say why.
+4. A check that could not run is not a check that passed: `null` and `unknown`
+   never mean pass, and warnings on a green run are the real output.
 5. Take every PMID from a literature_search result: existence never settles
    identity, only a title does. A `provenance_quote` is a passage you located,
    verbatim, for this row's claim — never the title.
 6. `start` is the 1-based VCF position: paste it, never subtract one.
 
-Every registry tool takes `target`. The polygon, target="test", is where a publish
-is a REHEARSAL and can be deleted again; target="prod" is the catalog, immutable,
-its data claimed by a hash `yank` never frees. Writes default to test, reads to
-prod. Rehearse, name the polygon out loud, promote only on explicit yes —
-"publish it" is not that ask.
+Every registry tool takes `target`, and catalog reads REQUIRE it — read back the
+instance you wrote to. target="test" is the polygon: a publish there is a
+REHEARSAL you can delete. target="prod" is the catalog, immutable, its data
+claimed by a hash `yank` never frees. Writes default to test. Rehearse, say so
+out loud, promote only on explicit yes — "publish it" is not that ask.
 """
 
 

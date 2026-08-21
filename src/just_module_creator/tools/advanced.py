@@ -30,7 +30,6 @@ from just_module_creator.models import (
 from just_module_creator.net import NetworkServices
 from just_module_creator.settings import RegistryTarget, Settings
 from just_module_creator.targets import (
-    DEFAULT_CATALOG_TARGET,
     client_for,
     instance_note,
 )
@@ -163,12 +162,12 @@ def register_extended(mcp: FastMCP, settings: Settings, services: NetworkService
         ),
     )
     async def registry_download(
+        target: RegistryTarget,
         namespace: str,
         name: str,
         version: str,
         dest: str,
         include_inputs: bool = True,
-        target: RegistryTarget = DEFAULT_CATALOG_TARGET,
     ) -> OpResult:
         """Download and integrity-verify a published module version.
 
@@ -188,9 +187,9 @@ def register_extended(mcp: FastMCP, settings: Settings, services: NetworkService
         downloaded module — that tool reconstructs a spec from parquet, and here the
         spec arrived as itself.
 
-        `target` defaults to production, the catalog a module is installed from.
-        The polygon holds rehearsals, so downloading from it is for checking your
-        own — never for consuming somebody's module.
+        `target` is REQUIRED and has no default. `prod` is the catalog a module
+        is installed from; the polygon holds rehearsals, so downloading from it is
+        for checking your own — never for consuming somebody's module.
         """
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")

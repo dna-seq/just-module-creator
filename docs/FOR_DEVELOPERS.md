@@ -156,7 +156,9 @@ take them.
 
 The registry runs a production catalog and a **polygon** — a second instance where a publish is a
 rehearsal you can delete again. Every registry tool takes `target="test" | "prod"`; the write tools
-default to the polygon and the catalog reads default to production. The instances share no database,
+default to the polygon and the catalog reads have **no default at all** — they refuse to guess which
+instance a question is about, because reading the world you did not just write to is what makes a
+fresh publish look like a broken catalog. The instances share no database,
 so an account, a token and a namespace exist on one of them only, and promoting means publishing
 again with `target="prod"`.
 

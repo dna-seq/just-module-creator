@@ -56,7 +56,6 @@ from just_module_creator.models import (
 from just_module_creator.net import NetworkServices
 from just_module_creator.settings import RegistryTarget, Settings
 from just_module_creator.targets import (
-    DEFAULT_CATALOG_TARGET,
     DEFAULT_WRITE_TARGET,
     client_for,
     describe,
@@ -329,12 +328,12 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         )
     )
     async def registry_search(
+        target: RegistryTarget,
         query: str | None = None,
         gene: str | None = None,
         category: str | None = None,
         page: int = 1,
         per_page: int = 20,
-        target: RegistryTarget = DEFAULT_CATALOG_TARGET,
     ) -> RegistrySearchResult:
         """Search the published module registry. Read-only, no token needed.
 
@@ -342,10 +341,10 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         either the thing to extend or the reason not to start. Filter by free
         text (`query`), by `gene`, or by `category`.
 
-        `target` defaults to **production** — unlike the write tools, because the
-        question here is about the published world. Point it at the polygon only
-        to see your own rehearsals; its catalog is other people's rehearsals plus
-        yours, and says nothing about what is published.
+        `target` is REQUIRED and has no default. `prod` is the published world
+        this question is usually about; the polygon holds your own rehearsals plus
+        everybody else's, and says nothing about what is published. A search that
+        guessed would answer confidently about the wrong instance.
         """
         if settings.offline:
             raise ToolError(
@@ -481,14 +480,15 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         ),
     )
     async def registry_get_module(
-        namespace: str, name: str, target: RegistryTarget = DEFAULT_CATALOG_TARGET
+        target: RegistryTarget, namespace: str, name: str
     ) -> OpResult:
         """Fetch one module's full registry record: card, readme, versions, manifest.
 
         The best available worked example — the published spec of a real module
-        is more instructive than any template. `target` defaults to production
-        for that reason; point it at the polygon to inspect a rehearsal of your
-        own.
+        is more instructive than any template. `target` is REQUIRED and has no
+        default: `prod` for the catalog everyone installs from, `test` for the
+        polygon, where you read back a rehearsal of your own. Reading the wrong
+        instance is what makes a module you just published look missing.
         """
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
@@ -516,9 +516,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         )
     )
     async def registry_is_published(
+        target: RegistryTarget,
         spec_dir: str | None = None,
         signature: str | None = None,
-        target: RegistryTarget = DEFAULT_CATALOG_TARGET,
     ) -> DuplicateCheck:
         """Has this authored data already been published — **under any name**?
 

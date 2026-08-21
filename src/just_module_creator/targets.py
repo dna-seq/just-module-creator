@@ -15,9 +15,16 @@ this surface does not expose (see ``prod_refusal``).
 
 **Why the write tools default to the polygon.** A forgotten ``target`` there
 costs nothing — delete it and go again. The same omission against production is
-irreversible. Reads about the published world (searching the catalog,
-downloading a module) default to production, because that is the world the
-question is about.
+irreversible.
+
+**Why the catalog reads have no default at all.** They used to default to
+production, on the reasoning that it is the world the question is about. That
+reasoning was right about the common case and wrong about the common *mistake*:
+somebody rehearses a publish on the polygon, reads it straight back without
+noticing the read has a different default, gets a 404 and concludes the catalog is
+broken. The tool cannot tell which world was meant, so it stops guessing and asks
+— ``target`` is a required argument on every catalog read, and the schema's enum
+makes the two options visible at the call site.
 
 **A target is declared here and verified by the server.** Registry 0.13 reports
 ``REGISTRY_MODE`` on ``/health`` and ``/api/v1/version``, and
@@ -54,10 +61,10 @@ from just_module_creator.settings import RegistryTarget, Settings
 TEST_NAMESPACE_PREFIX = "test-"
 TEST_MODULE_PREFIX = "test_"
 
-#: The default target per kind of question. Not one constant, because the two
-#: kinds are asking about different worlds — see the module docstring.
+#: The default for WRITES only, and there is deliberately no read counterpart:
+#: a forgotten target on a write costs nothing on the polygon, while a read
+#: cannot know which world was meant and now refuses to guess.
 DEFAULT_WRITE_TARGET: RegistryTarget = "test"
-DEFAULT_CATALOG_TARGET: RegistryTarget = "prod"
 
 
 def client_for(

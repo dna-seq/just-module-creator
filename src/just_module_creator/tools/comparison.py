@@ -46,7 +46,6 @@ from just_module_creator.models import (
 )
 from just_module_creator.settings import Settings
 from just_module_creator.targets import (
-    DEFAULT_CATALOG_TARGET,
     RegistryTarget,
     client_for,
     describe,
@@ -151,11 +150,11 @@ def register_comparison(mcp: FastMCP, settings: Settings) -> None:
         ),
     )
     async def compare_to_published(
+        target: RegistryTarget,
         spec_dir: str,
         namespace: str | None = None,
         name: str | None = None,
         version: str = "latest",
-        target: RegistryTarget = DEFAULT_CATALOG_TARGET,
     ) -> PublishedComparison:
         """Am I ahead of the catalog, and how? One or two bounded GETs, no download.
 
