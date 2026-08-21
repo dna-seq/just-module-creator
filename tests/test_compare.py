@@ -53,6 +53,41 @@ def _table(report, csv_name: str):
     return next(t for t in report.tables if t.csv == csv_name)
 
 
+def test_moving_a_column_into_the_defaults_block_is_not_a_content_change(pair):
+    """The `defaults:` fold, and the answer that contradicted itself without it.
+
+    A `curator` written on every variant row and the same value declared once under
+    `defaults:` are the same content: the compiler folds the block in before hashing, so
+    `content_signature` agrees across the pair. Reading each CSV directly does not fold,
+    and this report used to carry both answers at once — `content: same` beside thirteen
+    rows changed on `curator` and `method`. A finding that contradicts the payload
+    carrying it teaches a reader to discount findings, which is the cost worth a test.
+
+    `compiler.spec_tables` (upstream 0.6.5) returns the folded rows, which is why this
+    passes: nothing here reimplements the fold, and the private pieces it needs are not
+    ours to reach for.
+    """
+    left, right = pair
+    spec = right / "module_spec.yaml"
+    text = spec.read_text()
+    assert "defaults:" in text, "the fixture's defaults block is the subject of this test"
+    _rewrite(
+        right / "variants.csv",
+        lambda rows: [
+            row.update(curator="ai-module-creator", method="literature-review") for row in rows
+        ],
+    )
+    spec.write_text(
+        text.replace("defaults:\n  curator: ai-module-creator\n  method: literature-review\n", "")
+    )
+
+    report = _compare(left, right, 12, 2)
+    assert report.content == "same"
+    variants = _table(report, "variants.csv")
+    assert not variants.changed, f"changed on: {[g.columns for g in variants.changed]}"
+    assert variants.unchanged == variants.rows_left
+
+
 def test_a_module_against_an_identical_copy_moves_nothing(pair):
     left, right = pair
     report = _compare(left, right, 12, 2)

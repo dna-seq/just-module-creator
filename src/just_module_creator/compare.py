@@ -82,6 +82,21 @@ def read_build(spec_dir: Path) -> tuple[str | None, dict[str, Any]]:
     return doc.get("genome_build"), {**(module or {}), "genome_build": doc.get("genome_build")}
 
 
+def _load_one(spec_dir: Path, name: str, genome_build: str) -> LoadedTable:
+    """One authored table read on its own, WITHOUT the `defaults:` fold.
+
+    The fallback path and the licensing table, and nothing else — see `authored_tables`.
+    """
+    path = spec_dir / name
+    table = LoadedTable(csv=layout.preferred_spelling(name), path=path, spelling=name)
+    rows, errors, _ = compiler.load_csv_rows(path, draft.DRAFTABLE[name], name, genome_build)
+    if errors:
+        table.errors = list(errors)
+    else:
+        table.rows = list(rows)
+    return table
+
+
 def authored_tables(spec_dir: Path, genome_build: str = "GRCh38") -> dict[str, LoadedTable]:
     """Every authored table on disk, keyed by its **preferred** spelling.
 
@@ -90,18 +105,43 @@ def authored_tables(spec_dir: Path, genome_build: str = "GRCh38") -> dict[str, L
     and reporting them as two would say a file was removed and another added when
     nothing about the data moved. The spelling each side actually uses is reported
     instead.
+
+    **The rows come from `compiler.spec_tables`, which folds `defaults:` in.** Reading
+    each CSV directly is the obvious build and it silently produces a wrong answer:
+    a `curator` written on every row in one version and moved into the spec's
+    `defaults:` block in the next is the *same content*, and `content_signature` says so
+    — measured across a pair built from `hfe_hemochromatosis`, identical digest, and this
+    function reported all thirteen rows changed on `curator` and `method` before it read
+    the folded rows. That put two answers in one payload disagreeing about whether
+    anything moved, which teaches a reader to discount the one that is right.
+
+    The licensing table is loaded separately because it is deliberately outside that
+    roster: it is hashed by `source_signature`, not by `content_signature`, so an edit
+    there moves a different hash — which is the distinction `_SOURCE_SCOPED` reports.
     """
     out: dict[str, LoadedTable] = {}
-    for name, model in sorted(draft.DRAFTABLE.items()):
+    folded: dict[str, list[Any]] = {}
+    fold_failed = False
+    try:
+        folded, _ = compiler.spec_tables(spec_dir)
+    except ValueError:
+        # One data CSV will not validate, and `spec_tables` is all-or-nothing about
+        # that. Fall back to reading each table alone so the comparison can still name
+        # WHICH table is unreadable — an unreadable spec has no `content_signature`
+        # either, so nothing is claiming agreement here that the fold would have moved.
+        fold_failed = True
+
+    for name in sorted(draft.DRAFTABLE):
         path = spec_dir / name
         if not path.is_file():
             continue
         preferred = layout.preferred_spelling(name)
-        rows, errors, _ = compiler.load_csv_rows(path, model, name, genome_build)
-        table = LoadedTable(csv=preferred, path=path, spelling=name, rows=list(rows))
-        if errors:
-            table.errors = list(errors)
-            table.rows = []
+        if not fold_failed and name in folded:
+            table = LoadedTable(
+                csv=preferred, path=path, spelling=name, rows=list(folded[name])
+            )
+        else:
+            table = _load_one(spec_dir, name, genome_build)
         # A module carrying both spellings is upstream's error, not ours to merge:
         # keep the first seen and let the caller see the collision in `unknown`.
         out.setdefault(preferred, table)
