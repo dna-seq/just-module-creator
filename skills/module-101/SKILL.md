@@ -1,23 +1,23 @@
 ---
 name: module-101
 description: >-
-  Start here, and start here to write one. What a just-dna annotation module is, what this plugin can
-  and cannot do, the tool roster and its tiers, how the four packages fit together, the lifecycle
-  including second and later passes, and which stage skill owns the step you are on. Load this first
-  for any orientation question and for "create a module", then hand off — `module-start` to begin one,
-  `module-tables` for which table and what a module looks like on disk.
-  Triggers: "what is a module", "create a just-dna module", "write a module", "author a module", "how
-  do I create a module", "what can I do with this", "what is just-dna", "where do I start", "what
-  kinds of module", "is this for reading my DNA", "what does this plugin do", "explain modules",
-  "module overview", "getting started", "which skill do I need", "which tool do I use".
+  Start here to understand the thing. What a just-dna annotation module is, what this plugin can and
+  cannot do, the tool roster and its tiers, how the four packages fit together, and the corpus of
+  worked examples to read before writing one. The map, not the route: `create-module` owns where
+  to enter the lifecycle and which stage skill runs next, and `module-tables` owns which table a
+  finding belongs in.
+  Triggers: "what is a module", "what is just-dna", "what can I do with this", "what does this plugin
+  do", "explain modules", "module overview", "getting started", "is this for reading my DNA", "what
+  kinds of module", "why does this exist", "what are the four packages", "which tier is this tool in",
+  "show me an example module", "which skill do I need", "which tool do I use".
 ---
 
 # just-dna modules — the overview
 
-**This is the map, not the procedure.** Every detail lives in a stage skill; this file exists so you
-know what you are looking at, what is possible, and which skill owns the step you are on. If you find
-yourself deciding a column value from this file, you have gone one level too deep — stop and load the
-stage skill, or ask the tool.
+**This is the map, not the route.** It exists so you know what you are looking at and what is
+possible; `create-module` answers *where do I enter and what runs next*, and each stage skill owns its
+own procedure. If you find yourself deciding a column value from this file, you have gone one level too
+deep — stop and load the stage skill, or ask the tool.
 
 ## What a module is
 
@@ -32,7 +32,7 @@ below — has the real trees for all four shapes you will meet one in.
 
 | You want to | This is possible | Owned by |
 |---|---|---|
-| author a module from a trait and some sources | yes, end to end | the stage skills below |
+| author a module from a trait and some sources | yes, end to end | `create-module` routes it |
 | draft rows from a source that publishes them | ClinVar panels, CPIC star alleles, ClinPGx drug response | `module-draft` |
 | find the papers behind a row, and read them | PubMed, Europe PMC, Crossref, preprints, open-access fulltext | `find-evidence` |
 | turn rsIDs into coordinates and mint allele ids | yes, and it catches an off-by-one nothing offline can | `module-enrich` |
@@ -88,26 +88,11 @@ wraps all four as MCP tools; `references/CLI.md` names the few things it deliber
 
 ## The lifecycle
 
-```
-0 origin ─▶ 1 scaffold ─▶ 2 draft ─▶ 3 curate ─▶ 4 enrich ─▶ 5 cross-check ─▶ 6 compile ─▶ 7 rehearse ─▶ 8 publish ─▶ 9 install & join
-            (spec dir)    (if a      (only an                (report; you      verify      (polygon)    (immutable)   (consumer)
-                           source     author can)             decide)           sign, close
-                           has it)                                                                          │
-   ┌──────────────────── 10 feedback ◀───────────────────────────────────────────────────────────────────────┘
-   └─▶ pass 2+ re-enters at 3 (curate) — usually. Or 2 for a source refresh, 1 to add a table kind,
-       6 to rebuild under a newer toolchain. Never at 0: a second pass never starts from nothing.
-```
-
-Steps 4 and 5 are the only ones that fetch. Once `resolution.csv` and `literature.csv` exist they
-*are* the pin, so every later compile is offline and reproducible.
-
-**Two things about this diagram matter more than the order itself.**
-
-**Curate before you enrich.** A drafted row leaves `<<REPLACE>>` where a human must decide, and that
-placeholder makes every loader refuse the file — deliberately, since resolution is allele-aware and a
-placeholder genotype would skip the allele filter on exactly the rows that need it. You do not need
-to enrich first to see the alleles: the draft report prints the allele pair, and `lookup_variant`
-gives you the same for a row you are writing by hand.
+Origin, scaffold, draft, curate, enrich, cross-check, compile, close, rehearse, publish, install — and
+a feedback arrow back into the middle of it. **`create-module` holds the diagram**, the entry points
+into it, and the tools each stage calls, along with the two ordering rules that matter more than the
+order itself and the fact that only enrich and cross-check ever fetch. Load it when the question is
+*what runs next*.
 
 **A second pass is the normal state of a module, and it has six shapes** — prose, review, evidence,
 data, source refresh, rebuild. They compose, they differ in what they invalidate, and the version
@@ -339,13 +324,13 @@ this is stale.*
 > an author's judgement. Here, that decision is delegated to us. `RM15` is the audit that separated
 > the two; `CLAUDE.md` §2 carries the counterstance in full.
 
-## "How do I create one?" — the short answer
+## "How do I create one?"
 
-Say which trait, hand over whatever sources you have, and then, in order: scaffold the spec →
-draft anything a source publishes → curate what only an author can decide → enrich → cross-check →
-compile → close → rehearse on the polygon → publish. Each arrow is a skill, below. Expect the whole
-first pass to be one working session for a small module, and expect a second pass later — that is
-normal, not a sign the first one was wrong.
+**Load `create-module`.** It asks where the author is actually standing — nothing yet, a theme plus
+some sources, a bundle from an outside session, a source that publishes the rows, or a module that
+already exists — and routes to the stage that owns that answer. Expect a small module's first pass to
+be one working session, and expect a second pass later: that is normal, not a sign the first one was
+wrong.
 
 ## Where to go next
 
@@ -356,14 +341,8 @@ demand, do not invoke them.
 
 | Step or question | Load |
 |---|---|
-| **start a module — triage, licence, the spec** | `module-start` |
-| draft rows from a source that publishes them | `module-draft` |
-| **write the cells only a pilot can settle** | `module-curate` |
-| resolve coordinates and mint ids | `module-enrich` |
-| cross-check what you asserted | `module-check` |
-| build the artifact and read the build | `module-compile` |
-| declare the authoring finished | `module-close` |
-| rehearse, then publish | `module-publish` |
+| **make a module — where to enter, what runs next, what to call** | `create-module` |
+| **a spec directory whose state nobody knows** | `module-status` |
 | **run it on a genome here, without publishing** | `module-install-local` |
 | what a `weight` means | `module-weights` |
 | how a reader joins this to a VCF | `module-consumer` |
@@ -387,23 +366,17 @@ given number is. The two you will actually meet:
 - **RM15 — multi-build support.** GRCh38 is the only assembly with a refget table, so VRS minting and
   rsID resolution are GRCh38-only. Off GRCh38, expect less and say so in the README.
 
-**The split is complete, and there is no longer a single skill that carries the whole procedure.** That
-was `create-module`, 1431 lines loaded whole to answer any question; it was dismantled on 2026-08-20 and
-every line of it now sits in the stage that owns it. **Load the stage you are in**, not a monolith:
-
-- **The spine, in lifecycle order** — `module-start` (0–1), `module-draft` (2), `module-curate` (3),
-  `module-enrich` (4), `module-check` (5), `module-compile` (6), `module-close` (6b),
-  `module-publish` (7–8).
-- **The second-pass half**, which is the normal case rather than the exception — `module-revise` (which
-  kind of pass, and what it invalidates), `module-refresh` (re-running anything that already ran) and
-  `module-diff` (what moved, and the one reading that means an upstream source changed its answer).
-- **The references the stages load** — `module-tables` (which table, and the tree on disk),
-  `module-weights`, `module-consumer`, `find-evidence`.
+**No skill carries the whole procedure, and `create-module` is not one either.** The 1431-line version
+that did was dismantled on 2026-08-20 and every line of it now sits in the stage that owns it; what came
+back under that name on 2026-08-21 is a **router** — the entry points, the stage order and the tools each
+stage calls, and nothing a stage skill already owns. **Load the stage you are in**, and load
+`create-module` when you do not yet know which stage that is: it names the spine in lifecycle order, the
+second-pass three (`module-revise`, `module-refresh`, `module-diff`) and the references the stages read.
 
 ## What this file deliberately does not contain
 
 No column lists, no vocabularies, no requirement tables — **ask the tool.** No procedure — that is the
-stage skills. No per-table contracts — that is `module-tables` and its dossiers. The symptom lookup and
+stage skills. No route — that is `create-module`, and the lifecycle diagram lives there rather than here. No per-table contracts — that is `module-tables` and its dossiers. The symptom lookup and
 the CLI surface live in `references/` here rather than in the body, because they are read *from* every
 stage rather than *by* this one. If a question is answerable only with a specific cell value, a specific
 flag or a specific warning phrase, it is a subskill's question and this file should not have grown to

@@ -3,6 +3,57 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.17.0 — `/create-module` comes back as a router, and `module-101` gives up the flowchart
+
+**The name was load-bearing and the split took it away with the file.** `create-module` was the
+1431-line canonical procedure until 2026-08-20, when it was dismantled into the stage spine and
+deleted. That was right — a file loaded whole to answer any question is a file nobody updates in the
+right place — but it also removed the door an author walked through. Somebody arriving with *"make me
+a module"* was left with a map that told them a door existed somewhere. Asked for back on 2026-08-21:
+*"make it a small helper/wrapper skill hinting at relevant sequence of actions agent takes to create
+module from different stages."*
+
+**What shipped is a router and nothing else.** `skills/create-module/SKILL.md`, 106 lines against a
+500-line skill ceiling:
+
+- **An entry-point table read before anything runs**, because the entry is almost never step 0. A
+  trait and nothing else, a theme plus sources, a zip from an outside session, a directory whose state
+  nobody knows, a module that already exists, a gene panel a source publishes, a message nobody
+  recognises — seven starting points, seven different first loads. **When two rows apply the later one
+  wins**: a second pass entered as a first one re-derives what is already on disk and overwrites
+  judgements nobody recorded.
+- **The lifecycle diagram**, and the two ordering rules that matter more than the order — that only
+  enrich and cross-check ever fetch, and that curating before enriching is load-bearing rather than
+  tidy.
+- **One row per stage**: the decision that stage exists for, the skill that owns it, and the two to
+  four tools it calls. Tiers are named where they bite and stay `module-101`'s to explain.
+- **The three re-entries**, which are the normal case rather than the exception.
+
+It owns **no procedure, no column value, no warning phrase**. `tests/test_skills.py` pins that with a
+200-line ceiling — half the skill ceiling — and asserts it names all eight spine skills plus
+`module-revise` and `module-status`, because a router that cannot reach a stage is a dead end and one
+that only knows the spine sends a second-pass author through a first pass.
+
+### `module-101` lost what moved, rather than keeping a copy
+
+One fact, one home, applied to the router itself. Out of `module-101` and into `create-module`: the
+lifecycle diagram, the "curate before you enrich" rule, the `## "How do I create one?"` answer, the
+eight stage rows of the routing table, and the closing spine roster — which had also gone false, since
+it said no skill carries the whole procedure *because `create-module` was deleted*. The creation
+triggers left its frontmatter with them; `module-101` matches orientation questions now, and two
+skills matching one trigger was the duplication at the layer that decides which file gets loaded.
+
+`module-101` keeps what it is for: what a module is, the four packages, the tool roster and its tiers,
+the minimal authored surface, the sixteen worked examples, the framings that landed on a real
+beginner, and the four rules the tools enforce. 410 lines → 383.
+
+### The ninth command
+
+`/create-module` — the ask was for a slash command and the command layer already had the shape for it:
+route to the skill, add the one warning that matters at that door (a directory that has been here
+before is a second pass), and carry no procedure. Nine commands against twenty skills; a command per
+skill is still the crowding `RM20` refused.
+
 ## 0.16.0 — 0.6.6 adopted: four restatements retire, and one of ours contradicted itself
 
 **Format / compiler / enricher 0.6.1–0.6.4 → 0.6.6, floors raised, adopted 2026-08-21.** The three

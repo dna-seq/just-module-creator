@@ -202,9 +202,14 @@ def test_a_command_stays_thin(command: Path):
     )
 
 
-def test_the_commands_are_the_eight_that_were_chosen():
-    """Sixteen skills, eight commands. A command per skill is the crowding RM20 refused."""
+def test_the_commands_are_the_nine_that_were_chosen():
+    """Twenty skills, nine commands. A command per skill is the crowding RM20 refused.
+
+    `create-module` was added on 2026-08-21 — the ninth, and the one users asked for
+    back by name. It routes to the router skill; it does not restore the procedure.
+    """
     assert {p.stem for p in COMMAND_FILES} == {
+        "create-module",
         "module-101",
         "module-start",
         "find-evidence",

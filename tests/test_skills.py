@@ -1,6 +1,6 @@
 """The skills are a shipped surface and had no test. This is the guard.
 
-Nineteen skills, ~4,800 lines, loaded by an agent rather than imported by code — so
+Twenty skills, ~5,000 lines, loaded by an agent rather than imported by code — so
 nothing here failed when a link broke, when a skill named one that no longer
 shipped, or when a file grew past the size where it stops being read properly.
 The 1431-line monolith that was dismantled on 2026-08-20 got that way partly
@@ -62,11 +62,47 @@ NAMES = {p.name for p in ALL}
 
 def test_the_skill_set_is_what_the_manifest_promises():
     """A skill added or removed without the count moving is the drift this catches."""
-    assert len(ALL) == 19, f"skills shipped: {sorted(NAMES)}"
-    assert "create-module" not in NAMES, (
-        "the 1431-line procedure skill was dismantled on 2026-08-20; recreating it is "
-        "the drift CLAUDE.md warns about by name"
+    assert len(ALL) == 20, f"skills shipped: {sorted(NAMES)}"
+
+
+#: `create-module` is the one skill whose *shape* is pinned rather than only its
+#: frontmatter. The name shipped a 1431-line procedure until 2026-08-20 and was
+#: deleted; it came back on 2026-08-21 as a router, on the owner's instruction, and
+#: the risk it carries is regrowth rather than absence. The old guard here asserted
+#: the name was gone — this one asserts what it may hold.
+_ROUTER_MAX = 200
+
+
+def test_the_router_routes_and_does_not_regrow_into_the_procedure():
+    """Half the body ceiling, and it must name every stage it routes to.
+
+    A router that names a stage it cannot reach is a dead end; a router past this
+    size has started carrying the stage's work, which is exactly how the monolith
+    happened the first time.
+    """
+    front, body = _split(SKILLS / "create-module" / "SKILL.md")
+    lines = len(body.splitlines())
+    assert lines <= _ROUTER_MAX, (
+        f"{lines} lines. `create-module` routes to the stage that owns the step; a "
+        "procedure growing back into it is what CLAUDE.md warns about by name"
     )
+
+    spine = {
+        "module-start",
+        "module-draft",
+        "module-curate",
+        "module-enrich",
+        "module-check",
+        "module-compile",
+        "module-close",
+        "module-publish",
+    }
+    named = {name for name in NAMES if f"`{name}`" in body}
+    assert spine <= named, f"the router does not name {sorted(spine - named)}"
+
+    # The two doors are entered sideways, and a router that only knows the spine
+    # sends a second-pass author through a first pass.
+    assert {"module-revise", "module-status"} <= named
 
 
 @pytest.mark.parametrize("skill", ALL, ids=lambda p: p.name)
@@ -105,9 +141,6 @@ def test_every_skill_it_names_actually_ships(skill: Path):
     text = (skill / "SKILL.md").read_text(encoding="utf-8")
     named = set(re.findall(r"`(module-[a-z0-9-]+|find-evidence|create-module)`", text))
     missing = named - NAMES
-    # `create-module` may be *named* in the one paragraph explaining its removal.
-    if "create-module" in missing and "no longer" in text:
-        missing.discard("create-module")
     assert not missing, f"{skill.name} points at {sorted(missing)}"
 
 

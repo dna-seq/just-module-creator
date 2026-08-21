@@ -43,6 +43,7 @@ know what you must not do. Links carry positive detail only.
 | Path | What |
 |---|---|
 | `skills/module-101/SKILL.md` | **The entry point and the map — high level only.** What a module is, what the plugin can and cannot do, the four packages, the lifecycle *including second and later passes*, and the **minimal** authored surface (`module_spec.yaml` + `variants.csv` + `studies.csv` + `README.md`) and nothing beyond it — the table roster, the on-disk shapes and the `derived/` layout are `module-tables`'. It holds no column list, no procedure and no symptom lookup: anything answerable only with a specific cell value, flag or warning phrase belongs in a subskill, and this file growing to hold one is the drift to watch for. |
+| `skills/create-module/SKILL.md` | **The router, and the name people asked back.** Where to enter the lifecycle from wherever the author is actually standing — nothing yet, a theme plus sources, a handed bundle, a source that publishes rows, or a module that already exists — plus the stage diagram, the stage order, and the two to four tools each stage calls. It owns **no procedure**: every stage skill keeps its own, and the router's job ends the moment the right one is loaded. Ceiling 200 lines, half the skill ceiling, pinned by `tests/test_skills.py::test_the_router_routes_and_does_not_regrow_into_the_procedure`, because regrowth is the risk this name carries. |
 | **The stage spine**, one skill per lifecycle stage | `module-start` (0–1: triage, licence, the spec), `module-draft` (2), `module-curate` (3), `module-enrich` (4), `module-check` (5), `module-compile` (6), `module-close` (6b), `module-publish` (7–8). **Each owns its stage's procedure outright — there is no second copy anywhere**, and each ends with the discriminator (what to apply silently, what to put in front of a pilot) rather than a list of refusals. |
 | **The second-pass three** | `module-revise` (which kind of pass, and what it invalidates), `module-refresh` (re-running anything that already ran), `module-diff` (what moved, and the one reading that means an upstream source changed its answer). A second pass is the normal case, not the exception. |
 | **The references the stages load** | `module-weights` (the column everyone fills and nobody declares), `module-consumer` (the far side of the seam), `find-evidence` (search, verify a PMID, read a paper, and what may honestly be quoted). |
@@ -56,12 +57,18 @@ know what you must not do. Links carry positive detail only.
 | `.claude-plugin/marketplace.json` | Lets `/plugin marketplace add ./` work. |
 | `.codex-plugin/plugin.json` | Codex plugin manifest; same skills and server, via `${PLUGIN_ROOT}`. Carries the **second** hand-bumped version string. |
 
-> **`skills/create-module/` was the one canonical copy of the procedure and it no longer exists.**
-> Dismantled 2026-08-20 on the owner's instruction — *"drag away every quote until that doc is empty"* —
-> because a 1431-line file loaded whole to answer any question is a file every session re-reads and no
-> session updates in the right place. **Do not recreate it, and do not let a stage skill grow into it.**
-> The rule that replaces "do not restate the procedure beside its skill" is narrower and stricter: **one
-> fact, one home.** If two skills need the same rule, one owns it and the other links.
+> **`skills/create-module/` was the one canonical copy of the procedure. That copy is dead; the NAME is
+> back, and the difference is the whole rule.** The 1431-line version was dismantled 2026-08-20 on the
+> owner's instruction — *"drag away every quote until that doc is empty"* — because a file loaded whole
+> to answer any question is a file every session re-reads and no session updates in the right place. On
+> 2026-08-21 the owner asked for `/create-module` back: *"make it a small helper/wrapper skill hinting at
+> relevant sequence of actions"*. **What shipped is a router and nothing else** — entry points, stage
+> order, the tools per stage, and a hand-off. **Do not let it, or any stage skill, grow back into the
+> procedure**: the moment it holds a column value, a warning phrase or a judgement call, the monolith is
+> being rebuilt. The rule that replaces "do not restate the procedure beside its skill" is narrower and
+> stricter: **one fact, one home.** If two skills need the same rule, one owns it and the other links —
+> which is why `module-101` no longer carries the lifecycle diagram, the stage roster or the "how do I
+> create one" answer. Those moved; they were not copied.
 
 ---
 
@@ -977,6 +984,20 @@ have been questions.
   if two skills need the same rule, one owns it and the other links. A skill growing back toward a
   monolith is the drift to watch for; the ceiling is 500 lines and the reason is that a file loaded
   whole to answer any question is a file nobody updates in the right place.
+- **"People want /create-module back... make it a small helper/wrapper skill hinting at relevant
+  sequence of actions agent takes to create module from different stages."** Said 2026-08-21, and it
+  does **not** reverse the entry above — the monolith stays dismantled and the ceiling stays. What it
+  settles is that **the name was load-bearing and the split took it away with the file**: an author
+  arriving with "make me a module" had no door, only a map that told them a door existed somewhere.
+  The shape asked for is *"a flowchart from 101 with different entrypoints at different stages and
+  relevant toolsets/skillsets for these"*, plus *"deduplicate 101 and the rest and point to it"* — so
+  the flowchart **moved out of** `module-101` rather than being copied into a second place, which is
+  one-fact-one-home applied to the router itself. **The generalisation worth keeping: a split that is
+  right internally can still delete the entry point users had.** When it does, the repair is a router
+  at the old name, never the old file. Reversal recipe, if the router turns out to be one hop too
+  many: move the diagram and the entrypoint table back into `module-101`, delete
+  `skills/create-module/` and `commands/create-module.md`, drop the shape test, and restore the counts
+  in `tests/test_skills.py`, `tests/test_plugin_manifest.py` and the Claude manifest description.
 - **"Push to the maximum; defer only items that honestly depend on architectural decisions and
   questions that came to be after now."** The unattended-run rule, 2026-08-20. A question that already
   had a written specification is **not** deferrable merely because it was labelled "run §1 first" —
