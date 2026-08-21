@@ -3,6 +3,40 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.15.0 — a module can run on a genome without a registry
+
+**465 tests. Nineteen skills.** Everything below was already written up in the three sections that
+follow; this is what the release is *for*.
+
+**`module-install-local` — the third destination.** Until now the shortest honest path from *"it
+compiled"* to *"it matched something real"* ran through a polygon publish, which costs a namespace, a
+token and a name you have to live with. It does not have to. A compiled module can be registered into a
+local `just-dna-lite` install and annotated against a real VCF with no registry in the loop. Verified
+end to end against `assets/fto_bmi` compiled by our own `compile_module`: discovered with
+`lead = weights`, position join, provenance read straight off the manifest. **Our artifacts need no
+adjustment to be consumable.** The skill is explicit that this verifies nothing and is not a rehearsal
+for publishing — it exercises the annotation seam where the polygon exercises the registry one.
+
+**Three defects that were all the same shape: a claim nothing read.** The plugin listing named four
+literature sources while six ship (OpenAlex and Crossref landed in 0.14.0, the version the manifest
+declared). `CLAUDE.md`'s asset table had never learned `module-status` or `module-symptom`, so an agent
+reading the roster would conclude the two doors did not exist. The README told Codex users about
+sixteen skills that were eighteen, and called all of them commands when eight are. None of these could
+fail, because nothing checked them. All three now have guards derived from the code —
+`discovery.SEARCHABLE` and the skills directory — and the roster guard caught `module-install-local`'s
+own omission within the hour of being written.
+
+**`check_identifiers` no longer returns a traceback on a real path**, and argument checks precede the
+offline ceiling there as they already did elsewhere. **arXiv stopped ORing query words**, which had made
+every multi-word preprint search return noise, and **`paper_citations` stopped reading `cited_by` as its
+own opposite**. All three were found by running the tools against real identifiers rather than by
+reading code.
+
+**Filed upstream this cycle:** `S61` to the format tree (`lookup_variant` returning a correct coordinate
+and a *"position remains unset"* finding in one payload), and — through the unnumbered handoff channel,
+which `CLAUDE.md` §8 now names as the third intake — the missing CLI wrapper for
+`register_downloaded_module`, plus two probe-to-learn findings and two stale doc lines.
+
 ## Unreleased — the lookup, check and registry surfaces exercised live
 
 **`module-install-local` — the third destination.** Nineteen skills. Until now the shortest honest path
