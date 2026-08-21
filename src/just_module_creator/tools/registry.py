@@ -592,9 +592,10 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
 
         It is also the field where a module says what it is **not** — that its rows
         are candidates, that one association was not significant, which population
-        the evidence came from. `description` is one sentence and cannot carry
-        that, which is the reason this is amendable at all on an otherwise
-        immutable registry.
+        the evidence came from. `description` is meant to be the card's
+        one-sentence subtitle and cannot carry that -- and being inside the
+        attestation binding, lengthening it would cost a version, which is the
+        reason this is amendable at all on an otherwise immutable registry.
 
         Give it **one** of two things, and the distinction matters because both
         arrive as strings over this wire: `spec_dir` reads `README.md` from that

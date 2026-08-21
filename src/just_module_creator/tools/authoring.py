@@ -638,7 +638,11 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         `name` must be lowercase alphanumeric with underscores (`my-module` is
         rejected). Afterwards, replace every `<<REPLACE>>` in module_spec.yaml —
         title, description and report_title are required and the placeholder
-        blocks validation.
+        blocks validation. Keep `description` to **one short sentence, roughly
+        5-15 words**: it becomes the catalog card's subtitle and is rendered
+        whole, so a paragraph there is a fourteen-row card. Say what this module
+        distinguishes; methodology belongs in `weighting:`, `authorship:` and
+        `README.md`, and is the half that ends up identical across four cards.
         """
         target = resolve_dir(spec_dir, settings, must_exist=False)
         requested = [known_kind(k, draft.DRAFTABLE, _PRODUCED_CSVS) for k in (kinds or [])]
@@ -693,7 +697,10 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             written=plan.written,
             next_step=(
                 "Replace every <<REPLACE>> in module_spec.yaml (title, description, "
-                "report_title are required), then author the CSV rows and lint them "
+                "report_title are required; keep description to one short sentence, "
+                "roughly 5-15 words - it is the catalog card's subtitle, rendered "
+                "whole, and methodology belongs in weighting:, authorship: and "
+                "README.md instead), then author the CSV rows and lint them "
                 "with lint_rows before validating."
             ),
         )

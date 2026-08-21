@@ -942,6 +942,19 @@ have been questions.
   is necessary and nowhere near sufficient** — a stub occupies the search result a
   real module would have had.
 
+- **"There is no restriction I'd say 5-15 words length is optimum otherwise it looks bloated."**
+  Said 2026-08-21 of `module.description`, after `antonkulaga/cognitive_intelligence`'s card ran to
+  fourteen rows. The norm now lives in `skills/module-tables/references/module_spec.md` and is repeated
+  at the one point an author meets the field, `scaffold_module`'s `next_step`. Two things make it worth
+  keeping here rather than only there. **The user named the absence of a restriction and asked for a
+  norm anyway** — so the repair is prose at the point of writing, not a validator: a length ceiling
+  would refuse a merely verbose spec, refuse it after the prose was written, and make six published
+  modules retroactively invalid, which §10's *decisions, not breakage* rule forbids saying about
+  finished work. And **the length was the symptom rather than the defect**: four of the five reference
+  specs end with the byte-identical methodology sentence, so the field's one job — telling this module
+  apart from the ones beside it in a search result — was being spent on the half that four cards share.
+  `F58`, filed upstream as format-tree `S63`.
+
 - **A machine-located `provenance_quote` is legitimate; the fake was always the unattributed one.**
   Decided 2026-08-20, reversing the §2 prohibition outright: *"Yes, it is a derived false direction:
   demolish full force."* The agent reads the article — `fetch_fulltext` hands it over whole — so the

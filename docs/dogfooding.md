@@ -809,3 +809,70 @@ it matters most — the hour after upstream answers.
 **Why this is ours and not a note upstream.** Nothing is wrong with `uv`; the defect is in a
 verification recipe of ours that assumes a command means the same thing from any directory. The fix
 is the recipe.
+
+## F58 — nothing tells an author how long a `description` should be, and six of seven published cards are paragraphs
+
+**Found:** 2026-08-21, from the owner reading `antonkulaga/cognitive_intelligence`'s catalog card ·
+**Severity:** medium · **Status:** open here, filed upstream as format-tree `S63`
+
+The card's description ran to fourteen rows. The owner's read: *"Although there is no restriction I'd
+say 5-15 words length is optimum otherwise it looks bloated."*
+
+There is indeed no restriction, and that is the finding — not that one module overran, but that **no
+surface an author touches states a target at all**, so every module that came out long came out long
+for the same reason.
+
+**What the published catalog actually looks like.** `registry_search()` against production, all seven
+modules, word count of `description`:
+
+```
+ 79 words  antonkulaga/aggression_anger_snps@2.0.0
+ 60 words  antonkulaga/cognitive_intelligence@2.0.0     <- the fourteen-row card
+ 45 words  antonkulaga/bodybuilding@1.0.0
+ 38 words  antonkulaga/big_five_personality_snps@2.1.0
+ 36 words  ksuha-dna/placebo_response_claude@1.0.0
+ 25 words  antonkulaga/risk_impulsivity_snps@2.0.0
+  8 words  eric-mods/lactose_tolerance@1.0.1
+```
+
+One of seven is inside the band, and it is the outside author's two-variant module. **Measure the
+published record, not the sibling checkout** — `../just-dna-format`'s spec for
+`cognitive_intelligence` says 33 words where the published version says 60, and the immutable one is
+the one a consumer sees.
+
+**The length is the symptom; the repetition is the defect.** Four of the five specs under
+`data/output/corrected_modules/` end with the byte-identical sentence *"Curated from the GWAS Catalog
+(GRCh38), allele/strand-validated against dbSNP with a gnomAD r4 second witness."* Fifteen words, four
+cards, and on a search-results page the description's only job is to tell this module apart from the
+ones beside it. A sentence four modules share does the exact opposite of that while spending most of
+each card to do it. Methodology already has three homes that persist and are meant for it —
+`weighting:`, `authorship:` and `README.md` — and none of them is the card subtitle.
+
+**We had already asserted the norm twice and stated it nowhere.** `tools/registry.py`'s
+`registry_amend_readme` docstring says *"`description` is one sentence and cannot carry that"*, and
+`skills/module-tables/references/readme.md` says *"because `display.description` is one sentence"*.
+Both use the claim as a premise for something else; neither is anywhere an author looks while writing
+the line, and the corpus above is what the unenforced claim was worth. This is §8's third prose-rot
+shape exactly — an enforcement claim with no surface named. Two restatements, and the field's own
+model carries no `Field(description=…)` at all, which is `S63`.
+
+**Fix it.** The norm gets **one home** (`skills/module-tables/references/module_spec.md`, which owns
+the field), and it is repeated at the one point an author actually meets the field: `scaffold_module`'s
+`next_step`, which is the string an agent reads immediately before replacing the `<<REPLACE>>`. The two
+existing assertions are sharpened to agree with it rather than left as independent claims.
+
+**Surface it, do not fix it — and why each candidate repair is wrong.**
+
+- **A `max_length` or a validator on the field.** Refuses a spec that is merely verbose, and refuses it
+  at validate time, long after the prose was written and for a property that is taste rather than
+  correctness. It would also make six published modules retroactively invalid, which is a false claim
+  about finished work — they met every requirement that existed. Argued in `S63` and declined there.
+- **A `lint_rows`-style length warning of ours.** Cheaper, but it fires at the wrong end of the stage:
+  by the time a module lints, the description has been written, reviewed and forgotten. A warning that
+  arrives after the decision is a warning that gets waved through.
+- **The registry clamping or folding the card.** Rendering is theirs, and clamping hides content the
+  author chose to write — the description would still be a paragraph, just an invisible one. Not filed
+  in their intake for that reason.
+- **Amending the four long ones.** `description` lives in `module_spec.yaml`, inside the content
+  identity, so unlike the README it is not amendable — it costs a new version. That is the module
+  author's call and not ours, and it is a decision for their list rather than a repair for ours.

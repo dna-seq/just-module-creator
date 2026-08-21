@@ -21,7 +21,9 @@ confused for it.
 A module's rows say what is true. The readme says what the module *is*, what it is **not**, and what
 the author decided that no row records. On the catalog it is the module card's long prose (registry
 `S5`); in the spec directory it is the only place a caveat like *"most of these are from a preprint
-and one association was not significant"* can live, because `display.description` is one sentence.
+and one association was not significant"* can live, because `module.description` is the card's
+one-sentence subtitle and has no room for it (`module_spec.md` owns that norm and what it is worth —
+nothing enforces it, and most published descriptions overrun it).
 It is optional, it is never parsed, and nothing downstream branches on its content. It is a claim.
 
 ## Identity card

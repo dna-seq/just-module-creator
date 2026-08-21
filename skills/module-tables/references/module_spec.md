@@ -143,6 +143,22 @@ omits them. `license:` is only checked against `licensing.csv` when that file ex
   mean and whether they travel. Nothing can infer it; see the whole of Gotcha 1.
 - **`genome_build`** — the only key in this file that is *content* rather than metadata. Getting it
   wrong relocates every coordinate in the module.
+- **`module.description`** — the catalog card's subtitle, and **this dossier is where its length norm
+  lives**. Aim at **one short sentence, roughly 5-15 words**. Nothing enforces it: the field is a bare
+  `str` with no validator and, unlike `icon_set` and `color` beside it, carries no
+  `Field(description=...)` either, so an author gets no guidance from the model (format-tree `S63`).
+  Measured on production 2026-08-21, six of the seven published modules are 25-79 words — two to five
+  sentences, rendered whole, and the 60-word one occupies fourteen rows of its card. Say what this
+  module distinguishes from the ones beside it in a search result; **methodology is the thing to keep
+  out**, because it has three homes that persist and are meant for it (`weighting:`, `authorship:`,
+  `README.md`) and because it is the half that repeats. Four of the five reference specs end with the
+  byte-identical *"Curated from the GWAS Catalog (GRCh38), allele/strand-validated against dbSNP with a
+  gnomAD r4 second witness."* — fifteen words that make four cards look alike. The eight-word
+  `eric-mods/lactose_tolerance` is the calibration case *for*.
+
+  A long one is **not** a defect to repair: `description` sits inside the attestation binding, so
+  editing it costs a version. On a module already published it is a line for the decision list, never a
+  silent rewrite.
 - **`module.version`** — advisory, and **there is no versioning contract**. `2.0.0` does not mean
   reviewed, `1.0.0` does not mean unreviewed, and *"any rule of the form 'version N means stage X' is
   invented"* (MODULE_LIFECYCLE § 6.0). Never withhold a publish waiting for a milestone.

@@ -325,7 +325,9 @@ source:
   Dropping a row for want of a stated direction is a result, not a gap.
 - **The contact email.** Never inferred, never invented — it is somebody's personal data.
 - **The module's own identity** — `title`, `description`, `report_title`. A `<<REPLACE>>` here is a
-  question, not a chore.
+  question, not a chore. `description` becomes the catalog card's subtitle and is rendered whole, so it
+  wants one short sentence rather than a paragraph — `module-tables` → `references/module_spec.md` has
+  the band and what overrunning it costs once the module is published.
 
 **When you cannot tell which side a case is on, surface it.** Over-surfacing is recoverable; a silent
 wrong write is not.
