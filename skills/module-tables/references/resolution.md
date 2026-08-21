@@ -187,7 +187,7 @@ Ask the live schema for the column list. These are the ones whose *meaning* is r
 
   **`ensembl-rest` where you expected `ensembl-graphql` is not a fault, and neither is a 404 in the
   log beside it.** The live-Ensembl link tries the V2 GraphQL endpoint and falls back to REST when it
-  does not answer; throughout 0.6.x the REST leg has been the one that actually resolves rows. The
+  does not answer, and the fallback is expected behaviour rather than an outage. The
   column records *which leg answered*, so read it as provenance rather than as a health signal, and
   do not report the fallback as a defect or try to force the other leg. What would matter is the link
   answering nothing at all — that is `status`, not `source`.

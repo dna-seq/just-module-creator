@@ -47,9 +47,10 @@ can change the answer at all. Four packages plus us, and the tells are reliable:
 | **us** | a path outside the workspace, an offline refusal, a missing token, a `target` that was refused, a tool that is not in this tier | a setting, never a row. Nothing in your CSVs will fix it — see SYMPTOMS' *This server* section |
 
 **The one that arrives as silence rather than a message: a tool you are sure exists is simply not
-there.** Nine are hidden unless `JMC_MODE=extended`, and an MCP surface has no *switched off* state —
-only absence, which is indistinguishable from never built. Check `module-101`'s tool table, which
-marks the tier on every row, before concluding the plugin cannot do something. **Reaching for a shell
+there.** Anything `module-101`'s tool table marks **extended** is absent unless `JMC_MODE=extended`,
+and an MCP surface has no *switched off* state — only absence, which is indistinguishable from never
+built. Check that table, which marks the tier on every row and says how to widen it, before
+concluding the plugin cannot do something. **Reaching for a shell
 recipe or a raw HTTP call instead is how you lose what the tool did beyond fetching**, and for
 `registry_download` that is the digest verification the tool exists for.
 

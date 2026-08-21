@@ -521,9 +521,9 @@ no default at all for this reason — they refuse to guess rather than answer co
 wrong world.
 
 **A tool you are certain exists, and it is not on the surface.**
-Nine tools are hidden unless `JMC_MODE=extended` — the PGx drafters, the bulk fact passes,
-`refresh_sidecar`, `paper_citations`, `reverse_module` and `registry_download`. An MCP surface has no
-"switched off" state, only absence, so a missing tool looks exactly like one that was never built.
-`module-101`'s tool table marks the tier on every row. **Do not substitute a raw HTTP call or a shell
+Every tool `module-101`'s table marks **extended** is simply absent unless `JMC_MODE=extended`,
+and an MCP surface has no "switched off" state — only absence, which looks exactly like never built.
+Read the tier off that table rather than off a list here; it is the one home for which tool sits
+where, and `module-101` also carries how to widen the tier per launch method. **Do not substitute a raw HTTP call or a shell
 recipe for a tool that is merely switched off** — you lose what the tool does beyond fetching, which
 for `registry_download` is the digest verification that is the entire point.
