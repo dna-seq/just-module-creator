@@ -1117,15 +1117,17 @@ have been questions.
   second is a namespace that did not exist before, so the catalog is now taking modules from outside
   the two known authors. **This line said FIVE for a day, which is exactly what it warns about.**
   Earlier measurement, 2026-08-20, kept because the four `antonkulaga/*` are still the worked
-  examples: measured with `registry_search()` (defaults to prod).
+  examples: measured with `registry_search(target="prod")` — which took no `target` at the time and
+  defaulted to prod; since 0.18.0 the argument is required and there is no default to fall back on.
   Four are `antonkulaga/*` at `2.0.0`/`2.1.0` — `aggression_anger_snps` (28 variants),
   `big_five_personality_snps` (330), `cognitive_intelligence` (32), `risk_impulsivity_snps` (474) —
   and `eric-mods/lactose_tolerance` is now at **`1.0.1`**, not the `1.0.0` this file said until today.
   The `antonkulaga` four are the published outputs of the four authoring transcripts, so they are the
   worked examples of *what an outside driver actually ships*, and `lactose_tolerance` is still the
   smallest readable real spec. **This line goes stale the moment somebody publishes — re-run
-  `registry_search()` rather than quoting it**, which is exactly how it came to claim "one module" for
-  nine days.
+  `registry_search(target="prod")` rather than quoting it**, which is exactly how it came to claim
+  "one module" for nine days. The `target` is not optional on a read since 0.18.0, and omitting it
+  raises rather than guessing.
 - The enricher's Ensembl cache lands in
   `~/.cache/just-dna-pipelines/ensembl_variations`. The live V2 GraphQL endpoint
   currently 404s and the client falls back to REST — expected, not a defect.
