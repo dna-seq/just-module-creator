@@ -184,6 +184,13 @@ Ask the live schema for the column list. These are the ones whose *meaning* is r
 - **`source`** — *which link answered*: `cache`, `clinvar`, `ensembl`, `ensembl-rest`,
   `ensembl-graphql`, `gnomad`, `authored`, `reversed`, `manual` (as of format 0.6.1; the field is
   documented as open). Not a licensed source.
+
+  **`ensembl-rest` where you expected `ensembl-graphql` is not a fault, and neither is a 404 in the
+  log beside it.** The live-Ensembl link tries the V2 GraphQL endpoint and falls back to REST when it
+  does not answer; throughout 0.6.x the REST leg has been the one that actually resolves rows. The
+  column records *which leg answered*, so read it as provenance rather than as a health signal, and
+  do not report the fallback as a defect or try to force the other leg. What would matter is the link
+  answering nothing at all — that is `status`, not `source`.
 - **`authority`** — *which licensed source that link speaks for*, and the column `sources.csv.source`
   joins on. Empty is a real answer: `authored`, `reversed` and `manual` have no external authority to
   declare (`licensing.py:264-274`). Before the split existed, the compiler string-compared `source`
