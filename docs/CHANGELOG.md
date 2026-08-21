@@ -5,8 +5,11 @@ on our side, so agents in sibling repos are not surprised.
 
 ## 0.18.0 — the catalog reads stop guessing which registry they are talking about
 
-**`target` is now a REQUIRED argument on `registry_search`, `registry_get_module`,
-`registry_download` and `registry_is_published`.** It used to default to `prod`, on the reasoning
+**`target` is now REQUIRED on every tool that reads a catalog** — `registry_search`,
+`registry_get_module`, `registry_download`, `registry_is_published` and `compare_to_published`, which
+is the one whose name carries no `registry_` prefix and was therefore the one the guard could not see.
+`DEFAULT_CATALOG_TARGET` no longer exists, so a grep for it is the check rather than this list. It
+used to default to `prod`, on the reasoning
 that the published world is what such a question is about. That was right about the common case and
 wrong about the common **mistake**: somebody rehearses a publish on the polygon, reads it straight
 back without noticing that the read has a different default from the write, gets nothing, and

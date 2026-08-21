@@ -25,7 +25,7 @@ on production a botched publish is permanent in two ways at once.**
 | `test-` namespaces / `test_` module names | accepted | `422 test_data_on_prod`, at the claim as well as the publish |
 | deleting what you published | `registry_delete_version` / `registry_delete_module` | not possible — `yank` delists and does **not** free the content claim |
 | default for writes | **yes** | only when you ask |
-| default for catalog reads | **none — `target` is required** (`registry_search`, `registry_get_module`, `registry_download`, `registry_is_published`) | **none — `target` is required** |
+| default for catalog reads | **none — `target` is required on every tool that reads a catalog**, `compare_to_published` included | **none — `target` is required** |
 
 **Nothing is shared between them.** Separate databases, so an account, a token and a namespace exist on
 one instance only, and promoting a rehearsal means **publishing again** with `target="prod"`.

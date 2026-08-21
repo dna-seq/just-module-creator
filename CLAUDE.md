@@ -1095,9 +1095,13 @@ have been questions.
   polygon is up — it was DNS'd but answering a bare Caddy 404 earlier the same day.
   See `targets.py`; the write tools default to the polygon, because a forgotten `target`
   costs nothing on one and is irreversible on the other. **The catalog reads take no
-  default at all** — `registry_search`, `registry_get_module`, `registry_download` and
-  `registry_is_published` require `target`, since a read cannot know which world was
-  meant and a rehearsal read back against production looks like a 404.
+  default at all** — every tool that reads a catalog requires `target`, since a read
+  cannot know which world was meant and a rehearsal read back against production looks
+  like a 404. That is `registry_search`, `registry_get_module`, `registry_download`,
+  `registry_is_published` **and `compare_to_published`**, whose name carries no
+  `registry_` prefix and which the target guard therefore could not see until it was
+  given a second, unprefixed roster. `DEFAULT_CATALOG_TARGET` is gone; grep for it
+  rather than trusting this list.
 - **We hold a POLYGON credential and no production one, as of 2026-08-12.**
   `JMC_TEST_API_KEY` is set in `.env` and `registry_whoami(target="test")` answers
   **account `sheep`, namespace `test-sheep`** — so a polygon rehearsal needs no

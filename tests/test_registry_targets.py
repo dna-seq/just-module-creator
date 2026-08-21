@@ -250,6 +250,35 @@ async def test_writes_rehearse_and_catalog_reads_refuse_to_guess(make_client):
             )
 
 
+#: The catalog reads that do NOT carry a `registry_` prefix, so the map above cannot
+#: see them. `compare_to_published` asks the catalog what it holds for a module and
+#: is a read in every sense that matters here; it was made target-required with the
+#: other four on 2026-08-21 and nothing asserted it, because the guard globs on a
+#: name rather than on what the tool does.
+_UNPREFIXED_CATALOG_READS = ("compare_to_published",)
+
+
+async def test_the_catalog_reads_that_are_not_named_registry_anything_also_require_it(make_client):
+    """A check is only as wide as the set it reads, and a prefix is not a set.
+
+    Everything above enumerates `registry_*`. A tool that reaches the same two
+    instances under a different name is invisible to it, which is how a fifth
+    catalog read shipped target-required with no test saying so.
+    """
+    async with make_client(mode="extended") as client:
+        schemas = await _schemas(client)
+
+    for name in _UNPREFIXED_CATALOG_READS:
+        schema = schemas[name]
+        assert "target" in schema["properties"], f"{name} cannot be aimed at an instance"
+        assert schema["properties"]["target"].get("default") is None, (
+            f"{name} reads a catalog and must not guess which one"
+        )
+        assert "target" in schema.get("required", []), (
+            f"{name} has no default target but does not require one either"
+        )
+
+
 async def test_the_delete_verbs_refuse_production_before_sending_anything(make_client):
     """Polygon-only, and the refusal is ours: a 405 from the far end is not an answer.
 
