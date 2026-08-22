@@ -540,6 +540,15 @@ comparison against ISO values.
    now parses the tool names straight out of `server.INSTRUCTIONS` and fails if
    any is missing from essentials. Widened in 0.4.0 (see `docs/ROADMAP_HISTORY.md`).
 
+   **INSTRUCTIONS was never the only place that teaches, and that gap shipped twice
+   more.** `compare_to_published` is essentials and its docstring handed the caller a
+   `registry_download` + `compare_modules` pair naming a tool the default tier did not
+   have; an unattended run followed that exact sentence into nothing and concluded the
+   capability existed nowhere. `test_docstrings_only_name_tools_this_tier_has` now
+   asserts the same rule over **every essentials description**: naming an extended tool
+   is fine and often the honest answer, naming one without saying so is not. Third time
+   this shape has shipped, first time a test can see it.
+
    **The one exception, and its test.** `registry_register` writes to the registry
    and is *not* gated, because it is what mints the token — gating it would be a
    cycle. So the rule is: a registry write is token-gated **unless the token is its
@@ -601,6 +610,17 @@ comparison against ISO values.
   `os.environ` directly, where absent means unset. Inside a *test*, prefer
   `setenv(VAR, "")` — it runs after the fixture and wins.)
 - **Suspect ordering whenever a test passes alone and fails in the suite.**
+- **Never let a fixture compute its expected value with the code under test.** This is
+  §2's "never fill a value from the same source that checks it", and on 2026-08-22 it was
+  found inside our own suite. `test_compare_published`'s fixture built its manifest with
+  `authored_input_entries` — the newline-normalizing hasher the tool under test was
+  wrongly using — instead of `file_entries`, which is what a real publish writes. So the
+  suite compared a wrong rule against itself, agreed perfectly, and passed while the tool
+  reported 31 of 34 authored CSVs across eight published modules as changed when they were
+  byte-identical. **Ask of a green fixture what you ask of a green check: could this have
+  failed?** Build the expected value the way the *producer* builds it, and if that is not
+  possible, say so in the test rather than reaching for the nearest function that returns
+  the right shape.
 - **Never claim a test "would have caught" a bug** without running it against the
   buggy code and watching it fail.
 - Note `from conftest import ...`, not `from tests.conftest import ...`: a
@@ -1282,3 +1302,39 @@ have been questions.
 - **`logs/authoring.log` now has a writer, and it publishes.** `record_override` appends to it and every
   compile sweeps `logs/**.log` up with no opt-out. So never write an absolute path, a token or a
   transcript fragment into that file: it travels to the catalog verbatim.
+
+- **A plugin `commands/<name>.md` SHADOWS `skills/<name>/SKILL.md`, and the skill body never
+  loads.** Found 2026-08-22, and it had disabled nine of twenty skills including
+  `create-module`, the entry point `server.INSTRUCTIONS` names. Each shim's whole body was
+  *"load the `<name>` skill and do not work from memory of it"* — so the instruction not to
+  work from memory was delivered by the thing that prevented loading its source, and a
+  compliant agent produced nothing while a non-compliant one improvised and looked fine.
+  **A skill needs no command file to be `/`-invocable**, which is why the eleven unshadowed
+  ones worked throughout and why deleting `commands/` cost nothing. Two independent runs, a
+  live session's own skill listing (the shadowed nine showed the *command's* short
+  description, the rest the skill's), and a `Skill(create-module)` call returning the shim
+  byte for byte. `tests/test_plugin_manifest.py` now fails on any command/skill name
+  collision — a command that does something a skill cannot is still fine, sharing a name is
+  not. **The general lesson: every RM20 test asserted that a shim ROUTES to a skill that
+  ships, and none asserted that invoking the name DELIVERS one. Test the thing the user does,
+  not the thing you built.**
+- **`manifest.inputs[]` is hashed over RAW bytes; the newline-normalized hasher is for the
+  closure attestation only.** `just_dna_compiler.compiler.file_entries` fills `inputs[]`
+  locally and server-side alike, since the registry runs the same compiler on publish;
+  `newline_normalized_file_entries` exists so that rewriting line endings cannot un-close a
+  module via `verification.module_binding`. Upstream's RM82 docstring states the asymmetry
+  outright and records that it was once documented backwards — which is the form our own
+  comment then repeated, citing a measurement that does not reproduce. Borrowing the
+  normalizer for a published-digest comparison **inverts its purpose**: it fires on precisely
+  the CRLF files it was meant to protect, and Python's `csv` writes `\r\n`, so most authored
+  CSVs are CRLF. Read the upstream docstring before assuming which hasher a field uses.
+- **The two 2026-08-21 dogfooding runs are the outside-driver corpus for the REVIEW half.**
+  `/data/sources/modules_dogfooding/observations/` (seven documents, `F-01`..`F-31`, a curation
+  pass over the eight modules then on production, with all eight fetched specs and their
+  manifests under `work/` and `build/`) and
+  `/data/sources/just-dna-lite/docs/MODULE_DOGFOODING.md` (`D1`..`D26`, a revision pass over ten
+  v1-port modules). **Both ran plugin 0.18.0 in the DEFAULT tier**, which is what makes them
+  worth keeping: several of their conclusions about what the surface cannot do were true of
+  essentials rather than of the tool set, and reading them without that fact misroutes the
+  repair. Ingested here as `F60`–`F64`, `RM26`, `RM27`; their own F/D numbering is their series,
+  never ours. `modules_dogfooding` is not our repo — read it, never commit there.
