@@ -20,12 +20,18 @@ The hybrid registration pattern lives in ``build_server``:
   a spec directory: ``draft_from_clinvar`` (step 2) and ``enrich_module``
   (step 6). Both are named in the workflow INSTRUCTIONS teach, which is why
   neither can sit behind a mode flag.
+* ``register_artifact_reads`` — ALWAYS. ``registry_download`` and
+  ``reverse_module``: getting somebody else's published module onto disk, which is
+  bounded by the one version you named and is the entry point to every review.
 * ``register_extended``   — ONLY when mode == "extended" (registered on start).
+  ``paper_citations`` alone: a citation graph is sized by the corpus.
 * ``register_extended_passes`` — extended. PGx drafting and the bulk fact passes.
-* ``register_refresh``    — extended. ``refresh_sidecar``: capture, delete,
-  re-derive, reapply what is provably the author's, report the rest. Extended
-  because it runs whichever pass owns the sidecar, up to and including the
-  GWAS one, so essentials would reach an extended budget by another door.
+* ``register_refresh``    — ALWAYS, with the tier passed through: ``refresh_sidecar``
+  refuses only its two corpus-sized sidecars outside extended. Capture, delete,
+  re-derive, reapply what is provably the author's, report the rest. The gate moved
+  from the tool to its argument on 2026-08-22: it runs whichever pass owns the
+  sidecar, so the two whose pass a corpus sizes still need extended — but the five
+  bounded by the rows you wrote, `resolution.csv` among them, no longer do.
 
 The server NEVER raises at startup for a missing token (see auth.py): authoring
 a module needs no registry account at all.
@@ -46,7 +52,7 @@ from just_module_creator.logging_setup import get_logger, setup_logging
 from just_module_creator.net import build_services
 from just_module_creator.settings import Mode, Settings
 from just_module_creator.tools._shared import schema_versions
-from just_module_creator.tools.advanced import register_extended
+from just_module_creator.tools.advanced import register_artifact_reads, register_extended
 from just_module_creator.tools.authoring import register_essentials
 from just_module_creator.tools.checks import register_checks
 from just_module_creator.tools.comparison import register_comparison
@@ -143,10 +149,15 @@ def build_server(mode: Mode | None = None, settings: Settings | None = None) -> 
     register_passes(mcp, settings, services)
     register_provenance(mcp, settings)
     register_comparison(mcp, settings)
+    # Always on. `registry_download` / `reverse_module` get a published module onto
+    # disk, and `refresh_sidecar` re-derives one against its source; all three are
+    # bounded by what the caller named. Two unattended runs in the default tier each
+    # concluded the first was impossible and the third did not exist.
+    register_artifact_reads(mcp, settings, services)
+    register_refresh(mcp, settings, services, tier=resolved_mode)
     if resolved_mode == "extended":
         register_extended(mcp, settings, services)
         register_extended_passes(mcp, settings, services)
-        register_refresh(mcp, settings, services)
 
     log.info(
         "Server built (mode=%s, offline=%s, registry=%s, polygon=%s)",

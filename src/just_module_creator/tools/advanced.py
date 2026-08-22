@@ -1,15 +1,26 @@
-"""EXTENDED — registered ONLY when mode == "extended".
+"""EXTENDED — ``paper_citations`` only, plus the two artifact reads that moved out.
 
-What is left here after the tier was widened: the three tools whose cost is not
-bounded by what you named. ``paper_citations`` traverses a citation graph whose
-size the corpus decides, and ``reverse_module`` / ``registry_download`` are about
-reading back somebody *else's* compiled artifact rather than authoring your own.
-Opt in via ``JMC_MODE=extended`` / ``--mode extended``.
+``register_extended`` is registered ONLY when mode == "extended" and now holds one
+tool: ``paper_citations`` traverses a citation graph whose size the corpus decides,
+which is the cost rule the tier is *for*.
 
-Everything a module of your own actually needs now lives in the always-on tiers:
-the schema dump and integrity checks in ``authoring``, identifier and paper reads
-in ``research``, and ``enrich_module`` beside ``draft_from_clinvar`` in
-``passes`` — the two tools that fetch and then write into a spec directory.
+``register_artifact_reads`` is ALWAYS registered. ``reverse_module`` and
+``registry_download`` moved there on 2026-08-22, and the second clause of the old
+tier rule — "or that reads back somebody else's compiled artifact" — is **deleted
+rather than narrowed**. It was never a cost argument. Fetching one named version of
+one named module is bounded by exactly what the caller named, which is the
+essentials test; reversing one artifact directory is a local read with no network
+at all.
+
+The clause cost two unattended runs their whole task. Both ran in the default tier,
+neither could see ``registry_download``, and both concluded no tool fetches a
+published module — one of them wrote a bespoke script against an undocumented
+``/files/`` endpoint to get past it. Worse, ``compare_to_published`` is essentials
+and its docstring hands the caller a ``registry_download`` + ``compare_modules``
+pair, so the default tier taught a step it could not run. That is the same defect
+0.4.0 fixed for ``enrich_module``, and the lesson did not generalise the first time.
+
+What is left in the mode flag is one rule and no exceptions: **a corpus sizes it.**
 """
 
 from __future__ import annotations
@@ -118,11 +129,21 @@ def register_extended(mcp: FastMCP, settings: Settings, services: NetworkService
             lambda: citation_graph(services, paper_id=identifier, direction=direction, limit=limit)
         )
 
+def register_artifact_reads(
+    mcp: FastMCP, settings: Settings, services: NetworkServices
+) -> None:
+    """Always registered: get a published module onto disk, and read an artifact back.
+
+    Both are bounded by what the caller named — one version of one module, one
+    artifact directory — so neither belongs behind the mode flag. See the module
+    docstring for what the flag used to claim and why it was wrong.
+    """
+    del services  # Neither tool takes a network client; the signature matches its siblings.
+
     # ----------------------------------------------------------------- #
     # Round-trip
     # ----------------------------------------------------------------- #
     @mcp.tool(
-        tags={"extended"},
         annotations=ToolAnnotations(
             title="Reverse an artifact to a spec",
             readOnlyHint=False,
@@ -153,7 +174,6 @@ def register_extended(mcp: FastMCP, settings: Settings, services: NetworkService
     # Registry reads
     # ----------------------------------------------------------------- #
     @mcp.tool(
-        tags={"extended"},
         annotations=ToolAnnotations(
             title="Download a registry module",
             readOnlyHint=False,

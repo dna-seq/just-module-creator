@@ -657,12 +657,41 @@ async def test_a_module_with_no_sidecar_yet_is_a_plain_derivation(
 # --------------------------------------------------------------------------- #
 # Tiering, stamping, and the structural guard
 # --------------------------------------------------------------------------- #
-async def test_refresh_is_extended_and_absent_from_essentials(make_client) -> None:
-    """Cost, not usefulness: it can run the pass measured at 382 requests."""
+async def test_refresh_is_in_every_tier_and_the_gate_moved_to_the_sidecar(make_client) -> None:
+    """Cost, not usefulness — but the cost is per sidecar, not per tool (2026-08-22).
+
+    It was extended-only because it can run the pass measured at 382 requests. True
+    of two of the seven entries; the other five are bounded by the rows you wrote,
+    and gating the tool gated those too. Two unattended runs then each reported that
+    nothing re-derives a stale sidecar and that `rm resolution.csv` is the sanctioned
+    interface — the run's own highest-value action, spelled as a delete because the
+    tool that does it with a verified capture was invisible to them.
+    """
     async with make_client("essentials", offline_settings()) as client:
-        assert "refresh_sidecar" not in {t.name for t in await client.list_tools()}
+        assert "refresh_sidecar" in {t.name for t in await client.list_tools()}
     async with make_client("extended", offline_settings()) as client:
         assert "refresh_sidecar" in {t.name for t in await client.list_tools()}
+
+
+def test_the_corpus_sized_sidecars_are_the_ones_whose_pass_is_extended() -> None:
+    """Two independent producers, so the marker cannot quietly disagree with the tier.
+
+    `Sidecar.corpus_sized` is hand-set beside each entry; `EXTENDED_ONLY` in
+    `test_modes_and_auth` is the tool roster. A sidecar marked corpus-sized whose
+    pass is NOT gated as a tool would be friction with nothing behind it, and the
+    reverse would be the budget door the old tiering existed to shut.
+    """
+    from just_module_creator.tools.refresh import ROSTER
+
+    marked = {csv for csv, sidecar in ROSTER.items() if sidecar.corpus_sized}
+    assert marked == {"literature.csv", "gwas_effects.csv"}
+    # And every unmarked one really is reachable in the default tier.
+    for name, sidecar in ROSTER.items():
+        if name not in marked:
+            assert check_sidecar(name, mode="essentials") is sidecar
+    for name in marked:
+        with pytest.raises(ToolError, match="extended"):
+            check_sidecar(name, mode="essentials")
 
 
 async def test_the_answer_names_the_toolchain_that_derived_the_row_identity(

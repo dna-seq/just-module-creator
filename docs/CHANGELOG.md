@@ -3,6 +3,46 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — the extended tier stops hiding the way into somebody else's module
+
+**`registry_download`, `reverse_module` and `refresh_sidecar` are in every tier now.**
+The clause that put them behind the mode flag — *"or that reads back somebody else's
+compiled artifact"* — is **deleted rather than narrowed**, because it was never a cost
+argument. Fetching one named version of one named module is bounded by exactly what the
+caller named, which is the essentials test; reversing one artifact directory is a local
+read with no network at all. What is left in the flag is one rule and no exceptions: **a
+corpus sizes it.**
+
+The clause cost two independent unattended runs their whole task. Both ran in the default
+tier. Neither could see `registry_download`, so both reported that no tool fetches a
+published module — one wrote a bespoke script against an undocumented `/files/` endpoint
+to get past it, and observed that an agent restricted to the plugin's own tools "could
+complete step one of this task: list the modules, then stop, because it could not obtain
+one." Neither could see `refresh_sidecar` either, so both reported that nothing re-derives
+a stale sidecar and that `rm resolution.csv` is the sanctioned interface — which was the
+single highest-value action either run took, and this tool does it with a verified capture
+and the `signature_moved` canary instead of a delete.
+
+**`refresh_sidecar`'s cost objection was real, so the gate moved to the argument rather
+than being dropped.** It runs whichever pass owns the sidecar, and `gwas_effects.csv`'s is
+measured at 382 requests for one real module. That is true of two of the seven entries;
+the other five, `resolution.csv` among them, are bounded by the rows you wrote, and gating
+the tool gated those too. `Sidecar.corpus_sized` now marks the two, `check_sidecar` refuses
+them outside extended while naming what is reachable, and a test pins that set against the
+passes `register_extended_passes` gates — two independent producers, so the marker cannot
+drift from the tier.
+
+**The guard that was missing.** `test_the_taught_workflow_runs_in_the_default_tier` has
+covered `server.INSTRUCTIONS` since 0.4.0, and this defect walked straight past it:
+`compare_to_published` is essentials and its docstring handed the caller a
+`registry_download` + `compare_modules` pair, naming a tool the default tier did not have.
+An unattended run followed exactly that sentence, found nothing, and concluded the
+capability existed nowhere. `test_docstrings_only_name_tools_this_tier_has` now asserts the
+same rule over every essentials docstring: naming an extended tool is fine, naming one
+without saying so is not. This is the third time this shape has shipped — `enrich_module`
+in 0.4.0, `lookup_identifier` before it — and the first time the guard covers descriptions
+rather than only the taught order.
+
 ## Unreleased — nine skills stop being shadowed by a command that never loaded them
 
 **`commands/` is deleted.** The nine routing shims RM20 shipped each carried one

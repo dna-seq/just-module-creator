@@ -43,12 +43,30 @@ ESSENTIAL_TOOLS = {
     "check_identifiers",
 }
 
-# Bounded by a corpus rather than by what you named, or about reading back
-# somebody else's artifact. The only things a mode flag still hides.
+# Bounded by a CORPUS rather than by what you named. That is the whole rule now,
+# and there are no other clauses (2026-08-22).
+#
+# The clause that used to sit beside it — "or about reading back somebody else's
+# compiled artifact" — is DELETED, not narrowed. It was never a cost argument:
+# fetching one named version of one named module is bounded by exactly what the
+# caller named. It cost two independent unattended runs their task. Both ran in the
+# default tier, so neither saw `registry_download`, and both reported that no tool
+# fetches a published module — one wrote a script against an undocumented `/files/`
+# endpoint to get past it. `compare_to_published` is essentials and its docstring
+# hands the caller a `registry_download` + `compare_modules` pair, so the default
+# tier taught a step it could not run: the same defect 0.4.0 fixed for
+# `enrich_module`, which is why `test_docstrings_only_name_tools_this_tier_has`
+# below now guards the docstrings and not just INSTRUCTIONS.
+#
+# `refresh_sidecar` left too, and its cost objection was real rather than
+# inherited: it runs whichever pass owns the sidecar, and `gwas_effects.csv`'s is
+# measured at 382 requests. That gate moved to the ARGUMENT, where the cost lives —
+# `Sidecar.corpus_sized` — because five of the seven entries are bounded by the rows
+# you wrote, `resolution.csv` among them. Re-deriving that one is the highest-value
+# action either run took, and both spelled it `rm resolution.csv` for want of a tool
+# they could see.
 EXTENDED_ONLY = {
     "paper_citations",
-    "reverse_module",
-    "registry_download",
     "draft_from_cpic",
     "draft_from_clinpgx",
     "enrich_facts",
@@ -56,11 +74,6 @@ EXTENDED_ONLY = {
     # `1 + 2N` requests for a variant with N published associations, measured at 382
     # for one real module: sized by how much has been published, not by what you named.
     "enrich_gwas_effects",
-    # `refresh_sidecar` runs whichever pass owns the sidecar, up to and including the
-    # GWAS one, so essentials would reach an extended budget by another door — the
-    # rationale its author states in `server.py`'s module docstring, transcribed here
-    # rather than decided here.
-    "refresh_sidecar",
 }
 
 
@@ -103,6 +116,37 @@ def test_instructions_name_the_running_toolchain():
     """
     assert f"just-dna-format {metadata.version('just-dna-format')}" in INSTRUCTIONS
     assert f"just-dna-compiler {metadata.version('just-dna-compiler')}" in INSTRUCTIONS
+
+
+async def test_docstrings_only_name_tools_this_tier_has(essentials_client, extended_client):
+    """A docstring that hands you a tool this tier lacks is a dead end, same as INSTRUCTIONS.
+
+    `test_the_taught_workflow_runs_in_the_default_tier` guards the taught order and
+    nothing else, so this one went unnoticed: `compare_to_published` is essentials
+    and its docstring ended "`next_step` names the `registry_download` +
+    `compare_modules` pair that gets it", naming a tool the default tier did not
+    have. An unattended run followed it, found nothing, and concluded the capability
+    did not exist anywhere.
+
+    A mention is allowed to name an extended tool — that is often the honest answer
+    — but only while saying so, which is what the tier marker is. Asserted over the
+    essentials surface's own descriptions, so it re-checks whenever either moves.
+    """
+    essentials = await _names(essentials_client)
+    every_tool = await _names(extended_client)
+    missing = every_tool - essentials
+
+    offenders: list[str] = []
+    for tool in await essentials_client.list_tools():
+        text = tool.description or ""
+        for named in sorted(missing):
+            if f"`{named}`" not in text:
+                continue
+            # The marker may be the word or the variable that turns it on.
+            window = text[max(0, text.index(f"`{named}`") - 200) :]
+            if "extended" not in window.lower() and "JMC_MODE" not in window:
+                offenders.append(f"{tool.name} names `{named}` with no tier marker")
+    assert not offenders, "\n".join(offenders)
 
 
 async def test_extended_only_tools_are_absent_by_default(essentials_client):

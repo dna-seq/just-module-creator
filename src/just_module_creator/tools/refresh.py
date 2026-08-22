@@ -199,6 +199,13 @@ class Sidecar:
     fact_fields: tuple[str, ...]
     signature: Callable[[Sequence[BaseModel]], str]
     passes: tuple[SidecarPass, ...]
+    #: Its pass is sized by how much has been published rather than by what you
+    #: named, so refreshing it in the default tier would spend an extended budget
+    #: through a different door. Declared per sidecar rather than per tool because
+    #: this is where the cost actually lives: five of the seven are bounded by the
+    #: rows you wrote. `tests/test_refresh.py` pins this set against the passes
+    #: that `register_extended_passes` gates, so the two cannot drift apart.
+    corpus_sized: bool = False
 
 
 def _run_resolution(spec_dir: Path, mode: str, offline: bool, use: str, services: Any) -> Any:
@@ -312,6 +319,8 @@ ROSTER: dict[str, Sidecar] = {
         ),
     ),
     "literature.csv": Sidecar(
+        # `enrich_literature` searches per variant across the whole corpus.
+        corpus_sized=True,
         csv="literature.csv",
         model=LiteratureRow,
         fact_fields=LITERATURE_FACT_FIELDS,
@@ -353,6 +362,9 @@ ROSTER: dict[str, Sidecar] = {
         ),
     ),
     "gwas_effects.csv": Sidecar(
+        # `1 + 2N` requests for a variant with N published associations,
+        # measured at 382 for one real module.
+        corpus_sized=True,
         csv="gwas_effects.csv",
         model=GwasEffectRow,
         fact_fields=GWAS_FACT_FIELDS,
@@ -641,13 +653,32 @@ def aggregate(counted: Sequence[tuple[int, str]]) -> list[str]:
 # --------------------------------------------------------------------------- #
 # Argument checks
 # --------------------------------------------------------------------------- #
-def check_sidecar(name: str) -> Sidecar:
-    """Resolve a sidecar name, with a usable error and the honest refusals."""
+def check_sidecar(name: str, mode: str = "extended") -> Sidecar:
+    """Resolve a sidecar name, with a usable error and the honest refusals.
+
+    ``mode`` gates the corpus-sized sidecars only. The tool itself is essentials
+    since 2026-08-22: two unattended runs both concluded that re-deriving a stale
+    sidecar has no tool and that ``rm resolution.csv`` is the sanctioned interface,
+    because neither could see this one. `resolution.csv` is five of the seven
+    entries' company in being bounded by the rows you wrote, and it is the entry
+    both runs actually needed — refreshing it is the highest-value action either
+    run took, and this tool does it with a verified capture and the
+    ``signature_moved`` canary rather than with a delete.
+    """
     wanted = name.strip()
     if not wanted.endswith(".csv"):
         wanted = f"{wanted}.csv"
     if wanted in ROSTER:
-        return ROSTER[wanted]
+        chosen = ROSTER[wanted]
+        if chosen.corpus_sized and mode != "extended":
+            raise ToolError(
+                f"{wanted} is refreshable, but its pass is sized by how much has been "
+                f"published rather than by what you named, so it needs the extended tier: "
+                f"set JMC_MODE=extended (or --mode extended) and restart the server. "
+                f"Bounded in this tier: "
+                f"{', '.join(sorted(c for c, s in ROSTER.items() if not s.corpus_sized))}."
+            )
+        return chosen
     if wanted in UNREFRESHABLE:
         raise ToolError(f"{wanted} cannot be refreshed: {UNREFRESHABLE[wanted]}")
     raise ToolError(
@@ -686,11 +717,18 @@ def check_use(sidecar: Sidecar, use: str | None) -> str:
 # --------------------------------------------------------------------------- #
 # The tool
 # --------------------------------------------------------------------------- #
-def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices) -> None:
-    """Register the non-destructive sidecar refresh (extended tier)."""
+def register_refresh(
+    mcp: FastMCP, settings: Settings, services: NetworkServices, tier: str = "essentials"
+) -> None:
+    """Register the non-destructive sidecar refresh. Always registered since 2026-08-22.
+
+    ``tier`` is passed through to ``check_sidecar``, which refuses the two
+    corpus-sized sidecars outside the extended tier. The gate moved from the tool
+    to its argument because that is where the cost lives: five of the seven
+    entries are bounded by the rows you wrote, and gating the tool gated those too.
+    """
 
     @mcp.tool(
-        tags={"extended"},
         task=True,
         annotations=ToolAnnotations(
             title="Refresh a derived sidecar",
@@ -768,7 +806,7 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
         at all — no pass derives it.
         """
         target = resolve_dir(spec_dir, settings)
-        chosen = check_sidecar(sidecar)
+        chosen = check_sidecar(sidecar, mode=tier)
         declared = check_use(chosen, use)
         eff_offline = offline_for(settings, offline)
         mode = "strict" if strict else "best_effort"
