@@ -148,7 +148,8 @@ exclude authored files.
 ## F63 — an aborted `enrich_module` keeps running and overwrites the spec directory afterwards
 
 **Found:** 2026-08-21, run 1 · **Severity:** high, data integrity ·
-**Status:** open here; the upstream half is filed against the enricher.
+**Status:** mitigated 2026-08-22; the upstream half is format-tree `S66`, tracked as `F63`
+in [just-dna-format-pending-fixes.md](just-dna-format-pending-fixes.md).
 
 The mechanism, localized by reading both trees rather than by reproducing the timeout.
 `enrich_module` dispatches through `anyio.to_thread.run_sync` with the default

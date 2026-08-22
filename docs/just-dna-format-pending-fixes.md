@@ -1445,3 +1445,57 @@ decision for each of them.
 **Closes when** either a justification we can quote lands in an upstream reply, or the binding is split
 and a release `uv sync` installs carries it. The `short_description` half closes separately, when the
 field exists with its bound *and* the registry's card reads it.
+
+## F63 — an interrupted enrichment persists nothing, and its terminal write is unlocked (format `S66`)
+
+**Status: filed 2026-08-22 against enricher 0.6.6, open. Mitigated here, and the mitigation is
+narrower than the fix.**
+
+`enrich()` writes `resolution.csv` once, at the very end, after every network link — so a run killed
+at minute 29 has written nothing, and thirty minutes of successful per-variant resolution is
+discarded. The write itself is `open(path, "w")` + `csv.DictWriter`: in place, truncating, no
+tmp+rename and no fsync, so a kill mid-write leaves a valid-looking short file. `record_verification`
+and `record_source_terms` sit in the same tail. And there is **no advisory lock anywhere** in either
+tree, while the pass reads the existing sidecar at its start and rewrites it at its end — so the
+read-modify-write window is the whole run.
+
+**What made it a data-integrity finding rather than a scaling one.** A worker thread cannot be
+interrupted, so a client that gives up leaves the work running. Measured: an aborted 330-variant run
+was still alive when the author restored the published sidecar and re-enriched; the second call read
+the restored file, reported `resolved: 330, sources: ["cache"]` correctly and instantly, and the first
+then wrote its partial result over it, leaving **162** distinct rsIDs plus a rewritten
+`verification.json`. The module validated, closed and compiled green, because every count in it agreed
+with every other. An unresolved subject contributes no row at all in some branches, which is why the
+file shrank rather than degrading visibly.
+
+**Our mitigation, and what it does not cover.** A directory being enriched is claimed in process, and
+a second `enrich_module` on it raises with what is running and when it began instead of succeeding
+into a file about to be overwritten; the claim releases in `finally`, which covers exactly the window
+the abandoned write can land in because `run_sync` defaults to `abandon_on_cancel=False`. That stops
+the sequence that actually happened, where both calls came from one session. It **cannot** see an
+enrichment started by another process, it does not make an interrupted run keep what it resolved, and
+it does not make the write atomic. Those three are upstream's and are what `S66` asks for.
+
+## F64 — the warning surface cannot be read on the module that needs it most (format `S67`, `S68`)
+
+**Status: filed 2026-08-22 against compiler 0.6.6, open. No mitigation here and none is right.**
+
+Two findings, filed separately because the asks differ. `_verify_vrs_ids` emits one warning per
+allele while `_vrs_coverage` aggregates the same class a few lines away in the same file, and which
+path a module lands in is decided by whether `resolution.csv` carries a `vrs_id` at all — so **the
+module whose enricher minted more identities is the one that becomes unreadable.** Measured: 101
+resolution rows all carrying `vrs_id`, 47 of them indels, produced **85 warnings, 80 per-allele**;
+57,595 rows with 26,810 indels and no `vrs_id` on any produced **7, one aggregated**. On the first
+module the three warnings an author can act on are items 83, 84 and 85.
+
+Beside it, `warnings` is a flat `list[str]` with no code, no count and no cap across `validate_module`,
+`compile_module` and `registry_check`, and nothing separates a finding an author can clear from one
+they cannot — the VRS warnings say of themselves that they are *"minted upstream by the enricher, not
+recomputable here"*. The compiler already holds that discriminator and spends it on severity rather
+than presentation: *"a finding no authored edit could clear is not a `strict` matter."*
+
+**Why we are not mitigating.** Aggregating on our side would mean re-deriving upstream's grouping from
+warning text, which is the hardcoded-schema-fact this repo forbids, and it would hide the raw list an
+author may need. Every skill here insists warnings on a green run are the real output; that
+instruction is only followable if the list is readable, and readability is the producer's to give.
+
