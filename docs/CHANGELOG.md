@@ -3,6 +3,45 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — three descriptions that said something the code does not do
+
+**`enrich_module` promised a task id and polling. There is neither.** The tool is
+declared `task=True`, but that makes tasks *optional*: a client that sends no task
+metadata gets an ordinary synchronous call, and the usual ones send none. So it blocks,
+and progress is reported once before the work and once after and never during — which is
+why a large module trips a client **idle** timeout rather than a duration one. Measured:
+32 variants return in seconds; 330 and 474 were both killed client-side at 1800s. The
+docstring now says all of that, along with the two consequences a run has to plan around:
+nothing is written until the very end, so an interrupted run persists nothing and
+merge-not-clobber cannot help because there is no partial write to merge; and the
+interruption is client-side only, so the work continues here and still writes when it
+finishes — a call reported as failed can overwrite the file *after* a later call has
+already reported success against it. The same claim is corrected in
+`skills/module-enrich` and `docs/FOR_DEVELOPERS.md`, which had it too.
+
+**`record_override` contradicted the server's own rule 2, and there was no correct
+answer.** The tool said *"call this in response to a reported mismatch, never ahead of
+one"*; `INSTRUCTIONS` says *"you MAY write — and YOU log it: nothing logs a hand edit, so
+call `record_override`"*. A run whose checks all came back clean made every edit on its
+own arithmetic, so it could satisfy one instruction only by violating the other. Two
+different acts were sharing one docstring, and the discriminator was already in the
+signature: **`source_value` given is an outranking claim** and the ordering binds, because
+an author who could mark a row outranked before the mismatch fires would destroy the
+signal that catches a wrong row; **`source_value` omitted is an edit log** and nothing is
+ordered. Also stated plainly now: one call is one `(variant_key, field)` pair with no bulk
+form, so a column-wide correction is 214 calls in a real module — the workaround is named
+as a limitation rather than left to be discovered; and `value_sha256` digests the authored
+value *string*, so two rows corrected to the same value share one digest.
+
+**`INSTRUCTIONS` now states the plugin's own version.** Both runs independently spent their
+first calls working out which of two installed copies had answered — one by reading
+`installed_plugins.json` by hand, the other by `ls`-ing both caches and counting skill
+directories. The block already named the format and compiler versions and told the reader
+to compare against them, which is a number the surface never showed. It fits inside the
+2048-char host window that 0.14.0 overran by 7,172 characters, with the version slack left
+alone: prose was trimmed to make room, because that slack exists for version strings
+growing and spending it would be borrowing against the next bump.
+
 ## Unreleased — `compare_to_published` was hashing the local side by a rule nobody publishes
 
 **It normalized newlines on the local side and compared the result against a published

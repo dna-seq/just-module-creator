@@ -73,9 +73,24 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
     ) -> OverrideResult:
         """Record that an authored value deliberately outranks what a source says.
 
-        **Call this in response to a reported mismatch, never ahead of one.** That
-        ordering is the whole design. A cross-check that flags a row against ClinVar
-        is doing one of two jobs and they are indistinguishable at the moment it
+        **Two different acts land here, and only one of them is ordered.** This
+        docstring read "call this in response to a reported mismatch, never ahead of
+        one" until 2026-08-22, full stop — which contradicted the server's own rule 2,
+        *"you MAY write, and YOU log it: nothing logs a hand edit, so call
+        `record_override`"*. An unattended run hit it exactly: every edit it made was
+        prompted by its own arithmetic rather than by a reported mismatch, since the
+        checks all came back clean, so it could satisfy one instruction only by
+        violating the other. There was no correct answer available to a careful
+        reader. `source_value` is the discriminator, and it already was:
+
+        * **`source_value` given — an outranking claim, and the ordering below binds.**
+          You are asserting that this cell beats what that source says.
+        * **`source_value` omitted — an edit log, and nothing is ordered.** You changed
+          a cell and are recording that you did, who did, and why. Log it whenever you
+          write, which is the server's rule and is not in tension with anything here.
+
+        **Why the ordering binds on an outranking claim.** A cross-check that flags a
+        row against ClinVar is doing one of two jobs and they are indistinguishable at the moment it
         fires: either the row is wrong — a hallucination, or somebody's stale
         recollection — and the warning has just caught it, or the module is right and
         *current* while the archive lags, because of a retraction, a refuting
@@ -83,7 +98,17 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
         to mark a row outranked **before** the mismatch is reported would destroy the
         only signal that catches the first case.
 
-        So: read the finding, decide, then record the decision here.
+        So, for an outranking claim: read the finding, decide, then record the
+        decision here. For an edit log there is no finding to wait for.
+
+        **One call is one `(variant_key, field)` pair, and there is no bulk form.** A
+        correction that is right about a whole column is right 214 times over in a
+        real module, and logging it faithfully is 214 calls. Until there is a bulk
+        form, record it per row where the set is small enough to enumerate, and where
+        it is not, write one record per module and say in `reason` that it stands for
+        the set **and how the set was derived** — the derivation is the part a
+        reviewer needs, and prose is the wrong place for it, which is why this is a
+        stated limitation rather than a recommended practice.
 
         `reason` is prose and there is deliberately no vocabulary for it. Which of a
         retraction, a meta-analysis and a single larger cohort outranks an archive
@@ -97,7 +122,11 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
         review queue precisely so somebody revisits it. "Somebody decided this" never
         means green.
 
-        The record is bound to the value it justifies by digest, so editing that cell
+        The digest is of the authored **value string**, not of the cell, so two rows
+        that were corrected to the same value carry the same `value_sha256` — the
+        record is identified by `(variant_key, field)` and the digest tells you
+        whether that cell still holds what was justified. It is bound to the value it
+        justifies by digest, so editing that cell
         again makes the record stale rather than silently carrying the old reason onto
         a new value. Written into `provenance.json` — upstream's own file, recognised
         by the registry, outside `artifact.digest` — and logged into

@@ -387,7 +387,26 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
         subtracting one from a VCF position produces. It is a floor, not a total:
         only rows whose neighbouring base differs from `ref` are visible.
 
-        Runs as a background task: you get a task id immediately and poll.
+        **It blocks, and on a large module it blocks for a long time.** It is
+        declared task-capable, but that only makes tasks *optional*: a client that
+        sends no task metadata — and the usual ones do not — gets an ordinary
+        synchronous call, so there is no task id and nothing to poll. This said
+        otherwise until 2026-08-22, and a run planning around the promise had
+        nothing to plan with. Progress is reported once before the work and once
+        after, never during, so a client idle timeout is what you will hit rather
+        than a duration one. Measured: 32 variants return in seconds; 330 and 474
+        were both killed client-side at 1800s.
+
+        **Nothing is written until the very end.** The single `resolution.csv` write
+        happens after every network link, so a run that is interrupted at any point
+        persists nothing — thirty minutes of successful resolution is discarded, and
+        merge-not-clobber does not save you because there was no partial write to
+        merge. Worse, an interruption is *client-side only*: the work continues here
+        and still writes when it finishes, so a call you were told had failed can
+        overwrite this file later, after a second call has already reported success
+        against it. If a call timed out, count the rows in `resolution.csv` against
+        the authored subject count before trusting anything downstream, and treat a
+        `success` issued while an aborted call may still be running as unverified.
 
         Curate before you enrich. A `<<REPLACE>>` anywhere makes every loader
         refuse the file, this one included — deliberately, since forward

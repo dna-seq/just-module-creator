@@ -83,9 +83,9 @@ _FMT = schema_versions().format_version
 _COMP = schema_versions().compiler_version
 
 INSTRUCTIONS = f"""\
-Authoring surface for just-dna annotation modules. Schema answers come from
-just-dna-format {_FMT} and just-dna-compiler {_COMP}; older than yours means a stale
-process.
+Authoring surface for just-dna annotation modules (plugin v{__version__}). Schema
+answers come from just-dna-format {_FMT} and just-dna-compiler {_COMP}; older than
+yours is a stale process.
 
 A module is authored CSVs plus module_spec.yaml, compiled to a parquet artifact
 and manifest. Work in this order:
@@ -117,7 +117,7 @@ Every registry tool takes `target`, and catalog reads REQUIRE it — read back t
 instance you wrote to. target="test" is the polygon: a publish there is a
 REHEARSAL you can delete. target="prod" is the catalog, immutable, its data
 claimed by a hash `yank` never frees. Writes default to test. Rehearse, say so
-out loud, promote only on explicit yes — "publish it" is not that ask.
+aloud, promote only on explicit yes — "publish it" is not that ask.
 """
 
 

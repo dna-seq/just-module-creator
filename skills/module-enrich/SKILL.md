@@ -30,7 +30,7 @@ enrich_module(spec_dir="spec", strict=True)
 enrich_module(spec_dir="spec", offline=True)    # caches only, zero egress — and the ref check does NOT run
 ```
 
-It runs as a background task: you get a task id immediately and poll. Several links run in order —
+It blocks, and there is no task id and nothing to poll — the tool is declared task-capable, but a client that sends no task metadata gets a plain synchronous call, and the usual ones do not send it. Progress is reported before the work and after, never during, so what you hit on a large module is a client idle timeout. Nothing is written until the end, so an interrupted run persists nothing; and the interruption is client-side only, so the work continues here and still writes when it finishes. After a timeout, count `resolution.csv` against the authored subject count before trusting anything downstream. Several links run in order —
 **Ensembl cache → ClinVar snapshot → live Ensembl → gnomAD** — and three checks fold in: the reference
 base, `clin_sig`, and rsID currency. Snapshots are provisioned from HuggingFace when absent.
 

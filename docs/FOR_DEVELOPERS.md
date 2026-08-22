@@ -79,7 +79,7 @@ async with Client(transport=build_server(mode="extended")) as client:
 | `registry_search` | essentials | no | has someone already built this |
 | `registry_namespace_available` | essentials | no | is the name legal, is it free — the pre-flight for an irreversible claim |
 | `draft_from_clinvar` | essentials | no | ClinVar → `variants.csv` + `studies.csv`; `use` required |
-| `enrich_module` | essentials | no | **background task**; the only thing that catches a shifted `start` |
+| `enrich_module` | essentials | no | **blocks; no task id despite `task=True`**; the only thing that catches a shifted `start` |
 | `check_identifiers`, `lookup_identifier` | essentials | no | HGNC / OLS4 currency — what makes `trait_efo_id` writable honestly |
 | `lookup_open_access`, `fetch_fulltext` | essentials | no | where may I read it and on what terms; the document, never a passage |
 | `authoring_reference` | essentials | no | the whole generated DSL |
