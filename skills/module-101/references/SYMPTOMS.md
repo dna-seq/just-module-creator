@@ -526,4 +526,12 @@ and an MCP surface has no "switched off" state — only absence, which looks exa
 Read the tier off that table rather than off a list here; it is the one home for which tool sits
 where, and `module-101` also carries how to widen the tier per launch method. **Do not substitute a raw HTTP call or a shell
 recipe for a tool that is merely switched off** — you lose what the tool does beyond fetching, which
-for `registry_download` is the digest verification that is the entire point.
+for `enrich_gwas_effects` is the sidecar it writes and the licence rows it records on the way.
+`registry_download`, `reverse_module` and `refresh_sidecar` are **not** in that category: all three
+are in every tier, so an install missing one is older than 2026-08-22 rather than narrow.
+
+**`refresh_sidecar` refused the sidecar you named, and told you to set `JMC_MODE=extended`.**
+Not the tool being absent — the tool is there and it raised. Its gate is on the argument: a sidecar
+whose pass is sized by how much the world has published rather than by the rows you wrote needs the
+extended tier, and the refusal lists the names that do not. Take the list from the message; it is
+generated from the roster.

@@ -61,10 +61,15 @@ back verbatim and the run reports why. Classifying against a table that was neve
 filled would report every real row as one the source had withdrawn — which is the
 exact false negative this tool exists to prevent.
 
-Extended tier, on the cost rule and not on usefulness: a refresh runs whichever
-pass owns the sidecar, and `gwas_effects.csv`'s pass is measured at 382 requests
-for one real module. Registering this in essentials would let the default tier
-spend an extended-tier budget through a different door.
+Every tier since 2026-08-22, with the gate on the argument rather than the tool.
+The cost rule is unchanged and the measurement behind it stands — a refresh runs
+whichever pass owns the sidecar, and `gwas_effects.csv`'s is measured at 382
+requests for one real module — but that is true of the two sidecars marked
+`corpus_sized` and not of the rest, and gating the tool gated `resolution.csv`
+too. Re-deriving that one is the highest-value action either of the 2026-08-21
+unattended runs took, and both spelled it `rm resolution.csv` because neither
+could see this tool. `check_sidecar` raises on a gated name, listing what is
+reachable.
 """
 
 from __future__ import annotations

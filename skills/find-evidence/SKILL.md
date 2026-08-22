@@ -82,8 +82,12 @@ install: `paper_citations` and `enrich_literature_pass`. So on a default server 
 this loop **cannot be run at all**, and `literature.csv` stays at whatever the last run wrote —
 which for a module you did not author yourself may be nothing. The CLI equivalent is
 `just-dna-enricher literature <dir>`; reaching for it is stepping outside the MCP surface, so say so
-when you do. The same applies to `refresh_sidecar`, the tool for re-deriving a sidecar without
-losing curation: extended.
+when you do.
+
+**`refresh_sidecar` does not open that door either, and the reason is worth having straight.** The
+tool itself is in every tier, so most sidecars re-derive with no flag. Its gate is on the *argument*,
+and `literature.csv` is one of the two names it **refuses** without `JMC_MODE=extended` — same cost,
+same pass, different door. `module-refresh` owns the tool.
 
 ---
 

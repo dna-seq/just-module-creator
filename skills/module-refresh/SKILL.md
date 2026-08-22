@@ -27,18 +27,28 @@ human-overridable, which is the whole reason a curator may correct one.
 So the failure mode is silence. You re-run the pass, it reports success, and nothing changed. **If you
 expected a value to move and it did not, the file is still there.**
 
-### Do not do the delete by hand if you have `refresh_sidecar`
+### `refresh_sidecar` is the interface. Do not do the delete by hand
 
-**Extended tier** (`JMC_MODE=extended`). It makes the destructive sequence reversible: it copies the
-sidecar out, **reads the copy back and hashes it**, and only then deletes — so a capture that did not
-verify means nothing is touched. Then it re-derives, classifies every row against the live fact fields,
-**reapplies the rows it can prove a human wrote**, and **reports the rest without picking a side.** It
-also tells you whether the table's fact signature moved, which is the canary in `module-diff`.
+**It is in every tier — there is no flag to set and nothing to switch on.** If you were about to write
+`rm resolution.csv`, this is the tool you were reaching for, and it is strictly better than the `rm`:
+
+It copies the sidecar out, **reads the copy back and hashes it**, and only then deletes — so a capture
+that did not verify means nothing is touched. Then it re-derives, classifies every row against the live
+fact fields, **reapplies the rows it can prove a human wrote**, and **reports the rest without picking a
+side.** It also tells you whether the table's fact signature moved, which is the canary in `module-diff`.
 
 **It resumes if it dies mid-sequence** — a capture is never taken over an unfinished one, so a second
 attempt is a repair rather than a second loss.
 
-**Four honest limits, because a tool that hid them would be worse than the manual route:**
+**One gate, and it is on the argument rather than on the tool.** A sidecar whose pass is sized by how
+much the world has published, rather than by the rows you wrote, still needs `JMC_MODE=extended`:
+`literature.csv` searches per variant across the corpus, and `gwas_effects.csv` costs `1 + 2N` requests
+per variant, measured at 382 for one real module. Naming one of those in the default tier **raises**,
+and the refusal lists the names that are reachable — read it from there rather than from any file,
+because it is generated from the roster the tests pin. Everything else, `resolution.csv` included, runs
+in the default tier.
+
+**Five honest limits, because a tool that hid them would be worse than the manual route:**
 
 - **It refuses offline**, up front, before touching anything. A re-derivation with no egress is not a
   re-derivation.
@@ -47,19 +57,24 @@ attempt is a repair rather than a second loss.
 - **It refuses to classify against a partial re-derivation.** An unreachable source, a pass that did
   nothing, an empty fresh table → your bytes are restored verbatim. A table that was never filled would
   otherwise report every real row as one the source withdrew.
+- **It refuses the two corpus-sized sidecars outside the extended tier**, as above — and the refusal is
+  the only thing standing between you and the by-hand sequence further down.
 - **A `source="manual"` row is not always reapplied, and this one will surprise you.** An online run
   that reaches Ensembl writes a `status="not_found"` row for an rsID it cannot resolve. So your manual
   row's subject *is* present in the fresh table, and it lands in **conflicts** — reported, left on
   disk in the capture, not put back. When no link ran for that rsID there is no fresh row and the
   manual row **is** reapplied. Read the report rather than assuming which happened.
 
-The by-hand sequence below is still correct and is what you do in the default tier.
+The by-hand sequence is still documented below, and it has shrunk to one job: refreshing
+`literature.csv` or `gwas_effects.csv` on a server you cannot widen. It is no longer what you do on an
+ordinary refresh, and reaching for it there costs you the verified capture, the row classification and
+the canary.
 
 ## What deleting each sidecar costs
 
-Read this before deleting **by hand**. The cost column is what a bare `rm` plus a re-run will not give
-you back — `refresh_sidecar` reapplies the provably-authored rows from its capture, and reports the
-rest instead of losing them.
+**Read this before deleting by hand — and prefer not to.** The cost column is what a bare `rm` plus a
+re-run will not give you back. `refresh_sidecar` reapplies the provably-authored rows from its capture
+and reports the rest instead of losing them, which is the whole difference between the two routes.
 
 | Sidecar | A re-run… | Delete to re-derive when | Deleting costs |
 |---|---|---|---|

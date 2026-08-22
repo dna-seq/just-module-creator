@@ -310,10 +310,14 @@ Ordered by how likely a first-timer is to hit them.
      surfaces as a warning — and it decides from the citation's **metadata**, not from the string's
      shape, because length cannot separate a 17-word title from a 17-word sentence. It answers for a
      **pinned** row too, which is what makes it useful on exactly the modules that provoked it.
-   - **Correcting it needs the pass, which is extended-tier.** `enrich_literature_pass` and
-     `refresh_sidecar` are both `JMC_MODE=extended`, so on a default install there is no way to
-     bring the counters up to date at all. The CLI is `just-dna-enricher literature <dir>`, and
-     using it is stepping outside this plugin's surface.
+   - **Correcting it needs the pass, and the pass is extended-tier whichever door you use.**
+     `enrich_literature_pass` is an extended tool. `refresh_sidecar` is in every tier since
+     2026-08-22, but its gate moved to its argument rather than being dropped, and
+     `literature.csv` is one of the names it **refuses** outside `JMC_MODE=extended` — the search is
+     per variant across the corpus, which is the cost the flag exists for. So the conclusion is
+     unchanged: on a default install there is no way to bring these counters up to date at all. The
+     CLI is `just-dna-enricher literature <dir>`, and using it is stepping outside this plugin's
+     surface.
 8. **`--offline` is a no-op that keeps the pin, and it may still write the file.** It fetches nothing,
    re-examines nothing, warns, and rewrites the existing rows sorted by PMID (`enricher/literature.py:784-801`).
    If a pinned row covers every current citation it records **no verification record at all** —

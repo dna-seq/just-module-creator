@@ -198,19 +198,29 @@ match.
 | content signature, artifact integrity | `module_signature`, `verify_artifact` | essentials |
 | the whole generated DSL at once | `authoring_reference` | essentials |
 | see whether a module already exists, and read one | `registry_search`, `registry_get_module` | essentials |
+| **get a published module onto disk, verified** | `registry_download` | essentials |
+| turn a compiled artifact back into a spec | `reverse_module` | essentials |
+| re-derive a sidecar without losing curation | `refresh_sidecar` | essentials, except the two names below |
 | get an account and a token | `registry_register` | **always** |
 | draft the PGx tables | `draft_from_cpic`, `draft_from_clinpgx` | extended |
 | has this finding been replicated | `paper_citations` | extended |
 | fill the fact sidecars | `enrich_facts`, `enrich_literature_pass`, `enrich_gwas_effects` | extended |
-| re-derive a sidecar without losing curation | `refresh_sidecar` | extended |
-| turn an artifact back into a spec, or download one | `reverse_module`, `registry_download` | extended |
+| refresh `literature.csv` or `gwas_effects.csv` | `refresh_sidecar` on one of those two names | extended |
 | ask whether it would publish, cost-free | `registry_check`, `registry_validate` | gated |
 | publish, or rehearse a publish | `authenticate` → `registry_whoami` → `registry_claim_namespace` → `registry_publish` | gated |
 
-**The default tier runs the whole procedure**, scaffold to publish. The tiers split on **cost**:
-essentials is everything bounded by what you named — one identifier, one paper, one spec directory —
-and `JMC_MODE=extended` adds only what a *corpus* sizes, plus reading back somebody else's artifact.
+**The default tier runs the whole procedure**, scaffold to publish. The tiers split on **cost**, and
+the rule has one clause and no exceptions: essentials is everything bounded by what you named — one
+identifier, one paper, one spec directory, one version of one module — and `JMC_MODE=extended` adds
+only what a *corpus* sizes. Reading back somebody else's compiled artifact used to be a second clause
+and it was never a cost argument; it is gone, which is why the download and the reverse are essentials.
 `registry_register` is ungated because it is what mints the token; gating it would be a cycle.
+
+**The one gate that is on an argument rather than a tool.** `refresh_sidecar` is in every tier, because
+re-deriving what a pass wrote over the rows *you* wrote costs what your rows cost. Two sidecars are the
+exception — their passes are sized by how much the world has published, not by what you named — so
+naming one of those outside the extended tier **raises**, and the refusal lists which names are
+reachable. Read that list off the error rather than off any file; it is generated from the roster.
 
 **Switching extended on, and the way that looks right and is not.** An MCP surface has no *switched
 off* state — a tool in the other tier is simply **absent**, and absence is indistinguishable from
@@ -228,8 +238,10 @@ already set wins and your edit is read as nothing happening. It is the only sett
 because it is the only one the manifests pin.
 
 **Never substitute a shell recipe or a raw HTTP call for a tool that is merely switched off.** You
-lose whatever the tool does beyond fetching — for `registry_download` that is the digest
-verification, which is the entire point of it.
+lose whatever the tool does beyond fetching — for `enrich_gwas_effects` that is the sidecar it writes
+and the licence rows it records on the way. And check the table above before you conclude a tool is
+switched off at all: `registry_download` is in every tier, so if it is missing your install predates
+that change rather than being narrow.
 
 **Every registry tool takes a `target`.** Writes default to the polygon; **catalog reads have no
 default and refuse to guess** — reading the instance you did not just write to is what makes a fresh

@@ -23,6 +23,23 @@ progress marker. The state is only inferable from which files exist and what the
 inference goes wrong in a specific way: **a file existing proves a pass ran once, never that its answer
 is still the current one.**
 
+## If there is no directory yet, fetch one
+
+This skill reads a disk. When nobody handed you anything and the module exists only in the catalog,
+the acquisition comes first and it is one call:
+
+```
+registry_download(target="prod", namespace=ns, name=name, version="1.0.0", dest="./work")
+```
+
+Every tier, no flag. It verifies the bytes as it fetches, and its default `include_inputs=true` is
+what brings the authored CSVs down beside the parquets — without them there is almost nothing here to
+read, because every marker in the table below is an authored file. `target` is required and the two
+instances share no database. Which version to name is `registry_get_module`'s answer, not this skill's.
+
+**That is acquisition, not a status read.** Once the directory exists, the four passes below run on the
+disk and nothing else, for the reason in the next paragraph.
+
 ## Read it in four passes, cheapest first
 
 1. **The names on disk.** Which files are there at all. That alone brackets the stage.
@@ -34,8 +51,9 @@ is still the current one.**
 4. **One `validate_module`.** Cheap, offline, and it is the only step that reads the rows rather than
    the filenames. Do this last, because the three passes above usually explain whatever it reports.
 
-Do not run `enrich_module`, `compile_module` or any registry call to find out where you are. A status
-read is free; those are not, and two of them change the directory.
+Do not run `enrich_module`, `compile_module` or a catalog read to find out where you are. A status read
+is free; those are not, two of them change the directory, and what the registry holds is a different
+question from what this directory says.
 
 **The roster of names a spec directory may legitimately carry is not ours to write down.** It is
 `just_dna_registry.specfiles.RECOGNIZED_SPEC_FILES`, and `module-tables` →
@@ -137,6 +155,7 @@ offline gate.
 | The reading says | Load |
 |---|---|
 | nothing exists yet, or a bundle needs triage | `module-start` |
+| the module is published and you have no copy of it | fetch it with `registry_download`, then re-read here |
 | a source publishes rows nobody drafted | `module-draft` |
 | placeholders, or cells only a pilot can settle | `module-curate` |
 | no coordinates, no ids, or a stale sidecar | `module-enrich` |

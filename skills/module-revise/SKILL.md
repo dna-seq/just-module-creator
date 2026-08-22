@@ -19,6 +19,27 @@ A second pass is the **normal state of a module**, not a correction of a botched
 authoring session we have transcripts for was a second pass. A module at version 25 is a module
 somebody kept caring about.
 
+## First, get the module onto disk
+
+Everything below assumes a spec directory you can read. When the module you are opening is somebody
+else's, or is yours but only survives in the catalog, `registry_download` is how you get it — every
+tier, no flag. It verifies the bytes as it fetches, so a corrupted or tampered version raises instead
+of landing.
+
+```
+registry_download(target="prod", namespace=ns, name=name, version="2.0.0", dest="./work")
+```
+
+**`target` is required and the two instances share no database**, so name the one the version was
+published to. **Leave `include_inputs` at its default `true`**: without it you get the compiled
+parquets and `manifest.json` and none of the authored CSVs, and it is the authored CSVs a second pass
+edits. With them present you do **not** need `reverse_module` — that tool reconstructs a spec from
+parquet, and here the spec arrived as itself. Reach for it only on a compiled-only artifact, and read
+`module-compile` first for what a round trip drops.
+
+Then read the directory before touching it: `module-status` says which stage it is actually at, and a
+downloaded module is by definition somebody's finished work rather than a fresh start.
+
 ## How to talk to the author about an old module
 
 **An old module is out of date, not defective — and those are different claims about somebody's

@@ -32,6 +32,7 @@ Ask before routing. The answer decides which arrow you enter on, and it is almos
 | a zip or a spec directory from an outside session | triage, then read the disk | `module-start`, then `module-status` |
 | a spec directory whose state nobody knows | a reading, not a stage | `module-status` |
 | a module that exists and something moved | 10 feedback | `module-revise` |
+| a module that exists **in the catalog**, with nothing on your disk | fetch it, then read it | `registry_download` (essentials, verifies as it fetches), then `module-status` |
 | "the whole of gene X as ClinVar has it" | 1 then 2 | `module-start`, then `module-draft` |
 | a message they do not recognise | not a stage at all | `module-symptom` |
 
@@ -81,8 +82,9 @@ the allele pair, and `lookup_variant` gives you the same for a row you are writi
 | 9 join | how a consumer will read what you wrote — decided long before this step | `module-consumer`, `module-install-local` | none here; `just-dna-lite` runs it |
 
 **Tiers, not stages.** Everything above marked *extended* needs `JMC_MODE=extended`; the default tier
-runs the spine end to end, scaffold to publish. `module-101` carries the whole roster and the reason
-the line is drawn on cost.
+runs the spine end to end, scaffold to publish, and it also downloads a published module, reverses an
+artifact and refreshes a sidecar. `module-101` carries the whole roster, the one argument that is still
+gated, and the reason the line is drawn on cost.
 
 ## The three re-entries, which are the normal case
 

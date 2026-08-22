@@ -119,11 +119,13 @@ recorded, so the re-run never re-asks. **Silence is not evidence that nothing ch
 
 So detecting upstream drift *is* the delete-and-re-derive. There is no passive check.
 
-**Use the refresh tool if your build has one** (`refresh_sidecar` — check your tool list). It exists
-because the manual sequence is destructive: it captures the sidecar first, deletes, re-derives,
-classifies every row, reapplies what is provably yours, and **reports what it cannot tell apart.**
+**Run `refresh_sidecar` rather than doing it by hand.** It is in every tier, and it exists because the
+manual sequence is destructive: it captures the sidecar first, deletes, re-derives, classifies every
+row, reapplies what is provably yours, and **reports what it cannot tell apart.** The one thing that
+can stop you is naming `literature.csv` or `gwas_effects.csv` outside the extended tier — those two
+raise, and the refusal names what is reachable. `module-refresh` owns the tool.
 
-**By hand, if you have no such tool:**
+**By hand, when the tool refused the sidecar you need:**
 
 ```
 1. note the table's fact signature from the manifest
@@ -177,13 +179,16 @@ invisible is not: it moves `sources.signature` alone.
 For two published versions, the acquisition is still yours and the comparison is not:
 
 ```
-registry_download(target="prod", namespace=ns, name=name, version="1.0.0", dest="./v1")  # EXTENDED
-registry_download(target="prod", namespace=ns, name=name, version="2.0.0", dest="./v2")  # EXTENDED
-compare_modules(left_dir="./v1", right_dir="./v2")  # essentials
+registry_download(target="prod", namespace=ns, name=name, version="1.0.0", dest="./v1")
+registry_download(target="prod", namespace=ns, name=name, version="2.0.0", dest="./v2")
+compare_modules(left_dir="./v1", right_dir="./v2")
 ```
 
-Use `--layout flat` when downloading: a comparison is easier when both trees have the same shape, and
-`derived/` is only a presentation. `module-tables` → `references/LAYOUT.md` has the layouts.
+All three are essentials. The download verifies the bytes as it fetches — a failure raises rather than
+leaving you comparing a module you cannot trust — and it brings the authored inputs unless you pass
+`include_inputs=false`, which is what makes the comparison a comparison of specs rather than of
+parquet. Both trees arrive in the same flat shape, because the tool does not expose a layout choice;
+`derived/` is only a presentation and `module-tables` → `references/LAYOUT.md` has it.
 
 **What it will not do**, and none of it is "not yet": no write path and no parameter that could become
 one; no verdict on which side is right; **no pairing of rows whose natural key changed** — one removed

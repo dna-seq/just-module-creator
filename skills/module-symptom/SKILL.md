@@ -51,8 +51,14 @@ there.** Anything `module-101`'s tool table marks **extended** is absent unless 
 and an MCP surface has no *switched off* state — only absence, which is indistinguishable from never
 built. Check that table, which marks the tier on every row and says how to widen it, before
 concluding the plugin cannot do something. **Reaching for a shell
-recipe or a raw HTTP call instead is how you lose what the tool did beyond fetching**, and for
-`registry_download` that is the digest verification the tool exists for.
+recipe or a raw HTTP call instead is how you lose what the tool did beyond fetching** — for
+`enrich_gwas_effects` that is the sidecar it writes and the licence rows it records on the way.
+
+**Two absences that are not tier absences at all**, and both cost an unattended run its whole task
+before they were fixed: `registry_download` and `refresh_sidecar` are in **every** tier. If either is
+missing, the server is older than 2026-08-22 rather than narrow, and neither has a shell substitute
+worth reaching for — the download verifies the bytes as it fetches, and the refresh captures and
+verifies before it deletes anything.
 
 Two consequences worth holding on to. **A message about a coordinate being wrong can only have come
 from the enricher**, so if a strict compile is green that is not evidence the coordinates are right.
