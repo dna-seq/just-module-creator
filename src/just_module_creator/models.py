@@ -1092,7 +1092,19 @@ class RegistryModule(BaseModel):
     version: str | None = Field(default=None, description="Latest version.")
     title: str | None = Field(default=None, description="Display title.")
     description: str | None = Field(default=None, description="One-line description.")
-    genes: list[str] = Field(default_factory=list, description="Genes covered.")
+    genes: list[str] = Field(
+        default_factory=list,
+        description="Genes covered — **a sample, not the set**. The catalog cuts this to the "
+        "first few alphabetically, so a module naming 22 genes shows three and looks complete. "
+        "Read `gene_count` beside it before filtering on this list; searching BY gene is "
+        "unaffected and matches against all of them.",
+    )
+    gene_count: int | None = Field(
+        default=None,
+        description="How many genes the module covers, which is what tells you whether `genes` "
+        "above is the whole list. **null is not 0** — it means the catalog did not report a "
+        "count, not that the module covers no genes.",
+    )
     variant_count: int | None = Field(default=None, description="Variants in the module.")
     license: str | None = Field(default=None, description="Declared licence.")
 
@@ -1218,13 +1230,17 @@ class PublishPreflight(BaseModel):
         description="Accepted but noteworthy — keys the server dropped, a version it coerced.",
     )
 
-    module_level_clear: bool = Field(
+    module_level_clear: bool | None = Field(
+        default=None,
         description=(
             "**Read this as 'nothing module-level blocks this', never as 'this will publish'.** "
             "It composes exactly three gates: the spec validates under strict, `module.name` "
             "matches the path, and no version is already built from identical data. It says "
-            "nothing about the network tier, so a clear answer here is not a green light."
-        )
+            "nothing about the network tier, so a clear answer here is not a green light. "
+            "**null when the gates did not run** — with no token none of the three is asked, "
+            "and `false` there would assert that something module-level blocks a publish, "
+            "which is as unestablished as the clear answer would be."
+        ),
     )
     name_matches_path: bool | None = Field(
         default=None,

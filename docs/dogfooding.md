@@ -14,6 +14,42 @@ is usable, and what is missing.
 
 ---
 
+## F65 — four of the runs' registry findings did not survive verification, and one was ours
+
+**Found:** 2026-08-22, verifying before filing · **Severity:** n/a ·
+**Status:** closed. Recorded so nobody re-investigates.
+
+Checked against the live instances and the registry's own source before filing upstream.
+Four claims from the two runs were **not filed**, because they are wrong:
+
+- **"Every warning a local strict compile produced was discarded at publish."** Refuted
+  three ways. Production manifests carry `compilation.warnings` — two to four each —
+  **including the licence-conflict warning the finding said was dropped**. The server's
+  compiler version is readable at `/api/v1/version`, and digest non-reproducibility across
+  compiler versions is documented twice in their API reference (*"a recompile of the same
+  spec need not produce the same digest"*). The remaining true part is a **deployment lag**,
+  not a defect: their 0.20 roadmap already adopts 0.6.6.
+- **"`module_spec.yaml` never matches its own published digest."** Refuted by sweep: every
+  input of all eight production modules fetched through `/files/` and hashed — **29 of 29
+  match on both `sha256` and `size`**. The "374 bytes recorded vs 1198 served" observation
+  does not reproduce.
+- **"The `/files/` endpoint is undocumented."** It is documented in their API reference, and
+  the supported client route to authored source is `download(include_inputs=True)`, also
+  documented. Our own tier is what made it unreachable, which is `F60`'s neighbour and is
+  fixed.
+- **"The registry truncates the gene list without saying so."** The truncation is real and
+  documented, and `gene_count` sits beside the three genes in the live payload. **The bug
+  was ours**: `_module_card` read `genes` and never read `gene_count`, so a module naming 22
+  genes projected three and looked complete. Fixed; a caller filtering on `genes` now has
+  the number that says the list is a sample.
+
+**The pattern worth keeping.** Every one of these read as a confident measurement in a
+careful report, and three of the four dissolved on contact with the source. One run said it
+of itself — two of its three findings needed retracting, and the toolchain contributed to
+neither retraction. **Verify before filing, and verify against the producer rather than
+against the observation**; a note filed on a refuted claim costs upstream a triage cycle and
+costs us the next note's credibility.
+
 ## F60 — the surface answers "will this build?" four ways and "is this any good?" not at all
 
 **Found:** 2026-08-21, two independent unattended runs · **Severity:** high ·

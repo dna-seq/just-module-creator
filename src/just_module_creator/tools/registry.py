@@ -164,8 +164,12 @@ def _unauthenticated_preflight(
     defaulting to the negative, and ``valid`` is the field a caller branches on because
     it carries ``validate_module``'s own name. So both are null here, and so is
     ``registry_url`` — no instance answered, and naming one would claim a round trip
-    that never left. ``module_level_clear`` stays false on purpose: its own description
-    reads it as "nothing module-level blocks this", which nothing has established.
+    that never left. ``module_level_clear`` is null for the same reason and not false:
+    it composes three gates, none of which is asked without a token, and `false` would
+    assert that something module-level blocks a publish — as unestablished as the clear
+    answer. A check that could not run is not a check that passed, and it did not fail
+    either. ``strict`` stays `True` because it echoes the mode the call would grade
+    under, which is a statement about the request rather than about a result.
     """
     return PublishPreflight(
         spec_dir=spec_dir,
@@ -173,7 +177,7 @@ def _unauthenticated_preflight(
         name=name,
         strict=True,
         valid=None,
-        module_level_clear=False,
+        module_level_clear=None,
         name_matches_path=None,
         verdict=None,
         verdict_unavailable="no_registry_token",
@@ -332,12 +336,16 @@ def _preflight(
         next_step = "Module-level gates are not clear yet. `blocking` lists what stands in the way."
 
     stats = getattr(validation, "stats", None)
+    _reported_valid = getattr(validation, "valid", None)
     return PublishPreflight(
         spec_dir=spec_dir,
         namespace=namespace,
         name=name,
         strict=bool(getattr(validation, "strict", False)),
-        valid=bool(getattr(validation, "valid", False)),
+        # `None` when upstream reported no verdict at all, never `False`: a field that is
+        # absent is a check whose answer we do not have, and coercing it to the negative is
+        # the same defect the no-token path above was fixed for.
+        valid=None if _reported_valid is None else bool(_reported_valid),
         errors=errors,
         warnings=[str(w) for w in getattr(validation, "warnings", []) or []],
         info=[str(i) for i in getattr(validation, "info", []) or []],

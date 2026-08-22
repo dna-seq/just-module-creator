@@ -3,7 +3,16 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## Unreleased — the two read tools that answered the wrong question, and the file nothing described
+## 0.19.0 — the review half of the lifecycle becomes reachable
+
+Everything below came out of two independent unattended agent runs on 2026-08-21, each
+against plugin 0.18.0 and each, decisively, **in the default tier**: a curation pass over
+the eight modules then on the production registry, and a revision pass over ten modules in
+`just-dna-lite`. Between them they logged 57 findings. The through-line is that this surface
+implements the authoring half of its own model well and the reviewing half barely at all —
+and that a good deal of what looked missing was present and hidden.
+
+### the two read tools that answered the wrong question, and the file nothing described
 
 **`describe_spec_file` is new, and `describe_table("module_spec.yaml")` now redirects to it.**
 Rule 1 of the server instructions is *ask the tool, never memory*, and the one file every
@@ -56,7 +65,7 @@ absence. A zero under an explicit filter does not get that explanation, because 
 `namespace` pops the exclusion server-side and blaming the filter would be a false reason for
 a true zero.
 
-## Unreleased — three descriptions that said something the code does not do
+### three descriptions that said something the code does not do
 
 **`enrich_module` promised a task id and polling. There is neither.** The tool is
 declared `task=True`, but that makes tasks *optional*: a client that sends no task
@@ -95,7 +104,7 @@ to compare against them, which is a number the surface never showed. It fits ins
 alone: prose was trimmed to make room, because that slack exists for version strings
 growing and spending it would be borrowing against the next bump.
 
-## Unreleased — `compare_to_published` was hashing the local side by a rule nobody publishes
+### `compare_to_published` was hashing the local side by a rule nobody publishes
 
 **It normalized newlines on the local side and compared the result against a published
 digest taken over raw bytes.** `manifest.inputs[]` is filled by `file_entries` over the
@@ -127,7 +136,7 @@ measures nothing; that is a rule this repo holds about module data and had broke
 suite. The fixture now uses `file_entries`, which is what a publish writes, and three tests
 fail on the old hasher including the round trip that had always passed.
 
-## Unreleased — the extended tier stops hiding the way into somebody else's module
+### the extended tier stops hiding the way into somebody else's module
 
 **`registry_download`, `reverse_module` and `refresh_sidecar` are in every tier now.**
 The clause that put them behind the mode flag — *"or that reads back somebody else's
@@ -167,7 +176,7 @@ without saying so is not. This is the third time this shape has shipped — `enr
 in 0.4.0, `lookup_identifier` before it — and the first time the guard covers descriptions
 rather than only the taught order.
 
-## Unreleased — nine skills stop being shadowed by a command that never loaded them
+### nine skills stop being shadowed by a command that never loaded them
 
 **`commands/` is deleted.** The nine routing shims RM20 shipped each carried one
 instruction — *"load the `<name>` skill and do not work from memory of it"* — and a

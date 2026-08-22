@@ -107,6 +107,11 @@ def _module_card(card: dict) -> RegistryModule:
         title=pick("title"),
         description=pick("description"),
         genes=list(pick("genes", default=[]) or []),
+        # The catalog truncates `genes` to the first few alphabetically and reports the real
+        # total separately. Dropping it made a three-gene sample read as a complete list — a
+        # module whose own description names 22 genes showed three, and a caller filtering the
+        # returned records in memory got wrong answers with nothing saying so.
+        gene_count=pick("gene_count"),
         variant_count=pick("variant_count"),
         license=pick("license"),
     )

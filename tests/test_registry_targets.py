@@ -589,6 +589,55 @@ def test_no_token_leaves_the_plain_booleans_null_rather_than_false() -> None:
     assert out.verdict_unavailable == "no_registry_token"
 
 
+def test_no_token_leaves_the_composed_gate_null_too() -> None:
+    """`module_level_clear` composes three gates, and without a token none is asked.
+
+    It stayed `false` while the two beside it became null, on the reasoning that
+    nothing had established it was clear. True — and the same mistake one step along:
+    `false` asserts that something module-level BLOCKS a publish, which is exactly as
+    unestablished as the clear answer would be.
+
+    `strict` is deliberately NOT part of this. It echoes the mode the call would grade
+    under, which is a statement about the request rather than about a result, so it
+    stays two-valued.
+    """
+    from just_module_creator.tools.registry import _unauthenticated_preflight
+
+    out = _unauthenticated_preflight(
+        spec_dir="/tmp/spec", namespace="ns", name="m", target="test"
+    )
+
+    assert out.module_level_clear is None
+    assert out.strict is True
+
+
+def test_a_card_carries_the_gene_count_that_says_its_gene_list_is_a_sample() -> None:
+    """The catalog cuts `genes` to the first few and reports the real total separately.
+
+    We read the list and dropped the total, so a module whose own description names 22
+    genes showed three and looked complete — and a caller filtering the returned records
+    by `genes` in memory got wrong answers with nothing saying so. Searching BY gene was
+    never affected; only the projection was.
+
+    Asserted against a payload shaped like the catalog's, so this fails if the field is
+    dropped again rather than only when a live catalog is reachable.
+    """
+    from just_module_creator.tools.research import _module_card
+
+    card = _module_card(
+        {
+            "namespace": "antonkulaga",
+            "name": "aggression_anger_snps",
+            "version": "2.1.0",
+            "genes": ["ALCAM", "ARL17B", "ARPP21"],
+            "gene_count": 22,
+        }
+    )
+
+    assert card.gene_count == 22
+    assert len(card.genes) < card.gene_count, "the fixture should model a truncated list"
+
+
 # --------------------------------------------------------------------------- #
 # A listing is narrower than the instance (F14/F20, D15)
 # --------------------------------------------------------------------------- #
