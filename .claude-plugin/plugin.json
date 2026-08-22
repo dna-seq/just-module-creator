@@ -20,7 +20,6 @@
     "pubmed"
   ],
   "skills": "./skills",
-  "commands": "./commands",
   "mcpServers": {
     "just-module-creator": {
       "command": "uv",

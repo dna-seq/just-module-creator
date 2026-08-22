@@ -3,6 +3,36 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — nine skills stop being shadowed by a command that never loaded them
+
+**`commands/` is deleted.** The nine routing shims RM20 shipped each carried one
+instruction — *"load the `<name>` skill and do not work from memory of it"* — and a
+command shadows the same-named skill, so invoking any of those nine names returned the
+shim's own text and the skill body never loaded. The instruction not to work from memory
+was delivered by the thing that prevented loading its source. Nine of twenty skills were
+unreachable this way, `create-module` among them, which is the entry point
+`server.INSTRUCTIONS` names: *"Load `create-module` to route."*
+
+The eleven skills with no command file were reachable throughout, which is what made the
+surface read as working: `module-status` and `module-install-local` delivered full bodies
+in the same sessions where `module-check` and `module-revise` delivered routing text.
+
+Nothing is lost by the deletion. A skill is invocable as `/<name>` on its own — the
+eleven unshadowed ones always were — so `/create-module`, asked for by name on
+2026-08-21, still exists and now actually loads its router. Both manifests drop their
+`commands` declaration; `README.md` no longer claims nine of them.
+
+**Every RM20 test passed the whole time.** Each asserted that a shim *routes* to a skill
+that ships; none asserted that invoking the name *delivers* one. Those four tests are
+replaced by one guard on the collision itself — a command may exist, it may not share a
+skill's name — plus a check that neither manifest declares a directory that is not there.
+The guard was run against the restored shim and fails on it.
+
+Found independently by two unattended runs (`F-15`, `D25`), corroborated by the split in
+a live session's own skill listing — the nine showed their command's short description,
+the eleven their skill's long one — and confirmed by a `Skill(create-module)` call that
+returned `commands/create-module.md` byte for byte.
+
 ## 0.18.0 — the catalog reads stop guessing which registry they are talking about
 
 **`target` is now REQUIRED on every tool that reads a catalog** — `registry_search`,

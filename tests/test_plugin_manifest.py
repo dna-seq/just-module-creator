@@ -15,7 +15,6 @@ instead. They read files and import nothing over the network.
 from __future__ import annotations
 
 import json
-import re
 from importlib.metadata import version
 from pathlib import Path
 
@@ -143,82 +142,56 @@ def test_the_codex_mcp_config_launches_this_checkout(codex_manifest):
 
 
 # --------------------------------------------------------------------------- #
-# Commands (RM20)
+# Commands: the layer that shadowed nine skills (RM20, withdrawn 2026-08-22)
 # --------------------------------------------------------------------------- #
 COMMANDS = REPO / "commands"
-COMMAND_FILES = sorted(COMMANDS.glob("*.md"))
 
 
-def test_both_manifests_declare_the_commands_directory():
-    """A command surface nothing points at is a directory, not a feature."""
+def test_no_command_file_shares_a_name_with_a_skill():
+    """A command shadows the same-named skill, and the skill body never loads.
+
+    RM20 shipped nine routing shims whose whole body was "load the `<name>` skill
+    and do not work from memory of it". Invoking any of those nine names returned
+    the shim's own text instead of the skill — so the instruction not to work from
+    memory was delivered by the thing that prevented loading the memory's source.
+    Nine of twenty skills were unreachable, `create-module` among them, which is
+    the entry point `server.INSTRUCTIONS` names.
+
+    Every RM20 test passed throughout, because each asserted that a shim *routes*
+    to a skill that ships and none asserted that invoking the name *delivers* one.
+    That is why this test is about the collision and not about the shim's contents.
+
+    Reproduced four ways before the shims were deleted: two independent unattended
+    runs, the split in a live session's own skill listing (the nine showed their
+    command's short description, the eleven others their skill's), and a live
+    `Skill(create-module)` call that returned `commands/create-module.md` verbatim.
+
+    Commands are not forbidden — a command that does something a skill cannot is
+    fine. Sharing a skill's name is what breaks, so that is what this pins.
+    """
+    if not COMMANDS.is_dir():
+        return
+    skills = {p.name for p in (REPO / "skills").iterdir() if (p / "SKILL.md").is_file()}
+    collisions = sorted({p.stem for p in COMMANDS.glob("*.md")} & skills)
+    assert not collisions, (
+        f"{collisions} exist as both a command and a skill; the command wins and the "
+        "skill body never loads. Rename the command or delete it."
+    )
+
+
+def test_neither_manifest_declares_a_commands_directory_while_none_ships():
+    """A manifest pointing at a directory that is not there is a promise nothing keeps.
+
+    The declaration comes back with the directory, not before it.
+    """
     for path in (MANIFEST, CODEX_MANIFEST):
         manifest = json.loads(path.read_text(encoding="utf-8"))
-        assert "commands" in manifest, f"{path.name} does not declare commands"
-        declared = REPO / manifest["commands"].lstrip("./").rstrip("/")
-        assert declared.is_dir(), f"{path.name} points at {declared}, which is not a directory"
-
-
-@pytest.mark.parametrize("command", COMMAND_FILES, ids=lambda p: p.stem)
-def test_every_command_routes_to_a_skill_that_ships(command: Path):
-    """The whole design of the command layer: it routes, and the skill is the procedure.
-
-    A command naming a skill that does not exist sends a user into nothing, and a
-    command that stopped naming one has quietly become a second copy of the
-    procedure — the drift `CLAUDE.md` calls out by name.
-    """
-    body = command.read_text(encoding="utf-8")
-    skills = {p.name for p in (REPO / "skills").iterdir() if (p / "SKILL.md").is_file()}
-
-    named = {name for name in skills if f"`{name}`" in body}
-    assert named, f"{command.name} names no skill in backticks, so it routes nowhere"
-    assert named <= skills
-
-
-def _front_and_body(path: Path) -> tuple[dict, str]:
-    """Frontmatter as plain key/value, and the body. No YAML dependency needed here."""
-    match = re.match(r"^---\n(.*?)\n---\n(.*)$", path.read_text(encoding="utf-8"), re.DOTALL)
-    assert match, f"{path} has no frontmatter"
-    front = dict(
-        (k.strip(), v.strip())
-        for line in match.group(1).splitlines()
-        if ":" in line
-        for k, v in [line.split(":", 1)]
-    )
-    return front, match.group(2)
-
-
-@pytest.mark.parametrize("command", COMMAND_FILES, ids=lambda p: p.stem)
-def test_a_command_stays_thin(command: Path):
-    """The ceiling is what keeps a command from growing into the skill it points at.
-
-    Generous on purpose — this fails on a command that has started carrying a
-    procedure, not on one that got a paragraph longer.
-    """
-    front, body = _front_and_body(command)
-    assert front.get("description"), f"{command.name} has no description"
-    assert len(body.splitlines()) <= 30, (
-        f"{command.name} is {len(body.splitlines())} lines; a command routes to a skill "
-        "and the skill owns the procedure"
-    )
-
-
-def test_the_commands_are_the_nine_that_were_chosen():
-    """Twenty skills, nine commands. A command per skill is the crowding RM20 refused.
-
-    `create-module` was added on 2026-08-21 — the ninth, and the one users asked for
-    back by name. It routes to the router skill; it does not restore the procedure.
-    """
-    assert {p.stem for p in COMMAND_FILES} == {
-        "create-module",
-        "module-101",
-        "module-start",
-        "find-evidence",
-        "module-tables",
-        "module-check",
-        "module-compile",
-        "module-publish",
-        "module-revise",
-    }
+        if COMMANDS.is_dir():
+            assert "commands" in manifest, f"{path.name} does not declare commands"
+        else:
+            assert "commands" not in manifest, (
+                f"{path.name} declares a commands directory, but none ships"
+            )
 
 
 #: Wire name -> the name a human reads in the description. Hand-kept on purpose:

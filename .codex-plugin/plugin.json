@@ -18,7 +18,6 @@
     "literature"
   ],
   "skills": "./skills/",
-  "commands": "./commands/",
   "mcpServers": {
     "just-module-creator": {
       "type": "stdio",
