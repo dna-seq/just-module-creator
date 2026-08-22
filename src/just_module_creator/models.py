@@ -257,6 +257,79 @@ class TableList(BaseModel):
     produced_by: SchemaVersions = Field(description=_PRODUCED_BY_WHY)
 
 
+class SpecBlock(BaseModel):
+    """One nested block of ``module_spec.yaml`` — the fields under one YAML key."""
+
+    key: str = Field(
+        description="The YAML path that opens this block, dotted where a block nests inside "
+        "another (`module`, `weighting`). Write the fields below indented under it."
+    )
+    model: str = Field(description="Pydantic model validating this block.")
+    repeated: bool = Field(
+        description="True when the key takes a LIST of these blocks — `authorship:` is one entry "
+        "per contributor — so a single mapping under that key is the wrong shape."
+    )
+    category: str = Field(
+        description="Whether the block itself is `required`, `defaulted` or `optional` on the "
+        "file. Read it on the block before reading it on the fields: an optional block whose "
+        "fields are required is one to write completely or leave out entirely, since opening "
+        "the key commits you to what is under it."
+    )
+    description: str | None = Field(
+        default=None, description="What the block is for, from the field that declares it."
+    )
+    fields: list[dict] = Field(
+        description="Per-field name, type, category, description and vocabulary, generated from "
+        "the live model — the same content `authoring_reference` carries for this model, so the "
+        "two surfaces cannot disagree."
+    )
+
+
+class SpecFileDescription(BaseModel):
+    """Full generated description of ``module_spec.yaml``: its top-level keys and its blocks.
+
+    A separate model from ``TableDescription`` rather than a value it can carry, for the
+    same reason ``MachineTableDescription`` is separate: three of that model's fields —
+    ``requirements`` (from ``authoring_requirements``, which answers for CSV kinds only),
+    ``key`` (what makes two ROWS the same row) and ``redundancy_bearing`` (per-column
+    cross-checks) — would each have to be filled with an empty value here, and an empty
+    ``requirements`` reads as *no requirements* rather than as *the question does not
+    apply*. This file has requirements; they are simply per-field and per-block, which is
+    what ``category`` on each entry below says.
+    """
+
+    file: str = Field(description="The file this describes, inside the spec directory.")
+    model: str = Field(description="Pydantic model validating the whole file.")
+    hand_authored: Literal[True] = Field(
+        default=True,
+        description="Always true. A human (or the agent driving for them) writes this file; "
+        "`scaffold_module` creates it with `<<REPLACE>>` markers and nothing else fills it in.",
+    )
+    keys: list[dict] = Field(
+        description="The top-level keys, in declaration order. Each carries its type, its "
+        "description and `category` — the same three-way `required` / `defaulted` / `optional` "
+        "split every schema answer here uses, but read it as YAML rather than as a CSV cell: "
+        "**a `defaulted` key may simply be omitted and its default applies** (measured: a spec "
+        "carrying nothing but `module:` validates). The CSV rule that a defaulted column must be "
+        "written out is about an empty cell in a row, and this file has no rows. `block` names "
+        "the entry in `blocks` below that a key opens, or is null for a plain scalar key."
+    )
+    blocks: list[SpecBlock] = Field(
+        description="Every nested block reachable from the file's own model, discovered by "
+        "walking the live annotations rather than from a list kept here — so a block upstream "
+        "adds arrives with its fields attached."
+    )
+    registry_stamped: dict[str, str] = Field(
+        default_factory=dict,
+        description="key -> why an author must NOT write it: keys the format knows about that a "
+        "publishing registry stamps instead. They live in the `module:` block's namespace and it "
+        "is `extra=forbid`, so authoring one is refused rather than ignored. `module.version` is "
+        "deliberately absent from this map — that one IS yours to write.",
+    )
+    note: str = Field(description="What this file is, and what it is not, in one line.")
+    produced_by: SchemaVersions = Field(description=_PRODUCED_BY_WHY)
+
+
 class TableRequirements(BaseModel):
     """The three shapes of requiredness for one table kind.
 
@@ -458,7 +531,14 @@ class LintResult(BaseModel):
         )
     )
     normalized_csv: str = Field(
-        description="The input with `applied` normalizations only. Never invents a value."
+        description=(
+            "The rows as the loader reads them. Never invents a value — but it is NOT the input "
+            "plus the `alterations` above, and reconstructing it from them loses repairs: a row "
+            "with fewer cells than the header comes back padded, and a needlessly quoted cell "
+            "comes back unquoted, neither of them reported as an alteration. Measured on a valid "
+            "`variants.csv` slice with zero alterations and bytes that still differ, which is why "
+            "this is returned whole rather than left to a caller to rebuild."
+        )
     )
 
 
@@ -683,16 +763,57 @@ class IdentifierStatus(BaseModel):
     label: str | None = Field(default=None, description="Human-readable label.")
 
 
+class IdentifierTally(BaseModel):
+    """How many identifiers of one kind were asked about, and how many came back clean.
+
+    Every number here is produced by counting the verdicts, so it cannot disagree with
+    the records — and **null is not zero**. Null means this half was not asked: either
+    ``check_genes`` / ``check_traits`` was off, or the check did not apply to this module
+    at all. ``0`` means it WAS asked and the spec carries none of this kind.
+    """
+
+    checked: int | None = Field(
+        default=None,
+        description="Identifiers of this kind the check asked about. **null is not 0**: null "
+        "means this half was never asked, `0` means it was asked and there were none.",
+    )
+    clean: int | None = Field(
+        default=None,
+        description="How many came back current — `approved` for a gene, `current` for a trait. "
+        "Anything else counts as flagged, INCLUDING a state that means the check could not run "
+        "(a trait whose prefix this check cannot resolve): a check that did not run is not a "
+        "check that passed, so it is never counted clean.",
+    )
+    flagged: int | None = Field(
+        default=None,
+        description="`checked` minus `clean` — the ones whose records are always returned, "
+        "whatever `detail` says. Read `stale` for the one-line summary of each.",
+    )
+
+
 class IdentifierReport(BaseModel):
     """Currency of every gene symbol and trait CURIE in a spec.
 
     Writes no authored cell. It does write `verification.json` — an attestation
     that the question was put, never a value. See `tools/checks.py`.
+
+    **The verdict fields come first and the rosters come last, on purpose.** A clean
+    run on a real module has hundreds of records saying `approved`, and by default
+    they are not returned at all — the counts in `gene_tally` / `trait_tally` say how
+    many agreed, and `genes` / `traits` carry only what did not. Pass `detail=true`
+    for the full roster.
     """
 
     spec_dir: str = Field(description="The spec directory.")
-    genes: list[IdentifierStatus] = Field(description="Gene symbol verdicts.")
-    traits: list[IdentifierStatus] = Field(description="Trait CURIE verdicts.")
+    gene_tally: IdentifierTally = Field(
+        default_factory=IdentifierTally,
+        description="Counts for the gene half. Read this instead of `len(genes)`: on a default "
+        "run `genes` holds only the flagged records, so its length is not what was checked.",
+    )
+    trait_tally: IdentifierTally = Field(
+        default_factory=IdentifierTally,
+        description="Counts for the trait half, on the same terms as `gene_tally`.",
+    )
     stale: list[str] = Field(description="Identifiers needing attention, summarised.")
     gene_locus_conflicts: list[str] = Field(
         default_factory=list,
@@ -731,6 +852,25 @@ class IdentifierReport(BaseModel):
             "so there was no gene or trait to have an opinion about — not a skip), or the "
             "check ran and only the write failed, in which case the findings above stand."
         ),
+    )
+    detail: bool = Field(
+        default=False,
+        description=(
+            "Which shape the two rosters below are in — echoed rather than inferred. False: "
+            "`genes` and `traits` carry the flagged records only, and the clean ones were "
+            "withheld (`clean` in each tally counts them). True: every record, clean ones "
+            "included. Nothing else about the answer changes with it."
+        ),
+    )
+    genes: list[IdentifierStatus] = Field(
+        default_factory=list,
+        description="Gene symbol verdicts — the flagged ones only unless `detail` is true. An "
+        "empty list on a default run means nothing disagreed, which `gene_tally` quantifies; on "
+        "`detail=true` it means no genes were asked about at all.",
+    )
+    traits: list[IdentifierStatus] = Field(
+        default_factory=list,
+        description="Trait CURIE verdicts, on the same terms as `genes`.",
     )
 
 
@@ -972,6 +1112,14 @@ class RegistrySearchResult(BaseModel):
         ),
     )
     registry_url: str = Field(description="Which registry answered.")
+    next_step: str = Field(
+        default="",
+        description=(
+            "What this page does and does not establish — **read it before believing a "
+            "`total` of 0.** An unfiltered listing leaves the instance's test/sandbox "
+            "namespaces out, so a zero can be the filter rather than the catalog."
+        ),
+    )
 
 
 class PublishedVersion(BaseModel):
@@ -1054,7 +1202,15 @@ class PublishPreflight(BaseModel):
     name: str = Field(description="Module name it was checked against.")
     strict: bool = Field(description="The mode the findings were graded under.")
 
-    valid: bool = Field(description="Whether the spec validates under `strict`.")
+    valid: bool | None = Field(
+        default=None,
+        description=(
+            "Whether the spec validates under `strict`. **null means it was never "
+            "validated** — no token, so the spec was never uploaded and nothing ran. null is "
+            "not a failure and not a pass: `validate_module(strict=true)` answers the same "
+            "question locally and needs no credential."
+        ),
+    )
     errors: list[str] = Field(default_factory=list, description="Blocking findings.")
     warnings: list[str] = Field(default_factory=list, description="Non-blocking findings.")
     info: list[str] = Field(
@@ -1070,8 +1226,12 @@ class PublishPreflight(BaseModel):
             "nothing about the network tier, so a clear answer here is not a green light."
         )
     )
-    name_matches_path: bool = Field(
-        description="Whether the spec's `module.name` matches `name`. A publish 422s if not."
+    name_matches_path: bool | None = Field(
+        default=None,
+        description=(
+            "Whether the spec's `module.name` matches `name`. A publish 422s if not. **null "
+            "means the comparison never ran** — the two may match perfectly."
+        ),
     )
     published_as: list[PublishedVersion] = Field(
         default_factory=list,
@@ -1131,8 +1291,14 @@ class PublishPreflight(BaseModel):
     elapsed_seconds: float | None = Field(
         default=None, description="How long the dry run took server-side."
     )
-    target: str = Field(description="Which instance answered: 'prod' or 'test' (the polygon).")
-    registry_url: str = Field(description="Which registry answered.")
+    target: str = Field(description="Which instance was aimed at: 'prod' or 'test' (the polygon).")
+    registry_url: str | None = Field(
+        default=None,
+        description=(
+            "Which registry answered. **null means none did** — the request never left, so "
+            "naming a URL here would claim a round trip that did not happen."
+        ),
+    )
     next_step: str = Field(description="What to do with this result.")
 
 

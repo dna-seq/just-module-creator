@@ -16,6 +16,7 @@ from __future__ import annotations
 import csv
 import json
 from dataclasses import asdict
+from typing import get_args, get_origin
 
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
@@ -24,6 +25,7 @@ from just_dna_compiler import compiler, draft, hints, scaffold
 from just_dna_format import layout, reference
 from just_dna_format.integrity import IntegrityError, verify_manifest
 from just_dna_format.manifest import read_manifest
+from just_dna_format.spec import ModuleSpecConfig
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel
 
@@ -38,6 +40,8 @@ from just_module_creator.models import (
     MachineTableDescription,
     ScaffoldResult,
     SignatureResult,
+    SpecBlock,
+    SpecFileDescription,
     StudyFact,
     StudyFacts,
     TableDescription,
@@ -134,7 +138,8 @@ def _key_for(name: str) -> tuple[str, str | None]:
 
 _COMPOSITION_NOTE = (
     "A module composes from optional table kinds: module_spec.yaml is the only "
-    "always-present file, and at least one recognised table must exist. "
+    "always-present file — it is not a table and describe_spec_file answers it — "
+    "and at least one recognised table must exist. "
     "studies.csv is required IFF variants.csv is present. A PGx/PRS/binning "
     "module carries only its own tables and no variants.csv — never add an empty "
     "table to keep another company. It may still carry studies.csv, and often "
@@ -173,6 +178,95 @@ _PRODUCED_MODELS: dict[str, type[BaseModel]] = {
 
 #: The same roster as names, for the surfaces that list it rather than describe it.
 _PRODUCED_CSVS: tuple[str, ...] = tuple(_PRODUCED_MODELS)
+
+
+#: `module_spec.yaml`, from the constant held by the code that creates it rather than
+#: as a literal. The authored DSL has exactly one legal name in exactly one legal place
+#: — upstream's `layout` docstring says so and that asymmetry is deliberate — so there
+#: is no spelling question here of the kind `licensing.csv` has.
+_SPEC_FILE = scaffold.MODULE_SPEC
+
+_SPEC_REDIRECT = (
+    f"{_SPEC_FILE} is the module's spec FILE, not a table kind: it is YAML, it holds nested "
+    f"blocks rather than rows, and nothing about it has columns, a row key or a per-column "
+    f"cross-check. Call describe_spec_file() for its top-level keys and every block it carries "
+    f"— `weighting:`, `authorship:`, `module:` and the rest — generated from the same live "
+    f"models as every other schema answer here. scaffold_module writes the file itself."
+)
+
+
+def _refuse_spec_file(csv_name: str) -> None:
+    """Redirect the spec file to the route that answers it, before anything calls it unknown.
+
+    The four authoring routes here take a *table kind*, and `module_spec.yaml` reaching one
+    of them is a reader asking a reasonable question at the wrong door — the same situation
+    as a machine-produced sidecar, which `_shared.known_kind` already redirects. Left to
+    fall through, it arrived as *"Unknown table kind 'module_spec.yaml'"* followed by a list
+    of CSV kinds: false, and it sent the reader to `authoring_reference`, which answers in
+    164k characters and has to be grepped for three field names.
+    """
+    if csv_name.strip() == _SPEC_FILE:
+        raise ToolError(_SPEC_REDIRECT)
+
+
+def _spec_block_models(model: type[BaseModel]) -> dict[str, tuple[type[BaseModel], bool]]:
+    """Which of a model's authored fields open a nested block, and whether the key repeats.
+
+    Read off the live annotations, so a block upstream adds or removes moves here with it.
+    `list[Contribution]` and `GenePanelSpec | None` both arrive as their inner model — the
+    repetition is the part worth reporting, because a single mapping under `authorship:` is
+    the wrong shape rather than a missing field.
+    """
+    found: dict[str, tuple[type[BaseModel], bool]] = {}
+    for name in reference.authored_field_names(model):
+        annotation = model.model_fields[name].annotation
+        repeated = get_origin(annotation) is list
+        for candidate in (annotation, *get_args(annotation)):
+            if isinstance(candidate, type) and issubclass(candidate, BaseModel):
+                found[name] = (candidate, repeated)
+    return found
+
+
+def _spec_blocks(
+    model: type[BaseModel],
+    described: dict[str, object],
+    prefix: str = "",
+    seen: frozenset[type[BaseModel]] = frozenset(),
+) -> list[SpecBlock]:
+    """Every block reachable from `model`, depth-first, keyed by its dotted YAML path.
+
+    Recursive although the spec is one level deep today: the walk is the same length
+    either way, and a block that grows a sub-block would otherwise be reported as a field
+    of an unknown type. `seen` guards a model that reaches itself.
+    """
+    blocks: list[SpecBlock] = []
+    for key, (nested, repeated) in _spec_block_models(model).items():
+        if nested in seen:
+            continue
+        fields = described.get(nested.__name__)
+        if fields is None:
+            # Refused rather than reported as a block with no fields: an empty field list
+            # reads as "this block takes nothing", which is the opposite of the truth.
+            raise ToolError(
+                f"{prefix}{key} opens a {nested.__name__} block that "
+                f"just_dna_format.reference.authoring_reference() does not describe, so its "
+                f"fields cannot be generated. This is an upstream registration gap — report it "
+                f"rather than writing the block from memory."
+            )
+        blocks.append(
+            SpecBlock(
+                key=f"{prefix}{key}",
+                model=nested.__name__,
+                repeated=repeated,
+                category=reference.field_category(model, key),
+                description=model.model_fields[key].description,
+                fields=jsonable(fields),
+            )
+        )
+        blocks.extend(
+            _spec_blocks(nested, described, prefix=f"{prefix}{key}.", seen=seen | {nested})
+        )
+    return blocks
 
 
 _MACHINE_REFUSAL = (
@@ -382,6 +476,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         `tables` is what you write; `sidecars` is what a pass writes for you, and
         `describe_machine_table` answers those columns. `licensing.csv` sits under
         `tables` on purpose — it is the one fact sidecar a human authors.
+
+        `module_spec.yaml` is in neither list, because it is not a table: it holds
+        nested blocks rather than rows, and `describe_spec_file` answers it.
         """
         tables = []
         for name in sorted(draft.DRAFTABLE):
@@ -436,6 +533,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         calling it unknown. `licensing.csv` is answered *here*: it is a fact
         sidecar, and it is the one a human writes.
         """
+        _refuse_spec_file(csv_name)
         name = known_kind(csv_name, draft.DRAFTABLE, _PRODUCED_CSVS)
         described = hints.describe_table(name)
         # Both constants are global across kinds; narrow each to this table's
@@ -481,6 +579,59 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             key=jsonable(described.get("key", {})),
             redundancy_bearing=redundancy,
             attestation_bearing=attestation,
+            produced_by=schema_versions(),
+        )
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Describe module_spec.yaml", readOnlyHint=True, idempotentHint=True
+        )
+    )
+    def describe_spec_file() -> SpecFileDescription:
+        """Describe `module_spec.yaml`: every top-level key and every block it carries.
+
+        The one file a module always has, and the only one that is not a table — so
+        `describe_table` cannot answer it and redirects here instead. Everything below is
+        generated from the live model that validates the file, so the answer cannot drift
+        from what the compiler accepts, and it arrives in ONE call: `weighting:` and its
+        three fields, `authorship:` and what a contribution entry takes, `defaults:`,
+        `module:` and which of its keys a registry stamps for you.
+
+        Read `category`, and read it as YAML. A `defaulted` key here may be left out
+        altogether and its default applies — a spec carrying nothing but `module:`
+        validates — which is the opposite of the CSV rule about writing a default out
+        rather than leaving a cell blank, because there are no cells in this file. On a
+        block, `optional` plus required fields means write it completely or leave the key
+        out: opening it commits you to what is under it.
+
+        Two things this does not do. It writes nothing — `scaffold_module` creates the
+        file, with a `<<REPLACE>>` in every cell you must settle. And it has no opinion on
+        what belongs in a value: `weighting.scale` is free text on purpose, and what your
+        weights mean is yours to state rather than ours to offer a pick-list for.
+        """
+        reference_doc = reference.authoring_reference()
+        models = reference_doc["models"]
+        root = ModuleSpecConfig.__name__
+        blocks = _spec_blocks(ModuleSpecConfig, models)
+        opens = {block.key: block.model for block in blocks}
+        keys = []
+        for field in jsonable(models[root]):
+            # Copied rather than mutated: upstream's dict is its answer, and the pointer
+            # into `blocks` is ours.
+            entry = dict(field)
+            entry["block"] = opens.get(str(entry.get("name")))
+            keys.append(entry)
+        return SpecFileDescription(
+            file=_SPEC_FILE,
+            model=root,
+            keys=keys,
+            blocks=blocks,
+            registry_stamped=dict(reference_doc["registry_stamped_keys"]),
+            note=(
+                f"{_SPEC_FILE} is the module's identity and its authoring defaults, not data: "
+                "no variant, no study and no threshold lives here. It is the only file a spec "
+                "directory always has, and the compiler reads it before any table."
+            ),
             produced_by=schema_versions(),
         )
 
@@ -566,6 +717,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         explicitly. `any_of` carries the identity rules (rsid OR chrom+start)
         that no per-field flag can express.
         """
+        _refuse_spec_file(csv_name)
         name = known_kind(csv_name, draft.DRAFTABLE, _PRODUCED_CSVS)
         req = draft.authoring_requirements(name)
         return TableRequirements(
@@ -590,6 +742,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         enrich — so a half-filled table fails loudly on exactly the rows still to
         do, rather than compiling into a module that asserts nothing.
         """
+        _refuse_spec_file(csv_name)
         name = known_kind(csv_name, draft.DRAFTABLE, _PRODUCED_CSVS)
         if rows < 1:
             raise ToolError("rows must be >= 1.")
@@ -645,6 +798,8 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         `README.md`, and is the half that ends up identical across four cards.
         """
         target = resolve_dir(spec_dir, settings, must_exist=False)
+        for kind in kinds or []:
+            _refuse_spec_file(kind)
         requested = [known_kind(k, draft.DRAFTABLE, _PRODUCED_CSVS) for k in (kinds or [])]
         if rows < 1:
             raise ToolError("rows must be >= 1.")
@@ -731,6 +886,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         makes that check vacuous. `describe_table` names the columns under
         `redundancy_bearing`.
         """
+        _refuse_spec_file(csv_name)
         name = known_kind(csv_name, draft.DRAFTABLE, _PRODUCED_CSVS)
         report = hints.inspect_rows(name, csv_text)
         findings = to_findings(report.findings)

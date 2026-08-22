@@ -155,23 +155,32 @@ def _unauthenticated_preflight(
     The other gated tools return ``OpResult(success=False)``, which is honest there
     because they either did the thing or did not. A pre-flight returns a *verdict*,
     and the one thing this must never do is let "we could not ask" arrive shaped like
-    "would not publish". So ``verdict`` stays null and ``module_level_clear`` is
-    false-because-unknown, with ``verdict_unavailable`` naming the reason.
+    "would not publish". So ``verdict`` stays null, with ``verdict_unavailable``
+    naming the reason.
+
+    **The three-valued fields were honest and the plain booleans beside them were not
+    (`D22`).** Measured on a module that ``validate_module(strict=true)`` passes clean:
+    ``valid: false`` and ``name_matches_path: false``, both of them unrun checks
+    defaulting to the negative, and ``valid`` is the field a caller branches on because
+    it carries ``validate_module``'s own name. So both are null here, and so is
+    ``registry_url`` — no instance answered, and naming one would claim a round trip
+    that never left. ``module_level_clear`` stays false on purpose: its own description
+    reads it as "nothing module-level blocks this", which nothing has established.
     """
     return PublishPreflight(
         spec_dir=spec_dir,
         namespace=namespace,
         name=name,
         strict=True,
-        valid=False,
+        valid=None,
         module_level_clear=False,
-        name_matches_path=False,
+        name_matches_path=None,
         verdict=None,
         verdict_unavailable="no_registry_token",
         blocking=[],
         unchecked=["nothing was checked: no registry token is available for this instance."],
         target=target,
-        registry_url="",
+        registry_url=None,
         next_step=(
             "Not a verdict — nothing ran. Get a token with `registry_register`, store it with "
             "`authenticate`, then call this again. Meanwhile `validate_module(strict=true)` is the "

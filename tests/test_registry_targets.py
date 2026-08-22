@@ -561,6 +561,159 @@ def test_no_token_is_not_a_negative_verdict() -> None:
     assert "validate_module" in out.next_step
 
 
+def test_no_token_leaves_the_plain_booleans_null_rather_than_false() -> None:
+    """`D22`: the three-valued fields were honest and the two-valued ones beside them lied.
+
+    Measured with no token stored, on a module that `validate_module(strict=true)`
+    passes clean: `verdict` was null with `verdict_unavailable` naming the reason,
+    and right beside it `valid: false` on that clean spec and
+    `name_matches_path: false` for a spec dir and a `module.name` that do match.
+    Both were unrun checks reading as failed ones, and `valid` is the field a
+    caller branches on because it is named the same as `validate_module`'s.
+
+    A check that could not run is not a check that passed, and it is not a check
+    that failed either. `registry_url` goes the same way: no instance answered,
+    so naming one would claim a request that never left.
+    """
+    from just_module_creator.tools.registry import _unauthenticated_preflight
+
+    out = _unauthenticated_preflight(
+        spec_dir="/tmp/spec", namespace="ns", name="m", target="test"
+    )
+
+    assert out.valid is None, "nothing was validated, so `valid` is unknown rather than false"
+    assert out.name_matches_path is None, "the name was never compared against the path"
+    assert out.registry_url is None, "no registry answered, so none may be named as having"
+    # The fields that were already honest stay untouched.
+    assert out.verdict is None
+    assert out.verdict_unavailable == "no_registry_token"
+
+
+# --------------------------------------------------------------------------- #
+# A listing is narrower than the instance (F14/F20, D15)
+# --------------------------------------------------------------------------- #
+#: The registry leaves its test/sandbox namespaces out of an unfiltered listing on both
+#: instances and counts them in `/health`, which is documented server policy. What was
+#: ours was the dead end: `registry_health(target="test")` reporting a populated polygon
+#: beside `registry_search(target="test")` answering `total: 0`, with no argument on the
+#: tool that could ask the other question and nothing on the result saying one existed.
+#: An author who rehearses a publish and searches it back concludes the publish failed.
+
+
+def test_the_search_tool_can_ask_for_the_namespaces_a_listing_hides() -> None:
+    """The two arguments the client has always had and this tool did not pass.
+
+    Asserted against the installed client rather than against a remembered
+    signature: `group` and `namespace` are upstream's names for upstream's facets,
+    and a rename there must fail here rather than 422 in the field.
+    """
+    import inspect
+
+    from just_dna_registry.client import RegistryClient
+
+    upstream = inspect.signature(RegistryClient.list_modules).parameters
+    assert {"group", "namespace"} <= set(upstream)
+
+
+async def test_registry_search_exposes_group_and_namespace(make_client):
+    """A filter the wire supports and the tool does not expose is unreachable."""
+    async with make_client() as client:
+        schemas = await _schemas(client)
+
+    props = schemas["registry_search"]["properties"]
+    for facet in ("group", "namespace"):
+        assert facet in props, f"registry_search cannot ask the registry about {facet}"
+        assert props[facet].get("default") is None, (
+            f"{facet} must default to nothing: inferring group='test' from target='test' would "
+            "hide an unprefixed polygon namespace and rebuild this defect one level up"
+        )
+
+
+class _StubClient:
+    """Records the query it was asked for and answers with an empty page."""
+
+    def __init__(self, payload: dict) -> None:
+        self.payload = payload
+        self.seen: dict = {}
+
+    def list_modules(self, **kwargs):
+        self.seen = kwargs
+        return self.payload
+
+
+async def test_group_and_namespace_reach_the_registry_query(make_client, monkeypatch):
+    """Passed through, under the client's own parameter names.
+
+    `client_for` is patched where `research` bound it — the module holds its own
+    reference, so patching `targets` would miss it — and the stub keeps this
+    socket-free, which is what lets the ceiling be down for one call.
+    """
+    from just_module_creator.tools import research
+
+    stub = _StubClient({"items": [], "total": 0, "page": 1})
+    monkeypatch.setattr(research, "client_for", lambda *a, **kw: stub)
+
+    settings = Settings(offline=False, _env_file=None, api_key=None)  # type: ignore[call-arg]
+    async with make_client(settings=settings) as client:
+        await client.call_tool(
+            "registry_search",
+            {"target": "test", "group": "test", "namespace": "test-sheep"},
+        )
+
+    assert stub.seen.get("group") == "test"
+    assert stub.seen.get("namespace") == "test-sheep"
+
+
+async def test_an_unfiltered_zero_says_which_namespaces_it_left_out(make_client, monkeypatch):
+    """The failure an author actually hits: a rehearsal read back as `total: 0`.
+
+    The zero is real for the listing that produced it and says nothing about the
+    instance, so the result has to carry the retry rather than leaving the author
+    to conclude the publish failed.
+    """
+    from just_module_creator.tools import research
+
+    stub = _StubClient({"items": [], "total": 0, "page": 1})
+    monkeypatch.setattr(research, "client_for", lambda *a, **kw: stub)
+
+    settings = Settings(offline=False, _env_file=None, api_key=None)  # type: ignore[call-arg]
+    async with make_client(settings=settings) as client:
+        result = await client.call_tool("registry_search", {"target": "test"})
+
+    payload = result.structured_content or {}
+    assert payload["total"] == 0
+    note = payload["next_step"]
+    assert "test/sandbox" in note, "the zero must name what the listing left out"
+    assert 'group="test"' in note, "and name the call that asks the other question"
+    assert "not evidence of absence" in note
+
+
+def test_a_scoped_zero_is_not_blamed_on_the_default_exclusion() -> None:
+    """An explicit `namespace` pops the exclusion server-side, so that zero is measured.
+
+    Offering the retry there would be a false explanation for a true zero, which
+    is the same defect facing the other way.
+    """
+    from just_module_creator.tools.research import _search_next_step
+
+    unfiltered = _search_next_step(total=0, group=None, namespace=None)
+    scoped = _search_next_step(total=0, group=None, namespace="test-sheep")
+    grouped = _search_next_step(total=0, group="test", namespace=None)
+
+    assert 'group="test"' in unfiltered
+    assert 'group="test"' not in scoped
+    assert 'group="test"' not in grouped
+
+
+def test_a_non_empty_page_still_says_it_is_not_the_whole_instance() -> None:
+    """`total: 7` from a plain listing is as partial as `total: 0` is."""
+    from just_module_creator.tools.research import _search_next_step
+
+    note = _search_next_step(total=7, group=None, namespace=None)
+    assert "test/sandbox" in note
+    assert "no single group lists an instance whole" in note
+
+
 # --------------------------------------------------------------------------- #
 # Registry 0.14: an unclaimed name this surface still cannot claim
 # --------------------------------------------------------------------------- #

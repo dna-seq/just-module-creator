@@ -112,6 +112,40 @@ def _module_card(card: dict) -> RegistryModule:
     )
 
 
+def _search_next_step(*, total: int, group: str | None, namespace: str | None) -> str:
+    """What a search page establishes, and the zero it must not be read as.
+
+    The registry keeps its test/sandbox namespaces out of an unfiltered listing on
+    both instances, and counts them in `/health` — so `registry_health` reporting a
+    populated polygon beside `total: 0` here is two correct answers to two different
+    questions, not a broken catalog. It is documented server policy; the defect was
+    ours, in offering no way to ask the other question and no note saying one existed.
+
+    ``group="test"`` selects those namespaces and an explicit ``namespace`` pops the
+    exclusion, so a zero under either really is a measured zero. An unfiltered zero
+    measured only the part of the instance a listing shows, which is why it gets the
+    long sentence and the retry named in it.
+    """
+    scoped = bool(group) or bool(namespace)
+    if total == 0 and not scoped:
+        return (
+            "Nothing matched — and this listing left the instance's test/sandbox namespaces "
+            'out, so the zero is not evidence of absence. Retry with group="test" to list '
+            "those instead; on the polygon that is usually where everything is, a rehearsal "
+            "you just published included. An explicit `namespace` reaches one directly, and "
+            "`registry_get_module` answers for a module you can already name."
+        )
+    if total == 0:
+        return "Nothing matched under this filter."
+    if not scoped:
+        return (
+            "These are the matches outside the instance's test/sandbox namespaces, which a "
+            'listing leaves out by default. Pass group="test" or a `namespace` to see those — '
+            "no single group lists an instance whole."
+        )
+    return "These are the matches under this filter."
+
+
 def register_research(mcp: FastMCP, settings: Settings, services: NetworkServices) -> None:
     """Register the always-on read-only lookup tools.
 
@@ -332,6 +366,8 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         query: str | None = None,
         gene: str | None = None,
         category: str | None = None,
+        group: str | None = None,
+        namespace: str | None = None,
         page: int = 1,
         per_page: int = 20,
     ) -> RegistrySearchResult:
@@ -342,9 +378,30 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         text (`query`), by `gene`, or by `category`.
 
         `target` is REQUIRED and has no default. `prod` is the published world
-        this question is usually about; the polygon holds your own rehearsals plus
-        everybody else's, and says nothing about what is published. A search that
-        guessed would answer confidently about the wrong instance.
+        this question is usually about; `test` is the polygon, where a publish is
+        a rehearsal. A search that guessed would answer confidently about the
+        wrong instance.
+
+        **A default listing is not a listing of the instance.** Both instances
+        leave their test/sandbox namespaces out of an unfiltered listing — that is
+        the registry's own documented policy, not a defect — while `/health`
+        counts every namespace, which is how `registry_health` and this tool can
+        disagree about the same instance. On the polygon those namespaces are
+        usually where everything is, so a rehearsal you just published comes back
+        `total: 0` from a plain search.
+
+        Two ways past it, and neither is a default here: `group="test"` selects
+        those namespaces instead of excluding them, and an explicit `namespace`
+        reaches one directly. **No single `group` lists an instance whole**, so a
+        zero from a plain search is never evidence that nothing is published —
+        `next_step` says so on the result. `group` is the registry's own
+        vocabulary and it 422s on a value it does not know.
+
+        Nothing here infers `group` from `target`: no rule forces the `test-`
+        prefix on a polygon namespace, so a silent default would hide an
+        unprefixed one and reproduce the same wrong zero one level up. If you are
+        reading back a module you can already name, `registry_get_module` skips
+        the listing rules entirely.
         """
         if settings.offline:
             raise ToolError(
@@ -357,6 +414,10 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             params["gene"] = gene
         if category:
             params["category"] = category
+        if group:
+            params["group"] = group
+        if namespace:
+            params["namespace"] = namespace
 
         def _search() -> dict:
             client = client_for(target, settings)
@@ -368,12 +429,14 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             raise ToolError(f"Registry error: {exc}") from exc
 
         items = payload.get("items") or payload.get("results") or []
+        total = int(payload.get("total", len(items)))
         return RegistrySearchResult(
-            total=int(payload.get("total", len(items))),
+            total=total,
             page=int(payload.get("page", page)),
             modules=[_module_card(i) for i in items if isinstance(i, dict)],
             target=target,
             registry_url=settings.registry_url_for(target),
+            next_step=_search_next_step(total=total, group=group, namespace=namespace),
         )
 
     @mcp.tool(

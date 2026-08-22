@@ -53,7 +53,7 @@ from just_dna_enricher.verification import record_verification
 from mcp.types import ToolAnnotations
 
 from just_module_creator.logging_setup import get_logger
-from just_module_creator.models import IdentifierReport, IdentifierStatus
+from just_module_creator.models import IdentifierReport, IdentifierStatus, IdentifierTally
 from just_module_creator.settings import Settings
 from just_module_creator.tools._shared import resolve_dir
 
@@ -66,6 +66,35 @@ NOT_APPLICABLE = (
     "no variants.csv — the check does not apply, which is not a skip, so no "
     "verification.json was created"
 )
+
+
+#: The states that mean "this identifier is current". Everything else is flagged —
+#: including `unchecked`, a trait whose prefix this check cannot resolve, because a
+#: check that could not run is not a check that passed.
+#:
+#: **One predicate, three consumers.** The `stale` summary, the filtered rosters and
+#: the counts all read `_flagged` below. Two of them restating the same set is how a
+#: counted claim and the list it counts drift apart, which is the shape this file's own
+#: history is full of.
+_CURRENT_STATES = frozenset({"approved", "current"})
+
+
+def _flagged(status: IdentifierStatus) -> bool:
+    """Whether this verdict needs somebody's attention."""
+    return status.state not in _CURRENT_STATES
+
+
+def _tally(statuses: list[IdentifierStatus], asked: bool) -> IdentifierTally:
+    """Counts for one half — all null when the half was not asked.
+
+    `asked=False` is not `checked=0`: one says nothing was established about the genes
+    in this module, the other says the module has none. Collapsing them would let a
+    narrowed run read as a clean one.
+    """
+    if not asked:
+        return IdentifierTally()
+    flagged = sum(1 for s in statuses if _flagged(s))
+    return IdentifierTally(checked=len(statuses), clean=len(statuses) - flagged, flagged=flagged)
 
 
 def _statuses(report: object) -> tuple[list[IdentifierStatus], list[IdentifierStatus]]:
@@ -129,6 +158,7 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
         spec_dir: str,
         check_genes: bool = True,
         check_traits: bool = True,
+        detail: bool = False,
     ) -> IdentifierReport:
         """Check every gene symbol (HGNC) and trait CURIE (OLS4) in a spec is current.
 
@@ -142,6 +172,16 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
         `check_genes` and `check_traits` are recorded in the attestation, so
         narrowing a run narrows what the record claims. Turning one off does not
         make its half pass — it makes the record say it was not asked.
+
+        **The verdict is the answer; the roster is the raw material.** By default
+        `genes` and `traits` carry only the records that need attention, and
+        `gene_tally` / `trait_tally` say how many were checked and how many agreed.
+        A clean real module measured 325 gene records at roughly 95 characters each,
+        every one of them `approved`, to report an empty `stale` — so the interesting
+        fields arrived last, after 30 kB of agreement. Pass `detail=true` for the full
+        roster when you actually want to read it. Nothing else changes with the flag:
+        the same check runs, the same attestation is written, and the counts hold
+        either way.
 
         **`gene_locus_conflicts` is the one to read even when `stale` is empty.**
         It names rows whose gene sits on a different chromosome than the row's own
@@ -178,6 +218,11 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
         if not (target / "variants.csv").exists():
             return IdentifierReport(
                 spec_dir=str(target),
+                # Every count null rather than zero: the check did not apply, so
+                # nothing was established about this module's genes or traits — which
+                # is a different claim from "it has none".
+                gene_tally=_tally([], asked=False),
+                trait_tally=_tally([], asked=False),
                 genes=[],
                 traits=[],
                 stale=[],
@@ -185,6 +230,7 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
                 gene_locus_check_skipped=None,
                 attested=False,
                 attestation_note=NOT_APPLICABLE,
+                detail=detail,
             )
 
         if settings.offline:
@@ -228,12 +274,16 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
         stale = [
             f"{s.kind} {s.identifier}: {s.state}" + (f" -> {s.current}" if s.current else "")
             for s in genes + traits
-            if s.state not in {"approved", "current"}
+            if _flagged(s)
         ]
         return IdentifierReport(
             spec_dir=str(target),
-            genes=genes,
-            traits=traits,
+            # Counted off the FULL rosters, before either is trimmed below, so the
+            # numbers describe the check rather than the answer's shape.
+            gene_tally=_tally(genes, asked=check_genes),
+            trait_tally=_tally(traits, asked=check_traits),
+            genes=genes if detail else [g for g in genes if _flagged(g)],
+            traits=traits if detail else [t for t in traits if _flagged(t)],
             stale=stale,
             # `str(conflict)` is upstream's own sentence, which already says which
             # chromosome each half claims and what to do about it. Reformatting it
@@ -242,4 +292,5 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
             gene_locus_check_skipped=getattr(report, "gene_loci_not_checked", None),
             attested=attested,
             attestation_note=note,
+            detail=detail,
         )

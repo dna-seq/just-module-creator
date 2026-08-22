@@ -3,6 +3,59 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — the two read tools that answered the wrong question, and the file nothing described
+
+**`describe_spec_file` is new, and `describe_table("module_spec.yaml")` now redirects to it.**
+Rule 1 of the server instructions is *ask the tool, never memory*, and the one file every
+module has fell through the authoring route into *"Unknown table kind 'module_spec.yaml'"*
+followed by a list of CSV kinds — a dead end reached by following the rule. The only path
+left was `authoring_reference`, which returned **164,297 characters**, overflowed the result
+limit, spilled to a file and had to be grepped: three calls and a regex to learn three field
+names. The redirect shape already existed for machine sidecars, which refuse by naming the
+tool that answers; the spec file just was not wired into it.
+
+Everything the new tool returns is generated from `just_dna_format.spec.ModuleSpecConfig`,
+so it cannot drift from what the compiler accepts, and a test compares its top-level keys
+against `model_fields` — an upstream addition fails the suite rather than going unmentioned.
+`weighting:` and its three fields now arrive in one call. Both runs found that block
+undeclared on every module they touched, and one of them called it *"invisible by
+construction"*.
+
+**`check_identifiers` returns the verdict by default instead of the roster.** It answered a
+clean 325-gene module with every record in full — roughly 30 kB of `approved` — to report an
+empty `stale`, putting the interesting fields last, after everything that did not matter. The
+same call on a 4,793-gene module is about half a megabyte of agreement. Both runs reported
+this independently. `genes` and `traits` now carry only what needs attention, `gene_tally` /
+`trait_tally` say how many were checked and how many agreed, and `detail=true` returns the
+full roster unchanged. The counts are produced by counting the verdicts, so they cannot
+disagree with the records, and **`null` is not `0`**: null means that half was never asked.
+A state meaning the check could not run is never counted clean, which is the same rule the
+tri-state fields already held.
+
+**`registry_check` stops asserting `false` about checks that never ran.** With no token
+stored it returned `valid: false` and `name_matches_path: false` on a module that passes
+`validate_module(strict=true)` clean and whose name does match its path — beside `verdict:
+null`, `verdict_unavailable`, `unchecked` and a `next_step` that between them make the
+network tier impossible to misread. Two plain booleans asserting the opposite of four
+careful three-valued fields in the same response. Both are `bool | None` now and `null` when
+nothing ran, as is `registry_url`, which was `""` meaning unknown rather than empty. The cost
+was concrete: a caller branching on `valid` — the obvious field, named the same as
+`validate_module`'s — concluded a clean module was invalid because a credential was missing.
+
+**`registry_search` can reach the namespaces a listing hides.** It now takes `group` and
+`namespace`, passed through to the client, and **neither is defaulted from `target`**. The
+registry deliberately excludes test/sandbox namespaces from every listing except `group=test`
+— documented policy since registry 0.8.0, and correct on production — and the polygon holds
+essentially nothing else, so `registry_health` counted 9 modules there while `registry_search`
+returned `total: 0` and no tool could list the instance whose entire purpose is rehearsal. The
+temptation is to send `group="test"` whenever `target="test"`; that is refused deliberately,
+because nothing forces the prefix on a polygon namespace and a silent default would hide an
+unprefixed one, rebuilding this defect one level up. Instead the docstring says which group
+lists a rehearsal, and **an unfiltered zero now says what it left out** rather than reading as
+absence. A zero under an explicit filter does not get that explanation, because an explicit
+`namespace` pops the exclusion server-side and blaming the filter would be a false reason for
+a true zero.
+
 ## Unreleased — three descriptions that said something the code does not do
 
 **`enrich_module` promised a task id and polling. There is neither.** The tool is

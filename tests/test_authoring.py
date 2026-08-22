@@ -594,3 +594,71 @@ async def test_an_unknown_name_is_still_reported_as_unknown(essentials_client):
 
     with pytest.raises(ToolError, match="Unknown table"):
         await essentials_client.call_tool("describe_machine_table", {"csv_name": "nonsense.csv"})
+
+
+# --------------------------------------------------------------------------- #
+# module_spec.yaml: the file every module has, which no authoring route answered
+# --------------------------------------------------------------------------- #
+async def test_the_spec_file_is_redirected_rather_than_called_an_unknown_table(
+    essentials_client,
+):
+    """`describe_table("module_spec.yaml")` was a dead end, and rule 1 sends you there.
+
+    The server's first rule is "ask the tool, never memory", and the one file a module
+    always has fell through the authoring route into *"Unknown table kind
+    'module_spec.yaml'"* followed by a list of CSV kinds. An unattended run took the
+    only remaining path and called `authoring_reference`, which returned 164,297
+    characters, overflowed the result limit, spilled to a file and had to be grepped —
+    three calls and a regex to learn three field names.
+
+    The machine-sidecar refusal already had the right shape: name the route that
+    answers instead of implying a typo. This asserts the spec file gets it too.
+    """
+    from fastmcp.exceptions import ToolError
+
+    with pytest.raises(ToolError) as raised:
+        await essentials_client.call_tool("describe_table", {"csv_name": "module_spec.yaml"})
+    message = str(raised.value)
+    assert "describe_spec_file" in message
+    assert "Unknown" not in message
+
+
+async def test_the_spec_file_answers_weighting_in_one_call(essentials_client):
+    """`weighting:` is the block the docs recommend most and the file hid best.
+
+    Both 2026-08-21 runs found it undeclared on every module they touched. Asserted as
+    a property rather than a field list: the answer is generated from the live
+    `ModuleSpecConfig`, so pinning names here would be the hardcoded-schema-fact this
+    repo forbids — what must hold is that ONE call reaches the block and its fields.
+    """
+    result = await essentials_client.call_tool("describe_spec_file", {})
+    described = result.structured_content
+
+    blocks = {block["key"]: block for block in described["blocks"]}
+    assert "weighting" in blocks, f"no weighting block; got {sorted(blocks)}"
+    assert blocks["weighting"]["fields"], "the weighting block carries no fields"
+
+    # Generated, not transcribed: every block must be reachable from a top-level key.
+    keys = {key["name"] for key in described["keys"]}
+    for key in blocks:
+        assert key.split(".")[0] in keys, f"block {key} opens under no declared key"
+
+
+async def test_the_spec_file_description_is_generated_from_the_live_model(
+    essentials_client,
+):
+    """A hardcoded answer would drift the moment upstream adds a key. This catches that.
+
+    Compared against `ModuleSpecConfig.model_fields` rather than against a list written
+    here, so an upstream addition fails this test instead of silently going unmentioned.
+    """
+    from just_dna_format.spec import ModuleSpecConfig
+
+    result = await essentials_client.call_tool("describe_spec_file", {})
+    described = {key["name"] for key in result.structured_content["keys"]}
+
+    assert described == set(ModuleSpecConfig.model_fields), (
+        "describe_spec_file disagrees with the model that validates the file: "
+        f"missing {set(ModuleSpecConfig.model_fields) - described}, "
+        f"invented {described - set(ModuleSpecConfig.model_fields)}"
+    )
