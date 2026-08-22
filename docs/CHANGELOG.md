@@ -9,6 +9,31 @@ These landed after the tag, so `v0.19.0`'s tree does not contain them. Kept in t
 section rather than backdated into the release above, because a changelog entry that a
 tagged tree does not carry is exactly the drift this file's own prose rules exist to catch.
 
+### A second `enrich_module` on a directory already being enriched now refuses
+
+The one data-integrity finding in either run, and it is fixed rather than warned about.
+`enrich_module` dispatches the enricher into a worker thread, and a worker thread cannot
+be interrupted — so a client that gives up on the request leaves the work running, and it
+still rewrites `resolution.csv` when it finishes. Measured: an aborted 330-variant run was
+still alive when the author restored the published sidecar and re-enriched; the second call
+read the restored file, reported `resolved: 330, sources: ["cache"]` correctly and
+instantly, and the first call then wrote its partial result over it, leaving **162**
+distinct rsIDs plus a rewritten `verification.json`. The module validated, closed and
+compiled green, because every count in it agreed with every other.
+
+A directory with an enrichment in flight is now claimed, and a second enrichment of it
+raises with what is happening and when the other call began, instead of succeeding into a
+file that is about to be overwritten. The claim is released in `finally`, and that ordering
+is the fix rather than an implementation detail: `run_sync` defaults to
+`abandon_on_cancel=False`, so the await does not unwind until the thread returns — the
+claim therefore covers exactly the window in which the abandoned write can still land.
+
+**The honest limit is that it is in-process.** It cannot see an enrichment started by a
+different server process, and there is no lockfile in this tree or upstream's. What it
+stops is the sequence that actually happened, where both calls came from one session. The
+durable repairs are upstream's — a tmp+rename write, incremental persistence, and an
+advisory lock over the read-modify-write window — and are filed there.
+
 ### The duplicate-content gate rewards a cosmetic edit, and now says so
 
 `weighting:`, `README.md`, `authorship:` and the entire verification record sit outside

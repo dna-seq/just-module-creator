@@ -36,6 +36,7 @@ named.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -427,7 +428,24 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
             )
             await ctx.report_progress(progress=1, total=3)
 
+        started = _ENRICHMENTS_IN_FLIGHT.get(target)
+        if started is not None:
+            raise ToolError(
+                f"An enrichment of {target} started at {started} and is still running. "
+                "It rewrites resolution.csv when it finishes, so anything this call wrote "
+                "would be overwritten without warning — which is why this refuses instead "
+                "of succeeding. A worker thread cannot be cancelled: if the earlier call "
+                "was aborted by a client timeout, the work did not stop, and waiting for "
+                "it is the only safe option. When it lands, count resolution.csv against "
+                "the authored subject count before trusting it."
+            )
+
+        _ENRICHMENTS_IN_FLIGHT[target] = datetime.now(UTC).isoformat(timespec="seconds")
         try:
+            # Released in `finally` rather than on request cancellation, and that ordering
+            # is the point: `run_sync` defaults to `abandon_on_cancel=False`, so the await
+            # does not unwind until the thread returns. The claim therefore outlives an
+            # aborted request for exactly as long as the write it is protecting against.
             result = await run_sync(
                 lambda: enrich(target, mode=mode, offline=eff_offline, write=True)
             )
@@ -446,6 +464,8 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
                 warnings=[str(exc)],
                 note=_REGENERATE_NOTE,
             )
+        finally:
+            _ENRICHMENTS_IN_FLIGHT.pop(target, None)
 
         if ctx:
             await ctx.report_progress(progress=3, total=3)
@@ -474,6 +494,24 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
             warnings=warnings,
             note=_REGENERATE_NOTE,
         )
+
+
+#: Spec directories with an enrichment in flight, mapped to when it started (UTC).
+#:
+#: `enrich_module` dispatches the enricher into a worker thread, and a worker thread
+#: cannot be interrupted — so a client that gives up on the request leaves the work
+#: running, and it still rewrites `resolution.csv` when it finishes. That produced a
+#: measured data-integrity failure: an aborted 330-variant run was still alive when the
+#: author restored the published sidecar and re-enriched; the second call read the
+#: restored file, reported `resolved: 330` correctly, and the first call then wrote its
+#: partial result over it, leaving 162 distinct rsIDs. The module validated, closed and
+#: compiled green, because every count in it was internally consistent.
+#:
+#: In-process and per-server, which is the honest limit: it cannot see an enrichment
+#: started by a different process, and there is no lockfile anywhere in this tree or
+#: upstream's. What it does stop is the sequence that actually happened, where both
+#: calls came from one session.
+_ENRICHMENTS_IN_FLIGHT: dict[Path, str] = {}
 
 
 def register_extended_passes(mcp: FastMCP, settings: Settings, services: NetworkServices) -> None:

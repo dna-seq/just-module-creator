@@ -147,13 +147,20 @@ leaving **162 distinct rsIDs**, plus a rewritten `verification.json`. Subjects t
 resolved contribute no row at all rather than an unresolved one, which is why the file
 shrank rather than degrading visibly. The module validated, closed and compiled green.
 
-The docstring now carries the guard — count `resolution.csv` against the authored subject
-count after any timeout, and treat a `success` issued while an aborted call may still be
-running as unverified. **That is a warning, not a fix.** Ours to build: a per-spec-directory
-in-flight claim around the dispatch, so a second call refuses with the truth instead of
-succeeding into a file that is about to be overwritten. Note `refresh_sidecar` already has
-the pattern this needs — capture, read the copy back, hash it, only then destroy — and
-`enrich_module` destroys `resolution.csv` with no capture at all.
+**Partly fixed 2026-08-22.** A directory with an enrichment in flight is claimed, and a
+second enrichment of it raises with what is running and when it began rather than
+succeeding into a file about to be overwritten. The claim releases in `finally`, which
+covers exactly the window the abandoned write can land in, because `run_sync` defaults to
+`abandon_on_cancel=False`. The docstring also carries the reading guard — count
+`resolution.csv` against the authored subject count after any timeout.
+
+**What stays open.** The claim is in-process: it cannot see an enrichment started by a
+different server process, and there is no lockfile in this tree or upstream's. And
+`enrich_module` still destroys `resolution.csv` with no capture, while the sibling
+`refresh_sidecar` has exactly the pattern it needs — copy out, read the copy back, hash it,
+only then let anything destroy the original. The durable repairs are upstream's: a
+tmp+rename write, incremental persistence so an interrupted run keeps what it resolved, and
+an advisory lock over the read-modify-write window, which is the whole run.
 
 ## F64 — the plugin cannot see the channel a whole family of modules is published on
 

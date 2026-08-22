@@ -8,6 +8,7 @@ and that upstream's per-row distinctions survive the MCP boundary.
 
 from __future__ import annotations
 
+import contextlib
 import csv
 import json
 
@@ -800,3 +801,75 @@ async def test_study_facts_off_says_the_nulls_it_leaves_are_permanent(
         "enrich_gwas_effects", {"spec_dir": str(spec_dir), "study_facts": True}
     )
     assert list(csv.DictReader(written.read_text().splitlines()))[0]["pmid"] == "11788828"
+
+
+# --------------------------------------------------------------------------- #
+# The aborted enrichment that was still alive (F63)
+# --------------------------------------------------------------------------- #
+async def test_a_second_enrichment_refuses_while_the_first_is_still_in_flight(
+    make_client, tmp_path
+) -> None:
+    """The measured failure was two calls on one directory, and the second one succeeded.
+
+    A 330-variant enrichment was aborted by a client idle timeout. A worker thread
+    cannot be interrupted, so the work kept running. The author restored the published
+    330-row `resolution.csv` and re-enriched; that second call read the restored file,
+    reported `resolved: 330, sources: ["cache"]` correctly and instantly, and then the
+    first call reached its single terminal write and left **162** distinct rsIDs. The
+    module validated, closed and compiled green, because every count in it agreed.
+
+    Nothing anywhere reported a partial resolution as partial, and there is no lock in
+    this tree or upstream's. So the guard is the refusal: while a directory is claimed,
+    a second enrichment of it says what is happening instead of succeeding into a file
+    that is about to be overwritten.
+
+    Asserted on the claim registry directly rather than by racing two real enrichments —
+    a race that reproduced the bug would have to run the pass twice over the network,
+    and what is under test is the ordering, not the enricher.
+    """
+    from just_module_creator.tools import passes
+
+    spec = tmp_path / "spec"
+    spec.mkdir()
+    (spec / "module_spec.yaml").write_text("module:\n  name: spec\n", encoding="utf-8")
+
+    resolved = spec.resolve()
+    passes._ENRICHMENTS_IN_FLIGHT[resolved] = "2026-08-22T12:00:00+00:00"
+    try:
+        async with make_client("essentials", offline_settings()) as client:
+            with pytest.raises(ToolError) as raised:
+                await client.call_tool("enrich_module", {"spec_dir": str(spec)})
+    finally:
+        passes._ENRICHMENTS_IN_FLIGHT.pop(resolved, None)
+
+    message = str(raised.value)
+    assert "still running" in message
+    assert "2026-08-22T12:00:00+00:00" in message, "the refusal must say when the other call began"
+    # It must not read as a validation failure of the spec.
+    assert "overwritten" in message
+
+
+async def test_the_claim_is_released_so_a_later_enrichment_is_not_blocked_forever(
+    make_client, tmp_path
+) -> None:
+    """A claim that outlived its call would wedge the directory for the session.
+
+    Released in `finally` rather than on request cancellation, which is deliberate:
+    `run_sync` defaults to `abandon_on_cancel=False`, so the await does not unwind until
+    the thread returns — the claim therefore covers exactly the window in which the
+    abandoned write can still land, and no longer.
+    """
+    from just_module_creator.tools import passes
+
+    spec = tmp_path / "spec"
+    spec.mkdir()
+    (spec / "module_spec.yaml").write_text("module:\n  name: spec\n", encoding="utf-8")
+
+    async with make_client("essentials", offline_settings()) as client:
+        # Offline with no variants: the pass refuses or returns, either way it completes.
+        with contextlib.suppress(ToolError):
+            await client.call_tool("enrich_module", {"spec_dir": str(spec), "offline": True})
+
+    assert spec.resolve() not in passes._ENRICHMENTS_IN_FLIGHT, (
+        "the claim outlived its call, so this directory can never be enriched again"
+    )
