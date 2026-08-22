@@ -392,3 +392,89 @@ asked for the other six"* rather than *"the consumer ignores everything"*.
 > **Note the count before quoting it.** `CLAUDE.md` says 24 dossiers; **25** files carry a
 > `## Blanks for just-dna-lite` section, `LAYOUT.md` among them. State the rule and run the grep
 > rather than repeating either number.
+
+## RM26 — an audit surface: the offline arithmetic both runs had to write by hand
+
+**Severity:** high · **Status:** open · **Owner:** unassigned · **Opened** 2026-08-22
+
+Two independent unattended runs found every real defect by writing Python over the CSVs,
+while five tools answered *"will this build?"* in different words. `F60` and `F61` carry the
+measurements. The scope decision taken 2026-08-22 was to fix the surfaces and discovery in
+that pass and roadmap this, because it is new product rather than a surface repair.
+
+**The bar this has to clear is that every signal is computable offline from files the
+plugin already reads.** That is what makes it buildable rather than a wish, and it is also
+the boundary: anything needing a live source is a check and belongs in the check pass.
+
+Candidate signals, each already measured by hand in one of the two runs:
+
+- **Weight cells with no declared scale.** `weight` populated on N rows and no `weighting:`
+  block. Also the opposite sign, which run 2 hit: `weight` empty on *every* row and no
+  `weighting:` — so "the author authors none deliberately" and "the author forgot" are the
+  same bytes, which is the distinction `weighting:` exists to carry.
+- **Checks that have never run.** `verification.json` read for records that are absent, or
+  present with `skipped` set, or present with `subjects: 0`. Run 1 measured the reference-base
+  check at zero of eight modules, and the three states read very differently: a `skipped`
+  record and a record that ran over nothing are both not-a-pass, and only one of them says so.
+- **A record that counts findings and does not keep them.** Run 2 found 52 unresolved ClinVar
+  disagreements across two modules with `detail: null` and no sidecar naming the rows. The
+  rollup is ours even though the retention is upstream's.
+- **`effect_measure` disagreeing with its own p-value.** Compare `effect_size` against
+  `-Φ⁻¹(p/2)` per row. This is arithmetic on two authored columns and needs nothing external.
+- **Per-column fill counts.** Run 2's ask, and the cheapest item here: one pass over rows the
+  validator has already loaded turns "what is there to curate" from a question into a table.
+  Five of its six curated modules had `category` empty on every row, reported as `categories:
+  []` and treated as unremarkable.
+- **A module with no `studies.csv` beside rows that make clinical claims.** The rule exists in
+  `module-status` and is scoped to `variants.csv`, so a 1,482-row PGx module falls outside it
+  and nothing fires.
+
+**Two design constraints that are not negotiable.** First, this reports and never repairs: a
+disagreement is not a defect report, and several of these signals have honest explanations —
+run 1 retracted two of its own three findings, and nothing in the toolchain contributed to
+either retraction. Second, the output is a **decision list**, not a findings dump: if a human
+must choose, it goes in the list; if nothing must be chosen, it does not appear. An old module
+is out of date, not defective.
+
+**Where it should live is an open question.** A separate `audit_module` is the obvious shape.
+The alternative worth weighing first is carrying the voice into the success path of tools that
+already run — a green `validate_module` on a module whose reference-base check has never run
+should say so. Both runs independently observed that this surface says difficult things well
+and mostly says them when something breaks, and that a green result is a tool call while the
+caveat is prose. That argues for the second shape, or for both.
+
+`review_queue` is part of this entry rather than a separate one: `F61` is the same defect
+seen from the far end, and widening it to emit `unknown` entries for fields whose archive
+answer is not in the module is a smaller change than a new tool.
+
+## RM27 — check the conclusion against the row it sits on
+
+**Severity:** medium · **Status:** open · **Owner:** unassigned · **Opened** 2026-08-22
+
+`conclusion` is the sentence a person reads about themselves, it is `required: true`, and
+nothing checks it against anything — including the other cells on its own row. `lint_rows`
+was given twelve real rows in run 2 and returned zero errors and zero warnings while four of
+them said something that contradicts the row they are on: a homozygous-alt row opening with
+the reference homozygote's sentence, a `risk` state under prose reading *"is not
+increased"*, and two rows whose conclusions are byte-identical under different genotypes.
+
+**This proposal is unusually well founded for a roadmap entry, because that run implemented
+it and measured it.** Over 1,418 rows in six modules, the rule "the conclusion names a
+genotype token built from alleles that appear at **this rsID's own locus**" found 20 rows,
+of which roughly twelve are real and six severe — one module has the `C/C` and `A/A`
+conclusions swapped at a locus where all three rows carry `state: neutral, weight: 0.0`,
+and another scores `T/T` as `protective, +1.2` under text saying `GG` is protective. Measured
+precision about 60%, **which is why the recommendation is `warning` and not `error`**. The
+locus constraint is what makes it usable: an earlier version flagged `"TG"` inside *"raised
+plasma triglyceride (TG) levels"*, and requiring the token to be built from alleles at that
+site excludes it by construction.
+
+A second rule — two rows at one rsID carrying identical conclusions under different
+`state`/`weight` — found 492 groups, 480 of them in one GWAS port where a heterozygote and a
+homozygote share one sentence and differ only in dose. **That one is a question rather than a
+defect**, and the point is that nothing raises it and the author has no way to record having
+decided it. File it as a hint, not a warning.
+
+`module-curate` names the conclusion as a cell only a pilot may settle, which is right and
+is not in tension with this: "only a human may write it" is not "nothing may check it", and
+the plugin currently treats them as the same.

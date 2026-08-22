@@ -14,6 +14,129 @@ is usable, and what is missing.
 
 ---
 
+## F60 — the surface answers "will this build?" four ways and "is this any good?" not at all
+
+**Found:** 2026-08-21, two independent unattended runs · **Severity:** high ·
+**Status:** open. The tier and discovery half shipped 2026-08-22; the audit surface is `RM26`.
+
+Run 1 curated the eight modules then on the production registry; run 2 revised the ten
+modules in `just-dna-lite`'s v1 port. Neither had prior context. Both ran in the default
+tier. **Every module passed `validate_module(strict=true)` with zero errors**, and every
+real defect either run found was found by writing arithmetic over the CSVs.
+
+`registry_check`, `registry_validate`, `validate_module`, `compile_module` and `lint_rows`
+all answer *"will this build?"*. The offline gate is **right** to pass those modules and
+says so itself — *"strict means reproducible, not correct"* — so this is not a broken
+check. It is that the entry point to a curation pass tells you nothing, and the caveat
+that says so is prose while the green result is a tool call.
+
+What run 1 measured in modules that passed every gate, all by hand:
+
+| defect | how it was found | scale |
+|---|---|---|
+| `effect_measure` says `beta` on a Z-statistic | compare `effect_size` against `-Φ⁻¹(p/2)` | 242 variants, 4 modules |
+| `effect_size` dosage-doubled on hom rows | hom value = 2 × het value | 10 of 13 variants, 1 module |
+| `weighting:` never declared | read `module_spec.yaml` | every module in both runs |
+| the reference-base check had never run | read `verification.json` | every module in run 1 |
+| `gene: KIBRA` not HGNC-approved | `check_identifiers` — the one tool that found anything | 1 module |
+
+A "beta" of 7.29 on an item-level irritability score is not a possible effect size; it is
+the Z for that row's own p-value to three decimals, and in one module that column then
+held Z-statistics beside genuine per-allele betas of order 0.02 under one unit label.
+
+Run 2 found the same shape from the other side: a module with **190 rows and an empty
+`weight` on every one**, no `weighting:` block, passing strict and compiling green with
+`weights_rows: 190`. Nothing distinguishes "the author deliberately authors none" from
+"the author forgot", which is the question `weighting:` exists to answer.
+
+**Every signal in that table is computable offline from files the plugin already reads.**
+That is what makes this a gap rather than a wish. See `RM26`.
+
+## F61 — `review_queue` reports nothing to review while holding the evidence
+
+**Found:** 2026-08-21, run 1 · **Severity:** high · **Status:** open, `RM26`.
+
+`review_queue` is introduced as the priority list for a review pass — *"these are the rows
+to start with … the highest-value judgements in the module and the easiest to forget."*
+Run 1 recorded six overrides through `record_override`, including a ten-row correction to
+a fabricated `effect_size`, and every one was written to `provenance.json` and
+`logs/authoring.log`. The tool then returned `{"total": 0, "entries": []}` on both modules,
+with the records shunted into an `other_provenance` bucket of flattened strings.
+
+It is behaving as built, and the cause is documented: the queue's three states are computed
+by comparing the authored cell against the archive's current answer, and only `clin_sig`
+has that answer recorded inside the module, in `clinical_assertions.csv`. But `unknown` is
+one of the queue's own documented states and is explicitly *"not agreement"* — these are
+`unknown` entries, not silence. As it stands the tool reports the exact shape the rest of
+the pack spends thousands of words warning against: **a question that could not be put,
+presented as nothing to answer.** A reviewer opening the corrected module and running the
+tool that exists to say what to review is told there is nothing.
+
+## F62 — `compile_module` accepts an output directory that makes the spec unpublishable
+
+**Found:** 2026-08-21, run 1 · **Severity:** medium · **Status:** open.
+
+`out/` inside the spec directory is the obvious choice. `compile_module` accepts it and
+copies `README.md` into it, and the **publish** then fails two steps later:
+
+```
+HTTP 422 ambiguous_spec_layout
+  "`README.md` arrives from more than one path (`README.md`, `out/README.md`);
+   send one copy, since only the author knows which is current"
+```
+
+The error is excellent — it names both paths and refuses to guess — but it lands at the
+one operation with real consequences, and nothing upstream of it warns. Either
+`compile_module` should refuse an `output_dir` inside `spec_dir`, or the copy should
+exclude authored files.
+
+## F63 — an aborted `enrich_module` keeps running and overwrites the spec directory afterwards
+
+**Found:** 2026-08-21, run 1 · **Severity:** high, data integrity ·
+**Status:** open here; the upstream half is filed against the enricher.
+
+The mechanism, localized by reading both trees rather than by reproducing the timeout.
+`enrich_module` dispatches through `anyio.to_thread.run_sync` with the default
+`abandon_on_cancel=False`, and a worker thread cannot be interrupted at all — so a
+client-side abort leaves the work running, unaware and still holding its write. The
+enricher reads `resolution.csv` at the start of the run and rewrites it in one truncating,
+non-atomic write at the very end, with no lock anywhere in either tree, so the
+read-modify-write window is the whole run and two concurrent enrichments are
+last-writer-wins.
+
+What that produced: a run aborted client-side at 1800s; the published 330-row
+`resolution.csv` restored by hand; a second `enrich_module` returning `resolved: 330,
+sources: ["cache"]` correctly and instantly; and then the first call reaching its write and
+leaving **162 distinct rsIDs**, plus a rewritten `verification.json`. Subjects that never
+resolved contribute no row at all rather than an unresolved one, which is why the file
+shrank rather than degrading visibly. The module validated, closed and compiled green.
+
+The docstring now carries the guard — count `resolution.csv` against the authored subject
+count after any timeout, and treat a `success` issued while an aborted call may still be
+running as unverified. **That is a warning, not a fix.** Ours to build: a per-spec-directory
+in-flight claim around the dispatch, so a second call refuses with the truth instead of
+succeeding into a file that is about to be overwritten. Note `refresh_sidecar` already has
+the pattern this needs — capture, read the copy back, hash it, only then destroy — and
+`enrich_module` destroys `resolution.csv` with no capture at all.
+
+## F64 — the plugin cannot see the channel a whole family of modules is published on
+
+**Found:** 2026-08-21, run 2 · **Severity:** medium · **Status:** open, acknowledged.
+
+`compare_to_published`, `registry_is_published` and `registry_search` all answer about the
+module registry. Six of `just-dna-lite`'s modules have been published for months on
+HuggingFace at `just-dna-seq/annotators`, where each carries a `manifest.json` today, and
+that is where that repo's discovery tier actually reads modules from.
+`registry_is_published` returns `free_to_publish: true` for them. That verdict is true
+about the registry and **false about the world**, so for every module in that repo the
+question a revision pass opens with cannot be asked at all.
+
+The plugin is careful about precisely this class of mistake one level down — `target` is
+required with no default on every catalog read, because a search that guessed would answer
+confidently about the wrong instance. The same argument applies to which *kind* of
+publication is being asked about, and there it is not applied. The minimum their run asked
+for is the right shape: say what was not looked at.
+
 ## F6 — two of five literature sources refuse this host, and the tool is right to say so
 
 **Found:** 2026-08-11, capturing fixtures · **Severity:** medium ·
