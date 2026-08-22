@@ -216,9 +216,12 @@ matter, and the second is the one an agent gets wrong:
 - **Visible, by two independent routes.** `manifest.verification` is projected onto the registry's
   module-detail response as a `VerificationInfo` block — `closed`, `closed_at`, `closed_by`, `producer`,
   `produced_at`, and a per-check list of `check`/`subjects`/`findings`/`skipped`. It reads the **latest**
-  version's manifest; per-version access is the `…/manifest` route. And the bytes come back too, but
-  **only under `download(include_inputs=True, layout="split")`**, which lands `derived/verification.json`
-  — a plain download does not carry it. Deliberately not a card facet, not a filter, not sortable, and
+  version's manifest; per-version access is the `…/manifest` route. And the bytes come back too:
+  `include_inputs=True` has fetched the machine-written sidecars since registry 0.17, so
+  `verification.json` arrives with the rest. `layout` only decides where they land — `split` moves
+  them under `derived/` **after** the download so a reader can tell the author's files from the
+  enricher's — and `registry_download` pins `flat`, which is the tree a compile wants, so you get
+  the file either way. Deliberately not a card facet, not a filter, not sortable, and
   `None` is not collapsed with an empty block: **absent means no attestation survived**, which is a
   different statement from an attestation that recorded no checks.
 - **That `closed: true` is hash-checked, not asserted.** The projection reads the manifest, never the
