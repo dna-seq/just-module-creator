@@ -1499,3 +1499,36 @@ warning text, which is the hardcoded-schema-fact this repo forbids, and it would
 author may need. Every skill here insists warnings on a green run are the real output; that
 instruction is only followable if the list is readable, and readability is the producer's to give.
 
+## The 2026-08-22 filing set, and what did not survive verification
+
+Eight entries went to the format tree as **`S66`–`S73`** out of the two 2026-08-21 dogfooding runs.
+`F63` and `F64` above track the two we mitigated or deliberately did not; the rest are upstream-only
+and have no our-side half to record:
+
+| upstream | what |
+|---|---|
+| `S66` | `enrich()`'s single, unlocked, non-atomic terminal write — `F63` |
+| `S67` | `_verify_vrs_ids` per-allele where `_vrs_coverage` aggregates — `F64` |
+| `S68` | `warnings` is a flat `list[str]` with no code, count, or clearable/carried split — `F64` |
+| `S69` | the `panel:` deprecation's *"nothing else is lost"* |
+| `S70` | `verification.json` counts a check's findings and keeps none |
+| `S71` | `verification.json`'s `producer` is document-scoped, so a merge restamps records it did not produce |
+| `S72` | `stats`' scalar counters still describe `variants.csv` alone (follow-up to their `S57`) |
+| `S73` | a question: `pharm_variants.csv` has no citation column |
+
+**Six claims were dropped or rewritten before filing, and that is the part to remember.** Verifying
+against the installed packages rather than against the observation killed: *"`pharm_variants.csv` has
+eight columns"* (the model has 16 fields, 13 authored — the no-citation-column point survives, the
+count did not); *"`validate_module` says nothing about `verification.json`"* (it warns on staleness
+and on no-closure; the true and narrower claim is that nothing reads `VerificationRecord.findings`);
+two mutually contradictory guesses about what `pharm_variants.csv` is keyed on, replaced by
+`key_fields()`'s generated answer; a near-miss of our own about `rsid_currency` findings, which are
+in fact stamped per row; and `S69`'s proposed ask, since `panel:` already reaches `manifest.panel` —
+the defect is the warning's closing clause, not the absence of a home.
+
+The measurements the runs reported and nobody could re-measure — warning counts, panel gene counts,
+finding counts — are **labelled in each entry as reported rather than re-measured**, and every entry
+leads with a code-anchored mechanism instead. A parallel filing into the registry's intake went the
+same way: five candidates, one filed, four refuted (see `F65` in [dogfooding.md](dogfooding.md)).
+Between the two intakes, **ten of nineteen candidate claims did not survive contact with the source.**
+
