@@ -217,6 +217,22 @@ rehearsals and flags nothing.
 **Two modules differing only in `weighting:` are `409 duplicate_content`**, because that block sits
 outside `content_signature`. Declare it at scaffold time — `module-start`.
 
+**And know what that gate does to a pass that only improved the declarations.** `weighting:`, the
+README, `authorship:` and the whole verification record are all outside the content claim, so a
+revisit that declares the weight scale, writes a README, adds an authorship entry and re-runs every
+check leaves `content_signature` bit-identical and is refused as duplicate content. The refusal is
+correct — prose must not mint a new digest, which is what `registry_amend_readme` exists for. But
+*"declare the scale you never declared"* is the most-recommended improvement in this whole pack, and
+there is no way to ship it as a version.
+
+**The trap is the obvious way out.** Any trivial row edit defeats the hash, and the resulting module
+looks identical to an honest one: same green compile, same provenance record, same closure. Nothing
+flags it. **Do not manufacture a change to get past the gate.** The honest options are: amend the
+README and accept that the rest rides along unversioned; publish only if you also found a change that
+stands on its own evidence, and say in the changelog that the gate is what prompted the question; or
+leave it unpublished and record why. An agent measured against "modules published" will feel the pull
+here, which is exactly why it is written down.
+
 ## Prose costs no version
 
 Changelog, logo and readme each have an amend endpoint (`registry_amend_readme` here; the other two are

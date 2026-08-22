@@ -12,6 +12,26 @@ the eight modules then on the production registry, and a revision pass over ten 
 implements the authoring half of its own model well and the reviewing half barely at all —
 and that a good deal of what looked missing was present and hidden.
 
+### the duplicate-content gate rewards a cosmetic edit, and now says so
+
+`weighting:`, `README.md`, `authorship:` and the entire verification record sit outside
+`content_signature`. Both skills already said so. What neither said is what that does to a pass
+that improved only the declarations: one run declared the weight scale, wrote a README, added an
+authorship entry and re-ran eight checks, and `content_signature` had not moved a bit, so the
+registry refused the publish as duplicate content. It was right to. But "declare the scale you
+never declared" is the most-recommended improvement in this pack and there is no way to ship it
+as a version.
+
+The part worth writing down is the incentive rather than the gate. **Any trivial row edit defeats
+the hash**, and the module that results looks identical to an honest one — same green compile,
+same provenance record, same closure, and nothing flags it. An agent measured on "modules
+published" has an obvious move and it is the wrong one. `module-publish` now names the three
+honest options and says plainly not to manufacture a change to get past the gate.
+
+Also unstaled in `module-weights`: it said `describe_table("module_spec.yaml")` "will not point
+you at it", which was true and is the reason several sessions concluded `weighting:` did not
+exist. `describe_spec_file()` answers it now.
+
 ### the two read tools that answered the wrong question, and the file nothing described
 
 **`describe_spec_file` is new, and `describe_table("module_spec.yaml")` now redirects to it.**

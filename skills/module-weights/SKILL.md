@@ -75,9 +75,12 @@ where the weight lives.
 
 `weighting:` in `module_spec.yaml` is where you say what the numbers mean: the scale, the direction
 convention, the normalisation if you applied one, or that the module authors none. It is **invisible by
-construction** — `scaffold_module` omits every optional block and `describe_table("module_spec.yaml")`
-will not point you at it, which is why two real sessions concluded the field did not exist. Write it at
-scaffold time; `module-start` says so for the same reason.
+construction** — `scaffold_module` omits every optional block, and until 0.19.0
+`describe_table("module_spec.yaml")` answered *"Unknown table kind"* rather than pointing anywhere,
+which is why several real sessions concluded the field did not exist. **`describe_spec_file()` now
+answers it**, block by block, generated from the model that validates the file — so the scale and its
+three fields are one call away. Still write it at scaffold time; `module-start` says so for the same
+reason, because nothing prompts you later.
 
 It sits **outside `content_signature`**, with two consequences: an edit there costs no content identity,
 and two modules differing *only* in that block collide as `409 duplicate_content` at the registry.
