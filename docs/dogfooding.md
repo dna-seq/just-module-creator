@@ -14,6 +14,25 @@ is usable, and what is missing.
 
 ---
 
+## F66 — `lint_rows` echoes its whole input back, and that is load-bearing
+
+**Found:** 2026-08-21, run 2 · **Severity:** low · **Status:** open, deliberately not changed.
+
+`lint_rows` returns the entire input as `normalized_csv`. On a twelve-row slice that is
+fine; on a 1,039-row module it doubles a response that is already the largest thing the
+tool returns, and the run's ask was to make it opt-in.
+
+**Left as it is, and the reason is the `alterations` list beside it.** The tool reports
+what it normalised — `-2.0` written back as `-2` — and a caller applying those needs the
+normalized text to apply them *to*. Defaulting the echo off would leave `alterations`
+describing edits against bytes the caller no longer has, which trades a size problem for a
+correctness one.
+
+The size complaint is still real. The shape that would resolve both is a flag that returns
+the normalized rows **only where something was altered**, which is neither the whole file
+nor nothing — recorded here rather than built, because it is a behaviour change and this
+pass was scoped to surfaces.
+
 ## F65 — four of the runs' registry findings did not survive verification, and one was ours
 
 **Found:** 2026-08-22, verifying before filing · **Severity:** n/a ·
