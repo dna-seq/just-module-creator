@@ -658,10 +658,13 @@ def aggregate(counted: Sequence[tuple[int, str]]) -> list[str]:
 # --------------------------------------------------------------------------- #
 # Argument checks
 # --------------------------------------------------------------------------- #
-def check_sidecar(name: str, mode: str = "extended") -> Sidecar:
+def check_sidecar(name: str, mode: str = "essentials") -> Sidecar:
     """Resolve a sidecar name, with a usable error and the honest refusals.
 
-    ``mode`` gates the corpus-sized sidecars only. The tool itself is essentials
+    ``mode`` gates the corpus-sized sidecars only, and **defaults to the narrower tier
+    so that a call site which forgets it fails closed**: defaulting to ``"extended"``
+    would make a forgotten argument silently skip the gate, which is the wrong way round
+    for a budget guard. The tool itself is essentials
     since 2026-08-22: two unattended runs both concluded that re-deriving a stale
     sidecar has no tool and that ``rm resolution.csv`` is the sanctioned interface,
     because neither could see this one. `resolution.csv` is five of the seven

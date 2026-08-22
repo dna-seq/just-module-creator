@@ -3,16 +3,13 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## 0.19.0 — the review half of the lifecycle becomes reachable
+## Unreleased — after v0.19.0 was cut
 
-Everything below came out of two independent unattended agent runs on 2026-08-21, each
-against plugin 0.18.0 and each, decisively, **in the default tier**: a curation pass over
-the eight modules then on the production registry, and a revision pass over ten modules in
-`just-dna-lite`. Between them they logged 57 findings. The through-line is that this surface
-implements the authoring half of its own model well and the reviewing half barely at all —
-and that a good deal of what looked missing was present and hidden.
+These landed after the tag, so `v0.19.0`'s tree does not contain them. Kept in their own
+section rather than backdated into the release above, because a changelog entry that a
+tagged tree does not carry is exactly the drift this file's own prose rules exist to catch.
 
-### the duplicate-content gate rewards a cosmetic edit, and now says so
+### The duplicate-content gate rewards a cosmetic edit, and now says so
 
 `weighting:`, `README.md`, `authorship:` and the entire verification record sit outside
 `content_signature`. Both skills already said so. What neither said is what that does to a pass
@@ -31,6 +28,33 @@ honest options and says plainly not to manufacture a change to get past the gate
 Also unstaled in `module-weights`: it said `describe_table("module_spec.yaml")` "will not point
 you at it", which was true and is the reason several sessions concluded `weighting:` did not
 exist. `describe_spec_file()` answers it now.
+
+### Stale `extended` markers in `docs/`, and two trip wires
+
+The tier move's marker sweep covered `skills/` and the new guard reads tool descriptions, so
+`docs/` was the one place nobody's pass touched — and it still carried the deleted clause
+verbatim (`FOR_DEVELOPERS.md` twice, `BEYOND_BASICS.md`, `DESIGN-version-compare.md`). Fixed,
+and the two entries that are still true — `literature.csv` and `gwas_effects.csv` remain
+gated — are annotated as half-superseded rather than rewritten, since the finding they
+record is unchanged.
+
+**`check_sidecar` defaulted its tier argument to `"extended"`, so a call site that forgot it
+skipped the gate silently.** A budget guard must fail closed; the default is `"essentials"`.
+
+**`server.INSTRUCTIONS` had one character of headroom.** The block interpolates three version
+strings now — format, compiler and, since this release, the plugin's own — against a
+reservation sized for two, so an upstream patch bumping `0.6.9` to `0.6.10` would have failed
+the suite on somebody else's release. Prose trimmed to 1,999 characters and the reservation
+raised from 24 to 36, which is per version string rather than a flat margin.
+
+## 0.19.0 — the review half of the lifecycle becomes reachable
+
+Everything below came out of two independent unattended agent runs on 2026-08-21, each
+against plugin 0.18.0 and each, decisively, **in the default tier**: a curation pass over
+the eight modules then on the production registry, and a revision pass over ten modules in
+`just-dna-lite`. Between them they logged 57 findings. The through-line is that this surface
+implements the authoring half of its own model well and the reviewing half barely at all —
+and that a good deal of what looked missing was present and hidden.
 
 ### the two read tools that answered the wrong question, and the file nothing described
 

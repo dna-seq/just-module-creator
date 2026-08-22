@@ -96,7 +96,7 @@ and manifest. Work in this order:
 
 Load `create-module` to route. Rules no skill softens:
 
-1. Ask the tool, never memory. describe_table / table_requirements /
+1. Ask the tool, never memory: describe_table / table_requirements /
    describe_machine_table generate every column, vocabulary and requirement.
 2. You MAY write — and YOU log it: nothing logs a hand edit, so call
    `record_override` (it appends to logs/authoring.log). Two cells stay withheld:
@@ -104,16 +104,15 @@ Load `create-module` to route. Rules no skill softens:
    settles — genotype, weight, conclusion, direction.
 3. A mismatch means CHECK BOTH SIDES: the row may be wrong, and so may the
    source — archives lag the edge. A source is evidence, never authority: conform
-   to a stale one and the check agrees with itself. Decide on what you verified,
-   and say why.
+   to a stale one and the check agrees with itself. Decide on what you verified.
 4. A check that could not run is not a check that passed: `null` and `unknown`
-   never mean pass, and warnings on a green run are the real output.
+   never mean pass; warnings on a green run are the real output.
 5. Take every PMID from a literature_search result: existence never settles
    identity, only a title does. A `provenance_quote` is a passage you located,
    verbatim, for this row's claim — never the title.
 6. `start` is the 1-based VCF position: paste it, never subtract one.
 
-Every registry tool takes `target`, and catalog reads REQUIRE it — read back the
+Every registry tool takes `target`; catalog reads REQUIRE it — read back the
 instance you wrote to. target="test" is the polygon: a publish there is a
 REHEARSAL you can delete. target="prod" is the catalog, immutable, its data
 claimed by a hash `yank` never frees. Writes default to test. Rehearse, say so

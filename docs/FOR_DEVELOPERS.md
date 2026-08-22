@@ -95,10 +95,10 @@ async with Client(transport=build_server(mode="extended")) as client:
 | `record_override` | essentials | no | why an authored value outranks a source. **In response to a reported mismatch, never ahead of one** — a row markable as outranked before the check runs destroys the signal that catches a hallucination. Writes `provenance.json` and `logs/authoring.log` |
 | `review_queue` | essentials | no | those records, ranked worst-first. `still_bound` is three-valued; `resolved` means the archive caught up and the override was vindicated |
 | `compare_modules` | essentials | no | two spec directories, three grains, rows grouped by the set of columns that changed. No write path, no verdict on which side is right, and it never pairs rows whose key changed |
-| `refresh_sidecar` | extended | no | capture, verify, delete, re-derive, reapply what is provably authored, report the rest. Refuses offline and refuses `licensing.csv` |
+| `refresh_sidecar` | essentials, except `literature.csv` / `gwas_effects.csv` | no | capture, verify, delete, re-derive, reapply what is provably authored, report the rest. Refuses offline and refuses `licensing.csv` |
 | `describe_machine_table` | essentials | no | the live columns of the machine-written tables, and what a hand-written cell there costs |
 | `enrich_gwas_effects` | extended | no | the GWAS Catalog's published effect sizes, **beside** `weight` and never into it. `1 + 2N` requests per variant — the corpus of published associations sizes it |
-| `reverse_module`, `registry_download` | extended | no | read back somebody else's compiled artifact |
+| `reverse_module`, `registry_download` | essentials | no | get somebody else's published module onto disk — bounded by the one version you named |
 | `registry_validate`, `registry_check` | gated | **yes** | would this publish — server-side, spending no version number. `check` is the full dry run |
 | `registry_whoami`, `registry_claim_namespace`, `registry_publish` | gated | **yes** | registry writes; publish records the stamped identity in `published.json` |
 | `registry_amend_readme` | gated | **yes** | fix a published module's card — outside `artifact.digest`, so no version is spent |
@@ -169,8 +169,9 @@ again with `target="prod"`.
 - `essentials` — everything whose work is bounded by what you named: one identifier, one paper, one
   spec directory. That is the whole taught workflow plus the checks around it, so this tier takes a
   variants or SNP module from nothing to compiled, verified and published.
-- `extended` — only what a corpus sizes: `paper_citations`, the PGx drafters, the bulk fact passes,
-  and reading back somebody else's compiled artifact (`reverse_module`, `registry_download`).
+- `extended` — only what a corpus sizes: `paper_citations`, the PGx drafters and the bulk fact
+  passes. The clause "or reads back somebody else's compiled artifact" was deleted on 2026-08-22:
+  it was never a cost argument, and it hid the three tools two unattended runs needed most.
 
 It used to be read-vs-write, which never described the code — `scaffold_module` and `compile_module`
 both write and were always essentials, while `lookup_identifier` only reads and was not. Worse, the

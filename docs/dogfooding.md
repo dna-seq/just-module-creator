@@ -890,8 +890,14 @@ and much the larger half.
 
 **What it cost in this session.** `literature.csv` needed re-deriving (`quotes_authored: 0` beside
 authored quotes — see `F44` / upstream `S56`). The two tools for that, `enrich_literature_pass` and
-`refresh_sidecar`, are both extended. On a default server there is no route at all: the module was
+`refresh_sidecar`, were both extended. On a default server there was no route at all: the module was
 published with the sidecar as found, and the log says so.
+
+> **Half-superseded 2026-08-22 (0.19.0).** `refresh_sidecar` is in every tier now, but
+> `literature.csv` is one of the two sidecars it still refuses outside extended — its pass is sized
+> by a corpus — so the conclusion above **still holds for this table** and no longer holds in
+> general. The finding this entry is really about, that a taught step can be unreachable in the
+> tier that teaches it, is unchanged.
 
 **Candidate fix.** A test that extracts `name(` call sites from every `skills/**/*.md` fenced block,
 resolves them against the essentials roster, and requires an `EXTENDED` marker on the line for any

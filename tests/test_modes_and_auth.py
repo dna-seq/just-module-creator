@@ -544,11 +544,17 @@ async def test_paper_citations_accepts_an_unambiguous_direction(extended_client)
 #: 2.1.238. Nothing on our side raises, so the failure is invisible from here.
 _INSTRUCTIONS_CEILING = 2048
 
-#: Held back from the ceiling because the text interpolates two version numbers that
-#: grow: `0.6.1` becomes `0.10.12` and the string is four characters longer for a
-#: reason no edit to this file caused. A test that passed at exactly the ceiling
-#: would start failing on somebody else's release.
-_VERSION_SLACK = 24
+#: Held back from the ceiling because the text interpolates version numbers that grow:
+#: `0.6.1` becomes `0.10.12` and the string is four characters longer for a reason no
+#: edit to this file caused. A test that passed at exactly the ceiling would start
+#: failing on somebody else's release.
+#:
+#: Raised from 24 to 36 on 2026-08-22, when the block gained a THIRD interpolated
+#: version — the plugin's own, added because two unattended runs each spent their
+#: opening calls working out which of two installed copies had answered. The
+#: reservation is per version string, so adding one and leaving the slack alone would
+#: have left a single character of headroom against an upstream patch release.
+_VERSION_SLACK = 36
 
 
 def test_the_instructions_fit_in_what_the_host_will_actually_keep():

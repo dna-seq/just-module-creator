@@ -107,8 +107,14 @@ claim a content change.
 is "ESSENTIALS (network, read-only)". This is the same bounded read.
 
 **It ends by handing over rather than escalating.** Row detail needs the published version's authored
-inputs on disk, which is `registry_download`'s cost and is deliberately extended, so the result names
-the exact `registry_download` + `compare_modules` pair that gets it. It never downloads on its own.
+inputs on disk, which is `registry_download`'s cost, so the result names the exact
+`registry_download` + `compare_modules` pair that gets it. It never downloads on its own.
+
+> **Corrected 2026-08-22.** This said `registry_download` "is deliberately extended". It was, and
+> that was the defect: an essentials tool handed the caller a tool the default tier did not have,
+> and an unattended run followed the sentence into nothing and concluded no tool fetches a published
+> module at all. Both are essentials now, and `test_docstrings_only_name_tools_this_tier_has` fails
+> on the shape.
 
 `registry_is_published` should be called first and often makes this unnecessary: it already answers
 "is my exact content published, under any name". Verified — `lookup_by_signature` on a local copy of
@@ -229,7 +235,7 @@ split belongs.
 Concretely, published-vs-published is:
 
 ```
-registry_download(ns, name, v1, dest1)   # extended; our wrapper already defaults include_inputs true
+registry_download(ns, name, v1, dest1)   # our wrapper already defaults include_inputs true
 registry_download(ns, name, v2, dest2)
 compare_modules(dest1, dest2)            # essentials
 ```

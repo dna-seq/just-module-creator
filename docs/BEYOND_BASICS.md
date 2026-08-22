@@ -70,10 +70,10 @@ division as everywhere else — the module is the knowledge, the reader brings t
 
 - `registry_search` — has someone already built this?
 - `registry_get_module` — one module's full record.
-- `registry_download` (extended) — the compiled artifact **and** the authored CSVs. A published spec
+- `registry_download` — the compiled artifact **and** the authored CSVs. A published spec
   is the most instructive thing the catalog holds, which is why the inputs come down by default here
   even though the client's own default omits them.
-- `reverse_module` (extended) — reconstruct a spec from a compiled artifact, for the modules that
+- `reverse_module` — reconstruct a spec from a compiled artifact, for the modules that
   predate published inputs.
 
 ## After you have published
