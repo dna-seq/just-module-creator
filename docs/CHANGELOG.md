@@ -3,6 +3,38 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased — `compare_to_published` was hashing the local side by a rule nobody publishes
+
+**It normalized newlines on the local side and compared the result against a published
+digest taken over raw bytes.** `manifest.inputs[]` is filled by `file_entries` over the
+bytes on disk — locally and server-side alike, since the registry runs the same compiler —
+and upstream's RM82 docstring says so outright: *"`manifest.inputs[]` is deliberately not
+[normalized] … that field is filled independently, by `file_entries(spec_dir,
+_INPUT_FILES)` over the raw bytes, and the two were only ever equal by coincidence of
+computing the same thing."* Our code comment asserted the opposite and cited a measurement
+that does not reproduce.
+
+The normalization exists for exactly one consumer, the closure attestation
+`verification.module_binding`, so that an editor rewriting line endings cannot un-close a
+module. Borrowing it here inverted its purpose: **it fired on precisely the CRLF-carrying
+files it was meant to protect.** Python's `csv` writes `\r\n`, so 31 of the 34 authored
+CSVs across the eight modules on the production registry are CRLF, and the per-file
+verdict was wrong for effectively every file of every module. The digest printed as
+`local_sha256` matched no bytes anyone had ever recorded — not the file's, not the
+manifest's — so an author could not reconcile it by hand either.
+
+`content` stayed correct throughout and is the governing verdict, which is why this
+surfaced as noise rather than as a wrong answer. But the tool's own note lists "a CRLF"
+among the real differences it tolerates, while here there was no CRLF difference between
+the two files at all: it manufactured the discrepancy and then explained it away.
+
+**The test suite could not see it, for a reason worth keeping.** `test_compare_published`'s
+fixture built its manifest with `authored_input_entries` — the tool's own wrong rule — and
+then confirmed the two agreed. A check whose expected value comes from the thing under test
+measures nothing; that is a rule this repo holds about module data and had broken in its own
+suite. The fixture now uses `file_entries`, which is what a publish writes, and three tests
+fail on the old hasher including the round trip that had always passed.
+
 ## Unreleased — the extended tier stops hiding the way into somebody else's module
 
 **`registry_download`, `reverse_module` and `refresh_sidecar` are in every tier now.**

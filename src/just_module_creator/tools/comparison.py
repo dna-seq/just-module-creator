@@ -393,14 +393,25 @@ def _compare_published(
     if published_files:
         names = sorted(published_files)
         try:
-            # `newline_normalized_file_entries`, NOT `file_entries` — the publisher
-            # hashes through `authored_input_entries`, which normalizes newlines, and
-            # "two tiers must agree on it byte for byte" is upstream's own stated
-            # reason for that function being public. Measured on the HFE reference
-            # example: the raw hasher disagrees with the published entry on two of
-            # three files, so this tool would have reported a byte difference on
-            # every module authored on a machine whose newlines differ, forever.
-            entries = compiler.newline_normalized_file_entries(local, names)
+            # `file_entries`, NOT `newline_normalized_file_entries`. The comment here
+            # used to claim the publisher hashes through `authored_input_entries`,
+            # which normalizes newlines. It does not, and upstream's own RM82
+            # docstring on that function says so in terms: "`manifest.inputs[]` is
+            # deliberately not [newline-normalized] ... that field is filled
+            # independently, by `file_entries(spec_dir, _INPUT_FILES)` over the raw
+            # bytes, and the two were only ever equal by coincidence". The registry
+            # runs the same compiler server-side, so a published entry follows the
+            # same raw rule as a local one — there is no asymmetry to bridge.
+            #
+            # The normalization exists for exactly one consumer, the closure
+            # attestation `verification.module_binding`, so that an editor rewriting
+            # line endings cannot un-close a module. Borrowing it here inverted its
+            # purpose: it fired on precisely the CRLF-carrying files it was meant to
+            # protect, reporting 31 of 34 authored CSVs across eight published
+            # modules as "moved" while they were byte-identical, and printing a
+            # "local" digest matching no bytes anyone ever recorded — so an author
+            # could not reconcile it by hand either.
+            entries = compiler.file_entries(local, names)
         except (OSError, ValueError) as exc:
             entries = []
             unknown.append(
@@ -504,9 +515,9 @@ def _compare_published(
         metadata=metadata,
         unknown=unknown,
         next_step=(
-            f"For row-level detail: `registry_download` {canonical} (extended tier, it fetches "
-            "the authored inputs), then `compare_modules` against this directory. This tool "
-            "deliberately does not download."
+            f"For row-level detail: `registry_download` {canonical} (it fetches the authored "
+            "inputs, and verifies every digest as it goes), then `compare_modules` against "
+            "this directory. This tool deliberately does not download."
             if content != "same"
             else "Nothing to chase: every authored row matches what was published."
         ),

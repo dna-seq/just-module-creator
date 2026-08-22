@@ -12,6 +12,7 @@ whole reason the tool's network work is a separate two lines.
 
 from __future__ import annotations
 
+import hashlib
 import shutil
 from pathlib import Path
 
@@ -36,6 +37,11 @@ def spec(tmp_path: Path) -> Path:
     return target
 
 
+def _authored_names(spec_dir: Path) -> set[str]:
+    """The names a publish records, taken from upstream rather than listed here."""
+    return {e.name for e in compiler.authored_input_entries(spec_dir)}
+
+
 def manifest_of(spec_dir: Path) -> ModuleManifest:
     """A manifest that honestly describes `spec_dir`, built by the publisher's own code."""
     return ModuleManifest.model_validate(
@@ -53,7 +59,18 @@ def manifest_of(spec_dir: Path) -> ModuleManifest:
             # These two are the point, and both are computed from the real spec by
             # the same functions a real publish uses.
             "content_signature": compiler.content_signature(spec_dir),
-            "inputs": [e.model_dump() for e in compiler.authored_input_entries(spec_dir)],
+            # `file_entries` — the RAW hasher — because that is what fills
+            # `manifest.inputs[]` on a real publish, local or server-side. This said
+            # `authored_input_entries` (the newline-normalizing one) until 2026-08-22,
+            # which is the whole reason the CRLF bug below survived: the fixture
+            # manufactured a manifest using the tool's own wrong rule and then
+            # confirmed the two agreed. A check whose expected value comes from the
+            # thing under test measures nothing, which is a rule this repo holds
+            # about module data and had broken in its own suite.
+            "inputs": [
+                e.model_dump()
+                for e in compiler.file_entries(spec_dir, sorted(_authored_names(spec_dir)))
+            ],
         }
     )
 
@@ -145,3 +162,37 @@ def test_a_missing_local_file_is_reported_rather_than_dropped(spec: Path) -> Non
     studies = next(f for f in result.files if f.name == "studies.csv")
     assert studies.verdict in {"moved", "unknown"}
     assert studies.published_sha256 is not None
+
+
+def test_a_crlf_file_that_did_not_change_is_reported_as_same(spec: Path) -> None:
+    """The comparator must hash the local side the way the publisher hashed it.
+
+    It did not. It used `newline_normalized_file_entries`, whose normalization
+    exists for the closure attestation so that rewriting line endings cannot
+    un-close a module — and `manifest.inputs[]` is deliberately raw, which upstream's
+    RM82 docstring states outright. Borrowing the normalizer here inverted its
+    purpose: it fired on exactly the CRLF files it was meant to protect.
+
+    Measured on the eight modules published to the production registry: 31 of the 34
+    authored CSVs carry CRLF, because Python's `csv` module writes `\r\n`, so the
+    per-file verdict was wrong for effectively every file of every module. The digest
+    printed as "local" matched no bytes anyone had ever recorded.
+
+    This asserts the property rather than a digest: unchanged bytes are `same`, and
+    the digest reported for the local side is the digest of the bytes on disk.
+    """
+    crlf = spec / "variants.csv"
+    body = crlf.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+    crlf.write_bytes(body)
+    assert b"\r\n" in crlf.read_bytes(), "the fixture did not end up with CRLF"
+
+    result = compare(spec, manifest_of(spec))
+
+    entry = next(f for f in result.files if f.name == "variants.csv")
+    assert entry.verdict == "same", (
+        f"a byte-identical CRLF file was reported {entry.verdict!r}; "
+        f"local={entry.local_sha256} published={entry.published_sha256}"
+    )
+    assert entry.local_sha256 is not None
+    assert entry.local_sha256.endswith(hashlib.sha256(crlf.read_bytes()).hexdigest())
+    assert result.content == "same"
