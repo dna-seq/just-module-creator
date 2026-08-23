@@ -5,8 +5,8 @@ on our side, so agents in sibling repos are not surprised.
 
 ## 0.20.0 — 2026-08-24
 
-Everything below this heading landed after `v0.19.0` was cut, including the four entries that
-sat under an `Unreleased` heading until this release absorbed them.
+Everything below this heading landed after `v0.19.0` was cut, including the entries that sat under
+an `Unreleased` heading until this release absorbed them.
 
 ### `audit_module`: the offline arithmetic a curation pass had to write by hand (`RM26`)
 
@@ -88,9 +88,12 @@ overrides on two modules and then got `{"total": 0, "entries": []}` from the too
 job is to say what to review.
 
 `source` and `by` are now delimited by the literal key that follows them rather than by a
-character class, so both are free text as they always were on the writing side. **Records
-already written parse now** — this recovers them, it does not orphan a second batch — and a
-verbatim pre-fix marker is a test. Two smaller repairs in the same round trip: the
+character class, so both are free text as they always were on the writing side. **Records already
+written parse now, measured on the real ones rather than on a reconstruction**: the six records that
+run left in `modules_dogfooding/work/*/provenance.json` are **0 of 6 under the old pattern and 6 of 6
+under the new one**. Their source names are exactly the pathological shape — *"module's own prior
+authored value (big_five_personality_snps@2.1.0 as published)"* — spaces, parentheses, `@` and `/` in
+a field the reader thought was `[A-Za-z0-9_.-]+`. A verbatim pre-fix marker is also a test. Two smaller repairs in the same round trip: the
 `Source said:` fragment is split off with `rpartition`, because a justification quoting the
 phrase in its own prose had its sentence read back as the archive's answer; and a newline in
 a handle is collapsed rather than splitting the marker beyond recovery, while a `field` that

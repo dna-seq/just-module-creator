@@ -81,11 +81,10 @@ a file that will not survive a re-publish.
 | `logs/*.log` | the authoring pipeline left a trail | that it is safe to publish unread — logs are swept into every compile with no opt-out |
 
 Two absences say as much as any presence. **No `studies.csv` beside rows that make clinical claims is a
-hole**, not a choice — and the claim-bearing tables are not just `variants.csv`: `diplotypes.csv`,
-`copynumbers.csv`, `repeat_alleles.csv`, `heteroplasmy.csv` and `activity_phenotype.csv` all carry
-`clin_sig`, so a 1,482-row PGx module with no receipts is the same hole. That is what
-`audit_module` computes, over whichever of those tables are present, so you do not have to remember the
-roster. **No `variants.csv` at all is usually correct** — a PGx, binning or pointer module carries none,
+hole**, not a choice — and the claim-bearing tables are not just `variants.csv`. **Every table whose
+model carries `clin_sig` makes a clinical claim**, several of the binning kinds among them, so a PGx
+module with a thousand rows and no receipts is the same hole. Do not carry the list: `audit_module`
+computes the set from the live models and reads whichever of those tables are here. **No `variants.csv` at all is usually correct** — a PGx, binning or pointer module carries none,
 and adding an empty one to tidy the picture is the repair `module-tables` warns against by name.
 
 ## The one call that reads the whole directory at once

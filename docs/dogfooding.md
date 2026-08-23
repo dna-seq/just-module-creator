@@ -140,8 +140,12 @@ marker to `rationale`; the reader's pattern encoded `source=` as `[A-Za-z0-9_.-]
 writer enforced nothing, so a source named `GWAS Catalog` — or `ClinVar 2024-06`, or
 `gnomAD v4.1 (non-neuro)` — was written and then read back as **somebody else's provenance**.
 Hence `total: 0` beside a bucket of flattened strings: not a question that could not be put,
-but a record that could not be recognised as ours. Fixed 2026-08-24; the markers that run
-wrote parse now, so its six records are recoverable rather than lost.
+but a record that could not be recognised as ours. Fixed 2026-08-24, and the recovery is **measured
+on that run's own files** rather than asserted: the six records still sitting in
+`modules_dogfooding/work/*/provenance.json` parse **0 of 6 under the old pattern and 6 of 6 under the
+new one**. Every one of them names its source as something like *"module's own prior authored value
+(big_five_personality_snps@2.1.0 as published)"* — which is a good source name and an impossible
+`[A-Za-z0-9_.-]+`.
 
 **What generalises: a round trip that is only ever tested against the values the test author
 chose is not tested.** Every existing test used `source_name="clinvar"`, which the pattern

@@ -166,6 +166,22 @@ identity of the authored rows; that is the one to compare across an upgrade.
 identically; it has no opinion on whether the biology is right. Read the warnings on a green run —
 they are the interesting output.
 
+`audit_module` asks the other question, offline and over the same files: not *will this build* but
+*what does somebody still have to decide*. Whether `weighting:` says what the `weight` column means.
+Whether a recorded check ran over zero subjects, which reads exactly like a clean one. Whether an
+`effect_size` labelled `beta` is really the Z-statistic of its own p-value. Whether rows asserting a
+clinical significance have a paper behind them.
+
+```
+audit_module(spec_dir="assets/fto_bmi")
+→ decisions: 2 · clear: 2 · not_computed: 1
+  decide  weight_scale — 3 of 3 row(s) carry a weight and nothing says what the scale is
+  decide  checks_that_never_ran — verification.json carries no records at all
+```
+
+It reports and never repairs, and its three lists are three different claims: **`not_computed` is not
+a pass** — the file that signal reads is absent, so nothing about it is established.
+
 **7 — say you are finished.** `close_module` writes the one thing no check can write for you: that a
 person considers this module done, bound to the exact bytes of the files as they stand.
 
