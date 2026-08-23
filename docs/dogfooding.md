@@ -109,7 +109,8 @@ That is what makes this a gap rather than a wish. See `RM26`.
 
 ## F61 — `review_queue` reports nothing to review while holding the evidence
 
-**Found:** 2026-08-21, run 1 · **Severity:** high · **Status:** open, `RM26`.
+**Found:** 2026-08-21, run 1 · **Severity:** high · **Status:** **fixed 2026-08-24**, and the
+cause was not the one this entry assumed.
 
 `review_queue` is introduced as the priority list for a review pass — *"these are the rows
 to start with … the highest-value judgements in the module and the easiest to forget."*
@@ -118,14 +119,26 @@ a fabricated `effect_size`, and every one was written to `provenance.json` and
 `logs/authoring.log`. The tool then returned `{"total": 0, "entries": []}` on both modules,
 with the records shunted into an `other_provenance` bucket of flattened strings.
 
-It is behaving as built, and the cause is documented: the queue's three states are computed
-by comparing the authored cell against the archive's current answer, and only `clin_sig`
-has that answer recorded inside the module, in `clinical_assertions.csv`. But `unknown` is
-one of the queue's own documented states and is explicitly *"not agreement"* — these are
-`unknown` entries, not silence. As it stands the tool reports the exact shape the rest of
-the pack spends thousands of words warning against: **a question that could not be put,
-presented as nothing to answer.** A reviewer opening the corrected module and running the
-tool that exists to say what to review is told there is nothing.
+This entry read the symptom correctly and the cause wrongly, and both halves are worth
+keeping. The reading it proposed — that the queue can only decide `clin_sig` offline, so
+everything else should surface as `unknown` rather than as silence — describes behaviour the
+tool **already had**: `review_queue` emits an entry per record whatever the field, and
+`unknown` is one of its three documented states. `RM26` inherited the misreading and proposed
+widening a thing that was not narrow.
+
+**The actual defect was a codec that disagreed with itself.** `record_override` appends a
+marker to `rationale`; the reader's pattern encoded `source=` as `[A-Za-z0-9_.-]+` and the
+writer enforced nothing, so a source named `GWAS Catalog` — or `ClinVar 2024-06`, or
+`gnomAD v4.1 (non-neuro)` — was written and then read back as **somebody else's provenance**.
+Hence `total: 0` beside a bucket of flattened strings: not a question that could not be put,
+but a record that could not be recognised as ours. Fixed 2026-08-24; the markers that run
+wrote parse now, so its six records are recoverable rather than lost.
+
+**What generalises: a round trip that is only ever tested against the values the test author
+chose is not tested.** Every existing test used `source_name="clinvar"`, which the pattern
+accepted. Ask of a green round-trip what §6 asks of a green fixture — could this have
+failed? Four of the five source names in the new parametrization would have failed before
+the fix, and every one of them is a string somebody would actually type.
 
 ## F62 — `compile_module` accepts an output directory that makes the spec unpublishable
 

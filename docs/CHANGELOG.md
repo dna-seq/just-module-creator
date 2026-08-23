@@ -9,6 +9,25 @@ These landed after the tag, so `v0.19.0`'s tree does not contain them. Kept in t
 section rather than backdated into the release above, because a changelog entry that a
 tagged tree does not carry is exactly the drift this file's own prose rules exist to catch.
 
+### `review_queue` was losing its own records to a space in a source name (`F61`)
+
+`record_override` appends a machine-readable marker to `ProvenanceItem.rationale`, carrying
+the digest, the source and the timestamp that upstream's schema has no room for. The reader's
+pattern encoded `source=` as `[A-Za-z0-9_.-]+`, and nothing on the writing side enforced that
+— so `source_name="GWAS Catalog"` was written happily, failed to parse on the way back, and
+the record was reported as **somebody else's provenance**. An unattended run recorded six
+overrides on two modules and then got `{"total": 0, "entries": []}` from the tool whose whole
+job is to say what to review.
+
+`source` and `by` are now delimited by the literal key that follows them rather than by a
+character class, so both are free text as they always were on the writing side. **Records
+already written parse now** — this recovers them, it does not orphan a second batch — and a
+verbatim pre-fix marker is a test. Two smaller repairs in the same round trip: the
+`Source said:` fragment is split off with `rpartition`, because a justification quoting the
+phrase in its own prose had its sentence read back as the archive's answer; and a newline in
+a handle is collapsed rather than splitting the marker beyond recovery, while a `field` that
+is not a column name is refused rather than written into a published file unreadable.
+
 ### A second `enrich_module` on a directory already being enriched now refuses
 
 The one data-integrity finding in either run, and it is fixed rather than warned about.

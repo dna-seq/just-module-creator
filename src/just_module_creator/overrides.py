@@ -59,19 +59,29 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from just_dna_format.manifest import ProvenanceDoc, ProvenanceItem
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 PROVENANCE_FILE = "provenance.json"
 GENERATOR = "just-module-creator"
 
 #: Appended to `rationale`. Machine fields only — the prose before it is the
 #: reason a human reads, and nothing is encoded twice.
+#:
+#: **`source` and `by` are free text and the pattern must not pretend otherwise.**
+#: It read ``source=[A-Za-z0-9_.-]+`` until 2026-08-24, so a source named with a
+#: space — `GWAS Catalog`, `ClinVar 2024-06` — was written happily and then failed
+#: to parse on the way back: the record became somebody else's provenance, and
+#: `review_queue` reported nothing to review while holding it. That is `F61`,
+#: measured on two real modules. Both fields are now delimited by the literal key
+#: that follows them rather than by a character class, which parses every marker
+#: already written as well as the ones that used to be unreadable — the records
+#: from that run are recoverable, not lost.
 _MARKER = re.compile(
     r"\s*\[jmc field=(?P<field>[A-Za-z0-9_]+)"
     r" value_sha256=(?P<digest>[0-9a-f]{12})"
-    r" source=(?P<source>[A-Za-z0-9_.-]+)"
+    r" source=(?P<source>.+?)"
     r" recorded=(?P<at>[0-9TZ:.-]+)"
-    r" by=(?P<by>[^\]]+)\]"
+    r" by=(?P<by>.+?)\]\s*$"
 )
 
 
@@ -111,6 +121,36 @@ class OverrideRecord(BaseModel):
         "about most first passes, and a reviewer routes their scrutiny by it.",
     )
     value_sha256: str = Field(default="", description="Digest of `authored_value` when recorded.")
+
+    @field_validator("source_name", "recorded_by")
+    @classmethod
+    def _one_line(cls, value: str) -> str:
+        """Collapse whitespace, because the marker is a single line and a newline in
+        one of these two fields would split it beyond recovery.
+
+        Collapsing rather than refusing: a stray newline in a pasted handle is not a
+        decision anybody made, and the value survives it. `]` needs no handling — the
+        pattern is anchored on the end of the rationale, so a bracket inside either
+        field parses back as part of it.
+        """
+        return " ".join(value.split())
+
+    @field_validator("field")
+    @classmethod
+    def _identifier(cls, value: str) -> str:
+        """A column name, and the marker encodes it as one.
+
+        Refused rather than collapsed: unlike a handle, a `field` that is not a column
+        name means the record is attached to nothing, and writing it would put an
+        unreadable marker in a published file.
+        """
+        name = value.strip()
+        if not name.replace("_", "").isalnum() or not name:
+            raise ValueError(
+                f"`field` is a column name and must be an identifier; got {value!r}. "
+                "Call describe_table to see what this table's columns are called."
+            )
+        return name
 
     def bound_to(self, current_value: str | None) -> bool:
         """Does this record still justify what is in the cell today?"""
@@ -171,7 +211,11 @@ def from_items(items: Sequence[ProvenanceItem]) -> tuple[list[OverrideRecord], l
         reason = rationale[: match.start()].rstrip()
         source_value: str | None = None
         if " Source said: " in reason:
-            reason, _, tail = reason.partition(" Source said: ")
+            # `rpartition`: the fragment is APPENDED by `to_items`, so it is the last
+            # occurrence that is ours. A reason quoting the phrase — "the source said:
+            # …" is a natural thing to write in a justification — would otherwise be
+            # split at its own prose and the tail read back as what the archive said.
+            reason, _, tail = reason.rpartition(" Source said: ")
             source_value = tail.rstrip(".") or None
         records.append(
             OverrideRecord(

@@ -293,3 +293,117 @@ async def test_an_empty_module_has_an_empty_queue(essentials_client, module: Pat
     out = await essentials_client.call_tool("review_queue", {"spec_dir": str(module)})
     assert out.data.total == 0
     assert out.data.entries == []
+
+
+# --------------------------------------------------------------------------- #
+# F61 — the record that was written and then read back as somebody else's
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    "source_name",
+    [
+        "clinvar",
+        "GWAS Catalog",
+        "ClinVar 2024-06",
+        "gnomAD v4.1 (non-neuro)",
+        "the row's own p-value",
+    ],
+)
+def test_a_source_named_with_a_space_survives_the_round_trip(source_name: str):
+    """`F61`: the marker used to encode `source` as `[A-Za-z0-9_.-]+`.
+
+    Every one of these is a source somebody would actually type, and every one of
+    them was written to `provenance.json` happily and then failed to parse on the
+    way back — so the record became *foreign* provenance, `review_queue` returned
+    `{"total": 0}`, and a reviewer opening the module was told there was nothing to
+    review while the evidence sat in the file beside them.
+
+    Written as a round-trip rather than a regex assertion, because the defect was
+    precisely that the writer and the reader disagreed and neither was wrong alone.
+    """
+    record = _record(source_name=source_name)
+    back, foreign = overrides.from_items(overrides.to_items([record]))
+    assert foreign == []
+    assert len(back) == 1
+    assert back[0].source_name == source_name
+    assert back[0].source_value == "benign"
+    assert back[0].value_sha256 == value_digest("risk_factor")
+
+
+def test_markers_already_written_still_parse():
+    """The loosened pattern must recover records, not orphan a second batch.
+
+    This rationale is verbatim what the pre-fix writer produced, pasted rather than
+    generated: a test that builds the string with `to_items` would agree with
+    whatever the writer does today and could never fail.
+    """
+    item = ProvenanceItem(
+        variant_key="rs1801133",
+        rationale=(
+            "The 2021 meta-analysis restores the association. Source said: benign. "
+            "[jmc field=clin_sig value_sha256=0d1e2f3a4b5c source=clinvar "
+            "recorded=2026-08-21T04:17:09Z by=ai-module-creator]"
+        ),
+        human_reviewed=False,
+    )
+    back, foreign = overrides.from_items([item])
+    assert foreign == []
+    assert back[0].source_name == "clinvar"
+    assert back[0].recorded_by == "ai-module-creator"
+    assert back[0].recorded_at == "2026-08-21T04:17:09Z"
+    assert back[0].reason == "The 2021 meta-analysis restores the association."
+
+
+def test_a_reason_that_quotes_the_phrase_keeps_its_own_prose():
+    """`Source said:` is appended, so the LAST occurrence is ours.
+
+    "the source said: X" is a natural sentence in a justification. Splitting on the
+    first occurrence read the author's own prose back as the archive's answer.
+    """
+    record = _record(
+        reason="ClinVar's summary said: pathogenic, but the submitter withdrew it in 2024.",
+        source_value="pathogenic",
+    )
+    back, foreign = overrides.from_items(overrides.to_items([record]))
+    assert foreign == []
+    assert back[0].reason == (
+        "ClinVar's summary said: pathogenic, but the submitter withdrew it in 2024."
+    )
+    assert back[0].source_value == "pathogenic"
+
+
+def test_a_newline_in_a_handle_is_collapsed_rather_than_breaking_the_marker():
+    record = _record(recorded_by="ai-module-creator\n(overnight run)")
+    back, foreign = overrides.from_items(overrides.to_items([record]))
+    assert foreign == []
+    assert back[0].recorded_by == "ai-module-creator (overnight run)"
+
+
+def test_a_field_that_is_not_a_column_name_is_refused_rather_than_written():
+    """Refused, not collapsed: a marker that cannot be read is published verbatim."""
+    with pytest.raises(ValueError, match="column name"):
+        _record(field="clin sig")
+
+
+@pytest.mark.anyio
+async def test_the_queue_holds_a_record_whose_source_has_a_space_in_its_name(
+    essentials_client, module: Path
+):
+    """`F61` end to end, through the two tools rather than through the codec."""
+    await essentials_client.call_tool(
+        "record_override",
+        {
+            "spec_dir": str(module),
+            "variant_key": "rs1801133",
+            "field": "weight",
+            "authored_value": "-0.5",
+            "source_name": "GWAS Catalog",
+            "source_value": "-1.0",
+            "reason": "the published beta is per-allele; this row is the homozygote",
+            "recorded_by": "ai-module-creator",
+        },
+    )
+    out = await essentials_client.call_tool("review_queue", {"spec_dir": str(module)})
+    assert out.data.other_provenance == []
+    assert out.data.total == 1
+    assert out.data.entries[0].record.source_name == "GWAS Catalog"
+    assert out.data.entries[0].mismatch_state == "unknown"
