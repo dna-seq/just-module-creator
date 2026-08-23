@@ -446,35 +446,3 @@ caveat is prose. That argues for the second shape, or for both.
 `review_queue` is part of this entry rather than a separate one: `F61` is the same defect
 seen from the far end, and widening it to emit `unknown` entries for fields whose archive
 answer is not in the module is a smaller change than a new tool.
-
-## RM27 — check the conclusion against the row it sits on
-
-**Severity:** medium · **Status:** open · **Owner:** unassigned · **Opened** 2026-08-22
-
-`conclusion` is the sentence a person reads about themselves, it is `required: true`, and
-nothing checks it against anything — including the other cells on its own row. `lint_rows`
-was given twelve real rows in run 2 and returned zero errors and zero warnings while four of
-them said something that contradicts the row they are on: a homozygous-alt row opening with
-the reference homozygote's sentence, a `risk` state under prose reading *"is not
-increased"*, and two rows whose conclusions are byte-identical under different genotypes.
-
-**This proposal is unusually well founded for a roadmap entry, because that run implemented
-it and measured it.** Over 1,418 rows in six modules, the rule "the conclusion names a
-genotype token built from alleles that appear at **this rsID's own locus**" found 20 rows,
-of which roughly twelve are real and six severe — one module has the `C/C` and `A/A`
-conclusions swapped at a locus where all three rows carry `state: neutral, weight: 0.0`,
-and another scores `T/T` as `protective, +1.2` under text saying `GG` is protective. Measured
-precision about 60%, **which is why the recommendation is `warning` and not `error`**. The
-locus constraint is what makes it usable: an earlier version flagged `"TG"` inside *"raised
-plasma triglyceride (TG) levels"*, and requiring the token to be built from alleles at that
-site excludes it by construction.
-
-A second rule — two rows at one rsID carrying identical conclusions under different
-`state`/`weight` — found 492 groups, 480 of them in one GWAS port where a heterozygote and a
-homozygote share one sentence and differ only in dose. **That one is a question rather than a
-defect**, and the point is that nothing raises it and the author has no way to record having
-decided it. File it as a hint, not a warning.
-
-`module-curate` names the conclusion as a cell only a pilot may settle, which is right and
-is not in tension with this: "only a human may write it" is not "nothing may check it", and
-the plugin currently treats them as the same.

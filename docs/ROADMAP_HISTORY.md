@@ -9,6 +9,81 @@ here: it is filed upstream as an `S<n>` and tracked in
 
 ---
 
+## RM27 — check the conclusion against the row it sits on
+
+**Severity:** medium · **Status: CLOSED 2026-08-24 — shipped, both rules, and the measurement
+reproduces exactly.** · **Opened** 2026-08-22
+
+`conclusion` is the sentence a person reads about themselves, it is `required: true`, and
+nothing checks it against anything — including the other cells on its own row. `lint_rows`
+was given twelve real rows in run 2 and returned zero errors and zero warnings while four of
+them said something that contradicts the row they are on: a homozygous-alt row opening with
+the reference homozygote's sentence, a `risk` state under prose reading *"is not
+increased"*, and two rows whose conclusions are byte-identical under different genotypes.
+
+**This proposal is unusually well founded for a roadmap entry, because that run implemented
+it and measured it.** Over 1,418 rows in six modules, the rule "the conclusion names a
+genotype token built from alleles that appear at **this rsID's own locus**" found 20 rows,
+of which roughly twelve are real and six severe — one module has the `C/C` and `A/A`
+conclusions swapped at a locus where all three rows carry `state: neutral, weight: 0.0`,
+and another scores `T/T` as `protective, +1.2` under text saying `GG` is protective. Measured
+precision about 60%, **which is why the recommendation is `warning` and not `error`**. The
+locus constraint is what makes it usable: an earlier version flagged `"TG"` inside *"raised
+plasma triglyceride (TG) levels"*, and requiring the token to be built from alleles at that
+site excludes it by construction.
+
+A second rule — two rows at one rsID carrying identical conclusions under different
+`state`/`weight` — found 492 groups, 480 of them in one GWAS port where a heterozygote and a
+homozygote share one sentence and differ only in dose. **That one is a question rather than a
+defect**, and the point is that nothing raises it and the author has no way to record having
+decided it. File it as a hint, not a warning.
+
+`module-curate` names the conclusion as a cell only a pilot may settle, which is right and
+is not in tension with this: "only a human may write it" is not "nothing may check it", and
+the plugin currently treats them as the same.
+
+> **Shipped in `authored_checks.py`, surfaced through `lint_rows("variants.csv", …)` and
+> `validate_module`'s `authored_findings`.** Both entry points were already plumbed for the
+> repeated-quote rule from `RM17`; this widened them from `studies.csv` to both tables.
+>
+> **The measurement was reproduced before the rule was believed.** The six curated modules
+> are still on disk in `just-dna-lite/data/interim/v1_port/`, so the implementation was run
+> over the same 1,418 rows rather than written from the prose: **20 rows on rule 1 and 492
+> groups on rule 2, per module identical to the published table.** That is what makes the
+> quoted ~60% precision a property of *this* code rather than of a script nobody kept.
+>
+> **One thing the run's numbers taught that its prose did not.** A first pass here also matched
+> the *slashed* spelling — `C/A`, the one `genotype` itself uses — and got 24 instead of 20. All
+> four extras were the same sentence: `"rs2943634 C/A single nucleotide polymorphism"`,
+> `"Two SNPs, rs1042718 (C/A) and rs1042719 (G/C)"`. In prose the slashed form names *the SNP's
+> alleles*; only a doubled bare letter is unambiguously a claim about somebody's genotype. So the
+> matcher is bare-token-only, and the reason is in its docstring — the count is the evidence, not
+> the authority.
+>
+> **Levels are as the roadmap specified and for its stated reason.** Rule 1 is a `warning`
+> because precision is ~60% and a rule right six times in ten belongs in front of a reviewer,
+> not in front of a compile; rule 2 is `info` and aggregated into **one** finding for the table,
+> because 480 of its 492 groups were one module and a finding per group is the spam aggregation
+> exists to prevent. Rule 1 aggregates per rsID: a swapped pair is one decision, not two.
+>
+> **The third rule from `D14` — `state: risk` under prose containing a negation — was NOT
+> built.** It is cited as motivation in both the finding and this entry, and it was never
+> implemented and never measured. Adding it on the strength of four hand-read rows would put an
+> unmeasured precision behind a rule whose sibling needed its precision measured to pick a level.
+>
+> **`module-curate` said "Nothing checks a conclusion" and now says what the two rules do and do
+> not reach**, in the same commit — an enforcement claim with its surface named, per §8.
+>
+> **Reversal recipe**, if the warning turns out to be noise in the field: delete
+> `conclusion_genotype_findings` / `shared_conclusion_findings` and their constants from
+> `authored_checks.py`, restore `findings_for_csv_text` and `findings_for_spec_dir` to
+> `studies.csv` only, drop the `RM27` block from `tests/test_authored_checks.py`, and restore the
+> two paragraphs in `skills/module-curate/SKILL.md` and the `lint_rows` docstring. Nothing else
+> reads them, and no artifact carries them: these are findings, never cells.
+
+
+---
+
 ## RM23 — five literature sources where twenty-five exist
 
 **Severity:** medium · **Status: CLOSED 2026-08-20 — shipped in 0.14.0 as a PORT, not a dependency

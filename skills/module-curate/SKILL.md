@@ -71,6 +71,10 @@ lint_rows("variants.csv", "rsid,genotype,state,conclusion\nrs1801133,A/G,risk,�
 Read all three levels. `error` blocks a compile. `warning` does not — **and several of the traps on
 this page arrive only as warnings.** `info` names the columns left to you.
 
+Findings carry a `source`, and it is worth reading: `upstream` is the compiler's own, and
+`just-module-creator` is one this layer computed, which does not block a compile whatever its level.
+On `variants.csv` those are the two conclusion rules — see *What this stage cannot do*.
+
 ## The one pairing that must stay independent
 
 `rsid`, `chrom`, `start`, `ref`, `alts`, `clin_sig`, `doi`, `acmg_sf`, `function_status`,
@@ -288,8 +292,15 @@ authored being removed. None of these has a judgement in it and nothing re-check
 
 ## What this stage cannot do
 
-**Nothing checks a conclusion.** No tool reads the prose, compares it to the rows, or notices when it
-stops being true.
+**Almost nothing checks a conclusion, and the two rules that do are narrow.** `lint_rows` and
+`validate_module` now read `variants.csv` prose against the cells beside it, and only for two shapes:
+a conclusion naming a genotype token built from alleles at **this rsID's own locus** that is not the
+row's own (a `warning`, and roughly six in ten are real — the rest are comparative or quoted prose),
+and one conclusion shared by genotypes that score differently (an `info`, because it is a question:
+one association sentence over a het and a hom is reasonable when only the dose differs, and nothing
+records that you decided it). Everything else about the prose is unchecked — whether it is true,
+whether it matches the paper, whether it still holds after the rows around it changed. Neither rule
+blocks a compile and neither is a substitute for reading the sentence.
 
 **Nothing catches an off-by-one offline.** Every gate below the enricher passes a shifted module.
 

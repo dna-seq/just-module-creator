@@ -9,6 +9,36 @@ These landed after the tag, so `v0.19.0`'s tree does not contain them. Kept in t
 section rather than backdated into the release above, because a changelog entry that a
 tagged tree does not carry is exactly the drift this file's own prose rules exist to catch.
 
+### Two checks over `conclusion`, the required cell nothing compared to anything (`RM27`)
+
+`conclusion` is the sentence a person reads about themselves. It is `required: true`, and until now
+no gate anywhere read it — an unattended run handed `lint_rows` twelve real rows and got zero errors
+and zero warnings while four of them described a different genotype than the one they sit on.
+
+Two rules, both in `authored_checks.py`, both reaching `lint_rows("variants.csv", …)` and
+`validate_module`'s `authored_findings`:
+
+* **A conclusion naming a genotype that is not the row's own — `warning`.** The token has to be
+  buildable from alleles that occur at *this rsID's own locus*, which is what makes the rule usable:
+  it excludes `TG` inside "raised plasma triglyceride (TG) levels" by construction rather than by a
+  stop-list. Aggregated per rsID, since a swapped pair is one decision.
+* **One conclusion shared by genotypes that score differently — `info`.** A question rather than a
+  defect: one association sentence over a het and a hom is reasonable when only the dose differs, and
+  the point is that nothing asked. One finding for the table, not one per group.
+
+**Both counts were reproduced before the code was believed.** The six curated modules the rule was
+measured on are still on disk, so it was run over the same 1,418 rows: **20 rows and 492 groups,
+per module identical to the published table.** That also settled a design question the prose could
+not — matching the slashed spelling too gives 24, and all four extras are the same sentence, where
+`C/A` names *the SNP's alleles* rather than anybody's genotype. So only the bare doubled form is
+matched.
+
+Rule 1's level is the measurement's doing: precision is roughly 60%, the remainder being comparative
+or quoted prose, and a rule right six times in ten belongs in front of a reviewer rather than in
+front of a compile. Neither finding blocks anything, and both carry
+`source: "just-module-creator"`. `module-curate` said *"Nothing checks a conclusion"* and now says
+what these two reach and what they do not.
+
 ### `review_queue` was losing its own records to a space in a source name (`F61`)
 
 `record_override` appends a machine-readable marker to `ProvenanceItem.rationale`, carrying

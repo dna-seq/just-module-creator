@@ -19,9 +19,11 @@ import pytest
 
 from just_module_creator.authored_checks import (
     OURS,
+    conclusion_genotype_findings,
     findings_for_csv_text,
     findings_for_spec_dir,
     repeated_quote_findings,
+    shared_conclusion_findings,
 )
 
 TITLE = "Genome-wide association study of proneness to anger."
@@ -192,3 +194,158 @@ async def test_an_authored_finding_does_not_change_validity(essentials_client, s
     assert before.data.valid == after.data.valid
     assert before.data.authored_findings == []
     assert len(after.data.authored_findings) == 1
+
+
+# --------------------------------------------------------------------------- #
+# `RM27` — the conclusion against the row it sits on
+# --------------------------------------------------------------------------- #
+#: `rs17514846` is the FURIN/FES coronary-artery-disease variant, and the rows below
+#: are the real ones from the module the rule was measured on: the `C/C` and `A/A`
+#: conclusions are swapped, and all three rows read `neutral, 0.0` — so nothing else
+#: in the module distinguishes them either.
+SWAPPED = (
+    "rsid,genotype,weight,state,conclusion\n"
+    "rs17514846,C/C,0.0,neutral,AA genotype is associated with an increased risk of CAD\n"
+    "rs17514846,A/C,0.0,neutral,Heterozygous carriers show an intermediate association\n"
+    "rs17514846,A/A,0.0,neutral,CC genotype is NOT associated with an increased risk of CAD\n"
+)
+
+
+def _variant_rows(text: str):
+    import csv
+    import io
+
+    return list(csv.DictReader(io.StringIO(text)))
+
+
+def test_a_swapped_pair_of_conclusions_is_reported_once_for_the_locus():
+    findings = conclusion_genotype_findings(_variant_rows(SWAPPED))
+    assert len(findings) == 1, "one decision per locus, not one per row"
+    assert findings[0].level == "warning", "measured precision is ~60%; an error would be a lie"
+    assert findings[0].source == OURS
+    assert "rs17514846" in findings[0].message
+    assert "C/C names AA" in findings[0].message
+    assert "A/A names CC" in findings[0].message
+
+
+def test_a_conclusion_naming_its_own_genotype_is_not_reported():
+    text = (
+        "rsid,genotype,weight,state,conclusion\n"
+        "rs17514846,C/C,0.0,neutral,CC genotype is NOT associated with an increased risk of CAD\n"
+        "rs17514846,A/A,0.0,neutral,AA genotype is associated with an increased risk of CAD\n"
+    )
+    assert conclusion_genotype_findings(_variant_rows(text)) == []
+
+
+def test_a_two_letter_word_that_is_not_an_allele_at_this_locus_is_left_alone():
+    """The false positive that killed the first version of this rule.
+
+    `TG` in "raised plasma triglyceride (TG) levels" is genotype-shaped, and at a
+    site whose alleles are C and G it cannot be a genotype. The locus constraint
+    excludes it by construction rather than by a stop-list — so the same sentence
+    IS flagged at a T/G site, which is the second half of the property.
+    """
+    at_cg = (
+        "rsid,genotype,weight,state,conclusion\n"
+        "rs1260326,C/C,0.1,risk,Associated with raised plasma triglyceride (TG) levels\n"
+        "rs1260326,C/G,0.1,risk,Associated with raised plasma triglyceride (TG) levels\n"
+    )
+    assert conclusion_genotype_findings(_variant_rows(at_cg)) == []
+
+    at_tg = at_cg.replace("C/C", "T/T").replace("C/G", "T/G")
+    assert len(conclusion_genotype_findings(_variant_rows(at_tg))) == 1
+
+
+def test_the_slashed_spelling_in_prose_is_the_snps_alleles_and_is_not_matched():
+    """`C/A` in a conclusion names the SNP, not a genotype — the measured case.
+
+    All four findings this spelling added across the six-module corpus were this one
+    sentence, on rows whose prose was otherwise right.
+    """
+    text = (
+        "rsid,genotype,weight,state,conclusion\n"
+        "rs2943634,A/A,0.3,protective,rs2943634 C/A SNP has been associated with CAD. "
+        "AA-carriers have lower risk\n"
+        "rs2943634,C/C,-0.3,risk,rs2943634 C/A SNP has been associated with CAD. "
+        "CC-carriers have higher risk\n"
+    )
+    assert conclusion_genotype_findings(_variant_rows(text)) == []
+
+
+def test_a_row_whose_genotype_cannot_be_read_gets_no_opinion():
+    """A star allele is not a base pair, and a check that cannot run has not passed."""
+    text = (
+        "rsid,genotype,weight,state,conclusion\n"
+        "rs3892097,*4/*4,0.0,neutral,CC genotype is the normal metabolizer\n"
+        "rs3892097,C/C,0.0,neutral,CC genotype is the normal metabolizer\n"
+    )
+    assert conclusion_genotype_findings(_variant_rows(text)) == []
+
+
+def test_one_conclusion_across_genotypes_that_score_differently_is_a_question():
+    text = (
+        "rsid,genotype,weight,state,conclusion\n"
+        "rs4880,C/C,0.0,neutral,MnSOD activity varies with this polymorphism\n"
+        "rs4880,C/T,0.4,risk,MnSOD activity varies with this polymorphism\n"
+        "rs4880,T/T,0.8,risk,MnSOD activity varies with this polymorphism\n"
+    )
+    findings = shared_conclusion_findings(_variant_rows(text))
+    assert len(findings) == 1
+    assert findings[0].level == "info", "a question the author has not been asked, not a defect"
+    assert "rs4880" in findings[0].message
+
+
+def test_one_conclusion_across_genotypes_that_score_the_SAME_is_not_raised():
+    """Nothing to decide: the reader sees one sentence and one number."""
+    text = (
+        "rsid,genotype,weight,state,conclusion\n"
+        "rs4880,C/T,0.4,risk,MnSOD activity varies with this polymorphism\n"
+        "rs4880,T/T,0.4,risk,MnSOD activity varies with this polymorphism\n"
+    )
+    assert shared_conclusion_findings(_variant_rows(text)) == []
+
+
+def test_the_second_rule_is_one_finding_however_many_groups_there_are():
+    """480 of 492 measured groups were in one module. Per-group would be the spam."""
+    rows = [
+        {
+            "rsid": f"rs{1000000 + n}",
+            "genotype": genotype,
+            "weight": weight,
+            "state": "risk",
+            "conclusion": "Associated with the trait",
+        }
+        for n in range(40)
+        for genotype, weight in (("C/T", "0.4"), ("T/T", "0.8"))
+    ]
+    findings = shared_conclusion_findings(rows)
+    assert len(findings) == 1
+    assert findings[0].message.startswith("40 rsID(s)")
+    assert "and 35 more" in findings[0].message
+
+
+# --------------------------------------------------------------------------- #
+# Wiring: both surfaces carry the conclusion findings too
+# --------------------------------------------------------------------------- #
+@pytest.mark.anyio
+async def test_lint_rows_carries_the_conclusion_warning_on_variants(essentials_client):
+    out = await essentials_client.call_tool(
+        "lint_rows", {"csv_name": "variants.csv", "csv_text": SWAPPED}
+    )
+    ours = [f for f in out.data.findings if f.source == OURS]
+    assert len(ours) == 1
+    assert ours[0].level == "warning"
+    assert out.data.warnings >= 1, "the count must include ours"
+
+
+@pytest.mark.anyio
+async def test_validate_module_carries_them_from_variants_csv_too(
+    essentials_client, spec_dir: Path
+):
+    (spec_dir / "variants.csv").write_text(SWAPPED)
+    out = await essentials_client.call_tool(
+        "validate_module", {"spec_dir": str(spec_dir), "strict": False}
+    )
+    ours = [f for f in out.data.authored_findings if f.column == "conclusion"]
+    assert len(ours) == 1
+    assert ours[0].source == OURS

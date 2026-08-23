@@ -885,6 +885,17 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         author independently, since filling it from the source that later checks it
         makes that check vacuous. `describe_table` names the columns under
         `redundancy_bearing`.
+
+        **Read `source` on each finding.** `upstream` is the compiler's own, carried
+        across field-for-field; `just-module-creator` is one this layer computed, and
+        it never blocks a compile whatever its level. On `variants.csv` those are two
+        rules over `conclusion`, the only cell in the format a person reads about
+        themselves and the only required one nothing else compares to anything: a
+        `warning` where the prose names a genotype built from alleles at that rsID's
+        own locus that is not the row's own — roughly six in ten are real, the rest
+        comparative or quoted prose, which is why it is not an error — and an `info`
+        where genotypes that score differently share one sentence, which is a question
+        rather than a defect. On `studies.csv` it is the repeated-quote shape.
         """
         _refuse_spec_file(csv_name)
         name = known_kind(csv_name, draft.DRAFTABLE, _PRODUCED_CSVS)
