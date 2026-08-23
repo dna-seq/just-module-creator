@@ -3,11 +3,49 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## Unreleased — after v0.19.0 was cut
+## 0.20.0 — 2026-08-24
 
-These landed after the tag, so `v0.19.0`'s tree does not contain them. Kept in their own
-section rather than backdated into the release above, because a changelog entry that a
-tagged tree does not carry is exactly the drift this file's own prose rules exist to catch.
+Everything below this heading landed after `v0.19.0` was cut, including the four entries that
+sat under an `Unreleased` heading until this release absorbed them.
+
+### `audit_module`: the offline arithmetic a curation pass had to write by hand (`RM26`)
+
+Every other gate here answers *"will this build?"*. Two unattended curation passes over eighteen real
+modules found **every** genuine defect by writing Python over the CSVs, while `validate_module`,
+`compile_module`, `lint_rows`, `registry_check` and `registry_validate` all returned green — correctly,
+because the modules built. `audit_module` asks the other question, offline, over the same files.
+
+Five signals: whether `weighting:` says what the `weight` column means (in both directions, since an
+empty weight column and a deliberately unweighted module are the same bytes); whether any recorded
+check ran over zero subjects or was skipped; whether a check counted disagreements and kept none of
+them; whether an `effect_size` is really the Z-statistic of its own p-value under a label saying
+otherwise; and whether rows asserting a clinical significance have any paper behind them — over every
+table the models say can carry `clin_sig`, not `variants.csv` alone. Plus a per-column fill count for
+every authored table, which is data rather than a decision and lives in its own field.
+
+**The output is three lists and the third is the point.** `decisions` is what somebody must choose;
+`clear` computed and found nothing; **`not_computed` is not a pass** — the file that signal reads is
+absent, and each entry says which and so what. It reports and never repairs, and a signal is not a
+verdict: a module raising one is out of date or undeclared, never broken.
+
+**Validated against the corpora that produced the complaint rather than against fixtures.** It
+reproduces `superhuman`'s 190 empty weights, the six curated modules' undeclared scale, the 52
+`detail: null` findings split 20/32 across `cancer` and `pathogenic`, and `clinical_significance` at
+`subjects: 0` on all eight of the other corpus. It also finds seven rows a hand-repair pass missed —
+still labelled `beta` while carrying the Z of their own p-value. The discriminator is clean at that
+tolerance: 573 genuine betas do not match, 8 do, no OR matches, and all 296 rows already labelled `Z`
+do.
+
+Named in `module-check` and `module-status` rather than in `server.INSTRUCTIONS`, which has 49
+characters of headroom under its ceiling. `validate_module`'s docstring now says out loud that a green
+answer means the module builds and nothing more.
+
+### `pyyaml` is a declared dependency, and `S74` is why it has to be
+
+`compare.py` has always called `yaml.safe_load` on `module_spec.yaml` and leaned on a transitive pin;
+`audit.py` does the same. Both do it because `compiler._load_yaml` is private and nothing public
+returns a `ModuleSpecConfig` — filed upstream as format-tree `S74`, tracked here as `F67`. Declared for the same reason
+`httpx` is: a transitive pin is not a contract.
 
 ### Two checks over `conclusion`, the required cell nothing compared to anything (`RM27`)
 

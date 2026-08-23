@@ -568,6 +568,73 @@ class ValidationReport(BaseModel):
     stats: dict = Field(description="Variant/study/gene counts and table row counts.")
 
 
+class AuditSignal(BaseModel):
+    """One offline signal, and which of the three things it has to say.
+
+    **`state` is three-valued and the third value is the point.** `decide` means a
+    person has to choose something; `clear` means the signal computed and there is
+    nothing to choose; `not_computed` means the files this reads are not here, which
+    is **not** the same as nothing to decide. Collapsing the last two is how a
+    question that could not be put gets presented as nothing to answer.
+    """
+
+    name: str = Field(description="Stable slug for this signal — safe to match on.")
+    state: str = Field(description="decide | clear | not_computed.")
+    headline: str = Field(description="One sentence. On `decide`, the choice somebody must make.")
+    detail: list[str] = Field(
+        default_factory=list,
+        description="Per-item lines, aggregated and capped. Empty on `clear` and `not_computed`.",
+    )
+    why_not: str | None = Field(
+        default=None,
+        description="Only on `not_computed`: which file was missing or unreadable, and so what.",
+    )
+
+
+class ColumnFill(BaseModel):
+    """How full one column of one authored table is. Data, never a decision."""
+
+    csv: str = Field(description="The authored table.")
+    column: str = Field(description="The column.")
+    rows: int = Field(description="Rows in the table.")
+    filled: int = Field(description="Rows where this column is non-empty after stripping.")
+
+
+class AuditReport(BaseModel):
+    """What an offline curation pass would otherwise have had to compute by hand.
+
+    **This reports and never repairs, and it is a decision list rather than a
+    findings dump.** A disagreement is not a defect report: several of these signals
+    have honest explanations, and a module that raises one is out of date or
+    undeclared, not broken. Nothing here moves whether the module compiles.
+    """
+
+    spec_dir: str
+    decisions: list[AuditSignal] = Field(
+        description="Signals where somebody has to choose. This is the list to read first."
+    )
+    clear: list[AuditSignal] = Field(
+        description="Signals that computed and found nothing to decide."
+    )
+    not_computed: list[AuditSignal] = Field(
+        description=(
+            "Signals whose input files are absent or unreadable. **Not a pass.** Each carries "
+            "`why_not`, because a check that could not run is not a check that ran clean."
+        )
+    )
+    fill: list[ColumnFill] = Field(
+        default_factory=list,
+        description=(
+            "Per-column fill counts for every authored table present. Data rather than a "
+            "signal: nobody has to decide anything about a count, and a person reading one "
+            "decides something, which is theirs. Empty when `fill=false`."
+        ),
+    )
+    note: str = Field(
+        description="What this pass is and, more importantly, what it is not evidence of."
+    )
+
+
 class CompileReport(BaseModel):
     """Outcome of a compile: parquet artifact + manifest.json."""
 

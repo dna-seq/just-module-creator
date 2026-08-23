@@ -72,7 +72,8 @@ costs us the next note's credibility.
 ## F60 — the surface answers "will this build?" four ways and "is this any good?" not at all
 
 **Found:** 2026-08-21, two independent unattended runs · **Severity:** high ·
-**Status:** open. The tier and discovery half shipped 2026-08-22; the audit surface is `RM26`.
+**Status: closed 2026-08-24.** The tier and discovery half shipped 2026-08-22; the audit surface
+shipped in 0.20.0 as `audit_module` (`RM26`).
 
 Run 1 curated the eight modules then on the production registry; run 2 revised the ten
 modules in `just-dna-lite`'s v1 port. Neither had prior context. Both ran in the default
@@ -105,7 +106,15 @@ Run 2 found the same shape from the other side: a module with **190 rows and an 
 "the author forgot", which is the question `weighting:` exists to answer.
 
 **Every signal in that table is computable offline from files the plugin already reads.**
-That is what makes this a gap rather than a wish. See `RM26`.
+That is what makes this a gap rather than a wish, and `audit_module` now computes them: it
+reproduces `superhuman`'s 190 empty weights, the six curated modules' undeclared scale, the 52
+`detail: null` findings split 20/32 across two modules, and `clinical_significance` recorded at
+`subjects: 0` on all eight modules of the other corpus — measured against those directories rather
+than against fixtures. **It also finds seven rows the hand-repair pass missed**, still labelled
+`beta` while carrying the Z of their own p-value, which is the argument for the tool in one line.
+The one row in that table it does **not** cover is `gene: KIBRA` — that is `check_identifiers`,
+which needs HGNC and is therefore a check rather than an audit. See `RM26` in
+[ROADMAP_HISTORY.md](ROADMAP_HISTORY.md) for what was deliberately not built and why.
 
 ## F61 — `review_queue` reports nothing to review while holding the evidence
 

@@ -33,6 +33,31 @@ reason is written down.** An outranked row keeps warning — *somebody decided t
 because two releases on nobody remembers whether the retraction that motivated it was itself
 superseded.
 
+## Before the checks: what is decidable without a source
+
+```
+audit_module(spec_dir="spec")           # offline, writes nothing; decisions | clear | not_computed
+```
+
+Every gate below this line asks a source. `audit_module` asks the arithmetic instead — the questions
+answerable from the authored files alone, which is why it is not a check and does not belong in
+`verification.json`. Two unattended curation passes over eighteen real modules found **every** genuine
+defect by hand-writing exactly this arithmetic while `validate_module`, `compile_module`, `lint_rows`,
+`registry_check` and `registry_validate` all returned green. They were right to: those tools answer
+*"will this build?"*, and the modules built.
+
+What it asks: whether `weighting:` says what the `weight` column means (in both directions — an empty
+weight column and a deliberately unweighted module are the same bytes); whether any recorded check ran
+over zero subjects or was skipped; whether a check counted disagreements and kept none; whether an
+`effect_size` is really the Z-statistic of its own p-value under a label saying otherwise; and whether
+clinical claims have a paper behind them, over every table that can carry `clin_sig` rather than
+`variants.csv` alone.
+
+Its three lists are three different claims, and the third is the one to read carefully.
+**`not_computed` is not a pass** — the file that signal reads is absent, so nothing about it is
+established. A signal is not a verdict on the work either: a module that raises one is out of date or
+undeclared, not broken.
+
 ## The checks, and what each one actually reads
 
 ```

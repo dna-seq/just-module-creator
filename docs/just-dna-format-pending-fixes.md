@@ -1476,6 +1476,28 @@ the sequence that actually happened, where both calls came from one session. It 
 enrichment started by another process, it does not make an interrupted run keep what it resolved, and
 it does not make the write atomic. Those three are upstream's and are what `S66` asks for.
 
+## F67 — `ModuleSpecConfig` is public and nothing public produces one (format `S74`)
+
+**Status: filed 2026-08-24 against format / compiler 0.6.6, open. Mitigated here by parsing the file
+ourselves, which is not a workaround so much as the only route.**
+
+`ModuleSpecConfig` is exported from `just_dna_format.spec`; the only thing that turns a
+`module_spec.yaml` into one is `just_dna_compiler.compiler._load_yaml`, underscored. Verified against
+the installed packages rather than the sibling checkout — a sweep over every public callable in
+`just_dna_format` and `just_dna_compiler` for one returning that type came back empty, and
+`just_dna_registry.specfiles` has no loader either.
+
+**What it costs us.** `compare.py` and `audit.py` both `yaml.safe_load` the file and read the top-level
+keys they need out of a raw mapping, so neither gets the defaults folding, the authority-key dropping
+or the error list upstream's loader produces. It also puts **PyYAML** in our dependency list purely
+because theirs is unreachable — now declared rather than leaned on transitively, for the same reason
+`httpx` is.
+
+**No guard is possible and none is needed.** A private symbol is not something a test can pin: reaching
+into it is what §2 forbids outright, so the mitigation is to not need it. The honest limit is stated in
+`audit.read_spec`'s docstring — three keys, no defaults folding — and anything needing the validated
+shape goes through `validate_module`, which has it.
+
 ## F64 — the warning surface cannot be read on the module that needs it most (format `S67`, `S68`)
 
 **Status: filed 2026-08-22 against compiler 0.6.6, open. No mitigation here and none is right.**

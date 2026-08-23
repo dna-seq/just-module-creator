@@ -504,6 +504,21 @@ comparison against ISO values.
   non-breaking — but nothing here does; upstream owns every wire vocabulary.
 - **Polars only where upstream hands it to us.** We do not build dataframes; we
   read the parquet upstream wrote.
+- **We compute two kinds of finding of our own, and they are different layers, not
+  one.** `authored_checks.py` holds per-table lint findings (the repeated
+  `provenance_quote`, the two `conclusion` rules) that ride out through `lint_rows`
+  and `validate_module` carrying `source="just-module-creator"`; `audit.py` holds the
+  whole-directory **decision list** behind `audit_module`. The line between them is
+  the unit, not the subject: a finding about one table's rows is a lint finding, and
+  a question that needs `module_spec.yaml` beside `verification.json` beside two CSVs
+  is an audit signal. Both are offline and neither blocks a compile. **Anything that
+  asks a source is a check** and belongs beside `check_identifiers`, where it writes
+  an attestation — an audit writes nothing at all.
+- **An audit signal is three-valued and the third state has its own list.**
+  `decide` / `clear` / `not_computed`, and `not_computed` carries `why_not`. Folding
+  "the file this reads is not here" into "nothing to decide" is `F61`'s shape: a
+  question that could not be put, presented as nothing to answer. Same rule as
+  `None`-is-not-`False` one bullet up, at a coarser grain.
 - **Deterministic ordering is load-bearing** wherever output is compared or
   hashed. Never emit from `set`/`dict` iteration without an explicit sort —
   `sorted(draft.DRAFTABLE)`, `sorted(...checked...)`.
@@ -1328,6 +1343,14 @@ have been questions.
   normalizer for a published-digest comparison **inverts its purpose**: it fires on precisely
   the CRLF files it was meant to protect, and Python's `csv` writes `\r\n`, so most authored
   CSVs are CRLF. Read the upstream docstring before assuming which hasher a field uses.
+- **Validate a new offline signal against those two corpora before believing it, and say what it
+  reproduced.** Both are still on disk and both are real modules with hand-verified defects, which
+  makes them ground truth a fixture cannot be. `RM26` and `RM27` were both built this way and both
+  paid for it immediately: the conclusion rule's slashed-spelling variant scored 24 where the run
+  measured 20, and reading the four extras showed they were one sentence — `C/A` in prose names the
+  SNP's alleles, not a genotype — so the matcher narrowed for a reason rather than to match a number.
+  The audit's Z rule found seven rows a hand-repair pass had missed. **A signal whose only evidence
+  is a fixture you wrote is a signal you have measured against yourself.**
 - **The two 2026-08-21 dogfooding runs are the outside-driver corpus for the REVIEW half.**
   `/data/sources/modules_dogfooding/observations/` (seven documents, `F-01`..`F-31`, a curation
   pass over the eight modules then on production, with all eight fetched specs and their

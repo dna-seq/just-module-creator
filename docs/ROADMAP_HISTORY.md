@@ -9,6 +9,136 @@ here: it is filed upstream as an `S<n>` and tracked in
 
 ---
 
+## RM26 — an audit surface: the offline arithmetic both runs had to write by hand
+
+**Severity:** high · **Status: CLOSED 2026-08-24 — shipped as `audit_module` in 0.20.0.**
+· **Opened** 2026-08-22
+
+Two independent unattended runs found every real defect by writing Python over the CSVs,
+while five tools answered *"will this build?"* in different words. `F60` and `F61` carry the
+measurements. The scope decision taken 2026-08-22 was to fix the surfaces and discovery in
+that pass and roadmap this, because it is new product rather than a surface repair.
+
+**The bar this has to clear is that every signal is computable offline from files the
+plugin already reads.** That is what makes it buildable rather than a wish, and it is also
+the boundary: anything needing a live source is a check and belongs in the check pass.
+
+Candidate signals, each already measured by hand in one of the two runs:
+
+- **Weight cells with no declared scale.** `weight` populated on N rows and no `weighting:`
+  block. Also the opposite sign, which run 2 hit: `weight` empty on *every* row and no
+  `weighting:` — so "the author authors none deliberately" and "the author forgot" are the
+  same bytes, which is the distinction `weighting:` exists to carry.
+- **Checks that have never run.** `verification.json` read for records that are absent, or
+  present with `skipped` set, or present with `subjects: 0`. Run 1 measured the reference-base
+  check at zero of eight modules, and the three states read very differently: a `skipped`
+  record and a record that ran over nothing are both not-a-pass, and only one of them says so.
+- **A record that counts findings and does not keep them.** Run 2 found 52 unresolved ClinVar
+  disagreements across two modules with `detail: null` and no sidecar naming the rows. The
+  rollup is ours even though the retention is upstream's.
+- **`effect_measure` disagreeing with its own p-value.** Compare `effect_size` against
+  `-Φ⁻¹(p/2)` per row. This is arithmetic on two authored columns and needs nothing external.
+- **Per-column fill counts.** Run 2's ask, and the cheapest item here: one pass over rows the
+  validator has already loaded turns "what is there to curate" from a question into a table.
+  Five of its six curated modules had `category` empty on every row, reported as `categories:
+  []` and treated as unremarkable.
+- **A module with no `studies.csv` beside rows that make clinical claims.** The rule exists in
+  `module-status` and is scoped to `variants.csv`, so a 1,482-row PGx module falls outside it
+  and nothing fires.
+
+**Two design constraints that are not negotiable.** First, this reports and never repairs: a
+disagreement is not a defect report, and several of these signals have honest explanations —
+run 1 retracted two of its own three findings, and nothing in the toolchain contributed to
+either retraction. Second, the output is a **decision list**, not a findings dump: if a human
+must choose, it goes in the list; if nothing must be chosen, it does not appear. An old module
+is out of date, not defective.
+
+**Where it should live is an open question.** A separate `audit_module` is the obvious shape.
+The alternative worth weighing first is carrying the voice into the success path of tools that
+already run — a green `validate_module` on a module whose reference-base check has never run
+should say so. Both runs independently observed that this surface says difficult things well
+and mostly says them when something breaks, and that a green result is a tool call while the
+caveat is prose. That argues for the second shape, or for both.
+
+`review_queue` is part of this entry rather than a separate one: `F61` is the same defect
+seen from the far end, and widening it to emit `unknown` entries for fields whose archive
+answer is not in the module is a smaller change than a new tool.
+
+> **Shipped: `src/just_module_creator/audit.py` plus one essentials tool, `audit_module`, with 27
+> tests.** Five signals and a fill table, all offline, all bounded by one spec directory — which is
+> the tier line, cost rather than usefulness.
+>
+> **The shape question was settled as BOTH, and the recommendation in the entry above was the right
+> one.** `audit_module` is the separate tool, because a decision list is a different artifact from a
+> build verdict and burying it inside `validate_module`'s success path would make it a footnote on
+> the answer nobody was asking. But the entry's alternative was also acted on: `validate_module`'s
+> docstring now says out loud that a green answer means the module builds and nothing more, and
+> names where the other question is asked. Discovery is the whole risk with a new tool, so it is
+> named in `module-check` (before the checks, as the thing that needs no source) and in
+> `module-status` (first, on a module you did not create). It is **not** in `server.INSTRUCTIONS`:
+> that string has 49 characters of headroom under its 2048 ceiling and a truncated rule is worse
+> than an absent one.
+>
+> **Every signal was validated against the corpora that produced the complaint**, not against
+> fixtures. Over the eight modules in `modules_dogfooding/work/` and the ten in
+> `just-dna-lite/data/interim/v1_port/`, it reproduces the measurements in `F60` and run 2's
+> report: `superhuman`'s 190 rows with an empty `weight` and no `weighting:`; the six curated
+> modules carrying weights with no declared scale; **20 + 32 = the 52 findings with `detail: null`
+> across `cancer` and `pathogenic`**, exactly as reported; and `clinical_significance` recorded at
+> `subjects: 0` on all eight of the first corpus.
+>
+> **It also found something the correction pass missed, which is the argument for the tool in one
+> line.** `big_five_personality_snps` was hand-repaired by a script that relabelled `effect_measure`
+> only where *every* studies row for an rsID agreed. Seven rows survived that rule and are still
+> labelled `beta` while carrying the Z of their own p-value — `rs1729951`, 7.389 against a Z of
+> 7.441. Across both corpora the discriminator is clean: **573 genuine betas do not match, 8 do, no
+> OR matches, and all 296 rows already labelled `Z` do** — so the rule is essentially never fired by
+> a real effect size. Two rows minimum before it becomes a decision, because one coincidence is a
+> coincidence.
+>
+> **Three design constraints held, and each cost something worth recording.**
+>
+> 1. **Three states, never two.** `decisions` / `clear` / `not_computed`, and the third carries
+>    `why_not`. Folding "the file this reads is not here" into "nothing to decide" is `F61`'s exact
+>    shape, and a test asserts the three lists partition the signal roster.
+> 2. **Reports, never repairs; a decision list, not a findings dump.** Fill counts are *data* and
+>    live in their own field rather than in the list, because nobody has to decide anything about a
+>    count. A module raising a signal is out of date or undeclared, never broken.
+> 3. **The column names are the one hardcoded schema fact and they have a test, not a comment.**
+>    Which *tables* carry each column is generated from `draft.DRAFTABLE`, so
+>    `clinical_claims_without_studies` covers `diplotypes.csv` and the four other binning kinds
+>    without anybody maintaining a roster — which is what made the old `variants.csv`-scoped
+>    wording miss a 1,482-row PGx module.
+>
+> **What was deliberately NOT built.** A roster of which checks *should* have run: there is no
+> public one, and inventing it is the hand-kept schema fact this repo has already paid for twice.
+> So the signal reads the records present and says, in its own detail, that a check with no record
+> is invisible to it. Under-claiming beats a list that goes stale the next time upstream adds a
+> check.
+>
+> **The `review_queue` half of this entry was a misdiagnosis, and it is worth saying plainly.** The
+> remedy proposed above — "widening it to emit `unknown` entries for fields whose archive answer is
+> not in the module" — describes behaviour the tool already had. The real defect was a codec whose
+> writer and reader disagreed about what a `source_name` may contain; fixed separately, and `F61`
+> now carries the corrected cause.
+>
+> **One thing was filed rather than built**: `compiler._load_yaml` is private and nothing public
+> returns a `ModuleSpecConfig`, so `audit.read_spec` parses `module_spec.yaml` itself and reads
+> three top-level keys with no defaults folding. Format-tree **`S74`**, filed the day it was found.
+> `pyyaml` is now a declared dependency for the same reason `httpx` is — `compare.py` was already
+> calling it transitively, which was its own small drift.
+>
+> **Reversal recipe:** delete `src/just_module_creator/audit.py`, `tests/test_audit.py`, the
+> `audit_module` tool block and the `audit` import in `tools/authoring.py`, and `AuditSignal` /
+> `ColumnFill` / `AuditReport` from `models.py`; restore the paragraph in
+> `validate_module`'s docstring, the section in `skills/module-check/SKILL.md` and the section plus
+> the widened absence rule in `skills/module-status/SKILL.md`. `pyyaml` stays declared either way —
+> `compare.py` still calls it. Nothing here is written to any artifact, so no module carries a
+> trace of it.
+
+
+---
+
 ## RM27 — check the conclusion against the row it sits on
 
 **Severity:** medium · **Status: CLOSED 2026-08-24 — shipped, both rules, and the measurement

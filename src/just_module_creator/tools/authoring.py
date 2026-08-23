@@ -29,9 +29,10 @@ from just_dna_format.spec import ModuleSpecConfig
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel
 
-from just_module_creator import authored_checks, logscan
+from just_module_creator import audit, authored_checks, logscan
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
+    AuditReport,
     ClosureResult,
     CompileReport,
     LintResult,
@@ -931,6 +932,11 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         `strict` means *reproducible*, not *correct*: it refuses when resolution
         left something it could not reproduce, and has no opinion on whether your
         coordinates name the variant you meant. Read `warnings` even on a pass.
+
+        **A green answer here says the module builds and nothing more**, which is the
+        honest limit of every offline gate and not a defect in this one. `audit_module`
+        asks the other question — what somebody still has to decide — over the same
+        files and without a network.
         """
         target = resolve_dir(spec_dir, settings)
         result = await run_sync(lambda: compiler.validate_spec(target, strict=strict))
@@ -943,6 +949,62 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             authored_findings=await run_sync(lambda: authored_checks.findings_for_spec_dir(target)),
             stats=jsonable(result.stats),
         )
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Audit a module offline", readOnlyHint=True, idempotentHint=True
+        )
+    )
+    async def audit_module(spec_dir: str, fill: bool = True) -> AuditReport:
+        """Ask what a curation pass would ask. Offline, reads only; writes nothing.
+
+        **Every other gate here answers "will this build?".** `validate_module`,
+        `compile_module`, `lint_rows`, `registry_check` and `registry_validate` all
+        answer that question in different words, and they are right to pass a module
+        that builds. Two unattended curation passes over eighteen real modules found
+        every genuine defect by writing arithmetic over the CSVs instead, while every
+        one of those tools returned green.
+
+        The output is a **decision list**, not a findings dump. `decisions` is what
+        somebody has to choose about; `clear` is what computed and found nothing;
+        `not_computed` is what could not be computed and why, which is **not** a pass
+        — the file it reads is missing, so nothing about that signal is established.
+
+        What it asks today: whether `weighting:` says what the `weight` column means
+        (in both directions — an empty weight column and a deliberately unweighted
+        module are the same bytes); whether any recorded check ran over zero subjects
+        or was skipped; whether a check counted disagreements and kept none of them;
+        whether an `effect_size` is really the Z-statistic of its own p-value under a
+        label saying otherwise; and whether rows asserting a clinical significance
+        have any paper behind them. `fill` adds a per-column fill count for every
+        authored table — data rather than a decision, and the cheapest way to see
+        what is there to curate.
+
+        **It reports and never repairs, and a signal is not a verdict on the work.**
+        A module that raises one is out of date or undeclared, not broken; several of
+        these have honest explanations and a run producing this shape retracted two
+        of its own three findings. Nothing here moves whether the module compiles,
+        and a clean audit is not evidence the module is right — it is evidence that
+        five specific questions computable without a network came back quiet.
+        """
+        target = resolve_dir(spec_dir, settings)
+
+        def read() -> AuditReport:
+            decisions, clear, blocked = audit.run(target)
+            return AuditReport(
+                spec_dir=str(target),
+                decisions=decisions,
+                clear=clear,
+                not_computed=blocked,
+                fill=audit.column_fill(target) if fill else [],
+                note=(
+                    "Offline, over the authored files only. A quiet audit means these signals "
+                    "found nothing, never that the module is correct — nothing here reads a "
+                    "source, and anything that would is a check rather than an audit."
+                ),
+            )
+
+        return await run_sync(read)
 
     @mcp.tool(
         annotations=ToolAnnotations(

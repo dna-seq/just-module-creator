@@ -80,9 +80,30 @@ a file that will not survive a re-publish.
 | `provenance.json` | somebody recorded why an authored value outranks a source | that the override is still right. Read them back with `review_queue` |
 | `logs/*.log` | the authoring pipeline left a trail | that it is safe to publish unread — logs are swept into every compile with no opt-out |
 
-Two absences say as much as any presence. **No `studies.csv` beside a `variants.csv` is a hole**, not a
-choice. **No `variants.csv` at all is usually correct** — a PGx, binning or pointer module carries none,
+Two absences say as much as any presence. **No `studies.csv` beside rows that make clinical claims is a
+hole**, not a choice — and the claim-bearing tables are not just `variants.csv`: `diplotypes.csv`,
+`copynumbers.csv`, `repeat_alleles.csv`, `heteroplasmy.csv` and `activity_phenotype.csv` all carry
+`clin_sig`, so a 1,482-row PGx module with no receipts is the same hole. That is what
+`audit_module` computes, over whichever of those tables are present, so you do not have to remember the
+roster. **No `variants.csv` at all is usually correct** — a PGx, binning or pointer module carries none,
 and adding an empty one to tidy the picture is the repair `module-tables` warns against by name.
+
+## The one call that reads the whole directory at once
+
+```
+audit_module(spec_dir="spec")     # offline, writes nothing; decisions | clear | not_computed
+```
+
+**Run it first on a module you did not create.** The table above tells you which stage a file marks;
+this tells you what somebody still has to *choose* — whether `weighting:` says what the `weight` column
+means, whether any recorded check ran over zero subjects, whether a check counted disagreements and
+kept none of them, whether an `effect_size` is really the Z of its own p-value, and whether clinical
+claims have receipts. Plus a per-column fill count for every authored table, which is the cheapest way
+to see what is there to curate.
+
+Read its three lists as three different things. `decisions` is the short list somebody must act on.
+`clear` computed and found nothing. **`not_computed` is not a pass** — the file that signal reads is
+absent, so nothing about it is established, and each entry says which file and so what.
 
 ## Presence is not currency
 
