@@ -2,7 +2,7 @@
 name: create-module
 description: >-
   Make a just-dna annotation module — from nothing, from sources somebody handed you, from a source that publishes rows, or from a module that already exists. Routes to the stage that owns the work and names the tools it calls; it holds no procedure itself.
-  Triggers: "make a module", "create a module", "build an annotation module", "I have some papers", "start a module", "where do I begin", "turn this into a module", "add a gene panel", "/create-module".
+  Triggers: "make a module", "create a module", "build an annotation module", "I have some papers", "start a module", "where do I begin", "turn this into a module", "add a gene panel", "/create-module", "what does this plugin do", "explain modules", "module overview", "getting started", "what are the four packages", "i have a zip", "triage these sources", "which tables do i need".
 ---
 
 # Making a module — the route, not the procedure

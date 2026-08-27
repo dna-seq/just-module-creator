@@ -2,7 +2,7 @@
 name: module-status
 description: >-
   Work out what a module directory is, how far it got, and what somebody has to decide next. A reading rather than a stage: it authors nothing and hands off to whoever owns the next step.
-  Triggers: "where am I", "what next", "what stage is this module at", "resume", "pick up where I left off", "somebody handed me a spec directory", "what is left to do", "is this module finished", "is it ready to publish", "what still needs deciding", "status", "did this ever get enriched", "has this been closed", "what is missing", "I inherited this module", "look at this module".
+  Triggers: "where am I", "what next", "what stage is this module at", "resume", "pick up where I left off", "somebody handed me a spec directory", "what is left to do", "is this module finished", "is it ready to publish", "what still needs deciding", "status", "did this ever get enriched", "has this been closed", "what is missing", "I inherited this module", "look at this module", "what has to be decided", "who wrote this".
 ---
 
 # Where a module stands, and what has to be decided next

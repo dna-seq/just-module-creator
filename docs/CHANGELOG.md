@@ -3,6 +3,36 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.24.1 — 2026-08-28
+
+### The cost of demoting thirteen skills, measured rather than asserted
+
+0.24.0 said the price of the demotion was auto-loading and left it there. Three measurements:
+
+**What it cost in the past: one invocation.** Across 337 transcripts in 21 projects on this machine,
+`Skill()` was called 11 times on these names — 5 `create-module`, 2 `module-status`, 2
+`module-revise`, 1 `module-install-local`, and **1** on a name that is now a guide (`module-check`).
+Ten of eleven are still commands. The 50 times a skill file was opened with Read or Grep are
+unaffected, because that path is a path either way. **No skill of this plugin has ever been invoked
+by typing its name** — the value of a seven-entry menu is that it can be read, not that it was used.
+
+**What it could cost in future: the trigger phrases.** The 13 guides carry 181 of them. 24% still
+match a command's description; **58% match a tool description or `server.INSTRUCTIONS`**, which are
+in context on every connection whether or not any skill loads; 18% match neither, and every one of
+those 33 is mid-work vocabulary — `requires_callable`, `dropped_checks`, `resolution_signature`,
+`newer gnomAD` — that a session only produces once something is already loaded.
+
+**What recovery costs: one hop.** Every guide is one link from a command, and each is named by
+between 4 and 16 documents (`module-tables` by 16).
+
+Ten orphaned phrases that genuinely read as a first message — *"what does this plugin do"*,
+*"getting started"*, *"I have a zip"*, *"which tables do I need"*, *"who wrote this"* — moved into
+`create-module` and `module-status`, which are the doors that would have answered them. That took
+unmatched from 39 to 33 and command-matched from 18% to 24%.
+
+**So: not severe, and 0.24.0 overstated it.** The exposure is a first message that names no tool,
+matches no command and uses a guide's vocabulary; the saving is 2,806 tokens in every session.
+
 ## 0.24.0 — 2026-08-28
 
 ### Seven commands, thirteen guides: the `/` menu is for people now
