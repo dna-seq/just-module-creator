@@ -3,6 +3,15 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.22.1 — 2026-08-27
+
+`toolbox` no longer routes around `JMC_HIDE_GATED_UNTIL_AUTH`: a reveal by name beat that flag's
+disable by tag, so any session could have listed the publish route by asking. The group is withheld
+until the session holds a token, and the message names `authenticate`. Two claims corrected with it
+— rule 3 of `server.INSTRUCTIONS` has *"Decide on what you verified"* back, and
+`ToolboxGroup.tool_count` no longer promises a registration check it cannot perform. The 0.22.0 tag
+predates all three.
+
 ## 0.22.0 — 2026-08-27
 
 The context cost of the tool listing, measured and then acted on.
