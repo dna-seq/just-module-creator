@@ -105,6 +105,15 @@ def test_the_command_menu_is_what_a_person_would_ask_for():
     so it is a decision rather than a side effect: twenty entries cost 14,688
     characters of prompt and asked a layman to choose between `module-curate` and
     `module-enrich`. If a new command belongs here, change this set on purpose.
+
+    **The criterion is whether the person can recognise they want it.** Each of
+    these seven is something somebody arrives able to name — make one, work out
+    what this directory is, find the papers, publish it, decode this message, run it
+    on my genome, open it again. `module-101` is the case that proves the rule and
+    the reason it is a guide: whoever needs the overview does not know they need it,
+    and whoever knows what it is has stopped needing it. A menu entry serves neither,
+    while an agent that spots a beginner and loads it serves the first. Anything with
+    that shape is a guide, however useful.
     """
     assert COMMAND_NAMES == _EXPECTED_COMMANDS, {
         "unexpected": sorted(COMMAND_NAMES - _EXPECTED_COMMANDS),

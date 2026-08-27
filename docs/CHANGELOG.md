@@ -3,6 +3,23 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased
+
+### The beginner branch: 101 is pulled by the agent, never offered to the person
+
+`module-101` came off the menu in 0.24.0 on the grounds that it is written for an agent. The sharper
+reason, and the criterion the whole menu now encodes: **whoever needs the overview does not know they
+need it, and whoever knows what it is has stopped needing it** — a menu entry serves neither. What
+serves the first is an agent that notices, so `create-module`'s step 0 gains a branch for a question
+rather than a task, or a wish in the author's own vocabulary with none of ours in it, and routes to
+`module-101` to answer *from* before routing anywhere.
+
+That also corrects the framing the router had: it told you the map was optional. It is optional for
+your own routing and not optional when the person is the one asking, because that file is the half of
+"driveable by a layman" that is not a tool — its analogies and its what-this-cannot-do list are there
+to be said out loud. `test_the_command_menu_is_what_a_person_would_ask_for` carries the criterion so
+the next addition is judged by it.
+
 ## 0.24.1 — 2026-08-28
 
 ### The cost of demoting thirteen skills, measured rather than asserted

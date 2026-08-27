@@ -1119,6 +1119,18 @@ have been questions.
   is **not** a bicycle is the gate: one `ServiceGate`, one contact chain, one budget shared with the
   enricher by passing the same `PacingGate` instance.
 
+- **"The agenda behind hiding 101 — user who needs it doesn't know it needs 101. And one who knows no
+  longer needs it."** Stated 2026-08-28, and it is the *criterion* the seven-command menu encodes
+  rather than a fact about one file. **A command earns its place only if the person who wants it can
+  recognise they want it** — make one, work out what this directory is, find the papers, publish it,
+  decode this message, run it on my genome, open it again. Where recognising the need requires the
+  knowledge the document supplies, a menu entry serves nobody and the answer is an **agent that
+  notices**: `create-module`'s step 0 now has a branch for a question rather than a task, or a wish in
+  the author's own vocabulary with none of ours in it, and it routes to `module-101` to *answer from*
+  before routing anywhere. The same file is double-edged and both edges are real — *"101 is for llm and
+  for LLM to be able to 101 human"* — so its length is not bloat: the analogies and the
+  what-this-cannot-do list exist to be said out loud to somebody who has never seen a module.
+
 - **"Triage comands available to user, it is too puzzling for them to have a dozen... maybe hide 101
   thing, its 101 for an llm, not the user."** Said 2026-08-28, and it is a rule about the **menu**
   rather than about the content: the twenty skills all still ship, and thirteen of them simply stopped

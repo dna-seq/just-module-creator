@@ -12,7 +12,9 @@ every warning phrase and every judgement call lives in the stage skill that owns
 yourself deciding a cell from this file, load the stage skill instead — or ask the tool.
 
 For what a module *is*, what this plugin cannot do, and the framings that work on a beginner, load
-[`module-101`](../module-101/GUIDE.md) once. You do not need it to follow this route.
+[`module-101`](../module-101/GUIDE.md). You do not need it to follow this route — **but you do need it
+the moment the person is the one asking**, because that file is written to be explained *from*, not
+just read.
 
 ## Step 0 — work out where the author is actually standing
 
@@ -28,6 +30,7 @@ Ask before routing. The answer decides which arrow you enter on, and it is almos
 | a module that exists **in the catalog**, with nothing on your disk | fetch it, then read it | `registry_download` (essentials, verifies as it fetches), then `module-status` |
 | "the whole of gene X as ClinVar has it" | 1 then 2 | [`module-start`](../module-start/GUIDE.md), then [`module-draft`](../module-draft/GUIDE.md) |
 | a message they do not recognise | not a stage at all | `module-symptom` |
+| **a question rather than a task**, or a wish in their own words with none of this vocabulary in it | nowhere yet | [`module-101`](../module-101/GUIDE.md), and answer them from it before routing |
 
 **When two rows apply, the later one wins.** Almost every real session is a second pass, and a second
 pass entered as a first one re-derives work that is already on disk and overwrites judgements nobody
@@ -108,7 +111,7 @@ silently, and surface only what a human must choose.
 
 | | Load |
 |---|---|
-| what a module is, the four packages, the whole tool roster | [`module-101`](../module-101/GUIDE.md) |
+| what a module is, the four packages, the whole tool roster — **and the words to explain any of it to the person in front of you** | [`module-101`](../module-101/GUIDE.md) |
 | which table a finding belongs in, and where every file sits | [`module-tables`](../module-tables/GUIDE.md) |
 | a message you do not recognise | `module-symptom` |
 | run the finished module on a genome here, publishing nothing | `module-install-local` |

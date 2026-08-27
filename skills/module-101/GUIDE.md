@@ -19,6 +19,16 @@ possible; `create-module` answers *where do I enter and what runs next*, and eac
 own procedure. If you find yourself deciding a column value from this file, you have gone one level too
 deep — stop and load the stage skill, or ask the tool.
 
+**It has two readers and that is deliberate.** You are one: it orients you before you route. The other
+is the person you are working for, through you — the analogies, the what-this-cannot-do list and the
+worked examples here are written to be *said out loud* to somebody who has never seen a module, which
+is why they are longer than you need for yourself. **Nobody will ask for it by name**, which is why it is not on the menu: the person who needs this
+file does not know it exists, and the person who knows it exists has stopped needing it. So *you*
+notice — they asked what a word means, or described what they want in their own vocabulary with none
+of this one in it — and you load it and answer from it rather than from memory. The plugin is meant to
+be driveable by someone who cannot read a genetics paper, and this file is the half of that promise
+that is not a tool.
+
 ## What a module is
 
 **A module is a rulebook.** *If the DNA says X at spot Y, that means Z, and here is who showed it.*
