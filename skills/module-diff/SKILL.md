@@ -122,7 +122,7 @@ So detecting upstream drift *is* the delete-and-re-derive. There is no passive c
 **Run `refresh_sidecar` rather than doing it by hand.** It is in every tier, and it exists because the
 manual sequence is destructive: it captures the sidecar first, deletes, re-derives, classifies every
 row, reapplies what is provably yours, and **reports what it cannot tell apart.** The one thing that
-can stop you is naming `literature.csv` or `gwas_effects.csv` outside the extended tier — those two
+can slow you down is naming `literature.csv` or `gwas_effects.csv` — those two
 raise, and the refusal names what is reachable. `module-refresh` owns the tool.
 
 **By hand, when the tool refused the sidecar you need:**
@@ -156,7 +156,7 @@ problem are one problem, tracked upstream as **RM83**.
 ## What exactly changed — `compare_modules`
 
 Signatures tell you **what kind** of thing moved. They cannot tell you **what**. `compare_modules`
-does, offline and in essentials:
+does, offline:
 
 ```
 compare_modules(left_dir="./v1", right_dir="./v2")
@@ -184,7 +184,7 @@ registry_download(target="prod", namespace=ns, name=name, version="2.0.0", dest=
 compare_modules(left_dir="./v1", right_dir="./v2")
 ```
 
-All three are essentials. The download verifies the bytes as it fetches — a failure raises rather than
+The download verifies the bytes as it fetches — a failure raises rather than
 leaving you comparing a module you cannot trust — and it brings the authored inputs unless you pass
 `include_inputs=false`, which is what makes the comparison a comparison of specs rather than of
 parquet. Both trees arrive in the same flat shape, because the tool does not expose a layout choice;

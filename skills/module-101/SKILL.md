@@ -177,71 +177,61 @@ Prefer these over shelling out: they return structured results, their schema ans
 the live models, and they cannot reach the one compiler flag that silently produces a module no VCF can
 match.
 
-| Do this | Tool | Tier |
+| Do this | Tool | Note |
 |---|---|---|
-| choose a table kind, learn its columns, its requirements | `list_tables`, `describe_table`, `table_requirements` | essentials |
-| the columns of a table a *pass* writes | `describe_machine_table` | essentials |
-| a CSV header or a stub | `get_template` | essentials |
-| create the spec directory | `scaffold_module` | essentials |
-| check rows **before** writing them | `lint_rows` | essentials |
-| pre-flight, then build | `validate_module`, `compile_module` | essentials |
-| find the alleles for a genotype | `lookup_variant` | essentials |
-| **find the papers behind a row** | `literature_search` | essentials |
-| check a PMID/DOI and read the title back | `lookup_citation` | essentials |
-| where may I read this paper, and read it | `lookup_open_access`, `fetch_fulltext` | essentials |
-| draft variants + studies from ClinVar | `draft_from_clinvar` | essentials |
-| resolve coordinates, mint ids, catch a ref mismatch | `enrich_module` | essentials |
-| identifier currency, **and gene↔chromosome agreement** | `check_identifiers`, `lookup_identifier` | essentials |
-| declare the authoring finished | `close_module` | essentials |
-| record why an authored value outranks a source, and read the queue back | `record_override`, `review_queue` | essentials |
-| compare two spec directories, at three grains | `compare_modules` | essentials |
-| content signature, artifact integrity | `module_signature`, `verify_artifact` | essentials |
-| the whole generated DSL at once | `authoring_reference` | essentials |
-| see whether a module already exists, and read one | `registry_search`, `registry_get_module` | essentials |
-| **get a published module onto disk, verified** | `registry_download` | essentials |
-| turn a compiled artifact back into a spec | `reverse_module` | essentials |
-| re-derive a sidecar without losing curation | `refresh_sidecar` | essentials, except the two names below |
-| get an account and a token | `registry_register` | **always** |
-| draft the PGx tables | `draft_from_cpic`, `draft_from_clinpgx` | extended |
-| has this finding been replicated | `paper_citations` | extended |
-| fill the fact sidecars | `enrich_facts`, `enrich_literature_pass`, `enrich_gwas_effects` | extended |
-| refresh `literature.csv` or `gwas_effects.csv` | `refresh_sidecar` on one of those two names | extended |
+| choose a table kind, learn its columns, its requirements | `list_tables`, `describe_table`, `table_requirements` | — |
+| the columns of a table a *pass* writes | `describe_machine_table` | — |
+| a CSV header or a stub | `get_template` | — |
+| create the spec directory | `scaffold_module` | — |
+| check rows **before** writing them | `lint_rows` | — |
+| pre-flight, then build | `validate_module`, `compile_module` | — |
+| find the alleles for a genotype | `lookup_variant` | — |
+| **find the papers behind a row** | `literature_search` | — |
+| check a PMID/DOI and read the title back | `lookup_citation` | — |
+| where may I read this paper, and read it | `lookup_open_access`, `fetch_fulltext` | — |
+| draft variants + studies from ClinVar | `draft_from_clinvar` | — |
+| resolve coordinates, mint ids, catch a ref mismatch | `enrich_module` | — |
+| identifier currency, **and gene↔chromosome agreement** | `check_identifiers`, `lookup_identifier` | — |
+| declare the authoring finished | `close_module` | — |
+| record why an authored value outranks a source, and read the queue back | `record_override`, `review_queue` | — |
+| compare two spec directories, at three grains | `compare_modules` | — |
+| content signature, artifact integrity | `module_signature`, `verify_artifact` | — |
+| the whole generated DSL at once | `authoring_reference` | — |
+| see whether a module already exists, and read one | `registry_search`, `registry_get_module` | — |
+| **get a published module onto disk, verified** | `registry_download` | — |
+| turn a compiled artifact back into a spec | `reverse_module` | — |
+| re-derive a sidecar without losing curation | `refresh_sidecar` | two names cost more — see below |
+| get an account and a token | `registry_register` | **no token needed — it mints one** |
+| draft the PGx tables | `draft_from_cpic`, `draft_from_clinpgx` | a corpus sizes it |
+| has this finding been replicated | `paper_citations` | a corpus sizes it |
+| fill the fact sidecars | `enrich_facts`, `enrich_literature_pass`, `enrich_gwas_effects` | a corpus sizes it |
+| refresh `literature.csv` or `gwas_effects.csv` | `refresh_sidecar` on one of those two names | a corpus sizes it |
 | ask whether it would publish, cost-free | `registry_check`, `registry_validate` | gated |
 | publish, or rehearse a publish | `authenticate` → `registry_whoami` → `registry_claim_namespace` → `registry_publish` | gated |
 
-**The default tier runs the whole procedure**, scaffold to publish. The tiers split on **cost**, and
-the rule has one clause and no exceptions: essentials is everything bounded by what you named — one
-identifier, one paper, one spec directory, one version of one module — and `JMC_MODE=extended` adds
-only what a *corpus* sizes. Reading back somebody else's compiled artifact used to be a second clause
-and it was never a cost argument; it is gone, which is why the download and the reverse are essentials.
-`registry_register` is ungated because it is what mints the token; gating it would be a cycle.
+**There is one surface: every tool above is there, always.** Nothing has to be switched on. The
+mode axis — `JMC_MODE`, `--mode`, the `extended` tier — was removed in 0.21.0, after the line had
+been drawn four times and moved three, each time because the narrower surface taught a step it could
+not run. `registry_register` is ungated for the same family of reason: it is what mints the token,
+so gating it would be a cycle.
 
-**The one gate that is on an argument rather than a tool.** `refresh_sidecar` is in every tier, because
-re-deriving what a pass wrote over the rows *you* wrote costs what your rows cost. Two sidecars are the
-exception — their passes are sized by how much the world has published, not by what you named — so
-naming one of those outside the extended tier **raises**, and the refusal lists which names are
-reachable. Read that list off the error rather than off any file; it is generated from the roster.
+**What is left of that line is a warning, and it is worth reading.** The rows marked *a corpus sizes
+it* run work sized by how much the world has published rather than by what you named: a citation
+graph, a whole-source PGx draft, a pass that rewrites every row. `enrich_gwas_effects` is the sharp
+end — `1 + 2N` requests for a variant with N published associations, measured at 382 for one real
+module. Each tool says this in its own description, so read the description before firing one off on
+a large module. Nothing refuses; the budget is yours to weigh.
 
-**Switching extended on, and the way that looks right and is not.** An MCP surface has no *switched
-off* state — a tool in the other tier is simply **absent**, and absence is indistinguishable from
-never built, so check this table before telling anyone the plugin cannot do something.
+`refresh_sidecar` inherits that split through its argument rather than through the tool: re-deriving
+`resolution.csv` costs what your rows cost, while `literature.csv` and `gwas_effects.csv` run the
+expensive passes. It warns and proceeds.
 
-| How the server was started | How to widen it |
-|---|---|
-| plugin (`/plugin install`, `--plugin-dir`) | edit `JMC_MODE` in `.claude-plugin/plugin.json` — `.codex-plugin/plugin.json` for Codex — then reconnect |
-| project MCP server (`.mcp.json` in a checkout) | edit `JMC_MODE` there, then reconnect |
-| standalone CLI | `--mode extended`, or `JMC_MODE` in the shell or `.env` |
-
-**Editing `.env` cannot switch a plugin-launched server, and that is the trap.** The manifest exports
-`JMC_MODE` into the subprocess, and `.env` is loaded with `override=False`, so a variable that is
-already set wins and your edit is read as nothing happening. It is the only setting this bites,
-because it is the only one the manifests pin.
-
-**Never substitute a shell recipe or a raw HTTP call for a tool that is merely switched off.** You
-lose whatever the tool does beyond fetching — for `enrich_gwas_effects` that is the sidecar it writes
-and the licence rows it records on the way. And check the table above before you conclude a tool is
-switched off at all: `registry_download` is in every tier, so if it is missing your install predates
-that change rather than being narrow.
+**If a tool is missing, your install is old — not narrow.** An MCP surface has no *switched off*
+state, so an absent tool is indistinguishable from one that was never built, and that ambiguity is
+exactly what the tier used to create. Check the version before telling anyone the plugin cannot do
+something, and never substitute a shell recipe or a raw HTTP call for a tool you cannot see: you
+lose whatever it does beyond fetching — for `enrich_gwas_effects`, the sidecar it writes and the
+licence rows it records on the way.
 
 **Every registry tool takes a `target`.** Writes default to the polygon; **catalog reads have no
 default and refuse to guess** — reading the instance you did not just write to is what makes a fresh

@@ -70,21 +70,21 @@ the allele pair, and `lookup_variant` gives you the same for a row you are writi
 |---|---|---|---|
 | 0 origin | is there a module here, who else has built one, may its sources be redistributed | `module-start` | `registry_search`, `list_tables` |
 | 1 scaffold | which tables, which build, what the weights will mean | `module-start` | `scaffold_module`, `describe_table`, `table_requirements`, `get_template` |
-| 2 draft | which of the rows a source already publishes are worth carrying | `module-draft` | `draft_from_clinvar`; `draft_from_cpic`, `draft_from_clinpgx` (extended) |
+| 2 draft | which of the rows a source already publishes are worth carrying | `module-draft` | `draft_from_clinvar`; `draft_from_cpic`, `draft_from_clinpgx` (a corpus sizes those two) |
 | 3 curate | **the cells only a pilot can settle** — genotype, weight, state, direction, conclusion | `module-curate` | `lint_rows`, `lookup_variant`, `record_override`; `module-weights` for the one column no tool fills |
 | 3′ evidence | which paper stands behind each claim, and what may honestly be quoted | `find-evidence` | `literature_search`, `lookup_citation`, `lookup_open_access`, `fetch_fulltext` |
 | 4 enrich | nothing — you read the report. It is the only tier that can catch an off-by-one | `module-enrich` | `enrich_module`, `refresh_sidecar` |
-| 5 cross-check | what to do about each disagreement, one by one | `module-check` | `check_identifiers`, `lookup_identifier`, `review_queue`; `enrich_facts` (extended) |
+| 5 cross-check | what to do about each disagreement, one by one | `module-check` | `check_identifiers`, `lookup_identifier`, `review_queue`; `enrich_facts` |
 | 6 compile | whether the build's warnings are acceptable — `--strict` is determinism, not correctness | `module-compile` | `validate_module`, `compile_module`, `module_signature`, `verify_artifact` |
 | 6b close | that these bytes are final, and how the module was made | `module-close` | `close_module` |
 | 7 rehearse | nothing irreversible. This is where mistakes are supposed to happen | `module-publish` | `registry_check`, `registry_validate`, `registry_publish(target="test")` |
 | 8 publish | **the immutable one.** Only on an explicit ask for the official catalog | `module-publish` | `registry_register` → `registry_whoami` → `registry_claim_namespace` → `registry_publish` |
 | 9 join | how a consumer will read what you wrote — decided long before this step | `module-consumer`, `module-install-local` | none here; `just-dna-lite` runs it |
 
-**Tiers, not stages.** Everything above marked *extended* needs `JMC_MODE=extended`; the default tier
-runs the spine end to end, scaffold to publish, and it also downloads a published module, reverses an
-artifact and refreshes a sidecar. `module-101` carries the whole roster, the one argument that is still
-gated, and the reason the line is drawn on cost.
+**One surface, no tiers.** Every tool named above is registered, always — the `extended` tier went
+in 0.21.0. A few tools are expensive because a corpus sizes their work rather than your rows, and
+each says so in its own description; `module-101` carries the whole roster and which those are. What
+still gates is a **token**, and only for registry writes.
 
 ## The three re-entries, which are the normal case
 

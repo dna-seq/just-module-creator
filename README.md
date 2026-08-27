@@ -220,7 +220,7 @@ that.
 | | |
 |---|---|
 | [**What more can be done**](./docs/BEYOND_BASICS.md) | drug response and star alleles, polygenic scores, repeat counts and other measured quantities, digging into replication, learning from published modules |
-| [**For developers**](./docs/FOR_DEVELOPERS.md) | running the server standalone, the full tool list, modes, auth, configuration, deployment |
+| [**For developers**](./docs/FOR_DEVELOPERS.md) | running the server standalone, the full tool list, auth, discovery, configuration, deployment |
 | [`skills/module-101`](./skills/module-101/SKILL.md) | start here — what a module is, what the plugin can and cannot do, the tool roster |
 | [`skills/create-module`](./skills/create-module/SKILL.md) | `/create-module` — where to enter the lifecycle, what runs next, and which tools each stage calls |
 | [`skills/module-start`](./skills/module-start/SKILL.md) | begin one: triage the sources, take the licence position, write the spec |

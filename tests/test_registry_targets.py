@@ -217,7 +217,7 @@ def test_an_unprefixed_polygon_rehearsal_is_advised_not_refused():
 # --------------------------------------------------------------------------- #
 async def test_every_registry_tool_takes_a_target(make_client):
     """A new registry tool that forgets `target` fails here rather than in the field."""
-    async with make_client(mode="extended") as client:
+    async with make_client() as client:
         schemas = await _schemas(client)
 
     registry_tools = {
@@ -239,7 +239,7 @@ async def test_writes_rehearse_and_catalog_reads_refuse_to_guess(make_client):
     think the catalog is broken. `None` in the map means "required", and it is
     asserted twice: no default in the schema, and named in `required`.
     """
-    async with make_client(mode="extended") as client:
+    async with make_client() as client:
         schemas = await _schemas(client)
 
     for name, expected in REGISTRY_TOOL_DEFAULTS.items():
@@ -268,7 +268,7 @@ async def test_the_catalog_reads_that_are_not_named_registry_anything_also_requi
     instances under a different name is invisible to it, which is how a fifth
     catalog read shipped target-required with no test saying so.
     """
-    async with make_client(mode="extended") as client:
+    async with make_client() as client:
         schemas = await _schemas(client)
 
     for name in _UNPREFIXED_CATALOG_READS:
@@ -841,7 +841,7 @@ async def test_amend_readme_refuses_a_path_masquerading_as_prose(make_client):
     """
     from fastmcp.exceptions import ToolError
 
-    async with make_client("essentials", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         args = {"namespace": "ns", "name": "m", "version": "1.0.0"}
         with pytest.raises(ToolError, match="Provide either spec_dir"):
             await client.call_tool("registry_amend_readme", args)
@@ -861,7 +861,7 @@ async def test_amend_readme_refuses_to_blank_a_card(make_client, tmp_path):
     """
     from fastmcp.exceptions import ToolError
 
-    async with make_client("essentials", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         with pytest.raises(ToolError, match="blank the card"):
             await client.call_tool(
                 "registry_amend_readme",
@@ -881,7 +881,7 @@ async def test_amend_readme_names_the_exact_filename_it_reads(make_client, tmp_p
     spec.mkdir()
     (spec / "MODULE.md").write_text("# the old name")
 
-    async with make_client("essentials", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         with pytest.raises(ToolError, match="README.md"):
             await client.call_tool(
                 "registry_amend_readme",
@@ -906,7 +906,7 @@ async def test_yank_is_gated_and_reversible_and_says_it_repairs_nothing(make_cli
     agent report it as a fix: the mistake is still published, still fetchable,
     and the corrected module is a separate publish that has not happened yet.
     """
-    async with make_client("essentials", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         tools = {t.name: t for t in await client.list_tools()}
 
         assert {"registry_yank", "registry_unyank"} <= set(tools)
@@ -933,7 +933,7 @@ async def test_yank_defaults_to_the_polygon_like_every_other_write(make_client):
     An unaimed yank that silently delisted a production version would be the
     same class of mistake the tool exists to recover from.
     """
-    async with make_client("essentials", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         schemas = {t.name: t.inputSchema for t in await client.list_tools()}
         for name in ("registry_yank", "registry_unyank"):
             assert schemas[name]["properties"]["target"]["default"] == "test"

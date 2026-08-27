@@ -10,7 +10,7 @@
 | [Python, when neither CLI nor tool is enough](#python-when-neither-cli-nor-tool-is-enough) | the import-only surface, and where the row models live |
 
 The MCP server wraps the authoring loop. Everything else is still CLI-only, and the CLIs remain the
-fallback whenever a tool is unavailable (essentials-only mode, no MCP server configured, a flag the
+fallback whenever a tool is unavailable (no MCP server configured, an older server, a flag the
 wrapper does not expose).
 
 Install: `pip install just-dna-enricher` pulls the compiler and the format tier. Python ≥ 3.13.
@@ -41,7 +41,7 @@ Install: `pip install just-dna-enricher` pulls the compiler and the format tier.
 | **signing** | — | `keygen`, `sign` (and `close --private-key`) |
 | **PGx cross-checks** | — | `pgx`, `clinpgx check`, `check-acmg` |
 | **fact tables from ClinGen / ClinVar** | — | `gene-validity`, `assertions` |
-| **published GWAS effect sizes** | `enrich_gwas_effects` (extended) | `gwas` |
+| **published GWAS effect sizes** | `enrich_gwas_effects` | `gwas` |
 | **which rsID sits at a GRCh37 coordinate** | — | `hint recover` |
 | **snapshot building** | — | `clinvar build`, `clinpgx build`, `acmg build`, `cache pull` |
 

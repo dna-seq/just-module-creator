@@ -32,8 +32,6 @@ from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-Mode = Literal["essentials", "extended"]
-
 #: Which registry instance a call is aimed at. The registry runs two deployments
 #: of one image (0.12): production, and the **polygon** — a test instance that
 #: accepts `test-`prefixed data and, unlike production, will delete it again.
@@ -115,10 +113,6 @@ class Settings(BaseSettings):
     registry_url: str = DEFAULT_REGISTRY_URL
     registry_test_url: str = DEFAULT_POLYGON_URL
     registry_timeout: float = 600.0
-
-    # Tool surface. "essentials" is the authoring loop you cannot work without;
-    # "extended" adds enrichment, integrity, round-trip and registry reads.
-    mode: Mode = "essentials"
 
     # Network policy. When true, every tool that could fetch runs cache-only.
     # A hard ceiling: an `offline=False` argument cannot override it.

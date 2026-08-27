@@ -24,12 +24,13 @@ repetition.
 
 ```
 draft_from_clinvar(spec_dir="spec", genes=["HFE"], use="non_commercial", dry_run=True)
-draft_from_cpic(...)        # extended tier — a corpus sizes it
-draft_from_clinpgx(...)     # extended tier, and inject-only: build the snapshot first
+draft_from_cpic(...)        # a corpus sizes it: a whole-source draft
+draft_from_clinpgx(...)     # a corpus sizes it, and inject-only: build the snapshot first
 ```
 
-`draft_from_clinvar` is **essentials**; the two PGx drafters are **extended**, because a whole-source
-draft is sized by how much has been published rather than by what you named.
+All three are always available. The two PGx drafters are the expensive ones — a whole-source draft
+is sized by how much has been published rather than by what you named — which is worth knowing
+before you fire one at a large star-allele gene, not a reason to reach for the CLI instead.
 
 **`use` is required on all three and has no default.** `unstated` silently skips licence-bearing
 sources; anything else asserts a licence position you may not hold. If a draft returns

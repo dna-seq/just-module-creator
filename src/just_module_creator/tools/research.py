@@ -1,14 +1,14 @@
-"""ESSENTIALS (network, read-only) — look things up before you author them.
+"""Network, read-only — look things up before you author them.
 
-Registered in every mode, because curation is not possible without them: to
+Curation is not possible without them: to
 write a genotype you need the allele pair, to write a PMID you need to know it
 exists, to write a `trait_efo_id` you need to know the CURIE is real and current,
 and to judge a claim you need the paper's text in front of you.
 
 Each call here is bounded by what you named — one variant, one identifier, one
-paper, one spec directory — which is what makes them cheap enough to be default.
-The unbounded cousins (``paper_citations`` traverses a citation graph the corpus
-sizes) stayed extended.
+paper, one spec directory. The unbounded cousin is ``paper_citations``, which
+traverses a citation graph the corpus sizes; it is registered like everything
+else and says so in its own docstring.
 
 Every tool here **reports and refuses to write**. A value the lookup could fill
 comes back as an alteration with ``applied=false`` and a ``refusal``, because

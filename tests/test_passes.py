@@ -90,7 +90,7 @@ async def test_use_is_a_required_argument_not_a_defaulted_one(make_client) -> No
     Rejected at the schema layer rather than by a check inside the tool, so an
     agent cannot reach the source at all without stating a position.
     """
-    async with make_client("essentials", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         tool = next(t for t in await client.list_tools() if t.name == "draft_from_clinvar")
         assert "use" in (tool.inputSchema.get("required") or [])
 
@@ -233,33 +233,31 @@ def test_an_absent_line_stays_null_rather_than_becoming_row_plus_one() -> None:
 
 
 # --------------------------------------------------------------------------- #
-# Tiering
+# The surface: every drafter and every pass, on one listing
 # --------------------------------------------------------------------------- #
-async def test_clinvar_drafting_is_available_in_essentials(make_client) -> None:
-    """F1's hole only closes if it closes in the default mode."""
-    async with make_client("essentials", offline_settings()) as client:
-        names = {t.name for t in await client.list_tools()}
-        assert "draft_from_clinvar" in names
-        # The specialist path stays behind the opt-in.
-        assert "draft_from_cpic" not in names
-        assert "draft_from_clinpgx" not in names
-        assert "enrich_facts" not in names
+async def test_every_drafter_and_pass_is_registered(make_client) -> None:
+    """F1's hole only closes if it closes for the surface an agent actually gets.
 
-
-async def test_the_pgx_drafters_and_fact_passes_are_extended(make_client) -> None:
-    async with make_client("extended", offline_settings()) as client:
+    The PGx drafters and the fact passes were the extended tier until 0.21.0. The
+    cost that put them there is real and each says so in its own docstring; what
+    it may not do any more is decide, at server start, that a session working on a
+    PGx module cannot see the PGx drafters.
+    """
+    async with make_client(offline_settings()) as client:
         names = {t.name for t in await client.list_tools()}
         assert {
+            "draft_from_clinvar",
             "draft_from_cpic",
             "draft_from_clinpgx",
             "enrich_facts",
             "enrich_literature_pass",
+            "enrich_gwas_effects",
         } <= names
 
 
 async def test_an_unknown_fact_pass_names_the_valid_ones(make_client, tmp_path) -> None:
     (tmp_path / "module_spec.yaml").write_text("schema_version: '1.0'\n")
-    async with make_client("extended", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         with pytest.raises(ToolError) as excinfo:
             await client.call_tool(
                 "enrich_facts", {"spec_dir": str(tmp_path), "passes": ["frequences"]}
@@ -467,7 +465,7 @@ def test_the_guard_can_actually_report_a_shadowed_arm(tmp_path):
 
 
 async def test_one_sources_outage_does_not_discard_the_other_passes(
-    monkeypatch, extended_client, spec_dir
+    monkeypatch, client, spec_dir
 ):
     """The bug the per-pass `try` exists for: three sources' work lost to one being down.
 
@@ -490,7 +488,7 @@ async def test_one_sources_outage_does_not_discard_the_other_passes(
 
     monkeypatch.setattr(module, "_run_pass", fake_run_pass)
 
-    result = await extended_client.call_tool(
+    result = await client.call_tool(
         "enrich_facts",
         {"spec_dir": str(spec_dir), "use": "unstated", "offline": True},
     )
@@ -509,7 +507,7 @@ async def test_one_sources_outage_does_not_discard_the_other_passes(
 
 
 async def test_an_outage_is_reported_apart_from_a_data_failure(
-    monkeypatch, extended_client, spec_dir
+    monkeypatch, client, spec_dir
 ):
     """`unreachable` and `failed` answer different questions and must not merge.
 
@@ -527,7 +525,7 @@ async def test_an_outage_is_reported_apart_from_a_data_failure(
 
     monkeypatch.setattr(module, "_run_pass", fake_run_pass)
 
-    result = await extended_client.call_tool(
+    result = await client.call_tool(
         "enrich_facts",
         {"spec_dir": str(spec_dir), "use": "unstated", "passes": ["gene_metrics"]},
     )
@@ -645,7 +643,7 @@ def _inject_gwas_client(monkeypatch, client):
 
 
 async def test_a_published_effect_is_reported_and_never_becomes_a_weight(
-    monkeypatch, extended_client, spec_dir
+    monkeypatch, client, spec_dir
 ):
     """The three numbers that make "this beta is not a weight" readable instead of asserted.
 
@@ -654,10 +652,10 @@ async def test_a_published_effect_is_reported_and_never_becomes_a_weight(
     genotype could be matched against. The tool reports both counts and writes nothing
     into `weight` — there is no argument on this tool that could.
     """
-    client = FakeGwasClient([_GWAS_NAMED_ALLELE, _GWAS_UNKNOWN_ALLELE])
-    _inject_gwas_client(monkeypatch, client)
+    gwas_client = FakeGwasClient([_GWAS_NAMED_ALLELE, _GWAS_UNKNOWN_ALLELE])
+    _inject_gwas_client(monkeypatch, gwas_client)
 
-    result = await extended_client.call_tool(
+    result = await client.call_tool(
         "enrich_gwas_effects", {"spec_dir": str(spec_dir), "use": "unstated"}
     )
     data = result.data
@@ -677,11 +675,11 @@ async def test_a_published_effect_is_reported_and_never_becomes_a_weight(
     # The request budget, derived from the fixture rather than pasted off a run. Every call the
     # fake served IS a request issued: `_LinkCache` reaches the transport only on a miss, so a
     # cache hit never appears here and `requests_made` is exactly what the fake was asked.
-    served_follows = [c for c in client.calls if not c.startswith("assoc:")]
+    served_follows = [c for c in gwas_client.calls if not c.startswith("assoc:")]
     attempted_follows = sum(
         len(a["_links"]) for a in (_GWAS_NAMED_ALLELE, _GWAS_UNKNOWN_ALLELE)
     )
-    assert data.requests_made == len(client.calls) == 1 + len(served_follows)
+    assert data.requests_made == len(gwas_client.calls) == 1 + len(served_follows)
     assert data.requests_saved == attempted_follows - len(served_follows)
     # `1 + 2N`: N associations for the one variant queried, each naming a study and a trait. The
     # two share a study, so the cache pays exactly once here — on a real module it paid nothing.
@@ -693,7 +691,7 @@ async def test_a_published_effect_is_reported_and_never_becomes_a_weight(
 
 
 async def test_the_gwas_strict_ladder_escalates_on_the_catalogs_shape_after_writing(
-    monkeypatch, extended_client, spec_dir
+    monkeypatch, client, spec_dir
 ):
     """`--strict` here fires on the USUAL answer, and it fires after the sidecar is written.
 
@@ -705,10 +703,10 @@ async def test_the_gwas_strict_ladder_escalates_on_the_catalogs_shape_after_writ
     A shipped flagship module (`reference_examples/hfe_hemochromatosis`) carries six of
     these, so a strict failure here is not a verdict on the module.
     """
-    client = FakeGwasClient([_GWAS_UNDERFLOW])
-    _inject_gwas_client(monkeypatch, client)
+    gwas_client = FakeGwasClient([_GWAS_UNDERFLOW])
+    _inject_gwas_client(monkeypatch, gwas_client)
 
-    strict = await extended_client.call_tool(
+    strict = await client.call_tool(
         "enrich_gwas_effects", {"spec_dir": str(spec_dir), "strict": True}
     )
     assert strict.data.success is False
@@ -733,7 +731,7 @@ async def test_the_gwas_strict_ladder_escalates_on_the_catalogs_shape_after_writ
     assert rows[0]["p_value_num"] == ""
 
     # Same input, best_effort: the count is reported and the pass completes.
-    lenient = await extended_client.call_tool(
+    lenient = await client.call_tool(
         "enrich_gwas_effects", {"spec_dir": str(spec_dir), "strict": False}
     )
     assert lenient.data.success is True
@@ -744,14 +742,14 @@ async def test_the_gwas_strict_ladder_escalates_on_the_catalogs_shape_after_writ
     assert lenient.data.rows == 1
 
 
-async def test_the_gwas_pass_is_a_no_op_offline_rather_than_a_failure(extended_client, spec_dir):
+async def test_the_gwas_pass_is_a_no_op_offline_rather_than_a_failure(client, spec_dir):
     """No injected transport and the ceiling down: nothing fetched, nothing written, no error.
 
     The Catalog publishes a bulk download but this pass reads the REST API, so there is no
     snapshot to fall back on. A no-op that reported success without saying so would read as
     "the Catalog holds nothing for this module".
     """
-    result = await extended_client.call_tool(
+    result = await client.call_tool(
         "enrich_gwas_effects", {"spec_dir": str(spec_dir), "offline": True}
     )
     data = result.data
@@ -766,7 +764,7 @@ async def test_the_gwas_pass_is_a_no_op_offline_rather_than_a_failure(extended_c
 
 
 async def test_study_facts_off_says_the_nulls_it_leaves_are_permanent(
-    monkeypatch, extended_client, spec_dir
+    monkeypatch, client, spec_dir
 ):
     """The cheap mode costs one request per variant and the cut does not heal itself.
 
@@ -774,30 +772,30 @@ async def test_study_facts_off_says_the_nulls_it_leaves_are_permanent(
     rows rather than backfilling them. Asserted rather than described: the second run leaves
     `pmid` empty, and only deleting the file recovers it.
     """
-    client = FakeGwasClient([_GWAS_NAMED_ALLELE])
-    _inject_gwas_client(monkeypatch, client)
+    gwas_client = FakeGwasClient([_GWAS_NAMED_ALLELE])
+    _inject_gwas_client(monkeypatch, gwas_client)
 
-    thin = await extended_client.call_tool(
+    thin = await client.call_tool(
         "enrich_gwas_effects", {"spec_dir": str(spec_dir), "study_facts": False}
     )
     assert thin.data.success is True
     assert thin.data.study_facts is False
     # One request for the variant and no `_links` follows at all.
     assert thin.data.requests_made == 1
-    assert client.calls == ["assoc:rs4988235"]
+    assert gwas_client.calls == ["assoc:rs4988235"]
     assert any("will SKIP these rows" in w for w in thin.data.warnings)
 
     written = spec_dir / "gwas_effects.csv"
     assert list(csv.DictReader(written.read_text().splitlines()))[0]["pmid"] == ""
 
     # Re-running with study facts on does NOT backfill: the association id is already there.
-    await extended_client.call_tool(
+    await client.call_tool(
         "enrich_gwas_effects", {"spec_dir": str(spec_dir), "study_facts": True}
     )
     assert list(csv.DictReader(written.read_text().splitlines()))[0]["pmid"] == ""
 
     written.unlink()
-    await extended_client.call_tool(
+    await client.call_tool(
         "enrich_gwas_effects", {"spec_dir": str(spec_dir), "study_facts": True}
     )
     assert list(csv.DictReader(written.read_text().splitlines()))[0]["pmid"] == "11788828"
@@ -836,7 +834,7 @@ async def test_a_second_enrichment_refuses_while_the_first_is_still_in_flight(
     resolved = spec.resolve()
     passes._ENRICHMENTS_IN_FLIGHT[resolved] = "2026-08-22T12:00:00+00:00"
     try:
-        async with make_client("essentials", offline_settings()) as client:
+        async with make_client(offline_settings()) as client:
             with pytest.raises(ToolError) as raised:
                 await client.call_tool("enrich_module", {"spec_dir": str(spec)})
     finally:
@@ -865,7 +863,7 @@ async def test_the_claim_is_released_so_a_later_enrichment_is_not_blocked_foreve
     spec.mkdir()
     (spec / "module_spec.yaml").write_text("module:\n  name: spec\n", encoding="utf-8")
 
-    async with make_client("essentials", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         # Offline with no variants: the pass refuses or returns, either way it completes.
         with contextlib.suppress(ToolError):
             await client.call_tool("enrich_module", {"spec_dir": str(spec), "offline": True})

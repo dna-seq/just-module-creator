@@ -329,7 +329,7 @@ async def test_offline_refuses_before_anything_is_touched(make_client, spec_dir)
     write_csv(original, [ENSEMBL_ROW, MANUAL_ROW])
     before = original.read_bytes()
 
-    async with make_client("extended", offline_settings(workspace=str(spec_dir.parent))) as client:
+    async with make_client(offline_settings(workspace=str(spec_dir.parent))) as client:
         result = await client.call_tool(
             "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
         )
@@ -350,7 +350,7 @@ async def test_a_sidecar_that_does_not_validate_is_refused_before_the_delete(
     original.write_text("variant_key,start\nrs4988235,not-a-number\n", encoding="utf-8")
     before = original.read_bytes()
 
-    async with make_client("extended", online) as client:
+    async with make_client(online) as client:
         result = await client.call_tool(
             "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
         )
@@ -378,7 +378,7 @@ async def test_a_captured_override_survives_a_refresh(
     write_csv(original, [ENSEMBL_ROW, MANUAL_ROW])
     patch_resolution_pass(monkeypatch, fake_pass([ENSEMBL_ROW]))
 
-    async with make_client("extended", online) as client:
+    async with make_client(online) as client:
         result = await client.call_tool(
             "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
         )
@@ -418,7 +418,7 @@ async def test_an_ambiguous_row_is_reported_and_never_resolved(
     write_csv(original, [ENSEMBL_ROW])
     patch_resolution_pass(monkeypatch, fake_pass([REVISED_ROW]))
 
-    async with make_client("extended", online) as client:
+    async with make_client(online) as client:
         result = await client.call_tool(
             "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
         )
@@ -457,7 +457,7 @@ async def test_a_crash_between_delete_and_reapply_leaves_the_capture_recoverable
     directory = capture_dir(settings, spec_dir.resolve(), "resolution.csv")
 
     patch_resolution_pass(monkeypatch, fake_pass([ENSEMBL_ROW], crash="after"))
-    async with make_client("extended", settings) as client:
+    async with make_client(settings) as client:
         with pytest.raises(ToolError, match="died"):
             await client.call_tool(
                 "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
@@ -473,7 +473,7 @@ async def test_a_crash_between_delete_and_reapply_leaves_the_capture_recoverable
 
     # A re-run continues from it rather than capturing the half-derived file over it.
     patch_resolution_pass(monkeypatch, fake_pass([ENSEMBL_ROW]))
-    async with make_client("extended", settings) as client:
+    async with make_client(settings) as client:
         result = await client.call_tool(
             "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
         )
@@ -504,7 +504,7 @@ async def test_a_crash_before_the_pass_wrote_anything_resumes_by_re_deriving(
     directory = capture_dir(settings, spec_dir.resolve(), "resolution.csv")
 
     patch_resolution_pass(monkeypatch, fake_pass([ENSEMBL_ROW], crash="before"))
-    async with make_client("extended", settings) as client:
+    async with make_client(settings) as client:
         with pytest.raises(ToolError, match="died"):
             await client.call_tool(
                 "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
@@ -514,7 +514,7 @@ async def test_a_crash_before_the_pass_wrote_anything_resumes_by_re_deriving(
     assert (directory / PENDING_CSV).read_bytes() == captured_bytes
 
     patch_resolution_pass(monkeypatch, fake_pass([ENSEMBL_ROW]))
-    async with make_client("extended", settings) as client:
+    async with make_client(settings) as client:
         result = await client.call_tool(
             "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
         )
@@ -540,7 +540,7 @@ async def test_an_empty_re_derivation_restores_rather_than_reporting_a_withdrawa
     before = original.read_bytes()
     patch_resolution_pass(monkeypatch, fake_pass([]))
 
-    async with make_client("extended", online) as client:
+    async with make_client(online) as client:
         result = await client.call_tool(
             "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
         )
@@ -571,7 +571,7 @@ async def test_an_unreachable_source_restores_and_is_told_apart_from_a_failure(
         raise IdentifierUnavailable("Ensembl returned 503")
 
     patch_resolution_pass(monkeypatch, outage)
-    async with make_client("extended", online) as client:
+    async with make_client(online) as client:
         result = await client.call_tool(
             "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
         )
@@ -595,7 +595,7 @@ async def test_a_row_whose_source_proves_nothing_is_withheld_not_reapplied(
     write_csv(original, [ENSEMBL_ROW, withdrawn])
     patch_resolution_pass(monkeypatch, fake_pass([ENSEMBL_ROW]))
 
-    async with make_client("extended", online) as client:
+    async with make_client(online) as client:
         result = await client.call_tool(
             "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
         )
@@ -621,7 +621,7 @@ async def test_a_derived_layout_is_not_migrated_by_a_refresh(
     write_csv(original, [ENSEMBL_ROW, MANUAL_ROW])
     patch_resolution_pass(monkeypatch, fake_pass([ENSEMBL_ROW]))
 
-    async with make_client("extended", online) as client:
+    async with make_client(online) as client:
         result = await client.call_tool(
             "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
         )
@@ -642,7 +642,7 @@ async def test_a_module_with_no_sidecar_yet_is_a_plain_derivation(
     """Nothing to capture means nothing at risk, and it must not read as a refresh."""
     patch_resolution_pass(monkeypatch, fake_pass([ENSEMBL_ROW]))
 
-    async with make_client("extended", online) as client:
+    async with make_client(online) as client:
         result = await client.call_tool(
             "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
         )
@@ -657,41 +657,46 @@ async def test_a_module_with_no_sidecar_yet_is_a_plain_derivation(
 # --------------------------------------------------------------------------- #
 # Tiering, stamping, and the structural guard
 # --------------------------------------------------------------------------- #
-async def test_refresh_is_in_every_tier_and_the_gate_moved_to_the_sidecar(make_client) -> None:
-    """Cost, not usefulness — but the cost is per sidecar, not per tool (2026-08-22).
+async def test_every_sidecar_in_the_roster_resolves(make_client) -> None:
+    """Cost, not usefulness — and since 0.21.0 the cost is said rather than enforced.
 
-    It was extended-only because it can run the pass measured at 382 requests. True
-    of two of the seven entries; the other five are bounded by the rows you wrote,
-    and gating the tool gated those too. Two unattended runs then each reported that
-    nothing re-derives a stale sidecar and that `rm resolution.csv` is the sanctioned
-    interface — the run's own highest-value action, spelled as a delete because the
-    tool that does it with a verified capture was invisible to them.
+    `refresh_sidecar` was extended-only because it can run the pass measured at 382
+    requests. That was true of two of the seven entries; the other five are bounded
+    by the rows you wrote, and gating the tool gated those too. Two unattended runs
+    then each reported that nothing re-derives a stale sidecar and that
+    `rm resolution.csv` is the sanctioned interface — the run's own highest-value
+    action, spelled as a delete because the tool that does it with a verified
+    capture was invisible to them. The gate moved to the argument, then went.
     """
-    async with make_client("essentials", offline_settings()) as client:
+    from just_module_creator.tools.refresh import ROSTER
+
+    async with make_client(offline_settings()) as client:
         assert "refresh_sidecar" in {t.name for t in await client.list_tools()}
-    async with make_client("extended", offline_settings()) as client:
-        assert "refresh_sidecar" in {t.name for t in await client.list_tools()}
+    for name, sidecar in ROSTER.items():
+        assert check_sidecar(name) is sidecar
 
 
-def test_the_corpus_sized_sidecars_are_the_ones_whose_pass_is_extended() -> None:
-    """Two independent producers, so the marker cannot quietly disagree with the tier.
+async def test_the_corpus_sized_sidecars_are_the_ones_the_tool_warns_about(make_client) -> None:
+    """The marker and the warning are two producers, so neither can drift alone.
 
-    `Sidecar.corpus_sized` is hand-set beside each entry; `EXTENDED_ONLY` in
-    `test_modes_and_auth` is the tool roster. A sidecar marked corpus-sized whose
-    pass is NOT gated as a tool would be friction with nothing behind it, and the
-    reverse would be the budget door the old tiering existed to shut.
+    `Sidecar.corpus_sized` is hand-set beside each entry; the sentence a caller
+    reads is in `refresh_sidecar`'s docstring. A sidecar marked expensive that the
+    docstring does not name is a cost nobody is told about — which is how the tier
+    came to exist — and a name in the docstring that is not marked is friction with
+    nothing behind it.
     """
     from just_module_creator.tools.refresh import ROSTER
 
     marked = {csv for csv, sidecar in ROSTER.items() if sidecar.corpus_sized}
     assert marked == {"literature.csv", "gwas_effects.csv"}
-    # And every unmarked one really is reachable in the default tier.
-    for name, sidecar in ROSTER.items():
-        if name not in marked:
-            assert check_sidecar(name, mode="essentials") is sidecar
+
+    async with make_client(offline_settings()) as client:
+        described = {t.name: t.description or "" for t in await client.list_tools()}
+    text = described["refresh_sidecar"]
     for name in marked:
-        with pytest.raises(ToolError, match="extended"):
-            check_sidecar(name, mode="essentials")
+        assert name in text, f"{name} is corpus-sized and the docstring does not warn about it"
+    for name in set(ROSTER) - marked:
+        assert f"{name} run" not in text
 
 
 async def test_the_answer_names_the_toolchain_that_derived_the_row_identity(
@@ -705,7 +710,7 @@ async def test_the_answer_names_the_toolchain_that_derived_the_row_identity(
     """
     from importlib import metadata
 
-    async with make_client("extended", offline_settings(workspace=str(spec_dir.parent))) as client:
+    async with make_client(offline_settings(workspace=str(spec_dir.parent))) as client:
         result = await client.call_tool(
             "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
         )
@@ -800,7 +805,7 @@ async def test_a_refusal_never_claims_a_restoration_that_did_not_happen(
         raise EnrichmentError("Ensembl returned 503")
 
     patch_resolution_pass(monkeypatch, outage)
-    async with make_client("extended", online) as client:
+    async with make_client(online) as client:
         result = await client.call_tool(
             "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
         )

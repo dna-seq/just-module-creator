@@ -34,7 +34,7 @@ increasingly, a VCF annotator joining on position.
 | Parquet | `pharm_variants.parquet` — in `compiler._TABLE_KINDS` (`compiler.py:232`) and in `compiler.ARTIFACT_PARQUETS` |
 | Dedup key | `(variant_key, drug, genotype, phenotype_category, annotation_id)` — `compiler._TABLE_DUPE_KEYS[PharmVariantRow]`, `compiler.py:262-264`. Also what `draft.natural_key` returns, so an append can never create a row the compiler then rejects |
 | Authored or machine | **Authored.** A source provider (`clinpgx_draft`) can write real rows, but a human/AI owns them afterwards |
-| Who writes it | the author; `just-dna-enricher draft-clinpgx` (MCP: `draft_from_clinpgx`, extended tier); the compiler stamps three parquet-only columns |
+| Who writes it | the author; `just-dna-enricher draft-clinpgx` (MCP: `draft_from_clinpgx`); the compiler stamps three parquet-only columns |
 | Fact signature | **none.** It is an authored table, not a derived sidecar — see *What moving this table moves* |
 | In `content_signature`? | **Yes**, its authored cells. The three compiler-stamped columns are not |
 | In `artifact.digest`? | **Yes**, as `pharm_variants.parquet` bytes |

@@ -30,7 +30,8 @@ How a person's genotype changes a drug response. It is the deepest area of the s
 its own vocabulary: named alleles (the `*2`, `*17` "star alleles"), the pair a person carries
 (a diplotype), what each allele does, and which variants make an allele up.
 
-Two drafters exist for it, both in **extended** mode: `draft_from_cpic` and `draft_from_clinpgx`.
+Two drafters exist for it: `draft_from_cpic` and `draft_from_clinpgx`. Both pull a whole source,
+so the work is sized by what has been published rather than by what you named — plan the run.
 They copy rows out of a curated source, so they take a `use` argument, and that is not a formality:
 
 **Every PGx upstream — ClinPGx, CPIC, PharmVar — is CC BY-SA *plus a no-sale clause*.** None of them
@@ -52,17 +53,17 @@ division as everywhere else — the module is the knowledge, the reader brings t
 
 ## Evidence you can go deeper on
 
-- **Has this been replicated?** `paper_citations` (extended) walks the citation graph around a paper.
-  It is extended because a citation graph is sized by a corpus, not by what you named.
+- **Has this been replicated?** `paper_citations` walks the citation graph around a paper. Its size
+  is set by the corpus, not by what you named: a well-cited paper has thousands of citing works.
 - **Reading the paper.** `lookup_open_access` says where a legal copy is and on what terms;
   `fetch_fulltext` returns the document. Neither will hand you a passage — see the README's note on
   the two quote columns, and the [find-evidence skill](../skills/find-evidence/SKILL.md).
-- **Bulk passes.** `enrich_facts` and `enrich_literature_pass` (extended) rewrite the sidecars the
-  compile gate reads, across every row at once.
-- **Published effect sizes.** `enrich_gwas_effects` (extended) records what the GWAS Catalog
-  published for your rsIDs into `gwas_effects.csv` — one row per **association**, not per variant. It
-  is extended because the corpus of published associations sizes it: `1 + 2N` requests per variant,
-  measured at 382 for one real module. It does not fill `weight` and nothing on it could: a published
+- **Bulk passes.** `enrich_facts` and `enrich_literature_pass` rewrite the sidecars the compile gate
+  reads, across every row at once — so the module's size, not the call, sets the cost.
+- **Published effect sizes.** `enrich_gwas_effects` records what the GWAS Catalog published for your
+  rsIDs into `gwas_effects.csv` — one row per **association**, not per variant. The corpus of
+  published associations sizes it: `1 + 2N` requests per variant, measured at 382 for one real
+  module. It does not fill `weight` and nothing on it could: a published
   beta belongs to its own study's scale, many associations name no effect allele at all, and the tool
   reports both counts so that is readable rather than assumed.
 

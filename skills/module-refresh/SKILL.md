@@ -40,13 +40,12 @@ side.** It also tells you whether the table's fact signature moved, which is the
 **It resumes if it dies mid-sequence** — a capture is never taken over an unfinished one, so a second
 attempt is a repair rather than a second loss.
 
-**One gate, and it is on the argument rather than on the tool.** A sidecar whose pass is sized by how
-much the world has published, rather than by the rows you wrote, still needs `JMC_MODE=extended`:
-`literature.csv` searches per variant across the corpus, and `gwas_effects.csv` costs `1 + 2N` requests
-per variant, measured at 382 for one real module. Naming one of those in the default tier **raises**,
-and the refusal lists the names that are reachable — read it from there rather than from any file,
-because it is generated from the roster the tests pin. Everything else, `resolution.csv` included, runs
-in the default tier.
+**Two names cost far more than the rest, and nothing stops you.** A sidecar whose pass is sized by
+how much the world has published, rather than by the rows you wrote: `literature.csv` searches per
+variant across the corpus, and `gwas_effects.csv` costs `1 + 2N` requests per variant, measured at
+382 for one real module. Naming one of those used to **raise** unless the server was started in the
+extended tier; since 0.21.0 there is no tier, so the run warns and proceeds. Everything else,
+`resolution.csv` included, is bounded by the rows you wrote.
 
 **Five honest limits, because a tool that hid them would be worse than the manual route:**
 
@@ -57,8 +56,9 @@ in the default tier.
 - **It refuses to classify against a partial re-derivation.** An unreachable source, a pass that did
   nothing, an empty fresh table → your bytes are restored verbatim. A table that was never filled would
   otherwise report every real row as one the source withdrew.
-- **It refuses the two corpus-sized sidecars outside the extended tier**, as above — and the refusal is
-  the only thing standing between you and the by-hand sequence further down.
+- **It does not refuse the two expensive sidecars any more**, as above — it warns, and the budget is
+  yours to weigh. What it will not do is make the pass cheaper: the by-hand sequence further down
+  spends exactly the same requests, and loses the verified capture.
 - **A `source="manual"` row is not always reapplied, and this one will surprise you.** An online run
   that reaches Ensembl writes a `status="not_found"` row for an rsID it cannot resolve. So your manual
   row's subject *is* present in the fresh table, and it lands in **conflicts** — reported, left on

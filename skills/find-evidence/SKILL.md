@@ -73,21 +73,19 @@ cannot tell you the evidence was any good.
 literature_search(gene="MCM6", trait="lactase persistence")   # candidates, with titles
 lookup_open_access(pmid="11788828")                           # where may I read it, on what terms
 fetch_fulltext(pmid="11788828")                               # the document — never a passage
-paper_citations(...)                                          # EXTENDED. replicated, or one paper?
-enrich_literature_pass(spec_dir="spec")                       # EXTENDED. after you author the rows
+paper_citations(...)                                          # a corpus sizes it. replicated, or one paper?
+enrich_literature_pass(spec_dir="spec")                       # a corpus sizes it. after you author the rows
 ```
 
-**Two of those five are extended-tier** (`JMC_MODE=extended`) and are simply absent from a default
-install: `paper_citations` and `enrich_literature_pass`. So on a default server the verify step of
-this loop **cannot be run at all**, and `literature.csv` stays at whatever the last run wrote —
-which for a module you did not author yourself may be nothing. The CLI equivalent is
-`just-dna-enricher literature <dir>`; reaching for it is stepping outside the MCP surface, so say so
-when you do.
+**All five are always there.** The last two used to need `JMC_MODE=extended` and be absent without
+it, so on a default install the verify step of this loop could not be run at all; the tier went in
+0.21.0. What is still true is the **cost**: `paper_citations` follows a citation graph as large as
+the paper is cited, and `enrich_literature_pass` spends at least one request per citation in the
+module, so on a module with hundreds of studies it is a long run rather than a lookup. Weigh it,
+then run it.
 
-**`refresh_sidecar` does not open that door either, and the reason is worth having straight.** The
-tool itself is in every tier, so most sidecars re-derive with no flag. Its gate is on the *argument*,
-and `literature.csv` is one of the two names it **refuses** without `JMC_MODE=extended` — same cost,
-same pass, different door. `module-refresh` owns the tool.
+`refresh_sidecar` reaches the same pass through a different door — naming `literature.csv` re-derives
+that table — and it warns rather than refuses. `module-refresh` owns the tool.
 
 ---
 

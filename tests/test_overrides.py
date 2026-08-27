@@ -225,8 +225,8 @@ def test_a_field_with_no_archive_answer_stays_unknown_even_with_the_sidecar(modu
 # The tools
 # --------------------------------------------------------------------------- #
 @pytest.mark.anyio
-async def test_record_override_writes_the_file_and_logs_the_move(essentials_client, module: Path):
-    out = await essentials_client.call_tool(
+async def test_record_override_writes_the_file_and_logs_the_move(client, module: Path):
+    out = await client.call_tool(
         "record_override",
         {
             "spec_dir": str(module),
@@ -249,9 +249,9 @@ async def test_record_override_writes_the_file_and_logs_the_move(essentials_clie
 
 
 @pytest.mark.anyio
-async def test_the_log_appends_rather_than_replacing(essentials_client, module: Path):
+async def test_the_log_appends_rather_than_replacing(client, module: Path):
     for reason in ("first reason", "second reason"):
-        await essentials_client.call_tool(
+        await client.call_tool(
             "record_override",
             {
                 "spec_dir": str(module),
@@ -269,8 +269,8 @@ async def test_the_log_appends_rather_than_replacing(essentials_client, module: 
 
 
 @pytest.mark.anyio
-async def test_review_queue_reports_what_it_could_not_decide(essentials_client, module: Path):
-    await essentials_client.call_tool(
+async def test_review_queue_reports_what_it_could_not_decide(client, module: Path):
+    await client.call_tool(
         "record_override",
         {
             "spec_dir": str(module),
@@ -282,15 +282,15 @@ async def test_review_queue_reports_what_it_could_not_decide(essentials_client, 
             "recorded_by": "ai-module-creator",
         },
     )
-    out = await essentials_client.call_tool("review_queue", {"spec_dir": str(module)})
+    out = await client.call_tool("review_queue", {"spec_dir": str(module)})
     assert out.data.total == 1
     assert out.data.retirable == 0
     assert out.data.entries[0].mismatch_state == "unknown"
 
 
 @pytest.mark.anyio
-async def test_an_empty_module_has_an_empty_queue(essentials_client, module: Path):
-    out = await essentials_client.call_tool("review_queue", {"spec_dir": str(module)})
+async def test_an_empty_module_has_an_empty_queue(client, module: Path):
+    out = await client.call_tool("review_queue", {"spec_dir": str(module)})
     assert out.data.total == 0
     assert out.data.entries == []
 
@@ -386,10 +386,10 @@ def test_a_field_that_is_not_a_column_name_is_refused_rather_than_written():
 
 @pytest.mark.anyio
 async def test_the_queue_holds_a_record_whose_source_has_a_space_in_its_name(
-    essentials_client, module: Path
+    client, module: Path
 ):
     """`F61` end to end, through the two tools rather than through the codec."""
-    await essentials_client.call_tool(
+    await client.call_tool(
         "record_override",
         {
             "spec_dir": str(module),
@@ -402,7 +402,7 @@ async def test_the_queue_holds_a_record_whose_source_has_a_space_in_its_name(
             "recorded_by": "ai-module-creator",
         },
     )
-    out = await essentials_client.call_tool("review_queue", {"spec_dir": str(module)})
+    out = await client.call_tool("review_queue", {"spec_dir": str(module)})
     assert out.data.other_provenance == []
     assert out.data.total == 1
     assert out.data.entries[0].record.source_name == "GWAS Catalog"

@@ -925,44 +925,6 @@ That is more useful than the generic note and it is only available there.
 can take, and a fabricated licence string is worse than the missing warning. Name the obligation,
 name the licence you read, and stop.
 
-## F47 — a skill can teach an extended-tier step, and the guard that catches this only reads `server.INSTRUCTIONS`
-
-**Found:** 2026-08-20, trying to refresh `literature.csv` from a default-tier session ·
-**Severity:** medium · **Status:** open
-
-`find-evidence`'s loop ends with `enrich_literature_pass(spec_dir="spec")` as the verify step, and
-`paper_citations` sits in the same code block. Both are **extended** (`register_extended_passes`),
-so on a default install neither exists. Nothing in that skill said so — the only mention of a tier
-anywhere near this topic was one parenthesis in `literature.md`.
-
-**This is the exact failure `CLAUDE.md` §5 names** — *"a tier that teaches a step it cannot run is
-the failure mode to check for"* — and the guard written for it,
-`test_the_taught_workflow_runs_in_the_default_tier`, parses the tool names out of
-`server.INSTRUCTIONS`. It does not read the skills, which are the other half of the taught workflow
-and much the larger half.
-
-**What it cost in this session.** `literature.csv` needed re-deriving (`quotes_authored: 0` beside
-authored quotes — see `F44` / upstream `S56`). The two tools for that, `enrich_literature_pass` and
-`refresh_sidecar`, were both extended. On a default server there was no route at all: the module was
-published with the sidecar as found, and the log says so.
-
-> **Half-superseded 2026-08-22 (0.19.0).** `refresh_sidecar` is in every tier now, but
-> `literature.csv` is one of the two sidecars it still refuses outside extended — its pass is sized
-> by a corpus — so the conclusion above **still holds for this table** and no longer holds in
-> general. The finding this entry is really about, that a taught step can be unreachable in the
-> tier that teaches it, is unchanged.
-
-**Candidate fix.** A test that extracts `name(` call sites from every `skills/**/*.md` fenced block,
-resolves them against the essentials roster, and requires an `EXTENDED` marker on the line for any
-that is not. That is mechanical, it cannot drift, and it would have caught this the day
-`enrich_literature_pass` moved behind the flag.
-
-**A candidate that is wrong: moving the passes into essentials.** The tier line is cost, and a pass
-that rewrites every row of a corpus is squarely extended. The defect is the silence, not the tier.
-
-**What was done meanwhile.** `find-evidence` now marks both tools `EXTENDED` in the loop, names the
-CLI equivalent, and says that reaching for it is stepping outside the MCP surface.
-
 ## F50 — "Try the locations below" when there are none, because the fallback needs a DOI the caller did not pass
 
 **Found:** 2026-08-20, chasing an author manuscript by PMCID · **Severity:** low · **Status:** open

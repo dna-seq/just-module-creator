@@ -139,9 +139,9 @@ def test_it_reads_the_authored_file_rather_than_literature_csv(tmp_path: Path):
 # Wiring: both surfaces report it, and the layer that computed it stays legible
 # --------------------------------------------------------------------------- #
 @pytest.mark.anyio
-async def test_lint_rows_reports_it_and_counts_it_as_a_warning(essentials_client):
+async def test_lint_rows_reports_it_and_counts_it_as_a_warning(client):
     text = HEADER + f"rs1042173,24489884,{TITLE},x\nrs2769605,24489884,{TITLE},y\n"
-    out = await essentials_client.call_tool(
+    out = await client.call_tool(
         "lint_rows", {"csv_name": "studies.csv", "csv_text": text}
     )
     ours = [f for f in out.data.findings if f.source == OURS]
@@ -154,14 +154,14 @@ async def test_lint_rows_reports_it_and_counts_it_as_a_warning(essentials_client
 
 @pytest.mark.anyio
 async def test_validate_module_reports_it_beside_upstreams_own_strings(
-    essentials_client, spec_dir: Path
+    client, spec_dir: Path
 ):
     (spec_dir / "studies.csv").write_text(
         "rsid,pmid,provenance_quote,conclusion\n"
         f"rs4988235,11788828,{TITLE},Original identification\n"
         f"rs4988235,11788828,{TITLE},Second row citing the same paper\n"
     )
-    out = await essentials_client.call_tool(
+    out = await client.call_tool(
         "validate_module", {"spec_dir": str(spec_dir), "strict": False}
     )
     assert len(out.data.authored_findings) == 1
@@ -172,7 +172,7 @@ async def test_validate_module_reports_it_beside_upstreams_own_strings(
 
 
 @pytest.mark.anyio
-async def test_an_authored_finding_does_not_change_validity(essentials_client, spec_dir: Path):
+async def test_an_authored_finding_does_not_change_validity(client, spec_dir: Path):
     """It is a warning about a shape, not a refusal: the compiler would still build this."""
     honest = (
         "rsid,pmid,provenance_quote,conclusion\n"
@@ -184,11 +184,11 @@ async def test_an_authored_finding_does_not_change_validity(essentials_client, s
         f"rs4988235,11788828,{TITLE},Second\n"
     )
     (spec_dir / "studies.csv").write_text(honest)
-    before = await essentials_client.call_tool(
+    before = await client.call_tool(
         "validate_module", {"spec_dir": str(spec_dir), "strict": False}
     )
     (spec_dir / "studies.csv").write_text(repeated)
-    after = await essentials_client.call_tool(
+    after = await client.call_tool(
         "validate_module", {"spec_dir": str(spec_dir), "strict": False}
     )
     assert before.data.valid == after.data.valid
@@ -328,8 +328,8 @@ def test_the_second_rule_is_one_finding_however_many_groups_there_are():
 # Wiring: both surfaces carry the conclusion findings too
 # --------------------------------------------------------------------------- #
 @pytest.mark.anyio
-async def test_lint_rows_carries_the_conclusion_warning_on_variants(essentials_client):
-    out = await essentials_client.call_tool(
+async def test_lint_rows_carries_the_conclusion_warning_on_variants(client):
+    out = await client.call_tool(
         "lint_rows", {"csv_name": "variants.csv", "csv_text": SWAPPED}
     )
     ours = [f for f in out.data.findings if f.source == OURS]
@@ -340,10 +340,10 @@ async def test_lint_rows_carries_the_conclusion_warning_on_variants(essentials_c
 
 @pytest.mark.anyio
 async def test_validate_module_carries_them_from_variants_csv_too(
-    essentials_client, spec_dir: Path
+    client, spec_dir: Path
 ):
     (spec_dir / "variants.csv").write_text(SWAPPED)
-    out = await essentials_client.call_tool(
+    out = await client.call_tool(
         "validate_module", {"spec_dir": str(spec_dir), "strict": False}
     )
     ours = [f for f in out.data.authored_findings if f.column == "conclusion"]

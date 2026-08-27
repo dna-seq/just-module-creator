@@ -1,26 +1,26 @@
-"""EXTENDED — ``paper_citations`` only, plus the two artifact reads that moved out.
+"""The citation graph, and getting somebody else's module onto disk.
 
-``register_extended`` is registered ONLY when mode == "extended" and now holds one
-tool: ``paper_citations`` traverses a citation graph whose size the corpus decides,
-which is the cost rule the tier is *for*.
+``register_citation_graph`` holds one tool: ``paper_citations`` traverses a graph
+whose size the corpus decides rather than the caller. It used to be the whole
+content of the extended tier, and that tier is gone (0.21.0) — the cost is real,
+so it is said in the docstring where the caller reads it, instead of behind a
+flag that hid the tool from the sessions most likely to need it.
 
-``register_artifact_reads`` is ALWAYS registered. ``reverse_module`` and
-``registry_download`` moved there on 2026-08-22, and the second clause of the old
-tier rule — "or that reads back somebody else's compiled artifact" — is **deleted
-rather than narrowed**. It was never a cost argument. Fetching one named version of
-one named module is bounded by exactly what the caller named, which is the
-essentials test; reversing one artifact directory is a local read with no network
-at all.
+``register_artifact_reads`` holds ``reverse_module`` and ``registry_download``,
+which moved out of the tier on 2026-08-22 when the clause that put them there —
+"or that reads back somebody else's compiled artifact" — was deleted rather than
+narrowed. It was never a cost argument. Fetching one named version of one named
+module is bounded by exactly what the caller named; reversing one artifact
+directory is a local read with no network at all.
 
-The clause cost two unattended runs their whole task. Both ran in the default tier,
-neither could see ``registry_download``, and both concluded no tool fetches a
-published module — one of them wrote a bespoke script against an undocumented
-``/files/`` endpoint to get past it. Worse, ``compare_to_published`` is essentials
-and its docstring hands the caller a ``registry_download`` + ``compare_modules``
-pair, so the default tier taught a step it could not run. That is the same defect
-0.4.0 fixed for ``enrich_module``, and the lesson did not generalise the first time.
-
-What is left in the mode flag is one rule and no exceptions: **a corpus sizes it.**
+That clause cost two unattended runs their whole task. Both ran in the default
+tier, neither could see ``registry_download``, and both concluded no tool fetches
+a published module — one of them wrote a bespoke script against an undocumented
+``/files/`` endpoint to get past it. Worse, ``compare_to_published`` was in the
+default tier and its docstring hands the caller a ``registry_download`` +
+``compare_modules`` pair, so that tier taught a step it could not run. The same
+defect had already been fixed for ``enrich_module`` in 0.4.0 and did not
+generalise; removing the axis is what finally generalises it.
 """
 
 from __future__ import annotations
@@ -49,8 +49,10 @@ from just_module_creator.tools._shared import offline_for, resolve_dir
 log = get_logger()
 
 
-def register_extended(mcp: FastMCP, settings: Settings, services: NetworkServices) -> None:
-    """Register the extended-only tools."""
+def register_citation_graph(
+    mcp: FastMCP, settings: Settings, services: NetworkServices
+) -> None:
+    """Register ``paper_citations``: one tool, and the corpus sizes its work."""
 
     # ----------------------------------------------------------------- #
     # Reading a paper
@@ -63,7 +65,6 @@ def register_extended(mcp: FastMCP, settings: Settings, services: NetworkService
             )
 
     @mcp.tool(
-        tags={"extended"},
         annotations=ToolAnnotations(
             title="Who cited this paper",
             readOnlyHint=True,
@@ -96,6 +97,13 @@ def register_extended(mcp: FastMCP, settings: Settings, services: NetworkService
         Semantic Scholar only — it is the source that publishes the graph. Coverage
         is uneven for older clinical literature, so a short list is weak evidence
         of little citation rather than proof of none.
+
+        **Its size is set by the corpus, not by you.** A well-cited paper has
+        thousands of citing works, and a traversal follows whatever is there —
+        unlike every lookup beside it, which is bounded by the one thing you
+        named. Budget for it: this was the whole content of the extended tier
+        until 0.21.0, and the tier is gone because hiding it never made a
+        traversal cheaper.
 
         A rate limit or outage comes back as `results=null`, never an empty list:
         "S2 could not answer" and "nobody cited this" are different facts, and the

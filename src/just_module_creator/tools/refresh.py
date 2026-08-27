@@ -61,15 +61,15 @@ back verbatim and the run reports why. Classifying against a table that was neve
 filled would report every real row as one the source had withdrawn — which is the
 exact false negative this tool exists to prevent.
 
-Every tier since 2026-08-22, with the gate on the argument rather than the tool.
-The cost rule is unchanged and the measurement behind it stands — a refresh runs
-whichever pass owns the sidecar, and `gwas_effects.csv`'s is measured at 382
-requests for one real module — but that is true of the two sidecars marked
-`corpus_sized` and not of the rest, and gating the tool gated `resolution.csv`
-too. Re-deriving that one is the highest-value action either of the 2026-08-21
-unattended runs took, and both spelled it `rm resolution.csv` because neither
-could see this tool. `check_sidecar` raises on a gated name, listing what is
-reachable.
+**Nothing here is gated, and the cost is said out loud instead.** The measurement
+behind the old gate stands — a refresh runs whichever pass owns the sidecar, and
+`gwas_effects.csv`'s is measured at 382 requests for one real module — but that
+is true of the two sidecars marked `corpus_sized` and not of the other five. The
+gate moved from the tool to its argument on 2026-08-22 and left entirely with the
+mode axis in 0.21.0; what replaces it is a `ctx.info` warning and a paragraph in
+the tool's own docstring. Re-deriving `resolution.csv` was the highest-value
+action either of the 2026-08-21 unattended runs took, and both spelled it
+`rm resolution.csv` because neither could see this tool.
 """
 
 from __future__ import annotations
@@ -205,11 +205,13 @@ class Sidecar:
     signature: Callable[[Sequence[BaseModel]], str]
     passes: tuple[SidecarPass, ...]
     #: Its pass is sized by how much has been published rather than by what you
-    #: named, so refreshing it in the default tier would spend an extended budget
-    #: through a different door. Declared per sidecar rather than per tool because
-    #: this is where the cost actually lives: five of the seven are bounded by the
-    #: rows you wrote. `tests/test_refresh.py` pins this set against the passes
-    #: that `register_extended_passes` gates, so the two cannot drift apart.
+    #: named — two of the seven. Nothing refuses it any more: the tier that did is
+    #: gone (0.21.0), and hiding the tool never made the pass cheaper, it only made
+    #: the five bounded entries unreachable through the same door. What the marker
+    #: does now is make the cost visible *before* the call — `refresh_sidecar` says
+    #: it in `ctx.info` and names both in its own docstring, and
+    #: `tests/test_refresh.py` pins the docstring against this set so the warning
+    #: cannot drift away from the data.
     corpus_sized: bool = False
 
 
@@ -658,35 +660,26 @@ def aggregate(counted: Sequence[tuple[int, str]]) -> list[str]:
 # --------------------------------------------------------------------------- #
 # Argument checks
 # --------------------------------------------------------------------------- #
-def check_sidecar(name: str, mode: str = "essentials") -> Sidecar:
+def check_sidecar(name: str) -> Sidecar:
     """Resolve a sidecar name, with a usable error and the honest refusals.
 
-    ``mode`` gates the corpus-sized sidecars only, and **defaults to the narrower tier
-    so that a call site which forgets it fails closed**: defaulting to ``"extended"``
-    would make a forgotten argument silently skip the gate, which is the wrong way round
-    for a budget guard. The tool itself is essentials
-    since 2026-08-22: two unattended runs both concluded that re-deriving a stale
+    Every entry in the roster resolves. The tier gate that used to sit here — two
+    of the seven refused unless the server was started in extended — went with the
+    mode axis in 0.21.0. It had already been narrowed from the tool to its argument
+    on 2026-08-22, after two unattended runs each concluded that re-deriving a stale
     sidecar has no tool and that ``rm resolution.csv`` is the sanctioned interface,
-    because neither could see this one. `resolution.csv` is five of the seven
-    entries' company in being bounded by the rows you wrote, and it is the entry
-    both runs actually needed — refreshing it is the highest-value action either
-    run took, and this tool does it with a verified capture and the
-    ``signature_moved`` canary rather than with a delete.
+    because neither could see this one; `resolution.csv` was never the expensive
+    entry, and refreshing it with a verified capture and the ``signature_moved``
+    canary was the highest-value action either run took.
+
+    What is left of the cost argument is a warning rather than a refusal: see
+    ``Sidecar.corpus_sized``.
     """
     wanted = name.strip()
     if not wanted.endswith(".csv"):
         wanted = f"{wanted}.csv"
     if wanted in ROSTER:
-        chosen = ROSTER[wanted]
-        if chosen.corpus_sized and mode != "extended":
-            raise ToolError(
-                f"{wanted} is refreshable, but its pass is sized by how much has been "
-                f"published rather than by what you named, so it needs the extended tier: "
-                f"set JMC_MODE=extended (or --mode extended) and restart the server. "
-                f"Bounded in this tier: "
-                f"{', '.join(sorted(c for c, s in ROSTER.items() if not s.corpus_sized))}."
-            )
-        return chosen
+        return ROSTER[wanted]
     if wanted in UNREFRESHABLE:
         raise ToolError(f"{wanted} cannot be refreshed: {UNREFRESHABLE[wanted]}")
     raise ToolError(
@@ -725,15 +718,12 @@ def check_use(sidecar: Sidecar, use: str | None) -> str:
 # --------------------------------------------------------------------------- #
 # The tool
 # --------------------------------------------------------------------------- #
-def register_refresh(
-    mcp: FastMCP, settings: Settings, services: NetworkServices, tier: str = "essentials"
-) -> None:
-    """Register the non-destructive sidecar refresh. Always registered since 2026-08-22.
+def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices) -> None:
+    """Register the non-destructive sidecar refresh.
 
-    ``tier`` is passed through to ``check_sidecar``, which refuses the two
-    corpus-sized sidecars outside the extended tier. The gate moved from the tool
-    to its argument because that is where the cost lives: five of the seven
-    entries are bounded by the rows you wrote, and gating the tool gated those too.
+    Every sidecar in the roster is reachable. The two whose pass a corpus sizes
+    warn rather than refuse — the cost is real, and the caller is the one who can
+    weigh it against what they are doing.
     """
 
     @mcp.tool(
@@ -812,9 +802,21 @@ def register_refresh(
         `use` is required for `gene_metrics.csv` and `gwas_effects.csv`, whose
         passes read a licence-bearing source. `licensing.csv` cannot be refreshed
         at all — no pass derives it.
+
+        **Two entries are expensive and nothing stops you.** `literature.csv` and
+        `gwas_effects.csv` run passes sized by how much has been published rather
+        than by the rows you wrote — the GWAS one was measured at 382 requests for
+        one real module. The other five are bounded by your own rows. That is a
+        budget to weigh, not a refusal: this used to need a server restart in
+        another tier, and the tier hid the cheap five along with the two.
         """
         target = resolve_dir(spec_dir, settings)
-        chosen = check_sidecar(sidecar, mode=tier)
+        chosen = check_sidecar(sidecar)
+        if chosen.corpus_sized and ctx is not None:
+            await ctx.info(
+                f"{chosen.csv}'s pass is sized by how much has been published, not by the rows "
+                "you wrote — expect a long run and a large request budget."
+            )
         declared = check_use(chosen, use)
         eff_offline = offline_for(settings, offline)
         mode = "strict" if strict else "best_effort"

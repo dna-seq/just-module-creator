@@ -1289,7 +1289,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             "must author a coordinate, `start` is the 1-based VCF position: paste it, "
             "never subtract one.\n"
             "4. `lint_rows` on the text before writing it; act on the refusals yourself.\n"
-            "5. `validate_module(strict=true)`, then `enrich_module` (extended mode) "
+            "5. `validate_module(strict=true)`, then `enrich_module` "
             "for coordinates and the ref check, then `compile_module(strict=true)`.\n"
             "6. Read the warnings on every green run.\n\n"
             "Never invent a PMID, never fill a cell from the source that checks it, "

@@ -1,25 +1,35 @@
-"""The two gating axes: mode (which tools exist) and auth (whether they work).
+"""One tool surface, and the axes that are left: auth, offline, containment.
 
-Plus the offline ceiling, which is this server's third safety property: a
-per-call ``offline=False`` must never punch through a server configured for zero
-egress.
+The mode axis is gone (0.21.0). ``JMC_MODE``, ``--mode`` and the ``extended``
+tier were removed after three separate occasions on which the default tier taught
+a step it could not run, so what used to be *"does this tool exist in this
+tier?"* is now *"does this tool exist?"* — a weaker question that still catches
+every failure the tier tests were actually built for, because the failure shape
+was always a doc naming something the caller could not call.
+
+Auth decides whether the registry tools **work**, per call and per instance. The
+offline ceiling is the safety property a per-call ``offline=False`` must never
+punch through. Containment is ``JMC_WORKSPACE``.
 """
 
 from __future__ import annotations
 
+import inspect
 import re
 from importlib import metadata
 
 import pytest
 from conftest import offline_settings  # tests/ is on sys.path via pytest rootdir
 from fastmcp.exceptions import ToolError
+from pydantic import BaseModel
 
+from just_module_creator import models
 from just_module_creator.auth import GATED_TOOLS, resolve_install_id
 from just_module_creator.server import INSTRUCTIONS
 from just_module_creator.settings import Settings
 
-# The authoring loop an agent cannot work without. Present in EVERY mode.
-ESSENTIAL_TOOLS = {
+# The authoring loop an agent cannot work without.
+AUTHORING_LOOP = {
     "list_tables",
     "describe_table",
     # The read-only half of the same rule: an author meets `resolution.csv` and the
@@ -38,73 +48,100 @@ ESSENTIAL_TOOLS = {
     "literature_search",
     # And so does identifier checking: describe_table says trait_efo_id takes an
     # ontology CURIE, and this is the only thing that says the one you have in
-    # mind is real. Without it the default tier invites writing one from memory.
+    # mind is real. Without it, an author writes one from memory.
     "lookup_identifier",
     "check_identifiers",
 }
 
-# Bounded by a CORPUS rather than by what you named. That is the whole rule now,
-# and there are no other clauses (2026-08-22).
+# Bounded by a CORPUS rather than by what the caller named. That was the whole
+# content of the extended tier, and the cost measurement behind it still stands:
+# `enrich_gwas_effects` spends `1 + 2N` requests for a variant with N published
+# associations, measured at 382 for one real module.
 #
-# The clause that used to sit beside it — "or about reading back somebody else's
-# compiled artifact" — is DELETED, not narrowed. It was never a cost argument:
-# fetching one named version of one named module is bounded by exactly what the
-# caller named. It cost two independent unattended runs their task. Both ran in the
-# default tier, so neither saw `registry_download`, and both reported that no tool
-# fetches a published module — one wrote a script against an undocumented `/files/`
-# endpoint to get past it. `compare_to_published` is essentials and its docstring
-# hands the caller a `registry_download` + `compare_modules` pair, so the default
-# tier taught a step it could not run: the same defect 0.4.0 fixed for
-# `enrich_module`, which is why `test_docstrings_only_name_tools_this_tier_has`
-# below now guards the docstrings and not just INSTRUCTIONS.
-#
-# `refresh_sidecar` left too, and its cost objection was real rather than
-# inherited: it runs whichever pass owns the sidecar, and `gwas_effects.csv`'s is
-# measured at 382 requests. That gate moved to the ARGUMENT, where the cost lives —
-# `Sidecar.corpus_sized` — because five of the seven entries are bounded by the rows
-# you wrote, `resolution.csv` among them. Re-deriving that one is the highest-value
-# action either run took, and both spelled it `rm resolution.csv` for want of a tool
-# they could see.
-EXTENDED_ONLY = {
+# What changed in 0.21.0 is who is told. Hiding a tool never made its pass
+# cheaper; it made the tool invisible to exactly the sessions that needed it, and
+# it took cheap tools with it every time the line was drawn — `enrich_module` in
+# 0.4.0, `registry_download` and `refresh_sidecar` in the two 2026-08-21
+# unattended runs, one of which wrote a script against an undocumented `/files/`
+# endpoint rather than conclude the tool existed. So the cost is now a sentence in
+# each tool's own docstring, which is where a caller who could weigh it will read
+# it, and `test_the_corpus_sized_tools_say_what_they_cost` is what keeps that
+# sentence from drifting away from the tool.
+CORPUS_SIZED = {
     "paper_citations",
     "draft_from_cpic",
     "draft_from_clinpgx",
     "enrich_facts",
     "enrich_literature_pass",
-    # `1 + 2N` requests for a variant with N published associations, measured at 382
-    # for one real module: sized by how much has been published, not by what you named.
     "enrich_gwas_effects",
 }
+
+#: Prefixes every tool name in this server shares. A backticked word starting with
+#: one of these, in a tool description, is a tool being named — which is what makes
+#: `test_docstrings_only_name_tools_that_exist` able to tell a tool from a column.
+TOOL_PREFIXES = (
+    "registry_",
+    "draft_from_",
+    "enrich_",
+    "lookup_",
+    "describe_",
+    "compare_",
+    "refresh_",
+    "record_",
+    "review_",
+    "list_",
+    "table_",
+    "check_",
+    "lint_",
+    "audit_",
+    "study_",
+    "verify_",
+    "fetch_",
+    "paper_",
+    "close_",
+    "scaffold_",
+    "validate_",
+    "compile_",
+    "literature_",
+    "module_",
+    "reverse_",
+    "get_template",
+    "authenticate",
+)
 
 
 async def _names(client) -> set[str]:
     return {t.name for t in await client.list_tools()}
 
 
-async def test_essentials_mode_exposes_the_authoring_loop(essentials_client):
-    names = await _names(essentials_client)
-    assert names >= ESSENTIAL_TOOLS
+async def test_the_surface_exposes_the_authoring_loop(client):
+    names = await _names(client)
+    assert names >= AUTHORING_LOOP
 
 
-async def test_the_taught_workflow_runs_in_the_default_tier(essentials_client, extended_client):
-    """Every tool the server's own instructions name must exist in essentials.
+async def test_every_tool_the_taught_workflow_names_exists(client):
+    """Every tool the server's own instructions name must be registered.
 
-    The server teaches an order in ``INSTRUCTIONS``. Teaching a step the default
-    tier cannot run is the specific defect this asserts against — ``enrich_module``
-    was named in that order while being extended-only, so an agent following the
-    instructions hit a tool that was not there. Derived from the text rather than
-    restated, so editing the taught order re-checks it.
+    The server teaches an order in ``INSTRUCTIONS``. Teaching a step that cannot
+    be run is the defect this asserts against — ``enrich_module`` was named in
+    that order while being extended-only, so an agent following the instructions
+    hit a tool that was not there. The tier is gone and the assertion is weaker
+    for it, but the failure shape survives the tier: a taught name that no longer
+    resolves (renamed, moved, dropped) fails here exactly as it did before.
+    Derived from the text rather than restated, so editing the order re-checks it.
     """
     # Bounded by the blank line that ends the block, not by the prose that
     # follows it: this read `.split("Three rules")` until renumbering those rules
     # silently widened the slice to the whole document and reported an unrelated
     # tool as a tiering bug.
     workflow = INSTRUCTIONS.split("Work in this order:")[1].split("\n\n")[1]
-    every_tool = await _names(extended_client)
-    named = {word for word in re.findall(r"[a-z_]{4,}", workflow) if word in every_tool}
+    registered = await _names(client)
+    words = {word for word in re.findall(r"[a-z_]{4,}", workflow)}
+    named = {word for word in words if word in registered}
 
     assert named, "parsed no tool names out of the taught workflow — the format changed"
-    assert named <= await _names(essentials_client)
+    taught_tools = {w for w in words if w.startswith(TOOL_PREFIXES)}
+    assert taught_tools <= registered, sorted(taught_tools - registered)
 
 
 def test_instructions_name_the_running_toolchain():
@@ -118,87 +155,115 @@ def test_instructions_name_the_running_toolchain():
     assert f"just-dna-compiler {metadata.version('just-dna-compiler')}" in INSTRUCTIONS
 
 
-async def test_docstrings_only_name_tools_this_tier_has(essentials_client, extended_client):
-    """A docstring that hands you a tool this tier lacks is a dead end, same as INSTRUCTIONS.
+async def test_docstrings_only_name_tools_that_exist(client):
+    """A docstring that hands you a tool you cannot call is a dead end.
 
-    `test_the_taught_workflow_runs_in_the_default_tier` guards the taught order and
-    nothing else, so this one went unnoticed: `compare_to_published` is essentials
-    and its docstring ended "`next_step` names the `registry_download` +
-    `compare_modules` pair that gets it", naming a tool the default tier did not
-    have. An unattended run followed it, found nothing, and concluded the capability
-    did not exist anywhere.
+    `test_every_tool_the_taught_workflow_names_exists` guards the taught order and
+    nothing else, so this went unnoticed until an unattended run hit it:
+    `compare_to_published`'s docstring ended "`next_step` names the
+    `registry_download` + `compare_modules` pair that gets it", naming a tool the
+    default tier did not have. The run followed the sentence, found nothing, and
+    concluded the capability existed nowhere.
 
-    A mention is allowed to name an extended tool — that is often the honest answer
-    — but only while saying so, which is what the tier marker is. Asserted over the
-    essentials surface's own descriptions, so it re-checks whenever either moves.
+    Removing the tier removes that particular way of being wrong, and leaves this
+    one: a renamed or retired tool still named in a sibling's description. A
+    backticked word starting with one of `TOOL_PREFIXES` is a tool being named,
+    which is what tells a tool from a column or a file.
     """
-    essentials = await _names(essentials_client)
-    every_tool = await _names(extended_client)
-    missing = every_tool - essentials
+    listed = await client.list_tools()
+    registered = {t.name for t in listed}
+
+    # A backticked word can be a tool, a field we return or an argument a tool
+    # takes, and only the first kind can be a dead end. Both exclusions are
+    # GENERATED — from the live input schemas and from our own result models — so
+    # neither goes stale the way a hand-kept allowlist of "words that look like
+    # tools but are not" would.
+    data_words: set[str] = set()
+    for tool in listed:
+        data_words |= set((tool.inputSchema or {}).get("properties", {}))
+    for obj in vars(models).values():
+        if inspect.isclass(obj) and issubclass(obj, BaseModel):
+            data_words |= set(obj.model_fields)
 
     offenders: list[str] = []
-    for tool in await essentials_client.list_tools():
+    for tool in listed:
         text = tool.description or ""
-        for named in sorted(missing):
-            if f"`{named}`" not in text:
+        for named in sorted(set(re.findall(r"`([a-z][a-z0-9_]{3,})`", text))):
+            if named in registered or named in data_words:
                 continue
-            # The marker may be the word or the variable that turns it on.
-            window = text[max(0, text.index(f"`{named}`") - 200) :]
-            if "extended" not in window.lower() and "JMC_MODE" not in window:
-                offenders.append(f"{tool.name} names `{named}` with no tier marker")
+            if named.startswith(TOOL_PREFIXES):
+                offenders.append(f"{tool.name} names `{named}`, which is not registered")
     assert not offenders, "\n".join(offenders)
 
 
-async def test_extended_only_tools_are_absent_by_default(essentials_client):
-    assert not (EXTENDED_ONLY & await _names(essentials_client))
+async def test_the_corpus_sized_tools_say_what_they_cost(client):
+    """They are all reachable, and each one warns in its own description.
+
+    This is the whole replacement for the tier: nothing refuses, and the caller is
+    told before spending the budget. A tool that stops saying so is a tool whose
+    cost became invisible, which is how the flag got added in the first place.
+    """
+    names = await _names(client)
+    assert names >= CORPUS_SIZED
+
+    silent = []
+    for tool in await client.list_tools():
+        if tool.name not in CORPUS_SIZED:
+            continue
+        text = (tool.description or "").lower()
+        if not any(
+            phrase in text
+            for phrase in ("corpus", "published rather than", "how much has been published",
+                           "requests", "budget")
+        ):
+            silent.append(tool.name)
+    assert not silent, f"corpus-sized tools with no cost warning: {silent}"
 
 
-async def test_extended_mode_is_a_superset(essentials_client, extended_client):
-    essentials = await _names(essentials_client)
-    extended = await _names(extended_client)
-    assert essentials < extended
-    assert extended >= EXTENDED_ONLY
-    # The mode flag hides these and nothing else.
-    assert extended - essentials == EXTENDED_ONLY
+async def test_gated_tools_are_listed_by_default(client):
+    """Listed and refusing per call, so an agent can discover them without a token.
+
+    Hiding them is now possible per session — `ctx.enable_components` is
+    session-scoped, unlike `mcp.enable` — and is opt-in behind
+    `JMC_HIDE_GATED_UNTIL_AUTH`. The default stays *listed*, because a hidden tool
+    answers a call by name with "Unknown tool" instead of a message saying how to
+    get a token.
+    """
+    assert set(GATED_TOOLS) <= await _names(client)
 
 
-async def test_gated_tools_are_always_listed(essentials_client, extended_client):
-    """Listed in both modes: hiding them per-client is not multi-tenant safe."""
-    for client in (essentials_client, extended_client):
-        assert set(GATED_TOOLS) <= await _names(client)
-
-
-async def test_gated_tool_without_a_token_returns_not_raises(essentials_client):
-    result = await essentials_client.call_tool("registry_whoami", {})
+async def test_gated_tool_without_a_token_returns_not_raises(client):
+    result = await client.call_tool("registry_whoami", {})
     assert result.data.success is False
     assert "registry token" in result.data.message
 
 
-async def test_authenticate_stores_a_token_for_this_session(essentials_client):
-    result = await essentials_client.call_tool("authenticate", {"token": "tok_abc123"})
+async def test_authenticate_stores_a_token_for_this_session(client):
+    result = await client.call_tool("authenticate", {"token": "tok_abc123"})
     assert result.data.authenticated
     assert set(result.data.unlocked_tools) == set(GATED_TOOLS)
     # It stores; it does not claim the registry accepted anything.
     assert "registry_whoami" in result.data.message
 
 
-async def test_authenticate_rejects_an_empty_token(essentials_client):
-    result = await essentials_client.call_tool("authenticate", {"token": "   "})
+async def test_authenticate_rejects_an_empty_token(client):
+    result = await client.call_tool("authenticate", {"token": "   "})
     assert result.data.authenticated is False
 
 
 # --------------------------------------------------------------------------- #
 # Onboarding — the one registry write that cannot be token-gated
 # --------------------------------------------------------------------------- #
-async def test_onboarding_tools_are_in_every_mode(essentials_client, extended_client):
-    """The route to a token must exist in the DEFAULT surface.
+async def test_onboarding_tools_are_on_the_surface(client):
+    """The route to a token must be visible.
 
-    Behind `extended` it would be the same dead end in a different place: every
-    other registry tool needs a token, and only this one produces one.
+    Behind a flag it would be a dead end in a different place: every other
+    registry tool needs a token, and only this one produces one. That is also why
+    `registry_register` is pinned visible when the listing is narrowed — by tool
+    search, or by hiding the gated tools until a session authenticates.
     """
-    for client in (essentials_client, extended_client):
-        names = await _names(client)
-        assert {"registry_register", "registry_namespace_available"} <= names
+    names = await _names(client)
+    assert {"registry_register", "registry_namespace_available"} <= names
 
 
 async def test_the_tool_that_mints_the_token_is_not_gated_by_one():
@@ -206,7 +271,7 @@ async def test_the_tool_that_mints_the_token_is_not_gated_by_one():
 
 
 async def test_onboarding_tools_respect_the_offline_ceiling(make_client):
-    async with make_client("essentials", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         for tool, args in (
             ("registry_register", {"account": "test-creator"}),
             ("registry_namespace_available", {"namespace": "test-modules"}),
@@ -229,7 +294,7 @@ async def test_an_illegal_account_name_is_refused_before_any_socket(make_client,
         raise AssertionError("a socket was opened for a name that could be rejected locally")
 
     monkeypatch.setattr(httpx.Client, "__init__", explode)
-    async with make_client("essentials", Settings(offline=False, _env_file=None)) as client:  # type: ignore[call-arg]
+    async with make_client(Settings(offline=False, _env_file=None)) as client:  # type: ignore[call-arg]
         with pytest.raises(ToolError, match="not a legal account name") as caught:
             await client.call_tool("registry_register", {"account": "test_creator"})
     # The pattern itself, so the author does not have to guess what "legal" means.
@@ -290,7 +355,7 @@ async def test_registry_token_falls_back_to_the_toolchain_variable(monkeypatch):
 # The offline ceiling
 # --------------------------------------------------------------------------- #
 async def test_offline_settings_block_the_registry(make_client):
-    async with make_client("essentials", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         with pytest.raises(ToolError, match="offline"):
             await client.call_tool("registry_search", {"target": "prod", "query": "lactose"})
 
@@ -302,11 +367,9 @@ async def test_offline_settings_block_every_literature_tool(make_client):
     written it IS the pin — so serving a stale answer here would be inventing a
     guarantee nobody made.
     """
-    async with make_client("essentials", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         with pytest.raises(ToolError, match="offline|JMC_OFFLINE"):
             await client.call_tool("literature_search", {"query": "lactase persistence"})
-
-    async with make_client("extended", offline_settings()) as client:
         for tool, args in (
             ("fetch_fulltext", {"pmid": "11788828"}),
             ("lookup_open_access", {"pmid": "11788828"}),
@@ -328,7 +391,7 @@ async def test_the_offline_check_runs_before_any_client_is_constructed(make_clie
         raise AssertionError("a socket was opened under JMC_OFFLINE")
 
     monkeypatch.setattr(httpx.Client, "__init__", explode)
-    async with make_client("essentials", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         with pytest.raises(ToolError, match="offline|JMC_OFFLINE"):
             await client.call_tool("literature_search", {"query": "lactase persistence"})
 
@@ -351,7 +414,7 @@ async def test_workspace_confines_writes(make_client, tmp_path):
     inside.mkdir()
     settings = offline_settings(workspace=str(inside))
 
-    async with make_client("essentials", settings) as client:
+    async with make_client(settings) as client:
         ok = await client.call_tool(
             "scaffold_module", {"spec_dir": str(inside / "spec"), "name": "m"}
         )
@@ -364,7 +427,7 @@ async def test_workspace_confines_writes(make_client, tmp_path):
 
 
 async def test_no_workspace_means_no_restriction(make_client, tmp_path):
-    async with make_client("essentials", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         result = await client.call_tool(
             "scaffold_module", {"spec_dir": str(tmp_path / "anywhere"), "name": "m"}
         )
@@ -376,17 +439,17 @@ async def test_no_workspace_means_no_restriction(make_client, tmp_path):
 # --------------------------------------------------------------------------- #
 async def test_server_boots_with_no_environment(monkeypatch):
     """Authoring needs no registry account, so a bare env must never fail."""
-    for var in ("JMC_API_KEY", "JMC_MODE", "REGISTRY_TOKEN", "JMC_OFFLINE"):
+    for var in ("JMC_API_KEY", "REGISTRY_TOKEN", "JMC_OFFLINE"):
         monkeypatch.delenv(var, raising=False)
     from just_module_creator.server import build_server
 
     assert build_server() is not None
 
 
-async def test_resource_and_prompt_are_registered(essentials_client):
-    resources = {str(r.uri) for r in await essentials_client.list_resources()}
+async def test_resource_and_prompt_are_registered(client):
+    resources = {str(r.uri) for r in await client.list_resources()}
     assert "resource://just-dna/tables" in resources
-    prompts = {p.name for p in await essentials_client.list_prompts()}
+    prompts = {p.name for p in await client.list_prompts()}
     assert "create_module" in prompts
 
 
@@ -484,7 +547,7 @@ async def test_building_a_server_cannot_repopulate_the_environment_from_dotenv()
     before = {var: os.environ.get(var) for var in _ECOSYSTEM_VARS}
     assert before.get("JMC_TEST_API_KEY") is None  # the fixture ran
 
-    build_server(mode="essentials", settings=offline_settings())
+    build_server(settings=offline_settings())
 
     after = {var: os.environ.get(var) for var in _ECOSYSTEM_VARS}
     repopulated = {var: value for var, value in after.items() if value != before[var]}
@@ -508,7 +571,7 @@ def test_the_dotenv_sweep_actually_finds_the_loader_that_broke_this():
     assert locations.load_dotenv is _refuse_dotenv
 
 
-async def test_paper_citations_accepts_an_unambiguous_direction(extended_client):
+async def test_paper_citations_accepts_an_unambiguous_direction(client):
     """`cited_by` reads as its own opposite, so two clear spellings were added.
 
     Everywhere else in bibliometrics "cited by" labels the citations a paper
@@ -520,7 +583,7 @@ async def test_paper_citations_accepts_an_unambiguous_direction(extended_client)
     dropped spelling breaks a caller silently.
     """
     schema = None
-    for tool in await extended_client.list_tools():
+    for tool in await client.list_tools():
         if tool.name == "paper_citations":
             schema = tool
             break
@@ -532,7 +595,7 @@ async def test_paper_citations_accepts_an_unambiguous_direction(extended_client)
 
     # All three backwards spellings are legal, and a wrong one names the choices.
     with pytest.raises(ToolError) as caught:
-        await extended_client.call_tool(
+        await client.call_tool(
             "paper_citations", {"pmid": "11788828", "direction": "sideways"}
         )
     for spelling in ("citing", "references", "cites", "cited_by"):

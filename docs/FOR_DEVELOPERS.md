@@ -37,7 +37,6 @@ enough that a recalled one is usually a real record for a different paper.
 uv sync
 uv run pytest                                  # in-memory and offline; no test can reach the network
 uv run just-module-creator stdio               # run over stdio
-uv run just-module-creator stdio --mode extended
 uv run fastmcp dev fastmcp.json                # MCP Inspector
 ```
 
@@ -50,55 +49,58 @@ which is the shape of claim this repo now warns about in `CLAUDE.md` §8 — a c
 exactly like a hardcoded one. **Ask the server instead**, which cannot drift:
 
 ```bash
-uv run fastmcp dev fastmcp.json     # the Inspector lists every tool in the mode you started
+uv run fastmcp dev fastmcp.json     # the Inspector lists every registered tool
 ```
 
-Both tiers in one call, from Python:
+Or from Python:
 
 ```python
 from fastmcp import Client
 from just_module_creator.server import build_server
 
-async with Client(transport=build_server(mode="extended")) as client:
+async with Client(transport=build_server()) as client:
     names = sorted(tool.name for tool in await client.list_tools())
 ```
 
-| Tool | Tier | Token? | Notes |
+**There is one surface.** The `Cost` column below is a warning, not a gate: since 0.21.0 every tool
+is registered on every start, and the expensive ones say so in their own descriptions.
+
+| Tool | Cost | Token? | Notes |
 |---|---|---|---|
-| `list_tables` | essentials | no | which table kind a finding belongs in |
-| `describe_table` | essentials | no | columns, vocabularies, pick-lists, redundancy-bearing cells |
-| `table_requirements` | essentials | no | required / **defaulted** / optional + the one-of rules |
-| `get_template` | essentials | no | header-only or stubbed CSV |
-| `scaffold_module` | essentials | no | never overwrites; re-run to add a table |
-| `lint_rows` | essentials | no | lints CSV *text*; writes nothing, anywhere |
-| `validate_module` | essentials | no | pre-flight; pass the mode you will compile with |
-| `compile_module` | essentials | no | parquet + `manifest.json` |
-| `lookup_variant` | essentials | no | loci, alleles, ClinVar, rsID currency — and what it withholds |
-| `literature_search` | essentials | no | **the papers behind a row** — with titles, across several services |
-| `lookup_citation` | essentials | no | does this PMID/DOI exist, and which paper does it name |
-| `registry_search` | essentials | no | has someone already built this |
-| `registry_namespace_available` | essentials | no | is the name legal, is it free — the pre-flight for an irreversible claim |
-| `draft_from_clinvar` | essentials | no | ClinVar → `variants.csv` + `studies.csv`; `use` required |
-| `enrich_module` | essentials | no | **blocks; no task id despite `task=True`**; the only thing that catches a shifted `start` |
-| `check_identifiers`, `lookup_identifier` | essentials | no | HGNC / OLS4 currency — what makes `trait_efo_id` writable honestly |
-| `lookup_open_access`, `fetch_fulltext` | essentials | no | where may I read it and on what terms; the document, never a passage |
-| `authoring_reference` | essentials | no | the whole generated DSL |
-| `module_signature`, `verify_artifact` | essentials | no | did the content change; is the artifact intact |
-| `registry_get_module` | essentials | no | one module's full record — the best worked example there is |
-| `registry_is_published` | essentials | no | is this data already published **under any name** — local signature, nothing uploaded |
-| `registry_health` | essentials | no | is the instance up, and does it agree it is the one you named |
+| `list_tables` | bounded | no | which table kind a finding belongs in |
+| `describe_table` | bounded | no | columns, vocabularies, pick-lists, redundancy-bearing cells |
+| `table_requirements` | bounded | no | required / **defaulted** / optional + the one-of rules |
+| `get_template` | bounded | no | header-only or stubbed CSV |
+| `scaffold_module` | bounded | no | never overwrites; re-run to add a table |
+| `lint_rows` | bounded | no | lints CSV *text*; writes nothing, anywhere |
+| `validate_module` | bounded | no | pre-flight; pass the mode you will compile with |
+| `compile_module` | bounded | no | parquet + `manifest.json` |
+| `lookup_variant` | bounded | no | loci, alleles, ClinVar, rsID currency — and what it withholds |
+| `literature_search` | bounded | no | **the papers behind a row** — with titles, across several services |
+| `lookup_citation` | bounded | no | does this PMID/DOI exist, and which paper does it name |
+| `registry_search` | bounded | no | has someone already built this |
+| `registry_namespace_available` | bounded | no | is the name legal, is it free — the pre-flight for an irreversible claim |
+| `draft_from_clinvar` | bounded | no | ClinVar → `variants.csv` + `studies.csv`; `use` required |
+| `enrich_module` | bounded | no | **blocks; no task id despite `task=True`**; the only thing that catches a shifted `start` |
+| `check_identifiers`, `lookup_identifier` | bounded | no | HGNC / OLS4 currency — what makes `trait_efo_id` writable honestly |
+| `lookup_open_access`, `fetch_fulltext` | bounded | no | where may I read it and on what terms; the document, never a passage |
+| `authoring_reference` | bounded | no | the whole generated DSL |
+| `module_signature`, `verify_artifact` | bounded | no | did the content change; is the artifact intact |
+| `registry_get_module` | bounded | no | one module's full record — the best worked example there is |
+| `registry_is_published` | bounded | no | is this data already published **under any name** — local signature, nothing uploaded |
+| `registry_health` | bounded | no | is the instance up, and does it agree it is the one you named |
 | `registry_register` | always | — | **mints** an account and token, so it cannot be gated by one |
 | `authenticate` | always | — | stores a registry token you already hold, for *this session* |
-| `paper_citations` | extended | no | has this finding been replicated — traverses a graph the corpus sizes |
-| `draft_from_cpic`, `draft_from_clinpgx` | extended | no | the PGx tables |
-| `enrich_facts`, `enrich_literature_pass` | extended | no | the sidecars the compile gate reads; rewrite many rows at once |
-| `record_override` | essentials | no | why an authored value outranks a source. **In response to a reported mismatch, never ahead of one** — a row markable as outranked before the check runs destroys the signal that catches a hallucination. Writes `provenance.json` and `logs/authoring.log` |
-| `review_queue` | essentials | no | those records, ranked worst-first. `still_bound` is three-valued; `resolved` means the archive caught up and the override was vindicated |
-| `compare_modules` | essentials | no | two spec directories, three grains, rows grouped by the set of columns that changed. No write path, no verdict on which side is right, and it never pairs rows whose key changed |
-| `refresh_sidecar` | essentials, except `literature.csv` / `gwas_effects.csv` | no | capture, verify, delete, re-derive, reapply what is provably authored, report the rest. Refuses offline and refuses `licensing.csv` |
-| `describe_machine_table` | essentials | no | the live columns of the machine-written tables, and what a hand-written cell there costs |
-| `enrich_gwas_effects` | extended | no | the GWAS Catalog's published effect sizes, **beside** `weight` and never into it. `1 + 2N` requests per variant — the corpus of published associations sizes it |
-| `reverse_module`, `registry_download` | essentials | no | get somebody else's published module onto disk — bounded by the one version you named |
+| `paper_citations` | corpus-sized | no | has this finding been replicated — traverses a graph the corpus sizes |
+| `draft_from_cpic`, `draft_from_clinpgx` | corpus-sized | no | the PGx tables |
+| `enrich_facts`, `enrich_literature_pass` | corpus-sized | no | the sidecars the compile gate reads; rewrite many rows at once |
+| `record_override` | bounded | no | why an authored value outranks a source. **In response to a reported mismatch, never ahead of one** — a row markable as outranked before the check runs destroys the signal that catches a hallucination. Writes `provenance.json` and `logs/authoring.log` |
+| `review_queue` | bounded | no | those records, ranked worst-first. `still_bound` is three-valued; `resolved` means the archive caught up and the override was vindicated |
+| `compare_modules` | bounded | no | two spec directories, three grains, rows grouped by the set of columns that changed. No write path, no verdict on which side is right, and it never pairs rows whose key changed |
+| `refresh_sidecar` | bounded, except `literature.csv` / `gwas_effects.csv` | no | capture, verify, delete, re-derive, reapply what is provably authored, report the rest. Refuses offline and refuses `licensing.csv` |
+| `describe_machine_table` | bounded | no | the live columns of the machine-written tables, and what a hand-written cell there costs |
+| `enrich_gwas_effects` | corpus-sized | no | the GWAS Catalog's published effect sizes, **beside** `weight` and never into it. `1 + 2N` requests per variant — the corpus of published associations sizes it |
+| `reverse_module`, `registry_download` | bounded | no | get somebody else's published module onto disk — bounded by the one version you named |
 | `registry_validate`, `registry_check` | gated | **yes** | would this publish — server-side, spending no version number. `check` is the full dry run |
 | `registry_whoami`, `registry_claim_namespace`, `registry_publish` | gated | **yes** | registry writes; publish records the stamped identity in `published.json` |
 | `registry_amend_readme` | gated | **yes** | fix a published module's card — outside `artifact.digest`, so no version is spent |
@@ -162,43 +164,33 @@ fresh publish look like a broken catalog. The instances share no database,
 so an account, a token and a namespace exist on one of them only, and promoting means publishing
 again with `target="prod"`.
 
-## Modes
+## One surface (the mode axis is gone)
 
-`JMC_MODE` (env) or `--mode` (CLI), default `essentials`. The line is **cost, not usefulness**:
+`JMC_MODE`, `--mode` and the `extended` tier were removed in **0.21.0**. Every tool is registered on
+every start; nothing has to be switched on, and nothing is missing because of how the server was
+launched.
 
-- `essentials` — everything whose work is bounded by what you named: one identifier, one paper, one
-  spec directory. That is the whole taught workflow plus the checks around it, so this tier takes a
-  variants or SNP module from nothing to compiled, verified and published.
-- `extended` — only what a corpus sizes: `paper_citations`, the PGx drafters and the bulk fact
-  passes. The clause "or reads back somebody else's compiled artifact" was deleted on 2026-08-22:
-  it was never a cost argument, and it hid the three tools two unattended runs needed most.
+**The cost the tier was protecting is real and is now prose.** A handful of tools are sized by a
+*corpus* rather than by what the caller named — `paper_citations`, the PGx drafters, the bulk fact
+passes, and `enrich_gwas_effects` at `1 + 2N` requests per variant, measured at 382 for one real
+module. Each says so in its own description, and
+`tests/test_surface_and_auth.py::test_the_corpus_sized_tools_say_what_they_cost` fails if one stops
+saying it. A caller can weigh that against what they are doing; a flag read at server start cannot.
 
-It used to be read-vs-write, which never described the code — `scaffold_module` and `compile_module`
-both write and were always essentials, while `lookup_identifier` only reads and was not. Worse, the
-server taught `… → enrich_module → compile_module` as the canonical order while `enrich_module` was
-extended-only, so an agent following the default tier's own instructions hit a tool that was not
-there. `tests/test_modes_and_auth.py::test_the_taught_workflow_runs_in_the_default_tier` now parses
-the tool names out of that instruction text and fails if any of them is missing from essentials.
+**Why it went rather than being narrowed again.** The line was drawn four times and moved three:
+read-vs-write never described the code, `enrich_module` was extended-only while being step 6 of the
+taught order (0.4.0), `compare_to_published`'s own docstring named `registry_download` from a tier
+that did not have it, and `refresh_sidecar` was invisible to both 2026-08-21 unattended runs, which
+each concluded that `rm resolution.csv` is how a stale sidecar is re-derived. Every one is the same
+defect — the surface taught a step it could not run — and hiding a tool never made its pass cheaper.
+What survives is narrower and still fails loudly: `test_every_tool_the_taught_workflow_names_exists`
+parses the taught order out of `server.INSTRUCTIONS`, and `test_docstrings_only_name_tools_that_exist`
+asserts the same over every description.
 
-### Switching mode
-
-Where you set it depends on how the server was started, and **the three ways do not fall back to
-each other**:
-
-| Started as | Switch by |
-|---|---|
-| plugin (`/plugin install`, `--plugin-dir`) | edit `JMC_MODE` in `.claude-plugin/plugin.json` → reconnect |
-| project MCP server (`.mcp.json` in a checkout) | edit `JMC_MODE` in that file → reconnect |
-| standalone CLI | `uv run just-module-creator stdio --mode extended`, or `JMC_MODE` in the shell or `.env` |
-
-**Editing `.env` cannot switch a plugin-launched server.** `plugin.json` sets `JMC_MODE` in the
-server's `env` block, so it is already exported in the subprocess before any code runs, and `.env` is
-loaded with `override=False` — an exported variable wins deliberately, so the file is read and then
-ignored for that key. Nothing warns you; the tool list simply does not change. Same for `.mcp.json`.
-`JMC_MODE` is the only setting this bites, because it is the only one those files pin.
-
-To confirm which tier is actually live rather than which one you configured, ask for a tool that
-exists in one and not the other — `paper_citations` is present only in extended.
+Two axes remain, and neither is a tier. **Auth** decides whether the registry tools work — and,
+with `JMC_HIDE_GATED_UNTIL_AUTH`, whether they are listed to a session that has not authenticated.
+**Discovery** decides how the surface is presented: `JMC_TOOL_SEARCH` replaces the listing with
+`search_tools` + `call_tool`.
 
 ## Reloading after a change
 
@@ -222,8 +214,8 @@ pgrep -af just-module-creator
 ```
 
 Editing `SKILL.md`, `references/*.md` or `plugin.json` is a *plugin* change, so `/reload-plugins` is
-the right lever there — but a `plugin.json` change to `JMC_MODE` also needs the reconnect, because
-that value is only read when the server process starts.
+the right lever there — but a `plugin.json` change to the server's `env` block also needs the
+reconnect, because those values are only read when the server process starts.
 
 ## Auth
 
@@ -309,11 +301,11 @@ src/just_module_creator/
   net.py               the ONLY module that opens a socket: pacing, retries
   discovery.py         literature sources, parsers, and the refusals
   tools/
-    authoring.py       essentials — the offline loop, schema dump, integrity
-    research.py        essentials — read-only lookups: variants, papers, identifiers
-    passes.py          fetch-then-write: draft_from_clinvar + enrich_module (both
-                       essentials), then the extended PGx drafters and fact passes
-    advanced.py        extended — citation graph, reverse, registry download
+    authoring.py       the offline loop, schema dump, integrity
+    research.py        read-only lookups: variants, papers, identifiers
+    passes.py          fetch-then-write: draft_from_clinvar + enrich_module, then
+                       the PGx drafters and the fact passes
+    advanced.py        citation graph, reverse, registry download
     registry.py        token-gated registry writes
     _shared.py         path containment, offline ceiling, converters
 tests/                 in-memory, offline

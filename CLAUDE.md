@@ -426,7 +426,6 @@ uv run pytest                                  # the suite; -vvv when diagnosing
 uv run ruff check . && uv run pyright          # lint + types
 uv run just-module-creator stdio               # run over stdio
 uv run just-module-creator http --port 3011    # run over HTTP
-uv run just-module-creator stdio --mode extended
 uv run fastmcp dev fastmcp.json                # MCP Inspector
 claude --plugin-dir .                          # load as a plugin for one session
 ```
@@ -535,49 +534,53 @@ comparison against ISO values.
 
 ### How to add a tool
 
-1. Pick the tier. The line is **cost, not usefulness**: **essentials** =
-   everything whose work is bounded by what the caller named — one identifier,
-   one paper, one spec directory; **extended** (`JMC_MODE=extended`) = only what
-   a *corpus* sizes (a citation graph, a whole-source draft, a pass that rewrites
-   every row) or that reads back somebody else's compiled artifact;
-   **token-gated** = registry writes.
+1. **There is no tier. Register it, and if it is expensive, SAY SO in its
+   docstring.** `JMC_MODE`, `--mode` and the `extended` tier were removed in
+   0.21.0. The only registration question left is which `register_*` groups it —
+   subject matter, not cost — plus one binary: does it write to the registry, in
+   which case it is token-gated.
 
-   **Read-vs-write was the previous rule and it was wrong twice over.** It never
-   described the code — `scaffold_module` and `compile_module` both write and were
-   always essentials — and it put `lookup_identifier` behind the flag, so the
-   default tier could tell you `trait_efo_id` takes an ontology CURIE and then
-   give you no way to check one, which is an invitation to write it from memory:
-   the exact thing rule 1 of the server instructions forbids. Worst of all,
-   `enrich_module` was extended-only while being step 6 of the order those same
-   instructions teach. **A tier that teaches a step it cannot run is the failure
-   mode to check for**, and
-   `tests/test_modes_and_auth.py::test_the_taught_workflow_runs_in_the_default_tier`
-   now parses the tool names straight out of `server.INSTRUCTIONS` and fails if
-   any is missing from essentials. Widened in 0.4.0 (see `docs/ROADMAP_HISTORY.md`).
+   **The cost argument was real and is kept as prose.** A tool whose work a
+   *corpus* sizes — a citation graph, a whole-source draft, a pass that rewrites
+   every row — must say so where the caller reads it, and
+   `test_the_corpus_sized_tools_say_what_they_cost` fails if one stops saying it.
+   `enrich_gwas_effects` spends `1 + 2N` requests for a variant with N published
+   associations, measured at 382 for one real module; that sentence belongs in the
+   docstring, because a caller can weigh it against what they are doing and a flag
+   read at server start cannot.
 
-   **INSTRUCTIONS was never the only place that teaches, and that gap shipped twice
-   more.** `compare_to_published` is essentials and its docstring handed the caller a
-   `registry_download` + `compare_modules` pair naming a tool the default tier did not
-   have; an unattended run followed that exact sentence into nothing and concluded the
-   capability existed nowhere. `test_docstrings_only_name_tools_this_tier_has` now
-   asserts the same rule over **every essentials description**: naming an extended tool
-   is fine and often the honest answer, naming one without saying so is not. Third time
-   this shape has shipped, first time a test can see it.
+   **What the tier actually cost, four times over.** Read-vs-write was the first
+   line and it never described the code — `scaffold_module` and `compile_module`
+   both write and were never gated — while it put `lookup_identifier` behind the
+   flag, so the default surface could tell you `trait_efo_id` takes an ontology
+   CURIE and give you no way to check one: an invitation to write it from memory,
+   the exact thing rule 1 of the server instructions forbids. `enrich_module` was
+   extended-only while being step 6 of the taught order (fixed in 0.4.0).
+   `compare_to_published`'s docstring handed the caller a `registry_download` +
+   `compare_modules` pair the default tier did not have, and an unattended run
+   followed that sentence into nothing and concluded the capability existed
+   nowhere. `refresh_sidecar` was invisible to both 2026-08-21 runs, which each
+   reported that `rm resolution.csv` is how you re-derive a sidecar. **Every one of
+   those is the same defect: the surface taught a step it could not run**, and each
+   fix narrowed the line instead of asking whether the line paid for itself.
 
-   **The one exception, and its test.** `registry_register` writes to the registry
-   and is *not* gated, because it is what mints the token — gating it would be a
-   cycle. So the rule is: a registry write is token-gated **unless the token is its
-   output**, and that is a set of exactly one. It lives in `auth.py` beside
-   `authenticate` rather than in `tools/registry.py`, and it is registered in every
-   mode, not extended-only: hiding the only route to a credential behind a mode
-   flag reproduces the dead end it exists to remove (`F12`). If a second such tool
-   ever appears, that is the moment to ask whether "ungated onboarding" is a tier
+   Two tests survive the tier and both are narrower now:
+   `tests/test_surface_and_auth.py::test_every_tool_the_taught_workflow_names_exists`
+   parses `server.INSTRUCTIONS` and fails on a taught name that is not registered,
+   and `test_docstrings_only_name_tools_that_exist` asserts the same over every
+   description, with the "that is a field, not a tool" exclusions generated from
+   the live input schemas and our own models rather than hand-kept.
+
+   **The one exception left, and its test.** `registry_register` writes to the
+   registry and is *not* gated, because it is what mints the token — gating it
+   would be a cycle. So the rule is: a registry write is token-gated **unless the
+   token is its output**, and that is a set of exactly one. It lives in `auth.py`
+   beside `authenticate` rather than in `tools/registry.py`, and it is pinned
+   visible wherever the listing can be narrowed — by tool search, or by
+   `JMC_HIDE_GATED_UNTIL_AUTH` — because hiding the only route to a credential
+   reproduces the dead end it exists to remove (`F12`). If a second such tool ever
+   appears, that is the moment to ask whether "ungated onboarding" is a category
    rather than an exception — do not grow the exception silently.
-
-   There is no third mode, and tags are not the escape hatch: `mcp.enable()` is
-   server-global (see 7 below) and FastMCP 3.4.7 deprecated `include_tags` /
-   `exclude_tags` in its favour. Splitting extended would need a second `Mode`
-   member and a second `register_*`, and should wait for evidence that it is needed.
 2. Add it inside the matching `register_*` with type hints, a docstring (it
    becomes the description) and `ToolAnnotations`.
 3. Return a model from `models.py`.
@@ -1319,7 +1322,8 @@ have been questions.
   `test-sheep/test_aggression_anger_snps@1.0.0` and `test-sheep/test_big_five_personality_snps@1.0.0`.
   Both are `test-`prefixed on both halves, so `purge-test-data` will collect them; they are rehearsals
   of a remediation, not a correction of anything published. Both were published **knowingly carrying a
-  stale `literature.csv`** — correcting it needs extended-tier tools (`F47`), and a rehearsal that
+  stale `literature.csv`** — correcting it needed extended-tier tools at the time (`F47`; the tier went
+  in 0.21.0, so `enrich_literature_pass` is simply there now), and a rehearsal that
   waited for that would have measured nothing. **Nothing in the four production
   `antonkulaga/*` modules was touched** — a published version is immutable.
 - **`logs/authoring.log` now has a writer, and it publishes.** `record_override` appends to it and every
@@ -1367,5 +1371,7 @@ have been questions.
   v1-port modules). **Both ran plugin 0.18.0 in the DEFAULT tier**, which is what makes them
   worth keeping: several of their conclusions about what the surface cannot do were true of
   essentials rather than of the tool set, and reading them without that fact misroutes the
-  repair. Ingested here as `F60`–`F64`, `RM26`, `RM27`; their own F/D numbering is their series,
+  repair. **That reading is also why the tier is gone** — 0.21.0 removed the mode axis rather
+  than narrow it a fourth time, so a conclusion of theirs about a missing capability should be
+  re-tested against the one surface before it is believed. Ingested here as `F60`–`F64`, `RM26`, `RM27`; their own F/D numbering is their series,
   never ours. `modules_dogfooding` is not our repo — read it, never commit there.

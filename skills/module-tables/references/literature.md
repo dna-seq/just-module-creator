@@ -310,14 +310,15 @@ Ordered by how likely a first-timer is to hit them.
      surfaces as a warning — and it decides from the citation's **metadata**, not from the string's
      shape, because length cannot separate a 17-word title from a 17-word sentence. It answers for a
      **pinned** row too, which is what makes it useful on exactly the modules that provoked it.
-   - **Correcting it needs the pass, and the pass is extended-tier whichever door you use.**
-     `enrich_literature_pass` is an extended tool. `refresh_sidecar` is in every tier since
-     2026-08-22, but its gate moved to its argument rather than being dropped, and
-     `literature.csv` is one of the names it **refuses** outside `JMC_MODE=extended` — the search is
-     per variant across the corpus, which is the cost the flag exists for. So the conclusion is
-     unchanged: on a default install there is no way to bring these counters up to date at all. The
-     CLI is `just-dna-enricher literature <dir>`, and using it is stepping outside this plugin's
-     surface.
+   - **Correcting it needs the pass, and since 0.21.0 the pass is simply there.**
+     `enrich_literature_pass` needed `JMC_MODE=extended` until the tier was removed, and
+     `refresh_sidecar("literature.csv")` reaches the same pass through the other door and used to
+     refuse for the same reason; it now warns and runs. The cost is real either way — the search is
+     per variant across the corpus — so plan the run on a large module. **This paragraph used to end
+     "on a default install there is no way to bring these counters up to date at all", and that
+     sentence was the tier's whole cost in one line:** it was true, and it left published modules
+     carrying a stale `literature.csv` (`F47`). The CLI, `just-dna-enricher literature <dir>`, is
+     now the fallback for an older build rather than the only route.
 8. **`--offline` is a no-op that keeps the pin, and it may still write the file.** It fetches nothing,
    re-examines nothing, warns, and rewrites the existing rows sorted by PMID (`enricher/literature.py:784-801`).
    If a pinned row covers every current citation it records **no verification record at all** —

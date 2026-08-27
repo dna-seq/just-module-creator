@@ -37,7 +37,7 @@ No annotation table joins to it; the compiler only cross-checks it (`compiler.py
 | Parquet | `gwas_effects.parquet` — in `ARTIFACT_PARQUETS` (`compiler.py:298`), so in `artifact.digest`. Position in that tuple is load-bearing (it *is* digest order) |
 | Natural / dedup key | **the enricher's merge key only** — `association_id` alone (`gwas.py:_merge_key`). There is no compiler-side duplicate-row key for this table: it has no `_TABLE_DUPE_KEYS` entry, so a duplicated `association_id` compiles green. Per record, **not** per variant: a coarse per-rsID skip pins a module to whatever the Catalog held the first time |
 | Authored or machine-produced | **machine-produced**, human-writable. Not an `AuthoredModel`; `extra="forbid"` |
-| Who writes it | `just_dna_enricher.gwas.enrich_gwas` — via our `enrich_gwas_effects` (extended tier), or `just-dna-enricher gwas <spec-dir>` |
+| Who writes it | `just_dna_enricher.gwas.enrich_gwas` — via our `enrich_gwas_effects`, or `just-dna-enricher gwas <spec-dir>` |
 | Fact signature | `integrity.gwas_effect_signature` over `gwas.GWAS_FACT_FIELDS` (18 of 22 fields, `gwas.py:62`) → `manifest.gwas_effects.signature` |
 | In `content_signature`? | **No.** `_INPUT_FILES` (`compiler.py:267`) is `module_spec.yaml`, `variants.csv`, `studies.csv` and the authored table kinds — this is a `_FACT_TABLES` member (`compiler.py:330`) |
 | In `artifact.digest`? | **Yes**, via its parquet. Also byte-hashed into `manifest.derived[]` — transport only (`compiler.py:353`) |
@@ -289,10 +289,11 @@ Ordered by how likely a first-timer is to hit them.
   same reason. Same as every fact sidecar — not a gwas-specific gap.
 - **`enrich_gwas` IS wrapped now — this bullet said otherwise and was right when written.** Closed as
   our RM12 on 2026-08-20: `enrich_gwas_effects` in `tools/passes.py`, registered in
-  `register_extended_passes`, so it needs `JMC_MODE=extended`. Extended rather than essentials on the
-  cost rule: budget is `1 + 2N` requests per variant because pmid/trait/ancestry/study_accession all
-  sit behind `_links`, measured at **382 requests and 0 cache hits** on one real module. The CLI route
-  still works and is the fallback on an older build:
+  `register_bulk_passes`. It needed `JMC_MODE=extended` until 0.21.0 removed the tier; the cost that
+  put it there is unchanged and now stated in its own description — budget is `1 + 2N` requests per
+  variant because pmid/trait/ancestry/study_accession all sit behind `_links`, measured at **382
+  requests and 0 cache hits** on one real module. The CLI route still works and is the fallback on an
+  older build:
   `uv run just-dna-enricher gwas <spec-dir> [--no-study-facts] [--use …]`. Also
   note `list_tables().sidecars` (`tools/authoring.py:150`) lists only four sidecars and omits the
   format-0.6 three, `gwas_effects.csv` among them — the `resource://just-dna/tables` resource does

@@ -8,6 +8,42 @@ are not copied.
 
 ---
 
+## F47 — a skill can teach a step the running tier cannot run
+
+**Found:** 2026-08-20, trying to refresh `literature.csv` from a default-tier session ·
+**Resolved:** 2026-08-27 in 0.21.0, by removing the tier
+
+`find-evidence`'s loop ended with `enrich_literature_pass(spec_dir="spec")` as the verify step, with
+`paper_citations` in the same code block. Both were extended, so on a default install neither
+existed, and nothing in that skill said so — the only mention of a tier anywhere near the topic was
+one parenthesis in `literature.md`. The guard written for exactly this,
+`test_the_taught_workflow_runs_in_the_default_tier`, read `server.INSTRUCTIONS` and not the skills,
+which are the other half of the taught workflow and much the larger half.
+
+**What it cost.** `literature.csv` needed re-deriving (`quotes_authored: 0` beside authored quotes —
+`F44` / upstream `S56`). The two tools for that were both extended, so on a default server there was
+no route at all: the module was published with the sidecar as found, and the log says so.
+
+**How it was closed, and why not the way this entry proposed.** The candidate fix here was a test
+extracting `name(` call sites from every `skills/**/*.md` block and requiring an `EXTENDED` marker on
+any that was not in the default roster — and the entry explicitly ruled out moving the passes into
+essentials, on the grounds that *"the tier line is cost, and a pass that rewrites every row of a
+corpus is squarely extended. The defect is the silence, not the tier."*
+
+The cost argument was right and the conclusion was wrong, which took three more instances to see.
+This was the fourth time the same shape shipped — `enrich_module` taught while extended-only (0.4.0),
+`compare_to_published`'s docstring naming `registry_download` from a tier that lacked it,
+`refresh_sidecar` invisible to both 2026-08-21 unattended runs — and each of the first three was
+fixed by moving one tool across the line rather than by asking what the line bought. **What it bought
+was nothing a caller could not be told in prose**: hiding a tool never made its pass cheaper, and the
+sessions that could not see it were exactly the ones doing the work that needed it. 0.21.0 removed
+`JMC_MODE`, `--mode` and the `extended` tier; the cost moved into each expensive tool's own
+description, where a caller can weigh it, and
+`tests/test_surface_and_auth.py::test_the_corpus_sized_tools_say_what_they_cost` fails if one stops
+saying it. The skills-scanning test was not written: with one surface, the check that matters is
+"does this name resolve", and `test_docstrings_only_name_tools_that_exist` asserts that over every
+tool description.
+
 ## F52 — the review queue accused an author of an edit nobody made
 
 **Found:** 2026-08-20, dogfooding `review_queue` on `assets/fto_bmi` · **Resolved:** same session

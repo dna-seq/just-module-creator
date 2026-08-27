@@ -112,7 +112,7 @@ async def test_review_logs_reports_and_changes_nothing(make_client, tmp_path: Pa
     target.write_text("resolved /home/somebody/uploads/paper.pdf\n", encoding="utf-8")
     before = target.read_bytes()
 
-    async with make_client("essentials", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         data = (await client.call_tool("review_logs", {"spec_dir": str(spec)})).data
 
     assert data.logs == ["logs/run.log"]
@@ -126,7 +126,7 @@ async def test_a_module_with_no_logs_says_so(make_client, tmp_path: Path) -> Non
     """Absence is reported as absence, not as a clean bill of health."""
     spec = tmp_path / "spec"
     spec.mkdir()
-    async with make_client("essentials", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         data = (await client.call_tool("review_logs", {"spec_dir": str(spec)})).data
 
     assert data.logs == [] and data.findings == [] and data.total_bytes == 0

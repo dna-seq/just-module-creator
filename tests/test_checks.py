@@ -44,7 +44,7 @@ async def test_a_module_with_no_variants_gets_an_answer_not_a_traceback(
     bare.mkdir()
     (bare / "module_spec.yaml").write_text("name: nothing\n", encoding="utf-8")
 
-    async with make_client("extended", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         data = (await client.call_tool("check_identifiers", {"spec_dir": str(bare)})).data
 
     assert data.attested is False
@@ -57,7 +57,7 @@ async def test_a_module_with_no_variants_gets_an_answer_not_a_traceback(
 
 async def test_both_halves_off_is_refused_before_any_socket(make_client, spec: Path) -> None:
     """An attestation for a check nobody asked for would assert nothing."""
-    async with make_client("extended", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         with pytest.raises(ToolError, match="no question to put"):
             await client.call_tool(
                 "check_identifiers",
@@ -68,7 +68,7 @@ async def test_both_halves_off_is_refused_before_any_socket(make_client, spec: P
 async def test_the_offline_ceiling_refuses_and_writes_nothing(make_client, spec: Path) -> None:
     """It needs HGNC and OLS4, so offline is a refusal rather than a degraded run."""
     before = (spec / "verification.json").read_bytes()
-    async with make_client("extended", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         with pytest.raises(ToolError, match="JMC_OFFLINE"):
             await client.call_tool("check_identifiers", {"spec_dir": str(spec)})
     assert (spec / "verification.json").read_bytes() == before
@@ -146,7 +146,7 @@ def checked(monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setattr(checks_module, "_check_identifiers", _fake)
     settings = offline_settings()
-    built = server_module.build_server(mode="essentials", settings=settings)
+    built = server_module.build_server(settings=settings)
     monkeypatch.setattr(settings, "offline", False)
 
     def _open():
@@ -241,7 +241,7 @@ async def test_a_check_that_did_not_apply_counts_nothing_at_all(make_client, tmp
     bare.mkdir()
     (bare / "module_spec.yaml").write_text("name: nothing\n", encoding="utf-8")
 
-    async with make_client("extended", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         data = (await client.call_tool("check_identifiers", {"spec_dir": str(bare)})).data
 
     for tally in (data.gene_tally, data.trait_tally):

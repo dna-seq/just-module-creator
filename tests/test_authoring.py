@@ -20,10 +20,10 @@ FORMAT_VERSION = metadata.version("just-dna-format")
 COMPILER_VERSION = metadata.version("just-dna-compiler")
 
 
-async def test_list_tables_covers_every_draftable_kind(essentials_client):
+async def test_list_tables_covers_every_draftable_kind(client):
     from just_dna_compiler import draft
 
-    result = await essentials_client.call_tool("list_tables", {})
+    result = await client.call_tool("list_tables", {})
     listed = {t.csv for t in result.data.tables}
     assert listed == set(draft.DRAFTABLE)
     # Every kind gets a subject and a key, so "which table?" is answerable here.
@@ -39,25 +39,25 @@ async def test_list_tables_covers_every_draftable_kind(essentials_client):
     assert not unanswered, f"no subject/key for: {unanswered}"
 
 
-async def test_sources_csv_is_a_table_kind_not_a_sidecar(essentials_client):
+async def test_sources_csv_is_a_table_kind_not_a_sidecar(client):
     """0.5.4 made sources.csv draftable; it must not be described as both.
 
     It is the one fact sidecar a human writes and the only table the compile
     licence gate reads, so listing it under `sidecars` ("do not hand-author")
     while also listing it as a table told an author two opposite things.
     """
-    result = await essentials_client.call_tool("list_tables", {})
+    result = await client.call_tool("list_tables", {})
     assert "sources.csv" in {t.csv for t in result.data.tables}
     assert "sources.csv" not in result.data.sidecars
     # And it is answerable through the same surface as any other kind.
-    described = await essentials_client.call_tool("describe_table", {"csv_name": "sources.csv"})
+    described = await client.call_tool("describe_table", {"csv_name": "sources.csv"})
     assert {c["name"] for c in described.data.columns} >= {"source", "layer"}
-    req = await essentials_client.call_tool("table_requirements", {"csv_name": "sources.csv"})
+    req = await client.call_tool("table_requirements", {"csv_name": "sources.csv"})
     assert set(req.data.always) == {"source", "layer"}
 
 
-async def test_list_tables_states_the_companion_rule(essentials_client):
-    result = await essentials_client.call_tool("list_tables", {})
+async def test_list_tables_states_the_companion_rule(client):
+    result = await client.call_tool("list_tables", {})
     by_name = {t.csv: t for t in result.data.tables}
     assert by_name["variants.csv"].companions == ["studies.csv"]
     assert by_name["studies.csv"].companions == ["variants.csv"]
@@ -65,14 +65,14 @@ async def test_list_tables_states_the_companion_rule(essentials_client):
     assert by_name["pharm_variants.csv"].companions == []
 
 
-async def test_sidecars_are_listed_as_not_hand_authored(essentials_client):
-    result = await essentials_client.call_tool("list_tables", {})
+async def test_sidecars_are_listed_as_not_hand_authored(client):
+    result = await client.call_tool("list_tables", {})
     assert "resolution.csv" in result.data.sidecars
     assert "resolution.csv" not in {t.csv for t in result.data.tables}
 
 
-async def test_table_requirements_reports_all_three_shapes(essentials_client):
-    result = await essentials_client.call_tool("table_requirements", {"csv_name": "variants.csv"})
+async def test_table_requirements_reports_all_three_shapes(client):
+    result = await client.call_tool("table_requirements", {"csv_name": "variants.csv"})
     data = result.data
     assert set(data.always) == {"genotype", "state", "conclusion"}
     # The identity rule no per-field flag can express.
@@ -80,21 +80,21 @@ async def test_table_requirements_reports_all_three_shapes(essentials_client):
     assert isinstance(data.defaulted, dict)
 
 
-async def test_kind_argument_accepts_a_bare_name(essentials_client):
-    bare = await essentials_client.call_tool("table_requirements", {"csv_name": "variants"})
-    full = await essentials_client.call_tool("table_requirements", {"csv_name": "variants.csv"})
+async def test_kind_argument_accepts_a_bare_name(client):
+    bare = await client.call_tool("table_requirements", {"csv_name": "variants"})
+    full = await client.call_tool("table_requirements", {"csv_name": "variants.csv"})
     assert bare.data.always == full.data.always
 
 
-async def test_unknown_kind_lists_the_valid_ones(essentials_client):
+async def test_unknown_kind_lists_the_valid_ones(client):
     from fastmcp.exceptions import ToolError
 
     with pytest.raises(ToolError, match="variants.csv"):
-        await essentials_client.call_tool("describe_table", {"csv_name": "nonsense.csv"})
+        await client.call_tool("describe_table", {"csv_name": "nonsense.csv"})
 
 
-async def test_describe_table_flags_redundancy_bearing_columns(essentials_client):
-    result = await essentials_client.call_tool("describe_table", {"csv_name": "variants.csv"})
+async def test_describe_table_flags_redundancy_bearing_columns(client):
+    result = await client.call_tool("describe_table", {"csv_name": "variants.csv"})
     # These are the cells a later check compares against a source. If upstream
     # ever stops marking them, our "report, never repair" promise is hollow.
     assert result.data.redundancy_bearing
@@ -104,7 +104,7 @@ async def test_describe_table_flags_redundancy_bearing_columns(essentials_client
     assert result.data.attestation_bearing == []
 
 
-async def test_describe_table_separates_attestation_from_redundancy(essentials_client):
+async def test_describe_table_separates_attestation_from_redundancy(client):
     """The provenance cells carry BOTH reasons, and the sharper one must survive.
 
     `provenance_quote` is redundancy-bearing (compared against the fulltext) and
@@ -112,15 +112,15 @@ async def test_describe_table_separates_attestation_from_redundancy(essentials_c
     first would let a caller conclude that a fetched quote is merely an unverifiable
     cell rather than a false claim of provenance.
     """
-    result = await essentials_client.call_tool("describe_table", {"csv_name": "studies.csv"})
+    result = await client.call_tool("describe_table", {"csv_name": "studies.csv"})
     assert set(result.data.attestation_bearing) == {"provenance_quote", "provenance_regex"}
     # Subset, never an alternative to it.
     assert set(result.data.attestation_bearing) <= set(result.data.redundancy_bearing)
 
 
-async def test_attestation_bearing_is_narrowed_to_the_table(essentials_client):
+async def test_attestation_bearing_is_narrowed_to_the_table(client):
     """A table without the provenance columns must not be told to hand-author them."""
-    result = await essentials_client.call_tool("describe_table", {"csv_name": "sources.csv"})
+    result = await client.call_tool("describe_table", {"csv_name": "sources.csv"})
     columns = {c["name"] for c in result.data.columns}
     assert not set(result.data.attestation_bearing) - columns
 
@@ -136,7 +136,7 @@ async def test_attestation_bearing_is_narrowed_to_the_table(essentials_client):
     ],
 )
 async def test_every_generated_schema_answer_names_its_producing_versions(
-    essentials_client, tool, args
+    client, tool, args
 ):
     """A schema answer must say which toolchain generated it (RM13).
 
@@ -145,20 +145,20 @@ async def test_every_generated_schema_answer_names_its_producing_versions(
     with an old schema and no signal at all: 11 columns where the installed format
     has 14. The stamp is the only thing in the payload that can be compared.
     """
-    result = await essentials_client.call_tool(tool, args)
+    result = await client.call_tool(tool, args)
     assert result.data.produced_by.format_version == FORMAT_VERSION
     assert result.data.produced_by.compiler_version == COMPILER_VERSION
 
 
 @pytest.mark.parametrize("schemas", [False, True])
-async def test_authoring_reference_stamps_both_payload_forms(essentials_client, schemas):
+async def test_authoring_reference_stamps_both_payload_forms(client, schemas):
     """The whole-DSL dump carries the stamp inside its JSON, in both forms.
 
     It returns a JSON string rather than a model because the dossiers document the
     access path ``authoring_reference()["models"][...]``; the stamp therefore goes
     in as a key, and the documented path has to keep working.
     """
-    result = await essentials_client.call_tool("authoring_reference", {"schemas": schemas})
+    result = await client.call_tool("authoring_reference", {"schemas": schemas})
     payload = json.loads(result.data)
     assert payload["produced_by"] == {
         "format_version": FORMAT_VERSION,
@@ -168,17 +168,17 @@ async def test_authoring_reference_stamps_both_payload_forms(essentials_client, 
     assert documented_key in payload
 
 
-async def test_the_tables_resource_names_its_producing_versions(essentials_client):
+async def test_the_tables_resource_names_its_producing_versions(client):
     """The resource is generated from the same models, so it carries the same stamp."""
-    contents = await essentials_client.read_resource("resource://just-dna/tables")
+    contents = await client.read_resource("resource://just-dna/tables")
     text = "\n".join(getattr(c, "text", "") for c in contents)
     assert f"just-dna-format {FORMAT_VERSION}" in text
     assert f"just-dna-compiler {COMPILER_VERSION}" in text
 
 
-async def test_template_header_only_vs_stub(essentials_client):
-    blank = await essentials_client.call_tool("get_template", {"csv_name": "variants.csv"})
-    stub = await essentials_client.call_tool(
+async def test_template_header_only_vs_stub(client):
+    blank = await client.call_tool("get_template", {"csv_name": "variants.csv"})
+    stub = await client.call_tool(
         "get_template", {"csv_name": "variants.csv", "stub": True, "rows": 2}
     )
     assert "<<REPLACE>>" not in blank.data.content
@@ -186,11 +186,11 @@ async def test_template_header_only_vs_stub(essentials_client):
     assert stub.data.stub is True
 
 
-async def test_scaffold_creates_then_refuses_to_overwrite(essentials_client, tmp_path):
+async def test_scaffold_creates_then_refuses_to_overwrite(client, tmp_path):
     target = str(tmp_path / "spec")
     args = {"spec_dir": target, "name": "my_module", "kinds": ["variants.csv", "studies.csv"]}
 
-    first = await essentials_client.call_tool("scaffold_module", args)
+    first = await client.call_tool("scaffold_module", args)
     assert first.data.written
     assert {p.rsplit("/", 1)[-1] for p in first.data.created} == {
         "module_spec.yaml",
@@ -198,14 +198,14 @@ async def test_scaffold_creates_then_refuses_to_overwrite(essentials_client, tmp
         "studies.csv",
     }
 
-    second = await essentials_client.call_tool("scaffold_module", args)
+    second = await client.call_tool("scaffold_module", args)
     assert second.data.created == []
     assert len(second.data.refused) == 3  # never overwrites
 
 
-async def test_scaffold_dry_run_writes_nothing(essentials_client, tmp_path):
+async def test_scaffold_dry_run_writes_nothing(client, tmp_path):
     target = tmp_path / "spec"
-    result = await essentials_client.call_tool(
+    result = await client.call_tool(
         "scaffold_module",
         {"spec_dir": str(target), "name": "m", "kinds": ["variants.csv"], "dry_run": True},
     )
@@ -213,8 +213,8 @@ async def test_scaffold_dry_run_writes_nothing(essentials_client, tmp_path):
     assert not (target / "module_spec.yaml").exists()
 
 
-async def test_scaffold_warns_when_a_companion_is_missing(essentials_client, tmp_path):
-    result = await essentials_client.call_tool(
+async def test_scaffold_warns_when_a_companion_is_missing(client, tmp_path):
+    result = await client.call_tool(
         "scaffold_module",
         {"spec_dir": str(tmp_path / "spec"), "name": "m", "kinds": ["variants.csv"]},
     )
@@ -222,7 +222,7 @@ async def test_scaffold_warns_when_a_companion_is_missing(essentials_client, tmp
 
 
 async def test_scaffolding_a_binning_module_beside_studies_invites_no_empty_variants_csv(
-    essentials_client, tmp_path
+    client, tmp_path
 ):
     """`studies.csv` pulls `variants.csv` in only when it is asked for alone (`S49`).
 
@@ -234,7 +234,7 @@ async def test_scaffolding_a_binning_module_beside_studies_invites_no_empty_vari
     the warning and the file are two claims that can disagree.
     """
     spec = tmp_path / "bins"
-    result = await essentials_client.call_tool(
+    result = await client.call_tool(
         "scaffold_module",
         {"spec_dir": str(spec), "name": "m", "kinds": ["repeat_alleles.csv", "studies.csv"]},
     )
@@ -242,7 +242,7 @@ async def test_scaffolding_a_binning_module_beside_studies_invites_no_empty_vari
     assert not (spec / "variants.csv").exists()
     assert not any("variants.csv" in w for w in result.data.warnings)
     # The unconditional direction is untouched: a variant claim still needs its evidence.
-    alone = await essentials_client.call_tool(
+    alone = await client.call_tool(
         "scaffold_module",
         {"spec_dir": str(tmp_path / "vars"), "name": "m", "kinds": ["variants.csv"]},
     )
@@ -251,7 +251,7 @@ async def test_scaffolding_a_binning_module_beside_studies_invites_no_empty_vari
 
 
 async def test_a_redundancy_reason_says_when_its_checker_cannot_see_this_table(
-    essentials_client,
+    client,
 ):
     """`REDUNDANCY_BEARING` is keyed on a bare column, so the reason outran the checker.
 
@@ -262,17 +262,17 @@ async def test_a_redundancy_reason_says_when_its_checker_cannot_see_this_table(
     explanation in 0.6.6 (`S59`); this asserts we carry the scope rather than the bare
     reason, on both sides of it.
     """
-    scoped = await essentials_client.call_tool(
+    scoped = await client.call_tool(
         "describe_table", {"csv_name": "copynumbers.csv"}
     )
     assert "clin_sig" in scoped.data.redundancy_bearing
     assert "does not read copynumbers.csv" in scoped.data.redundancy_bearing["clin_sig"]
 
-    unscoped = await essentials_client.call_tool("describe_table", {"csv_name": "variants.csv"})
+    unscoped = await client.call_tool("describe_table", {"csv_name": "variants.csv"})
     assert "does not read" not in unscoped.data.redundancy_bearing["clin_sig"]
 
 
-async def test_describe_table_answers_what_an_append_collides_on(essentials_client):
+async def test_describe_table_answers_what_an_append_collides_on(client):
     """The `key` block upstream's `describe_table` has promised since 0.5, passed through.
 
     A second pass appends, so "what will this collide with" is the question before
@@ -282,19 +282,19 @@ async def test_describe_table_answers_what_an_append_collides_on(essentials_clie
     from just_dna_compiler import hints
 
     for csv_name in ("variants.csv", "repeat_alleles.csv"):
-        described = await essentials_client.call_tool("describe_table", {"csv_name": csv_name})
+        described = await client.call_tool("describe_table", {"csv_name": csv_name})
         key = hints.key_fields(csv_name)
         assert key is not None
         assert described.data.key["columns"] == list(key.columns)
         assert described.data.key["rule"] == key.rule
-    listed = await essentials_client.call_tool("list_tables", {})
+    listed = await client.call_tool("list_tables", {})
     rules = {t.csv: t.key_rule for t in listed.data.tables}
     assert rules["repeat_alleles.csv"] == "overlap"
     assert rules["variants.csv"] == "equality"
 
 
-async def test_lint_catches_unsorted_genotype(essentials_client):
-    result = await essentials_client.call_tool(
+async def test_lint_catches_unsorted_genotype(client):
+    result = await client.call_tool(
         "lint_rows",
         {
             "csv_name": "variants.csv",
@@ -305,9 +305,9 @@ async def test_lint_catches_unsorted_genotype(essentials_client):
     assert any(f.level == "error" and f.column == "genotype" for f in result.data.findings)
 
 
-async def test_lint_writes_nothing_and_keeps_info_findings(essentials_client, tmp_path):
+async def test_lint_writes_nothing_and_keeps_info_findings(client, tmp_path):
     text = "rsid,genotype,state,conclusion\nrs4988235,A/A,protective,x\n"
-    result = await essentials_client.call_tool(
+    result = await client.call_tool(
         "lint_rows", {"csv_name": "variants.csv", "csv_text": text}
     )
     assert result.data.errors == 0
@@ -317,9 +317,9 @@ async def test_lint_writes_nothing_and_keeps_info_findings(essentials_client, tm
     assert list(tmp_path.iterdir()) == []
 
 
-async def test_lint_normalized_csv_never_invents_a_value(essentials_client):
+async def test_lint_normalized_csv_never_invents_a_value(client):
     text = "rsid,genotype,state,conclusion\nrs4988235,A/A,protective,x\n"
-    result = await essentials_client.call_tool(
+    result = await client.call_tool(
         "lint_rows", {"csv_name": "variants.csv", "csv_text": text}
     )
     assert "<<REPLACE>>" not in result.data.normalized_csv
@@ -337,7 +337,7 @@ def _key_columns(keyed_on: str) -> list[str]:
     return [token.strip() for token in keyed_on.strip("()").split(",") if token.strip()]
 
 
-async def test_the_sidecar_roster_is_derived_from_the_installed_toolchain(essentials_client):
+async def test_the_sidecar_roster_is_derived_from_the_installed_toolchain(client):
     """`sidecars` was a four-item literal and the installed toolchain has seven.
 
     It named `resolution.csv` and the three 0.5 fact tables, so the three format-0.6
@@ -351,7 +351,7 @@ async def test_the_sidecar_roster_is_derived_from_the_installed_toolchain(essent
     from just_dna_registry import specfiles
 
     expected = {specfiles.RESOLUTION_CSV, *specfiles.FACT_CSVS} - set(draft.DRAFTABLE)
-    result = await essentials_client.call_tool("list_tables", {})
+    result = await client.call_tool("list_tables", {})
     assert set(result.data.sidecars) == expected
     assert result.data.sidecars == sorted(result.data.sidecars)  # deterministic order
     # The licensing carve-out, derived rather than special-cased: a fact sidecar that
@@ -359,7 +359,7 @@ async def test_the_sidecar_roster_is_derived_from_the_installed_toolchain(essent
     assert not set(result.data.sidecars) & set(draft.DRAFTABLE)
 
 
-async def test_every_documented_key_column_is_a_live_undeprecated_field(essentials_client):
+async def test_every_documented_key_column_is_a_live_undeprecated_field(client):
     """`keyed_on` is generated now, and this asks whether the generated answer is usable.
 
     It was written when the strings were hand-kept (`S48`), and that is exactly how
@@ -373,7 +373,7 @@ async def test_every_documented_key_column_is_a_live_undeprecated_field(essentia
     """
     from just_dna_compiler import draft
 
-    result = await essentials_client.call_tool("list_tables", {})
+    result = await client.call_tool("list_tables", {})
     missing: list[str] = []
     deprecated: list[str] = []
     for table in result.data.tables:
@@ -402,7 +402,7 @@ async def test_every_documented_key_column_is_a_live_undeprecated_field(essentia
     assert not deprecated, f"keyed_on names deprecated columns: {deprecated}"
 
 
-async def test_the_studies_subject_no_longer_says_a_row_must_name_a_variant(essentials_client):
+async def test_the_studies_subject_no_longer_says_a_row_must_name_a_variant(client):
     """RM47 relaxed `StudyRow`'s identifier rule, and our answer said otherwise.
 
     `REQUIRED_ANY_OF` went from `({rsid}, {chrom})` to `()`: a paper grounding a bin
@@ -418,12 +418,12 @@ async def test_the_studies_subject_no_longer_says_a_row_must_name_a_variant(esse
     # Ground truth, not prose: the model itself accepts a row with only a pmid.
     assert StudyRow(pmid="11788828", conclusion="x").variant_key is None
 
-    result = await essentials_client.call_tool("list_tables", {})
+    result = await client.call_tool("list_tables", {})
     subject = {t.csv: t.subject for t in result.data.tables}["studies.csv"]
     assert "no variant" in subject.lower(), subject
 
 
-async def test_a_binning_module_may_carry_studies_without_variants(essentials_client, tmp_path):
+async def test_a_binning_module_may_carry_studies_without_variants(client, tmp_path):
     """The composition note now says this, so the note is checked against a compile.
 
     Post-RM47 the honest advice to a binning author is *cite your thresholds*, and a
@@ -451,7 +451,7 @@ async def test_a_binning_module_may_carry_studies_without_variants(essentials_cl
         "pmid,conclusion\n9382095,SMN1 deletion and SMA severity\n"
     )
 
-    result = await essentials_client.call_tool(
+    result = await client.call_tool(
         "validate_module", {"spec_dir": str(spec), "strict": True}
     )
     assert result.data.valid, result.data.errors
@@ -485,7 +485,7 @@ def test_the_produced_roster_agrees_with_the_registry_that_recognises_the_same_f
         assert hints.derived_model_for(csv_name) is model
 
 
-async def test_every_machine_produced_sidecar_answers_its_columns(essentials_client):
+async def test_every_machine_produced_sidecar_answers_its_columns(client):
     """The hole RM11 closed: an author reads these files and could not ask what is in them.
 
     Expected columns come from `reference.authored_field_names`, not from the assembly
@@ -496,10 +496,10 @@ async def test_every_machine_produced_sidecar_answers_its_columns(essentials_cli
 
     from just_module_creator.tools.authoring import _PRODUCED_MODELS
 
-    listed = (await essentials_client.call_tool("list_tables", {})).data.sidecars
+    listed = (await client.call_tool("list_tables", {})).data.sidecars
     assert set(listed) == set(_PRODUCED_MODELS)
     for csv_name, model in sorted(_PRODUCED_MODELS.items()):
-        result = await essentials_client.call_tool(
+        result = await client.call_tool(
             "describe_machine_table", {"csv_name": csv_name}
         )
         assert result.data.csv == csv_name
@@ -519,13 +519,13 @@ async def test_every_machine_produced_sidecar_answers_its_columns(essentials_cli
         assert result.data.refusal
     # `resolution.csv` is the one whose rule is neither equality nor overlap: one rsID
     # legitimately resolves to several loci, so a repeated subject is not a duplicate.
-    resolution = await essentials_client.call_tool(
+    resolution = await client.call_tool(
         "describe_machine_table", {"csv_name": "resolution.csv"}
     )
     assert resolution.data.key["rule"] == "subject"
 
 
-async def test_a_machine_table_answer_carries_no_authoring_fields(essentials_client):
+async def test_a_machine_table_answer_carries_no_authoring_fields(client):
     """`hand_authored: false` plus the absence of the three author-only fields.
 
     Extending `describe_table` would have had to answer `requirements`,
@@ -533,14 +533,14 @@ async def test_a_machine_table_answer_carries_no_authoring_fields(essentials_cli
     `requirements` reads as *no requirements* rather than as *the question does not
     apply*. The separate model is how that stays unsayable.
     """
-    result = await essentials_client.call_tool(
+    result = await client.call_tool(
         "describe_machine_table", {"csv_name": "frequencies.csv"}
     )
     for author_only in ("requirements", "redundancy_bearing", "attestation_bearing"):
         assert not hasattr(result.data, author_only)
     assert result.data.hand_authored is False
     # And the other side of the pair says the opposite, in the same key.
-    authored = await essentials_client.call_tool("describe_table", {"csv_name": "variants.csv"})
+    authored = await client.call_tool("describe_table", {"csv_name": "variants.csv"})
     assert authored.data.hand_authored is True
 
 
@@ -555,7 +555,7 @@ async def test_a_machine_table_answer_carries_no_authoring_fields(essentials_cli
     ],
 )
 async def test_an_authoring_route_redirects_a_sidecar_instead_of_calling_it_unknown(
-    essentials_client, tool, args
+    client, tool, args
 ):
     """"Unknown table kind 'resolution.csv'" was false and sent the reader hunting a typo.
 
@@ -565,14 +565,14 @@ async def test_an_authoring_route_redirects_a_sidecar_instead_of_calling_it_unkn
     from fastmcp.exceptions import ToolError
 
     with pytest.raises(ToolError) as raised:
-        await essentials_client.call_tool(tool, args)
+        await client.call_tool(tool, args)
     message = str(raised.value)
     assert "describe_machine_table" in message
     assert "Unknown" not in message
 
 
 @pytest.mark.parametrize("spelling", ["licensing.csv", "sources.csv"])
-async def test_the_licence_table_is_refused_by_the_machine_route(essentials_client, spelling):
+async def test_the_licence_table_is_refused_by_the_machine_route(client, spelling):
     """`licensing.csv` must NOT get the do-not-author treatment, under either spelling.
 
     It is a fact sidecar and it is the one a human writes — the only table the compile
@@ -582,25 +582,25 @@ async def test_the_licence_table_is_refused_by_the_machine_route(essentials_clie
     from fastmcp.exceptions import ToolError
 
     with pytest.raises(ToolError, match="describe_table"):
-        await essentials_client.call_tool("describe_machine_table", {"csv_name": spelling})
-    answered = await essentials_client.call_tool("describe_table", {"csv_name": spelling})
+        await client.call_tool("describe_machine_table", {"csv_name": spelling})
+    answered = await client.call_tool("describe_table", {"csv_name": spelling})
     assert {c["name"] for c in answered.data.columns} >= {"source", "layer"}
     assert answered.data.hand_authored is True
 
 
-async def test_an_unknown_name_is_still_reported_as_unknown(essentials_client):
+async def test_an_unknown_name_is_still_reported_as_unknown(client):
     """The redirect must not swallow a genuine typo into a reassuring answer."""
     from fastmcp.exceptions import ToolError
 
     with pytest.raises(ToolError, match="Unknown table"):
-        await essentials_client.call_tool("describe_machine_table", {"csv_name": "nonsense.csv"})
+        await client.call_tool("describe_machine_table", {"csv_name": "nonsense.csv"})
 
 
 # --------------------------------------------------------------------------- #
 # module_spec.yaml: the file every module has, which no authoring route answered
 # --------------------------------------------------------------------------- #
 async def test_the_spec_file_is_redirected_rather_than_called_an_unknown_table(
-    essentials_client,
+    client,
 ):
     """`describe_table("module_spec.yaml")` was a dead end, and rule 1 sends you there.
 
@@ -617,13 +617,13 @@ async def test_the_spec_file_is_redirected_rather_than_called_an_unknown_table(
     from fastmcp.exceptions import ToolError
 
     with pytest.raises(ToolError) as raised:
-        await essentials_client.call_tool("describe_table", {"csv_name": "module_spec.yaml"})
+        await client.call_tool("describe_table", {"csv_name": "module_spec.yaml"})
     message = str(raised.value)
     assert "describe_spec_file" in message
     assert "Unknown" not in message
 
 
-async def test_the_spec_file_answers_weighting_in_one_call(essentials_client):
+async def test_the_spec_file_answers_weighting_in_one_call(client):
     """`weighting:` is the block the docs recommend most and the file hid best.
 
     Both 2026-08-21 runs found it undeclared on every module they touched. Asserted as
@@ -631,7 +631,7 @@ async def test_the_spec_file_answers_weighting_in_one_call(essentials_client):
     `ModuleSpecConfig`, so pinning names here would be the hardcoded-schema-fact this
     repo forbids — what must hold is that ONE call reaches the block and its fields.
     """
-    result = await essentials_client.call_tool("describe_spec_file", {})
+    result = await client.call_tool("describe_spec_file", {})
     described = result.structured_content
 
     blocks = {block["key"]: block for block in described["blocks"]}
@@ -645,7 +645,7 @@ async def test_the_spec_file_answers_weighting_in_one_call(essentials_client):
 
 
 async def test_the_spec_file_description_is_generated_from_the_live_model(
-    essentials_client,
+    client,
 ):
     """A hardcoded answer would drift the moment upstream adds a key. This catches that.
 
@@ -654,7 +654,7 @@ async def test_the_spec_file_description_is_generated_from_the_live_model(
     """
     from just_dna_format.spec import ModuleSpecConfig
 
-    result = await essentials_client.call_tool("describe_spec_file", {})
+    result = await client.call_tool("describe_spec_file", {})
     described = {key["name"] for key in result.structured_content["keys"]}
 
     assert described == set(ModuleSpecConfig.model_fields), (

@@ -408,7 +408,7 @@ def test_upstream_supplies_the_bibliographic_fields_identity_needs() -> None:
 
 
 async def test_an_offline_citation_lookup_withholds_the_title_rather_than_denying_it(
-    essentials_client,
+    client,
 ) -> None:
     """A check that could not run is not a check that failed.
 
@@ -416,7 +416,7 @@ async def test_an_offline_citation_lookup_withholds_the_title_rather_than_denyin
     falsy-but-present title would read as "this id names no paper", which is the
     fabricated-citation fingerprint, on a run that asked nobody.
     """
-    result = await essentials_client.call_tool(
+    result = await client.call_tool(
         "lookup_citation", {"pmid": "11788828", "offline": True}
     )
     data = result.data

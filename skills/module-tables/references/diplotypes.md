@@ -40,7 +40,7 @@ selecting rows by `drug` and `clinical_context`.
 | Parquet | `diplotypes.parquet` — in `compiler._TABLE_KINDS` (`compiler.py:230`) and in `compiler.ARTIFACT_PARQUETS` |
 | Dedup key | `(gene, haplotype_a, haplotype_b, trait_efo_id, drug, clinical_context)` — `compiler._TABLE_DUPE_KEYS[DiplotypeRow]`, `compiler.py:258-260`. Six-part, and every part earned by real CPIC data |
 | Authored or machine | **Authored.** `pgx_draft` writes real rows from CPIC; a human/AI owns them afterwards. `enrich-pgx` deliberately never generates them (`pgx.py` enricher, lines 13-18: "having a network pass write them would blur exactly the authored/derived line") |
-| Who writes it | the author; `just-dna-enricher draft --gene <G>` (MCP: `draft_from_cpic`, extended tier). The compiler stamps one parquet-only column (`module`) |
+| Who writes it | the author; `just-dna-enricher draft --gene <G>` (MCP: `draft_from_cpic`). The compiler stamps one parquet-only column (`module`) |
 | Fact signature | **none.** Authored table, not a derived sidecar — see *What moving this table moves* |
 | In `content_signature`? | **Yes**, every authored cell |
 | In `artifact.digest`? | **Yes**, as `diplotypes.parquet` bytes |

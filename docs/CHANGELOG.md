@@ -5,6 +5,45 @@ on our side, so agents in sibling repos are not surprised.
 
 ## Unreleased
 
+### The `extended` tier is gone: one surface, and the cost is said instead of enforced
+
+`JMC_MODE`, `--mode` and the `extended` tier are removed. Every tool is registered on every start —
+the PGx drafters, the three fact passes, `paper_citations`, and `refresh_sidecar` on any of its seven
+sidecars. `build_server()` takes no `mode`, `Settings.mode` is gone, the `extended` tag is off every
+tool, and the manifests, `.mcp.json` and `fastmcp.json` no longer pin a mode into the subprocess.
+
+**The cost argument was real and is kept as prose.** A handful of tools are sized by a *corpus*
+rather than by what the caller named, and each now says so in its own description — a whole-source
+PGx draft, a pass that rewrites every row, a citation graph, and `enrich_gwas_effects` at `1 + 2N`
+requests for a variant with N published associations, measured at 382 for one real module.
+`refresh_sidecar` warns through `ctx.info` when the sidecar you named runs one of those passes.
+`test_the_corpus_sized_tools_say_what_they_cost` fails if a tool stops saying it.
+
+**Why the line went rather than moving a fourth time.** It was drawn on read-vs-write, which never
+described the code; `enrich_module` was extended-only while being step 6 of the taught order (0.4.0);
+`compare_to_published`'s own docstring handed the caller a `registry_download` + `compare_modules`
+pair the default tier did not have, and an unattended run followed that sentence into nothing and
+concluded the capability existed nowhere; `refresh_sidecar` was invisible to both 2026-08-21
+unattended runs, which each reported that `rm resolution.csv` is how a stale sidecar is re-derived.
+Each fix moved one tool across the line. **Hiding a tool never made its pass cheaper** — it made the
+tool invisible to exactly the sessions doing the work that needed it. `F47` closes on this and moves
+to `previous_issues.md`, against its own recommendation, which was to keep the tier and write a test
+for the silence.
+
+The two guards that caught three of those survive, narrower:
+`test_every_tool_the_taught_workflow_names_exists` parses `server.INSTRUCTIONS`, and
+`test_docstrings_only_name_tools_that_exist` asserts the same over every description — with the "that
+is a field, not a tool" exclusions generated from the live input schemas and our own models rather
+than hand-kept. `tests/test_modes_and_auth.py` is now `tests/test_surface_and_auth.py`.
+
+Renames, for anyone with a call site: `register_extended` → `register_citation_graph`,
+`register_extended_passes` → `register_bulk_passes`, `check_sidecar(name, mode=…)` →
+`check_sidecar(name)`, and the `essentials_client` / `extended_client` fixtures → one `client`.
+
+**Not adopted from the template: `set_mode`.** It makes the tier switchable per session instead of at
+startup, which is the right answer for a server that keeps its tier — and the wrong one for a server
+that has just concluded the tier costs more than it buys.
+
 ### The session token store is FastMCP's now, not ours
 
 `SessionKeyStore` was reimplementing what the framework already provides. It is gone, and

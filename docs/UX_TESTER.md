@@ -133,9 +133,10 @@ Small, and each belongs to the second agent rather than upstream:
   turned out to be the visible corner of a wrong tier rule, and the tier was widened
   rather than the single tool moved. Essentials now runs the whole workflow: the
   identifier checks, `enrich_module`, `fetch_fulltext`, `lookup_open_access`,
-  `authoring_reference`, the integrity pair and `registry_get_module`. Extended keeps
-  only what a corpus sizes. **Re-probe from the default tier** — the friction you
-  recorded should be gone, and what is left of extended is worth its own look.
+  `authoring_reference`, the integrity pair and `registry_get_module`. Extended kept
+  only what a corpus sizes — and in **0.21.0 it went too**, after the same defect shipped
+  three more times. There is one surface now, so a probe that finds a tool missing is
+  reading an old install rather than a narrow tier.
 - ~~**The README documents installing the plugin and not reloading it.**~~ **Fixed** —
   README now has "Reloading after a change" and "Switching mode", including the trap that
   `.env` cannot switch a plugin-launched server.

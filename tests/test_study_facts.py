@@ -33,7 +33,7 @@ def spec(tmp_path: Path) -> Path:
 
 
 async def _facts(make_client, spec: Path):
-    async with make_client("essentials", offline_settings()) as client:
+    async with make_client(offline_settings()) as client:
         return (await client.call_tool("study_facts", {"spec_dir": str(spec)})).data
 
 

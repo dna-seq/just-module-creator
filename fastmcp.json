@@ -9,9 +9,6 @@
   },
   "deployment": {
     "transport": "stdio",
-    "log_level": "INFO",
-    "env": {
-      "JMC_MODE": "essentials"
-    }
+    "log_level": "INFO"
   }
 }

@@ -21,7 +21,7 @@ import pytest
 from fastmcp.client import Client
 
 from just_module_creator.server import build_server
-from just_module_creator.settings import Mode, Settings
+from just_module_creator.settings import Settings
 
 #: Variables read by code we do **not** control, so no field on our model names them
 #: and nothing can derive them. Hand-maintained by necessity; a test asserts the three
@@ -158,25 +158,19 @@ def offline_settings(**overrides) -> Settings:
 
 
 @pytest.fixture
-async def essentials_client():
-    server = build_server(mode="essentials", settings=offline_settings())
-    async with Client(transport=server) as client:
-        yield client
-
-
-@pytest.fixture
-async def extended_client():
-    server = build_server(mode="extended", settings=offline_settings())
-    async with Client(transport=server) as client:
-        yield client
+async def client():
+    """The whole tool surface. There is one — the mode axis went in 0.21.0."""
+    server = build_server(settings=offline_settings())
+    async with Client(transport=server) as connected:
+        yield connected
 
 
 @pytest.fixture
 def make_client():
     """Factory returning a fresh in-memory client (its own session)."""
 
-    def _make(mode: Mode = "essentials", settings: Settings | None = None):
-        server = build_server(mode=mode, settings=settings or offline_settings())
+    def _make(settings: Settings | None = None):
+        server = build_server(settings=settings or offline_settings())
         return Client(transport=server)
 
     return _make

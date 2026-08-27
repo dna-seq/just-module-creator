@@ -19,19 +19,19 @@ terms. That arrives as a first-class `skipped` field rather than `success=False`
 because a failure invites retrying with a different `use`, which is exactly
 fabricating a licence position to make a tool work.
 
-`draft_from_clinvar` and `enrich_module` are registered in **every** mode: they
-are steps 2 and 6 of the taught order, and a tier that teaches a step it cannot
-run is worse than one that never mentioned it. They are the only two tools that
-fetch and then write into a spec directory, which is why they share a module.
+`draft_from_clinvar` and `enrich_module` are steps 2 and 6 of the taught order.
+They are the only two tools that fetch and then write into a spec directory,
+which is why they share a module with the bulk passes below.
 
-The two PGx drafters and the bulk fact passes are extended — a PGx module is the
-specialist path, `draft_from_clinpgx` needs a snapshot only a CLI-only builder
-produces, and the fact passes rewrite many rows at once rather than answering
-about the one thing you named. `enrich_gwas_effects` is extended for the sharpest
-version of that cost: its budget is `1 + 2N` requests for a variant with N
-published associations, measured at **382 requests for one real module**, and the
-size is set by how much has been published rather than by anything the caller
-named.
+`register_bulk_passes` holds the two PGx drafters and the three fact passes. They
+were the extended tier until 0.21.0, on a cost argument that is still true and is
+now stated where the caller reads it rather than enforced by hiding the tool: a
+fact pass rewrites many rows at once instead of answering about the one thing you
+named, and `enrich_gwas_effects` is the sharpest version — its budget is `1 + 2N`
+requests for a variant with N published associations, measured at **382 requests
+for one real module**, sized by how much has been published rather than by
+anything the caller named. Say that in the docstring; do not spend a session's
+whole task on it, which is what the flag did.
 """
 
 from __future__ import annotations
@@ -514,11 +514,10 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
 _ENRICHMENTS_IN_FLIGHT: dict[Path, str] = {}
 
 
-def register_extended_passes(mcp: FastMCP, settings: Settings, services: NetworkServices) -> None:
+def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServices) -> None:
     """Register the PGx drafters, the sidecar fact passes and the GWAS Catalog pass."""
 
     @mcp.tool(
-        tags={"extended"},
         task=True,
         annotations=ToolAnnotations(
             title="Draft from CPIC",
@@ -551,6 +550,10 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
         get them all. An unrecognised value is an error listing what CPIC
         publishes, so a typo cannot quietly draft nothing.
 
+        **Budget: a whole-source draft, not one question.** It pulls every allele
+        CPIC publishes for the gene and writes three tables from it, so the work
+        is sized by what has been published rather than by anything you named.
+
         `alleles` is how you keep a large star-allele gene tractable: *n* alleles
         is *n(n+1)/2* diplotypes, and unfiltered CYP2D6 is 16,290 rows. Your real
         bound is the allele set your caller emits. The filter covers all three
@@ -581,7 +584,6 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
         return _draft_result(result, spec_dir=target, source="cpic", use=declared, dry_run=dry_run)
 
     @mcp.tool(
-        tags={"extended"},
         task=True,
         annotations=ToolAnnotations(
             title="Draft from ClinPGx",
@@ -620,6 +622,11 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
         by the source — and the bare haploid spelling ClinPGx uses for mtDNA were
         declined, costing CFTR F508del and every MT-RNR1 annotation (upstream
         S44). Those rows were **skipped**, not written under a wrong identity, so
+        **Budget: a whole-source draft.** Every pharmacogenomic variant the
+        snapshot holds for the gene, sized by what has been published rather than
+        by anything you named — and building the snapshot itself is the larger
+        cost, paid once, outside this tool.
+
         nothing stale is left to retract and re-running converges on exactly what
         a fresh draft produces — measured at 0 stale and 0 missing keys. That is
         the difference from the ClinVar case, where the identity itself moved.
@@ -653,7 +660,6 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
         )
 
     @mcp.tool(
-        tags={"extended"},
         task=True,
         annotations=ToolAnnotations(
             title="Fill literature.csv",
@@ -689,6 +695,10 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
         **`doi_conflicts` are reported, never rewritten.** Your authored DOI and
         the registry's disagree for that PMID, which means one of the two
         citations is the wrong paper — and only you know which.
+
+        **Budget: one or more requests per citation in the module**, so the cost
+        rises with the corpus you have cited rather than with anything named in
+        this call. A module with hundreds of studies is a long run.
 
         `offline=true` makes this a **no-op**: there is no offline literature
         snapshot and there will not be one. Once `literature.csv` is written it
@@ -767,7 +777,6 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
         )
 
     @mcp.tool(
-        tags={"extended"},
         task=True,
         annotations=ToolAnnotations(
             title="Run the sidecar fact passes",
@@ -798,6 +807,11 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
         gnomAD paces at roughly one batch per six seconds, so this is a background
         task. An existing sidecar is merged, never clobbered — delete the file to
         regenerate it.
+
+        **Budget: every subject in the module, three sources deep.** A fact pass
+        rewrites many rows at once instead of answering about the one thing you
+        named, so its request count is set by the module's size. That is a run to
+        plan, not a lookup to fire off.
 
         `missing` is not proof of absence: a gene gnomAD has no constraint entry
         for and a gene the pass could not reach look the same in the file, which
@@ -888,7 +902,6 @@ def register_extended_passes(mcp: FastMCP, settings: Settings, services: Network
         )
 
     @mcp.tool(
-        tags={"extended"},
         task=True,
         annotations=ToolAnnotations(
             title="Fill gwas_effects.csv",
