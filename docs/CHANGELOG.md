@@ -3,6 +3,34 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.23.0 — 2026-08-28
+
+### A description is context, so the ceiling depends on who pays for it
+
+Twenty tool docstrings rewritten and two tests to hold the line: in `toolbox.CORE` — what every
+session gets whether or not the server is layered — one paragraph is right, two is the outside and
+three is water; everywhere else five is fine where the tool genuinely takes five, and six is the
+point where it reads as an essay. Fifteen core tools were over, `record_override` at ten paragraphs
+and `draft_from_clinvar` at nine; four outside it were, `refresh_sidecar` at ten.
+
+**Nothing was deleted — the reasoning moved.** Why a tool is shaped this way, which defect it
+closed, what was measured, which option was rejected: that is for whoever edits the code, and it now
+sits in a comment above each tool where no session pays for it. `record_override`'s ten paragraphs
+carried the whole history of a contradiction between its own docstring and the server's rule 2; the
+history is in the comment, the discriminator (`source_value` given or omitted) is in the
+description, and the caller reads one sentence instead of an argument.
+
+| | before | after |
+|---|---:|---:|
+| description characters | 70,528 | 59,751 |
+| flat listing | 61,458 tokens | **58,586** (29.3% of a 200k window) |
+| layered listing | 20,103 tokens | **17,759** (8.9%) |
+| layered + tool search | 2,593 tokens | **2,507** |
+
+The layered surface falls furthest because that is where the trimming was aimed: `core` is the part
+nobody can decline. The two `toolbox` group sizes that moved (`passes`, `integrity`) are updated,
+both inside the 20% the drift test allows.
+
 ## 0.22.1 — 2026-08-27
 
 `toolbox` no longer routes around `JMC_HIDE_GATED_UNTIL_AUTH`: a reveal by name beat that flag's

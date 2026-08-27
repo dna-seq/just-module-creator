@@ -725,6 +725,12 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
     warn rather than refuse — the cost is real, and the caller is the one who can
     weigh it against what they are doing.
     """
+    # The conflict limit is the EVIDENCE available, not a rule against acting: a record saying
+    # you edited this cell and why would settle it. `record_override` writes such records but
+    # keys them by variant_key + column, and a sidecar subject is keyed otherwise, so nothing
+    # here can look one up yet — read `review_queue` beside this report until it can. The old
+    # tier hid the cheap five sidecars along with the two expensive ones, which is what the last
+    # paragraph is there to stop anyone reinventing.
 
     @mcp.tool(
         task=True,
@@ -745,70 +751,45 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
     ) -> SidecarRefreshReport:
         """Re-derive one derived sidecar against its source, keeping your own rows.
 
-        Every derived sidecar is **merge-not-clobber**: a re-run adds rows and
-        refreshes nothing already recorded. So asking a source whether it still
-        says what the file says means deleting the file first — and that discards
-        the rows a human worked out along with the stale ones. This does the
-        sequence reversibly: it copies the file somewhere durable *outside* the
-        spec directory and verifies the copy before deleting anything, re-runs the
-        pass that owns the table, classifies every row, puts back what is provably
-        yours, and reports everything else.
+        Every derived sidecar is **merge-not-clobber**: a re-run adds rows and refreshes
+        nothing already recorded, so asking a source whether it still says what the file
+        says means deleting the file first — which discards the rows a human worked out
+        along with the stale ones. This does that sequence reversibly: it copies the
+        file somewhere durable *outside* the spec directory and verifies the copy before
+        deleting anything, re-runs the pass that owns the table, classifies every row,
+        puts back what is provably yours, and reports the rest. A crash cannot lose your
+        rows — the capture is hashed before the delete and a run that dies mid-cycle
+        continues from it, and a sidecar with no verified capture is never deleted.
 
-        **Read `signature_moved` first. It is the canary.** A moved fact signature
-        with nothing reapplied and no conflict means the upstream source changed
-        its answer — the only drift this format can detect at all. An unmoved one
-        means the source still says exactly what your file said.
+        **Read `signature_moved` first. It is the canary.** A moved fact signature with
+        nothing reapplied and no conflict means the upstream source changed its answer —
+        the only drift this format can detect at all — while an unmoved one means the
+        source still says exactly what your file said.
 
-        **It does not resolve a conflict.** A subject present in both copies whose
-        facts differ is *either* a cell you edited *or* a revision the source
-        published, and the two values alone cannot separate those — two data
-        points, three explanations. So nothing here guesses, prefers a side or
-        merges: `conflicts` lists both sides and you decide. Note this is a limit
-        of the *evidence available*, not a rule against acting: a record saying you
-        edited this cell and why would settle it. `record_override` now writes such
-        records, but keyed by `variant_key` + column — a sidecar subject is keyed
-        otherwise, so nothing here can look one up yet. Read `review_queue` beside
-        this report until it can.
+        **It does not resolve a conflict**, because it cannot: a subject in both copies
+        whose facts differ is either a cell you edited or a revision the source
+        published, and two values cannot separate those. `conflicts` lists both sides
+        and you decide; `source_proves_authored` narrows what happened per row without
+        settling it, and the captured copy stays at `capture` for as long as you keep
+        it. **What is put back is a narrow, provable set** — rows whose subject the
+        fresh derivation does not mention at all AND whose `source` proves a human wrote
+        them. For `resolution.csv` specifically, an online run writes a
+        `status="not_found"` row for an rsID it cannot resolve, so a `source="manual"`
+        row for that variant lands in `conflicts` rather than `reapplied`.
 
-        Where the captured row's `source` is a value no fresh row uses,
-        `source_proves_authored` says so per row — that narrows what happened and
-        is still **not acted on**, because knowing who wrote a row does not settle
-        which of two answers about the world is right. The captured copy stays on
-        disk at `capture` for as long as you keep it.
-
-        **What is put back is a narrow, provable set**: rows whose *subject* the
-        fresh derivation does not mention at all AND whose `source` proves a human
-        wrote them. Everything else is reported. In particular, for
-        `resolution.csv` an online run that reaches Ensembl writes a
-        `status="not_found"` row for an rsID it cannot resolve — so a
-        `source="manual"` row for that same variant lands in `conflicts` rather
-        than in `reapplied`, and putting it back beside the fetched row is your
-        call. Where no link ran for that rsID no fresh row exists at all, and the
-        manual row is reapplied.
-
-        **Nothing is classified against a partial re-derivation.** If a source is
-        unreachable, a pass does nothing, or the fresh table comes back empty, the
-        captured bytes go back verbatim and `restored` says so — a table that was
-        never filled would report every real row as one the source withdrew.
-        `offline` refuses up front with nothing touched, for the same reason: a
-        cache-relative refresh compares the file against a cache rather than
-        against the source, which is a different question.
-
-        **A crash cannot lose your rows.** The capture is written and hashed before
-        the delete, and a run that dies mid-cycle leaves it findable: re-running
-        continues from it rather than capturing over it. A sidecar with no verified
-        capture is never deleted.
-
-        `use` is required for `gene_metrics.csv` and `gwas_effects.csv`, whose
-        passes read a licence-bearing source. `licensing.csv` cannot be refreshed
-        at all — no pass derives it.
+        **Nothing is classified against a partial re-derivation**: an unreachable
+        source, a pass that did nothing or an empty fresh table restores the captured
+        bytes verbatim and `restored` says so, since a table that was never filled would
+        report every real row as one the source withdrew. `offline` refuses up front for
+        the same reason. `use` is required for `gene_metrics.csv` and
+        `gwas_effects.csv`, whose passes read a licence-bearing source, and
+        `licensing.csv` cannot be refreshed at all because no pass derives it.
 
         **Two entries are expensive and nothing stops you.** `literature.csv` and
-        `gwas_effects.csv` run passes sized by how much has been published rather
-        than by the rows you wrote — the GWAS one was measured at 382 requests for
-        one real module. The other five are bounded by your own rows. That is a
-        budget to weigh, not a refusal: this used to need a server restart in
-        another tier, and the tier hid the cheap five along with the two.
+        `gwas_effects.csv` run passes sized by how much has been published rather than
+        by the rows you wrote — the GWAS one measured at 382 requests for one real
+        module. The other five are bounded by your own rows. A budget to weigh, not a
+        refusal.
         """
         target = resolve_dir(spec_dir, settings)
         chosen = check_sidecar(sidecar)

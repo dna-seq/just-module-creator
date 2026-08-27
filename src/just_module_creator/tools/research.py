@@ -180,18 +180,15 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     ) -> VariantLookup:
         """Look up one variant: its loci, alleles, ClinVar calls and rsID currency.
 
-        This is how you get the allele pair you need to decide a genotype. It
-        writes nothing and deliberately refuses to hand you cells to paste: the
-        `withheld` list carries each value with the reason it is yours to author.
-
-        `start` in the result is the **1-based VCF position** — the number
-        Ensembl, dbSNP, ClinVar and gnomAD all show. Copy it as printed; never
-        subtract one. More than one locus means the rsID is paralogous (several
-        genuinely distinct places) or pseudoautosomal (one place spelled twice).
-
-        Pass `ambiguity=true` to be warned when the answer is not unique, and
-        `frequencies=true` for gnomAD populations. `offline=true` restricts to
-        local caches — where an empty result means unchecked, not absent.
+        How you get the allele pair you need to decide a genotype. It writes nothing and
+        deliberately refuses to hand you cells to paste — `withheld` carries each value
+        with the reason it is yours to author. `start` in the result is the **1-based
+        VCF position**, the number Ensembl, dbSNP, ClinVar and gnomAD all show: copy it
+        as printed, never subtract one. More than one locus means the rsID is paralogous
+        (several genuinely distinct places) or pseudoautosomal (one place spelled
+        twice). Pass `ambiguity=true` to be warned when the answer is not unique,
+        `frequencies=true` for gnomAD populations, and note that under `offline=true` an
+        empty result means unchecked, not absent.
         """
         if not rsid and not (chrom and start):
             raise ToolError("Provide either rsid, or chrom and start.")
@@ -238,26 +235,19 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     ) -> CitationLookup:
         """Check a PMID or DOI, and read back **which paper it names**.
 
-        Existence alone is a weak guard against a recalled id: PMIDs are densely
-        allocated, so a number you half-remember is usually a real record for a
-        different paper and comes back `pmid_exists=true`. Fabrication is a failure
-        of *identity*, so read `title` — with `journal`, `year` and `first_author`
-        beside it — and compare it against the paper you meant. A title that
-        disagrees means the id is wrong however true `pmid_exists` is. They cost no
-        extra request: the same `esummary` response answers both questions.
-
-        Still take every PMID you write from a `literature_search` result rather
-        than from memory. This tool checks an id you already hold; it cannot tell
-        you which paper you *should* be citing.
-
-        A `null` in `pmid_exists` — or in `title` — means the question was not put,
-        not a negative answer, and an unasked question is never a passed check.
-        PMIDs are 1-8 digits; nine-digit ids are not PubMed ids (a few hundred of
-        ClinVar's citation ids are exactly that).
-
-        `withheld` carries PubMed's DOI with its refusal rather than as a cell to
-        paste: `doi` is redundancy-bearing, and filling it from the record that
-        gave you the PMID makes the DOI cross-check compare PubMed with itself.
+        Existence alone is a weak guard: PMIDs are densely allocated, so a half-
+        remembered number is usually a real record for a different paper and comes back
+        `pmid_exists=true`. Fabrication is a failure of *identity*, so read `title` —
+        with `journal`, `year` and `first_author` beside it, all from the same
+        `esummary` response at no extra request — and a title that disagrees means the
+        id is wrong however true `pmid_exists` is. Still take every PMID you write from
+        a `literature_search` result: this checks an id you hold, it cannot tell you
+        which paper you should be citing. A `null` in `pmid_exists` or `title` means the
+        question was not put, and an unasked question is never a passed check; PMIDs are
+        1-8 digits, so a nine-digit id is not one. `withheld` carries PubMed's DOI with
+        its refusal rather than as a cell to paste, because filling `doi` from the
+        record that gave you the PMID makes the DOI cross-check compare PubMed with
+        itself.
         """
         if not pmid and not doi:
             raise ToolError("Provide either pmid or doi.")
@@ -305,35 +295,21 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     ) -> LiteratureSearchResult:
         """Find the papers behind a row — and confirm a PMID names the paper you meant.
 
-        **Take every PMID you write from a result here, never from memory.** A
-        recalled 8-digit number is usually a real record for a *different* paper,
-        and existence checks pass for it — only a title settles identity. Pass
-        `pmids=[...]` to look up ids you already have and read their titles back.
-        `lookup_citation` now reports a title too, so either tool can check an id
-        you hold; this one is also how you find the id in the first place, across
-        several services at once.
-
-        Combine `query` with `gene`, `rsid` and `trait` — they are ANDed into one
-        search string. `sources` narrows which services are asked and can never
-        widen what `JMC_LITERATURE_SOURCES` permits.
-
-        **Read `sources` before believing an empty `papers`.** A source that could
-        not answer reports `results=null`; only a source that genuinely found
-        nothing reports `0`. A miss is not evidence of absence.
-
-        What this refuses, deliberately:
-
-        - **`doi` comes back in `withheld`, not as a cell.** It is
-          redundancy-bearing: filling `studies.csv:doi` from the record that gave
-          you the PMID makes the DOI cross-check compare a source with itself.
-        - **No relevance score across sources.** Each source's own rank is kept
-          under its own name, because a combined score is a convention with no
-          source behind it and it invites citing the top hit without reading it.
-        - **No verdict on whether a paper supports your claim.** That is the
-          reading you have to do.
-
-        A result flagged `preprint` has no PMID and is not peer-reviewed, so it
-        cannot ground a `studies.csv` row on its own — `pmid` is required there.
+        **Take every PMID you write from a result here, never from memory**: a recalled
+        8-digit number is usually a real record for a *different* paper and existence
+        checks pass for it, so only a title settles identity. Pass `pmids=[...]` to read
+        back the titles of ids you already hold. Combine `query` with `gene`, `rsid` and
+        `trait` — they are ANDed — and `sources` narrows which services are asked, never
+        widening what `JMC_LITERATURE_SOURCES` permits. **Read `sources` before
+        believing an empty `papers`**: a source that could not answer reports
+        `results=null`, only one that found nothing reports `0`, and a miss is not
+        evidence of absence. Three deliberate refusals: `doi` comes back in `withheld`
+        rather than as a cell (filling `studies.csv:doi` from the record that gave you
+        the PMID makes that cross-check compare a source with itself), there is no
+        relevance score across sources (a combined score has no source behind it and
+        invites citing the top hit unread), and there is no verdict on whether a paper
+        supports your claim. A `preprint` result has no PMID and cannot ground a
+        `studies.csv` row on its own.
         """
         eff_offline = offline_for(settings, False)
         if eff_offline:

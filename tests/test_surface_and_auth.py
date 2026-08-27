@@ -27,6 +27,7 @@ from just_module_creator import models
 from just_module_creator.auth import GATED_TOOLS, resolve_install_id
 from just_module_creator.server import INSTRUCTIONS, build_server
 from just_module_creator.settings import Settings
+from just_module_creator.toolbox import CORE
 
 # The authoring loop an agent cannot work without.
 AUTHORING_LOOP = {
@@ -655,3 +656,54 @@ def test_the_instructions_fit_in_what_the_host_will_actually_keep():
         f"Everything past that is dropped without an error. Move detail into a skill "
         f"— the tail is where the registry rules live, and the tail is what is lost"
     )
+
+
+# --------------------------------------------------------------------------- #
+# A description is context, and the core group's is context every session pays for
+# --------------------------------------------------------------------------- #
+_CORE_CEILING = 2
+_ESSAY_CEILING = 6
+
+
+def _paragraphs(tool) -> int:
+    return len([b for b in (tool.description or "").strip().split("\n\n") if b.strip()])
+
+
+async def test_the_core_tools_keep_their_descriptions_short(client):
+    """One paragraph is right, two is acceptable, three is water — for `core`.
+
+    A docstring here is not documentation: it is the tool's description, sent to
+    every client on every connection. The listing measured 61,458 tokens — 31% of a
+    200k window — with 70,528 characters in descriptions when this ceiling was
+    written, and `core` is the part nobody can decline: it is what a layered server
+    lists and what a flat one puts in front of every session regardless. The pass
+    that brought it under this rule took descriptions to 59,751 characters, the flat
+    listing to 58,586 tokens and the layered one to 17,759.
+
+    Prose explaining *why the tool is shaped this way* — the defect it closed, the
+    measurement behind it, the option that was rejected — belongs in a comment
+    above it, where whoever edits the code reads it and no session pays for it.
+    """
+    offenders = [
+        f"{t.name}: {_paragraphs(t)} paragraphs"
+        for t in await client.list_tools()
+        if t.name in CORE and _paragraphs(t) > _CORE_CEILING
+    ]
+    assert not offenders, "\n".join(sorted(offenders))
+
+
+async def test_no_description_anywhere_becomes_an_essay(client):
+    """Outside `core` the ceiling is looser, because the cost is opt-in and real.
+
+    A tool a session reveals deliberately — a drafter, a bulk pass, a registry
+    write — can carry five paragraphs when five is what the thing genuinely takes,
+    and several here do. What this catches is the other shape: the rule, then its
+    history, then the defect that motivated it, then the measurement, then the
+    upstream ticket. Those have homes that cost nobody context.
+    """
+    offenders = [
+        f"{t.name}: {_paragraphs(t)} paragraphs"
+        for t in await client.list_tools()
+        if _paragraphs(t) > _ESSAY_CEILING
+    ]
+    assert not offenders, "\n".join(sorted(offenders))

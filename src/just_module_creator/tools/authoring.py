@@ -469,17 +469,14 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     def list_tables() -> TableList:
         """List the authorable table kinds and what each row is about.
 
-        Start here when deciding which table a finding belongs in. The question
-        is what the row's *subject* is — not what data you happen to have. A
-        quantity with a threshold (repeat count, copy number, heteroplasmy
-        fraction, activity score) is a binning table, not a variant row.
-
-        `tables` is what you write; `sidecars` is what a pass writes for you, and
-        `describe_machine_table` answers those columns. `licensing.csv` sits under
-        `tables` on purpose — it is the one fact sidecar a human authors.
-
-        `module_spec.yaml` is in neither list, because it is not a table: it holds
-        nested blocks rather than rows, and `describe_spec_file` answers it.
+        Start here when deciding which table a finding belongs in: the question is what
+        the row's *subject* is, not what data you happen to have — a quantity with a
+        threshold (repeat count, copy number, heteroplasmy fraction, activity score) is
+        a binning table, not a variant row. `tables` is what you write; `sidecars` is
+        what a pass writes for you, answered by `describe_machine_table`;
+        `licensing.csv` sits under `tables` because it is the one fact sidecar a human
+        authors; and `module_spec.yaml` is in neither, because it holds nested blocks
+        rather than rows — `describe_spec_file` answers it.
         """
         tables = []
         for name in sorted(draft.DRAFTABLE):
@@ -503,6 +500,10 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             note=_COMPOSITION_NOTE,
             produced_by=schema_versions(),
         )
+    # Upstream glosses the somebody behind an attestation cell as a human, which is right for a
+    # layer where nothing can record a reader. Here an agent reading a fetched article is a
+    # reading that happened, so the rule is attribution rather than abstention — CLAUDE.md §2,
+    # reversed 2026-08-20.
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -513,26 +514,15 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         """Describe one table kind: every column, its type, vocabulary and pick-list.
 
         Generated from the live pydantic models, so it cannot drift from what the
-        compiler accepts. Ask this before writing any vocabulary cell — several
-        vocabularies are not what intuition suggests (`direction` is an axis, not
-        a magnitude: neutral/protective/risk/unknown, never increase/decrease).
-
-        The `redundancy_bearing` map names columns a later check compares against
-        a source. Author those yourself from independent reading; filling one
-        from the source that checks it makes the check vacuous.
-
-        `attestation_bearing` is the stronger case, and it is a subset: those
-        cells assert that *somebody read something*. Upstream glosses that
-        somebody as a human, which is right for a layer where nothing can record
-        a reader; here an agent reading a fetched article is a reading that
-        happened, so the rule is **quote what you located, verbatim, and record
-        who located it** — never the article's title, and never a passage a tool
-        picked for you. See `fetch_fulltext`.
-
-        **Authored kinds only.** A machine-produced sidecar is answered by
-        `describe_machine_table`, and asking for one here says so rather than
-        calling it unknown. `licensing.csv` is answered *here*: it is a fact
-        sidecar, and it is the one a human writes.
+        compiler accepts. Ask before writing any vocabulary cell — several are not what
+        intuition suggests (`direction` is an axis: neutral/protective/risk/unknown,
+        never increase/decrease). `redundancy_bearing` names the columns a later check
+        compares against a source, so author those independently: filling one from the
+        source that checks it makes the check vacuous. `attestation_bearing` is a subset
+        and the stronger case — those cells assert that somebody read something, so
+        quote what you located, verbatim, and record who located it, never the article's
+        title (`fetch_fulltext`). Authored kinds only: a machine-produced sidecar goes
+        to `describe_machine_table`, and `licensing.csv` is answered here.
         """
         _refuse_spec_file(csv_name)
         name = known_kind(csv_name, draft.DRAFTABLE, _PRODUCED_CSVS)
@@ -636,6 +626,14 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             produced_by=schema_versions(),
         )
 
+    # Separate from `describe_table` structurally, not stylistically: that tool would
+    # have had to answer `requirements`, `redundancy_bearing` and `attestation_bearing`
+    # with empty values, and an empty `requirements` reads as *no requirements* rather
+    # than *the question does not apply*. The `licensing.csv` carve-out is derived from
+    # `draft.DRAFTABLE`, so a table upstream makes authorable moves on its own. Both are
+    # pinned by `tests/test_authoring.py`, which is why neither is in the docstring: a
+    # description is context every session pays for, and this is reasoning for whoever
+    # edits the code.
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Describe a machine-produced table", readOnlyHint=True, idempotentHint=True
@@ -644,34 +642,15 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     def describe_machine_table(csv_name: str) -> MachineTableDescription:
         """Describe a sidecar a PASS wrote: every column, type and vocabulary. Read-only.
 
-        `resolution.csv` plus the fact sidecars — `list_tables().sidecars` is the live
-        roster, and it is derived, so ask it rather than trusting a list in prose (a
-        docstring cannot be generated, which is why this one names none). Generated
-        from the live pydantic models, like every other schema answer here, so
-        "ask the tool, never memory" now holds for the files an author *reads* as
-        well as the ones they write. It used to stop at the authored kinds, which
-        left the hole exactly where an author is looking at a produced file and
-        deciding whether to touch it.
-
-        **Nothing here writes, templates or lints these tables, and this being a
-        separate tool is the reason why.** Extending `describe_table` was the other
-        option and it would have had to answer three fields whose whole subject is
-        authoring — `requirements` (what you must supply), `redundancy_bearing` and
-        `attestation_bearing` (which cells you must reason out independently) — with
-        empty values, and an empty `requirements` reads as *no requirements* rather
-        than as *the question does not apply*. So the separation is structural: a
-        produced table has no template, no linter and no requirements answer, it
-        carries `hand_authored: false`, and the four authoring routes redirect here
-        instead of pretending the name is unknown.
-
-        **`licensing.csv` is refused here on purpose.** It is a fact sidecar and a
-        human writes it — the only one — so it stays on `describe_table` with its
-        template and its linter. That exception is derived from `draft.DRAFTABLE`
-        rather than special-cased, so a table upstream makes hand-authorable moves
-        surface without an edit here.
-
-        A row here is not evidence of anything you authored. Read `refusal` before
-        editing one of these files by hand.
+        `resolution.csv` plus the fact sidecars — ask `list_tables().sidecars` for the
+        live roster rather than trusting a list in prose, this one included. Generated
+        from the models, so "ask the tool, never memory" holds for the files an author
+        *reads* as well as the ones they write. A produced table has no template, no
+        linter and no requirements: nothing here writes or lints one, the answer says
+        `hand_authored: false`, and the authoring routes redirect here rather than call
+        the name unknown. `licensing.csv` is the exception and stays on `describe_table`
+        — it is the one fact sidecar a human writes. A row here is not evidence of
+        anything you authored; read `refusal` before editing one of these files by hand.
         """
         name = _machine_kind(csv_name)
         model = _PRODUCED_MODELS[name]
@@ -767,6 +746,10 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
     # ----------------------------------------------------------------- #
     # Authoring
+    # The 5-15 words is a norm rather than a validator: a length ceiling would refuse a merely
+    # verbose spec, refuse it after the prose was written, and make six published modules
+    # retroactively invalid. F58 / format-tree S63 — four of five reference specs end with the
+    # byte-identical methodology sentence, so the field's one job was spent on the shared half.
     # ----------------------------------------------------------------- #
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -785,18 +768,15 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     ) -> ScaffoldResult:
         """Create module_spec.yaml plus a stub CSV per table kind. Never overwrites.
 
-        Re-runnable: run it again with a different `kinds` to add a table later,
-        and anything already present is refused rather than clobbered. Pass
-        `dry_run=true` to see the plan first.
-
-        `name` must be lowercase alphanumeric with underscores (`my-module` is
-        rejected). Afterwards, replace every `<<REPLACE>>` in module_spec.yaml —
-        title, description and report_title are required and the placeholder
-        blocks validation. Keep `description` to **one short sentence, roughly
-        5-15 words**: it becomes the catalog card's subtitle and is rendered
-        whole, so a paragraph there is a fourteen-row card. Say what this module
-        distinguishes; methodology belongs in `weighting:`, `authorship:` and
-        `README.md`, and is the half that ends up identical across four cards.
+        Re-runnable: run it again with a different `kinds` to add a table later, and
+        anything already present is refused rather than clobbered — `dry_run=true` shows
+        the plan first. `name` must be lowercase alphanumeric with underscores (`my-
+        module` is rejected). Afterwards replace every `<<REPLACE>>` in
+        module_spec.yaml; title, description and report_title are required and the
+        placeholder blocks validation. Keep `description` to **one short sentence,
+        roughly 5-15 words**: it becomes the catalog card's subtitle and is rendered
+        whole. Say what this module distinguishes — methodology belongs in `weighting:`,
+        `authorship:` and `README.md`.
         """
         target = resolve_dir(spec_dir, settings, must_exist=False)
         for kind in kinds or []:
@@ -860,6 +840,12 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
                 "with lint_rows before validating."
             ),
         )
+    # `alterations` here carries normalizations that were APPLIED and is usually empty on a
+    # valid table; upstream's `inspect_rows` reports the left-to-you columns as findings
+    # instead. The refusals with `applied=false` come from `lookup_variant` and
+    # `lookup_citation`, the tools actually holding a value they could have written. Roughly six
+    # in ten conclusion warnings are real, the rest comparative or quoted prose, which is why it
+    # is not an error.
 
     @mcp.tool(
         annotations=ToolAnnotations(title="Lint CSV rows", readOnlyHint=True, idempotentHint=True)
@@ -867,36 +853,17 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     def lint_rows(csv_name: str, csv_text: str) -> LintResult:
         """Lint CSV text against a table kind. Writes nothing, anywhere.
 
-        Pass the rows as text — this needs no file on disk, so use it *before*
-        writing. Read all three finding levels: `error` blocks a compile,
-        `warning` does not (and several known traps arrive only as warnings —
-        a `risk` state with a positive weight compiles happily), and `info`
-        names the columns deliberately left to you.
-
-        **Where the redundancy-bearing columns show up here is `findings`, at
-        `info` level** — one per column the linter is deliberately leaving to you.
-        `alterations` on this tool carries normalizations that were *applied*, and
-        on a valid table it is usually empty; upstream's `inspect_rows` reports the
-        left-to-you columns as findings rather than as refused alterations. It is
-        `lookup_variant` and `lookup_citation` that return refusals with
-        `applied=false` and a `refusal`, because they are the tools holding a value
-        they could have written.
-
-        Either way the rule is the same: a redundancy-bearing cell is yours to
-        author independently, since filling it from the source that later checks it
-        makes that check vacuous. `describe_table` names the columns under
-        `redundancy_bearing`.
-
-        **Read `source` on each finding.** `upstream` is the compiler's own, carried
-        across field-for-field; `just-module-creator` is one this layer computed, and
-        it never blocks a compile whatever its level. On `variants.csv` those are two
-        rules over `conclusion`, the only cell in the format a person reads about
-        themselves and the only required one nothing else compares to anything: a
-        `warning` where the prose names a genotype built from alleles at that rsID's
-        own locus that is not the row's own — roughly six in ten are real, the rest
-        comparative or quoted prose, which is why it is not an error — and an `info`
-        where genotypes that score differently share one sentence, which is a question
-        rather than a defect. On `studies.csv` it is the repeated-quote shape.
+        Pass the rows as text, so use it *before* writing anything to disk, and read all
+        three levels: `error` blocks a compile, `warning` does not (a `risk` state with
+        a positive weight compiles happily), and `info` names the columns deliberately
+        left to you — the redundancy-bearing ones, yours to author independently because
+        filling one from the source that later checks it makes that check vacuous.
+        **Read `source` on each finding**: `upstream` is the compiler's own, carried
+        across field-for-field, while `just-module-creator` is one this layer computed
+        and never blocks a compile whatever its level — on `variants.csv` those are two
+        rules over `conclusion` (a warning where the prose names a genotype that is not
+        the row's own, an info where genotypes that score differently share one
+        sentence), and on `studies.csv` the repeated-quote shape.
         """
         _refuse_spec_file(csv_name)
         name = known_kind(csv_name, draft.DRAFTABLE, _PRODUCED_CSVS)
@@ -924,19 +891,14 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     async def validate_module(spec_dir: str, strict: bool = True) -> ValidationReport:
         """Pre-flight a spec directory. Writes nothing.
 
-        Pass the SAME `strict` you intend to compile with. Several checks are a
-        ladder — a warning under best-effort and an error under strict — so a
-        modeless pre-flight answers for the other compile. Default is strict
-        because that is what the registry runs.
-
-        `strict` means *reproducible*, not *correct*: it refuses when resolution
-        left something it could not reproduce, and has no opinion on whether your
-        coordinates name the variant you meant. Read `warnings` even on a pass.
-
-        **A green answer here says the module builds and nothing more**, which is the
-        honest limit of every offline gate and not a defect in this one. `audit_module`
-        asks the other question — what somebody still has to decide — over the same
-        files and without a network.
+        Pass the SAME `strict` you intend to compile with — several checks are a ladder,
+        a warning under best-effort and an error under strict, so a modeless pre-flight
+        answers for the other compile; the default is strict because that is what the
+        registry runs. `strict` means *reproducible*, not *correct*: it refuses when
+        resolution left something it could not reproduce and has no opinion on whether
+        your coordinates name the variant you meant, so read `warnings` even on a pass.
+        A green answer says the module builds and nothing more — `audit_module` asks
+        what somebody still has to decide, over the same files and without a network.
         """
         target = resolve_dir(spec_dir, settings)
         result = await run_sync(lambda: compiler.validate_spec(target, strict=strict))
@@ -1005,6 +967,8 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             )
 
         return await run_sync(read)
+    # Re-drafting moves the digest too: the licence table re-stamps `fetched_at`, which is
+    # inside it. A `risk` state with a positive weight is the other warning that compiles clean.
 
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -1022,21 +986,15 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     ) -> CompileReport:
         """Compile a spec directory into a parquet artifact plus manifest.json.
 
-        Offline and deterministic: it consumes the `resolution.csv` that enrich
-        produced and never fetches one. Recompiling an untouched spec reproduces
-        every hash **under one compiler version** — that is the property to test.
-        Upgrading the compiler moves `artifact_digest` on purpose and moves
-        `content_signature` on nothing, so compare the second one across versions.
-        (Re-*drafting* moves the digest too: the licence table re-stamps
-        `fetched_at`, which is inside it.)
-
-        A green compile is not evidence the module is correct. Read `warnings`:
-        a genotype whose alleles are not at its locus, or a `risk` state with a
-        positive weight, compiles cleanly under best-effort.
-
-        Read `resolution_subjects` beside `fully_resolved` — over an empty list
-        that flag is vacuously true. All five counters are null on a pre-0.6
-        artifact, and **null never means zero**.
+        Offline and deterministic: it consumes the `resolution.csv` that enrich produced
+        and never fetches one. Recompiling an untouched spec reproduces every hash
+        **under one compiler version** — upgrading the compiler moves `artifact_digest`
+        on purpose and moves `content_signature` on nothing, so compare the second
+        across versions. A green compile is not evidence the module is correct: read
+        `warnings`, since a genotype whose alleles are not at its locus compiles cleanly
+        under best-effort. Read `resolution_subjects` beside `fully_resolved` — over an
+        empty list that flag is vacuously true, and all five counters are null on a
+        pre-0.6 artifact, where **null never means zero**.
         """
         source = resolve_dir(spec_dir, settings)
         out = resolve_dir(output_dir, settings, must_exist=False)

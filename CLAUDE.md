@@ -582,7 +582,19 @@ comparison against ISO values.
    appears, that is the moment to ask whether "ungated onboarding" is a category
    rather than an exception — do not grow the exception silently.
 2. Add it inside the matching `register_*` with type hints, a docstring (it
-   becomes the description) and `ToolAnnotations`.
+   becomes the description) and `ToolAnnotations`. **A description is context, and
+   the ceiling depends on who pays for it.** In `toolbox.CORE` — what every
+   session gets whether or not the server is layered — one paragraph is right, two
+   is the outside, and three is water; outside it, five is fine where the tool
+   genuinely takes five, and the ceiling is six before it reads as an essay. Two
+   tests pin those. The listing measures 58,586 tokens, 29% of a 200k window, and
+   descriptions are 59,751 characters of it — down from 70,528 when the rule
+   landed, which took the layered surface down 11.7%. This is the difference
+   between a surface an agent can hold and one it cannot. Say what the tool does, what the arguments
+   mean and what it refuses; **the reasoning — why it is shaped this way, which
+   defect it closed, what was measured — goes in a comment above it**, where
+   whoever edits the code reads it and no session pays for it. Deleting the reason
+   is never the alternative: moving it is.
 3. Return a model from `models.py`.
 4. Paths through `resolve_dir`; network through `offline_for` and
    `anyio.to_thread.run_sync`.

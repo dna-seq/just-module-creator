@@ -259,15 +259,16 @@ token. It lives beside `authenticate` for that reason rather than with the other
 
 | Surface | Tools | Tokens | % of a 200k window | Saving |
 |---|---:|---:|---:|---:|
-| flat (default) | 57 | 61,458 | 30.7% | — |
-| `JMC_TOOLBOX=layered` | 18 | 20,103 | 10.1% | 67.3% |
-| layered + `JMC_TOOL_SEARCH=regex` | 5 | 2,593 | 1.3% | 95.8% |
+| flat (default) | 57 | 58,586 | 29.3% | — |
+| `JMC_TOOLBOX=layered` | 18 | 17,759 | 8.9% | 69.7% |
+| layered + `JMC_TOOL_SEARCH=regex` | 5 | 2,507 | 1.3% | 95.7% |
 | *(the removed `extended` tier, for scale)* | 50 | 53,844 | 26.9% | 12.4% |
 
-Two more numbers worth knowing before optimising anything: the mean tool costs 1,083 tokens and the
-median 940, and **`refresh_sidecar` alone is 6,133** — 80% of what the entire `extended` tier hid.
-The heaviest 16 tools are 52% of the listing, so trimming docstrings is a real lever independent of
-any of this.
+Descriptions are the third lever and the only one that costs nothing to pull: they were 70,528
+characters of that payload before the 0.23.0 pass and are 59,751 after, which took the flat listing
+down 4.7% and the layered one — where the trimming was concentrated, because `core` is what nobody
+can decline — down 11.7%. The ceiling is in `CLAUDE.md` §5 and two tests hold it: `core` stops at
+two paragraphs, everything else at six.
 
 Three switches narrow what is **listed**, and none of them narrows what exists. That distinction is
 the whole lesson of the removed tier, so keep it straight before reaching for any of them.

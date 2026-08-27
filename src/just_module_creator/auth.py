@@ -243,36 +243,23 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
         install_id: str | None = None,
         difficulty: int | None = None,
     ) -> RegistrationResult:
-        """Create a registry account and mint its API key. No token needed — this makes one.
+        """Create a registry account and mint its API key. No token needed — this makes
+        one.
 
-        Onboarding is self-service: no admin, no email, no approval. The only
-        gate is an install-id, a proof-of-work string ground locally in about a
-        second. Omit `install_id` and one is ground for you.
-
-        **`target` picks the instance, and defaults to the polygon.** The two
-        keep separate databases, so registering is per instance: an account on
-        the polygon does not exist in production and its token is not a
-        production credential. Register on both — the same install-id may be
-        reused, and reusing it is what keeps the two accounts recognisably
-        yours.
-
-        **Save the install-id this returns.** It is the account's only recovery
-        path. Re-registering the SAME install-id reissues a key for the SAME
-        account and ignores the `account` argument; calling again WITHOUT one
-        grinds a fresh id, which is a different account, and the first account
-        becomes unreachable if you did not keep its id. Put it in `.env` as
-        `JMC_INSTALL_ID`, and the tokens as `JMC_API_KEY` (production) and
-        `JMC_TEST_API_KEY` (polygon).
-
-        `account` obeys the namespace rule — lowercase letters and digits with
-        single hyphens. Underscores are rejected, not normalised. Note that
-        *module* names are the opposite convention and take underscores. A
-        `test-` handle is fine on the polygon and refused by production.
-
-        The token is stored for this session against this target, so
-        `authenticate` is not needed afterwards. Claiming a namespace is a
-        separate, irreversible step: check it with
-        `registry_namespace_available` first, then `registry_claim_namespace`.
+        Onboarding is self-service: no admin, no email, no approval, just an install-id
+        — a proof-of-work string ground locally in about a second, and omitting
+        `install_id` grinds one for you. **`target` picks the instance and defaults to
+        the polygon**, and the two keep separate databases, so an account on one does
+        not exist on the other; register on both with the same install-id. **Save the
+        install-id this returns**: it is the account's only recovery path, re-
+        registering it reissues a key for the SAME account and ignores `account`, while
+        calling again without one silently creates a different account. Put it in `.env`
+        as `JMC_INSTALL_ID`, the tokens as `JMC_API_KEY` and `JMC_TEST_API_KEY`.
+        `account` obeys the namespace rule — lowercase letters and digits with single
+        hyphens, underscores rejected rather than normalised, and a `test-` handle is
+        fine on the polygon and refused by production. The token is stored for this
+        session, so `authenticate` is unnecessary afterwards; claiming a namespace is a
+        separate, irreversible step behind `registry_namespace_available`.
         """
         if settings.offline:
             raise ToolError(
@@ -410,17 +397,14 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
     ) -> AuthResult:
         """Provide a registry token to unlock the registry write tools for THIS session.
 
-        The token is stored only against your own session and is never shared
-        with other clients. Use this when you already hold a token; if you do not
-        have an account yet, `registry_register` mints one and stores its token
-        for you, so this call is unnecessary after it. No token is needed to
-        author, validate or compile a module — only to publish one.
-
-        **A token belongs to one instance.** `target` says which, and defaults to
-        the polygon. The two registries keep separate databases, so storing a
-        production key against the polygon does not make it work there — it
-        makes the next polygon call fail as an unknown key. Authenticate twice,
-        once per instance, if you work with both.
+        Stored against your own session and never shared with other clients. Use it when
+        you already hold a token — `registry_register` mints one and stores it for you,
+        so this is unnecessary after that — and note no token is needed to author,
+        validate or compile a module, only to publish one. **A token belongs to one
+        instance**: `target` says which and defaults to the polygon, and storing a
+        production key against the polygon does not make it work there, it makes the
+        next polygon call fail as an unknown key. Authenticate twice if you work with
+        both.
         """
         # No format check: the registry issues the token and is the only thing
         # that can judge it. Inventing a prefix rule here would reject valid

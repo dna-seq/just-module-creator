@@ -15,11 +15,11 @@ session that asked — so the worst case is a round trip, not a dead end.
 **The numbers this exists for**, measured 2026-08-27 over the serialized
 ``tools/list`` payload (o200k tokenizer, so ±a few percent for Claude's):
 
-* the flat listing is **61,458 tokens** — 30.7% of a 200k window before a single
+* the flat listing is **58,586 tokens** — 29.3% of a 200k window before a single
   row of anyone's module is read;
-* layered it is **20,103** — 10.1% of that window, a saving of **41,355 tokens
-  (67%)**;
-* with ``tool_search`` on top, **2,593** (95.8% saved), at the price of a search
+* layered it is **17,759** — 8.9% of that window, a saving of **40,827 tokens
+  (70%)**;
+* with ``tool_search`` on top, **2,507** (95.7% saved), at the price of a search
   before the first call;
 * the old ``extended`` tier, for comparison, hid 6 tools worth **7,614** — a
   14.4% saving, which is why it was never worth what it cost;
@@ -137,7 +137,7 @@ GROUPS: tuple[Group, ...] = (
             "enrich_gwas_effects",
             "refresh_sidecar",
         ),
-        10744,
+        10275,
     ),
     Group(
         "review",
@@ -155,7 +155,7 @@ GROUPS: tuple[Group, ...] = (
             "verify_artifact",
             "reverse_module",
         ),
-        4744,
+        4677,
     ),
     Group(
         "catalog",
@@ -247,8 +247,8 @@ def register_toolbox(mcp: FastMCP, settings: Settings) -> None:
         Nothing here is unreachable and nothing is switched off: in the default
         `flat` configuration every tool is already listed and a reveal is a no-op
         that says so. Under `JMC_TOOLBOX=layered` the server lists the core
-        authoring loop and holds the rest here, which is measured at 41,000
-        tokens of context — two thirds of the whole listing.
+        authoring loop and holds the rest here, which is measured at 40,800
+        tokens of context — 70% of the whole listing.
 
         If a skill names a tool you cannot see, this is the answer — call it
         rather than concluding the capability does not exist, and rather than

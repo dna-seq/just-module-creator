@@ -89,44 +89,35 @@ def register_comparison(mcp: FastMCP, settings: Settings) -> None:
     ) -> ModuleComparison:
         """What moved between two spec directories. Offline; writes nothing, anywhere.
 
-        Answers at three grains in one report, because the caller does not yet know
-        which one they need — that is why they called:
+        Three grains in one report, because the caller does not yet know which one they
+        need — that is why they called. `content` / `frame` says whether anything an
+        author typed changed and whether the two sides even mean coordinates in the same
+        assembly; `tables[]` gives presence, row counts, added and removed, plus
+        `identity_scope`, which says *which hash your edit will move*; and
+        `tables[].changed[]` groups rows by **the set of columns that changed**, which
+        is what makes the row level readable — 1,190 rows changing in one column for one
+        reason is one line rather than 1,190.
 
-        1. **`content` / `frame`** — did anything an author typed change, and do the
-           two sides even mean coordinates in the same assembly.
-        2. **`tables[]`** — presence, row counts, added and removed, plus
-           `identity_scope`, which says *which hash your edit will move*.
-        3. **`tables[].changed[]`** — rows grouped by **the set of columns that
-           changed**. That grouping is what makes the row level readable: 1,190 rows
-           changing in one column for one reason is one fact printed 1,190 times, and
-           grouped it is one line.
+        **Read `frame` before any row count.** When the declared builds differ the
+        comparison is *not comparable* rather than clean: the natural key is build-
+        independent, so two assemblies produce character-identical keys naming loci
+        hundreds of bases apart, and "zero rows changed" is then the dangerous answer.
+        **`derived[]` is separate on purpose** — the authored side answers *did somebody
+        edit this module*, the derived side *did a source say something different* — and
+        sidecars are compared on fact signatures recomputed from disk, so a fresh
+        `fetched_at` is excluded by construction rather than by filtering.
 
-        **Read `frame` before any row count.** When the declared builds differ, the
-        row comparison is *not comparable* rather than clean — the natural key is
-        build-independent, so two assemblies produce character-identical keys naming
-        loci hundreds of bases apart, and "zero rows changed" is then the dangerous
-        answer.
-
-        **`derived[]` is a separate section on purpose.** The authored side answers
-        *did somebody edit this module*; the derived side answers *did a source say
-        something different*. Merging them into one count would destroy the one
-        distinction the identity ledger exists to preserve. Sidecars are compared on
-        their **fact signatures**, recomputed from the files on disk, so a fresh
-        `fetched_at` — which moves the bytes and no signature — is excluded by
-        construction rather than by filtering.
-
-        **What it will not do, and none of it is "not yet".** It has no write path and
-        no parameter that could become one. It never says which side is right: a later
+        **What it will not do, and none of it is "not yet".** No write path and no
+        parameter that could become one. It never says which side is right: a later
         version is not automatically more correct, and the published corpus contains a
         version that reverted its predecessor. It never pairs rows whose natural key
         changed — one removed and one added, never one changed, because pairing asserts
-        *this row became that row*. It writes no changelog prose and suggests no
-        version bump. And it cannot perform the canary: detecting that a source revised
-        an answer means deleting a sidecar and re-deriving it, which is
-        `refresh_sidecar`'s job, and that tool knows which side it just derived.
-
-        For the raw cells, run `diff`. This reports what moved and groups it; it does
-        not reproduce a line-by-line diff, badly.
+        *this row became that row*. It writes no changelog prose and suggests no version
+        bump. And it cannot perform the canary: detecting that a source revised an
+        answer means deleting a sidecar and re-deriving it, which is `refresh_sidecar`'s
+        job, because that tool knows which side it just derived. For raw cells, run
+        `diff` — this reports what moved and groups it rather than reproducing a line-
+        by-line diff badly.
         """
         left = resolve_dir(left_dir, settings)
         right = resolve_dir(right_dir, settings)

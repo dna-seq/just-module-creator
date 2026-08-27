@@ -259,6 +259,14 @@ def _draft_result(
 
 def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices) -> None:
     """Register the always-on drafting tool (ClinVar -> variants + studies)."""
+    # Below enricher 0.6.3 the drafter keyed a site on `ref`, so an ordinary ClinVar dup/del
+    # mirror pair collapsed onto one row and the second record was dropped silently (upstream
+    # S41). Measured on one gene: re-running leaves 0 records missing and 31 stale identities.
+    # Since 0.6.4 the run NAMES them, counted with examples, and deletes nothing — by re-draft
+    # time a drafted row is authored material and may have been curated since. The warning is
+    # the safety net rather than the plan: no file-level check can find these rows, because a
+    # coordinate row carries no `rsid` and nothing separates a stale row from a legitimate rsid-
+    # only one. Drafting into a fresh directory and reconciling stays the cleaner remediation.
 
     @mcp.tool(
         task=True,
@@ -283,53 +291,20 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
     ) -> DraftResult:
         """Draft `variants.csv` and `studies.csv` for one or more genes from ClinVar.
 
-        This is step 2 of the workflow — the one place an author used to have to
-        leave the tool surface. Re-runnable and additive: rows already in the files
-        are left exactly as they are.
-
-        **If this module was drafted before enricher 0.6.3, read the superseded-row
-        warning before you do anything else.** Below 0.6.3 the drafter keyed a site
-        on `ref`, so an ordinary ClinVar dup/del mirror pair collapsed onto one row
-        and the second record was dropped silently (upstream S41). Re-running here
-        recovers every dropped record — but "additive" cuts both ways: the collapsed
-        rsid-only rows are not retracted, so the module ends up asserting both the
-        right answer and the wrong one for the same locus. Measured on one gene: 0
-        records still missing, 31 stale identities left behind.
-
-        Since enricher 0.6.4 this run **names them** — *"N row(s) already in
-        variants.csv identify by rsID alone … this run writes those rsIDs with their
-        full coordinate"* — counted, with examples. Nothing deletes them, and that is
-        deliberate: by re-draft time a drafted row is authored material and yours may
-        have been curated since, so removing it is your call. Delete each once its
-        records are covered by the coordinate rows.
-
-        **The warning is the safety net, not the plan.** A file-level check cannot
-        find these rows — a coordinate row carries no `rsid`, so no column separates
-        a stale row from a legitimate rsid-only one, and only the drafting run knows
-        which rsIDs it is deliberately writing by coordinate. Drafting into a
-        **fresh directory** and reconciling against it stays the cleaner
-        remediation; the notice exists for the author who re-ran in place.
-
-        **`use` is required.** Pass `unstated`, `non_commercial` or `commercial`.
-        There is no default because both possible defaults are wrong: `unstated`
-        would silently skip licence-bearing sources, and anything else asserts a
-        position you may not hold. If `skipped=true` comes back, the terms were
-        not satisfied and nothing was fetched — **that is the gate working, and
-        re-running with a different `use` to get past it is fabricating a licence
-        position.**
-
-        `max_citations` drafts study rows from ClinVar's literature links, which is
-        what makes the panel compilable — a variant row needs grounding evidence.
-        `min_review_stars` defaults to 2 (multiple submitters, no conflicts).
-
-        Read `differs` in the result: those are rows where ClinVar disagrees with
-        something you already authored. They are **left unchanged** — rewriting
-        your value would destroy the evidence of the disagreement, and only you
-        know which side is right.
-
-        Drafted rows carry `<<REPLACE>>` in the cells only a human can decide.
-        That placeholder makes every loader refuse the file, `enrich_module`
-        included, so curate before you enrich.
+        Step 2 of the workflow, re-runnable and additive: rows already in the files are
+        left exactly as they are. **`use` is required** — `unstated`, `non_commercial`
+        or `commercial`, with no default because both possible defaults are wrong — and
+        `skipped=true` means the terms were not satisfied and nothing was fetched, which
+        is the gate working rather than an argument to retry with a different `use`.
+        Read `differs`: those are rows where ClinVar disagrees with something you
+        authored, left unchanged because only you know which side is right.
+        `max_citations` drafts the study rows that make a panel compilable,
+        `min_review_stars` defaults to 2, and drafted rows carry `<<REPLACE>>` in the
+        cells only a human can decide — which makes every loader refuse the file,
+        `enrich_module` included, so curate before you enrich. **If this module was
+        drafted before enricher 0.6.3, read the superseded-row warning first**: this run
+        recovers the records that version dropped but does not retract the collapsed
+        rows it wrote, so the module would assert both answers for one locus.
         """
         declared = _check_use(use)
         target = resolve_dir(spec_dir, settings)
@@ -363,6 +338,13 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
         return _draft_result(
             result, spec_dir=target, source="clinvar", use=declared, dry_run=dry_run
         )
+    # Declared task-capable, but that only makes tasks OPTIONAL: a client that sends no task
+    # metadata — and the usual ones do not — gets an ordinary synchronous call. The docstring
+    # said otherwise until 2026-08-22 and a run planning around the promise had nothing to plan
+    # with. Progress is reported once before and once after, never during, so a client idle
+    # timeout is what you hit. Measured: 32 variants return in seconds; 330 and 474 were killed
+    # client-side at 1800s. The interruption is client-side only, which is why a `success`
+    # issued while an aborted call may still be running is unverified.
 
     @mcp.tool(
         task=True,
@@ -381,41 +363,19 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
     ) -> EnrichReport:
         """Resolve rsIDs to coordinates and mint VRS ids, writing resolution.csv.
 
-        The only step that fetches, and the only thing that can catch the mistake
-        no offline gate can: it compares your authored `ref` against the actual
-        genome and reports `ref mismatch: N row(s) — coordinate shifted 1 base`.
-        **Read that line as being about `start`, not `ref`** — it is what
-        subtracting one from a VCF position produces. It is a floor, not a total:
-        only rows whose neighbouring base differs from `ref` are visible.
-
-        **It blocks, and on a large module it blocks for a long time.** It is
-        declared task-capable, but that only makes tasks *optional*: a client that
-        sends no task metadata — and the usual ones do not — gets an ordinary
-        synchronous call, so there is no task id and nothing to poll. This said
-        otherwise until 2026-08-22, and a run planning around the promise had
-        nothing to plan with. Progress is reported once before the work and once
-        after, never during, so a client idle timeout is what you will hit rather
-        than a duration one. Measured: 32 variants return in seconds; 330 and 474
-        were both killed client-side at 1800s.
-
-        **Nothing is written until the very end.** The single `resolution.csv` write
-        happens after every network link, so a run that is interrupted at any point
-        persists nothing — thirty minutes of successful resolution is discarded, and
-        merge-not-clobber does not save you because there was no partial write to
-        merge. Worse, an interruption is *client-side only*: the work continues here
-        and still writes when it finishes, so a call you were told had failed can
-        overwrite this file later, after a second call has already reported success
-        against it. If a call timed out, count the rows in `resolution.csv` against
-        the authored subject count before trusting anything downstream, and treat a
-        `success` issued while an aborted call may still be running as unverified.
-
-        Curate before you enrich. A `<<REPLACE>>` anywhere makes every loader
-        refuse the file, this one included — deliberately, since forward
-        resolution is allele-aware and a placeholder genotype would skip the
-        allele filter on exactly the rsIDs that need it.
-
-        `offline=true` restricts to local caches, where the ref check does not
-        run at all. A check that could not run is not a check that passed.
+        The only step that fetches, and the only thing that can catch the mistake no
+        offline gate can: it compares your authored `ref` against the genome and reports
+        `ref mismatch: N row(s) — coordinate shifted 1 base`. **Read that as being about
+        `start`, not `ref`** — it is what subtracting one from a VCF position produces —
+        and it is a floor rather than a total, since only rows whose neighbouring base
+        differs from `ref` are visible. **It blocks, with no task id to poll**, and
+        nothing is written until the very end, so an interrupted run persists nothing
+        and can still overwrite this file after you gave up on it: if a call timed out,
+        count the rows in `resolution.csv` against the authored subject count before
+        trusting anything downstream. Curate first — a `<<REPLACE>>` anywhere makes this
+        refuse, deliberately, since forward resolution is allele-aware. `offline=true`
+        restricts to local caches, where the ref check does not run at all, and a check
+        that could not run is not a check that passed.
         """
         target = resolve_dir(spec_dir, settings)
         eff_offline = offline_for(settings, offline)
@@ -678,31 +638,25 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
     ) -> LiteratureReport:
         """Resolve every citation in `studies.csv` into `literature.csv`.
 
-        Checks that each PMID exists (PubMed), that each authored DOI exists
-        (Crossref), and — where the text is retrievable — that each
-        `provenance_quote` really appears in the paper.
+        Checks that each PMID exists (PubMed), that each authored DOI exists (Crossref),
+        and — where the text is retrievable — that each `provenance_quote` really
+        appears in the paper.
 
-        **`quotes_unchecked` is not a failure count.** It means nothing was
-        retrievable to check against, and an abstract miss is not a verdict: the
-        claim may still be in the full paper.
+        **`quotes_unchecked` is not a failure count**: nothing was retrievable to check
+        against, and an abstract miss is not a verdict since the claim may still be in
+        the full paper. **`titles_as_quotes` is the opposite reading and the more
+        dangerous one** — a quote that is the article's own title passes every time,
+        because a title is inside its own fulltext, so the row counts as covered while
+        witnessing nothing. Ask of any green check whether it could have failed.
+        **`doi_conflicts` are reported, never rewritten**: your DOI and the registry's
+        disagree for that PMID, so one of the two citations is the wrong paper and only
+        you know which.
 
-        **`titles_as_quotes` is the opposite reading and the more dangerous one.**
-        A `provenance_quote` that is the article's own title passes the quote
-        check every time — a title is inside its own fulltext — so the row counts
-        as covered while witnessing nothing about the claim. Ask of any green
-        check whether it could have failed.
-
-        **`doi_conflicts` are reported, never rewritten.** Your authored DOI and
-        the registry's disagree for that PMID, which means one of the two
-        citations is the wrong paper — and only you know which.
-
-        **Budget: one or more requests per citation in the module**, so the cost
-        rises with the corpus you have cited rather than with anything named in
-        this call. A module with hundreds of studies is a long run.
-
-        `offline=true` makes this a **no-op**: there is no offline literature
-        snapshot and there will not be one. Once `literature.csv` is written it
-        *is* the pin, and every later compile reads it rather than the network.
+        **Budget: one or more requests per citation in the module**, so the cost rises
+        with the corpus you have cited rather than with anything named in this call — a
+        module with hundreds of studies is a long run. `offline=true` makes this a **no-
+        op**: there is no offline literature snapshot and there will not be one, because
+        once `literature.csv` is written it *is* the pin.
         """
         target = resolve_dir(spec_dir, settings)
         eff_offline = offline_for(settings, offline)
@@ -900,6 +854,8 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
             warnings=warnings,
             note=_REGENERATE,
         )
+    # Measured: reference_examples/hfe_hemochromatosis, a shipped flagship module, carries six
+    # p-value underflows, so `strict` refuses it while nothing about it is wrong.
 
     @mcp.tool(
         task=True,
@@ -920,49 +876,38 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
     ) -> GwasReport:
         """Record the GWAS Catalog's published effect sizes for this module's rsIDs.
 
-        One row per published **association**, not per variant — rs1800562 alone
-        carries 189 of them across different traits and papers. Queried by rsID, so a
-        coordinate-only variant row has no subject here and is simply absent.
+        One row per published **association**, not per variant — rs1800562 alone carries
+        189 across different traits and papers — and queried by rsID, so a coordinate-
+        only variant row is simply absent. A variant the Catalog holds nothing for gets
+        a **`not_found` row** rather than silence: no published genome-wide association
+        is itself a fact about the variant, and it is true of most clinically authored
+        ones.
 
-        **It does not fill `weight`, and the numbers it does record are not candidates
-        for one.** A published beta belongs to its own study's scale: on one real
-        module a single variant carried **12 distinct `effect_unit` values**, several
-        of them the Catalog's uninformative `unit`, and **33 of 186** recorded
-        associations named no effect allele at all — the study never established which
-        allele carries the effect, so the row has no direction a genotype could be
-        matched against. Both counts come back on the result
+        **It does not fill `weight`, and the numbers it records are not candidates for
+        one.** A published beta belongs to its own study's scale: on one real module a
+        single variant carried 12 distinct `effect_unit` values, and 33 of 186
+        associations named no effect allele at all, so those rows have no direction a
+        genotype could be matched against. Both counts come back on the result
         (`effect_units`, `associations_without_effect_allele`) precisely so that is
-        readable rather than assumed. `weight` remains your model of the finding, and
-        these sit beside it.
+        readable rather than assumed; `weight` stays your model of the finding and these
+        sit beside it.
 
-        **`strict` here is not a correctness gate, and it fails on the usual answer.**
-        It escalates on the Catalog's own shape — associations served without an id to
-        key on, and p-values the Catalog publishes below float64's range — and never on
-        `missing`. Measured: `reference_examples/hfe_hemochromatosis`, a shipped
-        flagship module, carries **six** such underflows, so strict refuses it while
-        nothing about it is wrong. It also escalates *after* the write, so on a strict
-        failure `gwas_effects.csv` holds everything `best_effort` would have written;
-        a fetch failure mid-pass writes nothing. The message says which.
+        **`strict` here is not a correctness gate and it fails on the usual answer.** It
+        escalates on the Catalog's own shape — associations served without an id to key
+        on, p-values published below float64's range — and never on `missing`, and it
+        escalates *after* the write, so a strict failure leaves everything `best_effort`
+        would have written while a fetch failure mid-pass writes nothing.
 
-        A variant the Catalog holds nothing for gets a **`not_found` row** rather than
-        silence: no published genome-wide association *is* a fact about the variant,
-        and it is true of most clinically authored ones.
-
-        The budget is `1 + 2N` requests per variant — pmid, trait, ancestry and study
-        accession all sit behind `_links` — measured at 382 for one real module against
-        somebody else's rate limit, which is why this runs as a background task.
-        `study_facts=false` cuts that to one request per variant, and the cut is
-        **sticky**: the merge is keyed on `association_id`, so a later run with study
-        facts on skips those rows and never backfills them. Delete the file to
-        re-derive.
-
-        `offline=true` makes this a **no-op**, not a failure — the Catalog publishes a
-        bulk download but this pass reads the REST API and has no snapshot.
-
-        `use` is recorded on the licence row and gates nothing: EMBL-EBI names no
-        licence, so `commercial_use` is written **unknown** rather than permitted. Do
-        not read that as permission — the terms of the thousands of publications the
-        Catalog summarizes are not settled by its terms page.
+        The budget is `1 + 2N` requests per variant, since pmid, trait, ancestry and
+        study accession sit behind `_links` — measured at 382 for one real module
+        against somebody else's rate limit. `study_facts=false` cuts that to one request
+        per variant, and the cut is **sticky**: the merge is keyed on `association_id`,
+        so a later run with study facts on skips those rows rather than backfilling
+        them, and only deleting the file re-derives them. `offline=true` is a no-op, not
+        a failure. `use` is recorded on the licence row and gates nothing — EMBL-EBI
+        names no licence, so `commercial_use` is written **unknown**, which is not
+        permission: the terms of the thousands of publications the Catalog summarizes
+        are not settled by its terms page.
         """
         target = resolve_dir(spec_dir, settings)
         eff_offline = offline_for(settings, offline)
