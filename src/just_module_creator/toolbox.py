@@ -33,9 +33,18 @@ visible after a reconnect, which is the restart problem wearing a new hat. Flip
 this on where you have checked, or where the session is long enough that one
 reconnect is cheaper than 40k tokens.
 
-Composes with ``tool_search`` (search sees what the session may see, so a hidden
-group is not searchable until revealed) and with ``JMC_HIDE_GATED_UNTIL_AUTH``
-(which reveals the ``publish`` group by tag on a successful ``authenticate``).
+Composes with ``tool_search``: search sees what the session may see, so a hidden
+group is not searchable until it is revealed.
+
+**It does not route around ``JMC_HIDE_GATED_UNTIL_AUTH``, and that took a test to
+settle rather than an assumption.** Session rules override global ones, so a
+reveal by *name* does beat that flag's disable by *tag* — measured, not guessed —
+which would have let any session list the publish route by asking for it, and an
+operator who set the flag set it precisely so that could not happen. So
+``toolbox`` checks: with the flag on and no token resolvable for this session,
+the ``publish`` group is held back and the answer says `authenticate` is the way
+in. Visibility was never the gate either way — the per-call token check is
+untouched, and a listed registry tool still refuses without a token.
 """
 
 from __future__ import annotations
@@ -45,6 +54,7 @@ from dataclasses import dataclass
 from fastmcp import Context, FastMCP
 from mcp.types import ToolAnnotations
 
+from just_module_creator.auth import resolve_api_key
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import ToolboxGroup, ToolboxResult
 from just_module_creator.settings import Settings
@@ -230,6 +240,10 @@ def register_toolbox(mcp: FastMCP, settings: Settings) -> None:
         (write to it, token needed), `closing` (finish and describe).
         `groups=["all"]` reveals everything.
 
+        One thing it will not do: on a server that hides the registry writes until
+        a session authenticates, revealing `publish` needs a token first — the
+        answer says so and names the way in.
+
         Nothing here is unreachable and nothing is switched off: in the default
         `flat` configuration every tool is already listed and a reveal is a no-op
         that says so. Under `JMC_TOOLBOX=layered` the server lists the core
@@ -256,6 +270,24 @@ def register_toolbox(mcp: FastMCP, settings: Settings) -> None:
 
         chosen = list(GROUPS) if "all" in wanted else [BY_NAME[g] for g in wanted]
 
+        # The operator's policy outranks a reveal: see the module docstring.
+        withheld = ""
+        if settings.hide_gated_until_auth and any(g.name == "publish" for g in chosen):
+            has_token = False
+            for target in ("test", "prod"):
+                if await resolve_api_key(ctx, settings, target):
+                    has_token = True
+                    break
+            if not has_token:
+                chosen = [g for g in chosen if g.name != "publish"]
+                withheld = (
+                    " The `publish` group was NOT revealed: this server hides the registry "
+                    "writes until a session authenticates (JMC_HIDE_GATED_UNTIL_AUTH), and "
+                    "revealing them here would route around that. Call "
+                    "`authenticate(token, target=...)` — or `registry_register` if you have no "
+                    "account — and they appear."
+                )
+
         roster = [
             ToolboxGroup(
                 name=group.name,
@@ -267,7 +299,10 @@ def register_toolbox(mcp: FastMCP, settings: Settings) -> None:
             for group in GROUPS
         ]
 
-        if not chosen:
+        # `wanted`, not `chosen`: a request whose only group was withheld above is
+        # not a request for the roster, and answering it with the roster would drop
+        # the one sentence saying why nothing happened.
+        if not wanted:
             total = sum(g.approx_tokens for g in roster)
             return ToolboxResult(
                 layered=layered,
@@ -294,11 +329,18 @@ def register_toolbox(mcp: FastMCP, settings: Settings) -> None:
                 message=(
                     "Nothing was hidden: this server lists every tool already "
                     "(`JMC_TOOLBOX=flat`). The named tools are in your list now and were "
-                    "before this call."
+                    "before this call." + withheld
                 ),
             )
 
         names = {name for group in chosen for name in group.tools}
+        if not names:
+            return ToolboxResult(
+                layered=True,
+                revealed=[],
+                groups=roster,
+                message="Nothing was revealed." + (withheld or " No group was named."),
+            )
         await ctx.enable_components(names=names)
         log.info(
             "Session %s revealed %s (%d tools)",
@@ -318,6 +360,7 @@ def register_toolbox(mcp: FastMCP, settings: Settings) -> None:
                     if still_hidden
                     else "Every group is now listed."
                 )
+                + withheld
                 + " If your client does not refresh its tool list on "
                 "notifications/tools/list_changed, reconnect once and they will be there."
             ),

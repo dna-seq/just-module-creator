@@ -45,12 +45,21 @@ its own second layer. `Group.approx_tokens` is therefore static, and
 `test_the_group_sizes_are_still_true` rebuilds a flat server, measures, and fails on more than 20%
 drift.
 
+**Two behaviours that had to be measured rather than assumed.** A hidden group is *disabled*, not
+merely unlisted, so calling one of its tools before the reveal fails with "Unknown tool" — that is
+where layering is stricter than tool search, which leaves an unlisted tool callable. And a reveal by
+*name* beats `JMC_HIDE_GATED_UNTIL_AUTH`'s disable by *tag*, because session rules override global
+ones: without a check, any session could have listed the publish route just by asking for it. So
+`toolbox` withholds the `publish` group while that flag is on and the session holds no token, and
+says `authenticate` is the way in. The other groups in the same call are still revealed.
+
 **The honest limit.** A mid-session reveal only lands on a client that honours
 `notifications/tools/list_changed`; FastMCP sends it and our in-memory client sees it, but Claude
 Code's behaviour has not been verified here. That is why the default is `flat` and why the reveal
 message ends by telling the caller to reconnect once if the tools do not appear. `server.INSTRUCTIONS`
 gains one line in layered mode, and the base was trimmed to keep both variants under the host's
-2048-character ceiling.
+2048-character ceiling — prose only: the six numbered rules are intact, which a first pass had not
+been, having dropped *"Decide on what you verified"* from rule 3 as layout collateral.
 
 ## 0.21.0 — 2026-08-27
 

@@ -179,3 +179,61 @@ async def test_layering_saves_what_it_claims(client):
         f"layer one is {layer_one} of {everything} approx-tokens — layering that saves less "
         "than half is not worth a round trip, so either core has grown or the claim has"
     )
+
+
+async def test_a_reveal_does_not_route_around_the_auth_policy(make_client):
+    """Layered + `JMC_HIDE_GATED_UNTIL_AUTH`: which rule wins, measured not assumed.
+
+    Two mechanisms disable `publish` at startup — by name (layering) and by tag
+    (the auth lever) — and a reveal re-enables by name. Session rules override
+    global ones, so the name-enable **does** beat the tag-disable: without the
+    check in `toolbox`, any session could list the publish route by asking for it,
+    which is exactly what an operator setting that flag was preventing. So the
+    group is withheld until the session holds a token, and the answer says how to
+    get one rather than going quiet.
+    """
+    settings = offline_settings(toolbox="layered", hide_gated_until_auth=True)
+    async with make_client(settings) as client:
+        answer = await client.call_tool("toolbox", {"groups": ["publish"]})
+
+        assert "publish" not in answer.data.revealed
+        assert "authenticate" in answer.data.message
+        assert "registry_publish" not in await _names(client)
+
+        # And authenticating is the way in, as the message says.
+        await client.call_tool("authenticate", {"token": "tok_abc123", "target": "test"})
+        assert "registry_publish" in await _names(client)
+
+
+async def test_a_reveal_still_serves_the_other_groups_when_publish_is_withheld(make_client):
+    """One refused group must not cost a session the ones it may have."""
+    settings = offline_settings(toolbox="layered", hide_gated_until_auth=True)
+    async with make_client(settings) as client:
+        answer = await client.call_tool("toolbox", {"groups": ["all"]})
+
+        assert "publish" not in answer.data.revealed
+        assert "evidence" in answer.data.revealed
+        listed = await _names(client)
+        assert "paper_citations" in listed and "registry_publish" not in listed
+
+
+async def test_a_hidden_tool_is_not_callable_until_revealed(make_client):
+    """The one way layering is stricter than tool search, and it belongs in a test.
+
+    Search leaves an unlisted tool callable by name; layering *disables* it, so a
+    call before the reveal fails with "Unknown tool". That is still not a dead
+    end — `toolbox` is listed and names it — but it is the difference between the
+    two levers, and a caller who assumes search's behaviour would misread it.
+    """
+    from fastmcp.exceptions import ToolError
+
+    async with make_client(_layered()) as client:
+        try:
+            await client.call_tool("paper_citations", {"pmid": "11788828"})
+        except ToolError as exc:
+            assert "paper_citations" in str(exc)
+        else:
+            raise AssertionError("a hidden tool answered a call; it is disabled, not unlisted")
+
+        await client.call_tool("toolbox", {"groups": ["evidence"]})
+        assert "paper_citations" in await _names(client)

@@ -115,7 +115,7 @@ Load `create-module` to route. Rules no skill softens:
    settles — genotype, weight, conclusion, direction.
 3. A mismatch means CHECK BOTH SIDES: the row may be wrong, and so may the
    source — archives lag the edge. A source is evidence, never authority: conform
-   to a stale one and the check agrees with itself.
+   to a stale one and the check agrees with itself. Decide on what you verified.
 4. A check that could not run is not a check that passed: `null` and `unknown`
    never mean pass; warnings on a green run are the real output.
 5. Take every PMID from a literature_search result: existence never settles
@@ -134,7 +134,7 @@ aloud, promote only on explicit yes — "publish it" is not that ask.
 #: ceiling above applies to the whole string, so this line is why the base above
 #: carries slack rather than filling its budget.
 LAYERED_NOTE = """
-Only the core loop is listed: `toolbox` names the rest and reveals it.
+`toolbox` names and reveals unlisted tools.
 """
 
 

@@ -48,9 +48,10 @@ class ToolboxGroup(BaseModel):
     summary: str = Field(description="What the group is for, in one line.")
     tools: list[str] = Field(description="The tools it holds.")
     tool_count: int = Field(
-        description="How many of them this server actually registered — a group naming a "
-        "tool that is not registered would be a roster that has drifted, so a count "
-        "below `len(tools)` is a defect to report rather than a smaller group."
+        description="How many tools the group holds — the length of `tools`, and nothing a "
+        "layered server could measure for itself, since visibility filtering hides its own "
+        "second layer from it. That every named tool is really registered is guaranteed by "
+        "`test_every_registered_tool_is_in_exactly_one_group` rather than by this count."
     )
     approx_tokens: int = Field(
         description="Roughly what listing this group costs you, characters divided by 4. An "
