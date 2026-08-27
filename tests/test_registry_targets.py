@@ -25,8 +25,6 @@ from conftest import offline_settings
 #: write in this sense — it stores a credential *for* an instance.
 from just_module_creator.auth import (
     GATED_TOOLS,
-    SessionKeyStore,
-    resolve_api_key,
     unauthenticated_result,
 )
 from just_module_creator.settings import (
@@ -150,20 +148,25 @@ def test_the_toolchain_env_vars_are_read_per_instance(monkeypatch):
     assert settings.registry_token("test") == "from-toolchain-test"
 
 
-def test_the_session_store_keeps_one_token_per_instance(monkeypatch):
-    _no_credentials(monkeypatch)
-    settings = Settings(_env_file=None)  # type: ignore[call-arg]
-    store = SessionKeyStore()
+async def test_the_session_store_keeps_one_token_per_instance(make_client):
+    """Authenticating against one instance must not unlock the other.
 
-    store.set(None, "poly-key", "test")
-    assert resolve_api_key(None, settings, store, "test") == "poly-key"
-    assert resolve_api_key(None, settings, store, "prod") is None, (
-        "authenticating against one instance must not unlock the other"
-    )
+    The token lives in FastMCP session state under a key that carries the target,
+    so this asserts the key is still two-axis: flatten it and the second
+    `authenticate` would silently retarget the first. Driven through the client
+    rather than against the resolver, because the store is now the framework's
+    and a session is the only thing that has one.
+    """
+    async with make_client() as client:
+        await client.call_tool("authenticate", {"token": "poly-key", "target": "test"})
 
-    store.set(None, "prod-key", "prod")
-    assert resolve_api_key(None, settings, store, "test") == "poly-key"
-    assert resolve_api_key(None, settings, store, "prod") == "prod-key"
+        prod = await client.call_tool("registry_whoami", {"target": "prod"})
+        assert prod.data.success is False
+        assert "prod" in prod.data.message
+
+        stored = await client.call_tool("authenticate", {"token": "prod-key", "target": "prod"})
+        assert stored.data.authenticated is True
+        assert stored.data.target == "prod"
 
 
 def test_the_two_instances_read_different_http_headers():

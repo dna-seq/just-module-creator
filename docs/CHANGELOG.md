@@ -3,6 +3,34 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased
+
+### The session token store is FastMCP's now, not ours
+
+`SessionKeyStore` was reimplementing what the framework already provides. It is gone, and
+`authenticate` / `registry_register` write into FastMCP session state instead —
+`ctx.set_state("registry_token:<target>", …)`, which namespaces by `ctx.session_id` for us.
+`resolve_api_key(ctx, settings, target)` is now awaited and is the only entry point; the
+`require_key` alias goes with the store, as does `register_stdio_only_unlock`, which existed
+because unlocking tools for one client used to be impossible without leaking them to every
+client — `ctx.enable_components()` is session-scoped, so it is not impossible any more.
+
+**The key stays two-axis.** The template this repo is built on keys session state by session
+alone; here the target is part of the key, because an author may hold an account on production
+and another on the polygon and the two tokens are not interchangeable. Flatten it and the second
+`authenticate` silently retargets the first.
+
+Two properties of the framework store that the hand-rolled dict did not have, both now stated in
+`auth.py` and `docs/FOR_DEVELOPERS.md` because they are load-bearing: an entry **expires after
+24h**, after which the session is asked for its token again, and the default backend is an
+in-process `MemoryStore`, so a multi-process HTTP deployment must pass a shared
+`FastMCP(session_state_store=…)` or a worker will not see what another worker stored. Neither
+affects a stdio plugin, which is one process and one session.
+
+Nothing changes for a caller: the resolution order, the per-instance scoping and the friendly
+refusal are the same. `registry_publish`'s `ctx` stopped being optional, which is the one
+signature that moved.
+
 ## 0.20.0 — 2026-08-24
 
 Everything below this heading landed after `v0.19.0` was cut, including the entries that sat under

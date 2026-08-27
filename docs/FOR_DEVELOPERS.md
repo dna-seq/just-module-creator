@@ -231,7 +231,8 @@ The server **never** raises at startup for a missing token. Gated tools resolve 
 
 1. `X-Registry-Token` / `X-Registry-Test-Token` HTTP header (multi-user safe)
 2. per-session token set via `authenticate` — or by `registry_register`, which stores the token it
-   mints into the same slot
+   mints into the same slot. The slot is FastMCP session state
+   (`ctx.set_state("registry_token:<target>", …)`), namespaced by session id for us
 3. `JMC_API_KEY`, else `REGISTRY_TOKEN` (what `registry-client` already reads) — and
    `JMC_TEST_API_KEY`, else `REGISTRY_TEST_TOKEN`, for the polygon
 
@@ -240,8 +241,11 @@ way round: the two keep separate databases, so the other instance's key is an un
 rather than a weaker one, and falling back would report the wrong problem.
 
 If none resolve, gated tools return a friendly message rather than raising. A token set via
-`authenticate` is scoped to the caller's own session and never leaks between HTTP clients. See
-[CLAUDE.md](../CLAUDE.md) for the multi-tenant caveat about `mcp.enable()`.
+`authenticate` is scoped to the caller's own session and never leaks between HTTP clients. Two
+properties of that store are worth planning around: an entry **expires after 24h**, after which the
+session is asked for its token again, and the default backend is an in-process `MemoryStore`, so a
+multi-process HTTP deployment has to pass a shared one — `FastMCP(session_state_store=…)` — or a
+worker will not see a token another worker stored.
 
 `registry_register` is the one registry write that is never gated, because it is what produces the
 token. It lives beside `authenticate` for that reason rather than with the other registry writes.
@@ -299,7 +303,7 @@ skills/find-evidence/
 src/just_module_creator/
   server.py            build_server(), CLI, graceful shutdown
   settings.py          pydantic-settings (JMC_*), safe defaults
-  auth.py              per-session/per-request token resolution
+  auth.py              per-request token resolution (FastMCP session state)
   models.py            trimmed Pydantic tool I/O
   logging_setup.py     stdlib logging -> stderr
   net.py               the ONLY module that opens a socket: pacing, retries

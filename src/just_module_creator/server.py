@@ -47,7 +47,7 @@ from dotenv import load_dotenv
 from fastmcp import FastMCP
 
 from just_module_creator import __version__
-from just_module_creator.auth import SessionKeyStore, register_auth
+from just_module_creator.auth import register_auth
 from just_module_creator.logging_setup import get_logger, setup_logging
 from just_module_creator.net import build_services
 from just_module_creator.settings import Mode, Settings
@@ -135,7 +135,6 @@ def build_server(mode: Mode | None = None, settings: Settings | None = None) -> 
         instructions=INSTRUCTIONS,
     )
 
-    store = SessionKeyStore()
     # One shared client set for the whole server. Lazy: constructing it opens no
     # connection, so importing this module still touches no network.
     services = build_services(settings)
@@ -143,8 +142,8 @@ def build_server(mode: Mode | None = None, settings: Settings | None = None) -> 
     register_essentials(mcp, settings)
     register_checks(mcp, settings)
     register_research(mcp, settings, services)
-    register_auth(mcp, settings, store)
-    register_registry(mcp, settings, store)
+    register_auth(mcp, settings)
+    register_registry(mcp, settings)
     register_passes(mcp, settings, services)
     register_provenance(mcp, settings)
     register_comparison(mcp, settings)

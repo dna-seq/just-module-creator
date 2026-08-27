@@ -583,9 +583,17 @@ comparison against ISO values.
 3. Return a model from `models.py`.
 4. Paths through `resolve_dir`; network through `offline_for` and
    `anyio.to_thread.run_sync`.
-5. Gated tools take `ctx: Context`, call `require_key`, return
-   `unauthenticated_result(settings)` on `None`, are tagged `registry_write`, and
-   are listed in `auth.GATED_TOOLS`.
+5. Gated tools are `async def`, take `ctx: Context`, `await
+   resolve_api_key(ctx, settings, target)`, return
+   `unauthenticated_result(settings, target)` on `None`, are tagged
+   `registry_write`, and are listed in `auth.GATED_TOOLS`. **The session store is
+   FastMCP's own** — `ctx.set_state` / `ctx.get_state` under
+   `auth.state_key(target)`, never a dict of ours: it is namespaced by
+   `ctx.session_id` already, and the two things that dict did not do are that
+   entries expire after 24h and that a multi-process HTTP deployment needs a
+   shared `FastMCP(session_state_store=...)` or one worker cannot see what
+   another stored. The target stays *in* the key: flatten it and the second
+   `authenticate` silently retargets the first.
 6. Add a test using the in-memory client.
 7. **Never** use `mcp.enable()`/`disable()` to gate per-user on multi-tenant
    HTTP — it is server-global and would leak tools across clients.

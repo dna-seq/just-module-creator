@@ -7,11 +7,22 @@ Design goals (multi-user safe):
 * A token is resolved PER REQUEST, never stored in a server-global mutable
   field. Resolution precedence:
     1. per-request HTTP header (``settings.api_key_header_for(target)``) -> multi-user safe
-    2. per-session store keyed by ``(ctx.session_id, target)`` (set via ``authenticate``)
+    2. FastMCP session state, under ``registry_token:<target>`` (set via ``authenticate``)
     3. ``JMC_API_KEY`` / ``JMC_TEST_API_KEY`` env, else ``REGISTRY_TOKEN`` /
        ``REGISTRY_TEST_TOKEN`` (single-tenant / local)
-* ``authenticate`` writes ONLY into the caller's own session slot, so one HTTP
-  client can never read or clobber another client's token.
+* The session store is FastMCP's own (``ctx.set_state`` / ``ctx.get_state``),
+  namespaced by ``ctx.session_id`` for us, so one HTTP client can never read or
+  clobber another client's token. **The target stays in the key** rather than
+  being flattened away: an author may hold an account on production and another
+  on the polygon, the two tokens are not interchangeable, and a single slot
+  would have the second ``authenticate`` silently retarget the first.
+
+Two properties of that store to plan around, because they differ from the
+hand-rolled dict this replaced: entries **expire after 24h**, after which a
+session is asked for its token again; and the default backend is an in-process
+``MemoryStore``, so a multi-process HTTP deployment must pass a shared one —
+``FastMCP(session_state_store=...)`` — or the worker fielding the next request
+will not see what another worker stored.
 
 **Every credential is scoped to one instance.** Production and the polygon keep
 separate databases, so an account minted on one does not exist on the other and a
@@ -19,15 +30,19 @@ token is only ever a credential for the instance that issued it. Nothing here
 falls back from one to the other: a missing polygon token means "register on the
 polygon", not "try the production key and see".
 
-Anti-pattern (documented, off by default): ``mcp.enable(tags=...)`` to "unlock"
-gated tools is SERVER-GLOBAL — it would expose tools to every connected client.
-Safe only for single-tenant stdio. See ``register_stdio_only_unlock`` below.
+Tool VISIBILITY is a separate question from tool AUTHORIZATION, and the two
+enable APIs are not interchangeable: ``mcp.enable()`` / ``mcp.disable()`` are
+SERVER-GLOBAL and safe only at startup, while ``ctx.enable_components()`` is
+scoped to the calling session and is the only one a client's own request may
+drive. The gated tools are listed to everyone by default and refuse politely per
+call, so an agent can discover them before it holds a token.
 
 ``registry_register`` lives here rather than in the gated ``tools/registry.py``
 even though it writes to the registry, because it is the one registry write that
-**cannot** be token-gated: it is what mints the token. Putting it behind the
-extended tier would be the same mistake in a different place — the default
-surface would still dead-end at "get a token from somewhere else".
+**cannot** be token-gated: it is what mints the token. Hiding it would be the
+same mistake in a different place — the surface would still dead-end at "get a
+token from somewhere else", which is why it is pinned visible everywhere the
+listing can be narrowed.
 """
 
 from __future__ import annotations
@@ -77,28 +92,13 @@ GATED_TOOLS = [
 ]
 
 
-class SessionKeyStore:
-    """Per-session, per-instance registry tokens. The ONLY auth state.
+def state_key(target: RegistryTarget) -> str:
+    """The session-state slot holding this session's token for ``target``.
 
-    Keyed by ``(session, target)`` rather than by session alone: one author can
-    hold an account on production and another on the polygon, and the two keys
-    are not interchangeable. A single slot would have the second
-    ``authenticate`` silently retarget the first.
+    FastMCP prefixes it with the session id, so this only has to separate the two
+    instances from each other.
     """
-
-    def __init__(self) -> None:
-        self._keys: dict[tuple[str, str], str] = {}
-
-    @staticmethod
-    def _sid(ctx: Context | None) -> str:
-        sid = getattr(ctx, "session_id", None) if ctx else None
-        return sid or "__local__"
-
-    def set(self, ctx: Context | None, key: str, target: RegistryTarget) -> None:
-        self._keys[(self._sid(ctx), target)] = key
-
-    def get(self, ctx: Context | None, target: RegistryTarget) -> str | None:
-        return self._keys.get((self._sid(ctx), target))
+    return f"registry_token:{target}"
 
 
 def _header_key(settings: Settings, target: RegistryTarget) -> str | None:
@@ -112,30 +112,20 @@ def _header_key(settings: Settings, target: RegistryTarget) -> str | None:
     return request.headers.get(settings.api_key_header_for(target))
 
 
-def resolve_api_key(
-    ctx: Context | None,
-    settings: Settings,
-    store: SessionKeyStore,
-    target: RegistryTarget,
+async def resolve_api_key(
+    ctx: Context, settings: Settings, target: RegistryTarget
 ) -> str | None:
-    """Resolve the registry token for THIS request and THIS instance."""
-    return (
-        _header_key(settings, target) or store.get(ctx, target) or settings.registry_token(target)
-    )
+    """Resolve the registry token for THIS request and THIS instance.
 
-
-def require_key(
-    ctx: Context | None,
-    settings: Settings,
-    store: SessionKeyStore,
-    target: RegistryTarget,
-) -> str | None:
-    """Return the resolved token, or ``None`` if the caller must authenticate.
-
-    Gated tools use this and return a friendly ``OpResult`` on ``None`` rather
-    than raising, so agents get an actionable message.
+    Returns ``None`` if the caller must authenticate. Gated tools take that
+    branch and return a friendly ``OpResult`` rather than raising, so an agent
+    gets an actionable message instead of a traceback.
     """
-    return resolve_api_key(ctx, settings, store, target)
+    return (
+        _header_key(settings, target)
+        or await ctx.get_state(state_key(target))
+        or settings.registry_token(target)
+    )
 
 
 def resolve_install_id(explicit: str | None, settings: Settings) -> tuple[str | None, str]:
@@ -213,7 +203,7 @@ def unauthenticated_result(settings: Settings, target: RegistryTarget = "prod") 
     )
 
 
-def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> None:
+def register_auth(mcp: FastMCP, settings: Settings) -> None:
     """Register the always-on auth tools: ``registry_register`` and ``authenticate``."""
 
     @mcp.tool(
@@ -229,10 +219,10 @@ def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> N
     )
     async def registry_register(
         account: str,
+        ctx: Context,
         target: RegistryTarget = DEFAULT_WRITE_TARGET,
         install_id: str | None = None,
         difficulty: int | None = None,
-        ctx: Context | None = None,
     ) -> RegistrationResult:
         """Create a registry account and mint its API key. No token needed — this makes one.
 
@@ -288,8 +278,7 @@ def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> N
 
         resolved, origin = resolve_install_id(install_id, settings)
         if resolved is None:
-            if ctx:
-                await ctx.info("Grinding a fresh install-id (proof-of-work, about a second)…")
+            await ctx.info("Grinding a fresh install-id (proof-of-work, about a second)…")
             resolved = await run_sync(
                 lambda: generate_install_id(difficulty) if difficulty else generate_install_id()
             )
@@ -324,7 +313,7 @@ def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> N
         namespaces = [str(n) for n in (payload.get("namespaces") or [])]
 
         if token:
-            store.set(ctx, token, target)
+            await ctx.set_state(state_key(target), token)
         # The token is a secret and never reaches the log.
         log.info(
             "Registered account %s on %s (install-id origin=%s, namespaces=%d)",
@@ -394,7 +383,7 @@ def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> N
             destructiveHint=False,
         )
     )
-    def authenticate(
+    async def authenticate(
         token: str, ctx: Context, target: RegistryTarget = DEFAULT_WRITE_TARGET
     ) -> AuthResult:
         """Provide a registry token to unlock the registry write tools for THIS session.
@@ -416,8 +405,8 @@ def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> N
         # tokens the moment upstream changes its issuer.
         if not token.strip():
             return AuthResult(authenticated=False, message="Empty token — nothing was stored.")
-        store.set(ctx, token.strip(), target)
-        log.info("Session %s stored a registry token for %s", SessionKeyStore._sid(ctx), target)
+        await ctx.set_state(state_key(target), token.strip())
+        log.info("Session %s stored a registry token for %s", ctx.session_id, target)
         return AuthResult(
             authenticated=True,
             unlocked_tools=GATED_TOOLS,
@@ -431,17 +420,3 @@ def register_auth(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> N
             ),
         )
 
-
-def register_stdio_only_unlock(mcp: FastMCP, store: SessionKeyStore) -> None:
-    """OPTIONAL, SINGLE-TENANT ONLY: hide gated tools until authenticated.
-
-    This disables the gated tools at startup and re-enables them globally on a
-    successful ``authenticate`` (emitting ``tools/list_changed``). Because
-    ``mcp.enable`` is SERVER-GLOBAL, enabling for one client exposes the tools
-    to ALL connected clients — so this is appropriate ONLY for single-tenant
-    stdio. Do NOT use under multi-user HTTP. Not wired up by default.
-    """
-    mcp.disable(tags={GATED_TAG})
-    # A real implementation would wrap `authenticate` to call
-    # `mcp.enable(tags={GATED_TAG})` after storing the token. Left as a
-    # documented pattern; per-call enforcement in resolve_api_key is the gate.

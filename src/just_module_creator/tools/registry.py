@@ -1,7 +1,7 @@
 """KEY-GATED — the registry calls that need a token.
 
 These are ALWAYS listed (so the multi-user HTTP path is safe and discoverable)
-and enforce auth PER CALL via ``require_key``. If no token is resolvable for the
+and enforce auth PER CALL via ``resolve_api_key``. If no token is resolvable for the
 current request they return a friendly ``OpResult`` instead of raising — never a
 global state flip, so one client can never ride another client's credential.
 
@@ -31,8 +31,7 @@ from mcp.types import ToolAnnotations
 from just_module_creator import logscan
 from just_module_creator.auth import (
     GATED_TAG,
-    SessionKeyStore,
-    require_key,
+    resolve_api_key,
     unauthenticated_result,
 )
 from just_module_creator.logging_setup import get_logger
@@ -367,7 +366,7 @@ def _preflight(
     )
 
 
-def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) -> None:
+def register_registry(mcp: FastMCP, settings: Settings) -> None:
     """Register the token-gated registry tools (tag: registry_write)."""
 
     def _client(token: str, target: RegistryTarget):
@@ -408,7 +407,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         the registry requires the publish capability on the namespace to accept a
         spec upload at all.
         """
-        token = require_key(ctx, settings, store, target)
+        token = await resolve_api_key(ctx, settings, target)
         if token is None:
             return _unauthenticated_preflight(
                 spec_dir=spec_dir, namespace=namespace, name=name, target=target
@@ -487,7 +486,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         forbids sale, so on `unstated` each source is skipped with a reason rather
         than queried, and `"commercial"` is refused outright.
         """
-        token = require_key(ctx, settings, store, target)
+        token = await resolve_api_key(ctx, settings, target)
         if token is None:
             return _unauthenticated_preflight(
                 spec_dir=spec_dir, namespace=namespace, name=name, target=target
@@ -556,7 +555,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         on one instance only, so this answers for that one: a token accepted here
         says nothing about the other.
         """
-        token = require_key(ctx, settings, store, target)
+        token = await resolve_api_key(ctx, settings, target)
         if token is None:
             return unauthenticated_result(settings, target)
         if settings.offline:
@@ -656,7 +655,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
                 "there instead of leaving it alone."
             )
 
-        token = require_key(ctx, settings, store, target)
+        token = await resolve_api_key(ctx, settings, target)
         if token is None:
             return unauthenticated_result(settings, target)
         if settings.offline:
@@ -732,7 +731,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
                 data={"target": target, "namespace": namespace},
             )
 
-        token = require_key(ctx, settings, store, target)
+        token = await resolve_api_key(ctx, settings, target)
         if token is None:
             return unauthenticated_result(settings, target)
         if settings.offline:
@@ -772,9 +771,9 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         name: str,
         version: str,
         spec_dir: str,
+        ctx: Context,
         changelog: str = "",
         target: RegistryTarget = DEFAULT_WRITE_TARGET,
-        ctx: Context | None = None,
     ) -> OpResult:
         """Publish a spec directory as a module version. The server recompiles it.
 
@@ -811,7 +810,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
                 data={"target": target, "namespace": namespace, "name": name},
             )
 
-        token = require_key(ctx, settings, store, target)
+        token = await resolve_api_key(ctx, settings, target)
         if token is None:
             return unauthenticated_result(settings, target)
         if settings.offline:
@@ -996,7 +995,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         Reversible with `registry_unyank` — which is exactly why it is the right
         first move when something looks wrong and you are not yet certain.
         """
-        token = require_key(ctx, settings, store, target)
+        token = await resolve_api_key(ctx, settings, target)
         if token is None:
             return unauthenticated_result(settings, target)
         if settings.offline:
@@ -1047,7 +1046,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         restores nothing about the module itself — the bytes never changed, which
         is why this is safe.
         """
-        token = require_key(ctx, settings, store, target)
+        token = await resolve_api_key(ctx, settings, target)
         if token is None:
             return unauthenticated_result(settings, target)
         if settings.offline:
@@ -1135,7 +1134,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         blocked = _prod_delete_refusal(target, "version")
         if blocked is not None:
             return blocked
-        token = require_key(ctx, settings, store, target)
+        token = await resolve_api_key(ctx, settings, target)
         if token is None:
             return unauthenticated_result(settings, target)
         if settings.offline:
@@ -1189,7 +1188,7 @@ def register_registry(mcp: FastMCP, settings: Settings, store: SessionKeyStore) 
         blocked = _prod_delete_refusal(target, "module")
         if blocked is not None:
             return blocked
-        token = require_key(ctx, settings, store, target)
+        token = await resolve_api_key(ctx, settings, target)
         if token is None:
             return unauthenticated_result(settings, target)
         if settings.offline:
