@@ -44,6 +44,9 @@ RegistryTarget = Literal["prod", "test"]
 #: How the tool listing is presented. See ``tool_search.py``.
 ToolSearch = Literal["off", "regex", "bm25"]
 
+#: Whether the surface is one layer or two. See ``toolbox.py``.
+ToolboxMode = Literal["flat", "layered"]
+
 DEFAULT_REGISTRY_URL = "https://module-registry.just-dna.life"
 DEFAULT_POLYGON_URL = "https://module-polygon.just-dna.life"
 
@@ -98,6 +101,13 @@ class Settings(BaseSettings):
     # and do not read it as the mode axis coming back.
     tool_search: ToolSearch = "off"
     tool_search_max_results: int = 5
+
+    # Two-layer surface. "flat" (default) lists all 56 tools; "layered" lists the
+    # core authoring loop and holds the other nine groups behind `toolbox`, which
+    # names them and reveals one to the calling session. Worth about 40k tokens of
+    # context — measured, see toolbox.py — and it defaults OFF because a reveal
+    # only lands mid-session on a client that honours tools/list_changed.
+    toolbox: ToolboxMode = "flat"
 
     # The proof-of-work id an account was registered with. OURS, not the
     # ecosystem's: `registry-client` takes it as a flag and prints it, and reads

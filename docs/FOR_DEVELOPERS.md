@@ -250,11 +250,37 @@ token. It lives beside `authenticate` for that reason rather than with the other
 | `JMC_WORKSPACE=/path` | Refuse to read or write outside this directory. Unset = no restriction (right for stdio; set it for HTTP). |
 | `JMC_LITERATURE_SOURCES=a,b` | Which literature services this deployment may talk to. A per-call `sources` narrows it and can never widen it. Unset = all; `""` = none. |
 | `JMC_HIDE_GATED_UNTIL_AUTH=true` | Hide the token-gated registry tools from a session until it authenticates. Off by default. |
+| `JMC_TOOLBOX=layered` | List the core authoring loop only; hold nine named groups behind `toolbox`, which reveals one per session. Off by default. |
 
 ## Discovery: what a session is shown
 
-Two switches narrow what is **listed**, and neither narrows what exists. That distinction is the
-whole lesson of the removed tier, so keep it straight before reaching for either.
+**The listing is the biggest single thing this server puts in a context window.** Measured
+2026-08-27 over the serialized `tools/list` payload (o200k tokenizer, so a few percent off Claude's):
+
+| Surface | Tools | Tokens | % of a 200k window | Saving |
+|---|---:|---:|---:|---:|
+| flat (default) | 57 | 61,458 | 30.7% | — |
+| `JMC_TOOLBOX=layered` | 18 | 20,103 | 10.1% | 67.3% |
+| layered + `JMC_TOOL_SEARCH=regex` | 5 | 2,593 | 1.3% | 95.8% |
+| *(the removed `extended` tier, for scale)* | 50 | 53,844 | 26.9% | 12.4% |
+
+Two more numbers worth knowing before optimising anything: the mean tool costs 1,083 tokens and the
+median 940, and **`refresh_sidecar` alone is 6,133** — 80% of what the entire `extended` tier hid.
+The heaviest 16 tools are 52% of the listing, so trimming docstrings is a real lever independent of
+any of this.
+
+Three switches narrow what is **listed**, and none of them narrows what exists. That distinction is
+the whole lesson of the removed tier, so keep it straight before reaching for any of them.
+
+**`JMC_TOOLBOX=layered`** lists the 17 core tools plus `toolbox`, and holds the other nine groups —
+`evidence`, `identifiers`, `pgx`, `passes`, `review`, `integrity`, `catalog`, `publish`, `closing` —
+until a session asks. `toolbox()` with no arguments returns the roster: every group, what it is for,
+the tools in it, and roughly what listing it would cost. `toolbox(groups=["evidence"])` reveals that
+group **to the calling session** via `ctx.enable_components`. Everything `server.INSTRUCTIONS`
+teaches is in `core`, derived from the instruction text by a test, so the taught order runs without
+a single `toolbox` call. The default is `flat` because a mid-session reveal depends on the client
+honouring `notifications/tools/list_changed`; where it does not, a revealed group shows up after a
+reconnect.
 
 **`JMC_HIDE_GATED_UNTIL_AUTH=true`** disables the `registry_write`-tagged tools at startup and
 reveals them to a session when that session's own `authenticate` (or `registry_register`) succeeds.
@@ -276,7 +302,7 @@ session may see.
 ## Configuration
 
 All `JMC_*` variables are optional — see `.env.template` and `settings.py`, including
-`JMC_HIDE_GATED_UNTIL_AUTH`, `JMC_TOOL_SEARCH` and `JMC_TOOL_SEARCH_MAX_RESULTS`. The just-dna toolchain's
+`JMC_TOOLBOX`, `JMC_HIDE_GATED_UNTIL_AUTH`, `JMC_TOOL_SEARCH` and `JMC_TOOL_SEARCH_MAX_RESULTS`. The just-dna toolchain's
 own variables (`JUST_DNA_*_CACHE`, `NCBI_API_KEY`, `PHARMVAR_API_KEY`, `REGISTRY_TOKEN`) are read by
 the enricher straight from the process environment; `.env.template` documents them so everything is
 configured in one place.
@@ -320,6 +346,7 @@ src/just_module_creator/
   server.py            build_server(), CLI, graceful shutdown
   settings.py          pydantic-settings (JMC_*), safe defaults
   tool_search.py       optional: collapse the listing into search_tools + call_tool
+  toolbox.py           optional: the core group, the other nine, and the reveal
   auth.py              per-request token resolution (FastMCP session state)
   models.py            trimmed Pydantic tool I/O
   logging_setup.py     stdlib logging -> stderr

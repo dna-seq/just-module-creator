@@ -47,8 +47,10 @@ log = get_logger()
 #: ``registry_register`` mints the token every gated tool needs and
 #: ``authenticate`` stores one you already hold — a client that has to *search*
 #: for the route to a credential is the dead end `F12` closed, arriving through a
-#: different door. Both are cheap to list and neither reads a corpus.
-ALWAYS_VISIBLE = ["registry_register", "authenticate"]
+#: different door. ``toolbox`` is here for the same reason one layer up: it is the
+#: roster of everything a layered server is holding back, and a roster nobody can
+#: find is not a roster. All three are cheap and none reads a corpus.
+ALWAYS_VISIBLE = ["registry_register", "authenticate", "toolbox"]
 
 
 def apply_tool_search(mcp: FastMCP, settings: Settings) -> None:

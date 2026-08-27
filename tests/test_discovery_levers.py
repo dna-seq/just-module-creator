@@ -10,6 +10,8 @@ repeats: it decided at startup, for everybody, that a tool did not exist.
   ``ctx.enable_components`` is session-scoped where ``mcp.enable`` is not.
 * ``JMC_TOOL_SEARCH`` replaces the listing with ``search_tools`` + ``call_tool``.
   It narrows what is LISTED and nothing else: an unlisted tool stays callable.
+* ``JMC_TOOLBOX=layered`` holds nine groups behind ``toolbox`` until a session
+  asks for one — see ``test_toolbox.py``; the composition of the two is here.
 """
 
 from __future__ import annotations
@@ -117,3 +119,27 @@ async def test_search_sees_only_what_this_session_may_see(make_client):
 
         after = await client.call_tool("search_tools", {"pattern": "registry_publish"})
         assert "registry_publish" in _text(after)
+
+
+# --------------------------------------------------------------------------- #
+# The three compose: layering decides what exists for a session, search how it is listed
+# --------------------------------------------------------------------------- #
+async def test_search_indexes_only_what_this_session_has_revealed(make_client):
+    """Layered + search: the roster stays findable, the hidden groups do not.
+
+    This is the combination worth checking, because each lever narrows a different
+    thing — layering narrows what the session *has*, search narrows what is
+    *listed* — and a client that cannot find `toolbox` under both is back at the
+    dead end neither is allowed to reproduce.
+    """
+    settings = offline_settings(toolbox="layered", tool_search="regex")
+    async with make_client(settings) as client:
+        assert "toolbox" in await _names(client)
+
+        blind = await client.call_tool("search_tools", {"pattern": "paper_citations"})
+        assert "paper_citations" not in _text(blind)
+
+        await client.call_tool("toolbox", {"groups": ["evidence"]})
+
+        found = await client.call_tool("search_tools", {"pattern": "paper_citations"})
+        assert "paper_citations" in _text(found)

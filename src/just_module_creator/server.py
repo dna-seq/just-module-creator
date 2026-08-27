@@ -58,6 +58,7 @@ from just_module_creator.logging_setup import get_logger, setup_logging
 from just_module_creator.net import build_services
 from just_module_creator.settings import Settings, ToolSearch
 from just_module_creator.tool_search import apply_tool_search
+from just_module_creator.toolbox import hide_layer_two, register_toolbox
 from just_module_creator.tools._shared import schema_versions
 from just_module_creator.tools.advanced import (
     register_artifact_reads,
@@ -94,11 +95,11 @@ _COMP = schema_versions().compiler_version
 
 INSTRUCTIONS = f"""\
 Authoring surface for just-dna annotation modules (plugin v{__version__}). Schema
-answers come from just-dna-format {_FMT} and just-dna-compiler {_COMP}; older than
-yours is a stale process.
+answers come from just-dna-format {_FMT} and just-dna-compiler {_COMP}; older
+than yours is a stale process.
 
-A module is authored CSVs plus module_spec.yaml, compiled to a parquet artifact
-and manifest. Work in this order:
+A module is authored CSVs plus module_spec.yaml, compiled to a parquet
+artifact. Work in this order:
 
   list_tables -> scaffold_module -> draft_from_clinvar -> literature_search
     -> author rows -> lint_rows -> validate_module(strict) -> enrich_module
@@ -109,12 +110,12 @@ Load `create-module` to route. Rules no skill softens:
 1. Ask the tool, never memory: describe_table / table_requirements /
    describe_machine_table generate every column, vocabulary and requirement.
 2. You MAY write — and YOU log it: nothing logs a hand edit, so call
-   `record_override` (it appends to logs/authoring.log). Two cells stay withheld:
+   `record_override` (→ logs/authoring.log). Two cells stay withheld:
    one a later check compares against THAT SAME source, and one only a pilot
    settles — genotype, weight, conclusion, direction.
 3. A mismatch means CHECK BOTH SIDES: the row may be wrong, and so may the
    source — archives lag the edge. A source is evidence, never authority: conform
-   to a stale one and the check agrees with itself. Decide on what you verified.
+   to a stale one and the check agrees with itself.
 4. A check that could not run is not a check that passed: `null` and `unknown`
    never mean pass; warnings on a green run are the real output.
 5. Take every PMID from a literature_search result: existence never settles
@@ -122,12 +123,26 @@ Load `create-module` to route. Rules no skill softens:
    verbatim, for this row's claim — never the title.
 6. `start` is the 1-based VCF position: paste it, never subtract one.
 
-Every registry tool takes `target`; catalog reads REQUIRE it — read back the
-instance you wrote to. target="test" is the polygon: a publish there is a
+Every registry tool takes `target`; catalog reads REQUIRE it — read back what
+you wrote to. target="test" is the polygon: a publish there is a
 REHEARSAL you can delete. target="prod" is the catalog, immutable, its data
 claimed by a hash `yank` never frees. Writes default to test. Rehearse, say so
 aloud, promote only on explicit yes — "publish it" is not that ask.
 """
+
+#: Appended only when the surface is layered, and it has to be short: the host
+#: ceiling above applies to the whole string, so this line is why the base above
+#: carries slack rather than filling its budget.
+LAYERED_NOTE = """
+Only the core loop is listed: `toolbox` names the rest and reveals it.
+"""
+
+
+def instructions_for(settings: Settings) -> str:
+    """The header this deployment sends, which depends on how much of it is listed."""
+    if settings.toolbox == "layered":
+        return INSTRUCTIONS + LAYERED_NOTE
+    return INSTRUCTIONS
 
 
 def build_server(
@@ -145,7 +160,7 @@ def build_server(
 
     mcp = FastMCP(
         name=f"just-module-creator v{__version__}",
-        instructions=INSTRUCTIONS,
+        instructions=instructions_for(settings),
     )
 
     # One shared client set for the whole server. Lazy: constructing it opens no
@@ -168,14 +183,18 @@ def build_server(
     register_refresh(mcp, settings, services)
     register_citation_graph(mcp, settings, services)
     register_bulk_passes(mcp, settings, services)
+    register_toolbox(mcp, settings)
+    if settings.toolbox == "layered":
+        hide_layer_two(mcp)
     if settings.hide_gated_until_auth:
         hide_gated_tools(mcp)
     # Last: a search transform indexes whatever is registered when it runs.
     apply_tool_search(mcp, settings)
 
     log.info(
-        "Server built (offline=%s, tool_search=%s, registry=%s, polygon=%s)",
+        "Server built (offline=%s, toolbox=%s, tool_search=%s, registry=%s, polygon=%s)",
         settings.offline,
+        settings.toolbox,
         settings.tool_search,
         settings.registry_url,
         settings.registry_test_url,

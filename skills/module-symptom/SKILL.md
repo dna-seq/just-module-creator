@@ -48,11 +48,13 @@ can change the answer at all. Four packages plus us, and the tells are reliable:
 
 **The one that arrives as silence rather than a message: a tool you are sure exists is simply not
 there.** An MCP surface has no *switched off* state — only absence, which is indistinguishable from
-never built. Since 0.21.0 there is one surface and nothing is hidden by configuration, so an absent
-tool means the server answering you is **older than the tool**: check the version in the server's own
-instructions header before concluding the plugin cannot do something. **Reaching for a shell recipe
-or a raw HTTP call instead is how you lose what the tool did beyond fetching** — for
-`enrich_gwas_effects` that is the sidecar it writes and the licence rows it records on the way.
+never built. Two things produce it, and `toolbox` separates them in one call: a **layered**
+deployment lists the core loop and holds nine named groups until a session asks, so
+`toolbox(groups=["passes"])` gets you the tool; if the roster does not name it either, the server
+answering you is **older than the tool** and the version in its instructions header says so.
+**Reaching for a shell recipe or a raw HTTP call instead is how you lose what the tool did beyond
+fetching** — for `enrich_gwas_effects` that is the sidecar it writes and the licence rows it records
+on the way.
 
 **Two absences that are not tier absences at all**, and both cost an unattended run its whole task
 before they were fixed: `registry_download` and `refresh_sidecar` are in **every** tier. If either is

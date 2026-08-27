@@ -606,11 +606,17 @@ comparison against ISO values.
    — disable by tag at startup, reveal per session in `authenticate` — and is off
    by default, because a hidden tool answers a call by name with "Unknown tool"
    instead of the refusal that says how to get a token.
-8. **Narrowing the LISTING is allowed; narrowing what exists is not.**
-   `JMC_TOOL_SEARCH` replaces the catalog with `search_tools` + `call_tool`, and
-   an unlisted tool stays callable by name — which is exactly what the removed
-   mode axis did not do. Anything pinned in `tool_search.ALWAYS_VISIBLE` is there
-   because a client that cannot see it cannot get in at all.
+8. **Narrowing the LISTING is allowed; narrowing what a session can REACH is
+   not.** `JMC_TOOL_SEARCH` replaces the catalog with `search_tools` +
+   `call_tool`, and an unlisted tool stays callable by name.
+   `JMC_TOOLBOX=layered` lists `core` plus `toolbox` and holds nine groups until
+   the session asks — which is the mode axis's saving (67%, 41,355 tokens
+   measured) without its defect, because the roster is always readable and the
+   reveal is a call rather than a restart. **A new tool therefore joins a group in
+   `toolbox.GROUPS`**, and `test_every_registered_tool_is_in_exactly_one_group`
+   fails if it does not; put it in `CORE` only if the taught order needs it.
+   Anything pinned in `tool_search.ALWAYS_VISIBLE` is there because a client that
+   cannot see it cannot get in at all.
 
 ---
 

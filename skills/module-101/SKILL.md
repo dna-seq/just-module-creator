@@ -226,12 +226,18 @@ a large module. Nothing refuses; the budget is yours to weigh.
 `resolution.csv` costs what your rows cost, while `literature.csv` and `gwas_effects.csv` run the
 expensive passes. It warns and proceeds.
 
-**If a tool is missing, your install is old — not narrow.** An MCP surface has no *switched off*
-state, so an absent tool is indistinguishable from one that was never built, and that ambiguity is
-exactly what the tier used to create. Check the version before telling anyone the plugin cannot do
-something, and never substitute a shell recipe or a raw HTTP call for a tool you cannot see: you
-lose whatever it does beyond fetching — for `enrich_gwas_effects`, the sidecar it writes and the
-licence rows it records on the way.
+**If a tool you expected is not listed, ask `toolbox` before concluding anything.** Some
+deployments run *layered* (`JMC_TOOLBOX=layered`): the core authoring loop is listed and the rest
+sit in nine named groups — `evidence`, `identifiers`, `pgx`, `passes`, `review`, `integrity`,
+`catalog`, `publish`, `closing`. `toolbox()` names every one of them and what it holds;
+`toolbox(groups=["evidence"])` reveals that group to your session and it stays. The taught order
+above never needs a reveal — everything it names is core.
+
+If `toolbox` says it is not holding that tool, then your install is **older than the tool**, not
+narrower: an MCP surface has no *switched off* state, so absence otherwise looks exactly like never
+built. Either way, never substitute a shell recipe or a raw HTTP call for a tool you cannot see —
+you lose whatever it does beyond fetching, which for `enrich_gwas_effects` is the sidecar it writes
+and the licence rows it records on the way.
 
 **Every registry tool takes a `target`.** Writes default to the polygon; **catalog reads have no
 default and refuse to guess** — reading the instance you did not just write to is what makes a fresh

@@ -9,6 +9,51 @@ The MCP template this repo is built on (`../mcp_template`) moved, and these thre
 it: its session-state auth, its two off-by-default discovery levers, and — going further than the
 template, which keeps a mode axis and made it switchable at runtime — dropping ours entirely.
 
+### `toolbox`: a two-layer surface with the roster always readable (opt-in)
+
+`JMC_TOOLBOX=layered` lists the 17-tool core authoring loop plus `toolbox`, and holds the other
+nine groups — `evidence`, `identifiers`, `pgx`, `passes`, `review`, `integrity`, `catalog`,
+`publish`, `closing` — until a session asks. `toolbox()` returns the roster: every group, what it is
+for, the tools in it, and roughly what listing it would cost. `toolbox(groups=["evidence"])` reveals
+that group to the **calling session** through `ctx.enable_components`. Default is `flat`, which is
+today's behaviour exactly.
+
+**Why this is not the tier coming back, and it is a real distinction rather than a rhetorical one.**
+The tier decided at startup, for everyone, that a tool did not exist; nothing named what was
+missing, and reaching it meant a restart with a different environment. Here the roster is readable
+before anything is revealed, the reveal is one call, it is scoped to the session that asked, and
+everything `server.INSTRUCTIONS` teaches is in `core` — derived from the instruction text by a test,
+so the taught order runs without a single `toolbox` call.
+
+**Measured, because the tier's cost argument never was.** Over the serialized `tools/list` payload
+(o200k tokenizer):
+
+| Surface | Tools | Tokens | % of a 200k window | Saving |
+|---|---:|---:|---:|---:|
+| flat | 57 | 61,458 | 30.7% | — |
+| layered | 18 | 20,103 | 10.1% | **67.3%** |
+| layered + tool search | 5 | 2,593 | 1.3% | 95.8% |
+| *the removed `extended` tier* | 50 | 53,844 | 26.9% | 12.4% |
+
+So the tier was worth 12% of a listing that is itself 31% of a context window, and this is worth
+67%. Two numbers that came out of the same measurement and matter more than the design: the mean
+tool costs 1,083 tokens, and **`refresh_sidecar` alone is 6,133 — 80% of everything the tier hid**.
+The heaviest 16 tools are 52% of the listing, so trimming docstrings is a lever independent of any
+of this.
+
+**Group sizes are written down rather than computed, and guarded.** Visibility filtering applies to
+the server itself — a layered `get_tool` returns `None` for what it is hiding — so it cannot measure
+its own second layer. `Group.approx_tokens` is therefore static, and
+`test_the_group_sizes_are_still_true` rebuilds a flat server, measures, and fails on more than 20%
+drift.
+
+**The honest limit.** A mid-session reveal only lands on a client that honours
+`notifications/tools/list_changed`; FastMCP sends it and our in-memory client sees it, but Claude
+Code's behaviour has not been verified here. That is why the default is `flat` and why the reveal
+message ends by telling the caller to reconnect once if the tools do not appear. `server.INSTRUCTIONS`
+gains one line in layered mode, and the base was trimmed to keep both variants under the host's
+2048-character ceiling.
+
 ### Two discovery levers adopted from the template, both off by default
 
 `JMC_HIDE_GATED_UNTIL_AUTH=true` hides the `registry_write`-tagged tools from a session until that

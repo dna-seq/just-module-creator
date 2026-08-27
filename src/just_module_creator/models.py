@@ -41,6 +41,40 @@ class OpResult(BaseModel):
     data: dict | None = Field(default=None, description="Optional payload.")
 
 
+class ToolboxGroup(BaseModel):
+    """One layer-2 group, as `toolbox` reports it."""
+
+    name: str = Field(description="Pass this to `toolbox(groups=[...])` to reveal it.")
+    summary: str = Field(description="What the group is for, in one line.")
+    tools: list[str] = Field(description="The tools it holds.")
+    tool_count: int = Field(
+        description="How many of them this server actually registered — a group naming a "
+        "tool that is not registered would be a roster that has drifted, so a count "
+        "below `len(tools)` is a defect to report rather than a smaller group."
+    )
+    approx_tokens: int = Field(
+        description="Roughly what listing this group costs you, characters divided by 4. An "
+        "ESTIMATE, not a measurement: on this surface it reads about 8% high against a real "
+        "tokenizer. It is here so a reveal is a decision rather than a reflex."
+    )
+
+
+class ToolboxResult(BaseModel):
+    """Result of a `toolbox` call: the roster, and what this session just revealed."""
+
+    layered: bool = Field(
+        description="Whether this server is holding tools back at all (`JMC_TOOLBOX=layered`). "
+        "False means every tool is already listed and a reveal changes nothing."
+    )
+    revealed: list[str] = Field(
+        default_factory=list, description="Groups revealed to THIS session by this call."
+    )
+    groups: list[ToolboxGroup] = Field(
+        default_factory=list, description="The whole layer-2 roster, revealed or not."
+    )
+    message: str = Field(description="Human-readable summary.")
+
+
 class AuthResult(BaseModel):
     """Result of an ``authenticate`` call (scoped to the calling session)."""
 

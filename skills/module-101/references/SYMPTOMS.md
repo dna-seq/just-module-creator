@@ -522,9 +522,12 @@ wrong world.
 
 **A tool you are certain exists, and it is not on the surface.**
 An MCP surface has no "switched off" state — only absence, which looks exactly like never built.
-Since 0.21.0 nothing is hidden by configuration: there is one surface, so an absent tool means the
-server is **older than the tool**. Read the version out of the server's own instructions header
-before concluding anything, and check `module-101`'s roster for what the current surface holds.
+**Call `toolbox` first**: a *layered* deployment (`JMC_TOOLBOX=layered`) lists the core authoring
+loop and holds nine named groups — evidence, identifiers, pgx, passes, review, integrity, catalog,
+publish, closing — until a session asks, and `toolbox(groups=[...])` reveals one to yours. If the
+roster does not name your tool either, the server is **older than the tool**: read the version out
+of its instructions header. If a reveal reports success and the tool still does not appear, your
+client is not refreshing on `notifications/tools/list_changed` — reconnect once.
 **Do not substitute a raw HTTP call or a shell recipe for a tool you cannot see** — you lose what the
 tool does beyond fetching, which for `enrich_gwas_effects` is the sidecar it writes and the licence
 rows it records on the way.
