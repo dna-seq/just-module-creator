@@ -264,6 +264,9 @@ token. It lives beside `authenticate` for that reason rather than with the other
 | layered + `JMC_TOOL_SEARCH=regex` | 5 | 2,507 | 1.3% | 95.7% |
 | *(the removed `extended` tier, for scale)* | 50 | 53,844 | 26.9% | 12.4% |
 
+The last row is measured against the pre-0.23.0 payload it belonged to — 61,458 tokens, before the
+docstring pass — so read it as *the tier saved an eighth* rather than against the baseline above it.
+
 Descriptions are the third lever and the only one that costs nothing to pull: they were 70,528
 characters of that payload before the 0.23.0 pass and are 59,751 after, which took the flat listing
 down 4.7% and the layered one — where the trimming was concentrated, because `core` is what nobody

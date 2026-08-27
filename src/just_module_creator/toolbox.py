@@ -12,7 +12,7 @@ taught a step it could not run (``docs/previous_issues.md``, ``F47``). Here the
 roster is always readable, the reveal is one call, and it is scoped to the
 session that asked — so the worst case is a round trip, not a dead end.
 
-**The numbers this exists for**, measured 2026-08-27 over the serialized
+**The numbers this exists for**, measured at 0.23.0 over the serialized
 ``tools/list`` payload (o200k tokenizer, so ±a few percent for Claude's):
 
 * the flat listing is **58,586 tokens** — 29.3% of a 200k window before a single
@@ -21,10 +21,14 @@ session that asked — so the worst case is a round trip, not a dead end.
   (70%)**;
 * with ``tool_search`` on top, **2,507** (95.7% saved), at the price of a search
   before the first call;
-* the old ``extended`` tier, for comparison, hid 6 tools worth **7,614** — a
-  14.4% saving, which is why it was never worth what it cost;
-* one tool, ``refresh_sidecar``, is 6,133 tokens — 80% of what that whole tier
-  hid, which says the second lever here is prose, not grouping.
+* one tool, ``refresh_sidecar``, is **5,841** — a tenth of the whole listing,
+  which says the second lever is prose rather than grouping. That lever was
+  pulled in 0.23.0 and it is not finished.
+
+Against the surface as it stood at 0.22.0, before the docstring pass: the whole
+listing was 61,458 tokens and the old ``extended`` tier hid 6 tools worth
+**7,614** of it — a 14.4% saving, which is why that tier was never worth what it
+cost, and the comparison the rest of this file is arguing with.
 
 **The host has to honour ``notifications/tools/list_changed``** for a reveal to
 land mid-session; ``ctx.enable_components`` sends it. That is why the default is
@@ -228,32 +232,22 @@ def register_toolbox(mcp: FastMCP, settings: Settings) -> None:
     async def toolbox(ctx: Context, groups: list[str] | None = None) -> ToolboxResult:
         """What this server can do beyond the tools you can see, and how to get it.
 
-        Call it with no arguments for the roster: every group, what it is for,
-        the tools in it, and roughly what listing it would cost you. Call it with
-        `groups` to reveal those groups **to this session** — they appear in your
-        tool list and stay for the rest of the session.
-
-        Groups: `evidence` (read a paper), `identifiers` (is this symbol or CURIE
-        current), `pgx` (draft the pharmacogenomics tables), `passes` (fill or
-        re-derive the machine-written sidecars), `review` (read a module back),
-        `integrity` (did anything move), `catalog` (read the registry), `publish`
-        (write to it, token needed), `closing` (finish and describe).
-        `groups=["all"]` reveals everything.
-
-        One thing it will not do: on a server that hides the registry writes until
-        a session authenticates, revealing `publish` needs a token first — the
-        answer says so and names the way in.
-
-        Nothing here is unreachable and nothing is switched off: in the default
-        `flat` configuration every tool is already listed and a reveal is a no-op
-        that says so. Under `JMC_TOOLBOX=layered` the server lists the core
-        authoring loop and holds the rest here, which is measured at 40,800
-        tokens of context — 70% of the whole listing.
-
-        If a skill names a tool you cannot see, this is the answer — call it
-        rather than concluding the capability does not exist, and rather than
-        reaching for a shell recipe, which loses whatever the tool does beyond
-        fetching.
+        Call it with no arguments for the roster: every group, what it is for, the tools
+        in it, and roughly what listing it would cost. Call it with `groups` to reveal
+        those groups **to this session** — they appear in your tool list and stay. The
+        groups are `evidence` (read a paper), `identifiers` (is this symbol or CURIE
+        current), `pgx` (draft the pharmacogenomics tables), `passes` (fill or re-derive
+        the machine-written sidecars), `review` (read a module back), `integrity` (did
+        anything move), `catalog` (read the registry), `publish` (write to it, token
+        needed), `closing` (finish and describe); `groups=["all"]` reveals everything.
+        Nothing here is unreachable and nothing is switched off — in the default `flat`
+        configuration every tool is already listed and a reveal is a no-op that says so,
+        while `JMC_TOOLBOX=layered` holds the non-core groups here and is measured at
+        40,800 tokens of context. Two limits: revealing `publish` needs a token first
+        where the server hides the registry writes until a session authenticates, and if
+        a skill names a tool you cannot see, **call this** rather than concluding the
+        capability does not exist or reaching for a shell recipe, which loses whatever
+        the tool does beyond fetching.
         """
         wanted = [g.strip() for g in (groups or []) if g.strip()]
         unknown = [g for g in wanted if g != "all" and g not in BY_NAME]

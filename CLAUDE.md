@@ -587,10 +587,12 @@ comparison against ISO values.
    session gets whether or not the server is layered — one paragraph is right, two
    is the outside, and three is water; outside it, five is fine where the tool
    genuinely takes five, and the ceiling is six before it reads as an essay. Two
-   tests pin those. The listing measures 58,586 tokens, 29% of a 200k window, and
-   descriptions are 59,751 characters of it — down from 70,528 when the rule
-   landed, which took the layered surface down 11.7%. This is the difference
-   between a surface an agent can hold and one it cannot. Say what the tool does, what the arguments
+   tests pin those. Measured at 0.23.0 — re-run rather than trusting these, they
+   are undated constants of exactly the kind §8 warns about — the listing is
+   58,586 tokens, 29% of a 200k window, with 59,751 characters of it in
+   descriptions, down from 70,528 when the rule landed, which took the layered
+   surface down 11.7%. This is the difference between a surface an agent can hold
+   and one it cannot. Say what the tool does, what the arguments
    mean and what it refuses; **the reasoning — why it is shaped this way, which
    defect it closed, what was measured — goes in a comment above it**, where
    whoever edits the code reads it and no session pays for it. Deleting the reason

@@ -684,10 +684,16 @@ async def test_the_core_tools_keep_their_descriptions_short(client):
     measurement behind it, the option that was rejected — belongs in a comment
     above it, where whoever edits the code reads it and no session pays for it.
     """
+    # `toolbox` is not in CORE and is held to CORE's ceiling anyway: it is the one
+    # tool listed in EVERY configuration — flat, layered, and as one of five pinned
+    # tools under layered+search, where its description would otherwise be a
+    # double-digit share of a 2,507-token surface. The roster is what the *call*
+    # returns; the description only has to get you there.
+    un_declinable = set(CORE) | {"toolbox"}
     offenders = [
         f"{t.name}: {_paragraphs(t)} paragraphs"
         for t in await client.list_tools()
-        if t.name in CORE and _paragraphs(t) > _CORE_CEILING
+        if t.name in un_declinable and _paragraphs(t) > _CORE_CEILING
     ]
     assert not offenders, "\n".join(sorted(offenders))
 
