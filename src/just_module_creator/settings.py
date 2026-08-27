@@ -41,6 +41,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 #: to call, and each host decides for itself what it is.
 RegistryTarget = Literal["prod", "test"]
 
+#: How the tool listing is presented. See ``tool_search.py``.
+ToolSearch = Literal["off", "regex", "bm25"]
+
 DEFAULT_REGISTRY_URL = "https://module-registry.just-dna.life"
 DEFAULT_POLYGON_URL = "https://module-polygon.just-dna.life"
 
@@ -80,6 +83,21 @@ class Settings(BaseSettings):
     test_api_key: str | None = None
     api_key_header: str = "X-Registry-Token"
     test_api_key_header: str = "X-Registry-Test-Token"
+
+    # Hide the token-gated registry tools from a session until it authenticates.
+    # OFF by default, and the default is the considered answer: listed-but-refusing
+    # keeps them discoverable by an agent that has no token yet, and the refusal
+    # says how to get one. Hidden, a call by name gets "Unknown tool" instead —
+    # which is the shape of dead end this repo keeps closing. Turn it on where the
+    # surface is shared with people who must not see a publish route at all.
+    hide_gated_until_auth: bool = False
+
+    # Tool discovery. "off" lists every registered tool; "regex"/"bm25" replace the
+    # listing with search_tools + call_tool so an agent finds tools by querying.
+    # This narrows what is LISTED and never what is callable — see tool_search.py,
+    # and do not read it as the mode axis coming back.
+    tool_search: ToolSearch = "off"
+    tool_search_max_results: int = 5
 
     # The proof-of-work id an account was registered with. OURS, not the
     # ecosystem's: `registry-client` takes it as a flag and prints it, and reads

@@ -5,6 +5,27 @@ on our side, so agents in sibling repos are not surprised.
 
 ## Unreleased
 
+### Two discovery levers adopted from the template, both off by default
+
+`JMC_HIDE_GATED_UNTIL_AUTH=true` hides the `registry_write`-tagged tools from a session until that
+session authenticates: `mcp.disable(tags=…)` at startup, then `ctx.enable_components(tags=…)` inside
+`authenticate` and `registry_register`. The reveal is **session-scoped** — that is the API's whole
+point, and it is why `auth.py` no longer carries a "stdio-only, single-tenant" caveat about
+`mcp.enable`. Off by default: a hidden tool answers a call by name with "Unknown tool" rather than
+the refusal that says how to get a token, and `registry_register` is never hidden at all.
+
+`JMC_TOOL_SEARCH=regex|bm25` (or `--tool-search`) replaces the tool listing with `search_tools` +
+`call_tool`, capped by `JMC_TOOL_SEARCH_MAX_RESULTS`. **It narrows what is listed and never what is
+callable** — an unlisted tool is still callable by name — which is the line that separates it from
+the tier removed in the same release. `registry_register` and `authenticate` are pinned visible:
+a client that has to search for the route to a credential is `F12`'s dead end arriving by a
+different door. Two costs worth knowing and now written down: a direct call to an unlisted tool
+degrades `result.data` to a plain dict, because the client never received a schema; and `regex` does
+not rank, so a broad pattern plus a small `max_results` can cut the tool you meant.
+
+They compose — search sees what the session may see — and `tests/test_discovery_levers.py` pins
+that, along with the per-session reveal not leaking to a second client.
+
 ### The `extended` tier is gone: one surface, and the cost is said instead of enforced
 
 `JMC_MODE`, `--mode` and the `extended` tier are removed. Every tool is registered on every start —

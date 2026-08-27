@@ -101,6 +101,25 @@ def state_key(target: RegistryTarget) -> str:
     return f"registry_token:{target}"
 
 
+def hide_gated_tools(mcp: FastMCP) -> None:
+    """Hide the token-gated tools until a session authenticates (opt-in).
+
+    Disabling by tag is server-global, which is what we want as the *starting*
+    state: nobody sees the registry writes. ``authenticate`` and
+    ``registry_register`` then call ``ctx.enable_components(tags={GATED_TAG})``,
+    which is scoped to the calling session — other clients stay in the dark, and
+    the authenticated one gets a ``tools/list_changed`` notification.
+
+    Off by default, and the reason is this repo's own history: a tool that is not
+    listed cannot be discovered, and calling one by name fails with "Unknown
+    tool" rather than the message saying how to get a token. That is the same
+    dead end the mode axis kept producing. Turn this on for a shared HTTP
+    deployment where an unauthenticated client should not even see a publish
+    route; leave it off for an authoring session.
+    """
+    mcp.disable(tags={GATED_TAG})
+
+
 def _header_key(settings: Settings, target: RegistryTarget) -> str | None:
     """Read the token for ``target`` from the current HTTP request header, if any."""
     try:
@@ -314,6 +333,9 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
 
         if token:
             await ctx.set_state(state_key(target), token)
+            if settings.hide_gated_until_auth:
+                # Session-scoped: reveals the gated tools to THIS client only.
+                await ctx.enable_components(tags={GATED_TAG})
         # The token is a secret and never reaches the log.
         log.info(
             "Registered account %s on %s (install-id origin=%s, namespaces=%d)",
@@ -406,6 +428,9 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
         if not token.strip():
             return AuthResult(authenticated=False, message="Empty token — nothing was stored.")
         await ctx.set_state(state_key(target), token.strip())
+        if settings.hide_gated_until_auth:
+            # Session-scoped, unlike `mcp.enable`: this client only.
+            await ctx.enable_components(tags={GATED_TAG})
         log.info("Session %s stored a registry token for %s", ctx.session_id, target)
         return AuthResult(
             authenticated=True,

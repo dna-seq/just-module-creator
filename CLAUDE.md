@@ -598,8 +598,19 @@ comparison against ISO values.
    another stored. The target stays *in* the key: flatten it and the second
    `authenticate` silently retargets the first.
 6. Add a test using the in-memory client.
-7. **Never** use `mcp.enable()`/`disable()` to gate per-user on multi-tenant
-   HTTP — it is server-global and would leak tools across clients.
+7. **Visibility is not authorization, and the two enable APIs are not
+   interchangeable.** `mcp.enable()` / `mcp.disable()` are **server-global**:
+   fine at startup, never in response to one client's request, because they would
+   leak tools across clients. `ctx.enable_components()` is **session-scoped** and
+   is the only one a request may drive. `JMC_HIDE_GATED_UNTIL_AUTH` combines them
+   — disable by tag at startup, reveal per session in `authenticate` — and is off
+   by default, because a hidden tool answers a call by name with "Unknown tool"
+   instead of the refusal that says how to get a token.
+8. **Narrowing the LISTING is allowed; narrowing what exists is not.**
+   `JMC_TOOL_SEARCH` replaces the catalog with `search_tools` + `call_tool`, and
+   an unlisted tool stays callable by name — which is exactly what the removed
+   mode axis did not do. Anything pinned in `tool_search.ALWAYS_VISIBLE` is there
+   because a client that cannot see it cannot get in at all.
 
 ---
 

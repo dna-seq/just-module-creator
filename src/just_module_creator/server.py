@@ -53,10 +53,11 @@ from dotenv import load_dotenv
 from fastmcp import FastMCP
 
 from just_module_creator import __version__
-from just_module_creator.auth import register_auth
+from just_module_creator.auth import hide_gated_tools, register_auth
 from just_module_creator.logging_setup import get_logger, setup_logging
 from just_module_creator.net import build_services
-from just_module_creator.settings import Settings
+from just_module_creator.settings import Settings, ToolSearch
+from just_module_creator.tool_search import apply_tool_search
 from just_module_creator.tools._shared import schema_versions
 from just_module_creator.tools.advanced import (
     register_artifact_reads,
@@ -129,13 +130,17 @@ aloud, promote only on explicit yes — "publish it" is not that ask.
 """
 
 
-def build_server(settings: Settings | None = None) -> FastMCP:
+def build_server(
+    settings: Settings | None = None, tool_search: ToolSearch | None = None
+) -> FastMCP:
     """Construct a fresh, fully-wired FastMCP server.
 
     A factory (not a singleton) so each test / deployment gets an isolated
-    instance.
+    instance. ``tool_search`` overrides the matching setting.
     """
     settings = settings or Settings()
+    if tool_search is not None:
+        settings = settings.model_copy(update={"tool_search": tool_search})
     setup_logging(settings)
 
     mcp = FastMCP(
@@ -163,10 +168,15 @@ def build_server(settings: Settings | None = None) -> FastMCP:
     register_refresh(mcp, settings, services)
     register_citation_graph(mcp, settings, services)
     register_bulk_passes(mcp, settings, services)
+    if settings.hide_gated_until_auth:
+        hide_gated_tools(mcp)
+    # Last: a search transform indexes whatever is registered when it runs.
+    apply_tool_search(mcp, settings)
 
     log.info(
-        "Server built (offline=%s, registry=%s, polygon=%s)",
+        "Server built (offline=%s, tool_search=%s, registry=%s, polygon=%s)",
         settings.offline,
+        settings.tool_search,
         settings.registry_url,
         settings.registry_test_url,
     )
@@ -231,6 +241,10 @@ def run_with_graceful_shutdown(server: FastMCP, **run_kwargs) -> None:
 # --------------------------------------------------------------------------- #
 app = typer.Typer(add_completion=False, help="just-dna module authoring MCP server.")
 
+_SEARCH_OPT = typer.Option(
+    None, "--tool-search", help="off | regex | bm25 (collapse the listing into search)"
+)
+
 
 def _load_env() -> None:
     """Load ``.env`` before any configuration is read.
@@ -243,10 +257,12 @@ def _load_env() -> None:
     load_dotenv(override=False)
 
 
-def _run(transport: str, host: str | None, port: int | None) -> None:
+def _run(
+    transport: str, host: str | None, port: int | None, tool_search: str | None = None
+) -> None:
     _load_env()
     settings = Settings()
-    server = build_server(settings=settings)
+    server = build_server(settings=settings, tool_search=tool_search)  # type: ignore[arg-type]
     kwargs: dict = {"transport": transport}
     if transport != "stdio":
         kwargs["host"] = host or settings.host
@@ -262,34 +278,37 @@ def main(
     transport: str = typer.Option(None, help="stdio | http | sse"),
     host: str = typer.Option(None, help="Host to bind (network transports)."),
     port: int = typer.Option(None, help="Port to bind (network transports)."),
+    tool_search: str = _SEARCH_OPT,
 ) -> None:
     """Run the server (transport from --transport or JMC_TRANSPORT)."""
     settings = Settings()
-    _run(transport or settings.transport, host, port)
+    _run(transport or settings.transport, host, port, tool_search)
 
 
 @app.command()
-def stdio() -> None:
+def stdio(tool_search: str = _SEARCH_OPT) -> None:
     """Run with the stdio transport (for local MCP clients)."""
-    _run("stdio", None, None)
+    _run("stdio", None, None, tool_search)
 
 
 @app.command()
 def http(
     host: str = typer.Option(None),
     port: int = typer.Option(None),
+    tool_search: str = _SEARCH_OPT,
 ) -> None:
     """Run with the streamable-HTTP transport."""
-    _run("http", host, port)
+    _run("http", host, port, tool_search)
 
 
 @app.command()
 def sse(
     host: str = typer.Option(None),
     port: int = typer.Option(None),
+    tool_search: str = _SEARCH_OPT,
 ) -> None:
     """Run with the (legacy) SSE transport."""
-    _run("sse", host, port)
+    _run("sse", host, port, tool_search)
 
 
 def cli_app() -> None:

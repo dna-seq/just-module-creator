@@ -249,10 +249,34 @@ token. It lives beside `authenticate` for that reason rather than with the other
 | `JMC_OFFLINE=true` | Hard network ceiling. Every tool that could fetch runs cache-only, and a per-call `offline=false` cannot override it. |
 | `JMC_WORKSPACE=/path` | Refuse to read or write outside this directory. Unset = no restriction (right for stdio; set it for HTTP). |
 | `JMC_LITERATURE_SOURCES=a,b` | Which literature services this deployment may talk to. A per-call `sources` narrows it and can never widen it. Unset = all; `""` = none. |
+| `JMC_HIDE_GATED_UNTIL_AUTH=true` | Hide the token-gated registry tools from a session until it authenticates. Off by default. |
+
+## Discovery: what a session is shown
+
+Two switches narrow what is **listed**, and neither narrows what exists. That distinction is the
+whole lesson of the removed tier, so keep it straight before reaching for either.
+
+**`JMC_HIDE_GATED_UNTIL_AUTH=true`** disables the `registry_write`-tagged tools at startup and
+reveals them to a session when that session's own `authenticate` (or `registry_register`) succeeds.
+The reveal is `ctx.enable_components`, which is **session-scoped**; `mcp.enable`/`disable` are
+**server-global** and are used only for the startup half. The cost, and why it is off by default: a
+session that has not authenticated cannot discover those tools at all, and calling one by name gets
+"Unknown tool" instead of the message saying how to get a token. `registry_register` is never
+hidden — it is what mints the token.
+
+**`JMC_TOOL_SEARCH=regex|bm25`** (or `--tool-search`) replaces the tool listing with two synthetic
+tools, `search_tools` and `call_tool`, so a client discovers by querying instead of receiving a
+catalog of dozens. `JMC_TOOL_SEARCH_MAX_RESULTS` caps the hits. Things to know: an unlisted tool is
+still callable by name, but the client never received its schema, so FastMCP's own client degrades
+`result.data` to a plain dict — go through `call_tool` if you want the typed model. `regex` does not
+rank, so a broad pattern plus a small `max_results` can cut the tool you meant; `bm25` ranks.
+Resources and prompts are unaffected. It composes with the switch above: search sees what the
+session may see.
 
 ## Configuration
 
-All `JMC_*` variables are optional — see `.env.template` and `settings.py`. The just-dna toolchain's
+All `JMC_*` variables are optional — see `.env.template` and `settings.py`, including
+`JMC_HIDE_GATED_UNTIL_AUTH`, `JMC_TOOL_SEARCH` and `JMC_TOOL_SEARCH_MAX_RESULTS`. The just-dna toolchain's
 own variables (`JUST_DNA_*_CACHE`, `NCBI_API_KEY`, `PHARMVAR_API_KEY`, `REGISTRY_TOKEN`) are read by
 the enricher straight from the process environment; `.env.template` documents them so everything is
 configured in one place.
@@ -295,6 +319,7 @@ skills/find-evidence/
 src/just_module_creator/
   server.py            build_server(), CLI, graceful shutdown
   settings.py          pydantic-settings (JMC_*), safe defaults
+  tool_search.py       optional: collapse the listing into search_tools + call_tool
   auth.py              per-request token resolution (FastMCP session state)
   models.py            trimmed Pydantic tool I/O
   logging_setup.py     stdlib logging -> stderr
