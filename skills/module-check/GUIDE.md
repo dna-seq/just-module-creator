@@ -71,7 +71,7 @@ just-dna-enricher clinpgx check spec/ --snapshot cp/ # pharm_variants.csv vs the
 ```
 
 The reference-base, `clin_sig` and rsID-currency checks are folded into `enrich_module` rather than
-living here — `module-enrich` owns them, because only that tier holds a reference sequence.
+living here — [`module-enrich`](../module-enrich/GUIDE.md) owns them, because only that tier holds a reference sequence.
 
 **Read `gene_locus_conflicts` even when `stale` is empty.** A fabricated row usually pairs a real gene
 name with a real-but-unrelated rsID: both halves pass their own check, and only the *relationship* is
@@ -213,7 +213,7 @@ carrying it across would re-bind a claim to different bytes — and it reports t
 `CloseResult.dropped_checks`, which is not a compile warning and never reaches `manifest.verification`.
 **15 of 16 reference examples record zero checks.**
 
-So the order is: close, then check, then read `dropped_checks`. `module-close` owns the closure itself.
+So the order is: close, then check, then read `dropped_checks`. [`module-close`](../module-close/GUIDE.md) owns the closure itself.
 
 ## What needs a pilot, and what you may simply fix
 
@@ -271,9 +271,9 @@ disagreement does.
 
 | You need | Load |
 |---|---|
-| the reference-base and rsID-currency checks | `module-enrich` |
-| the closure these records bind to | `module-close` |
-| what a record means, field by field | `module-tables` → `references/verification.md` |
-| the tables that record rather than adjudicate | `module-tables` → `references/{clinical_assertions,gene_validity}.md` |
+| the reference-base and rsID-currency checks | [`module-enrich`](../module-enrich/GUIDE.md) |
+| the closure these records bind to | [`module-close`](../module-close/GUIDE.md) |
+| what a record means, field by field | [`module-tables`](../module-tables/GUIDE.md) → `references/verification.md` |
+| the tables that record rather than adjudicate | [`module-tables`](../module-tables/GUIDE.md) → `references/{clinical_assertions,gene_validity}.md` |
 | what may honestly go in a quote | `find-evidence` |
 | a module that already exists, and where a reviewer starts | `module-revise` |

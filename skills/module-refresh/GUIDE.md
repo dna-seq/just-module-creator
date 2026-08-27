@@ -35,7 +35,7 @@ expected a value to move and it did not, the file is still there.**
 It copies the sidecar out, **reads the copy back and hashes it**, and only then deletes — so a capture
 that did not verify means nothing is touched. Then it re-derives, classifies every row against the live
 fact fields, **reapplies the rows it can prove a human wrote**, and **reports the rest without picking a
-side.** It also tells you whether the table's fact signature moved, which is the canary in `module-diff`.
+side.** It also tells you whether the table's fact signature moved, which is the canary in [`module-diff`](../module-diff/GUIDE.md).
 
 **It resumes if it dies mid-sequence** — a capture is never taken over an unfinished one, so a second
 attempt is a repair rather than a second loss.
@@ -99,7 +99,7 @@ true `subjects=5, findings=1` must not become *"never asked"* on a run that chan
 **Write to the file you read.** A module carrying the old `sources.csv` spelling, or carrying its
 sidecars under `derived/`, must be written back the same way. Both copies present is an **error naming
 both paths** (`layout.SidecarCollision`) — never a merge, never newest-wins, because two fact-hashed
-human-overridable copies are two legitimate claims. `module-tables` → `references/LAYOUT.md` has the
+human-overridable copies are two legitimate claims. [`module-tables`](../module-tables/GUIDE.md) → `references/LAYOUT.md` has the
 normalisation in full.
 
 **A derived column you expect to move needs the file gone, not the pass re-run.** The article licence
@@ -214,7 +214,7 @@ or CPIC. You find out because you looked.
 delete-everything, per file. There is no three-way merge and no per-row refresh.
 
 **Nothing repairs a module whose coordinates were wrong.** Deleting `resolution.csv` re-derives the
-lookup; it does not fix an authored `start` that was off by one. `module-enrich` owns that.
+lookup; it does not fix an authored `start` that was off by one. [`module-enrich`](../module-enrich/GUIDE.md) owns that.
 
 **A refresh does not make a module reviewed.** Bringing data up to date is not the same as somebody
 reading it — see `module-revise` for what a review pass actually is.
@@ -234,7 +234,7 @@ meet here:
 | You need | Load |
 |---|---|
 | which of the six second-pass kinds you are in | `module-revise` |
-| what actually moved, and which signature says so | `module-diff` |
-| the sidecar you are about to delete, in full | `module-tables` → `references/<name>.md` |
-| the drafter's report, read properly | `module-draft` |
-| re-resolving coordinates after an identity change | `module-enrich` |
+| what actually moved, and which signature says so | [`module-diff`](../module-diff/GUIDE.md) |
+| the sidecar you are about to delete, in full | [`module-tables`](../module-tables/GUIDE.md) → `references/<name>.md` |
+| the drafter's report, read properly | [`module-draft`](../module-draft/GUIDE.md) |
+| re-resolving coordinates after an identity change | [`module-enrich`](../module-enrich/GUIDE.md) |

@@ -13,7 +13,7 @@ description: >-
 # What moved, and what that means
 
 **Lifecycle stage:** read from 6 (compile) and 10 (feedback). Reached from `module-revise` and
-`module-refresh`.
+[`module-refresh`](../module-refresh/GUIDE.md).
 
 A module's hashes are not just dedup keys — **paired, they are a diagnostic instrument**, and the only
 one this format has for detecting that the world moved underneath a module. Read them as a decision
@@ -123,7 +123,7 @@ So detecting upstream drift *is* the delete-and-re-derive. There is no passive c
 manual sequence is destructive: it captures the sidecar first, deletes, re-derives, classifies every
 row, reapplies what is provably yours, and **reports what it cannot tell apart.** The one thing that
 can slow you down is naming `literature.csv` or `gwas_effects.csv` — those two
-raise, and the refusal names what is reachable. `module-refresh` owns the tool.
+raise, and the refusal names what is reachable. [`module-refresh`](../module-refresh/GUIDE.md) owns the tool.
 
 **By hand, when the tool refused the sidecar you need:**
 
@@ -188,7 +188,7 @@ The download verifies the bytes as it fetches — a failure raises rather than
 leaving you comparing a module you cannot trust — and it brings the authored inputs unless you pass
 `include_inputs=false`, which is what makes the comparison a comparison of specs rather than of
 parquet. Both trees arrive in the same flat shape, because the tool does not expose a layout choice;
-`derived/` is only a presentation and `module-tables` → `references/LAYOUT.md` has it.
+`derived/` is only a presentation and [`module-tables`](../module-tables/GUIDE.md) → `references/LAYOUT.md` has it.
 
 **What it will not do**, and none of it is "not yet": no write path and no parameter that could become
 one; no verdict on which side is right; **no pairing of rows whose natural key changed** — one removed
@@ -250,8 +250,8 @@ here is usually not a message but a surprise:
 
 | You need | Load |
 |---|---|
-| to actually re-derive without losing curation | `module-refresh` |
+| to actually re-derive without losing curation | [`module-refresh`](../module-refresh/GUIDE.md) |
 | which kind of second pass you are in | `module-revise` |
-| what a table contributes to which signature | `module-tables` → `references/<name>.md` |
-| what a consumer will and will not notice | `module-consumer` |
-| the download layouts | `module-tables` → `references/LAYOUT.md` |
+| what a table contributes to which signature | [`module-tables`](../module-tables/GUIDE.md) → `references/<name>.md` |
+| what a consumer will and will not notice | [`module-consumer`](../module-consumer/GUIDE.md) |
+| the download layouts | [`module-tables`](../module-tables/GUIDE.md) → `references/LAYOUT.md` |

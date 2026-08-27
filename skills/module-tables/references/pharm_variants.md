@@ -201,7 +201,7 @@ Ordered by how likely a first-timer is to hit them.
    Measured now on the reference example: `12 / 21178615 / T / A,C` on all nine rows,
    `positional_rows_placed == positional_rows == 9`. **Resolved 2026-08-20:** the skill that stated the old
    behaviour — "resolution is applied to `weights.parquet` only" — was corrected and then dismantled;
-   `module-enrich` now names the three positional tables and the three reasons a row is left unplaced,
+   [`module-enrich`](../../module-enrich/GUIDE.md) now names the three positional tables and the three reasons a row is left unplaced,
    and pins the grep fragment `have no chrom+start` rather than the sentence around it.
 2. **`alts` reaches parquet as a comma-joined *string*, where `weights.parquet` uses `List(Utf8)`.**
    Measured: `pharm_variants.parquet.alts` is `String` with value `'A,C'`. This is the `genotype`

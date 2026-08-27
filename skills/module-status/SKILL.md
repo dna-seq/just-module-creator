@@ -1,15 +1,8 @@
 ---
 name: module-status
 description: >-
-  Work out where a module actually stands from what is on disk, and turn that reading into the short
-  list of decisions somebody has to make next. Covers the files that mark each lifecycle stage and
-  what each one does and does not prove, the gap between a pass that ran once and a pass that is
-  current, and which stage skill owns the next step. Load this whenever you meet a spec directory you
-  did not create, or come back to one.
-  Triggers: "where am I", "what next", "what stage is this module at", "resume", "pick up where I left
-  off", "somebody handed me a spec directory", "what is left to do", "is this module finished", "is it
-  ready to publish", "what still needs deciding", "status", "did this ever get enriched", "has this
-  been closed", "what is missing", "I inherited this module", "look at this module".
+  Work out what a module directory is, how far it got, and what somebody has to decide next. A reading rather than a stage: it authors nothing and hands off to whoever owns the next step.
+  Triggers: "where am I", "what next", "what stage is this module at", "resume", "pick up where I left off", "somebody handed me a spec directory", "what is left to do", "is this module finished", "is it ready to publish", "what still needs deciding", "status", "did this ever get enriched", "has this been closed", "what is missing", "I inherited this module", "look at this module".
 ---
 
 # Where a module stands, and what has to be decided next
@@ -45,7 +38,7 @@ disk and nothing else, for the reason in the next paragraph.
 1. **The names on disk.** Which files are there at all. That alone brackets the stage.
 2. **What `module_spec.yaml` declares.** The module kind, `genome_build`, `weighting:`,
    `authorship:`, the licence position. These are declared once at birth and never re-asked
-   (`module-start`), so an absence here is an absence for the module's whole life.
+   ([`module-start`](../module-start/GUIDE.md)), so an absence here is an absence for the module's whole life.
 3. **`verification.json`.** Which checks ran, which were skipped and why, and whether a closure
    survives.
 4. **One `validate_module`.** Cheap, offline, and it is the only step that reads the rows rather than
@@ -56,7 +49,7 @@ is free; those are not, two of them change the directory, and what the registry 
 question from what this directory says.
 
 **The roster of names a spec directory may legitimately carry is not ours to write down.** It is
-`just_dna_registry.specfiles.RECOGNIZED_SPEC_FILES`, and `module-tables` →
+`just_dna_registry.specfiles.RECOGNIZED_SPEC_FILES`, and [`module-tables`](../module-tables/GUIDE.md) →
 `references/LAYOUT.md` explains what each roster governs. Read it from there rather than from memory —
 and note the consequence for anything you find that is *not* on it: an unrecognised name is tolerated by
 the compiler and dropped by the next server-side rebuild, so a file somebody invented beside the spec is
@@ -85,7 +78,7 @@ hole**, not a choice — and the claim-bearing tables are not just `variants.csv
 model carries `clin_sig` makes a clinical claim**, several of the binning kinds among them, so a PGx
 module with a thousand rows and no receipts is the same hole. Do not carry the list: `audit_module`
 computes the set from the live models and reads whichever of those tables are here. **No `variants.csv` at all is usually correct** — a PGx, binning or pointer module carries none,
-and adding an empty one to tidy the picture is the repair `module-tables` warns against by name.
+and adding an empty one to tidy the picture is the repair [`module-tables`](../module-tables/GUIDE.md) warns against by name.
 
 ## The one call that reads the whole directory at once
 
@@ -109,13 +102,13 @@ absent, so nothing about it is established, and each entry says which file and s
 Four ways a directory that looks finished is not, each with the skill that owns it:
 
 - **A sidecar that is present is authoritative and will not be refreshed by re-running the pass.** If
-  you expected a value to move and it did not, the file is still there. → `module-refresh`
+  you expected a value to move and it did not, the file is still there. → [`module-refresh`](../module-refresh/GUIDE.md)
 - **A closure is dropped the moment the authored bytes move.** So a module with edits after its last
-  close reads as closed in the file and open to the compiler. → `module-close`
+  close reads as closed in the file and open to the compiler. → [`module-close`](../module-close/GUIDE.md)
 - **A green strict compile is a determinism result.** The compiler never fetches, so nothing in it can
-  contradict a coordinate. → `module-compile`
+  contradict a coordinate. → [`module-compile`](../module-compile/GUIDE.md)
 - **A check that could not run is not a check that passed.** `skipped`, `unverifiable` and `null` are
-  not passes, and they are the readings most likely to be summarised away. → `module-check`
+  not passes, and they are the readings most likely to be summarised away. → [`module-check`](../module-check/GUIDE.md)
 
 ## The output is a decision list
 
@@ -132,11 +125,11 @@ Each entry says three things and stops:
 Shaped like this, and this short:
 
 > - **Fourteen rows in `variants.csv` still carry `<<REPLACE>>` in `genotype`.** Every loader refuses
->   the file until they are decided, so nothing downstream can run. → `module-curate`
+>   the file until they are decided, so nothing downstream can run. → [`module-curate`](../module-curate/GUIDE.md)
 > - **`weighting:` is undeclared and four rows carry a `weight`.** A reader cannot tell what the
->   numbers mean. Declare the scale, or declare that the module authors none. → `module-weights`
+>   numbers mean. Declare the scale, or declare that the module authors none. → [`module-weights`](../module-weights/GUIDE.md)
 > - **The licence is unstated and the rows came from a PGx source.** The compile gate reads
->   `licensing.csv` and nothing else. → `module-start`
+>   `licensing.csv` and nothing else. → [`module-start`](../module-start/GUIDE.md)
 
 **Everything evident and mechanical is applied silently and never listed.** A rename, a deprecated
 spelling, a column that moved: no judgement exists to exercise, so exercising one is noise. Anything
@@ -166,7 +159,7 @@ rather than the spine. Almost every real session is a second pass.
 
 **Was this authored here, or handed over?** A bundle from an outside session typically arrives with the
 deprecated sidecar spelling, no attestation, no closure and coordinates nobody has checked. Triage it
-before extending it, and do not assume the previous author's convention — `module-start` owns the
+before extending it, and do not assume the previous author's convention — [`module-start`](../module-start/GUIDE.md) owns the
 triage and carries the case where four modules shipped thousands of shifted coordinates through every
 offline gate.
 
@@ -174,19 +167,19 @@ offline gate.
 
 | The reading says | Load |
 |---|---|
-| nothing exists yet, or a bundle needs triage | `module-start` |
+| nothing exists yet, or a bundle needs triage | [`module-start`](../module-start/GUIDE.md) |
 | the module is published and you have no copy of it | fetch it with `registry_download`, then re-read here |
-| a source publishes rows nobody drafted | `module-draft` |
-| placeholders, or cells only a pilot can settle | `module-curate` |
-| no coordinates, no ids, or a stale sidecar | `module-enrich` |
-| assertions nobody compared against a source | `module-check` |
-| rows are settled and nothing is built | `module-compile` |
-| built, but no closure and no methodology | `module-close` |
+| a source publishes rows nobody drafted | [`module-draft`](../module-draft/GUIDE.md) |
+| placeholders, or cells only a pilot can settle | [`module-curate`](../module-curate/GUIDE.md) |
+| no coordinates, no ids, or a stale sidecar | [`module-enrich`](../module-enrich/GUIDE.md) |
+| assertions nobody compared against a source | [`module-check`](../module-check/GUIDE.md) |
+| rows are settled and nothing is built | [`module-compile`](../module-compile/GUIDE.md) |
+| built, but no closure and no methodology | [`module-close`](../module-close/GUIDE.md) |
 | finished and unpublished, or rehearsing | `module-publish` |
 | the module already exists and something moved | `module-revise` |
-| a pass has to be re-run over what it already wrote | `module-refresh` |
-| you need to know what actually changed between two states | `module-diff` |
-| where a file may sit, and the full name roster | `module-tables` → `references/LAYOUT.md` |
+| a pass has to be re-run over what it already wrote | [`module-refresh`](../module-refresh/GUIDE.md) |
+| you need to know what actually changed between two states | [`module-diff`](../module-diff/GUIDE.md) |
+| where a file may sit, and the full name roster | [`module-tables`](../module-tables/GUIDE.md) → `references/LAYOUT.md` |
 | a message you do not recognise | `module-symptom` |
 
 ## Symptoms

@@ -1,14 +1,8 @@
 ---
 name: module-symptom
 description: >-
-  You got a message and do not know what it means. This is the door to the symptom lookup: how to work
-  out which layer emitted a message before searching for it, how to match on the part of the text that
-  does not vary, what error, warning and info actually cost, why a warning on an otherwise green run is
-  the interesting output, and why a check that reports skipped is not a check that passed.
-  Triggers: "what does this message mean", "I got an error", "what went wrong", "it says", "unexpected
-  warning", "compile failed", "validate failed", "enrich failed", "unreplaced template placeholder",
-  "ref mismatch", "why is this a warning", "not run", "skipped", "unverifiable", "is this bad", "can I
-  ignore this", "it did not compile", "the registry rejected", "error message", "traceback".
+  You got a message and do not know what it means. Works out which layer emitted it, what error, warning and info actually cost, and why a warning on an otherwise green run is the interesting output.
+  Triggers: "what does this message mean", "I got an error", "what went wrong", "it says", "unexpected warning", "compile failed", "validate failed", "enrich failed", "ref mismatch", "unreplaced template placeholder", "why is this a warning", "not run", "skipped", "is this bad", "can I ignore this", "the registry rejected", "traceback".
 ---
 
 # A message you do not recognise
@@ -82,7 +76,7 @@ prove the problem and the other can only suspect it.
 - **Info is a record.** It is printed rather than left silent so that a table half the size you expected
   is never a surprise.
 - **`--strict` changes what some findings cost, and it is a determinism gate.** It means *reproducible*,
-  never *right*. `module-check` names the passes whose strict gate fires on the ordinary answer.
+  never *right*. [`module-check`](../module-check/GUIDE.md) names the passes whose strict gate fires on the ordinary answer.
 
 **Aggregate before you report.** Repeated warnings are grouped by *reason* with a count, never one line
 per row. A hundred lines of the same finding hides the one that is different.
@@ -123,15 +117,15 @@ In order, and the first three are cheap:
 | The message is about | Load |
 |---|---|
 | the full lookup, all four sections | `../module-101/references/SYMPTOMS.md` |
-| a placeholder, a stub, or a cell only a pilot can settle | `module-curate` |
-| a draft that produced too much, or the wrong rows | `module-draft` |
-| coordinates, alleles, the reference base, the PAR, VRS ids | `module-enrich` |
-| a cross-check, a skip reason, or an attestation | `module-check` |
-| validate disagreeing with compile, bins, ploidy, the licence gate | `module-compile` |
-| a closure that vanished, or a module that records none | `module-close` |
+| a placeholder, a stub, or a cell only a pilot can settle | [`module-curate`](../module-curate/GUIDE.md) |
+| a draft that produced too much, or the wrong rows | [`module-draft`](../module-draft/GUIDE.md) |
+| coordinates, alleles, the reference base, the PAR, VRS ids | [`module-enrich`](../module-enrich/GUIDE.md) |
+| a cross-check, a skip reason, or an attestation | [`module-check`](../module-check/GUIDE.md) |
+| validate disagreeing with compile, bins, ploidy, the licence gate | [`module-compile`](../module-compile/GUIDE.md) |
+| a closure that vanished, or a module that records none | [`module-close`](../module-close/GUIDE.md) |
 | publishing, tokens, namespaces, an instance | `module-publish` |
-| a re-run that changed nothing, or a sidecar that stayed stale | `module-refresh` |
-| which table a value belongs in, and what its columns are | `module-tables` |
+| a re-run that changed nothing, or a sidecar that stayed stale | [`module-refresh`](../module-refresh/GUIDE.md) |
+| which table a value belongs in, and what its columns are | [`module-tables`](../module-tables/GUIDE.md) |
 | where you are in the lifecycle, and what has to be decided | `module-status` |
 | a CLI flag no tool wraps | `../module-101/references/CLI.md` |
 | *"has this already been decided?"* | `../just-dna-format/docs/FAQ.md` — keyed by question, and a refusal is an answer |

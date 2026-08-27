@@ -12,7 +12,7 @@ description: >-
 
 # Weights — the column everyone fills and nobody declares
 
-**Read by:** stage 3 (curate), and any later pass that touches numbers. Reached from `module-curate`.
+**Read by:** stage 3 (curate), and any later pass that touches numbers. Reached from [`module-curate`](../module-curate/GUIDE.md).
 
 The most-requested and least-documented decision in the format. Every real authoring session spent its
 time here, every one invented a method, and none declared it.
@@ -79,7 +79,7 @@ construction** — `scaffold_module` omits every optional block, and until 0.19.
 `describe_table("module_spec.yaml")` answered *"Unknown table kind"* rather than pointing anywhere,
 which is why several real sessions concluded the field did not exist. **`describe_spec_file()` now
 answers it**, block by block, generated from the model that validates the file — so the scale and its
-three fields are one call away. Still write it at scaffold time; `module-start` says so for the same
+three fields are one call away. Still write it at scaffold time; [`module-start`](../module-start/GUIDE.md) says so for the same
 reason, because nothing prompts you later.
 
 It sits **outside `content_signature`**, with two consequences: an edit there costs no content identity,
@@ -102,7 +102,7 @@ say in the README which score it names.
 
 `pgs.csv` also carries **no coordinate columns at all**, so resolution never reaches it and a consumer
 joins it on `rsid` + `genotype`. That is a different fact from the positional tables' fill, with a
-different remedy — `module-curate` has the split.
+different remedy — [`module-curate`](../module-curate/GUIDE.md) has the split.
 
 ## How to choose a number, defensibly
 
@@ -111,7 +111,7 @@ defensible is not its magnitude:
 
 1. **State the axis first.** If no located paper says which allele carries the risk, there is no
    direction, and a weighted row asserting one is a coin flip that will look exactly as authoritative as
-   a real one. Drop the row instead — `module-curate`.
+   a real one. Drop the row instead — [`module-curate`](../module-curate/GUIDE.md).
 2. **Pick a scale and write it down.** Bounded in `[-1, 1]`, or *"log-odds from the named study"*, or
    ranks. Any of them is fine; an undeclared one is not.
 3. **Keep it ordinal within the module.** The comparison a reader can actually make is between two rows
@@ -161,8 +161,8 @@ withheld.
 
 | You need | Load |
 |---|---|
-| the rest of the cells only an author writes | `module-curate` |
-| the effects table in full | `module-tables` → `references/gwas_effects.md` |
-| the score pointer table in full | `module-tables` → `references/pgs.md` |
-| where `weighting:` lives in the spec | `module-tables` → `references/module_spec.md` |
-| what a consumer does with the number | `module-consumer` |
+| the rest of the cells only an author writes | [`module-curate`](../module-curate/GUIDE.md) |
+| the effects table in full | [`module-tables`](../module-tables/GUIDE.md) → `references/gwas_effects.md` |
+| the score pointer table in full | [`module-tables`](../module-tables/GUIDE.md) → `references/pgs.md` |
+| where `weighting:` lives in the spec | [`module-tables`](../module-tables/GUIDE.md) → `references/module_spec.md` |
+| what a consumer does with the number | [`module-consumer`](../module-consumer/GUIDE.md) |

@@ -157,7 +157,7 @@ bytes you closed.
 
 ## What this stage cannot do
 
-**It cannot verify anything.** Closing is a declaration, not a check; the checks are `module-check`.
+**It cannot verify anything.** Closing is a declaration, not a check; the checks are [`module-check`](../module-check/GUIDE.md).
 
 **It cannot preserve a record it invalidated.** A check attested over different bytes is dropped, and
 no flag keeps it.
@@ -183,8 +183,8 @@ the round trip. The module in your repository is the source of truth.
 
 | You need | Load |
 |---|---|
-| the checks whose records this stage can drop | `module-check` |
+| the checks whose records this stage can drop | [`module-check`](../module-check/GUIDE.md) |
 | rehearsing and then publishing | `module-publish` |
 | what a second pass does to the closure | `module-revise` |
-| the closure and the attestation in full | `module-tables` → `references/verification.md` |
-| the README as an artifact of its own | `module-tables` → `references/readme.md` |
+| the closure and the attestation in full | [`module-tables`](../module-tables/GUIDE.md) → `references/verification.md` |
+| the README as an artifact of its own | [`module-tables`](../module-tables/GUIDE.md) → `references/readme.md` |

@@ -1,14 +1,8 @@
 ---
 name: module-revise
 description: >-
-  What to do the second, third and twenty-fifth time somebody opens a module. Covers the six kinds of
-  second pass and which stage each re-enters, what each one invalidates, why a review pass destroys the
-  attestation and why that is correct, semantic versioning with no contract behind it, whether a review
-  should cost a version at all, and why prose is free. Load this whenever a module already exists —
-  which is the normal case, not the exception. Triggers: "update a module", "second pass", "new
-  version", "revise", "review pass", "bump the version", "which version", "already published",
-  "amend", "what version should this be", "somebody reviewed it", "re-close", "verification.json is
-  stale", "v2", "the module already exists".
+  Open a module again — the second, third or twenty-fifth pass. Which kind of pass it is decides what it invalidates, what has to re-run, and whether it costs a version at all.
+  Triggers: "open it again", "second pass", "revise", "update the module", "new evidence", "the source changed", "should this be a new version", "bump the version", "re-review", "what does this invalidate", "I need to change one row", "add a variant to an existing module".
 ---
 
 # Pass two and beyond — revise
@@ -35,7 +29,7 @@ published to. **Leave `include_inputs` at its default `true`**: without it you g
 parquets and `manifest.json` and none of the authored CSVs, and it is the authored CSVs a second pass
 edits. With them present you do **not** need `reverse_module` — that tool reconstructs a spec from
 parquet, and here the spec arrived as itself. Reach for it only on a compiled-only artifact, and read
-`module-compile` first for what a round trip drops.
+[`module-compile`](../module-compile/GUIDE.md) first for what a round trip drops.
 
 Then read the directory before touching it: `module-status` says which stage it is actually at, and a
 downloaded module is by definition somebody's finished work rather than a fresh start.
@@ -79,9 +73,9 @@ existing one is a decision for the list.
 **The question is never "what version does this deserve."** It is these four, in order:
 
 1. **What moved?** — which of the six kinds below
-2. **What has to be regenerated?** — `module-refresh` owns this
+2. **What has to be regenerated?** — [`module-refresh`](../module-refresh/GUIDE.md) owns this
 3. **What claims were invalidated?** — the attestation and the closure
-4. **What will a consumer see?** — `module-consumer` owns this
+4. **What will a consumer see?** — [`module-consumer`](../module-consumer/GUIDE.md) owns this
 
 ## The six kinds, and where each re-enters
 
@@ -281,12 +275,12 @@ the decision list.** What follows is the second half of that table, worked throu
 
 - **Which side is right when a re-draft reports `differs`.** That is the source disagreeing with
   something you already authored. It is left unchanged deliberately, because only you know which is
-  correct. `module-draft` owns the report.
+  correct. [`module-draft`](../module-draft/GUIDE.md) owns the report.
 - **Whether the prose still tells the truth.** Nothing checks a README against the rows beneath it. In
   the real corpus, prose is **identical across versions whose data doubled** — and one pair carries an
   identical `content_signature` while claiming a "maintenance update".
 - **Whether a stale hand-curated row should survive a re-derive.** Deleting a sidecar to refresh it
-  discards curation along with staleness. `module-refresh` owns the costs, table by table.
+  discards curation along with staleness. [`module-refresh`](../module-refresh/GUIDE.md) owns the costs, table by table.
 - **The version number itself.** Nothing enforces it, so nothing can check it. Say what changed in the
   changelog and let the number be a signal rather than an argument.
 
@@ -294,14 +288,14 @@ the decision list.** What follows is the second half of that table, worked throu
 
 **Nothing in the artifact or the catalog relates two versions.** No parent digest, no "what changed
 since v1" record, nothing stored. What you *can* do is compare two directories you have with
-`compare_modules`, and read the signatures — `module-diff` owns both.
+`compare_modules`, and read the signatures — [`module-diff`](../module-diff/GUIDE.md) owns both.
 
 **No consumer is notified that v2 exists.** There is no upgrade action anywhere in the install path —
 no "update available" badge, no SemVer comparison. A published v2 sits there until someone looks.
 
 **A re-draft cannot repair a module drafted before a drafter fix.** It appends and reports; it never
 rewrites. Whether a re-run converges depends on whether the old bug *skipped* rows or *wrote* them
-under an identity that has since moved — and those need opposite remediations. `module-refresh` owns it.
+under an identity that has since moved — and those need opposite remediations. [`module-refresh`](../module-refresh/GUIDE.md) owns it.
 
 **Nothing un-publishes.** Yank delists a version; it does not remove it and does not release its
 content claim.
@@ -321,9 +315,9 @@ action. The three you will actually meet on a second pass:
 
 | You need | Load |
 |---|---|
-| what to delete before re-deriving, and what deleting costs | `module-refresh` |
-| what moved, and which signature says so | `module-diff` |
-| the table you are about to edit, in full | `module-tables` |
+| what to delete before re-deriving, and what deleting costs | [`module-refresh`](../module-refresh/GUIDE.md) |
+| what moved, and which signature says so | [`module-diff`](../module-diff/GUIDE.md) |
+| the table you are about to edit, in full | [`module-tables`](../module-tables/GUIDE.md) |
 | rehearsing and promoting v2 | `module-publish` |
-| the closure and the attestation in detail | `module-tables` → `references/verification.md` |
-| the first pass, stage by stage | `module-101` names the spine; start at `module-start` |
+| the closure and the attestation in detail | [`module-tables`](../module-tables/GUIDE.md) → `references/verification.md` |
+| the first pass, stage by stage | [`module-101`](../module-101/GUIDE.md) names the spine; start at [`module-start`](../module-start/GUIDE.md) |

@@ -54,7 +54,7 @@ field that names it is `RefMismatch.shift`.
 **Why this report matters more than any other in the toolchain:** a uniformly shifted module passes
 `validate`, passes `compile --strict`, reports `fully_resolved: true`, and mints `ga4gh:VA.…` ids the
 compiler then reports **verified**. It has happened at scale — **3,038 rows across four modules**, every
-one of which cleared every offline gate. `module-curate` has the authoring-side rule and the one-call
+one of which cleared every offline gate. [`module-curate`](../module-curate/GUIDE.md) has the authoring-side rule and the one-call
 check that catches it on row 1 instead of row 3,000.
 
 **The count is a floor, not a total.** The check can only see rows where the neighbouring base differs
@@ -120,7 +120,7 @@ across the 11 reference tables. Do not read it as a staleness signal, and do not
 ⚠️ **CHECK — `--no-resolve` ignores an injected table and still exits zero.** Despite the name it is the
 master switch for **all** resolution: the resulting digest is byte-identical to compiling with
 `resolution.csv` deleted. The MCP `compile_module` tool cannot reach that branch; the CLI can.
-`module-compile` has the full trap.
+[`module-compile`](../module-compile/GUIDE.md) has the full trap.
 
 ## Off GRCh38
 
@@ -150,7 +150,7 @@ records it.
 authored identity refreshes nothing, silently. The delete is the operation, and the delete is what costs
 you `source="manual"` rows.
 
-**`module-refresh` owns all of it**: what deleting each sidecar costs, `refresh_sidecar`, and the two
+**[`module-refresh`](../module-refresh/GUIDE.md) owns all of it**: what deleting each sidecar costs, `refresh_sidecar`, and the two
 passes that break on a second run (`enrich_gene_metrics`' `UnboundLocalError`, and the gene-metrics
 override that duplicates instead of overriding). Load it before re-running anything.
 
@@ -180,7 +180,7 @@ operation.
 
 **It cannot mint an id for an indel offline**, and it cannot mint one at all off GRCh38.
 
-**It cannot refresh what is already recorded.** That is `module-refresh`.
+**It cannot refresh what is already recorded.** That is [`module-refresh`](../module-refresh/GUIDE.md).
 
 ## Symptoms
 
@@ -206,8 +206,8 @@ land here:
 
 | You need | Load |
 |---|---|
-| the authoring rule behind the off-by-one | `module-curate` |
-| to re-derive without losing curation | `module-refresh` |
-| the cross-checks that run after this | `module-check` |
-| the resolution table in full | `module-tables` → `references/resolution.md` |
-| what a filled coordinate does to the artifact | `module-compile` |
+| the authoring rule behind the off-by-one | [`module-curate`](../module-curate/GUIDE.md) |
+| to re-derive without losing curation | [`module-refresh`](../module-refresh/GUIDE.md) |
+| the cross-checks that run after this | [`module-check`](../module-check/GUIDE.md) |
+| the resolution table in full | [`module-tables`](../module-tables/GUIDE.md) → `references/resolution.md` |
+| what a filled coordinate does to the artifact | [`module-compile`](../module-compile/GUIDE.md) |

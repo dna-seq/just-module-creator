@@ -93,7 +93,7 @@ before it calls** — and there is no template, no linter and no requirements an
 `hints.DERIVED_TABLE_MODELS` the same day and declined to widen their own `describe_table` for the same
 reason — the missing piece was the map, not the presentation.)*
 
-**Four properties of that derived family**, each of which has cost somebody a day. `module-refresh`
+**Four properties of that derived family**, each of which has cost somebody a day. [`module-refresh`](../module-refresh/GUIDE.md)
 owns the procedure; these are the properties that make it necessary.
 
 - **Merge, never clobber.** A re-run *adds* to a sidecar and refreshes nothing already recorded, because
@@ -104,7 +104,7 @@ owns the procedure; these are the properties that make it necessary.
 - **Each is hashed by its *facts*, not its bytes.** A human-filled and a machine-filled table with the
   same facts hash equal, and a provenance column moves no signature. Which is why a moved
   `artifact.digest` beside an unmoved `content_signature` is a meaningful reading rather than a puzzle —
-  `module-diff` owns it.
+  [`module-diff`](../module-diff/GUIDE.md) owns it.
 - **They are the tables that may sit under `derived/`**, and the only ones. An authored table has exactly
   one legal name in one legal place.
 
@@ -298,9 +298,9 @@ wrong:
 ## What this skill cannot do
 
 It cannot tell you a column's type, its vocabulary or whether it is required — **ask the tool.** It
-cannot tell you what value to *write*: a weight is `module-weights`, a conclusion and a genotype are
-`module-curate`, a coordinate is `module-enrich`. It does not hold the procedure for any stage, and it
-does not decode a message you got back — that is `module-101` → `references/SYMPTOMS.md`.
+cannot tell you what value to *write*: a weight is [`module-weights`](../module-weights/GUIDE.md), a conclusion and a genotype are
+[`module-curate`](../module-curate/GUIDE.md), a coordinate is [`module-enrich`](../module-enrich/GUIDE.md). It does not hold the procedure for any stage, and it
+does not decode a message you got back — that is [`module-101`](../module-101/GUIDE.md) → `references/SYMPTOMS.md`.
 
 And no table here reads a sample. A module never contains a genotype under test or a measured value;
-the consumer brings the measurement at query time, and `module-consumer` owns that seam.
+the consumer brings the measurement at query time, and [`module-consumer`](../module-consumer/GUIDE.md) owns that seam.

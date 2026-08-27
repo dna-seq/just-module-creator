@@ -223,7 +223,7 @@ Ordered by how likely a first-timer is to hit them.
 11. **The skill that misdescribed this table is gone, and the replacement is right.** It listed a
     "`pharm_variants` / `diplotypes` / `pgs` row's `chrom` and `start`" as arriving null. `PgsRow` has no
     `chrom` and no `start`, so there is nothing to arrive null and no rsID to author instead — a
-    different fact with a different remedy. **Resolved 2026-08-20:** `module-enrich` and `module-curate`
+    different fact with a different remedy. **Resolved 2026-08-20:** [`module-enrich`](../../module-enrich/GUIDE.md) and [`module-curate`](../../module-curate/GUIDE.md)
     now state the split (three positional tables are filled; `diplotypes.csv` and `pgs.csv` have no
     coordinate columns at all, so a consumer joins them on `rsid` + `genotype`).
 

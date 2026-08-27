@@ -1,15 +1,8 @@
 ---
 name: module-install-local
 description: >-
-  Run a module against a real genome on this machine without publishing it anywhere. Covers the third
-  destination beside the two registries, the three routes in and which one keeps your compiled bytes,
-  what just-dna-lite verifies on the way in (nothing), the manifest line that decides whether the
-  module is visible at all, the name collision that is silent, and why a green annotation is not
-  evidence the module is right.
-  Triggers: "run it on my genome", "try it locally", "install without publishing", "test the module",
-  "annotate with my module", "just-dna-lite", "registered_modules", "modules.yaml", "local install",
-  "no registry", "skip the polygon", "does it actually match anything", "list-modules", "my module
-  does not show up", "0 variants annotated", "register a compiled module".
+  Run a module against a real genome on this machine, without publishing it anywhere. The third destination beside the two registries: which route keeps your compiled bytes, and why a green annotation is not evidence the module is right.
+  Triggers: "run it on my genome", "try it locally", "install without publishing", "test the module", "annotate with my module", "just-dna-lite", "registered_modules", "modules.yaml", "local install", "no registry", "does it actually match anything", "0 variants annotated", "my module does not show up".
 ---
 
 # Install a module on this machine, without a registry
@@ -51,7 +44,7 @@ So the whole weight of "are these bytes the bytes I compiled" sits on **you copy
 not editing it**. And the consequence that matters more:
 
 > **A clean annotation run is not evidence the module is correct.** It is evidence that polars could
-> read the parquet and that some rows joined. Same rule as a green compile — see `module-compile`. The
+> read the parquet and that some rows joined. Same rule as a green compile — see [`module-compile`](../module-compile/GUIDE.md). The
 > run reports `Variants annotated: N` and says nothing at all about whether those conclusions are true.
 
 ## Where the modules live
@@ -175,8 +168,8 @@ otherwise `rsid` + `genotype`, otherwise the module is **skipped** and the run s
 whose coordinates were never resolved therefore downgrades silently to an rsID join, and against a VCF
 with no rsIDs — which is most WGS callers' output — it matches nothing while reporting success.
 
-That is `module-enrich`'s stage (resolve before you install), and the three-valued join contract
-underneath it belongs to `module-consumer`. Neither is restated here.
+That is [`module-enrich`](../module-enrich/GUIDE.md)'s stage (resolve before you install), and the three-valued join contract
+underneath it belongs to [`module-consumer`](../module-consumer/GUIDE.md). Neither is restated here.
 
 ## Sharp edges
 
@@ -223,13 +216,13 @@ stale spec-directory `manifest.json` before route C, setting `$LITE` and the wor
 annotates 0 variants (is the VCF wrong, or the module?), a `Skipped` module (resolve coordinates, or
 accept an rsID-only module?), and above all **any impulse to edit an authored cell because the
 annotation looked wrong**. A local run disagreeing with expectation is a reading, not a defect report;
-the discriminator for editing against a source is `module-curate`'s.
+the discriminator for editing against a source is [`module-curate`](../module-curate/GUIDE.md)'s.
 
 ## What this cannot do
 
 - **It does not publish, and it is not a rehearsal for publishing.** Nobody else can install this.
 - **It verifies nothing.** See the top of this file — that is -lite's position, not an oversight here.
-- **It does not compare two versions.** `module-diff` is where that lives.
+- **It does not compare two versions.** [`module-diff`](../module-diff/GUIDE.md) is where that lives.
 - **No tool in this plugin performs any step above.** These are commands you run in another project;
   this plugin does not depend on just-dna-lite and does not shell into it.
 
@@ -241,7 +234,7 @@ not in it — that is a different repository's surface and this plugin does not 
 
 ## Where to go next
 
-- The module is not compiled yet → `module-compile`.
-- It annotated 0 variants and the VCF has no rsIDs → `module-enrich`.
+- The module is not compiled yet → [`module-compile`](../module-compile/GUIDE.md).
+- It annotated 0 variants and the VCF has no rsIDs → [`module-enrich`](../module-enrich/GUIDE.md).
 - You want it in a catalog after all → `module-publish`.
-- You want to know what a consumer can and cannot tell you → `module-consumer`.
+- You want to know what a consumer can and cannot tell you → [`module-consumer`](../module-consumer/GUIDE.md).

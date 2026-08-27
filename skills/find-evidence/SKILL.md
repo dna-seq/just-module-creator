@@ -1,25 +1,15 @@
 ---
 name: find-evidence
 description: >-
-  Find, verify and read the literature behind a just-dna row — search PubMed, Europe PMC,
-  Semantic Scholar and the preprint index, confirm a PMID names the paper you meant, locate a
-  legal open-access copy, and decide what may honestly be written into studies.csv from what
-  you read. Use when looking for evidence for a variant, gene, trait or drug response, when you
-  have a claim and need the citation, when a PMID needs checking against the paper it should
-  name, when you need an article's full text, or when deciding whether a quoted passage may
-  travel inside a published module. Triggers: "find papers", "literature search", "what is the
-  evidence for", "PMID for", "is this variant supported", "find the study", "open access",
-  "read the paper", "fulltext", "preprint", "bioRxiv", "medRxiv", "arXiv", "cite this",
-  "provenance quote", "studies.csv", "is this citation real", "has this been replicated",
-  "paywalled", "how do I get this paper",
-  "request a copy from the author", "interlibrary loan".
+  Find, verify and read the papers behind a row — search PubMed, Europe PMC, Semantic Scholar and the preprint index, confirm a PMID names the paper you meant, find a legal open-access copy, and decide what may honestly be quoted.
+  Triggers: "find papers", "what is the evidence", "search the literature", "is this PMID real", "which paper is this", "get the full text", "can I quote this", "find a study for this variant", "provenance_quote", "open access", "preprint", "citations".
 ---
 
 # Finding the evidence behind a row
 
 This skill covers getting from a question — *what is known about this variant?* — to citations and
 numbers you can defend. Authoring the module around them is
-[module-curate](../module-curate/SKILL.md); this is the step in the middle of that stage,
+[module-curate](../module-curate/GUIDE.md); this is the step in the middle of that stage,
 where `state`, `weight`, `effect_size`, `conclusion` and every `studies.csv` row get decided.
 
 Two things this never does. It does not judge whether a paper supports your claim — no tool here
@@ -85,7 +75,7 @@ module, so on a module with hundreds of studies it is a long run rather than a l
 then run it.
 
 `refresh_sidecar` reaches the same pass through a different door — naming `literature.csv` re-derives
-that table — and it warns rather than refuses. `module-refresh` owns the tool.
+that table — and it warns rather than refuses. [`module-refresh`](../module-refresh/GUIDE.md) owns the tool.
 
 ---
 
@@ -454,7 +444,7 @@ What remains true, and is the part that matters: **a preprint is not peer review
 on one is legitimate and must be said out loud in the `conclusion`, because a reader cannot tell from
 a PMID alone. And two further consequences worth planning for:
 
-- **Check for a published version before you author from it** — see `module-start`'s "is the
+- **Check for a published version before you author from it** — see [`module-start`](../module-start/GUIDE.md)'s "is the
   copy you were handed still the current one?". Review changes numbers and sometimes conclusions.
 - **Expect `quotes_found: null`.** A preprint frequently has no retrievable OA full text even when it
   has a PMCID, so quotes on it come back unchecked rather than confirmed. That is not a failure and

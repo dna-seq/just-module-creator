@@ -40,16 +40,34 @@ know what you must not do. Links carry positive detail only.
 
 ### The agent assets this repo ships
 
+**Two kinds of document, and the difference is who invokes them.** A `SKILL.md` is a
+**command**: `/`-invocable, listed in every session's prompt, written for a person
+deciding what they want. There are **seven**, and the set is pinned by name in
+`tests/test_skills.py::test_the_command_menu_is_what_a_person_would_ask_for` —
+`create-module`, `module-status`, `module-revise`, `find-evidence`, `module-publish`,
+`module-symptom`, `module-install-local`. A `GUIDE.md` is the same content loaded by a
+router, **by path**, when an agent reaches that step; there are thirteen and they are
+in nobody's menu.
+
+Thirteen skills became guides at 0.24.0 because twenty menu entries cost 14,688
+characters of every session's prompt and asked a layman to choose between
+`module-curate` and `module-enrich` — steps an agent is mid-way through, not things a
+person types. **What that move costs is auto-loading**: a guide can no longer be matched
+from its description, so a router has to name it, and
+`test_every_guide_is_reachable_from_a_command` walks the link graph from the seven doors
+to prove every one still can be. **When you add a guide, link it from a router in the
+same change** — an unlinked guide is unreachable content, not a smaller surface.
+
 | Path | What |
 |---|---|
-| `skills/module-101/SKILL.md` | **The entry point and the map — high level only.** What a module is, what the plugin can and cannot do, the four packages, the lifecycle *including second and later passes*, and the **minimal** authored surface (`module_spec.yaml` + `variants.csv` + `studies.csv` + `README.md`) and nothing beyond it — the table roster, the on-disk shapes and the `derived/` layout are `module-tables`'. It holds no column list, no procedure and no symptom lookup: anything answerable only with a specific cell value, flag or warning phrase belongs in a subskill, and this file growing to hold one is the drift to watch for. |
-| `skills/create-module/SKILL.md` | **The router, and the name people asked back.** Where to enter the lifecycle from wherever the author is actually standing — nothing yet, a theme plus sources, a handed bundle, a source that publishes rows, or a module that already exists — plus the stage diagram, the stage order, and the two to four tools each stage calls. It owns **no procedure**: every stage skill keeps its own, and the router's job ends the moment the right one is loaded. Ceiling 200 lines, half the skill ceiling, pinned by `tests/test_skills.py::test_the_router_routes_and_does_not_regrow_into_the_procedure`, because regrowth is the risk this name carries. |
+| `skills/module-101/GUIDE.md` | **The entry point and the map — high level only.** What a module is, what the plugin can and cannot do, the four packages, the lifecycle *including second and later passes*, and the **minimal** authored surface (`module_spec.yaml` + `variants.csv` + `studies.csv` + `README.md`) and nothing beyond it — the table roster, the on-disk shapes and the `derived/` layout are `module-tables`'. It holds no column list, no procedure and no symptom lookup: anything answerable only with a specific cell value, flag or warning phrase belongs in a subskill, and this file growing to hold one is the drift to watch for. |
+| `skills/create-module/SKILL.md` | **The door, and the name people asked back.** Where to enter the lifecycle from wherever the author is actually standing — nothing yet, a theme plus sources, a handed bundle, a source that publishes rows, or a module that already exists — plus the stage diagram, the stage order, and the two to four tools each stage calls. It owns **no procedure**: every stage skill keeps its own, and the router's job ends the moment the right one is loaded. Ceiling 200 lines, half the skill ceiling, pinned by `tests/test_skills.py::test_the_router_routes_and_does_not_regrow_into_the_procedure`, because regrowth is the risk this name carries. |
 | **The stage spine**, one skill per lifecycle stage | `module-start` (0–1: triage, licence, the spec), `module-draft` (2), `module-curate` (3), `module-enrich` (4), `module-check` (5), `module-compile` (6), `module-close` (6b), `module-publish` (7–8). **Each owns its stage's procedure outright — there is no second copy anywhere**, and each ends with the discriminator (what to apply silently, what to put in front of a pilot) rather than a list of refusals. |
 | **The second-pass three** | `module-revise` (which kind of pass, and what it invalidates), `module-refresh` (re-running anything that already ran), `module-diff` (what moved, and the one reading that means an upstream source changed its answer). A second pass is the normal case, not the exception. |
 | **The references the stages load** | `module-weights` (the column everyone fills and nobody declares), `module-consumer` (the far side of the seam), `find-evidence` (search, verify a PMID, read a paper, and what may honestly be quoted). |
 | **The two doors into a module you did not just create** | `module-status` (read the spec directory, work out which stage it is actually at, and hand back the short list of decisions somebody must make next) and `module-symptom` (a message arrived and its meaning is unknown — the door to `SYMPTOMS.md`, and how to tell which layer emitted it). Neither is a stage: they are entered sideways, from an inherited directory or an error, and they route to the stage that owns the work. |
 | `skills/module-install-local/SKILL.md` | **The third destination, and it is not a registry.** Installing a compiled module into `just-dna-lite` on this machine so it can meet a real VCF without being published anywhere — the three routes in, which one preserves the compiled bytes, and the manifest line that decides whether the module is visible at all. A side door off stage 6, **not** a stage and **not** a rehearsal for publishing: it exercises the *annotation* seam where the polygon exercises the *registry* one. Every command in it runs in the -lite checkout; nothing here depends on that package or shells into it. |
-| `skills/module-tables/SKILL.md` | **Which table, and where every file sits.** The router: table choice keyed on grain, the axes that must go in a key, composition, the three on-disk shapes, and the registry's `derived/` layout. Holds no column list and no procedure. |
+| `skills/module-tables/GUIDE.md` | **Which table, and where every file sits.** The router: table choice keyed on grain, the axes that must go in a key, composition, the three on-disk shapes, and the registry's `derived/` layout. Holds no column list and no procedure. |
 | `skills/module-tables/references/*.md` | 24 per-table dossiers plus `LAYOUT.md` (the tree, and the registry's upload normalisation). Each dossier carries an audit banner, 🚧 ROADWORKS and ⚠️ CHECK markers; **anchor on symbol names, not `file:line`**. |
 | `skills/module-101/references/SYMPTOMS.md` | Upstream message text → cause → action. Read *from* every stage, which is why it sits with the map rather than with one stage. |
 | `skills/module-101/references/CLI.md` | The full CLI surface, and what this server deliberately does **not** wrap. |
@@ -1322,7 +1340,7 @@ have been questions.
   curate from the first version or never, and **no agent may withhold a publish or a bump waiting
   for a milestone that does not exist**. Curated work is then cherry-picked into a featured catalog
   section by the operator. `authorship` is where the signal actually lives, which is why it is now
-  documented in `skills/module-start/SKILL.md` rather than left to the schema.
+  documented in `skills/module-start/GUIDE.md` rather than left to the schema.
 
 - **The old no-machine-quote rule produced title-as-quote on 3668 published rows — measured 2026-08-20.**
   Across every `studies.csv` in `../just-dna-format` (33 files, 44342 rows): the ten

@@ -1,10 +1,21 @@
 """The skills are a shipped surface and had no test. This is the guard.
 
-Twenty skills, ~5,000 lines, loaded by an agent rather than imported by code — so
-nothing here failed when a link broke, when a skill named one that no longer
+Twenty documents, ~5,000 lines, loaded by an agent rather than imported by code —
+so nothing here failed when a link broke, when a skill named one that no longer
 shipped, or when a file grew past the size where it stops being read properly.
 The 1431-line monolith that was dismantled on 2026-08-20 got that way partly
 because no gate ever said it had.
+
+**Two kinds of document, and the difference is who invokes them.** A `SKILL.md`
+is a COMMAND: `/`-invocable, listed in every session's prompt, and written for a
+person deciding what they want. A `GUIDE.md` is the same content with no
+frontmatter contract to the user — it is loaded by a router, by path, when an
+agent reaches that step. Thirteen skills became guides at 0.24.0 because a menu of
+twenty entries is a menu nobody reads, and because most of them are steps an agent
+is mid-way through rather than anything a person types. **The cost of that move is
+auto-loading**: a guide cannot be matched from its description any more, so the
+router has to name it — which is what `test_every_guide_is_reachable_from_a_command`
+holds.
 
 These are structural checks only. Whether a skill is *correct* is what the
 dossiers, the dogfooding loop and upstream's own docs are for; what a test can
@@ -49,6 +60,15 @@ def _skills() -> list[Path]:
     return sorted(p for p in SKILLS.iterdir() if (p / "SKILL.md").is_file())
 
 
+def _guides() -> list[Path]:
+    return sorted(p for p in SKILLS.iterdir() if (p / "GUIDE.md").is_file())
+
+
+def _document(path: Path) -> Path:
+    """The one markdown file that IS this directory — command or guide."""
+    return path / ("SKILL.md" if (path / "SKILL.md").is_file() else "GUIDE.md")
+
+
 def _split(path: Path) -> tuple[dict, str]:
     text = path.read_text(encoding="utf-8")
     match = re.match(r"---\n(.*?)\n---\n(.*)", text, re.S)
@@ -56,13 +76,45 @@ def _split(path: Path) -> tuple[dict, str]:
     return yaml.safe_load(match.group(1)) or {}, match.group(2)
 
 
-ALL = _skills()
+COMMANDS = _skills()
+GUIDES = _guides()
+ALL = sorted(COMMANDS + GUIDES)
 NAMES = {p.name for p in ALL}
+COMMAND_NAMES = {p.name for p in COMMANDS}
+
+#: What a person may type. Seven, deliberately: the menu is the first thing a user
+#: meets, and twenty entries of it were unreadable. Each is something somebody
+#: arrives WANTING — make one, work out what this is, find the papers, publish it,
+#: decode this message, run it on my genome, open it again — rather than a step an
+#: agent happens to be on.
+_EXPECTED_COMMANDS = {
+    "create-module",
+    "module-status",
+    "module-revise",
+    "find-evidence",
+    "module-publish",
+    "module-symptom",
+    "module-install-local",
+}
 
 
-def test_the_skill_set_is_what_the_manifest_promises():
-    """A skill added or removed without the count moving is the drift this catches."""
-    assert len(ALL) == 20, f"skills shipped: {sorted(NAMES)}"
+def test_the_command_menu_is_what_a_person_would_ask_for():
+    """The `/` menu, pinned by name rather than by count.
+
+    A skill added here shows up in every user's menu and in every session's prompt,
+    so it is a decision rather than a side effect: twenty entries cost 14,688
+    characters of prompt and asked a layman to choose between `module-curate` and
+    `module-enrich`. If a new command belongs here, change this set on purpose.
+    """
+    assert COMMAND_NAMES == _EXPECTED_COMMANDS, {
+        "unexpected": sorted(COMMAND_NAMES - _EXPECTED_COMMANDS),
+        "missing": sorted(_EXPECTED_COMMANDS - COMMAND_NAMES),
+    }
+
+
+def test_the_document_set_is_what_the_manifest_promises():
+    """A document added or removed without the count moving is the drift this catches."""
+    assert len(ALL) == 20, f"documents shipped: {sorted(NAMES)}"
 
 
 #: `create-module` is the one skill whose *shape* is pinned rather than only its
@@ -107,7 +159,7 @@ def test_the_router_routes_and_does_not_regrow_into_the_procedure():
 
 @pytest.mark.parametrize("skill", ALL, ids=lambda p: p.name)
 def test_frontmatter_is_portable_and_within_the_published_limits(skill: Path):
-    front, _ = _split(skill / "SKILL.md")
+    front, _ = _split(_document(skill))
     extra = set(front) - _LEGAL_FRONTMATTER
     assert not extra, f"{extra} would make this skill unpackageable outside Claude Code"
 
@@ -127,7 +179,7 @@ def test_frontmatter_is_portable_and_within_the_published_limits(skill: Path):
 
 @pytest.mark.parametrize("skill", ALL, ids=lambda p: p.name)
 def test_the_body_stays_under_the_size_where_it_stops_being_read(skill: Path):
-    _, body = _split(skill / "SKILL.md")
+    _, body = _split(_document(skill))
     lines = len(body.splitlines())
     assert lines <= _BODY_MAX, (
         f"{lines} lines. Move detail into references/ — a file this size is one an "
@@ -138,7 +190,7 @@ def test_the_body_stays_under_the_size_where_it_stops_being_read(skill: Path):
 @pytest.mark.parametrize("skill", ALL, ids=lambda p: p.name)
 def test_every_skill_it_names_actually_ships(skill: Path):
     """A pointer to a skill that does not exist is a dead end an agent cannot recover from."""
-    text = (skill / "SKILL.md").read_text(encoding="utf-8")
+    text = _document(skill).read_text(encoding="utf-8")
     named = set(re.findall(r"`(module-[a-z0-9-]+|find-evidence|create-module)`", text))
     missing = named - NAMES
     assert not missing, f"{skill.name} points at {sorted(missing)}"
@@ -165,11 +217,10 @@ def test_the_shared_references_are_where_every_skill_says_they_are():
         assert (SKILLS / "module-101" / "references" / name).is_file()
 
     pointing = [
-        p
-        for p in SKILLS.glob("*/SKILL.md")
-        if "../module-101/references/SYMPTOMS.md" in p.read_text(encoding="utf-8")
+        d for d in ALL
+        if "../module-101/references/SYMPTOMS.md" in _document(d).read_text(encoding="utf-8")
     ]
-    assert len(pointing) >= 10, "the stage skills should route symptom lookups to one place"
+    assert len(pointing) >= 10, "the stage guides should route symptom lookups to one place"
 
 
 @pytest.mark.parametrize(
@@ -207,7 +258,7 @@ def test_the_stage_spine_is_complete_and_each_carries_its_lifecycle_stage():
     ]
     assert set(spine) <= NAMES
     for name in spine:
-        body = (SKILLS / name / "SKILL.md").read_text(encoding="utf-8")
+        body = _document(SKILLS / name).read_text(encoding="utf-8")
         assert "**Lifecycle stage:**" in body, f"{name} does not say which stage it is"
 
 
@@ -221,7 +272,7 @@ def test_the_retired_stance_only_appears_as_something_retired(skill: Path):
     marks it as past. It survives legitimately elsewhere too, describing what an
     *upstream* check does on a mismatch: true of the compiler, and not a rule here.
     """
-    text = (skill / "SKILL.md").read_text(encoding="utf-8")
+    text = _document(skill).read_text(encoding="utf-8")
     marks = ("retired", "no longer", "used to", "until", "was the", "the format's")
     for match in re.finditer(r"[Rr]eport, never repair", text):
         window = text[max(0, match.start() - 300) : match.end() + 300].lower()
@@ -230,6 +281,42 @@ def test_the_retired_stance_only_appears_as_something_retired(skill: Path):
             f"{match.start()}. This layer writes; what it owes is the discriminator "
             "and a logged move"
         )
+
+
+def test_every_guide_is_reachable_from_a_command():
+    """A guide cannot be matched from its description, so a router has to name it.
+
+    This is the whole cost of demoting thirteen skills, and the only thing that
+    makes the demotion safe. Reachability is transitive — `module-refresh` is
+    reached through `module-revise`, and the stage spine through `create-module` —
+    so this walks the link graph from the seven commands rather than requiring
+    every guide to be named by one.
+
+    The repo has been here before, from the other direction: a `commands/` shim
+    shadowed nine skills and the bodies never loaded, and every test then asserted
+    that a shim ROUTED to a skill that shipped while none asserted that invoking
+    the name DELIVERED one. So this asserts the thing an agent actually does —
+    follow a link from the door it came in by.
+    """
+    reachable: set[str] = set()
+    frontier = [d for d in COMMANDS]
+    while frontier:
+        current = frontier.pop()
+        if current.name in reachable:
+            continue
+        reachable.add(current.name)
+        text = _document(current).read_text(encoding="utf-8")
+        for target in re.findall(r"\]\(\.\./([a-z0-9-]+)/GUIDE\.md\)", text):
+            candidate = SKILLS / target
+            if (candidate / "GUIDE.md").is_file() and target not in reachable:
+                frontier.append(candidate)
+
+    orphans = sorted({g.name for g in GUIDES} - reachable)
+    assert not orphans, (
+        f"no command links to {orphans}, directly or through another guide. A guide "
+        "nothing names is content that cannot be loaded: it lost description matching "
+        "when it stopped being a skill"
+    )
 
 
 def test_claude_md_names_every_skill_that_ships():

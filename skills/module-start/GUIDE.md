@@ -27,11 +27,11 @@ Each one closes off a class of wrong turn.
 
 1. **What is each row's subject?** A variant? A diplotype pair? A measured quantity? That picks the
    lead table, and **a module carries only the kinds it uses** — never an empty `variants.csv` to keep
-   another table company. → `module-tables`, or `list_tables`.
+   another table company. → [`module-tables`](../module-tables/GUIDE.md), or `list_tables`.
 2. **Are the coordinates GRCh38, and are they VCF positions?** Two separate questions, and the second
    has bitten harder. `start` is the **1-based VCF position** — the number Ensembl, dbSNP, ClinVar and
    gnomAD all show you. Paste it; never convert it. Off GRCh38 the module falls back to a
-   **build-relative** key that will not join against gnomAD, ClinVar or ClinGen. `module-curate` has
+   **build-relative** key that will not join against gnomAD, ClinVar or ClinGen. [`module-curate`](../module-curate/GUIDE.md) has
    the full trap.
 3. **What is the source, and may you use it this way?** Every PGx upstream (ClinPGx, CPIC, PharmVar)
    is CC BY-SA **plus a no-sale clause**, so none is sellable — do not read a bare "CC BY-SA" as
@@ -39,7 +39,7 @@ Each one closes off a class of wrong turn.
    lands in `licensing.csv`, which is the only file the compile gate reads.
 
 **Prefer the rsID to a coordinate wherever the source gives you both.** An rsid-only row cannot carry
-a coordinate mistake, and the resolution table `module-enrich` produces is then the independent second
+a coordinate mistake, and the resolution table [`module-enrich`](../module-enrich/GUIDE.md) produces is then the independent second
 value the cross-check needs. Author coordinates only when you have a reason: no rsID exists (roughly
 10% of ClinVar pathogenic variants), one rsID names several alleles and the row must say which, or the
 module is not GRCh38.
@@ -55,11 +55,11 @@ module is not GRCh38.
 
 If the author has no idea at all, the catalog gap is the best prompt: search a gene or trait they care
 about, and either nothing exists (a module to write) or something does (a module to read, which
-teaches more than any template — `module-101` lists the sixteen worked examples).
+teaches more than any template — [`module-101`](../module-101/GUIDE.md) lists the sixteen worked examples).
 
 **Read one before you start.** Sixteen modules ship in `../just-dna-format/reference_examples/`, each
 with a README saying what it demonstrates and often what it *broke*. Open the one shaped like what you
-are building; `module-101` has the table.
+are building; [`module-101`](../module-101/GUIDE.md) has the table.
 
 ## The author brings the theme; the rest is yours
 
@@ -75,7 +75,7 @@ which is a later pass, performed by a different person.
 **Correct the DNA-reading misconception early and unprompted.** A beginner's working model is usually
 *"point this at my DNA file and it tells me about me"*, and every later step reads as nonsense against
 it. One sentence up front saves the whole conversation: **there are two jobs — writing the rulebook and
-reading a DNA file against it — and this only does the first.** `module-101` has the rest of the
+reading a DNA file against it — and this only does the first.** [`module-101`](../module-101/GUIDE.md) has the rest of the
 beginner vocabulary.
 
 ## First: is the copy you were handed still the current one?
@@ -154,7 +154,7 @@ file you read, and leave the history to them. **A discrepancy is either somethin
 something to record honestly**, and that judgement needs no era.
 
 **And do not trust a bundle's own README.** One asserted allele validation performed over coordinates
-that were shifted by one base. A bundle's README is a claim, not a receipt; `module-101` has the worked
+that were shifted by one base. A bundle's README is a claim, not a receipt; [`module-101`](../module-101/GUIDE.md) has the worked
 case of five externally authored modules, four of them shifted.
 
 **26 of 27 real submitted bundles carry `MODULE.md`, not `README.md`.** A local compile of such a
@@ -240,7 +240,7 @@ a real publish.
 pointing anywhere useful. **Two real authoring sessions concluded the field did not exist.** It is where
 you say what a `weight` means — the scale, the direction convention, whether the module authors weights
 at all. A negative declaration is a good declaration: one reference example says *"scale: none — this
-module authors no weights"* and points the reader at `gwas_effects.parquet` instead. `module-weights`
+module authors no weights"* and points the reader at `gwas_effects.parquet` instead. [`module-weights`](../module-weights/GUIDE.md)
 owns what goes in it.
 
 `weighting:` sits **outside** `content_signature`, so two modules differing only in that block are
@@ -269,7 +269,7 @@ exactly what a reviewer routes on. **Declare `[ai, agent]` honestly when an agen
 that hides its authorship is the one failure mode no later reviewer can detect from the artifact.
 
 `authorship` sits outside `artifact.digest`, so adding a reviewer moves no content identity — which is
-what lets a pure review be a real version bump. `module-revise` owns that; `module-close` owns the
+what lets a pure review be a real version bump. `module-revise` owns that; [`module-close`](../module-close/GUIDE.md) owns the
 closure it interacts with.
 
 ### The licence, and the `--use` position
@@ -326,7 +326,7 @@ source:
 - **The contact email.** Never inferred, never invented — it is somebody's personal data.
 - **The module's own identity** — `title`, `description`, `report_title`. A `<<REPLACE>>` here is a
   question, not a chore. `description` becomes the catalog card's subtitle and is rendered whole, so it
-  wants one short sentence rather than a paragraph — `module-tables` → `references/module_spec.md` has
+  wants one short sentence rather than a paragraph — [`module-tables`](../module-tables/GUIDE.md) → `references/module_spec.md` has
   the band and what overrunning it costs once the module is published.
 
 **When you cannot tell which side a case is on, surface it.** Over-surfacing is recoverable; a silent
@@ -363,10 +363,10 @@ will meet at this stage:
 
 | You need | Load |
 |---|---|
-| which table a finding belongs in, and its columns | `module-tables` |
-| the spec file block by block | `module-tables` → `references/module_spec.md` |
-| drafting rows from a source that publishes them | `module-draft` |
-| writing the cells only an author decides | `module-curate` |
-| what a `weight` means and what to declare | `module-weights` |
+| which table a finding belongs in, and its columns | [`module-tables`](../module-tables/GUIDE.md) |
+| the spec file block by block | [`module-tables`](../module-tables/GUIDE.md) → `references/module_spec.md` |
+| drafting rows from a source that publishes them | [`module-draft`](../module-draft/GUIDE.md) |
+| writing the cells only an author decides | [`module-curate`](../module-curate/GUIDE.md) |
+| what a `weight` means and what to declare | [`module-weights`](../module-weights/GUIDE.md) |
 | finding and verifying the literature | `find-evidence` |
 | the module already exists | `module-revise` |

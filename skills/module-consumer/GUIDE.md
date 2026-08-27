@@ -86,7 +86,7 @@ rows"* is normal for a paralogous rsID. To count *findings* rather than rows, co
 archive's call *and the review behind it*, per allele; a module's `clin_sig` is one cell on one row. A
 consumer reading the flat cell as if it carried the archive's review depth is over-reading it, and an
 author copying the archive's call into the flat cell has made the module's own check vacuous —
-`module-curate` owns that rule.
+[`module-curate`](../module-curate/GUIDE.md) owns that rule.
 
 ## 🚧 ROADWORKS — the bin lookup is specified, and nothing implements it
 
@@ -115,7 +115,7 @@ to a reader right now.
 **And always author the `unresolved` sentinel**, per bin group. A consumer selects it when the
 measurement is **absent** — so never route a missing measurement to the lowest bin, which would report a
 non-measurement as a normal one. Nothing on the compile path refuses a table with **zero** sentinels;
-`module-curate` has the enforcement gap in full.
+[`module-curate`](../module-curate/GUIDE.md) has the enforcement gap in full.
 
 ## What a consumer cannot tell you
 
@@ -159,8 +159,8 @@ reader produces confident wrong answers and no part of this toolchain sees it.
 
 | You need | Load |
 |---|---|
-| the cells that decide how a row reads | `module-curate` |
-| the expansion and the resolution behind it | `module-enrich` |
-| which table a measurement belongs in | `module-tables` |
-| the per-table dossiers for the binning four | `module-tables` → `references/heteroplasmy.md`, `repeat_alleles.md`, `copynumbers.md`, `activity_phenotype.md` |
-| what a published module looks like on disk | `module-tables` → `references/LAYOUT.md` |
+| the cells that decide how a row reads | [`module-curate`](../module-curate/GUIDE.md) |
+| the expansion and the resolution behind it | [`module-enrich`](../module-enrich/GUIDE.md) |
+| which table a measurement belongs in | [`module-tables`](../module-tables/GUIDE.md) |
+| the per-table dossiers for the binning four | [`module-tables`](../module-tables/GUIDE.md) → `references/heteroplasmy.md`, `repeat_alleles.md`, `copynumbers.md`, `activity_phenotype.md` |
+| what a published module looks like on disk | [`module-tables`](../module-tables/GUIDE.md) → `references/LAYOUT.md` |

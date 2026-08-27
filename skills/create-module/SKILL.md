@@ -1,15 +1,8 @@
 ---
 name: create-module
 description: >-
-  The router for making a just-dna annotation module. Where to enter the lifecycle from wherever the
-  author is actually standing — nothing yet, a handed bundle, a source that publishes rows, or a
-  module that already exists — the stage order, and which skill and which tools own each step. It is
-  not the procedure: every stage skill owns its own and this file only gets you to the right one.
-  Load it whenever somebody asks for a module and the starting point is not yet settled.
-  Triggers: "create a module", "create-module", "make a module", "build a module", "write a module",
-  "author a module", "new module", "how do I create a module", "module for this gene", "module from
-  these papers", "walk me through it", "what order", "what do I do next", "which skill do I need",
-  "where do I start", "I want to annotate this trait".
+  Make a just-dna annotation module — from nothing, from sources somebody handed you, from a source that publishes rows, or from a module that already exists. Routes to the stage that owns the work and names the tools it calls; it holds no procedure itself.
+  Triggers: "make a module", "create a module", "build an annotation module", "I have some papers", "start a module", "where do I begin", "turn this into a module", "add a gene panel", "/create-module".
 ---
 
 # Making a module — the route, not the procedure
@@ -19,7 +12,7 @@ every warning phrase and every judgement call lives in the stage skill that owns
 yourself deciding a cell from this file, load the stage skill instead — or ask the tool.
 
 For what a module *is*, what this plugin cannot do, and the framings that work on a beginner, load
-`module-101` once. You do not need it to follow this route.
+[`module-101`](../module-101/GUIDE.md) once. You do not need it to follow this route.
 
 ## Step 0 — work out where the author is actually standing
 
@@ -27,20 +20,20 @@ Ask before routing. The answer decides which arrow you enter on, and it is almos
 
 | What they brought | Enter at | Load first |
 |---|---|---|
-| a trait or a gene, and nothing else | 0 origin | `module-start` |
-| a theme plus sources — PDFs, links, a podcast, a video | 0 origin | `module-start` (triage is yours, not theirs) |
-| a zip or a spec directory from an outside session | triage, then read the disk | `module-start`, then `module-status` |
+| a trait or a gene, and nothing else | 0 origin | [`module-start`](../module-start/GUIDE.md) |
+| a theme plus sources — PDFs, links, a podcast, a video | 0 origin | [`module-start`](../module-start/GUIDE.md) (triage is yours, not theirs) |
+| a zip or a spec directory from an outside session | triage, then read the disk | [`module-start`](../module-start/GUIDE.md), then `module-status` |
 | a spec directory whose state nobody knows | a reading, not a stage | `module-status` |
 | a module that exists and something moved | 10 feedback | `module-revise` |
 | a module that exists **in the catalog**, with nothing on your disk | fetch it, then read it | `registry_download` (essentials, verifies as it fetches), then `module-status` |
-| "the whole of gene X as ClinVar has it" | 1 then 2 | `module-start`, then `module-draft` |
+| "the whole of gene X as ClinVar has it" | 1 then 2 | [`module-start`](../module-start/GUIDE.md), then [`module-draft`](../module-draft/GUIDE.md) |
 | a message they do not recognise | not a stage at all | `module-symptom` |
 
 **When two rows apply, the later one wins.** Almost every real session is a second pass, and a second
 pass entered as a first one re-derives work that is already on disk and overwrites judgements nobody
 recorded. Ask whether the directory has been here before.
 
-**Nobody arrives with a table kind chosen.** They arrive with a finding. `module-tables` is the router
+**Nobody arrives with a table kind chosen.** They arrive with a finding. [`module-tables`](../module-tables/GUIDE.md) is the router
 for that question and it is read from every stage, not just this one.
 
 ## The spine
@@ -68,22 +61,22 @@ the allele pair, and `lookup_variant` gives you the same for a row you are writi
 
 | Stage | The decision it exists for | Skill | The tools |
 |---|---|---|---|
-| 0 origin | is there a module here, who else has built one, may its sources be redistributed | `module-start` | `registry_search`, `list_tables` |
-| 1 scaffold | which tables, which build, what the weights will mean | `module-start` | `scaffold_module`, `describe_table`, `table_requirements`, `get_template` |
-| 2 draft | which of the rows a source already publishes are worth carrying | `module-draft` | `draft_from_clinvar`; `draft_from_cpic`, `draft_from_clinpgx` (a corpus sizes those two) |
-| 3 curate | **the cells only a pilot can settle** — genotype, weight, state, direction, conclusion | `module-curate` | `lint_rows`, `lookup_variant`, `record_override`; `module-weights` for the one column no tool fills |
+| 0 origin | is there a module here, who else has built one, may its sources be redistributed | [`module-start`](../module-start/GUIDE.md) | `registry_search`, `list_tables` |
+| 1 scaffold | which tables, which build, what the weights will mean | [`module-start`](../module-start/GUIDE.md) | `scaffold_module`, `describe_table`, `table_requirements`, `get_template` |
+| 2 draft | which of the rows a source already publishes are worth carrying | [`module-draft`](../module-draft/GUIDE.md) | `draft_from_clinvar`; `draft_from_cpic`, `draft_from_clinpgx` (a corpus sizes those two) |
+| 3 curate | **the cells only a pilot can settle** — genotype, weight, state, direction, conclusion | [`module-curate`](../module-curate/GUIDE.md) | `lint_rows`, `lookup_variant`, `record_override`; [`module-weights`](../module-weights/GUIDE.md) for the one column no tool fills |
 | 3′ evidence | which paper stands behind each claim, and what may honestly be quoted | `find-evidence` | `literature_search`, `lookup_citation`, `lookup_open_access`, `fetch_fulltext` |
-| 4 enrich | nothing — you read the report. It is the only tier that can catch an off-by-one | `module-enrich` | `enrich_module`, `refresh_sidecar` |
-| 5 cross-check | what to do about each disagreement, one by one | `module-check` | `check_identifiers`, `lookup_identifier`, `review_queue`; `enrich_facts` |
-| 6 compile | whether the build's warnings are acceptable — `--strict` is determinism, not correctness | `module-compile` | `validate_module`, `compile_module`, `module_signature`, `verify_artifact` |
-| 6b close | that these bytes are final, and how the module was made | `module-close` | `close_module` |
+| 4 enrich | nothing — you read the report. It is the only tier that can catch an off-by-one | [`module-enrich`](../module-enrich/GUIDE.md) | `enrich_module`, `refresh_sidecar` |
+| 5 cross-check | what to do about each disagreement, one by one | [`module-check`](../module-check/GUIDE.md) | `check_identifiers`, `lookup_identifier`, `review_queue`; `enrich_facts` |
+| 6 compile | whether the build's warnings are acceptable — `--strict` is determinism, not correctness | [`module-compile`](../module-compile/GUIDE.md) | `validate_module`, `compile_module`, `module_signature`, `verify_artifact` |
+| 6b close | that these bytes are final, and how the module was made | [`module-close`](../module-close/GUIDE.md) | `close_module` |
 | 7 rehearse | nothing irreversible. This is where mistakes are supposed to happen | `module-publish` | `registry_check`, `registry_validate`, `registry_publish(target="test")` |
 | 8 publish | **the immutable one.** Only on an explicit ask for the official catalog | `module-publish` | `registry_register` → `registry_whoami` → `registry_claim_namespace` → `registry_publish` |
-| 9 join | how a consumer will read what you wrote — decided long before this step | `module-consumer`, `module-install-local` | none here; `just-dna-lite` runs it |
+| 9 join | how a consumer will read what you wrote — decided long before this step | [`module-consumer`](../module-consumer/GUIDE.md), `module-install-local` | none here; `just-dna-lite` runs it |
 
 **One surface, no tiers.** Every tool named above is registered, always — the `extended` tier went
 in 0.21.0. A few tools are expensive because a corpus sizes their work rather than your rows, and
-each says so in its own description; `module-101` carries the whole roster and which those are. What
+each says so in its own description; [`module-101`](../module-101/GUIDE.md) carries the whole roster and which those are. What
 still gates is a **token**, and only for registry writes.
 
 ## The three re-entries, which are the normal case
@@ -91,12 +84,12 @@ still gates is a **token**, and only for registry writes.
 | You are | Load | Because |
 |---|---|---|
 | opening a module again — second pass or twenty-fifth | `module-revise` | which kind of pass it is decides what it invalidates. There is **no versioning contract**: `2.0.0` does not mean reviewed and no agent may withhold a publish waiting for a milestone that does not exist |
-| re-running something that already ran | `module-refresh` | every sidecar merges rather than clobbers, so a plain re-run refreshes **nothing** and says so quietly |
-| asking what actually moved | `module-diff` | and one reading there is the only way to detect an upstream source revising its answer |
+| re-running something that already ran | [`module-refresh`](../module-refresh/GUIDE.md) | every sidecar merges rather than clobbers, so a plain re-run refreshes **nothing** and says so quietly |
+| asking what actually moved | [`module-diff`](../module-diff/GUIDE.md) | and one reading there is the only way to detect an upstream source revising its answer |
 
 ## What does not change, whichever arrow you entered on
 
-Four rules the tools enforce rather than merely document. `module-101` states them in full and
+Four rules the tools enforce rather than merely document. [`module-101`](../module-101/GUIDE.md) states them in full and
 `server.INSTRUCTIONS` is the authority if the two ever disagree.
 
 1. **Ask the tool, never memory** — no column list, vocabulary or requirement is written down in any
@@ -115,7 +108,7 @@ silently, and surface only what a human must choose.
 
 | | Load |
 |---|---|
-| what a module is, the four packages, the whole tool roster | `module-101` |
-| which table a finding belongs in, and where every file sits | `module-tables` |
+| what a module is, the four packages, the whole tool roster | [`module-101`](../module-101/GUIDE.md) |
+| which table a finding belongs in, and where every file sits | [`module-tables`](../module-tables/GUIDE.md) |
 | a message you do not recognise | `module-symptom` |
 | run the finished module on a genome here, publishing nothing | `module-install-local` |

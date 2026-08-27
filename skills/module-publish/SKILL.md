@@ -1,13 +1,8 @@
 ---
 name: module-publish
 description: >-
-  Rehearse on the polygon, then promote to the catalog. Covers the two registry instances and what
-  differs, the pre-flights that cost nothing, reading a three-valued verdict, what the server fills in
-  for you, the content claim that is name-independent and survives a yank, when to advocate for
-  production rather than wait to be asked, and the files that publish without your noticing.
-  Triggers: "publish", "rehearse", "polygon", "registry", "namespace", "would_publish", "duplicate
-  content", "yank", "publish to production", "register", "install id", "token", "amend readme",
-  "test data on prod".
+  Publish a module: rehearse on the polygon, read the verdict, then promote to the catalog on an explicit yes. Production is immutable and claims your data by hash, so the rehearsal is the part that is meant to go wrong.
+  Triggers: "publish", "release it", "put it in the catalog", "send it to the registry", "rehearse", "polygon", "claim a namespace", "registry token", "yank", "unpublish", "is it published", "promote to prod", "version bump".
 ---
 
 # Stages 7–8 — rehearse, then publish
@@ -215,7 +210,7 @@ clean; the calibration case is `assets/logs/quote-remediation.log`, which really
 rehearsals and flags nothing.
 
 **Two modules differing only in `weighting:` are `409 duplicate_content`**, because that block sits
-outside `content_signature`. Declare it at scaffold time — `module-start`.
+outside `content_signature`. Declare it at scaffold time — [`module-start`](../module-start/GUIDE.md).
 
 **And know what that gate does to a pass that only improved the declarations.** `weighting:`, the
 README, `authorship:` and the whole verification record are all outside the content claim, so a
@@ -290,8 +285,8 @@ messages are mostly the registry's:
 | You need | Load |
 |---|---|
 | **running it on a genome without publishing at all** | `module-install-local` — a different seam, not a substitute for the polygon |
-| the closure and the record the card projects | `module-close` |
+| the closure and the record the card projects | [`module-close`](../module-close/GUIDE.md) |
 | publishing a second version | `module-revise` |
-| what the download layouts look like | `module-tables` → `references/LAYOUT.md` |
-| what the card renders from | `module-tables` → `references/readme.md` |
+| what the download layouts look like | [`module-tables`](../module-tables/GUIDE.md) → `references/LAYOUT.md` |
+| what the card renders from | [`module-tables`](../module-tables/GUIDE.md) → `references/readme.md` |
 | the client surface and the operator commands | `../module-101/references/CLI.md` |

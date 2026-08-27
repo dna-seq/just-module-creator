@@ -192,7 +192,7 @@ rsid-only study row and its coordinate-keyed replacement — surfacing only as a
 variants not in variants.csv"* orphan warning, which **blames the citation**. **Guard:** after any
 re-draft, diff `studies.csv`'s rsIDs against `variants.csv`'s and delete the stale rows before compiling.
 
-`module-refresh` owns re-running in general — including the fact that a re-draft appending nothing is
+[`module-refresh`](../module-refresh/GUIDE.md) owns re-running in general — including the fact that a re-draft appending nothing is
 completely inert and does not even move the digest.
 
 ## What needs a pilot, and what you may simply fix
@@ -239,9 +239,9 @@ refused.
 
 | You need | Load |
 |---|---|
-| to decide the cells it left | `module-curate` |
-| to re-run anything that already ran | `module-refresh` |
-| which PGx table a finding belongs in | `module-tables` |
-| the PGx tables in full | `module-tables` → `references/{haplotypes,allele_function,diplotypes,pharm_variants}.md` |
-| the licence row a draft should have written | `module-tables` → `references/licensing.md` |
+| to decide the cells it left | [`module-curate`](../module-curate/GUIDE.md) |
+| to re-run anything that already ran | [`module-refresh`](../module-refresh/GUIDE.md) |
+| which PGx table a finding belongs in | [`module-tables`](../module-tables/GUIDE.md) |
+| the PGx tables in full | [`module-tables`](../module-tables/GUIDE.md) → `references/{haplotypes,allele_function,diplotypes,pharm_variants}.md` |
+| the licence row a draft should have written | [`module-tables`](../module-tables/GUIDE.md) → `references/licensing.md` |
 | the drafter flags in full | `../module-101/references/CLI.md` |

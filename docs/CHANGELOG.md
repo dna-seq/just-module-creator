@@ -3,6 +3,43 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.24.0 — 2026-08-28
+
+### Seven commands, thirteen guides: the `/` menu is for people now
+
+Twenty `/`-invocable skills asked a layman to choose between `module-curate` and `module-enrich`,
+which are steps an agent is mid-way through rather than anything a person types — and cost 14,688
+characters of every session's prompt to offer. Thirteen of them keep their content, their
+`references/` subtrees and their frontmatter, and lose only their menu entry: `SKILL.md` becomes
+`GUIDE.md`, loaded by a router, by path.
+
+What is left is what somebody arrives *wanting*:
+
+| | |
+|---|---|
+| `/create-module` | make one — from nothing, from sources you were handed, or from one that exists |
+| `/module-status` | what is this directory, how far did it get, what has to be decided |
+| `/module-revise` | open it again — second pass or twenty-fifth |
+| `/find-evidence` | find, verify and read the papers behind a row |
+| `/module-publish` | rehearse on the polygon, then promote to the catalog |
+| `/module-symptom` | decode a message you did not expect |
+| `/module-install-local` | run it against a real genome, no registry involved |
+
+Their descriptions were rewritten for that reader — a plain first sentence, then the trigger
+phrases — and the menu now costs **3,464 characters (~866 tokens) against 14,688**, a 76% cut on top
+of a menu that can be read.
+
+**The cost is auto-loading, and it is the whole risk.** A guide cannot be matched from its
+description any more, so a router has to name it. `test_every_guide_is_reachable_from_a_command`
+walks the link graph from the seven doors and fails on any guide nothing reaches — transitively, so
+`module-refresh` through `module-revise` and the stage spine through `create-module` both count.
+Every mention of a demoted name across the skills is now a link to its path rather than a bare
+name, which is what makes the walk possible and the reference loadable.
+
+This repo has been on the other side of exactly this: a `commands/` shim shadowed nine skills, every
+test asserted the shim ROUTED to a skill that shipped, and none asserted that invoking the name
+DELIVERED one. The reachability test is that lesson applied forward.
+
 ## 0.23.0 — 2026-08-28
 
 ### A description is context, so the ceiling depends on who pays for it

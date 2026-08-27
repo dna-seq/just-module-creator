@@ -4,7 +4,7 @@ description: >-
   Start here to understand the thing. What a just-dna annotation module is, what this plugin can and
   cannot do, the tool roster and its tiers, how the four packages fit together, and the corpus of
   worked examples to read before writing one. The map, not the route: `create-module` owns where
-  to enter the lifecycle and which stage skill runs next, and `module-tables` owns which table a
+  to enter the lifecycle and which stage skill runs next, and [`module-tables`](../module-tables/GUIDE.md) owns which table a
   finding belongs in.
   Triggers: "what is a module", "what is just-dna", "what can I do with this", "what does this plugin
   do", "explain modules", "module overview", "getting started", "is this for reading my DNA", "what
@@ -33,17 +33,17 @@ below — has the real trees for all four shapes you will meet one in.
 | You want to | This is possible | Owned by |
 |---|---|---|
 | author a module from a trait and some sources | yes, end to end | `create-module` routes it |
-| draft rows from a source that publishes them | ClinVar panels, CPIC star alleles, ClinPGx drug response | `module-draft` |
+| draft rows from a source that publishes them | ClinVar panels, CPIC star alleles, ClinPGx drug response | [`module-draft`](../module-draft/GUIDE.md) |
 | find the papers behind a row, and read them | PubMed, Europe PMC, Crossref, preprints, open-access fulltext | `find-evidence` |
-| turn rsIDs into coordinates and mint allele ids | yes, and it catches an off-by-one nothing offline can | `module-enrich` |
-| check what you asserted against what the sources say | reference base, ClinVar call, PMIDs, identifiers, ACMG SF, gene↔locus | `module-check` |
-| record published GWAS effect sizes | yes — **beside** `weight`, never into it | `module-weights` |
-| point at a published polygenic score | yes, as a manifest of PGS Catalog ids | `module-weights` |
-| build and verify the artifact | yes, reproducibly and offline once resolved | `module-compile` |
+| turn rsIDs into coordinates and mint allele ids | yes, and it catches an off-by-one nothing offline can | [`module-enrich`](../module-enrich/GUIDE.md) |
+| check what you asserted against what the sources say | reference base, ClinVar call, PMIDs, identifiers, ACMG SF, gene↔locus | [`module-check`](../module-check/GUIDE.md) |
+| record published GWAS effect sizes | yes — **beside** `weight`, never into it | [`module-weights`](../module-weights/GUIDE.md) |
+| point at a published polygenic score | yes, as a manifest of PGS Catalog ids | [`module-weights`](../module-weights/GUIDE.md) |
+| build and verify the artifact | yes, reproducibly and offline once resolved | [`module-compile`](../module-compile/GUIDE.md) |
 | rehearse a publish, then publish | polygon first, then the immutable catalog | `module-publish` |
 | **revise a module that already exists** | yes — and this is the common case | `module-revise` |
-| read back somebody else's published module | yes | `module-diff` |
-| compare two versions row by row | yes, offline, grouped by what changed | `module-diff` |
+| read back somebody else's published module | yes | [`module-diff`](../module-diff/GUIDE.md) |
+| compare two versions row by row | yes, offline, grouped by what changed | [`module-diff`](../module-diff/GUIDE.md) |
 
 **What it cannot do, and will not pretend to.** It never opens a VCF, calls a genotype, or gives
 medical advice. It does not lift coordinates between assemblies (it recovers the rsID instead). No
@@ -56,7 +56,7 @@ whole module only since compiler 0.6.6.** Before that the gene facets came from 
 so a PGx, copy-number or activity-bin module published `genes: []` and `registry_search(gene=…)` would
 not return it however many rows carried a `gene` cell. A manifest is written at compile time, so a
 version published earlier still carries the old numbers — recompiling and publishing again is what
-moves them. Never repair it with an empty `variants.csv`. `module-tables` carries the detail.
+moves them. Never repair it with an empty `variants.csv`. [`module-tables`](../module-tables/GUIDE.md) carries the detail.
 
 **`--strict` is not a correctness gate.** It means *reproducible*. The compiler never fetches, so it
 holds no reference to check a coordinate against: a module shifted one base passes validate, passes
@@ -111,7 +111,7 @@ download from the registry is the artifact, optionally plus every input — and 
 the machine-written half is re-homed under `derived/`, which is a *presentation* rather than a place a
 file lives.
 
-**`module-tables` holds all three trees, file by file**, along with what the registry hoists, renames
+**[`module-tables`](../module-tables/GUIDE.md) holds all three trees, file by file**, along with what the registry hoists, renames
 and refuses on the way in. Load it when you need to know where something goes.
 
 ## A bundle somebody hands you — the common starting point
@@ -268,7 +268,7 @@ curated; a pharmacogenomics module (star alleles, single-variant drug response, 
 module (repeat expansion, copy number, mtDNA heteroplasmy, metabolizer activity, PRS percentile bands); a
 pointer module naming published PGS scores; or a mix.
 
-**Which table a finding belongs in, and every column of every one of them, is `module-tables`.** It
+**Which table a finding belongs in, and every column of every one of them, is [`module-tables`](../module-tables/GUIDE.md).** It
 routes to an exhaustive dossier per table. Do not decide a table from this file.
 
 ### Read one before you start
@@ -317,7 +317,7 @@ authored ones — they **merge rather than clobber**, they are hashed **by their
 bytes**, and re-deriving one means deleting it first, which discards hand-curated rows along with stale
 ones. `licensing.csv` is the one of them a human is expected to write.
 
-**`module-tables` carries the roster, who writes each, and a dossier apiece.** The compiled artifact is
+**[`module-tables`](../module-tables/GUIDE.md) carries the roster, who writes each, and a dossier apiece.** The compiled artifact is
 nineteen possible parquets plus `manifest.json`; you never write parquet by hand, and `reverse` is a
 fixed point rather than a backup — it cannot restore `authorship`, the verification record or the
 closure. **The module in your repository is the source of truth.**
@@ -363,7 +363,7 @@ wrong.
 
 ## Where to go next
 
-**Reading the pointers:** `` `module-tables` → `references/variants.md` `` means *that file, under that
+**Reading the pointers:** `` [`module-tables`](../module-tables/GUIDE.md) → `references/variants.md` `` means *that file, under that
 skill's directory* — `skills/module-tables/references/variants.md`. A `references/` path with no skill
 in front of it belongs to the skill you are reading. Dossiers are files, not skills: read them on
 demand, do not invoke them.
@@ -373,10 +373,10 @@ demand, do not invoke them.
 | **make a module — where to enter, what runs next, what to call** | `create-module` |
 | **a spec directory whose state nobody knows** | `module-status` |
 | **run it on a genome here, without publishing** | `module-install-local` |
-| what a `weight` means | `module-weights` |
-| how a reader joins this to a VCF | `module-consumer` |
-| which table kind a finding belongs in, and every column of it | `module-tables` |
-| what a module looks like on disk, and what `derived/` is | `module-tables` → `references/LAYOUT.md` |
+| what a `weight` means | [`module-weights`](../module-weights/GUIDE.md) |
+| how a reader joins this to a VCF | [`module-consumer`](../module-consumer/GUIDE.md) |
+| which table kind a finding belongs in, and every column of it | [`module-tables`](../module-tables/GUIDE.md) |
+| what a module looks like on disk, and what `derived/` is | [`module-tables`](../module-tables/GUIDE.md) → `references/LAYOUT.md` |
 | a message you do not recognise | `references/SYMPTOMS.md` |
 | the CLI surface, and what is not wrapped | `references/CLI.md` |
 | finding, verifying and reading the literature | `find-evidence` |
@@ -400,12 +400,12 @@ that did was dismantled on 2026-08-20 and every line of it now sits in the stage
 back under that name on 2026-08-21 is a **router** — the entry points, the stage order and the tools each
 stage calls, and nothing a stage skill already owns. **Load the stage you are in**, and load
 `create-module` when you do not yet know which stage that is: it names the spine in lifecycle order, the
-second-pass three (`module-revise`, `module-refresh`, `module-diff`) and the references the stages read.
+second-pass three (`module-revise`, [`module-refresh`](../module-refresh/GUIDE.md), [`module-diff`](../module-diff/GUIDE.md)) and the references the stages read.
 
 ## What this file deliberately does not contain
 
 No column lists, no vocabularies, no requirement tables — **ask the tool.** No procedure — that is the
-stage skills. No route — that is `create-module`, and the lifecycle diagram lives there rather than here. No per-table contracts — that is `module-tables` and its dossiers. The symptom lookup and
+stage skills. No route — that is `create-module`, and the lifecycle diagram lives there rather than here. No per-table contracts — that is [`module-tables`](../module-tables/GUIDE.md) and its dossiers. The symptom lookup and
 the CLI surface live in `references/` here rather than in the body, because they are read *from* every
 stage rather than *by* this one. If a question is answerable only with a specific cell value, a specific
 flag or a specific warning phrase, it is a subskill's question and this file should not have grown to

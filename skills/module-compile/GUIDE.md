@@ -74,7 +74,7 @@ one compiler version.**
 **Across a version boundary the rule is different**, and worth knowing before you panic:
 `artifact_digest` is the **byte** identity and moves on a compiler upgrade by design, while
 `content_signature` is the identity of your **authored rows** and does not. So compare
-`content_signature` when you upgrade, and re-pin any stored `artifact_digest`. `module-diff` owns the
+`content_signature` when you upgrade, and re-pin any stored `artifact_digest`. [`module-diff`](../module-diff/GUIDE.md) owns the
 full decision tree over which of them moved.
 
 **Read `resolution_subjects` beside `fully_resolved`.** Over an empty list that flag is `true`
@@ -100,7 +100,7 @@ Several are **unclearable by any authored edit**, and chasing them is wasted wor
   nobody established is not a finding, and it is distinct from `not_found`, which is an ordinary miss.
 - **A skipped positional fill** on a non-GRCh38 module (RM15) — it says so on its own line.
 - **`This module records no closure`** — a true statement about a module still being written. Do not
-  run `close_module` to clear it. `module-close` owns why.
+  run `close_module` to clear it. [`module-close`](../module-close/GUIDE.md) owns why.
 
 **A warning count moved in compiler 0.6.6, and no text did.** The `faf95` arithmetic warning was
 published **twice** into `manifest.compilation.warnings` — the check runs in `validate_spec` and again
@@ -130,7 +130,7 @@ never match a genome. The correct call is `resolve_with_ensembl=True, ensembl_ca
 
 **Deleting `resolution.csv` is part of a rebuild.** Existing rows are authoritative and merged, so a fix
 that changes an authored allele will not show up until you delete the file first. The table is a pin,
-not a cache. `module-refresh` owns what deleting each sidecar costs.
+not a cache. [`module-refresh`](../module-refresh/GUIDE.md) owns what deleting each sidecar costs.
 
 ## The round trip, and what it silently costs
 
@@ -186,7 +186,7 @@ strictness to the compile you intend to run.
 - **Whether to drop a row the grammar cannot express.** Approximating a symbolic allele into
   nucleotides asserts something the source did not.
 - **Whether a moved digest matters.** A digest move with every signature still is by construction
-  something you did — `module-diff` names the three routes.
+  something you did — [`module-diff`](../module-diff/GUIDE.md) names the three routes.
 
 ## What this stage cannot do
 
@@ -197,10 +197,10 @@ coordinates name the variant you meant.
 enricher produced and will not look a coordinate up for you.
 
 **It cannot compare two versions.** No diff, no parent digest, no monotonic stats anywhere in the
-artifact. `module-diff` owns what *can* be read off the signatures.
+artifact. [`module-diff`](../module-diff/GUIDE.md) owns what *can* be read off the signatures.
 
 **It cannot stamp a closure.** `validate_module` stays read-only however cleanly it passes, and that is
-deliberate — `module-close`.
+deliberate — [`module-close`](../module-close/GUIDE.md).
 
 ## Symptoms
 
@@ -222,9 +222,9 @@ land here:
 
 | You need | Load |
 |---|---|
-| which signature moved and what it means | `module-diff` |
-| to declare the authoring finished | `module-close` |
-| to re-derive a sidecar before rebuilding | `module-refresh` |
-| the coordinates to be right in the first place | `module-enrich` |
-| what a consumer will do with the artifact | `module-consumer` |
+| which signature moved and what it means | [`module-diff`](../module-diff/GUIDE.md) |
+| to declare the authoring finished | [`module-close`](../module-close/GUIDE.md) |
+| to re-derive a sidecar before rebuilding | [`module-refresh`](../module-refresh/GUIDE.md) |
+| the coordinates to be right in the first place | [`module-enrich`](../module-enrich/GUIDE.md) |
+| what a consumer will do with the artifact | [`module-consumer`](../module-consumer/GUIDE.md) |
 | the full CLI surface, and what is not wrapped | `../module-101/references/CLI.md` |

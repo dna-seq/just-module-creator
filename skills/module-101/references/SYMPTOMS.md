@@ -2,10 +2,10 @@
 
 | Section | Covers | The skill that owns the fix |
 |---|---|---|
-| [Authoring and loading](#authoring-and-loading) | placeholders, defaulted columns, ragged rows, vocabularies, the sign warning, an unfiltered star-allele draft | `module-curate`, `module-draft` |
-| [Resolution and enrichment](#resolution-and-enrichment) | ref mismatch and the off-by-one, hosting verdicts, expansion, the PAR, a sidecar that did not change | `module-enrich`, `module-refresh` |
-| [Validation and compile](#validation-and-compile) | validate-then-compile disagreements, VRS ids, bins, ploidy, the licence gate, the closure warning | `module-compile`, `module-close` |
-| [Checks](#checks) | ACMG SF, the `clin_sig` cross-check and its two skip reasons, ClinVar citation ids, a re-draft's superseded rows | `module-check`, `module-refresh` |
+| [Authoring and loading](#authoring-and-loading) | placeholders, defaulted columns, ragged rows, vocabularies, the sign warning, an unfiltered star-allele draft | [`module-curate`](../../module-curate/GUIDE.md), [`module-draft`](../../module-draft/GUIDE.md) |
+| [Resolution and enrichment](#resolution-and-enrichment) | ref mismatch and the off-by-one, hosting verdicts, expansion, the PAR, a sidecar that did not change | [`module-enrich`](../../module-enrich/GUIDE.md), [`module-refresh`](../../module-refresh/GUIDE.md) |
+| [Validation and compile](#validation-and-compile) | validate-then-compile disagreements, VRS ids, bins, ploidy, the licence gate, the closure warning | [`module-compile`](../../module-compile/GUIDE.md), [`module-close`](../../module-close/GUIDE.md) |
+| [Checks](#checks) | ACMG SF, the `clin_sig` cross-check and its two skip reasons, ClinVar citation ids, a re-draft's superseded rows | [`module-check`](../../module-check/GUIDE.md), [`module-refresh`](../../module-refresh/GUIDE.md) |
 | [This server](#this-server-not-the-toolchain) | the workspace boundary, the offline ceiling, a missing token, a contract or target mismatch, a tool that is switched off | none — the repair is configuration, not data |
 
 Real message text, matched on the distinctive phrase. Most of these cost someone a day.
@@ -166,7 +166,7 @@ regenerated, not patched.
 
 Then find the source, because the shift arrived with it and will arrive again: UCSC's Table Browser
 columns and `pysam`'s `record.start` are 0-based while the same tools' browser display and
-`record.pos` are 1-based. `module-curate`'s *The mistake nothing offline can catch* has the full list and
+`record.pos` are 1-based. [`module-curate`](../../module-curate/GUIDE.md)'s *The mistake nothing offline can catch* has the full list and
 the one-call check that catches it on row 1 instead of row 3,000.
 
 **`ref mismatch: N row(s) — single-base ref disagrees at a position nothing else contradicts`**

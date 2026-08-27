@@ -46,7 +46,7 @@ down** — `record_override` is where it goes, after the mismatch has been repor
 |---|---|
 | `genotype` | Sources publish **alleles, not genotypes**. Whether one copy is informative follows from the condition's inheritance mode. **Except on a non-diploid contig**, where only one genotype is expressible and `draft-panel` writes it for you |
 | `state` (when stubbed) | The record is `uncertain_significance` and **no vocabulary member means "undecided"** — `neutral` says benign, `risk` says a direction. If you can justify neither, **drop the row** rather than pick one to make the compile pass |
-| `weight`, `direction`, `effect_size` | Your model of the finding. ClinVar publishes no effect statistic. `module-weights` owns the whole question |
+| `weight`, `direction`, `effect_size` | Your model of the finding. ClinVar publishes no effect statistic. [`module-weights`](../module-weights/GUIDE.md) owns the whole question |
 | `trait_efo_id` | A source's condition is free text or MedGen. Mapping it to an ontology is inference |
 | `conclusion` | What the module *says*. Keep it hedged where the biology is — penetrance, tissue, co-factors |
 
@@ -169,7 +169,7 @@ the check** — and no command does it for you.
 The only thing that catches this is `enrich_module` run **online**: *"ref mismatch: N row(s) —
 coordinate shifted 1 base…"*. Read that line as being about `start`, not `ref`, and read the count as a
 **floor** — it can only see rows where the neighbouring base differs from your `ref`, roughly three in
-four. `module-enrich` owns the report.
+four. [`module-enrich`](../module-enrich/GUIDE.md) owns the report.
 
 ## Genotype spellings that decide whether a row can ever match
 
@@ -250,7 +250,7 @@ The house algebra is **three-valued: true / false / unknown**, and `None` is nev
 - **On licensing, unknown terms are undetermined, never permitted** — `share_alike` / `commercial_use`
   left blank do not mean allowed.
 - **Set `requires_callable=true` (with `callable_from`)** wherever the *absence* of a variant is the
-  informative call: a no-call is not a reference call. `module-consumer` has what a reader does with it,
+  informative call: a no-call is not a reference call. [`module-consumer`](../module-consumer/GUIDE.md) has what a reader does with it,
   including the fact that nothing reads it yet.
 - **`unchecked` / `unknown` in a report means the question was never put.**
 
@@ -304,7 +304,7 @@ blocks a compile and neither is a substitute for reading the sentence.
 
 **Nothing catches an off-by-one offline.** Every gate below the enricher passes a shifted module.
 
-**Nothing fills `weight`, and nothing will.** `module-weights`.
+**Nothing fills `weight`, and nothing will.** [`module-weights`](../module-weights/GUIDE.md).
 
 **Nothing decides the trim.** `validate` and `compile` are as green at 1,613 rows as at 13.
 
@@ -332,10 +332,10 @@ this stage:
 
 | You need | Load |
 |---|---|
-| what a `weight` means and what to declare | `module-weights` |
+| what a `weight` means and what to declare | [`module-weights`](../module-weights/GUIDE.md) |
 | finding, verifying and reading the evidence | `find-evidence` |
-| which table a finding belongs in | `module-tables` |
-| the variants table in full, and the sign check that cannot fire | `module-tables` → `references/variants.md` |
-| to turn rsIDs into coordinates | `module-enrich` |
-| the checks that will compare this against the sources | `module-check` |
+| which table a finding belongs in | [`module-tables`](../module-tables/GUIDE.md) |
+| the variants table in full, and the sign check that cannot fire | [`module-tables`](../module-tables/GUIDE.md) → `references/variants.md` |
+| to turn rsIDs into coordinates | [`module-enrich`](../module-enrich/GUIDE.md) |
+| the checks that will compare this against the sources | [`module-check`](../module-check/GUIDE.md) |
 | this module already exists and you are revising it | `module-revise` |

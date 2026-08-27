@@ -333,7 +333,7 @@ Ordered by how likely a first-timer is to hit them.
 - **No `--attest` flag** (RM72 wired the four blocked members unconditionally), **no accumulation**
   (`merge_records` replaces per check — "two answers to that are not two facts"), and **no signing
   from this plugin**: `close_module` takes `closed_by` only, and `--private-key` is the CLI's
-  (`module-close`).
+  ([`module-close`](../../module-close/GUIDE.md)).
 
 ## Consumption today
 

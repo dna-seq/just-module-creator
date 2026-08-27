@@ -83,29 +83,30 @@ _SKILL_COUNT_WORDS = {
 
 
 def test_the_declared_skill_directory_holds_the_skills_the_description_promises(manifest):
-    """The description states a skill COUNT, so the number and the directory must agree.
+    """The description states both COUNTS, so both must agree with the directory.
 
-    Derived rather than hand-kept. The set was pinned literally until the skill surface
-    started growing, and then every addition failed this test for the wrong reason — the
-    fault it reports would be "you added a skill", not "the plugin misdescribes itself".
-    What must not drift is the *promise*: the count a user reads in the description, and
-    the two skills every other document sends a reader to.
+    Derived rather than hand-kept: pinning the set literally made every addition fail for
+    the wrong reason — "you added a skill" rather than "the plugin misdescribes itself".
+    What must not drift is the *promise* a user reads, and since 0.24.0 that is two
+    numbers, because the directory holds two kinds of document. A `SKILL.md` is a command
+    in the user's menu; a `GUIDE.md` is loaded by a router, by path, and is deliberately
+    not offered to anyone choosing what to type.
+
+    `create-module` is the declared entry point — the server's own instructions name it —
+    so its absence is a broken door rather than a smaller surface.
     """
     skills_dir = REPO / manifest["skills"].removeprefix("./")
-    shipped = {p.name for p in skills_dir.iterdir() if (p / "SKILL.md").is_file()}
+    commands = {p.name for p in skills_dir.iterdir() if (p / "SKILL.md").is_file()}
+    guides = {p.name for p in skills_dir.iterdir() if (p / "GUIDE.md").is_file()}
 
-    # `module-101` is the declared entry point and `module-start` is where it sends anyone
-    # actually beginning a module; CLAUDE.md, the server instructions and module-101 itself
-    # all point at them by name, so their absence is a broken link rather than a smaller
-    # surface. This pin named `create-module` until 2026-08-20, when the 1431-line procedure
-    # skill was dismantled into the ten stage skills and deleted — the entry point moved, so
-    # the pin moved with it.
-    assert {"module-101", "module-start"} <= shipped
+    assert "create-module" in commands
+    assert not (commands & guides), "a directory is a command or a guide, never both"
 
-    promised = _SKILL_COUNT_WORDS[len(shipped)]
-    assert f"{promised} skills" in manifest["description"], (
-        f"{len(shipped)} skills ship, so the description must say '{promised} skills'"
-    )
+    for count, word in ((len(commands), "commands"), (len(guides), "guides")):
+        promised = _SKILL_COUNT_WORDS[count]
+        assert f"{promised} {word}" in manifest["description"], (
+            f"{count} {word} ship, so the description must say '{promised} {word}'"
+        )
 
 
 def test_the_marketplace_entry_points_at_this_plugin():
@@ -130,7 +131,7 @@ def test_the_codex_manifest_matches_the_package_and_skills(codex_manifest, manif
     assert codex_dir.resolve() == claude_dir.resolve()
 
     shipped = {p.name for p in codex_dir.iterdir() if (p / "SKILL.md").is_file()}
-    assert {"module-101", "module-start"} <= shipped
+    assert "create-module" in shipped
 
 
 def test_the_codex_mcp_config_launches_this_checkout(codex_manifest):
