@@ -1,6 +1,6 @@
 {
   "name": "just-module-creator",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "description": "Author, validate, compile, and publish research-use just-dna annotation modules with schema-aware tools and literature search.",
   "author": {
     "name": "DNA Seq",

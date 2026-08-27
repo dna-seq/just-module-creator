@@ -3,11 +3,9 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## 0.21.0 — 2026-08-27
+## 0.22.0 — 2026-08-27
 
-The MCP template this repo is built on (`../mcp_template`) moved, and these three changes adopt
-it: its session-state auth, its two off-by-default discovery levers, and — going further than the
-template, which keeps a mode axis and made it switchable at runtime — dropping ours entirely.
+The context cost of the tool listing, measured and then acted on.
 
 ### `toolbox`: a two-layer surface with the roster always readable (opt-in)
 
@@ -53,6 +51,12 @@ Code's behaviour has not been verified here. That is why the default is `flat` a
 message ends by telling the caller to reconnect once if the tools do not appear. `server.INSTRUCTIONS`
 gains one line in layered mode, and the base was trimmed to keep both variants under the host's
 2048-character ceiling.
+
+## 0.21.0 — 2026-08-27
+
+The MCP template this repo is built on (`../mcp_template`) moved, and these three changes adopt
+it: its session-state auth, its two off-by-default discovery levers, and — going further than the
+template, which keeps a mode axis and made it switchable at runtime — dropping ours entirely.
 
 ### Two discovery levers adopted from the template, both off by default
 
