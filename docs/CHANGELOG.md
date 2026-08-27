@@ -3,7 +3,11 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## Unreleased
+## 0.21.0 — 2026-08-27
+
+The MCP template this repo is built on (`../mcp_template`) moved, and these three changes adopt
+it: its session-state auth, its two off-by-default discovery levers, and — going further than the
+template, which keeps a mode axis and made it switchable at runtime — dropping ours entirely.
 
 ### Two discovery levers adopted from the template, both off by default
 
