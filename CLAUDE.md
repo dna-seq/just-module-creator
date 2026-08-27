@@ -60,7 +60,7 @@ same change** — an unlinked guide is unreachable content, not a smaller surfac
 
 | Path | What |
 |---|---|
-| `skills/module-101/GUIDE.md` | **The entry point and the map — high level only.** What a module is, what the plugin can and cannot do, the four packages, the lifecycle *including second and later passes*, and the **minimal** authored surface (`module_spec.yaml` + `variants.csv` + `studies.csv` + `README.md`) and nothing beyond it — the table roster, the on-disk shapes and the `derived/` layout are `module-tables`'. It holds no column list, no procedure and no symptom lookup: anything answerable only with a specific cell value, flag or warning phrase belongs in a subskill, and this file growing to hold one is the drift to watch for. |
+| `skills/module-101/GUIDE.md` | **The map — high level only, and no longer the entry point: `/create-module` is the door and `server.INSTRUCTIONS` names it.** What a module is, what the plugin can and cannot do, the four packages, the lifecycle *including second and later passes*, and the **minimal** authored surface (`module_spec.yaml` + `variants.csv` + `studies.csv` + `README.md`) and nothing beyond it — the table roster, the on-disk shapes and the `derived/` layout are `module-tables`'. It holds no column list, no procedure and no symptom lookup: anything answerable only with a specific cell value, flag or warning phrase belongs in a subskill, and this file growing to hold one is the drift to watch for. |
 | `skills/create-module/SKILL.md` | **The door, and the name people asked back.** Where to enter the lifecycle from wherever the author is actually standing — nothing yet, a theme plus sources, a handed bundle, a source that publishes rows, or a module that already exists — plus the stage diagram, the stage order, and the two to four tools each stage calls. It owns **no procedure**: every stage skill keeps its own, and the router's job ends the moment the right one is loaded. Ceiling 200 lines, half the skill ceiling, pinned by `tests/test_skills.py::test_the_router_routes_and_does_not_regrow_into_the_procedure`, because regrowth is the risk this name carries. |
 | **The stage spine**, one skill per lifecycle stage | `module-start` (0–1: triage, licence, the spec), `module-draft` (2), `module-curate` (3), `module-enrich` (4), `module-check` (5), `module-compile` (6), `module-close` (6b), `module-publish` (7–8). **Each owns its stage's procedure outright — there is no second copy anywhere**, and each ends with the discriminator (what to apply silently, what to put in front of a pilot) rather than a list of refusals. |
 | **The second-pass three** | `module-revise` (which kind of pass, and what it invalidates), `module-refresh` (re-running anything that already ran), `module-diff` (what moved, and the one reading that means an upstream source changed its answer). A second pass is the normal case, not the exception. |
@@ -1118,6 +1118,17 @@ have been questions.
   code is yikes"* — the honest routes are a dependency with attribution or a fork, not copying. What
   is **not** a bicycle is the gate: one `ServiceGate`, one contact chain, one budget shared with the
   enricher by passing the same `PacingGate` instance.
+
+- **"Triage comands available to user, it is too puzzling for them to have a dozen... maybe hide 101
+  thing, its 101 for an llm, not the user."** Said 2026-08-28, and it is a rule about the **menu**
+  rather than about the content: the twenty skills all still ship, and thirteen of them simply stopped
+  being things a person is offered. The test for what a user would want is *what did they arrive
+  wanting* — make one, work out what this directory is, find the papers, publish it, decode this
+  message, run it on my genome, open it again — and never *which step is the agent on*, which is what
+  `module-curate` and `module-enrich` answer. Asked for "like 4-8 entry items" and chose seven,
+  explicitly dropping `module-tables` from the eight offered. **Do not helpfully re-promote a guide**:
+  `test_the_command_menu_is_what_a_person_would_ask_for` pins the set by name so that adding one is a
+  decision, and the thing that makes a guide reachable is a router naming it, not a menu entry.
 
 ## 11. Learned workspace facts
 
