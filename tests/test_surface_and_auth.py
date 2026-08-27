@@ -25,7 +25,7 @@ from pydantic import BaseModel
 
 from just_module_creator import models
 from just_module_creator.auth import GATED_TOOLS, resolve_install_id
-from just_module_creator.server import INSTRUCTIONS
+from just_module_creator.server import INSTRUCTIONS, build_server
 from just_module_creator.settings import Settings
 
 # The authoring loop an agent cannot work without.
@@ -437,6 +437,22 @@ async def test_no_workspace_means_no_restriction(make_client, tmp_path):
 # --------------------------------------------------------------------------- #
 # Server-level contract
 # --------------------------------------------------------------------------- #
+def test_a_stale_jmc_mode_in_the_environment_is_ignored(monkeypatch) -> None:
+    """Every install that predates 0.21.0 has `JMC_MODE` somewhere — it must be inert.
+
+    A shell export, an old `.mcp.json`, a `.env` nobody edited. `Settings` no longer
+    has a `mode` field, so the variable is an extra, and `extra="ignore"` is what
+    makes an upgrade silent rather than a ValidationError at boot for everybody.
+    The suite cannot catch this by accident: `conftest`'s clear-list is derived from
+    `Settings.model_fields`, which no longer names `mode`, so the variable is never
+    set under the suite unless a test sets it — as this one does.
+    """
+    monkeypatch.setenv("JMC_MODE", "extended")
+    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+    assert not hasattr(settings, "mode")
+    assert build_server(settings=settings) is not None
+
+
 async def test_server_boots_with_no_environment(monkeypatch):
     """Authoring needs no registry account, so a bare env must never fail."""
     for var in ("JMC_API_KEY", "REGISTRY_TOKEN", "JMC_OFFLINE"):

@@ -529,6 +529,12 @@ before concluding anything, and check `module-101`'s roster for what the current
 tool does beyond fetching, which for `enrich_gwas_effects` is the sidecar it writes and the licence
 rows it records on the way.
 
+**`No such option: --mode` when starting the server, or a launch config that sets `JMC_MODE`.**
+The other direction of the same change: `--mode` was removed in 0.21.0, so a launch line carrying it
+fails before the server starts. Drop the flag. A `JMC_MODE` left in a `.env`, an `.mcp.json` or a
+plugin manifest is harmless — it is read as an unknown setting and ignored — but it is worth deleting
+so nobody reads it as still doing something.
+
 **`refresh_sidecar` refused the sidecar you named, and told you to set `JMC_MODE=extended`.**
 That refusal is from a server older than 0.21.0, where two sidecars needed the extended tier. On a
 current one the same call warns and runs: `literature.csv` and `gwas_effects.csv` re-derive through
