@@ -23,6 +23,16 @@
   note         = {Software.}
 }
 
+% --- Companion paper ---
+@misc{companion2026justdnalite,
+  title        = {{Just-DNA-Lite}: local genome annotation and polygenic risk
+                  scoring with deterministic modules},
+  author       = {{Anonymous}},
+  year         = {2026},
+  note         = {Companion platform paper (in preparation; citation
+                  anonymized for review).}
+}
+
 % --- Annotation engines ---
 @article{mclaren2016vep,
   title     = {The {Ensembl} Variant Effect Predictor},
@@ -101,6 +111,67 @@
   doi       = {10.1093/nar/gkac1010}
 }
 
+% --- ClinGen / ACMG ---
+@article{rehm2015clingen,
+  title     = {{ClinGen} --- The Clinical Genome Resource},
+  author    = {Rehm, Heidi L. and Berg, Jonathan S. and Brooks, Lisa D.
+               and Bustamante, Carlos D. and Evans, James P.
+               and Landrum, Melissa J. and Ledbetter, David H.
+               and Maglott, Donna R. and Martin, Christa Lese
+               and Nussbaum, Robert L. and Plon, Sharon E.
+               and Ramos, Erin M. and Sherry, Stephen T.
+               and Watson, Michael S.},
+  journal   = {New England Journal of Medicine},
+  volume    = {372},
+  number    = {23},
+  pages     = {2235--2242},
+  year      = {2015},
+  doi       = {10.1056/NEJMsr1406261}
+}
+
+@article{richards2015acmg,
+  title     = {Standards and guidelines for the interpretation of sequence
+               variants: a joint consensus recommendation of the {American
+               College of Medical Genetics and Genomics} and the {Association
+               for Molecular Pathology}},
+  author    = {Richards, Sue and Aziz, Nazneen and Bale, Sherri
+               and Bick, David and Das, Soma and Gastier-Foster, Julie
+               and Grody, Wayne W. and Hegde, Madhuri
+               and Lyon, Elaine and Spector, Elaine
+               and Voelkerding, Karl and Rehm, Heidi L.},
+  journal   = {Genetics in Medicine},
+  volume    = {17},
+  number    = {5},
+  pages     = {405--424},
+  year      = {2015},
+  doi       = {10.1038/gim.2015.30}
+}
+
+% --- Pharmacogenomics ---
+@article{whirl2012pharmgkb,
+  title     = {Pharmacogenomics Knowledge for Personalized Medicine},
+  author    = {Whirl-Carrillo, Michelle and McDonagh, Ellen M.
+               and Hebert, J. M. and Gong, Li and Sangkuhl, Katrin
+               and Thorn, Caroline F. and Altman, Russ B.
+               and Klein, Teri E.},
+  journal   = {Clinical Pharmacology \& Therapeutics},
+  volume    = {92},
+  number    = {4},
+  pages     = {414--417},
+  year      = {2012},
+  doi       = {10.1038/clpt.2012.96}
+}
+
+% --- GA4GH ---
+@misc{ga4gh2022gks,
+  title        = {{GA4GH} Genomic Knowledge Standards},
+  author       = {{Global Alliance for Genomics and Health}},
+  year         = {2022},
+  howpublished = {\url{https://www.ga4gh.org/product/genomic-knowledge-standards/}},
+  note         = {Interoperability standards for variant annotation
+                  and interpretation.}
+}
+
 % --- LLM factuality and tool use ---
 @article{ji2023survey,
   title     = {Survey of Hallucination in Natural Language Generation},
@@ -140,4 +211,103 @@
   year         = {2024},
   howpublished = {\url{https://modelcontextprotocol.io}},
   note         = {Specification and documentation.}
+}
+
+% --- Genomic LLM benchmarks ---
+@article{jin2024geneturing,
+  title     = {{GeneTuring} tests for the field of computational genomics},
+  author    = {Jin, Qiao and Yang, Yifan and Chen, Qingyu and Lu, Zhiyong},
+  journal   = {Nature Methods},
+  volume    = {21},
+  pages     = {768--778},
+  year      = {2024},
+  doi       = {10.1038/s41592-024-02196-4}
+}
+
+@article{jin2024genegpt,
+  title     = {{GeneGPT}: Augmenting Large Language Models with Domain Tools
+               for Improved Access to Biomedical Information},
+  author    = {Jin, Qiao and Yang, Yifan and Chen, Qingyu and Lu, Zhiyong},
+  journal   = {Bioinformatics},
+  volume    = {40},
+  number    = {2},
+  pages     = {btae075},
+  year      = {2024},
+  doi       = {10.1093/bioinformatics/btae075}
+}
+
+% --- Biomedical text mining ---
+@article{stenson2020hgmd,
+  title     = {The {Human Gene Mutation Database} ({HGMD}): optimizing its use
+               in a clinical diagnostic or research setting},
+  author    = {Stenson, Peter D. and Mort, Matthew and Ball, Edward V.
+               and Chapman, Mark and Evans, Katie and Azevedo, Luisa
+               and Hayden, Matthew and Heber, Sally and Cooper, David N.},
+  journal   = {Human Genetics},
+  volume    = {139},
+  pages     = {1197--1207},
+  year      = {2020},
+  doi       = {10.1007/s00439-020-02199-3}
+}
+
+@article{wang2026pubmind,
+  title     = {{PubMind}: literature-based genetic variant extraction and
+               functional annotation using large language models},
+  author    = {Wang, Peng and Wang, Kai},
+  journal   = {Nature Communications},
+  year      = {2026},
+  doi       = {10.1038/s41467-026-76834-4},
+  note      = {Article in Press.}
+}
+
+@article{wei2022tmvar3,
+  title     = {{tmVar} 3.0: an improved variant concept recognition and
+               normalization tool},
+  author    = {Wei, Chih-Hsuan and Allot, Alexis and Riehle, Kevin
+               and Milosavljevic, Aleksandar and Lu, Zhiyong},
+  journal   = {Bioinformatics},
+  volume    = {38},
+  number    = {18},
+  pages     = {4449--4451},
+  year      = {2022},
+  doi       = {10.1093/bioinformatics/btac537}
+}
+
+@article{wei2024pubtator3,
+  title     = {{PubTator} 3.0: an {AI}-powered literature resource for
+               unlocking biomedical knowledge},
+  author    = {Wei, Chih-Hsuan and Allot, Alexis and Leaman, Robert
+               and Lu, Zhiyong},
+  journal   = {Nucleic Acids Research},
+  volume    = {52},
+  number    = {W1},
+  pages     = {W540--W546},
+  year      = {2024},
+  doi       = {10.1093/nar/gkae235}
+}
+
+@article{allot2023litvar2,
+  title     = {Tracking genetic variants in the biomedical literature using
+               {LitVar} 2.0},
+  author    = {Allot, Alexis and Lee, Kyubum and Chen, Qingyu
+               and Luo, Ling and Lu, Zhiyong},
+  journal   = {Nature Genetics},
+  volume    = {55},
+  pages     = {901--903},
+  year      = {2023},
+  doi       = {10.1038/s41588-023-01414-x}
+}
+
+% --- Agent orchestration ---
+@article{hong2023metagpt,
+  title     = {{MetaGPT}: Meta Programming for A Multi-Agent Collaborative
+               Framework},
+  author    = {Hong, Sirui and Zhuge, Mingchen and Chen, Jonathan
+               and Zheng, Xiawu and Cheng, Yuheng and Zhang, Ceyao
+               and Wang, Jinlin and Wang, Zili and Yau, Steven Ka Zhong
+               and Lin, Zijuan and Zhou, Liyang and Ran, Chenyu
+               and Xiao, Lingfeng and Wu, Chenglin and Schmidhuber, J{\"u}rgen},
+  journal   = {arXiv preprint arXiv:2308.00352},
+  year      = {2023},
+  url       = {https://arxiv.org/abs/2308.00352}
 }
