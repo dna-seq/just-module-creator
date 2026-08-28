@@ -446,6 +446,8 @@ uv run just-module-creator stdio               # run over stdio
 uv run just-module-creator http --port 3011    # run over HTTP
 uv run fastmcp dev fastmcp.json                # MCP Inspector
 claude --plugin-dir .                          # load as a plugin for one session
+uv run manuscript template                     # EASRP template → .md + .pdf
+uv run manuscript manuscript                   # paper draft → .md + .pdf
 ```
 
 `just <recipe>` wraps all of these. **Always run `uv run pytest` and
@@ -754,6 +756,24 @@ two: `docs/dogfooding.md` (open) → `docs/previous_issues.md` (resolved here) /
   over a verbatim line.
 - **Before a PR**, print `git diff <upstream>/main --stat HEAD` and
   `git log <upstream>/main..HEAD --oneline`, show the output, and wait for approval.
+
+### Manuscript writing
+
+The paper draft lives in `docs/manuscript/`. Same toolchain as glucose-forecasting:
+EASRP 2026 `template.tex` + `easrp2026.sty`, Typer CLI `uv run manuscript`.
+
+```bash
+uv run manuscript template      # template.tex → template.md + template.pdf
+uv run manuscript manuscript    # manuscript.tex → manuscript.md + manuscript.pdf
+```
+
+Edit `manuscript.tex`, then rebuild both PDF and Markdown. After a `.tex` change,
+always regenerate both. The empty template is the section order to follow
+(Introduction, Related work, Method, Results, Discussion, Conclusion) — not the
+retired `just-dna-agents` outline in
+`../just-dna-lite/docs/manuscript/v0.2/paper2-dna-agents.md`, which is inspiration
+only. Papers for related work go in `data/cache/for_manuscript/` (gitignored).
+Process notes are in `docs/manuscript/README.md`.
 
 ### Upstream findings go to the producer, never into a workaround
 

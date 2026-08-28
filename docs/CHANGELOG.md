@@ -5,6 +5,16 @@ on our side, so agents in sibling repos are not surprised.
 
 ## Unreleased
 
+### Manuscript writing toolchain (EASRP 2026)
+
+Same shape as glucose-forecasting: `docs/manuscript/` holds `template.tex`,
+`easrp2026.sty`, and the paper draft; `uv run manuscript template` and
+`uv run manuscript manuscript` build Markdown (via pypandoc) and PDF (via
+tectonic). The CLI lives at `src/manuscript/`. The first draft follows the
+EASRP section order and treats the old just-dna-agents write-up as inspiration
+only — this paper is the plugin that wraps `just-dna-compiler`, not that
+runtime.
+
 ### The beginner branch: 101 is pulled by the agent, never offered to the person
 
 `module-101` came off the menu in 0.24.0 on the grounds that it is written for an agent. The sharper

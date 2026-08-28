@@ -41,5 +41,13 @@ dev:
 plugin:
     claude --plugin-dir .
 
+# Build manuscript Markdown + PDF from the EASRP LaTeX.
+manuscript:
+    uv run manuscript manuscript
+
+# Build the empty EASRP template (Markdown + PDF) to check the toolchain.
+manuscript-template:
+    uv run manuscript template
+
 # Everything CI would run.
 ci: lint types test

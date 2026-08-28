@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../just-dna-lite"
+		},
+		{
+			"path": "../glucose-forecasting"
+		},
+		{
+			"path": "../just-dna-compiler"
+		},
+		{
+			"path": "../just-dna-registry"
+		}
+	],
+	"settings": {}
+}

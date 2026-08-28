@@ -38,6 +38,7 @@ uv sync
 uv run pytest                                  # in-memory and offline; no test can reach the network
 uv run just-module-creator stdio               # run over stdio
 uv run fastmcp dev fastmcp.json                # MCP Inspector
+uv run manuscript manuscript                   # paper draft → docs/manuscript/manuscript.md + .pdf
 ```
 
 The server **boots with no environment configured** — authoring a module needs no registry account.
