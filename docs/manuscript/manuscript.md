@@ -24,7 +24,7 @@ This paper makes four contributions:
 
 #### Genome annotation and catalogs.
 
-A variant call records what differs between a sample and a reference genome. Annotation adds information about that call, such as its predicted consequence, known clinical classification, reported trait association, or the conclusion assigned to a particular genotype. VEP, ANNOVAR, and OpenCRAVAT/OakVar perform this kind of lookup by joining a callset to established resources . ClinVar and the GWAS Catalog publish records that can supply annotation content . ClinGen provides expert variant curation within the ACMG/AMP framework . PharmGKB and CPIC supply pharmacogenomic annotations including diplotype-level clinical recommendations . The GA4GH Genomic Knowledge Standards define interoperable representations for variant annotations . The problem addressed here begins before the join: selected evidence must be turned into a reviewable, machine-checkable collection that can be distributed and applied consistently.
+A variant call records what differs between a sample and a reference genome. Annotation adds information about that call, such as its predicted consequence, known clinical classification, reported trait association, or the conclusion assigned to a particular genotype. VEP, ANNOVAR, and OpenCRAVAT/OakVar perform this kind of lookup by joining a callset to established resources . ClinVar and the GWAS Catalog publish records that can supply annotation content . HGMD derives variant–disease associations from the literature through manual review, though the public version updates infrequently and does not include explicit pathogenicity calls . ClinGen provides expert variant curation within the ACMG/AMP framework . PharmGKB and CPIC supply pharmacogenomic annotations including diplotype-level clinical recommendations . The GA4GH Genomic Knowledge Standards define interoperable representations for variant annotations . The problem addressed here begins before the join: selected evidence must be turned into a reviewable, machine-checkable collection that can be distributed and applied consistently.
 
 Table <a href="#tab:comparison" data-reference-type="ref" data-reference="tab:comparison">1</a> compares the authoring capabilities of these tools with `just-module-creator`.
 
@@ -35,8 +35,10 @@ Table <a href="#tab:comparison" data-reference-type="ref" data-reference="tab:c
 | VEP / ANNOVAR       |  –  |  –  |  –  |  –  |  –  |
 | OpenCRAVAT / OakVar |     |     |  –  |  –  |     |
 | ClinVar / ClinGen   |     |     |     |  –  |     |
+| HGMD                |     |  –  |     |  –  |  –  |
 | PharmGKB / CPIC     |     |     |     |  –  |  –  |
 | GA4GH GKS           |     |     |     |  –  |  –  |
+| PubMind-DB          |  –  |     |     |     |     |
 | Raw LLM             |  –  |  –  |  –  |     |  –  |
 | just-module-creator |     |     |     |     |     |
 
@@ -44,7 +46,11 @@ Qualitative comparison of authoring and sharing capabilities. The comparison foc
 
 </div>
 
-#### Language models and scientific extraction.
+#### Biomedical text mining and variant extraction.
+
+Conventional named entity recognition systems such as tmVar3 and PubTator3 have improved gene and variant tagging in biomedical text . LitVar 2 links literature paragraphs with variant records from external databases, accelerating knowledge retrieval . However, these tools are largely limited to entity-level extraction and do not recover relational information such as variant-specific pathogenicity across disease contexts or the experimental evidence supporting a classification. PubMind applies instruction-tuned LLMs to extract variant–disease–pathogenicity associations directly from over 41 million PubMed abstracts and 5.4 million full-text articles, producing a database of approximately 1.3 million unique variants with contextual annotations . These systems demonstrate that LLM-based literature mining can recover structured variant knowledge at scale, but their output is a flat database rather than a versioned, schema-validated module that an annotation consumer can install and apply to a genome.
+
+#### Factuality and tool use.
 
 Language models can produce fluent text around a false identifier or citation . Benchmarks on genomic question-answering show that models hallucinate gene names, variant identifiers, and functional annotations . Retrieval-augmented approaches and tool use reduce the need to improvise when a model can call a typed operation instead . The Model Context Protocol provides a standard for connecting models to external tools . Biomedical MCP services can search literature, ontologies, and variant databases. just-module-creator uses the same general approach, then carries the result into module files that the rest of the Just-DNA pipeline can inspect and reuse.
 
