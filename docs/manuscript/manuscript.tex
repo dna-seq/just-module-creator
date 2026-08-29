@@ -34,79 +34,62 @@ describe which genotype a claim concerns, what evidence supports it, and how a
 consumer should present it. A module can be written and edited manually. An AI
 assistant can also draft one from a paper, a variant list, or a description of
 a topic, but its output remains an editable data artifact rather than generated
-analysis code.
+analysis code. Unlike extracted data that requires further engineering to use,
+a compiled module can be applied to real genomes within minutes, producing
+annotated reports immediately.
 
-We present the Just-DNA ecosystem and the path a module follows through it.
-\texttt{just-dna-format} defines the schema; \texttt{just-dna-enricher} records
-source-derived facts; \texttt{just-dna-compiler} validates and compiles the
-files. \textbf{just-module-creator}, an open-source plugin for Claude Code and
-Codex, is the authoring entry point: it exposes these packages as typed tools so
-that both AI-assisted and manually edited modules use the same live schema. An
-author can keep the result in a local module store, rehearse publication in a
-deletable test registry, or publish a version to the production registry.
-Just-DNA-Lite later filters a local VCF and joins selected modules to matching
-genotypes; its internal design is the subject of a companion platform
-paper~\citep{companion2026justdnalite}.
+The authoring plugin, \textbf{just-module-creator}, runs inside Claude Code and
+Codex---AI coding assistants that bioinformaticians and developers already use
+daily---so module authoring requires no new infrastructure beyond installing a
+plugin. The underlying toolchain validates authored files against a live schema,
+compiles them, and publishes versions to a shared registry. Just-DNA-Lite then
+joins selected modules to matching genotypes in a local VCF file; its design is
+the subject of a companion paper~\citep{companion2026justdnalite}.
 
-The language model helps with reading and drafting, while deterministic software
-handles schema validation, compilation, genome processing, and scoring. This
-paper describes the module lifecycle from source material to shared store and
-local use. It proposes a protocol for evaluating variant recovery, citation
-identity, and effect-direction agreement in AI-assisted creation, and reports
-catalog statistics from the first eight published modules. The software
-is open-source and intended for research use only.
+This paper describes the module lifecycle from source material to shared
+registry and local use, proposes an evaluation protocol for variant recovery,
+citation identity, and effect-direction agreement, and reports catalog
+statistics from the first published modules. The software is open-source and
+intended for research use only.
 \end{abstract}
 
 % ================================================================
 \section{Introduction}
 % ================================================================
 
-Suppose a researcher wants a recent lactose-tolerance study to inform a genomic
-report. The researcher can transcribe the relevant variants and evidence into
-tables, or ask an AI assistant to prepare a first draft. In either case, the
-result is the same kind of object: a module that can be edited, checked,
-versioned, and shared. The researcher may keep it in a local store while it is
-being reviewed, publish it to a test registry for rehearsal, and later release
-an accepted version through the production registry. When a user selects that
-module in Just-DNA-Lite, the application joins its records to matching
-genotypes in a local VCF and includes the resulting annotations in a
-report~\citep{companion2026justdnalite}.
+Genomic annotation connects variant calls to the knowledge that gives them
+meaning: trait associations, clinical classifications, effect sizes, and the
+evidence behind each claim. This knowledge is scattered across papers, databases,
+and preprints, and it changes as new studies appear. Turning it into something a
+computational pipeline can use requires structured, validated records with
+unambiguous variant identifiers, genome-build coordinates, and traceable
+citations.
 
-This separation between knowledge and sample processing is central to the
-design. A paper may report an association with lactose tolerance, drug response,
-or another trait, but a computational pipeline needs an unambiguous variant,
-the genotype to which the claim applies, the genome build and allele
-orientation, a structured conclusion, and a trace back to the evidence. A
-\emph{module} is a versioned collection of those records. It contains no sample
-data and no executable analysis code. The same compiled module can be applied
-to many genomes.
+Researchers increasingly use AI coding assistants such as Claude Code and Codex
+for this kind of work. These tools are powerful, but when asked to analyze
+variants they typically generate a script: code that may fabricate
+identifiers~\citep{jin2024geneturing}, attach a real PMID to the wrong
+paper~\citep{ji2023survey,gao2023enabling}, reverse an allele, or bypass
+established filters. Each session may produce slightly different code, and the
+result must be reviewed for correctness, efficiency, and security before it can
+be trusted. The output is a one-off answer tied to one session, not a reusable
+resource.
 
-The sample follows a different path. A VCF often contains millions of variant
-calls. Just-DNA-Lite normalizes their representation, applies configured
-quality filters, and joins the retained calls to selected modules and reference
-data. That pipeline and its benchmarks are described in the companion platform
-paper~\citep{companion2026justdnalite}; polygenic risk scores follow a parallel
-numerical path through \texttt{just-prs}.
-
-A general-purpose assistant is useful during curation, but it does not provide
-this structure by itself. Asked to ``make me a lactose-tolerance module,'' it
-may return rsIDs, an explanation, and a new script that searches a VCF. The
-answer can contain a fabricated identifier, a reversed allele, or a real PMID
-that names the wrong paper~\citep{ji2023survey,gao2023enabling}. Language models
-can also generate plausible but non-existent gene names or variant
-identifiers~\citep{jin2024geneturing}. Generated code may bypass the
-established filters and validators or depend on an unstated environment. The
-next run can produce a different implementation because the implementation was
-generated as part of the answer.
-
-The Just-DNA ecosystem gives that assistant a narrower and more useful job.
-\texttt{just-module-creator} helps it read sources, prepare module files, run
-checks, and present unresolved decisions to the author. The files use schemas
-from \texttt{just-dna-format}; \texttt{just-dna-enricher} records facts from
-external sources; \texttt{just-dna-compiler} validates and compiles them; and
-\texttt{just-dna-registry} stores published versions. Manual authors use the
-same files and tools. Just-DNA-Lite remains responsible for
-sample-level computation~\citep{companion2026justdnalite}.
+This paper presents the Just-DNA ecosystem, which gives these same assistants a
+different job. Instead of generating code, the assistant produces structured
+data: a \emph{module} of editable CSV tables where each variant is linked to its
+studies, citations, effect sizes, and supporting passages. The input can be
+anything the assistant can read, from a single sentence describing a trait to a
+collection of papers or a summary from another model. Every variant is verified
+against reference databases such as dbSNP; dedicated checking tools validate
+gene symbols against HGNC, trait identifiers against ontology services, and flag
+decisions that require domain expertise. The result contains no executable code.
+Once compiled into Parquet, a columnar format optimized for fast queries,
+Just-DNA-Lite joins the module to a personal genome and returns annotated results
+in under a minute~\citep{companion2026justdnalite}. Modules are versioned and
+shareable: they can be kept locally, rehearsed in a staging registry, or
+published for others to install and use. The same files can also be written or
+edited entirely by hand.
 
 This paper makes four contributions:
 
@@ -116,7 +99,8 @@ This paper makes four contributions:
     \item It presents \texttt{just-module-creator}, an authoring plugin that
     exposes the public capabilities of \texttt{just-dna-format},
     \texttt{just-dna-compiler}, \texttt{just-dna-enricher}, and
-    \texttt{just-dna-registry} as typed MCP tools~\citep{anthropic2024mcp}.
+    \texttt{just-dna-registry} as typed Model Context Protocol (MCP)
+    tools~\citep{anthropic2024mcp}.
     The plugin reads the installed schema instead of carrying a copy.
     \item It defines how modules move between a local store, a deletable test
     registry, and the production registry while preserving provenance and
@@ -151,37 +135,52 @@ annotations~\citep{ga4gh2022gks}. The problem addressed here begins before the
 join: selected evidence must be turned into a reviewable, machine-checkable
 collection that can be distributed and applied consistently.
 
-Table~\ref{tab:comparison} compares the authoring capabilities of these tools
-with \texttt{just-module-creator}.
+Table~\ref{tab:comparison} narrows the comparison to systems adjacent to the
+authoring task: extension-based annotation platforms, structured literature
+extraction, unconstrained model drafting, and \texttt{just-module-creator}.
 
 \begin{table}[ht]
 \centering
-\small
-\caption{Qualitative comparison of authoring and sharing capabilities. The
-comparison focuses on the \emph{authoring} side of the boundary: how new
-annotation content is created, validated, and distributed. It does not compare
-runtime annotation speed, which is the subject of the companion platform
+\scriptsize
+\caption{Qualitative comparison of systems adjacent to annotation authoring.
+The rows have different primary tasks; the capability columns compare how
+their structured outputs are created, checked, and shared. Runtime annotation
+speed is outside this comparison and is covered in the companion platform
 paper~\citep{companion2026justdnalite}.}
 \label{tab:comparison}
-\begin{tabular}{@{}p{0.18\linewidth}ccccc@{}}
+\begin{tabular}{@{}p{0.15\linewidth}p{0.25\linewidth}ccccc@{}}
 \toprule
+System & Kind / primary task
 & \rotatebox{70}{Versioned modules}
 & \rotatebox{70}{Schema validation}
 & \rotatebox{70}{Provenance tracking}
 & \rotatebox{70}{AI-assisted authoring}
-& \rotatebox{70}{Community registry} \\
+& \rotatebox{70}{Shared catalog} \\
 \midrule
-VEP / ANNOVAR        & --  & --  & --  & --  & --  \\
-OpenCRAVAT / OakVar  & \checkmark & \checkmark & --  & --  & \checkmark \\
-ClinVar / ClinGen    & \checkmark & \checkmark & \checkmark & --  & \checkmark \\
-HGMD                 & \checkmark & --  & \checkmark & --  & --  \\
-PharmGKB / CPIC      & \checkmark & \checkmark & \checkmark & --  & --  \\
-GA4GH GKS            & \checkmark & \checkmark & \checkmark & --  & --  \\
-PubMind-DB           & --  & \checkmark & \checkmark & \checkmark & \checkmark \\
-Raw LLM              & --  & --  & --  & \checkmark & --  \\
-just-module-creator  & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+OpenCRAVAT / OakVar & annotation platform / user-supplied annotation extensions
+  & \checkmark & \checkmark & -- & -- & \checkmark \\
+PubMind-DB & text-mined database / LLM extraction of variant--disease--pathogenicity records
+  & -- & \checkmark & \checkmark & \checkmark & \checkmark \\
+Raw LLM & general-purpose model / unconstrained drafting
+  & -- & -- & -- & \checkmark & -- \\
+just-module-creator & authoring plugin / create, review, and publish installable modules
+  & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
 \bottomrule
 \end{tabular}
+\begin{minipage}{0.96\linewidth}
+\vspace{0.35em}
+\raggedright
+\scriptsize
+\emph{Criteria.} \emph{Versioned modules}: user-installable or distributable
+annotation units with explicit versions. \emph{Schema validation}: structured
+records are checked against a declared machine-readable schema.
+\emph{Provenance tracking}: record- or module-level source links travel with
+the output. \emph{AI-assisted authoring}: a language model participates
+directly in creating or revising the structured output. \emph{Shared catalog}:
+outputs or extensions are discoverable through a shared service. A dash means
+the capability is not part of the system's core public workflow, not that no
+related function can be added around it.
+\end{minipage}
 \end{table}
 
 \paragraph{Biomedical text mining and variant extraction.}
@@ -227,7 +226,91 @@ topology.
 \section{Method}
 % ================================================================
 
-\subsection{How modules move through the ecosystem}
+\subsection{The module artifact}
+
+At the artifact boundary, a just-dna annotation module is an editable
+directory. It always contains
+\texttt{module\_spec.yaml} and at least one recognized table. The table records
+the thing being annotated, such as a genotype, a diplotype, or a measured
+quantity. Evidence and machine-produced sidecars are stored separately.
+Compilation converts this human-readable directory into machine-readable
+Parquet files and a content-addressed
+\texttt{manifest.json}~\citep{justdnaformat2026}. The compiled artifact is what
+a consumer installs and joins to a genome.
+
+The authored files are ordinary YAML, CSV, Markdown, and optional image files.
+A domain expert can open them in a spreadsheet to review and correct an AI
+draft without special tools. just-module-creator
+operates on this same directory rather than introducing a separate format for
+AI-produced content. The module describes how a genotype or measurement should be
+interpreted if a consumer encounters it. Just-DNA-Lite, or another compatible
+consumer, supplies the genome or measurement later.
+
+The author does not need to supply this directory, or any CSV file, at the
+start of a session. The conversation may begin with only a trait, a gene, or an
+idea. It may instead include a deep research report, paper, PDF, link, or custom
+file; request rows from a provider such as ClinVar, CPIC, or ClinPGx; or point
+to an existing module on disk or in the catalog. The \texttt{/create-module}
+router identifies the appropriate entry point. From an idea alone, the
+assistant can search the catalog and literature before selecting table kinds
+from the live schema. Scaffolding and row authoring then create the editable
+directory described above.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+    node distance=0.28cm,
+    layer/.style={draw, rounded corners=2pt, fill=black!4,
+                  text width=0.82\linewidth, align=left,
+                  inner xsep=8pt, inner ysep=4pt, font=\small},
+    arr/.style={-{Stealth[length=4pt]}, thick},
+    edge/.style={font=\scriptsize\sffamily, fill=white, inner sep=1pt},
+  ]
+  \node[layer] (entry) {\textbf{Conversation entry:}
+    an idea, trait, or gene; a supplied paper, link, deep research report, or
+    custom file; a request to draft from ClinVar, CPIC, or ClinPGx; or an
+    existing local or catalog module.};
+  \node[layer, below=of entry] (route) {\textbf{Route, discover, and triage:}
+    inspect current state, search the catalog and literature when needed,
+    check source identity and reuse terms, and choose table kinds from the live
+    schema.};
+  \node[layer, below=of route] (scaffold) {\textbf{Scaffold and draft:}
+    create \texttt{module\_spec.yaml} and only the tables the finding needs;
+    author rows from supplied or retrieved evidence, or draft rows from a
+    provider that publishes them.};
+  \node[layer, below=of scaffold] (workspace) {\textbf{Editable module workspace:}
+    authored claims, evidence, metadata, and optional prose or images; derived
+    source records; plus provenance, verification, and authoring logs.};
+  \node[layer, below=of workspace] (review) {\textbf{Review and build:}
+    curate scientific decisions, enrich and cross-check source facts, validate,
+    compile, and close. Later evidence or reviewer feedback re-enters this
+    workflow at the stage it affects.};
+  \node[layer, below=of review] (destinations) {\textbf{Destinations:}
+    local installation, rehearsal on the polygon, or publication to the
+    production catalog; a consumer later joins the compiled module to a genome.};
+  \draw[arr] (entry) -- (route);
+  \draw[arr] (route) -- (scaffold);
+  \draw[arr] (scaffold) -- (workspace);
+  \draw[arr] (workspace) -- (review);
+  \draw[arr] (review) -- (destinations);
+\end{tikzpicture}
+\caption{From conversation to a usable module. Module files are intermediate
+artifacts created by the workflow, not required user inputs. Authored claims
+remain distinct from derived source records inside the editable workspace.}
+\label{fig:conversation-to-module}
+\end{figure}
+
+The table kind follows the subject of the claim. For example, in format 0.6.6
+used for this manuscript, a single-variant claim belongs in
+\texttt{variants.csv}; evidence for those rows belongs in
+\texttt{studies.csv}. Pharmacogenomic diplotypes, copy-number ranges, repeat
+counts, and published polygenic-score identifiers use other tables. The
+manuscript does not reproduce their column lists. The plugin calls
+\texttt{describe\_table} and \texttt{table\_requirements}, which read the
+installed pydantic models. An author therefore sees the schema accepted by the
+compiler running in that session.
+
+\subsection{Architecture and lifecycle}
 
 Module authoring and sample analysis remain separate until Just-DNA-Lite joins
 a compiled module to a local genome. On the authoring path, a person may edit
@@ -335,34 +418,6 @@ knowledge path. It can search and read sources, draft module rows, and help
 review disagreements. VCF filtering, module joins, and polygenic scoring
 remain ordinary software steps with explicit inputs and repeatable code.
 
-\subsection{The module artifact}
-
-A just-dna annotation module begins as a directory. It always contains
-\texttt{module\_spec.yaml} and at least one recognized table. The table records
-the thing being annotated, such as a genotype, a diplotype, or a measured
-quantity. Evidence and machine-produced sidecars are stored separately. The
-compiler turns this directory into parquet files and a content-addressed
-\texttt{manifest.json}~\citep{justdnaformat2026}.
-
-The authored files are ordinary YAML, CSV, Markdown, and optional image files.
-They can be created and revised without an AI assistant. just-module-creator
-operates on this same directory rather than introducing an AI-specific module
-format. The module describes how a genotype or measurement should be
-interpreted if a consumer encounters it. Just-DNA-Lite, or another compatible
-consumer, supplies the genome or measurement later.
-
-The table kind follows the subject of the claim. For example, in format 0.6.6
-used for this manuscript, a single-variant claim belongs in
-\texttt{variants.csv}; evidence for those rows belongs in
-\texttt{studies.csv}. Pharmacogenomic diplotypes, copy-number ranges, repeat
-counts, and published polygenic-score identifiers use other tables. The
-manuscript does not reproduce their column lists. The plugin calls
-\texttt{describe\_table} and \texttt{table\_requirements}, which read the
-installed pydantic models. An author therefore sees the schema accepted by the
-compiler running in that session.
-
-\subsection{Components and responsibilities}
-
 No single package implements the whole path. Each component owns a boundary
 that another component can call without reimplementing its rules. Within the
 module toolchain, dependencies point inward: enricher $\rightarrow$ compiler
@@ -395,7 +450,7 @@ whose public contract is the MCP tool surface and the accompanying workflow
 documents. The same source tree ships plugin manifests for Claude Code and
 Codex. Both hosts launch the same server and load the same skills.
 
-\subsection{Compiler behaviour belongs to the compiler}
+\subsection{Determinism, evidence, and responsibility}
 
 Within one compiler version, \texttt{just-dna-compiler} tests that a valid
 specification can be compiled, reversed, and compiled again without changing
@@ -414,65 +469,8 @@ claim in valid syntax, the compiler may preserve it perfectly. Reproducible
 output shows that the compiler kept the input stable; it does not show that the
 input agrees with the literature.
 
-\subsection{Tools available to the assistant}
-
-The MCP tools are grouped by task: authoring, research, checks, enrichment,
-comparison, and registry work. The default configuration lists the full
-surface. An optional layered configuration initially lists the core authoring
-loop and a \texttt{toolbox} command that reveals the other groups. Tool search
-can reduce the listing further. These discovery options change what the agent
-sees in its context; they do not create a separate implementation of the
-workflow.
-
-Registry writes require a token, with one necessary exception:
-\texttt{registry\_register} creates the token and therefore cannot require one
-in advance. Tools whose cost depends on a large source corpus state that cost
-in their descriptions.
-
-Literature and enrichment requests share a pacing gate, including the NCBI
-budget used by several lookups. The literature search fills a gap left by the
-enricher. The enricher can verify a PMID that an author already has, but it does
-not search for the paper. \texttt{literature\_search} returns titles so the
-assistant can check identity. The existence of a PMID alone says nothing about
-whether it is the intended article.
-
-\subsection{How a person enters the workflow}
-
-A person usually knows what they want to accomplish, not which internal stage
-performs it. They may want to create a module, understand an inherited
-directory, find a paper, revise a published module, or decode an error message.
-The command menu uses those intentions as its entries.
-
-\begin{center}
-\small
-\begin{tabular}{@{}ll@{}}
-\toprule
-Command & Purpose \\
-\midrule
-\texttt{/create-module} & begin or continue creating a module \\
-\texttt{/module-status} & inspect a directory and identify the next decision \\
-\texttt{/module-revise} & begin another pass over an existing module \\
-\texttt{/find-evidence} & find and read evidence for a row \\
-\texttt{/module-publish} & rehearse and then publish \\
-\texttt{/module-symptom} & explain a message from the toolchain \\
-\texttt{/module-install-local} & install a compiled module without a catalog \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-The first version of the menu exposed twenty stage names. That forced a person
-to choose between terms such as \texttt{module-curate} and
-\texttt{module-enrich} before the system had explained either one. The seven
-commands now route to thirteen guides. A guide contains the procedure for one
-stage and is loaded by path when the assistant reaches that stage.
-
-\texttt{/create-module} is therefore a router. It examines what the author has
-already provided and selects the next stage. If the request shows that the
-person first needs an explanation, the router loads the overview guide. The
-overview is not a menu command because a new author would not know its internal
-name.
-
-\subsection{The authoring journey}
+% Tools available to the assistant and How a person enters the workflow
+% are in the supplementary material (Appendix~\ref{app:tools-and-commands}).
 
 The workflow follows the module from an idea to one of its destinations:
 
@@ -490,10 +488,11 @@ search and manual authoring. Scaffolding creates the files and placeholders
 required for the selected table kind.
 
 Curation follows drafting because a drafted row may still contain decisions
-that the source cannot make for the module. The author or assistant must decide
-which genotype the claim concerns, how a weight should be interpreted, and how
-the conclusion should be worded. The workflow presents these decisions rather
-than silently choosing values that merely satisfy the schema.
+that the source cannot make for the module: which genotype the claim concerns,
+how a weight should be interpreted, and how the conclusion should be worded.
+These are the decisions where domain expertise has the most leverage. The
+workflow presents them to the author rather than silently choosing values that
+merely satisfy the schema.
 
 Enrichment resolves identifiers and writes sidecars such as
 \texttt{resolution.csv} and \texttt{literature.csv}. These files record the
@@ -511,8 +510,6 @@ Most modules return to this workflow. A later source release, a new paper, or a
 reviewer's correction begins a revision pass. The router inspects the existing
 directory so that the assistant does not treat a revision as a blank first
 draft and overwrite decisions whose history matters.
-
-\subsection{Edits, evidence, and responsibility}
 
 The compiler reports problems but does not edit authored values.
 just-module-creator is the authoring application, so its workflow permits
@@ -552,11 +549,11 @@ installed or discovered. A local installation is useful during authoring. The
 registry provides two shared stores for publication rehearsal and release.
 
 The registry has two independent instances. Production is the catalog used by
-consumers. The polygon, selected with \texttt{target=test}, is a rehearsal
-environment where an author can delete a test publication. Writes default to
-the polygon. Catalog reads require an explicit target so that an author does
-not publish to one instance, read from the other, and mistake the missing
-result for a failed publication.
+consumers. The staging registry, called the polygon and selected with
+\texttt{target=test}, is a rehearsal environment where an author can delete a
+test publication. Writes default to the polygon. Catalog reads require an
+explicit target so that an author does not publish to one instance, read from
+the other, and mistake the missing result for a failed publication.
 
 The production catalog is immutable. Publishing a version also claims its
 authored content by hash, and yanking the version does not release that claim.
@@ -564,7 +561,8 @@ The workflow therefore rehearses on the polygon and asks separately before a
 production publish. The registry accepts the specification, runs its own
 enrichment and strict compilation, and stores the artifact it produced. It
 does not rely on a locally claimed digest, and it does not require the author
-to sign the local artifact.
+to sign the local artifact. Inclusion in either catalog distributes a module;
+it is not scientific review, clinical validation, or endorsement.
 
 Publication is not the only way to use a module.
 \texttt{/module-install-local} installs a compiled artifact into a
@@ -622,26 +620,6 @@ Three modules were authored by people who are not the plugin's developers
 (\texttt{eric-mods}, \texttt{ksuha-dna}), indicating that the tool surface
 is usable beyond the original team.
 
-\subsection{Command menu reduction}
-
-The command redesign reduced the text placed in every session from 14,688
-characters for twenty entries to 3,464 characters for seven entries, a 76\%
-reduction. A test walks the links from those seven commands and confirms that
-every guide remains reachable. The smaller menu therefore removes repeated
-prompt content without making a stage inaccessible.
-
-\subsection{The title-as-quote observation}
-
-A measurement across 33 \texttt{studies.csv} files (44,342 rows) in the
-upstream repository found that 3,668 rows carried a
-\texttt{provenance\_quote} that was the article's title verbatim. Since a
-title always appears in its own full text, the quote-verification check
-matched on all 3,668 rows while evidencing nothing about whether anyone
-located support for the row's claim. This observation led to the attribution
-requirement described in Section~3.8: a quote must name who located it in
-\texttt{StudyRow.curator} so that a reviewer can distinguish a machine-located
-passage from a human-read one.
-
 \subsection{Proposed evaluation protocol}
 
 The creation evaluation begins with an expert-checked fixture. Each fixture
@@ -689,78 +667,62 @@ accuracy.
 \section{Discussion}
 % ================================================================
 
-The ecosystem's architecture changes what an AI assistant is asked to produce.
-It writes module data for an existing pipeline instead of inventing the
-pipeline again for each question. The same compiler and schema are used for
-every module, and the sample is normalized once before selected annotations are
-joined through the established columnar implementation. The language model may
-still misunderstand a paper. Its draft is kept inspectable, and source
-disagreements and unresolved judgements remain visible to the author.
+Genomic data is becoming personally accessible, and people already use AI
+assistants---coding tools such as Claude Code and Codex, or plain chat
+applications such as ChatGPT---to interpret their
+results~\citep{conyngham2026rosie}. Restricting this is not viable: regulatory
+frameworks add compliance burdens, yet users find workarounds or proceed
+informally. The more effective response is to build a community where the work
+happens in the open, where domain professionals can review what others publish,
+and where the tools enforce structure. A module is visible, reviewable, and
+correctable; a one-off chat session is none of these.
 
-The workflow must work for people with different levels of expertise. A
-geneticist may want to decide every genotype and evidence statement. A
-non-specialist may provide a topic and several papers, then rely on the
-assistant to explain each decision. The tool surface cannot assume which kind
-of author is present. It can perform mechanical corrections and keep a record
-of them, while presenting scientific interpretation and production publishing
-for review.
+The safety concern is real but cuts deeper than AI. Candidate-gene studies have
+failed to replicate~\citep{border2019no}, GWAS effect sizes routinely shrink in
+independent cohorts~\citep{ioannidis2005why}, direct-to-consumer tests have
+produced false-positive rates above 40\%~\citep{tandyconnor2018false}, and
+variant reclassifications have led to genetic
+misdiagnoses~\citep{manrai2016genetic}. A person from a more deterministic
+field can easily mistake a statistical association for a causal mechanism.
+The ecosystem is therefore explicitly research-only, and educating users about
+these limitations is as important as the tools. A module that faithfully
+reflects a study which later fails to replicate is not wrong on its own terms,
+but a user acting on it may be harmed all the same.
 
-The skills help the agent follow this path, but they are instructions rather
-than a security boundary. An agent can still bypass them and edit a CSV
-directly. The same is true of the provenance log: tool-mediated overrides are
-recorded, while a hand edit depends on the agent calling the recording tool.
-These limits are important because the paper evaluates a workflow composed of
-tools and instructions, not a closed application that prevents every other
-action.
-
-Agent hosts and MCP conventions change quickly. This paper focuses on the parts
-that should survive a client update. Schema answers come from the installed
-models. Edits can carry attribution, and source disagreements remain visible.
-Publication is rehearsed on a separate instance. The compiler retains authority
-over the artifact. Client-specific setup belongs in the repository
-documentation.
+The registry turns individual effort into shared infrastructure: authors
+version, extend, correct, and republish modules---the pattern software
+engineering solved with package registries. The catalog already holds modules
+from independent authors, and the plugin's MCP tools are listed on
+biocontext.ai so other agent platforms can use them independently. Modules
+contain no individual-level data; Just-DNA-Lite applies them locally, so a
+person's VCF never leaves their machine and annotation runs raise no GDPR
+concerns. The knowledge travels through the registry; the genome does not.
 
 \paragraph{Limitations.}
-The present evaluation has several limitations. It contains no creation
-accuracy estimate; the available fixtures are too small for a performance
-claim. The plugin cannot determine whether an annotation is medically correct.
-It can make the claim structured, attributable, and easier to review. The
-module authoring workflow targets GRCh38 and does not perform liftover. Local
-installation into Just-DNA-Lite is described as a procedure that runs in that
-checkout; just-module-creator does not execute the consumer on the author's
-behalf. We have not compared the runtime of freely generated VCF scripts with
-the Just-DNA-Lite pipeline. The performance argument made here is
-architectural: the established path reuses normalized Parquet data and a
-maintained join implementation instead of generating a new analysis for each
-request. The companion platform paper~\citep{companion2026justdnalite} provides
-the runtime benchmarks.
-
-\paragraph{Relationship to the companion paper.}
-This paper describes the module authoring path. The companion platform
-paper~\citep{companion2026justdnalite} describes the consumer side: the
-Just-DNA-Lite application, its VCF processing pipeline, annotation speed
-benchmarks, the \texttt{just-prs} polygenic risk score engine, and the web
-interface. The two papers share the same module contract but describe
-different sides of the boundary and can be read independently.
+The module system launched in August 2026 and the catalog is less than a month
+old. We are developing mechanisms to involve genetic counselors and
+domain-expert agents in quality evaluation, and to communicate to citizen
+scientists that many modules reflect early-stage research rather than
+clinical-grade evidence. Just-DNA-Lite provides an extensive FAQ and
+science-literacy guide; the module catalog needs comparable guidance.
+The evaluation contains no creation accuracy estimate; the available fixtures
+are too small for a performance claim. The authoring workflow targets GRCh38
+and does not perform liftover. Runtime benchmarks are in the companion
+paper~\citep{companion2026justdnalite}.
 
 % ================================================================
 \section{Conclusion}
 % ================================================================
 
-The Just-DNA ecosystem separates two kinds of work. Module authors turn papers
-and databases into structured, attributable annotation knowledge. Just-DNA-Lite
-filters and normalizes a local genome, joins it to selected compiled modules,
-and produces results for inspection and reporting. A companion platform
-paper~\citep{companion2026justdnalite} describes that consumer side in detail.
+People are already using AI assistants to interpret genomic data, and the volume
+of such use will only grow. The Just-DNA ecosystem channels that work into
+versioned, schema-validated modules that accumulate as shared infrastructure
+rather than evaporating with each chat session. The registry makes genomic
+annotation knowledge composable: an author publishes once, and others install,
+extend, and build on the result. Eight modules from five independent namespaces
+show that the path from first draft to published, reusable annotation is
+functional today.
 
-Within the authoring side, just-module-creator lets an AI assistant draft and
-revise ordinary module files while the installed schema, enricher, compiler,
-and registry provide the shared path from draft to published artifact. The
-production catalog holds eight modules from five namespaces, demonstrating
-that the authoring and publishing workflow is functional end to end. A module
-can then be installed locally or consumed from the catalog without asking the
-language model to write another genomic pipeline. Scientific judgement belongs
-to the author, and sample-level computation belongs to deterministic software.
 The software is open-source and intended for research use only.
 
 % References
@@ -801,5 +763,88 @@ process sample data for research and educational use; their reports and scores
 are not diagnoses or medical advice. Language that implies causation, such as
 ``causes'' or ``guarantees,'' is outside the scope of a module written with this
 plugin.
+
+% ================================================================
+\section{Tools and command menu}
+\label{app:tools-and-commands}
+% ================================================================
+
+\subsection*{Command menu reduction}
+
+The command redesign reduced the text placed in every session from 14,688
+characters for twenty entries to 3,464 characters for seven entries, a 76\%
+reduction. A test walks the links from those seven commands and confirms that
+every guide remains reachable. The smaller menu therefore removes repeated
+prompt content without making a stage inaccessible.
+
+\subsection*{The title-as-quote observation}
+
+A measurement across 33 \texttt{studies.csv} files (44,342 rows) in the
+upstream repository found that 3,668 rows carried a
+\texttt{provenance\_quote} that was the article's title verbatim. Since a
+title always appears in its own full text, the quote-verification check
+matched on all 3,668 rows while evidencing nothing about whether anyone
+located support for the row's claim. This observation led to the attribution
+requirement described in Section~3.3: a quote must name who located it in
+\texttt{StudyRow.curator} so that a reviewer can distinguish a machine-located
+passage from a human-read one.
+
+\subsection*{Tools available to the assistant}
+
+The MCP tools are grouped by task: authoring, research, checks, enrichment,
+comparison, and registry work. The default configuration lists the full
+surface. An optional layered configuration initially lists the core authoring
+loop and a \texttt{toolbox} command that reveals the other groups. Tool search
+can reduce the listing further. These discovery options change what the agent
+sees in its context; they do not create a separate implementation of the
+workflow.
+
+Registry writes require a token, with one necessary exception:
+\texttt{registry\_register} creates the token and therefore cannot require one
+in advance. Tools whose cost depends on a large source corpus state that cost
+in their descriptions.
+
+Literature and enrichment requests share a pacing gate, including the NCBI
+budget used by several lookups. The literature search fills a gap left by the
+enricher. The enricher can verify a PMID that an author already has, but it does
+not search for the paper. \texttt{literature\_search} returns titles so the
+assistant can check identity. The existence of a PMID alone says nothing about
+whether it is the intended article.
+
+\subsection*{How a person enters the workflow}
+
+A person usually knows what they want to accomplish, not which internal stage
+performs it. They may want to create a module, understand an inherited
+directory, find a paper, revise a published module, or decode an error message.
+The command menu uses those intentions as its entries.
+
+\begin{center}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Command & Purpose \\
+\midrule
+\texttt{/create-module} & begin or continue creating a module \\
+\texttt{/module-status} & inspect a directory and identify the next decision \\
+\texttt{/module-revise} & begin another pass over an existing module \\
+\texttt{/find-evidence} & find and read evidence for a row \\
+\texttt{/module-publish} & rehearse and then publish \\
+\texttt{/module-symptom} & explain a message from the toolchain \\
+\texttt{/module-install-local} & install a compiled module without a catalog \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The first version of the menu exposed twenty stage names. That forced a person
+to choose between terms such as \texttt{module-curate} and
+\texttt{module-enrich} before the system had explained either one. The seven
+commands now route to thirteen guides. A guide contains the procedure for one
+stage and is loaded by path when the assistant reaches that stage.
+
+\texttt{/create-module} is therefore a router. It examines what the author has
+already provided and selects the next stage. If the request shows that the
+person first needs an explanation, the router loads the overview guide. The
+overview is not a menu command because a new author would not know its internal
+name.
 
 \end{document}

@@ -14,6 +14,9 @@
 		},
 		{
 			"path": "../just-dna-registry"
+		},
+		{
+			"path": "../ClawBio"
 		}
 	],
 	"settings": {}
