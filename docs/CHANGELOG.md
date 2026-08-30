@@ -3,6 +3,35 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.24.3 — 2026-08-30
+
+### The tools can be reachable and invisible, and no skill said so
+
+A subagent probe showed the plugin's MCP tools arrive **deferred** — present but not listed until a
+schema is loaded — so "I cannot see the tools" is a routine observation rather than a broken install.
+Nothing in the skill set told an agent how to read it, and getting it backwards has already cost two
+unattended runs their conclusions: both reported capabilities absent that were merely unlisted.
+
+`module-101` now opens its tool section with the three states (answers / deferred / stale build
+answering), the one call that settles it, and the spine an agent must be able to call before starting.
+`list_tables` is the probe because its `produced_by` block reports the format and compiler versions the
+server is actually running — one call proves the server is there *and* which schema it answers from.
+`test_the_self_check_spine_is_callable` pins the roster, since a list in prose rots like a hand-kept
+one. Deliberately narrow: a blanket "every tool a skill names must exist" false-positives on the thirty
+files that name upstream symbols, which are the compiler's and the enricher's and correctly named.
+
+### The mode tier finally leaves the prose
+
+Twenty statements across sixteen skills still qualified a tool by the `essentials`/`extended` axis
+removed in 0.21.0 — *"at essentials tier"*, *"in every tier"*, *"at any tier"*. Each told a reader a
+route depends on a switch that no longer exists, one step from the same wrong conclusion.
+
+Targeted rather than a rename, because `tier` is overloaded three ways and only one is stale. Kept: the
+layer sense (the enricher is still the only one that fetches), `research_tier` and `clin_sig`'s
+four-tier axis which are data, the `JMC_MODE` symptom entries which describe what an older server
+actually says, and the four historical asides that carry a consequence — a published module still lacks
+its literature pass, and the cost outlived the flag.
+
 ## 0.24.2 — 2026-08-30
 
 ### Supplementary tables are in reach, and `find-evidence` said they were not
