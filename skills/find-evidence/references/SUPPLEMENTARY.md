@@ -42,10 +42,36 @@ rule 3's *read and not found* versus *unchecked* distinction exists to keep sepa
 
 ---
 
-## The ladder
+## Three tools do this now
 
-Run it in order. Stop at the first rung that answers, and **record which rung answered** — the rung is
-part of what you know about the file.
+Since 0.25.0 the ladder is a tool surface, not a procedure you drive by hand:
+
+| call | what it does |
+|---|---|
+| `list_supplementary(doi= / pmid= / pmcid=)` | inventory only, fetches nothing. Runs the rungs below and says which one answered |
+| `fetch_supplementary(url=)` | one file, from a url the inventory gave you, into the cache |
+| `describe_supplementary(path=)` | a workbook's sheet names and its in-cell `Supplementary Table …` titles. Offline, no spreadsheet library |
+
+**Read `verdict` as three-valued and never as a boolean.** `found`; `none_published` — the paper has
+none; `not_determinable` — no rung could answer, which for now usually means *no URL pattern is known
+for this publisher*. The third is a gap in our coverage and is **never** evidence a paper has no
+supplementary material. Two agents recorded exactly that inference as a fact about the world.
+
+`notes` says what the answer is bounded by. The pattern rung stops enumerating on a guess, so its file
+list is a floor rather than a count; the Europe PMC rung is authoritative because it carries each
+file's real extension.
+
+They go through `net.py`'s `ServiceGate`, so pacing, retries on 429/503 and the contact header are
+handled — nothing below needs saying in a prompt.
+
+**None of them parses a table into rows**, deliberately. Which sheet supports a row's claim is a
+judgement about that row, the same reason `fetch_fulltext` returns no best-matching passage.
+
+## The ladder those tools run
+
+Worth reading even though you no longer type it: it is what `rung` and `why_not` are telling you, and
+it is what to do by hand when the verdict is `not_determinable`. **Record which rung answered** — the
+rung is part of what you know about the file.
 
 **Identify yourself on every request.** These are polite-pool hosts and the address says whose budget
 is being spent, so send the one the contact chain resolved — `JMC_USER_EMAIL`, then

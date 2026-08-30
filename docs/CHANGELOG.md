@@ -3,6 +3,59 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.25.0 — 2026-08-31
+
+### Supplementary tables become a tool surface
+
+Three tools, in the `evidence` group. `list_supplementary(doi|pmid|pmcid)` inventories what a paper
+published beside itself; `fetch_supplementary(url)` gets one file; `describe_supplementary(path)` reads
+a workbook's sheet names and its in-cell `Supplementary Table …` titles. A minor rather than a patch:
+this is a contract change, three new names on the tool surface.
+
+**Why they exist.** A GWAS paper's body says *"263 variants across 180 loci"* and lists none of them;
+the rsIDs, effect alleles and per-trait p-values are in the supplementary workbook, and `fetch_fulltext`
+returns the JATS body without it. Two agents given the same task independently recorded *"no plugin tool
+fetches supplementary material"* and dropped a paper's entire contribution — one then rebuilt the
+publisher URL pattern from scratch over twelve blind probes with no pacing. The ladder was already
+documented in a skill; what was missing was a tool, so the calls went out ungated. That is `F68`'s open
+half, now closed: all three run through `net.py`'s `ServiceGate`, so pacing, `Retry-After`, 429/503
+retries and the contact header are handled rather than left to a prompt to ask for.
+
+**`verdict` is three-valued and that is the design.** `found` / `none_published` / `not_determinable`,
+the last carrying `why_not` and naming the DOI prefix. A publisher we hold no pattern for is a gap in
+our coverage and **never** evidence a paper has no supplementary material — collapsing those two is
+precisely the inference that produced the finding above. `notes` bounds the answer: the pattern rung
+stops enumerating on a guess so its list is a floor, while the Europe PMC rung is authoritative because
+it carries each file's real extension. Extensions are not guessable — `MOESM1` has been observed as
+`.txt` on one article and `.pdf` on another, and a peer-review PDF sits at `MOESM3` on a third.
+
+**What they will not do.** No fetch-everything form: Europe PMC's bulk endpoint returns one zip of every
+file *and every figure* with no way to select, measured at 224 MB to reach a 14 KB table. And nothing
+parses a table into rows — which sheet supports a row's claim is a judgement about that row, the same
+reason `fetch_fulltext` returns no best-matching passage. `describe_supplementary` reads the xlsx
+container directly, so it needs no spreadsheet library and works where `openpyxl` is absent.
+
+Coverage is Springer Nature — `10.1007`, `10.1186`, `10.1038` — measured against four real articles.
+Everything else returns `not_determinable` with the prefix named, which is a to-do list rather than a
+silent hole.
+
+`net.py` gains `HttpService.probe`, a paced GET whose 4xx is an answer rather than a failure: on an
+object store a 403 means *no such key*, and raising there would report a source as unavailable for a
+file the publisher simply never posted. Throttling and 5xx retry exactly as before.
+
+### An ask the sources do not support gets zero rows and a report
+
+`create-module`'s step 0 triages the ask against each source before authoring. A source making no claim
+about the module's subject contributes no rows, and the answer is to name it and hand the decision back;
+zero rows is a legitimate outcome and a finding. The failure this closes is silent subversion — an ask
+the sources cannot support, formally satisfied by authoring whatever identifiers the papers happen to
+name, which passes every check while asserting something none of its sources says.
+
+It carries the opposite error with it, because it looks identical: a module about a trait covers **both
+directions**, and a subject named by a desirable word does not restrict the module to the desirable
+half. The test is whether the source makes a claim about the subject, never whether the claim is
+favourable.
+
 ## 0.24.3 — 2026-08-30
 
 ### The tools can be reachable and invisible, and no skill said so

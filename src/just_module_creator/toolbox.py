@@ -116,9 +116,17 @@ CORE = (
 GROUPS: tuple[Group, ...] = (
     Group(
         "evidence",
-        "Read a paper: where a legal copy is, its full text, and who cited it.",
-        ("lookup_open_access", "fetch_fulltext", "paper_citations"),
-        4457,
+        "Read a paper: a legal copy, its full text, who cited it, and the "
+        "supplementary tables its per-variant numbers are actually in.",
+        (
+            "lookup_open_access",
+            "fetch_fulltext",
+            "paper_citations",
+            "list_supplementary",
+            "fetch_supplementary",
+            "describe_supplementary",
+        ),
+        6374,
     ),
     Group(
         "identifiers",

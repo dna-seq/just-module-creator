@@ -29,15 +29,25 @@ qualified by an exception.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from anyio.to_thread import run_sync
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 from just_dna_compiler import compiler
 from just_dna_enricher import lookup as enricher_lookup
+from just_dna_enricher.literature import EuropePmcClient
+from just_dna_enricher.locations import default_ensembl_cache_dir
 from just_dna_registry import RegistryError
 from mcp.types import ToolAnnotations
 
-from just_module_creator.discovery import fulltext, open_access, search_literature
+from just_module_creator import supplementary
+from just_module_creator.discovery import (
+    DEFAULT_EUROPEPMC_BASE,
+    fulltext,
+    open_access,
+    search_literature,
+)
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
     CitationLookup,
@@ -51,9 +61,13 @@ from just_module_creator.models import (
     OpResult,
     RegistryModule,
     RegistrySearchResult,
+    SupplementaryDescription,
+    SupplementaryFetch,
+    SupplementaryFileInfo,
+    SupplementaryList,
     VariantLookup,
 )
-from just_module_creator.net import NetworkServices
+from just_module_creator.net import HttpService, NetworkServices, ServiceGate, ServiceUnavailable
 from just_module_creator.settings import RegistryTarget, Settings
 from just_module_creator.targets import (
     DEFAULT_WRITE_TARGET,
@@ -835,3 +849,218 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         return await run_sync(
             lambda: fulltext(services, pmid=pmid, pmcid=pmcid, doi=doi, max_chars=max_chars)
         )
+
+    # Three tools rather than one, because inventory is cheap and fetching is not:
+    # an agent that can see 54 files picks one, and an agent that cannot downloads
+    # everything. The bulk route measured 224 MB to reach a 14 KB table.
+    #
+    # They exist because two agents given the same task independently recorded "no
+    # plugin tool fetches supplementary material" and dropped a paper's whole
+    # contribution — one then rebuilt the publisher URL pattern over twelve blind
+    # probes with no pacing. The ladder was documented in a skill at the time; what
+    # was missing was a tool, so the calls went out ungated (`F68`).
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="List supplementary files", readOnlyHint=True, openWorldHint=True
+        )
+    )
+    async def list_supplementary(
+        doi: str | None = None,
+        pmid: str | None = None,
+        pmcid: str | None = None,
+    ) -> SupplementaryList:
+        """What a paper published beside itself. Inventory only — fetches no file.
+
+        A GWAS paper's body says *"263 variants across 180 loci"* and lists none of
+        them; the rsIDs, effect alleles and per-trait p-values are in the
+        supplementary workbook, which `fetch_fulltext` does not return. Call this
+        before concluding a paper's numbers are out of reach.
+
+        Two rungs. When the article is in Europe PMC its fulltext XML names every
+        file **with its real extension**, which is authoritative — extensions are
+        not guessable, and a peer-review PDF and a data workbook sit at adjacent
+        indices. Otherwise the publisher's ESM URL pattern is probed, which is the
+        common case for a paper published this month, and exactly when somebody is
+        writing a module about it.
+
+        **Read `verdict` as three-valued.** `none_published` says the paper has no
+        supplementary material. `not_determinable` says no rung could answer —
+        usually that no URL pattern is known for this publisher — and it is never
+        evidence of absence. `notes` says what the answer is bounded by: the
+        pattern rung stops enumerating on a guess, so its file list is a floor.
+        """
+        _require_network("Supplementary listing")
+        if not (doi or pmid or pmcid):
+            raise ToolError("Provide a doi, pmid or pmcid.")
+        return await run_sync(lambda: _supplementary_list(services, doi, pmid, pmcid))
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Fetch one supplementary file", readOnlyHint=True, openWorldHint=True
+        )
+    )
+    async def fetch_supplementary(url: str) -> SupplementaryFetch:
+        """Download **one** supplementary file to the cache. Parses nothing.
+
+        Takes a `url` from `list_supplementary` rather than an identifier, so the
+        file you get is one you chose from an inventory you read. There is
+        deliberately no fetch-everything form: Europe PMC's bulk endpoint returns a
+        single zip of every file *and every figure* with no way to select, measured
+        at **224 MB to reach a 14 KB table**.
+
+        Returns a path. Read the file yourself — for a workbook,
+        `describe_supplementary` says which sheets are in it.
+        """
+        _require_network("Supplementary fetch")
+        return await run_sync(lambda: _supplementary_fetch(services, url))
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Describe a supplementary workbook", readOnlyHint=True, openWorldHint=False
+        )
+    )
+    async def describe_supplementary(path: str) -> SupplementaryDescription:
+        """The sheets in a downloaded workbook, and what they call themselves.
+
+        Offline, and needs no spreadsheet library — it reads the xlsx container
+        directly, which is why it works where `openpyxl` is not installed.
+
+        Sheets are commonly named `ST1`…`ST14` while the titles written *inside*
+        them read `Supplementary Table S8: …`; both are returned because neither
+        alone tells you which sheet holds what. The article's own body is the third
+        half of that map — it cites *(Supplementary Table S5)* at the sentence whose
+        claim you are trying to support.
+
+        **Returns no rows, on purpose.** Which sheet supports a given row's claim is
+        a judgement about that row, the same reason `fetch_fulltext` returns no
+        best-matching passage.
+        """
+        return await run_sync(lambda: _describe_workbook(path, settings))
+
+
+def _esm_service(services: NetworkServices) -> HttpService:
+    """The ESM host as a paced service, built once and closed at shutdown.
+
+    Its own gate rather than a shared one: this is an object store, not an API with
+    a published budget, and it is nobody else's rate limit to spend.
+    """
+    for existing in services._extra:  # noqa: SLF001 — the registry is ours
+        if existing.name == "publisher_esm":
+            return existing
+    return services.register(
+        HttpService(
+            name="publisher_esm",
+            base_url=supplementary.ESM_HOST,
+            gate=ServiceGate(interval=0.5),
+            headers={"User-Agent": f"just-module-creator (mailto:{services.contact_email()})"},
+        )
+    )
+
+
+def _supplementary_cache(settings: Settings) -> Path:
+    """Beside the ecosystem's other caches, never inside a spec directory.
+
+    A name absent from `specfiles.RECOGNIZED_SPEC_FILES` is dropped by the next
+    server-side rebuild, so our own downloads live where the enricher keeps its
+    snapshots. `JMC_WORKSPACE` wins when it is set, so containment still holds.
+    """
+    if settings.workspace:
+        return resolve_dir(str(settings.workspace), settings, must_exist=False) / "supplementary"
+    return default_ensembl_cache_dir().parent / "supplementary"
+
+
+def _supplementary_list(
+    services: NetworkServices, doi: str | None, pmid: str | None, pmcid: str | None
+) -> SupplementaryList:
+    client = services.lookup_clients.europepmc or EuropePmcClient()
+    if pmid and not (pmcid and doi):
+        record = client.lookup([pmid]).get(pmid) or {}
+        pmcid = pmcid or record.get("pmcid")
+        doi = doi or record.get("doi")
+
+    xml: str | None = None
+    xml_base: str | None = None
+    if pmcid:
+        service = services.register(
+            HttpService(
+                name="europepmc_xml",
+                base_url=DEFAULT_EUROPEPMC_BASE,
+                gate=ServiceGate(interval=0.5),
+                headers={"User-Agent": f"just-module-creator (mailto:{services.contact_email()})"},
+            )
+        )
+        try:
+            xml = service.get(f"{pmcid}/fullTextXML").text
+            xml_base = f"https://europepmc.org/articles/{pmcid}/bin"
+        except ServiceUnavailable as exc:
+            log.warning("fullTextXML unavailable for %s: %s", pmcid, exc)
+
+    result = supplementary.inventory(
+        doi=doi, xml=xml, xml_base_url=xml_base, probe=_esm_service(services)
+    )
+    return SupplementaryList(
+        doi=result.doi,
+        pmcid=pmcid,
+        verdict=result.verdict,
+        rung=result.rung,
+        publisher=result.publisher,
+        why_not=result.why_not,
+        notes=result.notes,
+        files=[
+            SupplementaryFileInfo(
+                name=f.name, url=f.url, extension=f.extension,
+                caption=f.caption, size_bytes=f.size_bytes,
+            )
+            for f in result.files
+        ],
+    )
+
+
+def _supplementary_fetch(services: NetworkServices, url: str) -> SupplementaryFetch:
+    if not url.startswith(("http://", "https://")):
+        raise ToolError("Pass a url from list_supplementary.")
+    service = _esm_service(services)
+    on_esm_host = url.startswith(supplementary.ESM_HOST)
+    path = url[len(supplementary.ESM_HOST) :] if on_esm_host else url
+    try:
+        response = service.probe(path)
+    except ServiceUnavailable as exc:
+        return SupplementaryFetch(url=url, retrieved=False, note=f"{exc}")
+    if response.status_code >= 400:
+        return SupplementaryFetch(
+            url=url, retrieved=False,
+            note=(
+                f"HTTP {response.status_code}. On this host a 403 means no such object — "
+                "the file is not published under that name, which is not the same as the "
+                "article having no supplementary material."
+            ),
+        )
+    target = _supplementary_cache(services.settings)
+    target.mkdir(parents=True, exist_ok=True)
+    destination = target / url.rsplit("/", 1)[-1]
+    destination.write_bytes(response.content)
+    return SupplementaryFetch(
+        url=url,
+        path=str(destination),
+        retrieved=True,
+        size_bytes=len(response.content),
+        content_type=response.headers.get("content-type"),
+    )
+
+
+def _describe_workbook(path: str, settings: Settings) -> SupplementaryDescription:
+    resolved = Path(path)
+    if not resolved.is_file():
+        raise ToolError(f"No such file: {path}")
+    sheets, titles = supplementary.workbook_sheets(resolved)
+    if not sheets and not titles:
+        return SupplementaryDescription(
+            path=str(resolved), is_workbook=False,
+            note=(
+                "Not an xlsx workbook, or a workbook with no sheet table. A PDF, CSV or text "
+                "supplement is read directly — this tool describes spreadsheet structure only."
+            ),
+        )
+    return SupplementaryDescription(
+        path=str(resolved), is_workbook=True, sheets=sheets, table_titles=titles
+    )

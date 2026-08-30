@@ -167,13 +167,40 @@ class HttpService:
         except httpx.HTTPError as exc:
             raise ServiceUnavailable(self.name, f"{type(exc).__name__}: {exc}") from exc
 
+    def probe(self, path: str, params: dict[str, Any] | None = None) -> httpx.Response:
+        """A paced GET whose 4xx is an ANSWER rather than a failure.
+
+        `get` turns every 4xx into `ServiceUnavailable`, which is right when a 4xx
+        means the request was wrong. It is wrong for an object store: Springer's
+        ESM host answers a key that does not exist with **403**, so on that host a
+        4xx is the negative result we asked for, and raising would report "the
+        source is unavailable" for a file the publisher simply never posted.
+
+        Throttling and 5xx still retry exactly as in `get` — the difference is
+        only what happens to a 4xx that survives them.
+        """
+        try:
+            return self._get(path, params, tolerate_client_error=True)
+        except _Throttled as exc:
+            raise ServiceUnavailable(
+                self.name, f"HTTP {exc.status_code}", rate_limited=exc.status_code == 429
+            ) from exc
+        except httpx.HTTPError as exc:
+            raise ServiceUnavailable(self.name, f"{type(exc).__name__}: {exc}") from exc
+
     @retry(
         stop=attempt_floor(3),
         wait=_wait_honouring_retry_after,
         retry=retry_if_exception_type((httpx.TransportError, httpx.TimeoutException, _Throttled)),
         reraise=True,
     )
-    def _get(self, path: str, params: dict[str, Any] | None) -> httpx.Response:
+    def _get(
+        self,
+        path: str,
+        params: dict[str, Any] | None,
+        *,
+        tolerate_client_error: bool = False,
+    ) -> httpx.Response:
         """The retried attempt. Same shape as the enricher's own clients.
 
         `attempt_floor` rather than `stop_after_attempt` so a deployment can raise
@@ -186,7 +213,8 @@ class HttpService:
         response = self._http().get(url, params=params)
         if response.status_code == 429 or response.status_code >= 500:
             raise _Throttled(response)
-        response.raise_for_status()
+        if not tolerate_client_error:
+            response.raise_for_status()
         return response
 
 

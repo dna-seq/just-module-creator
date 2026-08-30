@@ -200,8 +200,9 @@ the honest cell is empty".** That was wrong on its own example: PMID 29500382's 
 requests from the DOI, openly served under CC-BY, and **42 of those 65 rsIDs are in it** with the
 p-values the rows assert. All 65 shipped carrying the title instead. Go and get it — the ladder, the
 routes that look right and fail, and what a workbook quote does to `quotes_found` are in
-[`references/SUPPLEMENTARY.md`](references/SUPPLEMENTARY.md). The honest empty cell comes *after* that
-ladder, not instead of it.
+[`references/SUPPLEMENTARY.md`](references/SUPPLEMENTARY.md) — and since 0.25.0 it is three tools rather
+than a procedure: `list_supplementary`, `fetch_supplementary`, `describe_supplementary`. The honest
+empty cell comes *after* you have called them, not instead of it.
 
 ### 3. An empty cell is a result, and there are four kinds
 

@@ -1114,6 +1114,96 @@ class OpenAccessResult(BaseModel):
     findings: list[LintFinding] = Field(default_factory=list, description="Notes and warnings.")
 
 
+class SupplementaryFileInfo(BaseModel):
+    """One supplementary object as the publisher posted it."""
+
+    name: str = Field(description="Filename as published, e.g. `41467_2018_3242_MOESM5_ESM.xlsx`.")
+    url: str = Field(description="Where it is, ready to pass to `fetch_supplementary`.")
+    extension: str = Field(description="Lowercased, from the name. Never inferred from content.")
+    caption: str | None = Field(
+        default=None,
+        description=(
+            "The publisher's own caption, unimproved. Often uninformative — *Additional file 3.* "
+            "is a real one — so treat a blank-looking caption as the publisher's silence rather "
+            "than as a description of the file."
+        ),
+    )
+    size_bytes: int | None = Field(
+        default=None, description="From `content-length` when the host sent one; null otherwise."
+    )
+
+
+class SupplementaryList(BaseModel):
+    """What a paper published alongside itself, and how we found out.
+
+    Three-valued on purpose: `none_published` and `not_determinable` are different
+    answers and collapsing them is how a gap in our coverage gets recorded as a fact
+    about the paper.
+    """
+
+    doi: str | None = Field(default=None, description="The DOI the ladder ran against.")
+    pmcid: str | None = Field(default=None, description="The PMC id, when the article is in PMC.")
+    verdict: str = Field(
+        description=(
+            "`found` | `none_published` | `not_determinable`. **`not_determinable` is not "
+            "`none_published`**: it means no rung could answer — usually that we hold no URL "
+            "pattern for this publisher — and it is never evidence the article has no "
+            "supplementary material."
+        )
+    )
+    rung: str = Field(
+        description=(
+            "`europepmc_xml` | `publisher_pattern` | `none`. The XML rung gives real names and "
+            "extensions; the pattern rung guesses extensions and stops enumerating on a guess."
+        )
+    )
+    publisher: str | None = Field(default=None, description="The family the DOI prefix names.")
+    files: list[SupplementaryFileInfo] = Field(default_factory=list)
+    why_not: str | None = Field(
+        default=None, description="Set when `verdict` is `not_determinable`: what stopped it."
+    )
+    notes: list[str] = Field(
+        default_factory=list, description="What this answer is bounded by. Read before trusting it."
+    )
+
+
+class SupplementaryFetch(BaseModel):
+    """One supplementary file on disk. Nothing is parsed for you."""
+
+    url: str = Field(description="What was fetched.")
+    path: str | None = Field(
+        default=None, description="Local path under the resolved cache dir, or null on failure."
+    )
+    retrieved: bool = Field(description="Whether bytes came back.")
+    size_bytes: int | None = Field(default=None, description="Bytes written.")
+    content_type: str | None = Field(default=None, description="As the host reported it.")
+    note: str | None = Field(default=None, description="Why not, when `retrieved` is false.")
+
+
+class SupplementaryDescription(BaseModel):
+    """The shape of a workbook: which sheets, and what they call themselves.
+
+    Inventory, never rows. Which sheet supports a given row's claim is a judgement
+    about that row, so this reports what is there and stops.
+    """
+
+    path: str = Field(description="The file described.")
+    is_workbook: bool = Field(description="False for a PDF, a CSV or anything not an xlsx zip.")
+    sheets: list[str] = Field(
+        default_factory=list,
+        description="Sheet names in book order — commonly `ST1`…`ST14`, plus a contents sheet.",
+    )
+    table_titles: list[str] = Field(
+        default_factory=list,
+        description=(
+            "In-cell titles matching *Supplementary Table…*, sorted. A sheet named `ST8` and a "
+            "title reading `Supplementary Table S8: …` are the two halves of the same map, and "
+            "neither alone tells you which sheet answers your question."
+        ),
+    )
+    note: str | None = Field(default=None)
+
+
 class FullTextResult(BaseModel):
     """A document to read. Never a passage, and never a suggested quote."""
 
