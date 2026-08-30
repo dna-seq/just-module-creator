@@ -369,4 +369,5 @@ will meet at this stage:
 | writing the cells only an author decides | [`module-curate`](../module-curate/GUIDE.md) |
 | what a `weight` means and what to declare | [`module-weights`](../module-weights/GUIDE.md) |
 | finding and verifying the literature | `find-evidence` |
+| getting the supplementary table a GWAS paper's numbers live in | [`find-evidence`](../find-evidence/references/SUPPLEMENTARY.md) |
 | the module already exists | `module-revise` |

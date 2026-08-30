@@ -253,6 +253,39 @@ def test_a_long_reference_opens_with_a_way_in(reference: Path):
     )
 
 
+def test_a_referenced_job_is_cued_from_a_door_not_only_linked_to():
+    """Link-reachability is not cue-reachability, and the difference cost a benchmark.
+
+    `test_every_guide_is_reachable_from_a_command` walks the link graph, so it passed
+    while `find-evidence/references/SUPPLEMENTARY.md` was unfindable in practice: both
+    routers named `find-evidence` as *"which paper stands behind each claim"* and nothing
+    said it also owns getting the supplementary table. Two independent agents, given the
+    same task on 2026-08-30, each concluded "no plugin tool fetches supplementary
+    material" — one inferred it from the MCP listing, the other reconstructed the ESM URL
+    pattern from scratch over twelve blind probes. Neither ever opened the skill.
+
+    So a router must name the *job*, not only the skill. This checks the one case that was
+    measured; it is not a general theory of discoverability, and a second instance is the
+    signal to generalise it rather than to add a second special case.
+    """
+    doors = [SKILLS / "create-module" / "SKILL.md", SKILLS / "module-start" / "GUIDE.md"]
+    blind = []
+    for door in doors:
+        # Strip link TARGETS before looking: a path ending SUPPLEMENTARY.md satisfies a
+        # naive substring search while telling a reader scanning the row nothing. The cue
+        # has to be in the prose a router is actually read for.
+        raw = door.read_text(encoding="utf-8")
+        raw = re.sub(r"\]\([^)]*\)", "]", raw)  # link targets
+        raw = re.sub(r"`[^`]*`", "", raw)  # code spans, which is how filenames appear
+        prose = raw.lower()
+        if "supplementar" not in prose:
+            blind.append(door.name)
+    assert not blind, (
+        f"{blind} route to find-evidence without naming supplementary retrieval. An agent "
+        "holding the paper and needing the table inside its supplement has no cue to open it."
+    )
+
+
 def test_the_stage_spine_is_complete_and_each_carries_its_lifecycle_stage():
     """Every stage an agent is taught must have somewhere to go."""
     spine = [

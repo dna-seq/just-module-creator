@@ -1,8 +1,8 @@
 ---
 name: find-evidence
 description: >-
-  Find, verify and read the papers behind a row — search PubMed, Europe PMC, Semantic Scholar and the preprint index, confirm a PMID names the paper you meant, find a legal open-access copy, and decide what may honestly be quoted.
-  Triggers: "find papers", "what is the evidence", "search the literature", "is this PMID real", "which paper is this", "get the full text", "can I quote this", "find a study for this variant", "provenance_quote", "open access", "preprint", "citations".
+  Find, verify and read the papers behind a row — search PubMed, Europe PMC, Semantic Scholar and the preprint index, confirm a PMID names the paper you meant, find a legal open-access copy, reach the supplementary tables a GWAS paper's per-variant numbers actually live in, and decide what may honestly be quoted.
+  Triggers: "find papers", "what is the evidence", "search the literature", "is this PMID real", "which paper is this", "get the full text", "can I quote this", "find a study for this variant", "provenance_quote", "open access", "preprint", "citations", "supplementary table", "supplementary data", "additional file", "the rsIDs are not in the text", "MOESM", "ESM", "the paper only gives a summary", "where are the effect sizes", "download the xlsx".
 ---
 
 # Finding the evidence behind a row
