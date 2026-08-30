@@ -14,6 +14,42 @@ is usable, and what is missing.
 
 ---
 
+## F70 — an interrupted `enrich` leaves a partial `resolution.csv` that nothing marks as partial
+
+**Found:** 2026-08-31, when six benchmark agents were killed mid-run by a quota limit ·
+**Severity:** medium · **Status:** filed upstream as format-tree `S76`. The detector half may be ours.
+
+One run was authoring 789 variant rows over **263 distinct rsIDs** and was killed during `enrich`. It
+left a `resolution.csv` of 203 rows covering **201 rsIDs** — well-formed, every row correct, every
+`status=resolved`. **Nothing on disk says it covers 201 of 263.** No marker, no count, no sentinel.
+
+**Merge-not-clobber is what makes it dangerous.** The natural recovery — run it again — merges onto the
+stale 201 and reports success, because from the merge's view the present rows need nothing and the
+absent ones were never recorded as attempted. The correct recovery (delete, or `refresh_sidecar`) is
+documented; the problem is that the failure is **undetectable**, so nothing prompts anyone into it.
+
+Second artifact in the same directory: `verification.json` was written before the interruption, so the
+module carries an attestation over bytes a completed enrich will change. That half is at least loud —
+the stale-verification warning fires — which is the contrast worth noting: an interrupted run leaves
+two disagreeing artifacts, one that announces itself and one that does not.
+
+**We surfaced it rather than repairing it**, because deleting a sidecar is destructive and
+`resolution.csv` can carry hand-curated `source="manual"` rows. `refresh_sidecar` is the safe path and
+exists for exactly this, but it is a repair, not a detector.
+
+**Surface it, and why the candidates are wrong except one.**
+
+- **Have `enrich` refuse when a sidecar looks short.** It cannot tell a partial write from a
+  legitimately smaller one — an author who resolved a subset deliberately, or injected a curated
+  sidecar for the rows they care about, are both supported today. This breaks a working practice to
+  catch a crash. Argued against ourselves in `S76`.
+- **A lint of ours comparing the two counts.** Cheap and it is a *reading*, which is our layer — but
+  it belongs beside `audit_module`'s decision list rather than in `lint_rows`, and it needs the
+  three-valued treatment: `unknown` where the authored subject set cannot be determined, never `0`.
+  Held until upstream answers, because if they write atomically the detector has nothing to detect.
+- **Atomic write upstream** — temp file then rename — is the smallest fix, needs no new field, and
+  closes the reported failure outright. That is what `S76` asks for.
+
 ## F69 — a `p_value` and an `effect_size` on one row are asserted to belong together, and nothing records or checks that they do
 
 **Found:** 2026-08-31, reviewing the two-agent reproducibility benchmark · **Severity:** medium ·
