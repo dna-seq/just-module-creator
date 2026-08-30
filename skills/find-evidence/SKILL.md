@@ -192,9 +192,16 @@ is *for* on this module and write the choice down:
 The choice matters most on GWAS. A catalog-derived module cites a paper for a per-variant
 association the paper's *prose* may never state: measured on `aggression_anger`, none of the 65
 rsIDs drawn from PMID 29500382 appears anywhere in that article's retrievable text, because the
-associations live in its supplementary data and downloadable summary statistics. `fetch_fulltext`
-returns the JATS body and no supplementary file, so for those rows there is nothing in reach to
-quote — and the honest cell is empty.
+associations live in its supplementary data and downloadable summary statistics.
+
+**`fetch_fulltext` returns the JATS body and no supplementary file — a limit of the tool, not of what
+is in reach. Corrected 2026-08-30; this passage used to end "there is nothing in reach to quote, and
+the honest cell is empty".** That was wrong on its own example: PMID 29500382's workbook is two HTTP
+requests from the DOI, openly served under CC-BY, and **42 of those 65 rsIDs are in it** with the
+p-values the rows assert. All 65 shipped carrying the title instead. Go and get it — the ladder, the
+routes that look right and fail, and what a workbook quote does to `quotes_found` are in
+[`references/SUPPLEMENTARY.md`](references/SUPPLEMENTARY.md). The honest empty cell comes *after* that
+ladder, not instead of it.
 
 ### 3. An empty cell is a result, and there are four kinds
 
@@ -211,6 +218,11 @@ because they are not the same claim:
 `quotes_found` mirrors the first two: `null` when nothing could be checked against, `0` when a text
 was read and the passage was not in it. Neither is a failure and neither is a reason to delete a
 quote.
+
+**A fifth state exists and this counter cannot see it.** A quote located in a *supplementary* file
+also scores `0`, because the checker searches the article body only — reporting "absent from the
+paper" for a passage verbatim in that paper's own workbook. Nothing separates the two, so record the
+source file yourself: [`references/SUPPLEMENTARY.md`](references/SUPPLEMENTARY.md).
 
 ### 3b. If the article names the variant but reports a different trait, STOP
 

@@ -14,6 +14,81 @@ is usable, and what is missing.
 
 ---
 
+## F68 — nothing on the surface reaches a supplementary table, and the skill taught the empty cell because of it
+
+**Found:** 2026-08-30, reproducing a supplementary table retrieval from a PDF the owner supplied ·
+**Severity:** medium · **Status:** the skill half is fixed in this change
+(`skills/find-evidence/references/SUPPLEMENTARY.md`, plus the corrected passage in `SKILL.md`); the
+tool half is open and deliberately not built.
+
+For a GWAS paper the per-variant numbers a `studies.csv` row asserts are almost never in the article
+body. The body says *"263 independent variants across 180 genomic loci"*; the rsIDs, positions,
+alleles and p-values are in the supplementary workbook. `fetch_fulltext` returns the JATS body and
+nothing else, and **no tool on the surface lists, fetches or reads a supplementary file.**
+
+**The cost is not the missing tool. It is what the skill concluded from it.**
+`skills/find-evidence/SKILL.md` said, of the exact case it names:
+
+> `fetch_fulltext` returns the JATS body and no supplementary file, so for those rows there is
+> nothing in reach to quote — and the honest cell is empty.
+
+That is `F42`'s shape one layer up: a surface limit written up as a fact about the world, teaching an
+author to record *nothing available* for something that is available. Measured against its own
+example — PMID `29500382`, `10.1038/s41467-018-03242-8`, the 65 `aggression_anger` rows — the
+supplementary is **two HTTP requests from the DOI**, on an open host, no authentication, CC-BY, and
+its *Supplementary Data 2* carries 504 lead-SNP rsIDs of which **42 of the 65 are present**, with the
+per-item association p-values those rows assert. The rows did not get the honest empty cell either:
+all 65 shipped carrying the article title (`F42` / upstream `S54`).
+
+**What was measured, on four real articles.** The ladder is DOI → Europe PMC record → `fullTextXML`
+inventory → publisher pattern, and the negative results are the load-bearing half:
+
+- `link.springer.com` is behind a JavaScript bot challenge — a `curl` of the resolved DOI returns
+  3 KB titled *Client Challenge* under HTTP 200. Scraping the article page finds no links and looks
+  like an article with no supplementary material.
+- Europe PMC reported `hasSuppl: N`, `inEPMC: N`, `isOpenAccess: N` for `10.1007/s11357-025-02044-3`,
+  which is CC-BY and has two openly downloadable ESM files. The flag describes their holdings, not the
+  article. Crossref carries no `relation` for the ESM and Unpaywall points only at the article PDF, so
+  **no metadata API in our stack exposes supplementary files.**
+- Europe PMC's `supplementaryFiles` endpoint works and returns one zip of everything including every
+  figure, unselectable: **224 MB** on `PMC12506250` to reach a 14 KB table.
+- Extensions are not guessable — `MOESM1` was `.txt` on one article and `.pdf` on another, and
+  `MOESM3` was a peer-review PDF rather than data. A 403 across the extensions tried means *unknown*,
+  not *absent*, which is the three-valued rule at the corpus level.
+
+**A second counter reads wrong, and this one is ours.** `enrich_literature_pass` searches the Europe
+PMC body, so a quote lifted from a supplementary workbook scores `quotes_found: 0` — indistinguishable
+from *read and not found*, which the skill teaches "says something". A correct supplementary quote
+therefore reports as a suspect one. The skill now names the fifth state and tells the author to record
+the source file, because nothing on the surface can.
+
+**Surface it, do not build it yet — and why each candidate repair is wrong today.**
+
+- **A `fetch_supplementary` tool.** The obvious shape, and the reason to wait is that rung 3 is
+  publisher-specific: we measured the Springer Nature family only (`10.1007`, `10.1186`, `10.1038`).
+  A tool that silently covers one family and returns nothing for Elsevier or Oxford reproduces exactly
+  the defect above — a surface limit an author reads as an absence — unless it distinguishes *no
+  pattern for this publisher* from *no supplementary material*, which is a three-valued return the
+  design has not been through yet.
+- **Wrapping Europe PMC's `supplementaryFiles`.** One call, no pattern table, and it is the 224 MB
+  route. It also answers nothing for the article that prompted this, which is not in PMC at all — the
+  common case for a paper published in the last few months, which is exactly when a module is being
+  written about it.
+- **Teaching the ladder in prose only, which is what shipped here.** Honest and immediately useful,
+  and it costs a network call the `ServiceGate` never sees: §2 says every outbound request goes
+  through `net.py` so pacing and the shared NCBI budget cannot drift, and a taught `curl` is outside
+  it. The two hosts involved (`static-content.springer.com`, EBI) are not NCBI and are not metered
+  against that budget, so the ceiling is not breached today — but this is the argument that makes the
+  tool the right end state rather than an optional convenience.
+- **Parsing the ESM into rows for the author.** Out of scope and the wrong layer — which sheet answers
+  a row's claim is a judgement about that row, the same reason `fetch_fulltext` does not return a
+  best-matching passage.
+
+**Not filed upstream.** This is authoring workflow, which is ours to build (§11); the schema and the
+checks are unchanged. The one thing owed upstream is a corroboration on `S54`, whose evidence was that
+a rule against machine-located quotes produced 3668 titles: the 42-of-65 number says those rows had a
+real passage in reach the whole time.
+
 ## F66 — `lint_rows` echoes its whole input back, and that is load-bearing
 
 **Found:** 2026-08-21, run 2 · **Severity:** low · **Status:** open, deliberately not changed.

@@ -5,6 +5,31 @@ on our side, so agents in sibling repos are not surprised.
 
 ## Unreleased
 
+### Supplementary tables are in reach, and `find-evidence` said they were not
+
+`skills/find-evidence/SKILL.md` told an author that a GWAS paper's per-variant numbers are
+unreachable — *"`fetch_fulltext` returns the JATS body and no supplementary file, so for those rows
+there is nothing in reach to quote, and the honest cell is empty"* — and it was wrong on the example
+it names. PMID `29500382`'s supplementary workbook is two HTTP requests from the DOI, on an open host,
+no authentication, CC-BY, and **42 of the 65 `aggression_anger` rsIDs are in its Supplementary Data 2**
+with the per-item p-values those rows assert. Those 65 rows shipped carrying the article title instead
+(`F42` / upstream `S54`), so the rule did not even buy the empty cell it argued for.
+
+The passage is corrected and the procedure is homed in
+`skills/find-evidence/references/SUPPLEMENTARY.md`: the retrieval ladder (DOI → Europe PMC record →
+`fullTextXML` inventory → publisher pattern, Springer Nature family measured), the four routes that
+look right and fail, and the workbook-to-sheet step. The negative results are the half worth having —
+`link.springer.com` is behind a bot challenge, `hasSuppl: N` is a false negative on a CC-BY article
+with two downloadable ESM files, Europe PMC's `supplementaryFiles` endpoint is 224 MB for a 14 KB
+table, and a 403 on a guessed extension means *unknown* rather than *absent*.
+
+`SKILL.md` also gains the fifth empty-cell state its own counter cannot see: a quote located in a
+supplementary file scores `quotes_found: 0` because `enrich_literature_pass` searches the article body
+only, which is indistinguishable from *read and not found*. Nothing on the surface separates them, so
+the author records the source file. The missing tool surface is `F68` in `docs/dogfooding.md`, filed
+rather than built — rung 3 is publisher-specific, and a tool covering one family that returns nothing
+for the rest would reproduce the same defect one layer down.
+
 ### Manuscript writing toolchain (EASRP 2026)
 
 Same shape as glucose-forecasting: `docs/manuscript/` holds `template.tex`,
