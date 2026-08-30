@@ -2,14 +2,15 @@
 name: module-101
 description: >-
   Start here to understand the thing. What a just-dna annotation module is, what this plugin can and
-  cannot do, the tool roster and its tiers, how the four packages fit together, and the corpus of
+  cannot do, the tool roster and how to confirm it is actually reachable, how the four packages fit
   worked examples to read before writing one. The map, not the route: `create-module` owns where
   to enter the lifecycle and which stage skill runs next, and [`module-tables`](../module-tables/GUIDE.md) owns which table a
   finding belongs in.
   Triggers: "what is a module", "what is just-dna", "what can I do with this", "what does this plugin
   do", "explain modules", "module overview", "getting started", "is this for reading my DNA", "what
-  kinds of module", "why does this exist", "what are the four packages", "which tier is this tool in",
-  "show me an example module", "which skill do I need", "which tool do I use".
+  kinds of module", "why does this exist", "what are the four packages", "the tools are missing",
+  "I cannot see the mcp tools", "is the plugin loaded", "show me an example module", "which skill do I
+  need", "which tool do I use".
 ---
 
 # just-dna modules — the overview
@@ -181,7 +182,39 @@ wrong basis for choosing a column, a vocabulary member or a table kind. The inst
 a cell may contain, stop explaining and ask `describe_table` / `table_requirements`. A metaphor that
 starts answering schema questions has become a second source of truth.
 
-## The tools, and which tier they are in
+## First: confirm the tools are actually reachable
+
+**There are no tiers. Every tool is on one surface** — the `essentials`/`extended` axis was removed in
+0.21.0, so a tool you cannot see is never a tool you lack permission for. It is one of three things,
+and they need opposite responses:
+
+| what you observe | what it is | what to do |
+|---|---|---|
+| the tool answers | the server is live | carry on |
+| no `mcp__…just-module-creator__…` tool is listed at all | the names may be **deferred** rather than absent | load the schema first, then call — a **subagent** gets them this way (measured 2026-08-30) |
+| listed, but the call errors | the plugin is not loaded, or a stale build is answering | reload the plugin; check which version replied |
+
+**One call settles it.** `list_tables` needs no network, no spec directory and no argument, and its
+`produced_by` block reports the format and compiler versions the server is actually running — so the
+same call proves the server is there *and* which schema it will answer from. If those versions are
+older than the installed packages, you are talking to a stale process, and every schema answer you get
+is that stale build's.
+
+**The spine you must be able to call** before starting the lifecycle — if any of these is missing, stop
+and fix the install rather than working around it:
+
+`list_tables`, `describe_table`, `table_requirements`, `scaffold_module`, `lint_rows`,
+`validate_module`, `enrich_module`, `compile_module`, `literature_search`, `record_override`
+
+That is the taught order's own roster, not a second list to maintain: the same names are in
+`server.INSTRUCTIONS` and a test fails if one of them stops being registered.
+
+**Not seeing a tool is not the same as the capability not existing**, and getting this backwards has
+cost two unattended runs their conclusions — both reported capabilities absent that were merely
+unlisted. Three-valued: *present*, *absent*, *not visible from here*. Only the first two are facts
+about the product.
+
+## The tools
 
 Prefer these over shelling out: they return structured results, their schema answers are generated from
 the live models, and they cannot reach the one compiler flag that silently produces a module no VCF can

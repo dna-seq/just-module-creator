@@ -17,6 +17,7 @@ from __future__ import annotations
 import inspect
 import re
 from importlib import metadata
+from pathlib import Path
 
 import pytest
 from conftest import offline_settings  # tests/ is on sys.path via pytest rootdir
@@ -195,6 +196,37 @@ async def test_docstrings_only_name_tools_that_exist(client):
             if named.startswith(TOOL_PREFIXES):
                 offenders.append(f"{tool.name} names `{named}`, which is not registered")
     assert not offenders, "\n".join(offenders)
+
+
+async def test_the_self_check_spine_is_callable(client):
+    """`module-101` tells an agent to confirm these before starting. A retired name there
+    sends somebody to fix an install that is fine.
+
+    Added 2026-08-30 after a subagent probe showed the plugin tools arrive **deferred**
+    rather than listed, so "I cannot see them" is a routine observation an agent has to
+    read correctly. The guide answers it with a named roster, and a roster in prose rots
+    exactly like a hand-kept list — hence this test rather than a comment beside it.
+
+    Deliberately narrow. A blanket "every tool a skill names must exist" fails on the 30
+    files that discuss upstream symbols by name — `validate_spec`, `module_stats`,
+    `enrich_pgx` are the compiler's and the enricher's, correctly named and not ours. Only
+    the spine claims to be *our* callable surface, so only the spine is pinned.
+    """
+    guide = (
+        Path(__file__).resolve().parents[1] / "skills" / "module-101" / "GUIDE.md"
+    ).read_text(encoding="utf-8")
+    marker = "**The spine you must be able to call**"
+    assert marker in guide, "module-101 lost its self-check roster"
+    block = guide.split(marker, 1)[1].split("That is the taught order")[0]
+    named = sorted(set(re.findall(r"`([a-z][a-z0-9_]{3,})`", block)))
+    assert len(named) >= 8, f"the roster shrank to {named} — did the section move?"
+
+    registered = {tool.name for tool in await client.list_tools()}
+    missing = [n for n in named if n not in registered]
+    assert not missing, (
+        f"module-101's self-check roster names {missing}, which is not registered. "
+        "An agent told to verify these would conclude its install is broken."
+    )
 
 
 async def test_the_corpus_sized_tools_say_what_they_cost(client):
