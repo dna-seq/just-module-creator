@@ -3,7 +3,7 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## Unreleased
+## 0.24.2 — 2026-08-30
 
 ### Supplementary tables are in reach, and `find-evidence` said they were not
 
