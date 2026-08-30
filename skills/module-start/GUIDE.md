@@ -112,6 +112,14 @@ that pass.
 
 ## Triaging a source you were handed
 
+**Before the checks below, ask the prior question: does this source make a claim about what was
+actually asked for?** Where it does not, it contributes no rows and the answer is to say so rather
+than to author whatever identifiers it happens to name — a module padded to satisfy an ask its sources
+do not support passes every check and asserts something none of them says. Zero rows from a source is
+a legitimate outcome and a finding to report. [`create-module`](../create-module/SKILL.md) owns that rule, including the
+opposite error of narrowing a subject to the half its name flatters; this section is the checks you
+run once a source has survived it.
+
 A summary is not evidence — it is somebody's reading of evidence, and if a machine wrote it the
 citations may be generated rather than recalled. **Assume nothing, check each claim, and expect most of
 them to fail.** A real run of this procedure turned **seven** offered rsIDs into **one** authored row.

@@ -32,6 +32,37 @@ Ask before routing. The answer decides which arrow you enter on, and it is almos
 | a message they do not recognise | not a stage at all | `module-symptom` |
 | **a question rather than a task**, or a wish in their own words with none of this vocabulary in it | nowhere yet | [`module-101`](../module-101/GUIDE.md), and answer them from it before routing |
 
+### Check the ask against the sources before you author anything
+
+**A source that makes no claim about the module's subject contributes no rows. Say so; do not pad.**
+The failure to avoid is silent subversion: an ask that the sources cannot support, formally satisfied
+by authoring whatever identifiers the papers happen to name. That produces a module that looks
+complete, passes every check, and asserts something none of its sources says. **Nothing downstream can
+detect it** — the rows are well-formed, the quotes are verbatim, the compile is green.
+
+So triage the ask first, one source at a time, and ask of each: *does this source make a claim about
+the thing being asked for?* Where it does not:
+
+- **author no rows from it**, and
+- **report it** — name the source, say what it does claim, and hand the decision back. An author who
+  learns a paper does not support their ask can supply a different paper, widen the ask, or accept a
+  smaller module. None of those is your call to make silently.
+- A module with fewer rows and an honest report beats a fuller one that padded. **Zero rows is a
+  legitimate outcome** and it is a finding, not a failure — it is `module-status`' decision list, one
+  stage earlier.
+
+**Do not narrow the subject while you do it, which is the opposite error and just as easy.** A module
+about a trait covers that trait in **both directions**: a variant that worsens the outcome belongs
+beside one that improves it, and a subject named by a desirable word does not restrict the module to
+the desirable half. The test is only whether the source makes a claim about the subject — never
+whether the claim is favourable, and never whether the effect points the way the name suggests.
+
+Two more distinctions worth holding here, because both look like a mismatch and neither is one: a
+source may support the subject with a *different* table kind than expected ([`module-tables`](../module-tables/GUIDE.md) decides that,
+not this step), and a source may support it weakly rather than not at all — a claim with no comparison
+group or no test still says something, and belongs with its limits written into the row rather than
+being dropped. Drop a source only where the claim is genuinely absent.
+
 **When two rows apply, the later one wins.** Almost every real session is a second pass, and a second
 pass entered as a first one re-derives work that is already on disk and overwrites judgements nobody
 recorded. Ask whether the directory has been here before.
