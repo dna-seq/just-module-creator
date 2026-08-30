@@ -271,7 +271,7 @@ Ordered by how likely a first-timer is to hit them.
   gap (RM5), not something to smuggle into a count.
 - **Forensic microvariant notation does not belong here.** `TH01 9.3` means nine repeats plus three
   bases; it is an allele *name*, not the decimal 9.3, and never a numeric bound.
-- **No repeat drafter, in any tier.** Nothing publishes repeat thresholds in a machine-readable form
+- **No repeat drafter, anywhere.** Nothing publishes repeat thresholds in a machine-readable form
   this ecosystem consumes.
 > ⚠️ **CHECK — requiredness has a fourth shape here, and no tool reports it.**
 > **Current state.** `authoring_requirements` publishes three shapes — `always`, `any_of`,

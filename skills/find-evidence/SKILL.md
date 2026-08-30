@@ -13,7 +13,7 @@ numbers you can defend. Authoring the module around them is
 where `state`, `weight`, `effect_size`, `conclusion` and every `studies.csv` row get decided.
 
 Two things this never does. It does not judge whether a paper supports your claim — no tool here
-returns that verdict, at any tier. And it does not write a cell. It finds and it fetches; the
+returns that verdict. And it does not write a cell. It finds and it fetches; the
 reading and the deciding are the authoring work.
 
 **You are a legitimate reader.** `fetch_fulltext` hands you the article, so reading it is a reading

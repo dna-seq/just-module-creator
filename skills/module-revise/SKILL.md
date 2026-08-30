@@ -16,8 +16,8 @@ somebody kept caring about.
 ## First, get the module onto disk
 
 Everything below assumes a spec directory you can read. When the module you are opening is somebody
-else's, or is yours but only survives in the catalog, `registry_download` is how you get it — every
-tier, no flag. It verifies the bytes as it fetches, so a corrupted or tampered version raises instead
+else's, or is yours but only survives in the catalog, `registry_download` is how you get it — always
+registered, no flag. It verifies the bytes as it fetches, so a corrupted or tampered version raises instead
 of landing.
 
 ```

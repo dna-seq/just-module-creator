@@ -147,7 +147,7 @@ Ordered by how likely a first-timer is to hit them.
    the error surfaces on the consumer's machine, per sample, as a failed scoring-file resolution inside
    `just-prs`, after the module is in an immutable registry.
 
-   > 🚧 **ROADWORKS — nothing in any tier resolves a `pgs_id`.** 
+   > 🚧 **ROADWORKS — nothing anywhere resolves a `pgs_id`.** 
    > **Current state.** Re-confirmed across all three packages: the only check on the column is the
    > `^PGS\d+$` shape. No enricher pass fetches the PGS Catalog, `check_identifiers` does not look at
    > this table, and `fully_resolved: true` on a `pgs`-only module is structural — `PgsRow` is not a

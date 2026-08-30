@@ -50,8 +50,8 @@ answering you is **older than the tool** and the version in its instructions hea
 fetching** — for `enrich_gwas_effects` that is the sidecar it writes and the licence rows it records
 on the way.
 
-**Two absences that are not tier absences at all**, and both cost an unattended run its whole task
-before they were fixed: `registry_download` and `refresh_sidecar` are in **every** tier. If either is
+**Two absences that are not absences at all**, and both cost an unattended run its whole task
+before they were fixed: `registry_download` and `refresh_sidecar` are **always registered**. If either is
 missing, the server is older than 2026-08-22 rather than narrow, and neither has a shell substitute
 worth reaching for — the download verifies the bytes as it fetches, and the refresh captures and
 verifies before it deletes anything.

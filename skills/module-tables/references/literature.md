@@ -170,7 +170,7 @@ citation(s) no study or bin in this module cites … left out of the artifact, a
 
 ## Required to exist
 
-- **Nothing requires this table.** It is optional at every tier: `_literature_block` returns `None` on
+- **Nothing requires this table.** It is optional, always: `_literature_block` returns `None` on
   empty, the parquet is skipped, and no compile check fails for its absence.
 - **The pass requires at least one citation, from either of two sites.** `enrich_literature` refuses
   with *"no citations in {spec_dir} — … neither studies.csv rows nor a `pmid` on any binning row"*
@@ -463,7 +463,7 @@ Through the MCP surface, the **authored** side is what you can ask about:
 - `table_requirements("studies.csv")` — read all three shapes of requiredness.
 - `lookup_citation(pmid=…)` / `literature_search(...)` — **read the title** before writing a PMID.
 - `enrich_literature_pass(spec_dir, strict=…, check_fulltext=…, check_doi=…)` — the pass that writes
-  this file (extended tier; `just-dna-enricher literature <dir>` is the CLI equivalent).
+  this file (`just-dna-enricher literature <dir>` is the CLI equivalent).
 - `validate_module` / `compile_module` — where the orphan, nonexistent-citation and non-commercial-quote
   warnings surface.
 

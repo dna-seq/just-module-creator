@@ -29,7 +29,7 @@ expected a value to move and it did not, the file is still there.**
 
 ### `refresh_sidecar` is the interface. Do not do the delete by hand
 
-**It is in every tier — there is no flag to set and nothing to switch on.** If you were about to write
+**It is always registered — there is no flag to set and nothing to switch on.** If you were about to write
 `rm resolution.csv`, this is the tool you were reaching for, and it is strictly better than the `rm`:
 
 It copies the sidecar out, **reads the copy back and hashes it**, and only then deletes — so a capture

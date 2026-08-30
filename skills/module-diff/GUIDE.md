@@ -4,7 +4,7 @@ description: >-
   Work out what moved in a module and what it means. Covers the identity ledger, the decision tree over
   content-signature versus the eight fact signatures versus artifact.digest, the canary that is the only
   way to detect an upstream source revising an answer, how to find what exactly changed when nothing
-  computes it, and the honest fact that no tier compares two versions. Triggers: "what changed", "why
+  computes it, and the honest fact that nothing on the surface compares two versions. Triggers: "what changed", "why
   did the digest move", "diff two versions", "canary", "did the source change", "content_signature",
   "compare modules", "compare_modules", "is this stale", "fact signature", "the digest moved and I changed nothing",
   "resolution_signature", "did upstream change its answer".
@@ -119,7 +119,7 @@ recorded, so the re-run never re-asks. **Silence is not evidence that nothing ch
 
 So detecting upstream drift *is* the delete-and-re-derive. There is no passive check.
 
-**Run `refresh_sidecar` rather than doing it by hand.** It is in every tier, and it exists because the
+**Run `refresh_sidecar` rather than doing it by hand.** It is always registered, and it exists because the
 manual sequence is destructive: it captures the sidecar first, deletes, re-derives, classifies every
 row, reapplies what is provably yours, and **reports what it cannot tell apart.** The one thing that
 can slow you down is naming `literature.csv` or `gwas_effects.csv` — those two

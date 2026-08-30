@@ -162,7 +162,7 @@ that the closure cannot be carried and the recompiled manifest has no `verificat
 
 ## Required to exist
 
-- **Nothing requires this table.** Optional at every tier. `_gene_validity_block` returns `None` on
+- **Nothing requires this table.** Optional, always. `_gene_validity_block` returns `None` on
   empty (`compiler.py:4745`), the parquet is skipped, and no compile check fails. Deleting it from
   `hboc_palb2` produced zero errors and zero warnings.
 - **It requires `variants.csv`, and silently produces nothing without it.** The gene set is
@@ -464,7 +464,7 @@ annotation half of `just-dna-lite` cannot even locate the file.
 
 ## Ask the live schema
 
-`describe_machine_table("gene_validity.csv")` answers this file in full, at essentials tier. The
+`describe_machine_table("gene_validity.csv")` answers this file in full. The
 authored-table routes — `describe_table` / `table_requirements` / `get_template` / `lint_rows` —
 **decline it**, which is routing rather than an absence —
 they gate on `draft.DRAFTABLE`, which holds the authored kinds plus `licensing.csv`/`sources.csv`

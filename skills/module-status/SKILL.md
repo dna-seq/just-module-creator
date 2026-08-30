@@ -25,7 +25,7 @@ the acquisition comes first and it is one call:
 registry_download(target="prod", namespace=ns, name=name, version="1.0.0", dest="./work")
 ```
 
-Every tier, no flag. It verifies the bytes as it fetches, and its default `include_inputs=true` is
+Always registered, no flag. It verifies the bytes as it fetches, and its default `include_inputs=true` is
 what brings the authored CSVs down beside the parquets — without them there is almost nothing here to
 read, because every marker in the table below is an authored file. `target` is required and the two
 instances share no database. Which version to name is `registry_get_module`'s answer, not this skill's.

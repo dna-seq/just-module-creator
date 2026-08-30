@@ -375,7 +375,7 @@ measured, `just-dna-lite` reads **zero** of the seven derived fact parquets (`fr
 
 ## Ask the live schema
 
-`describe_machine_table("gwas_effects.csv")` answers this file in full, at essentials tier. The
+`describe_machine_table("gwas_effects.csv")` answers this file in full. The
 authored-table routes — `describe_table` / `table_requirements` / `get_template` / `lint_rows` —
 **decline it** (see
 What does not exist). Two routes that do work:

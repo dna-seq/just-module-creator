@@ -362,7 +362,7 @@ reads a single AC, AN, `faf95` or `dataset` value downstream of publication.
 `describe_table` / `table_requirements` / `get_template` / `lint_rows` **all refuse this table** —
 they gate on `draft.DRAFTABLE`, which holds the authored kinds plus `licensing.csv` / `sources.csv`
 only. Verified against format 0.6.1 / compiler 0.6.1: `hints.describe_table("frequencies.csv")`
-raises `DraftError: 'frequencies.csv' is not an authored table of this format`. **`describe_machine_table("frequencies.csv")` is the route that answers**, at essentials tier; the
+raises `DraftError: 'frequencies.csv' is not an authored table of this format`. **`describe_machine_table("frequencies.csv")` is the route that answers**; the
 refusal above is routing rather than an absence. You can also read the live model directly:
 
 ```bash

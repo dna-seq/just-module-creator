@@ -160,7 +160,7 @@ scratch dir, baseline twice (byte-identical), then one mutation per row.
 
 ## Required to exist
 
-- **Nothing requires it.** It is optional in every tier: absent → `manifest.clinical_assertions` is
+- **Nothing requires it.** It is optional, always: absent → `manifest.clinical_assertions` is
   `None`, the registry facet is `0`, and no validation complains.
 - **It requires `resolution.csv`.** The pass refuses without one — *"no resolution.csv in {dir} — the
   clinical-assertion pass reads resolved coordinates, so run `just-dna-enricher enrich` first"*

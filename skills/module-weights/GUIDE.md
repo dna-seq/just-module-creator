@@ -97,7 +97,7 @@ pointer to a PGS Catalog id plus the envelope it is valid in — not a table of 
 This plugin does not compute a polygenic score, and neither does anything downstream of it today.
 
 ⚠️ **CHECK — a fabricated PGS id validates, lints clean and compiles.** Nothing resolves the identifier
-against the Catalog at any tier. **Guard:** take the id from a Catalog record you actually opened, and
+against the Catalog, anywhere on the surface. **Guard:** take the id from a Catalog record you actually opened, and
 say in the README which score it names.
 
 `pgs.csv` also carries **no coordinate columns at all**, so resolution never reaches it and a consumer
