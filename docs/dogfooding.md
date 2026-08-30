@@ -84,10 +84,13 @@ the source file, because nothing on the surface can.
   a row's claim is a judgement about that row, the same reason `fetch_fulltext` does not return a
   best-matching passage.
 
-**Not filed upstream.** This is authoring workflow, which is ours to build (§11); the schema and the
-checks are unchanged. The one thing owed upstream is a corroboration on `S54`, whose evidence was that
-a rule against machine-located quotes produced 3668 titles: the 42-of-65 number says those rows had a
-real passage in reach the whole time.
+**Not filed upstream, and nothing is owed.** This is authoring workflow, which is ours to build
+(§11); the schema and the checks are unchanged. `S54` was the obvious place for a corroboration — its
+evidence was that a rule against machine-located quotes produced 3668 titles, and the 42-of-65 number
+says those rows had a real passage in reach the whole time — but **`S54` is answered and has moved to
+`CONSUMER_SUGGESTIONS_HISTORY.md`**, and an answered entry is a closed record rather than an inbox.
+The number is recorded here instead. Checked 2026-08-30, so nobody re-investigates whether it was
+filed.
 
 ## F66 — `lint_rows` echoes its whole input back, and that is load-bearing
 

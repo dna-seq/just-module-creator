@@ -47,6 +47,13 @@ rule 3's *read and not found* versus *unchecked* distinction exists to keep sepa
 Run it in order. Stop at the first rung that answers, and **record which rung answered** — the rung is
 part of what you know about the file.
 
+**Identify yourself on every request.** These are polite-pool hosts and the address says whose budget
+is being spent, so send the one the contact chain resolved — `JMC_USER_EMAIL`, then
+`JUST_DNA_CONTACT_EMAIL`, then the project default — as `-A 'just-dna module author
+(mailto:<that address>)'`. **Never invent an address**: a fabricated one misattributes the traffic to
+a stranger. These calls are outside `net.py`'s `ServiceGate`, which is `F68`'s open half; neither host
+is NCBI, so the shared budget is not touched, but pace yourself rather than looping a probe.
+
 ### Rung 0 — get the DOI
 
 ```bash
