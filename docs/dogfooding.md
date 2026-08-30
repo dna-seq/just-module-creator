@@ -14,6 +14,51 @@ is usable, and what is missing.
 
 ---
 
+## F69 — a `p_value` and an `effect_size` on one row are asserted to belong together, and nothing records or checks that they do
+
+**Found:** 2026-08-31, reviewing the two-agent reproducibility benchmark · **Severity:** medium ·
+**Status:** filed upstream as format-tree `S75`; nothing to build here until the column exists.
+
+The benchmark's two runs overlapped on exactly one row and disagreed on it: `rs117385980` / PMID
+41249831, both writing `effect_size 1.42 / OR / not_significant`, one writing `p_value 0.36` and the
+other `0.75`. **Neither was a misreading.** The paper reports two tests of the same association —
+Table 3/5's allelic Fisher's exact (`OR 1.4, p 0.36`) and Table 6's univariate logistic
+(`OR 1.42, CI 0.18–11.67, p 0.75`) — and each run took one.
+
+Run B's row is internally consistent. **Run A's is not**: Table 6's effect size beside Table 3's
+p-value, with its own `conclusion` citing Table 6's CI, so the row names one analysis's estimate and
+another's p-value. Run A identified this itself when asked, and the run is frozen with the mispairing
+in place and annotated, because repairing it would have destroyed the comparison it is evidence for.
+
+**Everything was green** — strict validate, strict compile, `audit_module`, and `quotes_found`. The
+provenance quote is verbatim and correct: it grounds the significance *verdict* and contains no
+statistic, so quote verification is structurally blind to this. `audit_module`'s
+`effect_size_is_its_own_z` is a different check and does not reach it.
+
+`StudyRow` has `study_design` (*"e.g. meta-analysis, GWAS"*), which describes the **study**; nothing
+describes the **analysis**. And `key.columns` is `["variant_key", "pmid"]` on equality, so a paper
+reporting several analyses of one variant is representable by exactly one — chosen silently, with no
+field recording which. A correct row and a mispaired one are byte-indistinguishable to every consumer.
+
+**Ours to file, not to build, and that is the unusual part.** §11 says an authoring-workflow gap is
+ours to build first — this is not one. The missing thing is a **column**, which is schema, which we own
+none of. Until `S75` lands there is nowhere to put the fact, and a lint of ours could only compare two
+numbers it has no way to attribute. What we can do meanwhile is what the reference module does: carry
+one analysis, name the other in the README and `logs/authoring.log`, and say which was chosen.
+
+**Surface it, and why the candidate repairs are wrong.**
+
+- **A lint comparing `p_value` against `effect_size`.** There is nothing to compare. Both can be
+  verbatim-correct and still come from different tables; correctness is not a property of either number
+  alone. Only provenance separates them, and provenance is exactly what is not recorded.
+- **Requiring `study_design` to carry the test.** It would overload a field that already means
+  something else, on rows six published modules have already written, and it would still not associate
+  the test with a *particular* pair on a multi-analysis paper.
+- **A convention in our skills — "always take the regression model".** It picks a winner the source
+  does not; here the right answer is the *other* one, because a zero cell makes Fisher's exact the
+  appropriate test and the logistic MLE unstable. A rule that would have produced the wrong number on
+  the first case it met is not a rule.
+
 ## F68 — nothing on the surface reaches a supplementary table, and the skill taught the empty cell because of it
 
 **Found:** 2026-08-30, reproducing a supplementary table retrieval from a PDF the owner supplied ·
