@@ -3,6 +3,75 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## 0.26.0 — 2026-08-31
+
+### Five surfaces that told an author something other than what happened
+
+All five came out of one benchmark run against the current tree, given the plain-user prompt and asked
+for blunt feedback. None is a wrong computation; each is a place a tool's account of itself was wrong.
+
+- **`record_override`'s returned `note`** described an outrank on a call that recorded a judged cell.
+  `F71` made that split in the persisted log line and left the note unconditional, so the one field a
+  caller reads back said *"the cross-check still reports this mismatch"* when there was no source and
+  nothing disputed. Both branches now, with a test run against the old code and watched to fail.
+- **`OverrideRecord.authored_value`** promised *"what the module says"* and is empty on every record
+  read back — upstream's `ProvenanceItem` has no slot for it, so only the digest survives the round
+  trip. The description says so now and points at `current_value` and `still_bound`, which work. A gap
+  named in a comment and denied in a description is the shape §7 exists to catch.
+- **`declared_use` folded the hyphen in two of three tools.** `enrich_facts` and `refresh_sidecar`
+  normalised `non-commercial`; the registry pre-flight passed it through to a 422 naming neither the
+  hyphen nor the accepted spellings. One helper in `_shared` now, reading format's own
+  `VALID_DECLARED_USE` — which also retires `passes.py`'s hand-written vocabulary tuple.
+- **`literature_search` repeated one ninety-word DOI refusal per result** — ten copies in a call,
+  against this repo's own aggregate-by-reason rule. Written once with the count; every row keeps its
+  `refusal` token, so a caller filtering on it loses nothing.
+- **`compile_module` now warns when `output_dir` is inside the spec directory.** The compile copies
+  `README.md` into the output, the registry uploader walks the spec tree, and `registry_check` answers
+  `ambiguous_spec_layout` with a 422 two steps later. A warning rather than a refusal: real modules
+  here use that layout and their artifacts are fine.
+
+`F71b`, `F71c`, `F74`, `F75`, `F76` in `docs/dogfooding.md`.
+
+### The version handshake does not mean your rows will be accepted
+
+**`CLAUDE.md` §11 said *"every 0.6.x interoperates"* and that is false.** Both live registries validate
+at format **0.6.1** while `uv sync` installs **0.6.6**, and every row model is `extra="forbid"` — so a
+`studies.csv` carrying `curator` (format 0.6.5, and the per-row record of who located a quote) is
+refused by prod and polygon alike with `Extra inputs are not permitted`, after every local gate passes.
+Removing that one column flips `registry_check` to `verdict: true, blocking: []`.
+
+The claim was measured on `assert_compatible()`, which is scoped to major.minor below 1.0 and therefore
+**cannot fail** for the class of change that breaks a publish. That is the check-that-cannot-fail defect
+applied to our own workspace notes. §11 is corrected, `SYMPTOMS.md` has the entry, and the guidance is
+unchanged: keep the column. Conforming a module to a registry that lags the format is the stale-source
+move §2 forbids. Filed as registry-tree `S18`; `F77`.
+
+### One rule, one home: no `literature`-layer licence row
+
+`module-start` carried a *"must cover every source … including PubMed"* claim; `module-tables`'
+`licensing.md` said *"nobody, ever"*. Both shipped in 0.25.0 and a run reported the contradiction.
+
+Measured: adding or removing the row changes **nothing** — same validate, same compile, same warnings —
+because literature-layer rows are exempt from the orphan check outright. And the *premise* of the
+"must" is false: a literature source's terms are per **article**, and `literature.csv` already records
+`license`, `share_alike`, `commercial_use` and `redistribution` per PMID. So the row buys no
+enforcement while inviting source-level permission booleans about metadata, where the constraint that
+binds is the article's. The claim is struck; `licensing.md` owns the rule.
+
+`reference-sirt6/` was brought into line — five literature rows removed, revalidated, re-closed,
+recompiled. `content_signature` and the closure hash are unchanged (`licensing.csv` is outside both);
+`artifact.digest` moved to `sha256:7610f0fa…`. Its README also stops claiming **zero warnings**: it
+compiles with two, both documented there, one of them the compiler's own partial message filed as
+`S79`.
+
+### Filed upstream
+
+`S79` (the licence-disagreement warning prints only the sources that mismatch, so a declaration
+matching one of two annotation-layer rows reads as matching none) and `S80` (`state` publishes six
+values flat while `derive.py` calls two of them retired — 377 `risk` and 4 `neutral` across the 16
+reference examples, and zero uses of `alt`, `ref` or `significant`) in the format tree; `S18` in the
+registry's.
+
 ## 0.25.0 — 2026-08-31
 
 ### Supplementary tables become a tool surface

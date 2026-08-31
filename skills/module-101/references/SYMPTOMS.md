@@ -513,6 +513,24 @@ and a `0.7` client against a `0.6` server refuses. **Nothing about the spec will
 recompiling will not either** — either the deployment is upgraded, or the registry is driven from a
 checkout pinned to the contract it serves. An operator's call, not an author's.
 
+**`<table>.csv line N [<column>]: Extra inputs are not permitted` from the registry, while every local
+gate passed.** Not a typo, and usually not your spec. The instance validates against the format
+version **it** runs, and it can be several patch releases behind the one you compiled with — measured
+2026-08-31: both instances serve `format: 0.6.1`, `uv sync` installs 0.6.6, and every row model is
+`extra="forbid"`. So a column that shipped in 0.6.2 or later is a valid, current column that the
+server has never heard of, and the message says what pydantic says about a misspelling. Check the
+column against `describe_table` first; if it is real, this is the gap. **The version handshake does
+not catch it** — `assert_compatible()` is scoped to major.minor, so a 0.6.6 client and a 0.6.1 server
+certify each other and then disagree row by row.
+
+**It is a decision, not a defect, and the obvious repair is the wrong one.** Dropping the column makes
+the publish go green and deletes whatever it recorded. The worked case is `curator` on `studies.csv`,
+which is the per-row record of *who located a quote* — remove it and the module publishes, having
+silently lost the attribution the field exists for. The honest options are: wait for the instance to
+catch up; publish without the column and say in the README that it was dropped for the registry's
+format version, not because it was unknown; or ask the operator to upgrade. Filed as registry-tree
+`S18`, asking that the refusal name the version gap instead of reading like a typo.
+
 **`Registry error: … That is a refusal to act on an instance other than the one you named.`**
 The guard working. Every registry tool declares a `target` and the server verifies it against the
 instance's reported mode before acting. Check which one you named: **the polygon and production share

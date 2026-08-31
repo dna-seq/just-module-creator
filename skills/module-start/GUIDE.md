@@ -301,10 +301,15 @@ check, so write the row yourself.**
 - **`license:` in the YAML must not contradict `licensing.csv`.** A ClinVar module declaring `CC0-1.0`
   warns, because the source row says `public-domain` — the same grant, but the check compares
   **spellings**. Match the source's spelling.
-- **It must cover every source your fact tables cite, including PubMed if you carry studies.** A
-  literature row is not reported as unused when `studies.csv` has rows: `studies.csv` has no `source`
-  column by design, so nothing can corroborate the service you read the record through, and the row is
-  the only record of its terms.
+- **It must cover every source your fact tables cite — and a literature service is not one of them.**
+  No `pubmed` row, ever, and none for Crossref, Europe PMC, OpenAlex or Unpaywall either: a literature
+  source's terms are per *article*, not per source, so they live on `literature.csv`, which records
+  `license`, `share_alike`, `commercial_use` and `redistribution` for each PMID. Upstream has no
+  `pubmed` entry in `TERMS_BY_SOURCE` and will not add one (RM46). Measured 2026-08-31: adding or
+  removing the row changes nothing — same validate, same compile, same warnings — because
+  literature-layer rows are exempt from the orphan check outright, so the row buys no enforcement and
+  invites source-level permission booleans for metadata while the binding constraint is the article's.
+  See `module-tables/references/licensing.md`, which owns this rule.
 - **`--use` accepts `non-commercial`; the `declared_use` *column* takes `non_commercial`** with an
   underscore. The flag normalises; a cell you type by hand does not.
 - **The file was `sources.csv` before format 0.6 and both spellings still read.** Create only

@@ -1304,13 +1304,28 @@ have been questions.
   through 0.6.4 is the stretch where the three did *not* move together — format and compiler sat at
   0.6.1 while the enricher took patches alone (0.6.2 for RM101's exception contract, 0.6.3 for the
   ClinVar and ClinPGx drafter fixes, 0.6.4 for S45).
-- **Both live registry instances still serve `format: 0.6.1` while we compile with 0.6.6, and that is
-  fine — measured 2026-08-21, not assumed.** The contract check is scoped to **major.minor** below
-  1.0, so every 0.6.x interoperates: `assert_compatible()` passes against prod and the polygon with a
-  0.6.6 client, and `curl -s <url>/api/v1/version` returns
-  `{"registry":"0.18.2","format":"0.6.1","compiler":"0.6.1"}` on both. **A 0.7 client against a 0.6
-  server is the case that would refuse**, so re-probe at the next minor rather than reading this line
-  as a general permission.
+- **Both live registry instances serve `format: 0.6.1` while we compile with 0.6.6, and "every 0.6.x
+  interoperates" is FALSE. Corrected 2026-08-31; this line said it was fine for ten days.** The
+  handshake does pass — `assert_compatible()` is scoped to major.minor below 1.0, and
+  `curl -s <url>/api/v1/version` still returns
+  `{"registry":"0.18.2","format":"0.6.1","compiler":"0.6.1"}` on prod and polygon alike. **The
+  handshake is not the thing that validates your rows.** A `studies.csv` carrying `curator` — a field
+  that shipped in format **0.6.5**, on a model that is `extra="forbid"` — is refused by both
+  instances with `studies.csv line 2 [curator]: Extra inputs are not permitted`, while every local
+  gate passes. Measured: removing that one column flips `registry_check` to
+  `verdict: true, blocking: []`.
+
+  **Why this was wrong rather than merely stale.** It was measured on the handshake, which cannot fail
+  for the class of change that actually breaks a publish — a field added in a patch release. That is
+  the same "could this check have failed?" defect the rulebook applies to a module's green checks,
+  found in our own workspace notes. **Never conclude compatibility from `assert_compatible()` alone**;
+  the only proof is a `registry_check` against the instance you mean to publish to.
+
+  **Do not drop the field to get a green light.** Conforming a module to a registry that lags the
+  format is the stale-source move §2 forbids, and `curator` is the per-row record of who located a
+  quote. Filed as registry-tree `S18` and `F77`; the symptom is in
+  `skills/module-101/references/SYMPTOMS.md`. **A 0.7 client against a 0.6 server is the case the
+  handshake itself would refuse**, so re-probe at the next minor too.
 - **Both live registry instances now serve `format: 0.6.1` / `registry: 0.18.x`, verified 2026-08-19,
   and the 0.5.4 contract block is over.** The installed client is **0.18.2** as of 2026-08-20 — this
   line said 0.18.1 for a day. Every version-guarded call works again — a `download` of

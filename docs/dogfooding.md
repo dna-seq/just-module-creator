@@ -14,6 +14,113 @@ is usable, and what is missing.
 
 ---
 
+## F77 — the version handshake certifies a registry pair that then refuses our own rows, and our workspace note said the opposite
+
+**Found:** 2026-08-31, in a single-run SIRT6 benchmark on plugin 0.25.0 · **Severity:** high ·
+**Status:** filed as registry-tree `S18`, open. Symptom entry shipped; `CLAUDE.md` §11 corrected.
+
+A module green through every local gate — strict validate, strict enrich, strict compile, verified
+digests, closed with eleven check records — is refused by both live registries:
+
+```
+valid: false — studies.csv line 2 [curator]: Extra inputs are not permitted
+```
+
+`StudyRow.curator` shipped in format **0.6.5**. Both instances validate at **0.6.1**
+(`/api/v1/version`, prod and polygon, measured) and `StudyRow` is `extra="forbid"`. Removing that one
+column returns `verdict: true, blocking: []`.
+
+**The part that is ours is the claim we had written down.** `CLAUDE.md` §11 said *"every 0.6.x
+interoperates"*, measured on `assert_compatible()`, which is scoped to major.minor below 1.0 and
+therefore **cannot fail** for the class of change that actually breaks a publish — a field added in a
+patch release. That is the "could this check have failed?" defect, in our own workspace facts, and it
+stood for ten days.
+
+**The obvious repair is the wrong one and the run got that right.** Dropping `curator` makes the
+publish go green and silently deletes the per-row record of *who located a quote* — the attribution
+that field exists for, and which `server.INSTRUCTIONS` rule 5 pushes an author toward filling. The run
+kept the column, published nothing, and surfaced it as a decision. Conforming a module to a registry
+that lags the format is the stale-source move §2 forbids.
+
+**Surface it, and why one candidate is wrong.** Pre-stripping fields the target instance does not know
+would require us to model their validation, would delete authored provenance, and would make a
+module's bytes depend on which registry it was aimed at. `S18` asks instead that the refusal name the
+version gap. **A product guard is worth building** — compare the fields a module uses against the
+target's reported format version and warn by name — and is deferred rather than dismissed: it needs a
+version-to-model mapping and a probe, which is more than a patch.
+
+## F76 — `output_dir` inside the spec directory poisons a registry call two steps later
+
+**Found:** 2026-08-31 · **Severity:** medium · **Status:** fixed here, 0.26.0.
+
+`compile_module(spec_dir=X, output_dir=X/build)` is the obvious call and nothing warned. The compile
+copies `README.md` into `output_dir`; the registry uploader walks the spec tree recursively; and
+`registry_check` then answers `ambiguous_spec_layout — README.md arrives from more than one path` with
+a 422. The cost lands nowhere near the argument that caused it — the run that hit it lost a confusing
+detour and a full restructure, with nothing pointing back at the compile.
+
+**A warning, not a refusal, and that is the interesting half.** `reference-sirt6/` itself uses
+`build/` inside the spec, and its artifact is fine. The layout is legal; what it costs is a later
+call. Refusing would condemn working modules to catch a mistake that only matters if you publish.
+
+## F75 — one refusal, one reason, ten copies
+
+**Found:** 2026-08-31 · **Severity:** low · **Status:** fixed here, 0.26.0.
+
+A single `literature_search` emitted the same ninety-word DOI-refusal paragraph once per result — ten
+copies — which is the repeated-warning shape `CLAUDE.md` §5 names outright: *aggregate repeated
+warnings by reason, with a count, never one per row.* It was the run's loudest complaint about output
+volume, in a report that had eleven other things to complain about.
+
+The reason is now written once, with the count. Every row keeps its machine-readable
+`refusal="redundancy_bearing"` token, so a caller filtering on it loses nothing — the prose was the
+only duplicated part, and the prose is the expensive part.
+
+## F74 — the same argument, accepted by two of our tools and refused by the third
+
+**Found:** 2026-08-31 · **Severity:** medium · **Status:** fixed here, 0.26.0.
+
+`declared_use` takes `non_commercial`; the enricher's CLI flag is written `non-commercial`. So an
+author who has just read a `--use` line types the hyphen. `enrich_facts` and `refresh_sidecar` folded
+it; `registry_check` passed it straight through and the server answered 422 without naming the hyphen
+or the accepted spellings.
+
+**Two-and-a-half rules, not two.** `passes.py` also carried its own hardcoded
+`("unstated", "non_commercial", "commercial")` tuple — the hardcoded-vocabulary defect §2 forbids,
+sitting next to a correct call that read format's `VALID_DECLARED_USE`. One helper in `_shared` now,
+reading the format's own vocabulary, with all three call sites through it and a test that exercises
+the entry points rather than the helper: the defect was never in the fold, it was in a call site that
+did not use one.
+
+## F71b — `record_override`'s returned note described a mode the call had not used
+
+**Found:** 2026-08-31 · **Severity:** medium · **Status:** fixed here, 0.26.0.
+
+`F71` split the persisted log line on `source_value` — *outranks* with one, *authored* without — and
+left the returned `note` unconditional. So a call recording a judged cell got back *"the cross-check
+still reports this mismatch … a recorded outrank is downgraded, never passed"*, when there was no
+source, no mismatch and nothing to downgrade. The note is the one field a caller reads to learn what
+just happened.
+
+**Kept under `F71`'s number with a suffix on purpose**: it is the same defect, one field over, and
+numbering it separately would hide that fixing half a surface is how this happened. The test asserts
+both branches and was run against the old code and watched to fail.
+
+## F71c — `OverrideRecord.authored_value` promised what the read path cannot deliver
+
+**Found:** 2026-08-31 · **Severity:** low · **Status:** documented here, 0.26.0; not fixable in code.
+
+`review_queue` reports `authored_value: ""` on every entry, always. Upstream's `ProvenanceItem` has no
+slot for it, so our field, value, source and timestamp are packed into a `[jmc field=… value_sha256=…]`
+suffix inside the free-text rationale and only the digest survives. The code says so in a comment —
+`# not stored; the digest is what binds` — while the field's own description said *"What the module
+says, at the moment of the record."*
+
+**The description was the defect, not the design.** The digest is the right binding and
+`current_value` / `still_bound` answer the question a reader actually has. The field now says it is
+set on write and empty on read-back, and points at the two that work. A gap named in a comment and
+denied in a description is the shape §7 exists to catch.
+
 ## F73 — a paper's published coordinates are GRCh37 and nothing warns you; two independent runs caught it, and neither was told to look
 
 **Found:** 2026-08-31, both centenarian benchmark runs, independently · **Severity:** high ·
