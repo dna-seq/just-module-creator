@@ -10,6 +10,7 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{booktabs}
+\usepackage{needspace}
 \usepackage{hyperref}
 \usepackage{url}
 \usepackage{tikz}
@@ -90,6 +91,9 @@ shareable: they can be kept locally, rehearsed in a staging registry, or
 published for others to install and use. The same files can also be written or
 edited entirely by hand.
 
+% Keep the lead-in with the first item; alone at a page foot it reads as a
+% dropped sentence rather than an introduction to the list.
+\needspace{5\baselineskip}
 This paper makes four contributions:
 
 \begin{enumerate}
