@@ -873,7 +873,9 @@ async def test_the_claim_is_released_so_a_later_enrichment_is_not_blocked_foreve
     )
 
 
-async def test_a_long_enrich_reports_it_is_alive_without_inventing_a_fraction(make_client, tmp_path):
+async def test_a_long_enrich_reports_it_is_alive_without_inventing_a_fraction(
+    make_client, tmp_path
+):
     """WORKAROUND TEST — delete with the heartbeat when the enricher ships `progress`.
 
     `enrich()` is one opaque blocking call in 0.6.6: a 263-rsID module ran 20+ minutes
@@ -903,8 +905,9 @@ async def test_a_long_enrich_reports_it_is_alive_without_inventing_a_fraction(ma
     try:
         async def _beat(ctx, seconds_running: float) -> None:
             # Exercise the heartbeat body directly: the real one wraps a network call.
-            import anyio
             from datetime import UTC, datetime
+
+            import anyio
 
             started = datetime.now(UTC)
             with anyio.move_on_after(seconds_running):
@@ -921,7 +924,7 @@ async def test_a_long_enrich_reports_it_is_alive_without_inventing_a_fraction(ma
         passes._HEARTBEAT_SECONDS = monkey
 
     assert reported, "a long enrich must say it is alive while it is still running"
-    for progress, total, message in reported:
+    for _progress, total, message in reported:
         assert total is None, (
             f"reported total={total!r} — a fraction claims a denominator we do not have. "
             "Upstream batches inside resolver.py; inventing one fabricates their measurement."

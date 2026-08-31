@@ -54,6 +54,15 @@ signature and the *recovery* of an rsID from an old-assembly coordinate — the 
 source's assembly before you author a coordinate at all*, which is the moment the decision is made.
 Both runs got there by reading the paper's methods, not by being told.
 
+**Measured properly the next day, and the picture is sharper than the first report.** Probed with a
+minimal spec pasting `rs61849494`'s GRCh37 coordinate onto a GRCh38 module: `validate_spec` passes
+(correctly — it is offline); **`enrich(mode="strict")` REFUSES**, raising `EnrichmentError` and
+leaving the module untouched, with a diagnosis that names the repair outright; `best_effort` reports
+all three lines then writes the wrong coordinate into `resolution.csv`; and
+**`compile_module(strict=True)` then succeeds silently** over that file. So the enricher's strict flag
+already does the right thing, and the hole is that the diagnosis is discarded before the compiler sees
+it. Filed as `S78`. Our own default is `best_effort`, which is the path that meets this.
+
 **Surface it, and the fix is prose plus possibly a check.**
 
 - **The prose fix, which is ours and cheap:** `module-curate` and `module-start` should say that a

@@ -171,6 +171,54 @@ coordinate shifted 1 base…"*. Read that line as being about `start`, not `ref`
 **floor** — it can only see rows where the neighbouring base differs from your `ref`, roughly three in
 four. [`module-enrich`](../module-enrich/GUIDE.md) owns the report.
 
+### The same mistake at megabase scale: the source is on another build
+
+An off-by-one moves a row one base. **A paper on GRCh37 moves it megabases**, and papers publishing
+GRCh37 coordinates without labelling them are ordinary — the assembly is often stated once in the
+methods and nowhere near the table you are reading.
+
+Measured on PMID 41057961 (live Ensembl, both assemblies): `rs61849494` is `chr10:51613269 G/A` on
+GRCh37 and `chr10:45982565 C/T` on GRCh38 — **5.6 Mb apart and strand-flipped**, so the ref and the
+alt are wrong too. `rs11228733` shifts 232 kb.
+
+**So make the source's build a triage question, before you author a single coordinate.** Find the
+assembly in the methods; if the paper does not say, treat that as unknown rather than as GRCh38.
+
+**The safe default is to author `rsid` only, and let resolution supply the coordinate.** That is not
+timidity — it is what gives the compiler's rsid-vs-coordinate check something *independent* to
+compare. Author both, and you have handed it two numbers from the same source.
+
+**What actually happens if you paste one anyway, measured rather than assumed.** The enricher does
+catch it, and says so in three ways at once, the last of which names the repair:
+
+> Old-assembly coordinate — 1 row(s) — the authored ref is the GRCh37 base AND GRCh37 dbSNP records a
+> variant starting there — the strongest of the three, and the one that names the rs-number to author
+> instead (10:51613269 → rs61849494).
+
+**Which gate stops it depends entirely on the mode you enriched in, and that is the thing to know:**
+
+| gate | GRCh37 coordinate pasted onto a GRCh38 module |
+|---|---|
+| `validate_module` | **passes** — offline, cannot know |
+| `enrich_module(strict=True)` | **refuses**, writes nothing, module unchanged |
+| `enrich_module()` (default) | reports all three lines, then writes `resolution.csv` with the wrong coordinate |
+| `compile_module(strict=True)` | **succeeds, silently** — no error, no warning about the coordinate |
+
+So on the default path the enrich report is the **only** place the problem is ever stated, and a run
+that does not read it ships a module about the wrong locus with every later gate green. `--strict` on
+a compile is a determinism gate, not a correctness one, and here it is being handed a
+`resolution.csv` whose rows were written over a diagnosed disagreement with no record that they were.
+Filed upstream as `S78`.
+
+**So: enrich strict when you can, and read the report either way.** Strict is not always right —
+`best_effort` exists because an unreachable Ensembl must not be a failure — which is exactly why the
+report matters rather than the flag.
+
+**A source on an old build has a second cost worth planning for.** Its variants that carry *no* rsID
+cannot be brought forward at all — nothing here lifts coordinates over — so they are excluded and
+said to be excluded, never pasted. Two independent runs met this on the same paper and both excluded
+47 rows for exactly that reason.
+
 ## Genotype spellings that decide whether a row can ever match
 
 - **A genotype is `C/C`, not `CC`.** `CC` parses as a single two-base allele. ClinPGx writes the

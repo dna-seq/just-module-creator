@@ -124,6 +124,15 @@ A summary is not evidence — it is somebody's reading of evidence, and if a mac
 citations may be generated rather than recalled. **Assume nothing, check each claim, and expect most of
 them to fail.** A real run of this procedure turned **seven** offered rsIDs into **one** authored row.
 
+0. **What genome build is the source on?** Ask this **first**, before any coordinate is copied. Find
+   the assembly in the methods; a paper that does not say is *unknown*, never GRCh38 by default. A
+   GRCh37 source is ordinary and its coordinates are wrong by **megabases** on a GRCh38 module —
+   `rs61849494` sits 5.6 Mb apart between the builds and is strand-flipped, so `ref` and `alts` are
+   wrong too. The safe authoring default from any paper is **`rsid` only**, letting resolution supply
+   the coordinate: that is what gives the compiler's rsid-vs-coordinate check something independent
+   to compare. [`module-curate`](../module-curate/GUIDE.md) has the measurement and what each gate
+   does and does not catch. Variants the source gives with no rsID cannot come forward at all —
+   nothing here lifts coordinates over — so exclude them and say so.
 1. **Does every rsID resolve?** `lookup_variant(rsid=…)`. Read the finding, not just `loci`: an
    unreachable Ensembl reports *"could not be reached, so its answer is unchecked rather than empty"*
    at `warning`, while a genuine absence stays `info`. **Re-run on the warning** — it says nothing
