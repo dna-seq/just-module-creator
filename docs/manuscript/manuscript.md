@@ -12,7 +12,7 @@ This paper makes four contributions:
 
 2.  It presents `just-module-creator`, an authoring plugin that exposes the public capabilities of `just-dna-format`, `just-dna-compiler`, `just-dna-enricher`, and `just-dna-registry` as typed Model Context Protocol (MCP) tools . The plugin reads the installed schema instead of carrying a copy.
 
-3.  It defines how modules move between a local store, a deletable test registry, and the production registry while preserving provenance and decisions that still require review.
+3.  It defines how modules move between a local store, a test registry whose publications can be deleted, and the public catalog while preserving provenance and decisions that still require review.
 
 4.  It defines an evaluation protocol for variant recovery, citation identity, and effect-direction agreement, and reports catalog statistics from the first eight published modules across five independent namespaces.
 
@@ -118,7 +118,7 @@ Curation follows drafting because a drafted row may still carry decisions the so
 
 ## Local and shared module stores
 
-A compiled module can reach a consumer through three routes (Figure <a href="#fig:architecture" data-reference-type="ref" data-reference="fig:architecture">2</a>): local installation into a Just-DNA-Lite checkout for testing with a VCF, publication to the staging registry (the polygon, `target=test`) for a deletable rehearsal, or publication to the immutable production catalog. The registry runs its own enrichment and strict compilation on publish, so the stored artifact is the one the server produced, not a locally claimed digest. Inclusion in either catalog distributes a module; it is not scientific review, clinical validation, or endorsement.
+A compiled module can reach a consumer through three routes (Figure <a href="#fig:architecture" data-reference-type="ref" data-reference="fig:architecture">2</a>): local installation into a Just-DNA-Lite checkout for testing with a VCF, publication to the staging registry (the polygon, `target=test`) for a deletable rehearsal, or publication to the immutable public catalog. The registry runs its own enrichment and strict compilation on publish, so the stored artifact is the one the server produced, not a locally claimed digest. Inclusion in either catalog distributes a module; it is not scientific review, clinical validation, or endorsement.
 
 ## Evaluation dimensions
 
@@ -170,7 +170,7 @@ Seven of the 20 skills are user-invocable commands, exposing the workflow throug
 
 ## Production catalog
 
-At the time of writing, the production registry holds eight published modules across 19 versions and five independent namespaces (three distinct owners). Table <a href="#tab:catalog" data-reference-type="ref" data-reference="tab:catalog">4</a> summarizes the published modules.
+At the time of writing, the public catalog holds eight published modules across 19 versions and five independent namespaces (three distinct owners). Table <a href="#tab:catalog" data-reference-type="ref" data-reference="tab:catalog">4</a> summarizes the published modules.
 
 <div id="tab:catalog">
 
@@ -186,7 +186,7 @@ At the time of writing, the production registry holds eight published modules ac
 | lactose_tolerance       |        2 |       8 |     1 | 2               |
 | **Total**               |  **885** |         |       | **19 versions** |
 
-Modules published to the production registry as of August 2026. All modules target GRCh38 and were compiled with strict resolution.
+Modules published to the public catalog as of August 2026. All modules target GRCh38 and were compiled with strict resolution.
 
 </div>
 
@@ -218,7 +218,7 @@ The software is open-source and intended for research use only.
 
 - **Just-DNA-Lite**: <https://anonymous.4open.science/r/just-dna-lite> (local VCF processing, annotation, and reporting; described in the companion paper ).
 
-- The production catalog and staging polygon are live at URLs provided in the anonymized repositories.
+- The public catalog and staging polygon are live at URLs provided in the anonymized repositories.
 
 # Appendix
 

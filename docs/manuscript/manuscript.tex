@@ -105,8 +105,9 @@ This paper makes four contributions:
     \texttt{just-dna-registry} as typed Model Context Protocol (MCP)
     tools~\citep{anthropic2024mcp}.
     The plugin reads the installed schema instead of carrying a copy.
-    \item It defines how modules move between a local store, a deletable test
-    registry, and the production registry while preserving provenance and
+    \item It defines how modules move between a local store, a test registry
+    whose publications can be deleted, and the public catalog while
+    preserving provenance and
     decisions that still require review.
     \item It defines an evaluation protocol for variant recovery, citation
     identity, and effect-direction agreement, and reports catalog statistics
@@ -288,7 +289,7 @@ and stage.
     workflow at the stage it affects.};
   \node[layer, below=of review] (destinations) {\textbf{Destinations:}
     local installation, rehearsal on the polygon, or publication to the
-    production catalog; a consumer later joins the compiled module to a genome.};
+    public catalog; a consumer later joins the compiled module to a genome.};
   \draw[arr] (entry) -- (route);
   \draw[arr] (route) -- (scaffold);
   \draw[arr] (scaffold) -- (workspace);
@@ -460,7 +461,7 @@ A compiled module can reach a consumer through three routes
 (Figure~\ref{fig:architecture}): local installation into a Just-DNA-Lite
 checkout for testing with a VCF, publication to the staging registry (the
 polygon, \texttt{target=test}) for a deletable rehearsal, or publication to
-the immutable production catalog. The registry runs its own enrichment and
+the immutable public catalog. The registry runs its own enrichment and
 strict compilation on publish, so the stored artifact is the one the server
 produced, not a locally claimed digest. Inclusion in either catalog
 distributes a module; it is not scientific review, clinical validation, or
@@ -593,14 +594,14 @@ Command & Purpose \\
 
 \subsection{Production catalog}
 
-At the time of writing, the production registry holds eight published modules
+At the time of writing, the public catalog holds eight published modules
 across 19 versions and five independent namespaces (three distinct
 owners). Table~\ref{tab:catalog} summarizes the published modules.
 
 \begin{table}[ht]
 \centering
 \small
-\caption{Modules published to the production registry as of August 2026.
+\caption{Modules published to the public catalog as of August 2026.
 All modules target GRCh38 and were compiled with strict resolution.}
 \label{tab:catalog}
 \begin{tabular}{@{}p{0.30\linewidth}rrrl@{}}
@@ -716,7 +717,7 @@ The software is open-source and intended for research use only.
     \url{https://anonymous.4open.science/r/just-dna-lite}
     (local VCF processing, annotation, and reporting; described in the
     companion paper~\citep{companion2026justdnalite}).
-    \item The production catalog and staging polygon are live at URLs
+    \item The public catalog and staging polygon are live at URLs
     provided in the anonymized repositories.
 \end{itemize}
 
