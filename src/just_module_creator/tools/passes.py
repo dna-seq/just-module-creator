@@ -40,6 +40,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import anyio
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
@@ -406,9 +407,46 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
             # is the point: `run_sync` defaults to `abandon_on_cancel=False`, so the await
             # does not unwind until the thread returns. The claim therefore outlives an
             # aborted request for exactly as long as the write it is protecting against.
-            result = await run_sync(
-                lambda: enrich(target, mode=mode, offline=eff_offline, write=True)
-            )
+            # WORKAROUND — remove when the enricher's own `progress` callback ships.
+            # Upstream accepted it as ask 4 of S66 and it lands in 0.7 (RM128); 0.6.6
+            # has no `progress` parameter, verified by signature rather than by
+            # changelog. Until then `enrich()` is one opaque blocking call: a 263-rsID
+            # module ran 20+ minutes writing nothing, and an operator watching it could
+            # not tell work from a hang. That ambiguity is what killed a benchmark run
+            # and produced the partial sidecar in F70.
+            #
+            # This reports ELAPSED TIME, never a fraction. We cannot know the
+            # denominator — upstream's resolver batches inside `resolver.py` rather than
+            # looping per subject, which is precisely why they have not settled what the
+            # callback counts — and inventing a percentage would be a fabricated
+            # measurement of somebody else's work. A heartbeat says "alive, N seconds
+            # in", which is the whole question being asked.
+            #
+            # TO DISMANTLE AT 0.7: delete `_heartbeat` and this task group, pass
+            # `progress=` into `enrich()`, and report real (done, total). The subject
+            # count then comes from upstream instead of being unknown.
+            async def _heartbeat() -> None:
+                if ctx is None:
+                    return
+                started = datetime.now(UTC)
+                while True:
+                    await anyio.sleep(_HEARTBEAT_SECONDS)
+                    seconds = int((datetime.now(UTC) - started).total_seconds())
+                    await ctx.report_progress(
+                        progress=seconds,
+                        message=(
+                            f"enrich still running, {seconds}s elapsed — resolving rsIDs "
+                            "against Ensembl. It writes resolution.csv only when it "
+                            "finishes, so no output yet is expected, not a stall."
+                        ),
+                    )
+
+            async with anyio.create_task_group() as beat:
+                beat.start_soon(_heartbeat)
+                result = await run_sync(
+                    lambda: enrich(target, mode=mode, offline=eff_offline, write=True)
+                )
+                beat.cancel_scope.cancel()
         except EnrichmentError as exc:
             return EnrichReport(
                 success=False,
@@ -471,6 +509,12 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
 #: started by a different process, and there is no lockfile anywhere in this tree or
 #: upstream's. What it does stop is the sequence that actually happened, where both
 #: calls came from one session.
+#: How often the enrich heartbeat speaks. Thirty seconds is short enough that an
+#: operator watching a silent tool learns it is alive before deciding it is not, and
+#: long enough that a normal small module finishes without emitting one at all.
+#: Paired with the workaround in `enrich_module`; both go at 0.7.
+_HEARTBEAT_SECONDS = 30.0
+
 _ENRICHMENTS_IN_FLIGHT: dict[Path, str] = {}
 
 

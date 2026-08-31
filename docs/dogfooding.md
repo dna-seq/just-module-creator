@@ -14,6 +14,36 @@ is usable, and what is missing.
 
 ---
 
+## F72 — a corpus-sized `enrich` is indistinguishable from a hang, and the fix is upstream's but not ours to wait for
+
+**Found:** 2026-08-31 · **Severity:** medium · **Status:** worked around here, with a dismantle note.
+Upstream's real fix is `S66` ask 4, accepted and shipping in **0.7** (`RM128`).
+
+A 263-rsID module ran **20+ minutes** inside `enrich_module` writing nothing. `enrich()` persists
+`resolution.csv` only at the end, so silence is the expected appearance of work — and an operator
+watching it cannot tell that from a dead process. That ambiguity is what led to killing the run,
+which produced the partial sidecar in `F70`.
+
+**Upstream already owns this and already answered it.** `S66` ask 4 is the progress callback; it is
+accepted, minor-legal, and lands in 0.7 with the transaction and the `flock`. Verified against the
+**installed** package rather than the changelog: `inspect.signature(enrich)` has no `progress`
+parameter and `just_dna_format.layout` has neither `atomic_writer` nor `atomic_write_text` at 0.6.6.
+
+**So we hold a workaround, and the owner's call is the reason:** 0.7 is being built and is not
+expected soon, so waiting means every long run stays ambiguous until it lands.
+
+**What the workaround is careful about.** It reports **elapsed seconds, never a fraction**. We cannot
+know the denominator — upstream batches inside `resolver.py` rather than looping per subject, which
+is precisely why *they* have not settled what the callback counts — and a percentage of ours would be
+a fabricated measurement of another layer's work. A heartbeat answers the question actually being
+asked, which is *alive or dead*, and answers nothing it cannot.
+
+**TO DISMANTLE AT 0.7**, and the marker is in the code beside the task group: delete `_heartbeat`,
+`_HEARTBEAT_SECONDS` and the task group, pass `progress=` into `enrich()`, report real
+`(done, total)`, and delete
+`test_a_long_enrich_reports_it_is_alive_without_inventing_a_fraction`. The subject count then comes
+from upstream instead of being unknown, which is the whole reason to stop doing it ourselves.
+
 ## F71 — `record_override` logged every authored cell as "outranks", claiming disputes that never happened
 
 **Found:** 2026-08-31, reading six benchmark runs' `logs/authoring.log` · **Severity:** medium ·

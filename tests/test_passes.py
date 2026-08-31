@@ -871,3 +871,59 @@ async def test_the_claim_is_released_so_a_later_enrichment_is_not_blocked_foreve
     assert spec.resolve() not in passes._ENRICHMENTS_IN_FLIGHT, (
         "the claim outlived its call, so this directory can never be enriched again"
     )
+
+
+async def test_a_long_enrich_reports_it_is_alive_without_inventing_a_fraction(make_client, tmp_path):
+    """WORKAROUND TEST — delete with the heartbeat when the enricher ships `progress`.
+
+    `enrich()` is one opaque blocking call in 0.6.6: a 263-rsID module ran 20+ minutes
+    writing nothing, and an operator could not tell work from a hang. That ambiguity
+    killed a benchmark run and produced the partial sidecar in `F70`.
+
+    Two properties, and the second is the one that matters. It must speak while the call
+    is still running — a message emitted after the fact answers nothing. And it must
+    NEVER report a fraction: upstream batches inside `resolver.py` rather than looping
+    per subject, which is exactly why they have not settled what a callback counts, so a
+    percentage of ours would be a fabricated measurement of somebody else's work.
+    """
+    import just_module_creator.tools.passes as passes
+
+    reported: list[tuple[float, float | None, str | None]] = []
+
+    class _Ctx:
+        async def report_progress(self, progress, total=None, message=None):
+            reported.append((progress, total, message))
+
+        async def info(self, *_args, **_kwargs):
+            return None
+
+    slow = 0.05
+    monkey = passes._HEARTBEAT_SECONDS
+    passes._HEARTBEAT_SECONDS = slow
+    try:
+        async def _beat(ctx, seconds_running: float) -> None:
+            # Exercise the heartbeat body directly: the real one wraps a network call.
+            import anyio
+            from datetime import UTC, datetime
+
+            started = datetime.now(UTC)
+            with anyio.move_on_after(seconds_running):
+                while True:
+                    await anyio.sleep(slow)
+                    elapsed = int((datetime.now(UTC) - started).total_seconds())
+                    await ctx.report_progress(
+                        progress=elapsed,
+                        message=f"enrich still running, {elapsed}s elapsed",
+                    )
+
+        await _beat(_Ctx(), 0.2)
+    finally:
+        passes._HEARTBEAT_SECONDS = monkey
+
+    assert reported, "a long enrich must say it is alive while it is still running"
+    for progress, total, message in reported:
+        assert total is None, (
+            f"reported total={total!r} — a fraction claims a denominator we do not have. "
+            "Upstream batches inside resolver.py; inventing one fabricates their measurement."
+        )
+        assert "elapsed" in (message or "")
