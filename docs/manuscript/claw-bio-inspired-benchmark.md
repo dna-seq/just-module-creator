@@ -1,9 +1,15 @@
-# The authoring scorer: what it measures, and what the round measured
+# The authoring scorer: the framework, and what the prep runs showed
 
-The design this file used to hold was written **before** the benchmark ran. The
-benchmark then ran, and corrected it in four places. This is the version that
-describes what is built — `src/just_module_creator/bench.py`, the corpus in
-`assets/benchmarks/`, and the numbers they produce.
+The design this file used to hold was written **before** anything ran. Prep runs
+then corrected it in four places. This is the version that describes what is built
+— `src/just_module_creator/bench.py`, the corpus in `assets/benchmarks/`, and what
+each of its three modes is worth.
+
+**The framework is the deliverable here; the numbers are not yet results.** The
+runs that produced them were preparation — they surfaced the prompt changes and
+the upstream items, and the plugin changed between them — so they demonstrate that
+the instrument measures something and no more. The scored round runs against a
+stable build.
 
 Lineage is ClawBio's genomic evaluation infrastructure, adapted from scoring
 **pipeline filtering** to scoring **module authoring**. What we kept and what we
@@ -64,7 +70,19 @@ decoys keep it broken.
 
 ---
 
-## What the round measured
+## What the prep round measured
+
+**These runs are preparation, not results, and the distinction is load-bearing.**
+They were run to shake out the instrument, and they did: they produced the prompt
+changes, the four scoring corrections below, and a dozen upstream items — several
+of which changed the plugin *between* runs, so the three were not scored against
+one build. **The numbers below demonstrate that the framework measures something;
+they do not measure how well the tool authors modules.** The scored round runs
+against a stable plugin, and this table is expected to move.
+
+What is stable and reusable is everything else on this page: the adjudication
+method, the three modes, the four corrections, and the rule that key agreement and
+cell agreement are read together.
 
 Three completed runs of one prompt over one paper (SIRT6, `10.1038/s41598-025-24018-3`),
 scored against the adjudicated reference. `a` and `b` are the merge's parents; `a2`
@@ -179,15 +197,28 @@ The corpus is committed, so these run on a fresh checkout. `build/` is not: a
 compile is deterministic, and the digests a recompile is checked against are in
 `sirt6/metadata.json`.
 
+## What a real round needs
+
+The framework is built; the round it exists for has not been run. What that needs:
+
+1. **A stable plugin across every run.** The prep runs spanned three builds, which
+   is the single reason their table cannot carry a claim.
+2. **More than one adjudicated reference.** One out of three papers has one.
+   `centenarian` and `ards` have runs and prompts and no expert answer.
+3. **Repeats per prompt**, so a number has a spread rather than a value.
+4. **A second host.** Every run so far is one model through one host, so nothing
+   here separates the tool from the model. Repeating the prompts through Codex is
+   the plan.
+
 ## A note on the manuscript
 
 The paper's evaluation protocol is **Section 4.2**, not 4.4 — the numbering moved
 when two subsections went to the appendix. `docs/manuscript/reviewer.md:28` still
 carries the old pointer.
 
-Section 4.2 currently ends *"We therefore report no recall or precision estimate in
-this paper and present the protocol as a framework for future evaluation."* The
-table above is what replaces that sentence. It answers reviewer recommendation #6
-— run the protocol, report what it measured — and it answers it with **N=3 runs of
-one prompt against a human-adjudicated reference**, which is a smaller claim than a
-performance estimate and a more defensible one.
+Section 4.2 used to end *"We therefore report no recall or precision estimate in
+this paper and present the protocol as a framework for future evaluation."* It now
+describes the framework and shows it working, which is a **smaller** claim than
+that sentence promised and a defensible one: reviewer recommendation #6 asks for
+the protocol run and reported, and what is reported is that the instrument
+measures something, on prep runs, with the round still to come.

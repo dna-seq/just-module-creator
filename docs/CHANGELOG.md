@@ -3,9 +3,9 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## Unreleased
+## 0.27.0 — 2026-08-31
 
-### The benchmark scorer becomes a tested module, and the paper reports a number
+### The benchmark scorer becomes a tested module, and the framework is ready for a real round
 
 `scripts/bench_score.py` was a one-off outside `testpaths` and pyright's `include`, so it had never
 been collected or type-checked. It is `src/just_module_creator/bench.py` now, beside `compare.py` and
@@ -63,14 +63,18 @@ Two seams are declared and neither is implemented: `RowJudge` for the cells a st
 cannot score, and `CitationResolver` for existence and title. A judge never moves a row out of
 `unscored` into a pass.
 
-### The paper stops promising an evaluation and reports one
+### The paper describes a framework, and shows it working on prep runs
 
-Section 4.2 said *"we report no recall or precision estimate."* It now carries a table of three runs
-against the adjudicated reference, and the method above it — because scoring modules this system
-authored against a module this system authored would measure agreement with itself, and the human
-adjudication is what breaks that. `docs/manuscript/claw-bio-inspired-benchmark.md` is rewritten from
-a pre-round design into a description of what was built and measured. Limitations says plainly that
-three runs of one prompt is a demonstration rather than a performance estimate.
+Section 4.2 said *"we report no recall or precision estimate."* It now describes the framework — how
+a reference is adjudicated, what the three modes ask, and which two properties of a score have to be
+read together — and illustrates it on the runs that exist.
+
+**Those runs are prep, and the paper says so.** They were what surfaced the prompt changes and the
+upstream items, so their numbers are a demonstration that the instrument works rather than a
+measurement of how well the tool authors. The scored round happens against a stable plugin, and the
+table is expected to change. `docs/manuscript/claw-bio-inspired-benchmark.md` is rewritten from a
+pre-round design into a description of what was built, what it measured, and what each measurement
+is worth.
 
 ## 0.26.0 — 2026-08-31
 
