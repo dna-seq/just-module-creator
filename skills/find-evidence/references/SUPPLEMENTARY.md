@@ -42,15 +42,27 @@ rule 3's *read and not found* versus *unchecked* distinction exists to keep sepa
 
 ---
 
-## Three tools do this now
+## Four tools do this now
 
-Since 0.25.0 the ladder is a tool surface, not a procedure you drive by hand:
+Since 0.25.0 the ladder is a tool surface, not a procedure you drive by hand, and since 0.29.0 it
+reaches the cells:
 
 | call | what it does |
 |---|---|
 | `list_supplementary(doi= / pmid= / pmcid=)` | inventory only, fetches nothing. Runs the rungs below and says which one answered |
 | `fetch_supplementary(url=)` | one file, from a url the inventory gave you, into the cache |
 | `describe_supplementary(path=)` | a workbook's sheet names and its in-cell `Supplementary Table …` titles. Offline, no spreadsheet library |
+| `read_supplementary(path=, sheet=, offset=, limit=)` | the rows of one sheet you named. Offline |
+
+**`read_supplementary` hands over cells and stops there.** It does not pick the sheet, find the header
+row or select the rows that answer a claim — those are judgements about the row you are authoring, the
+same reason `fetch_fulltext` returns no best-matching passage. What it does guarantee is the two things
+a hand-written reader keeps getting wrong: every row padded to the sheet's width, so zipping against a
+header cannot shift a column, and both counts taken by streaming rather than off the workbook's
+optional dimension record.
+
+**Page on `last_populated_row`, not `total_rows`.** They disagree by however many blank rows the
+producer left: the ARDS paper's `ST9` spans 1000 and holds 266.
 
 **Read `verdict` as three-valued and never as a boolean.** `found`; `none_published` — the paper has
 none; `not_determinable` — no rung could answer, which for now usually means *no URL pattern is known
@@ -178,13 +190,23 @@ Four routes look correct and are not. Each was measured.
 
 Finding the file is half of it. The table a row needs is usually one sheet of a workbook.
 
-The sheet roster is readable without opening the workbook in a dataframe library:
+`describe_supplementary` gives the roster and `read_supplementary` gives the rows. The shell
+equivalent of the first still works and is worth knowing when you are outside the plugin:
 
 ```bash
 unzip -p suppl.xlsx xl/workbook.xml | grep -o '<sheet [^>]*name="[^"]*"'
 unzip -p suppl.xlsx xl/sharedStrings.xml | grep -o 'Supplementary Table S[0-9]*:[^<]*'
 ```
 
+There is **no shell equivalent of the second worth writing**, and that is why the tool exists. Four
+authoring runs wrote one anyway — shared strings, cell references, absent dimension records, sparse
+rows — and two produced a column-alignment bug that puts a BETA in the chromosome column: well-formed,
+plausible and wrong. Call the tool.
+
+**Read the first few rows before pulling the table.** A supplementary sheet usually opens with a title
+line, sometimes a section line, then the header — `ST9` puts its real header on row 2, zero-based —
+and a two-level header is common. `limit=5` at `offset=0` costs nothing and tells you where the data
+starts.
 Sheets are commonly named `ST1`…`ST14` while their in-cell titles read *"Supplementary Table S8: …"*,
 and many workbooks carry a `Table of Contents` sheet that maps one to the other. The body text is the
 other half of the map: it cites *(Supplementary Table S5-6)* at the sentence whose claim you are

@@ -11,6 +11,7 @@ import zipfile
 from pathlib import Path
 
 import pytest
+from conftest import offline_settings
 
 from just_module_creator import supplementary as S
 
@@ -145,3 +146,155 @@ def test_a_non_workbook_reports_empty_rather_than_raising(tmp_path: Path) -> Non
     pdf = tmp_path / "esm.pdf"
     pdf.write_bytes(b"%PDF-1.4 not a zip")
     assert S.workbook_sheets(pdf) == ([], [])
+
+
+# --------------------------------------------------------------------------- #
+# Reading the rows — the rung four runs hand-rolled, and the two bugs they hit
+# --------------------------------------------------------------------------- #
+#: A minimal but genuinely valid xlsx container, written as XML rather than with
+#: openpyxl, because the cases worth testing are the ones a correct writer never
+#: produces: **no `<dimension>` element** (the "missing `ref`" one run lost two
+#: bugs to) and a **sparse row** whose middle cells are simply absent (the
+#: column-shift the other hand-rolled reader produced). Real identifiers: the two
+#: rsIDs and their GRCh38 coordinates are from the ARDS paper's ST9.
+_CONTENT_TYPES = (
+    '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+    '<Default Extension="xml" ContentType="application/xml"/>'
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package'
+    ".relationships+xml\"/>"
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-'
+    'officedocument.spreadsheetml.sheet.main+xml"/>'
+    '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-'
+    'officedocument.spreadsheetml.worksheet+xml"/></Types>'
+)
+_ROOT_RELS = (
+    '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/'
+    'relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/'
+    '2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'
+)
+_WORKBOOK = (
+    '<?xml version="1.0"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+    ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'
+    '<sheet name="ST9" sheetId="1" r:id="rId1"/></sheets></workbook>'
+)
+_WORKBOOK_RELS = (
+    '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/'
+    'relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/'
+    '2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>'
+)
+_SHEET = (
+    '<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/'
+    'main"><sheetData>'
+    '<row r="1"><c r="A1" t="inlineStr"><is><t>rsID</t></is></c>'
+    '<c r="B1" t="inlineStr"><is><t>CHR</t></is></c>'
+    '<c r="C1" t="inlineStr"><is><t>BP</t></is></c>'
+    '<c r="D1" t="inlineStr"><is><t>BETA</t></is></c></row>'
+    '<row r="2"><c r="A2" t="inlineStr"><is><t>rs1801133</t></is></c>'
+    '<c r="D2"><v>-0.0154</v></c></row>'
+    '<row r="3"><c r="A3" t="inlineStr"><is><t>rs6859</t></is></c><c r="B3"><v>19</v></c>'
+    '<c r="C3"><v>44878777</v></c><c r="D3"><v>0.112</v></c></row>'
+    # Trailing cells simply absent — the row ends after B, and the sheet is 4 wide.
+    '<row r="4"><c r="A4" t="inlineStr"><is><t>rs429358</t></is></c><c r="B4"><v>19</v></c></row>'
+    '<row r="5"/><row r="6"/>'
+    "</sheetData></worksheet>"
+)
+
+
+def _degenerate_workbook(tmp_path: Path) -> Path:
+    book = tmp_path / "esm.xlsx"
+    with zipfile.ZipFile(book, "w") as archive:
+        archive.writestr("[Content_Types].xml", _CONTENT_TYPES)
+        archive.writestr("_rels/.rels", _ROOT_RELS)
+        archive.writestr("xl/workbook.xml", _WORKBOOK)
+        archive.writestr("xl/_rels/workbook.xml.rels", _WORKBOOK_RELS)
+        archive.writestr("xl/worksheets/sheet1.xml", _SHEET)
+    return book
+
+
+def test_a_sparse_row_keeps_its_columns_instead_of_shifting_left(tmp_path: Path) -> None:
+    """The bug that made a hand-rolled reader worse than no reader at all.
+
+    Row 2 writes cells `A2` and `D2` and nothing between them. A reader that takes
+    the cells in order puts `-0.0154` in the second column, so an author zipping
+    against the header records the BETA as the chromosome — well-formed, plausible
+    and wrong. Every row comes back padded to the sheet's width, in position.
+    """
+    window = S.workbook_rows(_degenerate_workbook(tmp_path), "ST9")
+    assert window.rows[0] == ["rsID", "CHR", "BP", "BETA"]
+    assert window.rows[1] == ["rs1801133", None, None, -0.0154]
+    assert window.rows[2] == ["rs6859", 19, 44878777, 0.112]
+    # And the other half of the same shape, which is OURS rather than the reader's:
+    # a row whose TRAILING cells are absent arrives short, and a caller zipping it
+    # against the header gets a row two columns wide with no indication why.
+    assert window.rows[3] == ["rs429358", 19, None, None]
+    assert all(len(row) == window.width for row in window.rows)
+
+
+def test_the_counts_are_streamed_rather_than_read_off_the_dimension_record(
+    tmp_path: Path,
+) -> None:
+    """This fixture has **no** `<dimension>` element, which is legal and common.
+
+    `max_row` and `max_column` are read from that record, so a reader trusting them
+    gets `1` or `None` here and truncates the sheet without saying so. Both counts
+    are taken while streaming instead.
+
+    `last_populated_row` is the other half: rows 5 and 6 exist and are empty, so the
+    sheet spans six rows and holds four. A caller paging on the span alone spends
+    the difference on nothing — measured at 734 wasted rows on one real workbook.
+    """
+    window = S.workbook_rows(_degenerate_workbook(tmp_path), "ST9")
+    assert window.width == 4
+    assert window.total_rows == 6
+    assert window.last_populated_row == 3
+
+
+def test_the_window_pages_and_the_offset_is_not_reindexed(tmp_path: Path) -> None:
+    """An offset returns the sheet's own rows, never a renumbered view of them."""
+    window = S.workbook_rows(_degenerate_workbook(tmp_path), "ST9", offset=2, limit=1)
+    assert window.rows == [["rs6859", 19, 44878777, 0.112]]
+    assert window.total_rows == 6, "the counts describe the sheet, not the window"
+
+
+def test_a_wrong_sheet_name_lists_the_real_ones_rather_than_guessing(tmp_path: Path) -> None:
+    """`ST9` and `Supplementary Table S9` are both plausible and only one is a sheet."""
+    with pytest.raises(S.SupplementaryError) as raised:
+        S.workbook_rows(_degenerate_workbook(tmp_path), "Supplementary Table S9")
+    assert "ST9" in str(raised.value)
+
+
+def test_a_pdf_supplement_is_this_readers_limit_and_says_so(tmp_path: Path) -> None:
+    """The distinction the whole module exists for, one rung further down.
+
+    A PDF has rows a person can read. Reporting "no rows" would record our own
+    limit as a fact about the file, which is what `not_determinable` versus
+    `none_published` keeps apart at the inventory rung.
+    """
+    pdf = tmp_path / "esm.pdf"
+    pdf.write_bytes(b"%PDF-1.4 not a zip")
+    with pytest.raises(S.SupplementaryError) as raised:
+        S.workbook_rows(pdf, "ST9")
+    message = str(raised.value)
+    assert "not a statement that the file has no rows" in message
+
+
+async def test_the_tool_reports_truncation_against_populated_rows(make_client, tmp_path) -> None:
+    """Trailing blank rows must not make every sheet report as truncated.
+
+    Four populated rows and two blank ones: a window of two is genuinely short, and
+    a window of four is complete even though the sheet spans six.
+    """
+    book = _degenerate_workbook(tmp_path)
+    async with make_client(offline_settings()) as client:
+        short = await client.call_tool(
+            "read_supplementary", {"path": str(book), "sheet": "ST9", "limit": 2}
+        )
+        whole = await client.call_tool(
+            "read_supplementary", {"path": str(book), "sheet": "ST9", "limit": 4}
+        )
+    assert short.data.truncated is True
+    assert whole.data.truncated is False, (
+        "rows 5 and 6 are blank; counting them as outstanding would report every "
+        "sheet with trailing padding as incomplete forever"
+    )
+    assert whole.data.sheets_available == ["ST9"]

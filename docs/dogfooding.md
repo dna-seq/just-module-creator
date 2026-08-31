@@ -647,6 +647,17 @@ the source file, because nothing on the surface can.
   a row's claim is a judgement about that row, the same reason `fetch_fulltext` does not return a
   best-matching passage.
 
+  > **Overturned 2026-09-01, by measurement, and the error is worth naming.** This bullet bundled two
+  > different acts under one refusal. *Choosing which sheet answers a row's claim* is a judgement and
+  > is still refused — `describe_supplementary` returns no rows and `read_supplementary` picks no sheet.
+  > *Handing back the cells of a sheet the author named* is not a judgement; it is decoding a zip
+  > container, and the layer argument never applied to it. Four independent authoring runs — 4 of 4 —
+  > then hand-wrote an xlsx parser to get past the gap, two with a column-alignment bug that puts a
+  > BETA in the chromosome column, one calling it 40% of its run. `read_supplementary` ships in 0.29.0
+  > with `openpyxl` as a hard dependency. **The general lesson: a refusal that names a judgement should
+  > be checked against what it actually blocks** — this one blocked the mechanical half for a month and
+  > sent every author to write the same buggy parser.
+
 **Not filed upstream, and nothing is owed.** This is authoring workflow, which is ours to build
 (§11); the schema and the checks are unchanged. `S54` was the obvious place for a corroboration — its
 evidence was that a rule against machine-located quotes produced 3668 titles, and the 42-of-65 number

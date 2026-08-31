@@ -3,7 +3,46 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## Unreleased
+## 0.29.0 — 2026-09-01
+
+### `read_supplementary`: the ladder finally reaches the cells
+
+Four of four authoring runs in the last round asked for one thing above everything else — a way to get
+rows out of the workbook `fetch_supplementary` had just downloaded. Each hand-wrote an xlsx parser to
+do it; two produced a column-alignment bug that puts a BETA in the chromosome column, and one called it
+40% of its run. There was no spreadsheet engine in the venv at all: `openpyxl`, `pandas` and `xlrd`
+absent, `polars.read_excel` with no backend.
+
+`read_supplementary(path, sheet, offset, limit)` returns the rows of one sheet you name. Offline — a
+local file, no request. It **picks no sheet, finds no header and selects no rows**: those are judgements
+about the row being authored, which is why `describe_supplementary` still returns none and why
+`fetch_fulltext` still returns no best-matching passage. What it guarantees is the mechanical half,
+and each guarantee is a bug one of those runs actually hit:
+
+- **Every row padded to the sheet's width.** A row whose trailing cells are absent arrives short, and
+  zipping it against a header shifts every column after the gap.
+- **Both counts streamed, never read off the workbook's dimension record** — which is optional, is
+  frequently wrong, and was the "missing `ref` attribute" one run lost two bugs to.
+- **`last_populated_row` beside `total_rows`**, because they disagree by however many blank rows the
+  producer left. Measured on the ARDS paper's `ST9`: spans 1000, holds 266. A caller paging on the span
+  spends three quarters of its calls on nothing.
+- **A `.xls`, PDF or CSV is refused as THIS READER's limit**, never as a file with no rows — the same
+  `not_determinable` / `none_published` distinction the inventory rung keeps, one rung further down.
+
+Validated against both papers' real workbooks, not only fixtures: `ST9` of the ARDS supplement (22
+columns, header on row 2) and the centenarian supplement's `Del SNPs and ref` (113 rows, whose in-cell
+title says *Supplementary File 14* while the file is `MOESM13`).
+
+**`openpyxl` is a new hard dependency**, chosen over `polars.read_excel` on two grounds: polars builds
+a DataFrame and infers a column schema, which silently coerces the mixed columns a supplementary table
+is full of, and §5 says we do not build dataframes. openpyxl's read-only mode streams, so a 50 MB
+workbook is not read into memory to reach one sheet.
+
+**`F68`'s deferral is overturned, and the reason it was wrong is recorded there.** That finding
+bundled two acts under one refusal — choosing a sheet (a judgement, still refused) and returning the
+cells of a named one (decoding a zip). The layer argument only ever applied to the first. A refusal
+that names a judgement is worth checking against what it actually blocks.
+
 
 ### The second pair of the round: what agreed, what split, and one report that did not survive
 

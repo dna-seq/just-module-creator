@@ -1,6 +1,6 @@
 [project]
 name = "just-module-creator"
-version = "0.28.0"
+version = "0.29.0"
 description = "MCP server and skills for authoring and publishing just-dna annotation modules; a Claude Code and Codex plugin"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -58,6 +58,17 @@ dependencies = [
     # as format-tree `S74`. Until then this is a direct call and a transitive pin is
     # not a contract.
     "pyyaml>=6",
+    # The last rung of the supplementary ladder. `describe_supplementary` reads the
+    # xlsx container by hand and needs nothing, but returning ROWS does: shared
+    # strings, cell references and sparse cells are where four independent runs'
+    # hand-rolled parsers each broke, two of them with a column-alignment bug.
+    # openpyxl rather than `polars.read_excel`, on two grounds: polars builds a
+    # DataFrame and infers a column schema, which silently coerces the mixed columns
+    # a supplementary table is full of, and §5 says we do not build dataframes. Its
+    # read-only mode streams, so a 50 MB workbook is not read into memory to reach
+    # one sheet. `.xls` is out of scope and is reported as OUR limit, never as a
+    # sheet with no rows.
+    "openpyxl>=3.1.5",
 ]
 
 [project.scripts]
