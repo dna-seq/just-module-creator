@@ -65,6 +65,7 @@ from just_module_creator.models import (
     SupplementaryFetch,
     SupplementaryFileInfo,
     SupplementaryList,
+    SupplementaryRows,
     VariantLookup,
 )
 from just_module_creator.net import HttpService, NetworkServices, ServiceGate, ServiceUnavailable
@@ -933,9 +934,49 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
 
         **Returns no rows, on purpose.** Which sheet supports a given row's claim is
         a judgement about that row, the same reason `fetch_fulltext` returns no
-        best-matching passage.
+        best-matching passage. `read_supplementary` returns the rows once you have
+        named a sheet.
         """
         return await run_sync(lambda: _describe_workbook(path, settings))
+
+    # The last rung, and the argument for building it is a measurement rather than a
+    # preference. `F68` deferred this as "the wrong layer" — but the thing it was
+    # right to refuse is *choosing which sheet answers a row's claim*, and it filed
+    # returning the cells under the same heading. Four independent authoring runs
+    # then hand-wrote an xlsx parser to get past the gap, two of them with a
+    # column-alignment bug, one calling it 40% of the run. Deciding is a judgement;
+    # decoding a zip container is not, and this decodes.
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Read rows from a supplementary workbook", readOnlyHint=True, openWorldHint=False
+        )
+    )
+    async def read_supplementary(
+        path: str, sheet: str, offset: int = 0, limit: int = 200
+    ) -> SupplementaryRows:
+        """The rows of one sheet in a workbook you already downloaded.
+
+        Offline — a local file, no request. `fetch_supplementary` gets the workbook,
+        `describe_supplementary` names its sheets, this reads one of them. Name the
+        `sheet` exactly as that inventory spells it; a wrong name lists the real ones
+        rather than guessing at the nearest.
+
+        **Rows come back as the sheet has them**, from row 0: a title line, a blank,
+        a two-level header and then the data, in order. Which row is the header is
+        yours to read off them — a guess followed silently is worse than no guess.
+        Every row is padded to `width`, so zipping against a header cannot shift
+        columns.
+
+        **Page on `last_populated_row`, never on `total_rows`.** They disagree
+        whenever a producer left trailing blank rows, and on the one real workbook
+        measured they disagreed by 734. `truncated` says populated rows remain.
+
+        Costs context rather than egress: a 22-column sheet at `limit=200` is a
+        large result, so read the first few rows to find the header before pulling
+        the table. Legacy `.xls`, PDF and CSV are not read here, and that is
+        reported as this reader's limit — never as a file with no rows.
+        """
+        return await run_sync(lambda: _read_workbook(path, sheet, offset, limit))
 
 
 def _esm_service(services: NetworkServices) -> HttpService:
@@ -1063,4 +1104,30 @@ def _describe_workbook(path: str, settings: Settings) -> SupplementaryDescriptio
         )
     return SupplementaryDescription(
         path=str(resolved), is_workbook=True, sheets=sheets, table_titles=titles
+    )
+
+
+def _read_workbook(path: str, sheet: str, offset: int, limit: int) -> SupplementaryRows:
+    resolved = Path(path)
+    if not resolved.is_file():
+        raise ToolError(f"No such file: {path}")
+    if offset < 0 or limit < 1:
+        raise ToolError("`offset` is 0-based and `limit` is at least 1.")
+    try:
+        window = supplementary.workbook_rows(resolved, sheet, offset=offset, limit=limit)
+    except supplementary.SupplementaryError as exc:
+        raise ToolError(str(exc)) from exc
+    last = window.last_populated_row
+    return SupplementaryRows(
+        path=str(resolved),
+        sheet=sheet,
+        sheets_available=window.sheet_names,
+        rows=window.rows,
+        offset=offset,
+        width=window.width,
+        total_rows=window.total_rows,
+        last_populated_row=last,
+        # Against the last POPULATED row: trailing blanks are not rows anybody is
+        # waiting for, and counting them would report every sheet as truncated.
+        truncated=last is not None and last >= offset + limit,
     )

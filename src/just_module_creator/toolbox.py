@@ -125,8 +125,9 @@ GROUPS: tuple[Group, ...] = (
             "list_supplementary",
             "fetch_supplementary",
             "describe_supplementary",
+            "read_supplementary",
         ),
-        6374,
+        7100,
     ),
     Group(
         "identifiers",

@@ -1204,6 +1204,48 @@ class SupplementaryDescription(BaseModel):
     note: str | None = Field(default=None)
 
 
+class SupplementaryRows(BaseModel):
+    """One sheet's cells. The last rung of the ladder, and it stops at the cells.
+
+    `describe_supplementary` says which sheets exist; this returns the rows of one
+    you named. It does not pick the sheet, find the header or select the rows that
+    answer a claim — those are judgements about the row being authored, and the
+    reason `fetch_fulltext` returns no best-matching passage either.
+    """
+
+    path: str = Field(description="The workbook read.")
+    sheet: str = Field(description="The sheet read, exactly as it is named in the book.")
+    sheets_available: list[str] = Field(
+        default_factory=list, description="Every sheet in the book, in book order."
+    )
+    rows: list[list[str | int | float | bool | None]] = Field(
+        default_factory=list,
+        description=(
+            "The window, one list per row, every row padded to `width` so a caller may zip "
+            "against a header without columns shifting. Rows come back as the sheet has them "
+            "— a title row, a blank, a two-level header and the data are all here, in order, "
+            "because which row is the header is read off them rather than guessed for you."
+        ),
+    )
+    offset: int = Field(description="0-based index of the first row returned.")
+    width: int = Field(description="Columns, taken over populated rows.")
+    total_rows: int = Field(
+        description="Rows the sheet spans, INCLUDING trailing blank ones a producer left."
+    )
+    last_populated_row: int | None = Field(
+        default=None,
+        description=(
+            "0-based index of the last row with anything in it — page on THIS, not on "
+            "`total_rows`. Measured on one real workbook: 1000 spanned, 265 populated. "
+            "`null` means the sheet is empty, which is a fact about the sheet."
+        ),
+    )
+    truncated: bool = Field(
+        description="Whether populated rows remain past this window. Ask again with a higher "
+        "`offset`; nothing here is a summary of what was left out."
+    )
+
+
 class FullTextResult(BaseModel):
     """A document to read. Never a passage, and never a suggested quote."""
 

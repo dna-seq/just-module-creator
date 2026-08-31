@@ -22,8 +22,11 @@ from __future__ import annotations
 import re
 import zipfile
 from dataclasses import dataclass, field
+from datetime import date, datetime
 from pathlib import Path
 from urllib.parse import quote
+
+from openpyxl import load_workbook
 
 from just_module_creator.net import HttpService, ServiceUnavailable
 
@@ -157,6 +160,98 @@ def workbook_sheets(path: Path) -> tuple[list[str], list[str]]:
             shared = archive.read("xl/sharedStrings.xml").decode("utf-8", "replace")
             titles = sorted(set(re.findall(r"(Supplementary Tables?[^<]{0,200})", shared)))
     return sheets, titles
+
+
+#: What a cell can be on the wire. `datetime` is rendered ISO-8601 rather than
+#: passed through: a supplementary table's date column is metadata an author
+#: transcribes, and a naive `YYYY-MM-DD HH:MM:SS` is misparsed as local time.
+Cell = str | int | float | bool | None
+
+
+@dataclass(frozen=True)
+class SheetWindow:
+    """A window onto one sheet, plus the two counts that make paging honest."""
+
+    rows: list[list[Cell]]
+    total_rows: int
+    last_populated_row: int | None
+    width: int
+    sheet_names: list[str]
+
+
+def workbook_rows(path: Path, sheet: str, offset: int = 0, limit: int = 200) -> SheetWindow:
+    """One sheet's cells, as rows of equal width. The rung after ``workbook_sheets``.
+
+    ``rows`` is the window ``offset..offset+limit``. ``total_rows`` is the sheet's
+    whole span and ``last_populated_row`` is the 0-based index of the last row with
+    anything in it — **both, because they disagree and the difference is trailing
+    blank rows a producer left behind**. Measured on the ARDS paper's ST9: 1000 rows
+    spanned, 265 last populated, so a caller paging on ``total_rows`` alone spends
+    three quarters of its calls on nothing. ``None`` means the sheet is empty.
+
+    **Three things this does that a hand-rolled reader keeps getting wrong**, each
+    measured on a real run rather than imagined:
+
+    * ``max_row``/``max_column`` come from the workbook's *dimension record*, which
+      is optional and is written wrong by plenty of producers — the "missing ``ref``
+      attribute" one run spent two bugs on. Both are counted while streaming.
+    * Every row is **padded to the sheet's width**. openpyxl yields a short tuple
+      for a row whose trailing cells are empty, and a caller zipping that against a
+      header silently shifts columns — the other bug from the same run.
+    * A ``datetime`` becomes an ISO-8601 string rather than crossing the wire as an
+      object with a repr that is not what the cell said.
+
+    Rows come back exactly as the sheet has them, including its title and blank
+    lines: which row is the header, and which sheet answers a claim, are judgements
+    about the row being authored. This hands over the cells and stops.
+    """
+    if not zipfile.is_zipfile(path):
+        raise SupplementaryError(
+            f"{path.name} is not an xlsx workbook. A legacy .xls, a PDF or a CSV is not read "
+            "here — that is a limit of this reader, not a statement that the file has no rows."
+        )
+    book = load_workbook(path, read_only=True, data_only=True)
+    try:
+        names = list(book.sheetnames)
+        if sheet not in names:
+            raise SupplementaryError(
+                f"No sheet named {sheet!r}. This workbook has: {', '.join(names)}"
+            )
+        worksheet = book[sheet]
+        rows: list[list[Cell]] = []
+        total = 0
+        width = 0
+        last_populated: int | None = None
+        stop = offset + limit
+        for index, row in enumerate(worksheet.iter_rows(values_only=True)):
+            total += 1
+            if any(value is not None for value in row):
+                last_populated = index
+                # Width is taken over POPULATED rows only. A trailing blank row can
+                # be yielded at the dimension record's width and would otherwise pad
+                # every real row out to a column nothing ever wrote in.
+                width = max(width, len(row))
+            if offset <= index < stop:
+                rows.append([_cell(value) for value in row])
+        # Padded AFTER the whole sheet is seen: the widest row may sit below the
+        # window, and a window narrower than the sheet is the shift this prevents.
+        return SheetWindow(
+            rows=[row + [None] * (width - len(row)) for row in rows][:limit],
+            total_rows=total,
+            last_populated_row=last_populated,
+            width=width,
+            sheet_names=names,
+        )
+    finally:
+        book.close()
+
+
+def _cell(value: object) -> Cell:
+    if isinstance(value, datetime | date):
+        return value.isoformat()
+    if isinstance(value, str | int | float | bool) or value is None:
+        return value
+    return str(value)
 
 
 def inventory(
