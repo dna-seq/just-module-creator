@@ -17,8 +17,8 @@ uv run manuscript manuscript    # manuscript.tex → manuscript.md + manuscript.
 
 The idea is that we use Claude Code and Cursor to write the manuscript in this repository, with sibling checkouts in the workspace for facts the paper must not invent:
 
-* [just-dna-format](https://github.com/dna-seq/just-dna-format) — schema, compiler, enricher (we wrap these; we own none of them)
-* [just-dna-lite](https://github.com/dna-seq/just-dna-lite) — companion platform paper; the consumer that joins a compiled module to a VCF
+* [just-dna-format](https://anonymous.4open.science/r/just-dna-format) — schema, compiler, enricher (we wrap these; we own none of them)
+* [just-dna-lite](https://anonymous.4open.science/r/just-dna-lite) — companion platform paper; the consumer that joins a compiled module to a VCF
 * the registry checkout on disk (`just-dna-marketplace` is a stale directory name only)
 
 An older draft lived in just-dna-lite as `docs/manuscript/v0.2/paper2-dna-agents.md`. That draft described `just-dna-agents`, which this plugin replaced. Use it for inspiration only. Follow the EASRP section order in `template.tex` / `manuscript.tex` (Introduction, Related work, Method, Results, Discussion, Conclusion). Do not rebuild the agents-paper section list (unified MCP toolkit, Agno team, PRS orchestration).
