@@ -58,6 +58,7 @@ import json
 import sys
 from collections import Counter
 from pathlib import Path
+from typing import Protocol
 
 from just_dna_compiler import draft, hints
 from pydantic import BaseModel, Field
@@ -699,6 +700,129 @@ def score_weight_sign(
     )
 
 
+class Judgment(BaseModel):
+    """One adjudicated cell. `unknown` is a verdict, never a soft `disagree`."""
+
+    verdict: str = Field(description="`agree` | `disagree` | `unknown`.")
+    confidence: float | None = None
+    rationale: str
+    judge: str = Field(
+        description="What produced it — a name or a model id. Recorded, never inferred."
+    )
+
+
+class RowJudge(Protocol):
+    """The seam an LLM adjudicator would fill. **Nothing implements it.**
+
+    Deterministic scoring answers the questions with a right answer on disk. Three
+    do not, and each is a place this seam would take over:
+
+    * `conclusion` — free text, where two correct paraphrases are not string-equal;
+    * `direction` on a row the deterministic rule excluded because one side withheld,
+      but where a source names a direction the author could have read;
+    * a `pmid` the fixture does not carry, where deciding whether the returned title
+      names the paper the row's claim is about is a judgement rather than a lookup.
+
+    **A judge never moves a row out of `unscored` into a pass.** Its verdicts would
+    ride their own axis and never merge into the deterministic ratio: a model's
+    judgement is not the same evidence as a cell match, and one number covering both
+    cannot say which happened.
+    """
+
+    def judge_cell(
+        self, column: str, reference: BaseModel | None, generated: BaseModel | None, key: tuple
+    ) -> Judgment: ...
+
+
+class CitationResolver(Protocol):
+    """Answers *does this PMID exist, and what does it name* — Axis 2's network half.
+
+    Two implementations are anticipated and neither is built: a cache reading
+    resolutions stored beside the fixture, which is what a hermetic suite would use,
+    and a thin adapter over the `lookup_citation` this package already depends on.
+    Until one exists, `CitationIdentity.resolver` reports `none` and the verdicts
+    that need a lookup stay empty rather than being guessed.
+    """
+
+    def resolve(self, pmid: str) -> dict: ...
+
+
+class CitationIdentity(BaseModel):
+    """Which papers a run cited, against which the reference cites.
+
+    **`unrecognised` is not a failure.** A fixture is one curation: `assets/fto_bmi`
+    cites one paper, so a run citing three genuinely relevant ones would score 1/3
+    under `correct ÷ total`. `recall` is the sound offline number and `accuracy` is
+    `None` until a resolver exists.
+
+    **`misidentified` and `hallucinated` are empty offline, and that is honest rather
+    than clean.** Sorting a PMID the fixture lacks into *names a different paper* or
+    *does not exist* needs a lookup; `null` means UNCHECKED, and calling an unchecked
+    id hallucinated is the check-that-could-not-run failure pointing the other way.
+    """
+
+    expected_pmids: list[str]
+    generated_pmids: list[str]
+    correct: list[str]
+    missing: list[str]
+    unrecognised: list[str] = Field(
+        description="Cited by the run, absent from the fixture. Reported, not scored."
+    )
+    misidentified: list[str] = Field(default_factory=list)
+    hallucinated: list[str] = Field(default_factory=list)
+    resolver: str = Field(
+        description="`none` | `cache` | `network`. An empty `hallucinated` from an "
+        "unasked question and one from a real check are different claims."
+    )
+    accuracy: float | None
+    recall: float | None
+    unscored: list[Unscored] = Field(default_factory=list)
+
+
+def score_citations(
+    fixture: BenchFixture, run: Path, *, resolver: CitationResolver | None = None
+) -> CitationIdentity:
+    """Compare cited PMIDs. Offline unless a resolver is supplied; none exists yet."""
+    expected = sorted(
+        {str(k[1]) for k in fixture.expected_keys.get("studies.csv", set()) if len(k) > 1}
+    )
+    generated = sorted(
+        {
+            str(pmid)
+            for row in _run_rows(run, "studies.csv").values()
+            if (pmid := getattr(row, "pmid", None))
+        }
+    )
+    correct = sorted(set(expected) & set(generated))
+    unscored: list[Unscored] = []
+    if resolver is None:
+        unscored.append(
+            Unscored(
+                subject="studies.csv:pmid",
+                reason="no resolver, so existence and title were not checked — an id absent "
+                "from the fixture is unrecognised, never hallucinated",
+            )
+        )
+    if not expected:
+        unscored.append(
+            Unscored(
+                subject="studies.csv:recall",
+                reason="the fixture has no adjudicated reference, so there is nothing to recall",
+            )
+        )
+    return CitationIdentity(
+        expected_pmids=expected,
+        generated_pmids=generated,
+        correct=correct,
+        missing=sorted(set(expected) - set(generated)),
+        unrecognised=sorted(set(generated) - set(expected)),
+        resolver="none" if resolver is None else "cache",
+        accuracy=None if resolver is None else None,
+        recall=round(len(correct) / len(expected), 4) if expected else None,
+        unscored=unscored,
+    )
+
+
 class GroundTruthScore(BaseModel):
     """The primary measurement: did this run recover the adjudicated answer.
 
@@ -718,6 +842,7 @@ class GroundTruthScore(BaseModel):
     reference_build: str | None
     run_build: str | None
     variants: VariantRecovery
+    citations: CitationIdentity
     direction: DirectionAgreement
     weight_sign: WeightSignAgreement
     thresholds_met: dict[str, bool | None]
@@ -744,7 +869,8 @@ def score_ground_truth(
     fixture: BenchFixture,
     run: Path,
     *,
-    judge: object | None = None,
+    judge: RowJudge | None = None,
+    resolver: CitationResolver | None = None,
 ) -> GroundTruthScore:
     """Score a run against a fixture's adjudicated reference.
 
@@ -762,10 +888,16 @@ def score_ground_truth(
     """
     run_rows = _run_rows(run, "variants.csv")
     variants = score_variant_recovery(fixture, run_rows)
+    citations = score_citations(fixture, run, resolver=resolver)
     direction = score_direction(fixture, run_rows)
     weight_sign = score_weight_sign(fixture, run_rows)
 
-    unscored = list(variants.unscored) + list(direction.unscored) + list(weight_sign.unscored)
+    unscored = (
+        list(variants.unscored)
+        + list(citations.unscored)
+        + list(direction.unscored)
+        + list(weight_sign.unscored)
+    )
     if judge is None:
         unscored.append(
             Unscored(
@@ -778,6 +910,8 @@ def score_ground_truth(
         "pair_recall": variants.pair_recall,
         "rsid_recall": variants.rsid_recall,
         "decoy_rate": variants.decoy_rate,
+        "citation_recall": citations.recall,
+        "citation_accuracy": citations.accuracy,
         "direction_agreement": direction.agreement,
         "weight_sign_agreement": weight_sign.sign_agreement,
     }
@@ -811,6 +945,7 @@ def score_ground_truth(
         reference_build=reference_build,
         run_build=run_build,
         variants=variants,
+        citations=citations,
         direction=direction,
         weight_sign=weight_sign,
         thresholds_met=thresholds_met,

@@ -235,3 +235,44 @@ def test_the_payload_is_byte_stable_across_runs(fixture):
     second = score_ground_truth(fixture, SIRT6 / "runs" / "a").model_dump_json()
 
     assert first == second
+
+
+def test_citation_recall_is_the_offline_number_and_accuracy_is_not(fixture, tmp_path):
+    """`runs/a2` cited the assigned paper and not the source it replicates.
+
+    That is the round's own finding as a number: fetching the primary longevity
+    source unprompted happened in one run of two, so it is not stable behaviour.
+    """
+    both = score_ground_truth(fixture, SIRT6 / "runs" / "a").citations
+    one = score_ground_truth(fixture, SIRT6 / "runs" / "a2" / "spec").citations
+
+    assert both.recall == 1.0
+    assert both.correct == ["28399814", "41249831"]
+    assert one.recall == 0.5
+    assert one.missing == ["28399814"]
+    for report in (both, one):
+        assert report.resolver == "none"
+        assert report.accuracy is None, "identity needs a lookup and none was made"
+        assert report.hallucinated == []
+        assert report.misidentified == []
+
+
+def test_a_pmid_the_fixture_lacks_is_unrecognised_and_never_hallucinated(
+    fixture, tmp_path
+):
+    """Offline, `null` means UNCHECKED.
+
+    Calling an id we never looked up 'hallucinated' is the check-that-could-not-run
+    failure pointing the other way — and an extra citation is not a failure at all,
+    because a fixture is one curation rather than the set of all correct papers.
+    """
+    run = _copy(tmp_path, SIRT6 / "reference")
+    _edit(run, "studies.csv", lambda rows: rows[0].update(pmid="11788828"))
+
+    citations = score_ground_truth(fixture, run).citations
+
+    assert "11788828" in citations.unrecognised
+    assert citations.hallucinated == []
+    assert citations.misidentified == []
+    assert "41249831" in citations.missing, "swapping one out loses it from recall"
+    assert citations.recall == 0.5
