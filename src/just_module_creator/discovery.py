@@ -181,8 +181,24 @@ _DOI_REFUSAL = (
 )
 
 
+#: What the second and later rows carry instead of the full paragraph. The reason is
+#: one rule, so it is stated once; the row still carries its own `after`, `source` and
+#: `refusal` token, which is the part that is genuinely per-row.
+_DOI_REFUSAL_REPEAT = "Withheld for the reason given on the first withheld row."
+
+
 def doi_refusals(candidates: list[LiteratureCandidate]) -> list[LintAlteration]:
-    """One withheld `doi` per candidate that has one. Ordered with the candidates."""
+    """One withheld `doi` per candidate that has one. Ordered with the candidates.
+
+    **The reason is written once and the rest point at it.** A ten-result search
+    emitted ten copies of the same ninety-word paragraph, which is the repeated-warning
+    shape this repo's own rule forbids — aggregate by reason, with a count, never one
+    per row. What is per-row here is the DOI, its source and the refusal token, and
+    those still ride on every row; only the prose is de-duplicated. Measured in the
+    2026-08-31 benchmark, where the flood was the run's single loudest complaint about
+    output volume (`F75`).
+    """
+    withheld = [(index, c) for index, c in enumerate(candidates) if c.doi]
     return [
         LintAlteration(
             row=index,
@@ -195,10 +211,13 @@ def doi_refusals(candidates: list[LiteratureCandidate]) -> list[LintAlteration]:
             # Upstream's own token, verbatim, so the refusal reads as one rule
             # across lookup_variant, lookup_citation and here.
             refusal="redundancy_bearing",
-            note=_DOI_REFUSAL,
+            note=(
+                f"{_DOI_REFUSAL} ({len(withheld)} DOIs withheld in this result.)"
+                if position == 0
+                else _DOI_REFUSAL_REPEAT
+            ),
         )
-        for index, candidate in enumerate(candidates)
-        if candidate.doi
+        for position, (index, candidate) in enumerate(withheld)
     ]
 
 

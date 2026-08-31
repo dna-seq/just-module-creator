@@ -67,6 +67,36 @@ async def test_compile_writes_an_artifact(client, spec_dir, tmp_path):
     assert (out / "manifest.json").is_file()
 
 
+async def test_an_output_dir_inside_the_spec_is_warned_about_and_still_compiles(
+    client, spec_dir, tmp_path
+):
+    """`<spec>/build` is the obvious default and it poisons a later registry call.
+
+    The compile copies `README.md` into `output_dir`; the registry uploader then walks
+    the spec tree, finds two, and 422s with `ambiguous_spec_layout`. The cost lands two
+    steps away from the argument that caused it, so the warning is here — and it is a
+    warning rather than a refusal because real modules in this repo use that layout and
+    their artifacts are fine.
+    """
+    inside = spec_dir / "build"
+    result = await client.call_tool(
+        "compile_module",
+        {"spec_dir": str(spec_dir), "output_dir": str(inside), "strict": False},
+    )
+    assert result.data.success, "the layout is legal — this must not become a refusal"
+    assert result.data.warnings, "an output dir inside the spec must be said out loud"
+    assert "ambiguous_spec_layout" in result.data.warnings[0]
+    assert "inside the spec directory" in result.data.warnings[0]
+
+    beside = tmp_path / "beside"
+    quiet = await client.call_tool(
+        "compile_module",
+        {"spec_dir": str(spec_dir), "output_dir": str(beside), "strict": False},
+    )
+    assert quiet.data.success
+    assert not any("ambiguous_spec_layout" in w for w in quiet.data.warnings)
+
+
 async def test_strict_compile_refuses_unresolved_rows(client, spec_dir, tmp_path):
     """Strict means *reproducible*: without resolution.csv there is nothing to reproduce.
 

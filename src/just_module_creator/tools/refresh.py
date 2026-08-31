@@ -148,7 +148,12 @@ from just_module_creator.models import (
 )
 from just_module_creator.net import NetworkServices
 from just_module_creator.settings import Settings
-from just_module_creator.tools._shared import offline_for, resolve_dir, schema_versions
+from just_module_creator.tools._shared import (
+    normalize_declared_use,
+    offline_for,
+    resolve_dir,
+    schema_versions,
+)
 
 log = get_logger()
 
@@ -707,12 +712,7 @@ def check_use(sidecar: Sidecar, use: str | None) -> str:
             f"defaults are wrong — 'unstated' silently skips the source, and anything else "
             f"asserts a position you may not hold."
         )
-    normalized = use.strip().replace("-", "_").lower()
-    if normalized not in VALID_DECLARED_USE:
-        raise ToolError(
-            f"`use` must be one of {', '.join(sorted(VALID_DECLARED_USE))} — got {use!r}."
-        )
-    return normalized
+    return normalize_declared_use(use)
 
 
 # --------------------------------------------------------------------------- #

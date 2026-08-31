@@ -66,6 +66,7 @@ from just_dna_enricher.gene_metrics import (
 from just_dna_enricher.gwas import GwasError, enrich_gwas
 from just_dna_enricher.literature import LiteratureEnrichmentError, enrich_literature
 from just_dna_enricher.pgx_draft import draft_gene
+from just_dna_format.vocab import VALID_DECLARED_USE
 from mcp.types import ToolAnnotations
 
 from just_module_creator.logging_setup import get_logger
@@ -79,11 +80,18 @@ from just_module_creator.models import (
 )
 from just_module_creator.net import NetworkServices
 from just_module_creator.settings import Settings
-from just_module_creator.tools._shared import offline_for, resolve_dir
+from just_module_creator.tools._shared import (
+    normalize_declared_use,
+    offline_for,
+    resolve_dir,
+)
 
 log = get_logger()
 
-VALID_USE = ("unstated", "non_commercial", "commercial")
+# Kept only for the message in `_pass_argument_help`; the *check* reads format's
+# own `VALID_DECLARED_USE` through `normalize_declared_use`. A second literal here
+# is the hardcoded-vocabulary defect, and it stays a display string for that reason.
+VALID_USE = tuple(sorted(VALID_DECLARED_USE))
 
 _REGENERATE_NOTE = (
     "An existing sidecar is authoritative and merged, never clobbered. To "
@@ -184,15 +192,13 @@ async def _guard(call):
 
 
 def _check_use(use: str) -> str:
-    """Validate the licence declaration. Never defaulted, never guessed."""
-    normalized = use.strip().replace("-", "_").lower()
-    if normalized not in VALID_USE:
-        raise ToolError(
-            f"`use` must be one of {', '.join(VALID_USE)} — got {use!r}. This is your licence "
-            "position and there is no default: 'unstated' silently skips licence-bearing "
-            "sources, and anything else asserts a position you may not hold."
-        )
-    return normalized
+    """Validate the licence declaration. Never defaulted, never guessed.
+
+    Thin now: the rule and the vocabulary both live in `_shared`, so the hyphen is
+    folded the same way here, in `refresh` and in the registry pre-flight, which is
+    what `F74` found they did not do.
+    """
+    return normalize_declared_use(use)
 
 
 def _tables(result: Any, *, written: bool) -> list[DraftedTable]:

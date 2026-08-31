@@ -150,9 +150,27 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
             logged_to=str(target / AUTHORING_LOG),
             replaced_existing=replaced,
             record=record,
+            # The same split as the log line above, and it was missed when that one
+            # was made (`F71` fixed the persisted half and left this). The
+            # unconditional sentence told an author who had recorded an *authored*
+            # cell that "the cross-check still reports this mismatch" — there was no
+            # mismatch, no source and nothing to downgrade, so the one field the
+            # caller reads back described a mode it had not used. A returned note is
+            # the tool's answer to what just happened; getting it wrong is the same
+            # defect as getting the log wrong, one field over.
             note=(
-                "Recorded, not resolved. The cross-check still reports this mismatch and the row "
-                "stays in `review_queue` — a recorded outrank is downgraded, never passed."
+                (
+                    "Recorded, not resolved. The cross-check still reports this mismatch "
+                    "and the row stays in `review_queue` — a recorded outrank is "
+                    "downgraded, never passed."
+                )
+                if source_value
+                else (
+                    "Recorded as an authored cell, not an outrank. No source supplied a "
+                    "value here, so nothing was disputed and nothing is silenced: the "
+                    "record is the attribution, and `review_queue` ranks it by the "
+                    "judgement it carries rather than by a disagreement."
+                )
             ),
         )
 

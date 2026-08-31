@@ -446,3 +446,52 @@ async def test_the_queue_holds_a_record_whose_source_has_a_space_in_its_name(
     assert out.data.total == 1
     assert out.data.entries[0].record.source_name == "GWAS Catalog"
     assert out.data.entries[0].mismatch_state == "unknown"
+
+
+@pytest.mark.anyio
+async def test_the_returned_note_describes_the_mode_the_call_actually_used(
+    client, module: Path
+):
+    """`F71` split the log line on `source_value` and left the returned note alone.
+
+    The note is the one field a caller reads back to learn what just happened, and it
+    told an author who had recorded a judged cell that "the cross-check still reports
+    this mismatch" — there was no source, no mismatch and nothing to downgrade. Both
+    branches are asserted here, because fixing one and leaving the other is exactly the
+    defect this closes.
+    """
+    disagreed = await client.call_tool(
+        "record_override",
+        {
+            "spec_dir": str(module),
+            "variant_key": "rs1801133",
+            "field": "clin_sig",
+            "authored_value": "risk_factor",
+            "source_name": "clinvar",
+            "source_value": "benign",
+            "reason": "the 2021 meta-analysis (PMID 33417889) restores the association",
+            "recorded_by": "ai-module-creator",
+        },
+    )
+    assert "outrank" in disagreed.data.note
+    assert "mismatch" in disagreed.data.note
+
+    authored = await client.call_tool(
+        "record_override",
+        {
+            "spec_dir": str(module),
+            "variant_key": "rs1801133",
+            "field": "weight",
+            "authored_value": "-0.2",
+            "source_name": "clinvar",
+            "reason": "a judged magnitude; no source supplies a weight",
+            "recorded_by": "ai-module-creator",
+        },
+    )
+    assert "authored cell" in authored.data.note
+    assert "outrank" not in authored.data.note.replace("not an outrank", "")
+    assert "mismatch" not in authored.data.note
+
+    logged = (module / "logs" / "authoring.log").read_text()
+    assert "authored rs1801133 weight=" in logged
+    assert "outranks clinvar ('benign')" in logged

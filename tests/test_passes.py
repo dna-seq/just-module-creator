@@ -930,3 +930,46 @@ async def test_a_long_enrich_reports_it_is_alive_without_inventing_a_fraction(
             "Upstream batches inside resolver.py; inventing one fabricates their measurement."
         )
         assert "elapsed" in (message or "")
+
+
+def test_every_caller_folds_the_hyphen_the_same_way():
+    """One spelling rule, and it used to be two-and-a-half.
+
+    The enricher's CLI flag is written `non-commercial` and the `declared_use` column
+    takes `non_commercial`, so an author who has just read a `--use` line types the
+    hyphen. `enrich_facts` and `refresh_sidecar` folded it; the registry pre-flight
+    passed it through and the server answered 422 without naming the hyphen — the same
+    argument accepted by two tools and refused by the third (`F74`).
+
+    Asserted through the three entry points rather than through the helper alone, since
+    the defect was never in the helper: it was a call site that did not use one.
+    """
+    from just_module_creator.tools._shared import normalize_declared_use
+    from just_module_creator.tools.refresh import ROSTER, check_use
+
+    # A sidecar whose pass actually reads a licence-bearing source, or `check_use`
+    # returns "unstated" before it ever reaches the fold.
+    sidecar = ROSTER["gene_metrics.csv"]
+    folds = (
+        normalize_declared_use,
+        _check_use,
+        lambda value: check_use(sidecar, value),
+    )
+    for fold in folds:
+        assert fold("non-commercial") == "non_commercial"
+        assert fold("NON-COMMERCIAL") == "non_commercial"
+        assert fold(" non_commercial ") == "non_commercial"
+        with pytest.raises(ToolError, match="must be one of"):
+            fold("whatever-i-like")
+
+
+def test_the_use_vocabulary_is_the_formats_own_and_not_a_literal_here():
+    """A hardcoded vocabulary is a bug waiting for the next upstream release.
+
+    `VALID_USE` was a tuple written in this module; it is now derived from format's
+    `VALID_DECLARED_USE`, so a value added upstream reaches our refusal message without
+    an edit here.
+    """
+    from just_dna_format.vocab import VALID_DECLARED_USE
+
+    assert set(VALID_USE) == set(VALID_DECLARED_USE)

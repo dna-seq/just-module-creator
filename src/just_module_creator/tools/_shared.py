@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from fastmcp.exceptions import ToolError
+from just_dna_format.vocab import VALID_DECLARED_USE
 
 from just_module_creator.models import (
     LintAlteration,
@@ -65,6 +66,31 @@ def resolve_dir(raw: str, settings: Settings, *, must_exist: bool = True) -> Pat
     if must_exist and not path.is_dir():
         raise ToolError(f"{path} is not an existing directory.")
     return path
+
+
+def normalize_declared_use(use: str) -> str:
+    """The one spelling rule for a licence declaration, shared by every caller.
+
+    Both spellings reach us and only one reaches an artifact: the enricher's CLI
+    flag is written `non-commercial` and the `declared_use` **column** takes
+    `non_commercial`, so an author who has just read a `--use` line types the
+    hyphen. Two of our tools normalized it and a third passed it through to the
+    registry, which 422s — the same argument accepted in one call and refused in
+    the next, with nothing in the refusal naming the hyphen. The vocabulary is
+    format's `VALID_DECLARED_USE`, never a list written here.
+
+    Raises `ToolError` on anything outside it. There is deliberately no default:
+    `unstated` silently skips licence-bearing sources and anything else asserts a
+    position the caller may not hold.
+    """
+    normalized = use.strip().replace("-", "_").lower()
+    if normalized not in VALID_DECLARED_USE:
+        raise ToolError(
+            f"`use` must be one of {', '.join(sorted(VALID_DECLARED_USE))} — got {use!r}. "
+            "Hyphens are accepted and folded to underscores; anything else is refused "
+            "rather than guessed, because this is your licence position."
+        )
+    return normalized
 
 
 def offline_for(settings: Settings, requested: bool) -> bool:

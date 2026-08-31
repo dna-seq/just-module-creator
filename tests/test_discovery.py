@@ -299,8 +299,22 @@ def test_every_candidate_with_a_doi_gets_a_refusal(pubmed_records) -> None:
         assert alteration.column == "doi"
         assert alteration.applied is False
         # Upstream's own token, so the refusal reads as one rule across every tool.
+        # This is the per-row half and it rides on EVERY row: a caller filtering on
+        # the token must not have to read prose to find the rows it applies to.
         assert alteration.refusal == "redundancy_bearing"
-        assert "redundancy-bearing" in alteration.note
+
+    # The prose half is written once. Ten results used to mean ten copies of the same
+    # ninety-word paragraph, which is the repeated-warning shape the repo's own rule
+    # forbids, and it was the loudest output-volume complaint in the 2026-08-31
+    # benchmark. The count belongs with the reason so the aggregation is legible.
+    full = [a for a in refusals if "redundancy-bearing" in a.note]
+    assert len(full) == 1
+    assert full[0] is refusals[0]
+    assert f"{len(with_doi)} DOIs withheld" in full[0].note
+    for alteration in refusals[1:]:
+        assert alteration.note == (
+            "Withheld for the reason given on the first withheld row."
+        )
 
 
 def test_no_code_path_ever_offers_a_provenance_quote(pubmed_records, europepmc_records) -> None:

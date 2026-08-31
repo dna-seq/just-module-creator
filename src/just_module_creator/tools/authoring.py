@@ -998,6 +998,23 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         """
         source = resolve_dir(spec_dir, settings)
         out = resolve_dir(output_dir, settings, must_exist=False)
+        # Warned, not refused, and the difference is deliberate. `<spec>/build` is the
+        # obvious place to put it and real modules here do exactly that, so refusing
+        # would condemn working layouts. What it costs shows up two steps later and
+        # nowhere near the cause: the compile copies `README.md` into `output_dir`, the
+        # registry uploader walks the spec tree recursively, and `registry_check` then
+        # answers `ambiguous_spec_layout — README.md arrives from more than one path`
+        # with a 422. A benchmark run lost a confusing detour and a full restructure to
+        # it, with nothing pointing back at this call (`F76`).
+        layout_note: list[str] = []
+        if out == source or source in out.parents:
+            layout_note.append(
+                f"{out.name!r} is inside the spec directory. The compile copies "
+                "README.md into it, and a later registry call walks the spec tree and "
+                "refuses two of them: 'ambiguous_spec_layout — README.md arrives from "
+                "more than one path'. Nothing is wrong with the artifact; move the "
+                "output beside the spec rather than under it before publishing."
+            )
         if ctx:
             await ctx.info(f"Compiling {source.name} -> {out}")
 
@@ -1021,7 +1038,10 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             success=result.success,
             output_dir=str(result.output_dir) if result.output_dir else None,
             errors=list(result.errors),
-            warnings=list(result.warnings),
+            # Ours first: it is about this call's arguments and is actionable now,
+            # where the compiler's are about the module. Never merged into the
+            # compiler's list — a warning of ours must be legible as ours.
+            warnings=layout_note + list(result.warnings),
             stats=jsonable(result.stats),
             artifact_digest=getattr(artifact, "digest", None),
             content_signature=getattr(manifest, "content_signature", None),

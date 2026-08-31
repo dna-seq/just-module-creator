@@ -100,7 +100,17 @@ class OverrideRecord(BaseModel):
 
     variant_key: str = Field(description="rsid or chrom:start:ref, matching the authored row.")
     field: str = Field(description="The column the disagreement is on — `clin_sig`, `state`, …")
-    authored_value: str = Field(description="What the module says, at the moment of the record.")
+    authored_value: str = Field(
+        description=(
+            "What the module says, at the moment of the record. **Set when you write a "
+            "record; empty when one is read back**, and that asymmetry is not a bug to "
+            "route around: upstream's `ProvenanceItem` has no slot for it, so only "
+            "`value_sha256` survives the round trip and the digest is what binds the "
+            "record to the cell. On a record read from disk, ask `current_value` what "
+            "the row says now and `still_bound` whether it is still the value that was "
+            "recorded — an empty `authored_value` there means unstored, never blank."
+        )
+    )
     source_name: str = Field(description="Which source disagrees — `clinvar`, `clingen`, `gwas`.")
     source_value: str | None = Field(
         default=None, description="What that source said when the record was written, if known."

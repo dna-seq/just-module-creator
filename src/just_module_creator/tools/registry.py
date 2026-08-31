@@ -47,6 +47,7 @@ from just_module_creator.targets import (
 )
 from just_module_creator.tools._shared import (
     jsonable,
+    normalize_declared_use,
     resolve_dir,
     to_published_versions,
 )
@@ -503,6 +504,14 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
             )
 
         spec = resolve_dir(spec_dir, settings)
+        # Normalized here rather than passed through. `enrich_facts` and
+        # `refresh_sidecar` both fold `non-commercial` to `non_commercial`; this call
+        # did not, and the registry answers a hyphen with a 422 that names neither the
+        # hyphen nor the accepted spellings. So the same argument was accepted by two
+        # tools of ours and refused by the third, which is the shape an author reads
+        # as the registry being broken (`F74`).
+        if declared_use is not None:
+            declared_use = normalize_declared_use(declared_use)
         try:
             report = await run_sync(
                 lambda: _client(token, target).check(
