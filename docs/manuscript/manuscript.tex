@@ -47,7 +47,7 @@ authored files against a live schema, checks identifiers against reference
 databases, and compiles modules into a portable artifact. A shared registry lets
 independent authors publish, version, and exchange modules---the package-registry
 pattern applied to genomic annotation knowledge. Once installed, a module can be
-applied to a personal genome within minutes; the annotation consumer,
+applied to a personal genome in under a minute; the annotation consumer,
 Just-DNA-Lite, is the subject of a companion
 paper~\citep{companion2026justdnalite}. The software is open-source and available at
 \url{https://anonymous.4open.science/r/just-dna-registry} (anonymized for review).
@@ -83,10 +83,9 @@ anything the assistant can read, from a single sentence describing a trait to a
 collection of papers or a summary from another model. Every variant is verified
 against reference databases such as dbSNP; dedicated checking tools validate
 gene symbols against HGNC, trait identifiers against ontology services, and flag
-decisions that require domain expertise. The result contains no executable code.
-Once compiled into Parquet, a columnar format optimized for fast queries,
-Just-DNA-Lite joins the module to a personal genome and returns annotated results
-in under a minute~\citep{companion2026justdnalite}. Modules are versioned and
+decisions that require domain expertise.
+Once compiled to Parquet, Just-DNA-Lite joins the module to a personal
+genome~\citep{companion2026justdnalite}. Modules are versioned and
 shareable: they can be kept locally, rehearsed in a staging registry, or
 published for others to install and use. The same files can also be written or
 edited entirely by hand.
@@ -247,14 +246,11 @@ interpreted if a consumer encounters it. Just-DNA-Lite, or another compatible
 consumer, supplies the genome or measurement later.
 
 The author does not need to supply this directory, or any CSV file, at the
-start of a session. The conversation may begin with only a trait, a gene, or an
-idea. It may instead include a deep research report, paper, PDF, link, or custom
-file; request rows from a provider such as ClinVar, CPIC, or ClinPGx; or point
-to an existing module on disk or in the catalog. The \texttt{/create-module}
-router identifies the appropriate entry point. From an idea alone, the
-assistant can search the catalog and literature before selecting table kinds
-from the live schema. Scaffolding and row authoring then create the editable
-directory described above.
+start of a session. Figure~\ref{fig:conversation-to-module} shows how a
+conversation entry---which can range from a trait name to a collection of
+papers---moves through routing, scaffolding, and review to a compiled module.
+The \texttt{/create-module} router identifies the appropriate entry point
+and stage.
 
 \begin{figure}[ht]
 \centering
@@ -395,13 +391,11 @@ knowledge path. It can search and read sources, draft module rows, and help
 review disagreements. VCF filtering, module joins, and polygenic scoring
 remain ordinary software steps with explicit inputs and repeatable code.
 
-No single package implements the whole path. Each component owns a boundary
-that another component can call without reimplementing its rules. Within the
-module toolchain, dependencies point inward: enricher $\rightarrow$ compiler
-$\rightarrow$ format. The format and compiler do not fetch remote data. The
-enricher performs source lookups and writes the derived sidecars used later by
-the compiler. The registry publishes the compiled result, and Just-DNA-Lite
-consumes it in a separate application.
+Dependencies point inward: enricher $\rightarrow$ compiler $\rightarrow$
+format. Table~\ref{tab:packages} lists each component's responsibility and
+boundary. \texttt{just-module-creator} is the agent-facing authoring entry
+point examined in this paper, distributed as a plugin for Claude Code and
+Codex.
 
 \begin{table}[ht]
 \centering
@@ -421,89 +415,39 @@ Just-DNA-Lite & filter VCFs, join annotations, and produce reports & define modu
 \end{tabular}
 \end{table}
 
-Of these components, just-module-creator is the agent-facing authoring entry
-point examined most closely in this paper. It is distributed as a plugin for
-Claude Code and Codex, exposing the same MCP tools and workflow in both hosts.
-
 \subsection{Determinism, evidence, and responsibility}
 
-A module passes through drafting, curation, enrichment, checking, compilation,
-and closure before it reaches a store. Each layer guarantees something
-different, and a reviewer or auditing agent can read the boundaries between
-them to know exactly what has been established and what still requires
-expert judgment.
+The compiler establishes structural validity and reproducibility: schema
+conformance, coordinate resolution, and a deterministic content
+signature~\citep{justdnaformat2026}. What it does not establish is whether the
+authored claims agree with the literature. A false association in valid syntax
+compiles perfectly. Three properties keep the evidence chain auditable.
 
-\paragraph{What the compiler guarantees.}
-Within one compiler version, \texttt{just-dna-compiler} guarantees a
-round-trip: a valid specification can be compiled to Parquet, reversed back to
-CSV, and compiled again without changing its \emph{content signature}---a
-normalized hash over the authored rows, independent of file ordering,
-whitespace, and column position. \texttt{just-module-creator} calls that
-compiler with full resolution always enabled.
+First, authored values and their checks are kept independent. The workflow
+does not fill a value from the source that will later check it, because such
+a check compares the source with itself. The design test is: \emph{could this
+check have failed?} If not, it measured nothing
+(Section~\ref{sec:checks}).
 
-The compiler therefore establishes structural validity and reproducibility: the
-module conforms to the schema, identifiers resolve to coordinates, and the
-build is deterministic. What it does not---and is not designed to---establish is
-whether the authored claims agree with the literature. If an assistant writes a
-false association in valid syntax, the compiler preserves it perfectly.
-Distinguishing a correct row from a well-formed wrong one is the work of the
-next two layers.
+Second, disagreements with reference archives are preserved rather than
+silently resolved. ClinVar may lag a retraction; when the authored value
+should remain, \texttt{record\_override} logs the difference and the reason.
 
-\paragraph{What the evidence tools enforce.}
-Correctness depends on the evidence chain, and the toolchain enforces three
-properties that keep that chain auditable.
+Third, unknown results are distinguished from clean ones. A source timeout
+produces a null, not a pass. The identifier check writes an attestation to
+\texttt{verification.json} so a reviewer can tell an empty report from one
+with no findings.
 
-Authored values and their checks are kept independent. The workflow does not
-fill a value from the source that will later check it, because such a check
-compares the source with itself. The same principle catches a subtler pattern:
-when every study row for a PMID carries the article's title as its
-\texttt{provenance\_quote}, the quote-verification check matches on every row,
-because a title always appears in its own full text. The enricher's literature
-pass detects this; the plugin's own lint flags any PMID whose quoted rows all
-carry the identical passage. The design test is: \emph{could this check have
-failed?} If not, it measured nothing.
+The assistant may locate a verbatim \texttt{provenance\_quote} from retrieved
+full text and follow citations into supplementary tables to find per-variant
+statistics. A \texttt{curator} field records who located each quote---a name
+or model identifier---so a reviewer can direct scrutiny where it is most
+needed. Attribution does not transfer responsibility: the human author holds
+accountability regardless.
 
-Disagreements with reference archives are preserved rather than silently
-resolved. ClinVar may lag a retraction; a meta-analysis may overturn a prior
-classification. When the authored value should remain,
-\texttt{record\_override} logs which field differs, what the source said, who
-decided, and why---making the reasoning available to any reviewer or auditing
-agent that later inspects the module.
-
-Unknown results are distinguished from clean ones. A source timeout or an
-absent file produces a null, not a pass. The identifier check writes an
-attestation to \texttt{verification.json} recording whether the registries were
-reachable, so a reviewer can tell an empty report from a report with no
-findings.
-
-\paragraph{What remains visible for expert review.}
-The assistant may read retrieved full text and locate a verbatim passage as a
-\texttt{provenance\_quote}---the reading is real, performed through the same
-retrieval the enricher uses. It can also follow a citation into its
-supplementary tables to locate per-variant statistics---effect sizes, p-values,
-and allele frequencies---that the main text often defers to its supplements.
-Once the text has been read, the quote-found check on that row becomes a
-citation-pairing check: it confirms the passage appears under the correct PMID,
-and a reviewer or auditing agent evaluates whether it supports the claim.
-
-The \texttt{curator} field on each study row records who located the
-quote---a name, a handle, or a model identifier---so that a reviewer can
-direct scrutiny where it is most needed. The field is not checked by any
-gate; it is legible to a person or an auditing agent, not to a build.
-Attribution does not transfer responsibility: the human author holds
-accountability for the module regardless of who located each passage.
-
-\medskip
-
-The compiler reports problems but does not edit authored values.
-\texttt{just-module-creator}, as the authoring application, permits
-edits---bounded by the same three rules: every tool-mediated override is
-logged, no value is filled from the source that will check it, and
-disagreements are preserved for review. Curation follows drafting precisely
-because a drafted row may still carry decisions the source cannot
-make---which genotype the claim concerns, how a weight should be interpreted,
-and how the conclusion should be worded---and these are the decisions the
-workflow surfaces for domain experts rather than resolving silently.
+Curation follows drafting because a drafted row may still carry decisions the
+source cannot make---genotype, weight interpretation, conclusion wording---and
+these are surfaced for domain experts rather than resolved silently.
 
 \subsection{Local and shared module stores}
 
@@ -517,9 +461,63 @@ produced, not a locally claimed digest. Inclusion in either catalog
 distributes a module; it is not scientific review, clinical validation, or
 endorsement.
 
+\subsection{Evaluation dimensions}
+
+Three dimensions are relevant for evaluating AI-authored modules against
+expert-curated ground truth: variant recall (which rsID--genotype pairs were
+recovered), citation identity (whether each PMID names the intended paper,
+not merely exists), and weight-sign agreement (whether the effect direction
+matches). The adjudicated set is not yet large enough for a performance
+claim; we report these dimensions as a framework for future evaluation.
+
 % ================================================================
 \section{Results}
 % ================================================================
+
+\label{sec:checks}
+
+The plugin can be installed from its GitHub repository in a single command
+(\texttt{/install-plugin} in Claude Code, or a repository URL in the Codex
+plugin marketplace). Once installed, the assistant gains access to 60 typed
+MCP tools (Appendix~\ref{app:tools}) and 20 skills---written workflow
+instructions that teach the assistant when to call which tool. In both
+Claude Code and Codex, skills marked as commands can be invoked directly
+by typing \texttt{/name} in the prompt.
+
+With the plugin active, the assistant calls typed tools instead of
+generating code (Figure~\ref{fig:conversation-to-module}): enrichment adds
+coordinates and derived sidecars, compilation validates against the live
+schema, and the compiled artifact can be published to the registry and
+immediately applied to a personal genome. The checks described in
+Section~3.3 catch citation misattributions, identifier drift, and schema
+violations in practice---a measurement across 33 upstream
+\texttt{studies.csv} files (44,342 rows) found 3,668 rows where the
+\texttt{provenance\_quote} was the article's title, a passage that always
+matches its own full text and evidences nothing.
+
+\subsection{Command menu}
+
+Seven of the 20 skills are user-invocable commands, exposing the workflow
+through intentions rather than internal stages. The remaining thirteen
+are guides loaded automatically by a router when the assistant reaches
+the corresponding lifecycle stage.
+
+\begin{center}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Command & Purpose \\
+\midrule
+\texttt{/create-module} & begin or continue creating a module \\
+\texttt{/module-status} & inspect a directory and identify the next decision \\
+\texttt{/module-revise} & begin another pass over an existing module \\
+\texttt{/find-evidence} & find and read evidence for a row \\
+\texttt{/module-publish} & rehearse and then publish \\
+\texttt{/module-symptom} & explain a message from the toolchain \\
+\texttt{/module-install-local} & install a compiled module without a catalog \\
+\bottomrule
+\end{tabular}
+\end{center}
 
 \subsection{Production catalog}
 
@@ -551,39 +549,13 @@ lactose\_tolerance      &  2  &   8 &   1 & 2 \\
 \end{tabular}
 \end{table}
 
-The modules span three independent namespaces from three owners. The largest module
-(\texttt{risk\_impulsivity\_snps}, 474 variants across 325 genes) and the
-smallest (\texttt{lactose\_tolerance}, 2 variants in 1 gene) both compiled with
-strict resolution and fully resolved coordinates. The
-\texttt{big\_five\_personality\_snps} module went through four published
-versions, illustrating the revision workflow: extraction, schema completion,
-score references, and weight correction.
-
-AI-authored modules are identified in their manifest authorship records.
-Three modules were authored by people who are not the plugin's developers,
-indicating that the tool surface is usable beyond the original team.
-
-\subsection{Evaluation protocol}
-
-The creation evaluation begins with an expert-checked fixture. Each fixture
-contains a free-text prompt and the \texttt{module\_spec.yaml},
-\texttt{variants.csv}, and \texttt{studies.csv} that the assistant should
-recover. The generated module is compared with the fixture on three questions:
-
-\begin{itemize}
-    \item Variant recall is the fraction of ground-truth
-    $(\textit{rsID},\textit{genotype})$ rows present in the generated module.
-    \item Citation identity requires every cited PMID to exist and to name the
-    paper indicated by the title returned during search. Existence alone is
-    insufficient.
-    \item Weight-sign accuracy measures whether the generated effect direction
-    agrees with the fixture. Magnitude is reported separately because a module
-    weight is an authored choice and is not copied from a GWAS beta.
-\end{itemize}
-
-A larger adjudicated set and repeated runs are needed to support a
-performance claim. We therefore report no recall or precision estimate in
-this paper and present the protocol as a framework for future evaluation.
+The modules span three namespaces from three owners; three were authored by
+people outside the development team. Module sizes range from 2 to 474
+variants. Four versions of \texttt{big\_five\_personality\_snps} show that
+iterative revision works in practice. Two modules on the same trait
+(\texttt{placebo\_response} via Codex, \texttt{placebo\_response\_claude} via
+Claude Code) were created by the same author to compare the two assistants;
+both compiled against the same schema and are published side by side.
 
 % ================================================================
 \section{Discussion}
@@ -651,10 +623,10 @@ The software is open-source and intended for research use only.
 \bibliographystyle{plainnat}
 \bibliography{references}
 
-% Appendix
-\appendix
+% ================================================================
 \section{Code and data availability}
-\label{app:code}
+\label{sec:code}
+% ================================================================
 
 \begin{itemize}
     \item \textbf{just-dna-format, just-dna-compiler, and just-dna-enricher}:
@@ -671,6 +643,11 @@ The software is open-source and intended for research use only.
     provided in the anonymized repositories.
 \end{itemize}
 
+% ================================================================
+\appendix
+\section*{Appendix}
+% ================================================================
+
 \section{Research use only}
 \label{app:ruo}
 
@@ -683,78 +660,272 @@ are not diagnoses or medical advice. Language that implies causation, such as
 plugin.
 
 % ================================================================
-\section{Tools and command menu}
-\label{app:tools-and-commands}
+\section{Plugin surface: tools and skills}
+\label{app:tools}
 % ================================================================
 
-\subsection*{Command menu reduction}
+A Claude Code or Codex plugin is a bundle of two kinds of asset. \textbf{MCP
+tools} are typed operations the assistant can call---each has a name, typed
+inputs, and a structured return value. \textbf{Skills} are written
+instructions loaded into the assistant's context on demand; they teach the
+workflow that the tools serve, including when to call which tool and what to
+do with the result. Together, 60 tools and 20 skills make up the
+\texttt{just-module-creator} plugin surface.
 
-The command redesign reduced prompt content by 76\% (from twenty entries to
-seven) while keeping every guide reachable through routing.
+\subsection*{Tools (60)}
 
-\subsection*{The title-as-quote observation}
+The tools are organized into a core set (always listed) and nine optional
+groups that a session can reveal incrementally via \texttt{toolbox}.
+Table~\ref{tab:tools-core} lists the 18 core and meta tools;
+Tables~\ref{tab:tools-evidence}--\ref{tab:tools-closing} list the nine
+groups. Registry writes require a token obtained through
+\texttt{authenticate}. Literature and enrichment requests share a single
+pacing gate, including the NCBI budget.
 
-A measurement across 33 \texttt{studies.csv} files (44,342 rows) in the
-upstream repository found that 3,668 rows carried a
-\texttt{provenance\_quote} that was the article's title verbatim. Since a
-title always appears in its own full text, the quote-verification check
-matched on all 3,668 rows while evidencing nothing about whether anyone
-located support for the row's claim. This observation led to the attribution
-requirement described in Section~3.3: a quote must name who located it in
-\texttt{StudyRow.curator} so that a reviewer can distinguish a machine-located
-passage from a human-read one.
+\begin{table}[ht]
+\centering
+\scriptsize
+\caption{Core tools (always listed) and the meta-tool.}
+\label{tab:tools-core}
+\begin{tabular}{@{}p{0.30\linewidth}p{0.62\linewidth}@{}}
+\toprule
+Tool & Purpose \\
+\midrule
+\texttt{list\_tables}           & List authorable table kinds and what each row represents \\
+\texttt{describe\_table}        & Describe one table kind: every column, type, vocabulary, and pick-list \\
+\texttt{table\_requirements}    & The three shapes of requiredness for a table kind \\
+\texttt{describe\_machine\_table} & Describe a machine-written sidecar: columns, types, vocabulary \\
+\texttt{get\_template}          & Get a CSV template (header only, or header plus stub rows) \\
+\texttt{scaffold\_module}       & Create \texttt{module\_spec.yaml} plus stub CSVs; never overwrites \\
+\texttt{lint\_rows}             & Lint CSV text against a table kind (writes nothing) \\
+\texttt{validate\_module}       & Pre-flight a spec directory (writes nothing) \\
+\texttt{compile\_module}        & Compile a spec directory into Parquet plus \texttt{manifest.json} \\
+\texttt{draft\_from\_clinvar}   & Draft \texttt{variants.csv} and \texttt{studies.csv} from ClinVar \\
+\texttt{enrich\_module}         & Resolve rsIDs to coordinates and mint VRS identifiers \\
+\texttt{literature\_search}     & Find papers behind a row; confirm a PMID names the intended paper \\
+\texttt{lookup\_citation}       & Check a PMID or DOI and read back which paper it names \\
+\texttt{lookup\_variant}        & Look up one variant: loci, alleles, ClinVar calls, rsID currency \\
+\texttt{record\_override}       & Log that an authored value deliberately outranks a source \\
+\texttt{registry\_register}     & Create a registry account and mint its API key \\
+\texttt{authenticate}           & Provide a registry token to unlock write tools for this session \\
+\texttt{toolbox}                & List optional tool groups and reveal them to the session \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\subsection*{Tools available to the assistant}
+\begin{table}[ht]
+\centering
+\scriptsize
+\caption{Evidence group: read a paper, its citations, and its supplementary tables.}
+\label{tab:tools-evidence}
+\begin{tabular}{@{}p{0.30\linewidth}p{0.62\linewidth}@{}}
+\toprule
+Tool & Purpose \\
+\midrule
+\texttt{lookup\_open\_access}     & Where a paper may legally be read, and on what terms \\
+\texttt{fetch\_fulltext}          & Retrieve a paper's text so the assistant can read and quote it \\
+\texttt{paper\_citations}         & Papers that cite this one, or the papers it cites \\
+\texttt{list\_supplementary}      & Inventory the supplementary files attached to a paper \\
+\texttt{fetch\_supplementary}     & Download one supplementary file to the cache \\
+\texttt{describe\_supplementary}  & Sheets in a downloaded workbook and their column names \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-The MCP tools are grouped by task: authoring, research, checks, enrichment,
-comparison, and registry work. The listing can be narrowed so the agent sees
-only the groups relevant to its current stage. Registry writes require a
-token.
+\begin{table}[ht]
+\centering
+\scriptsize
+\caption{Identifiers group: check gene symbols and ontology CURIEs.}
+\label{tab:tools-identifiers}
+\begin{tabular}{@{}p{0.30\linewidth}p{0.62\linewidth}@{}}
+\toprule
+Tool & Purpose \\
+\midrule
+\texttt{check\_identifiers}  & Check every gene symbol (HGNC) and trait CURIE (OLS4) in a spec \\
+\texttt{lookup\_identifier}  & Check one gene symbol or trait CURIE \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-Literature and enrichment requests share a pacing gate, including the NCBI
-budget used by several lookups. The literature search fills a gap left by the
-enricher. The enricher can verify a PMID that an author already has, but it does
-not search for the paper. \texttt{literature\_search} returns titles so the
-assistant can check identity. The existence of a PMID alone says nothing about
-whether it is the intended article. Supplementary-table retrieval extends the
-evidence path: the assistant can fetch, list, and inspect supplementary files
-attached to a cited paper, reaching the per-variant rows that GWAS main texts
-typically defer to their supplements.
+\begin{table}[ht]
+\centering
+\scriptsize
+\caption{Pharmacogenomics (PGx) group: draft from curated PGx sources.}
+\label{tab:tools-pgx}
+\begin{tabular}{@{}p{0.30\linewidth}p{0.62\linewidth}@{}}
+\toprule
+Tool & Purpose \\
+\midrule
+\texttt{draft\_from\_cpic}     & Draft haplotypes, allele function, and diplotypes from CPIC \\
+\texttt{draft\_from\_clinpgx}  & Draft \texttt{pharm\_variants.csv} from a ClinPGx snapshot \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\subsection*{How a person enters the workflow}
+\begin{table}[ht]
+\centering
+\scriptsize
+\caption{Passes group: fill or re-derive machine-written sidecars.}
+\label{tab:tools-passes}
+\begin{tabular}{@{}p{0.30\linewidth}p{0.62\linewidth}@{}}
+\toprule
+Tool & Purpose \\
+\midrule
+\texttt{enrich\_facts}             & Fill frequency, constraint, and dosage sidecars \\
+\texttt{enrich\_literature\_pass}  & Resolve every citation in \texttt{studies.csv} into \texttt{literature.csv} \\
+\texttt{enrich\_gwas\_effects}     & Record the GWAS Catalog's published effect sizes for the module's rsIDs \\
+\texttt{refresh\_sidecar}          & Re-derive one sidecar against its source, keeping curated rows \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-A person usually knows what they want to accomplish, not which internal stage
-performs it. They may want to create a module, understand an inherited
-directory, find a paper, revise a published module, or decode an error message.
-The command menu uses those intentions as its entries.
+\begin{table}[ht]
+\centering
+\scriptsize
+\caption{Review group: read a module back and surface decisions.}
+\label{tab:tools-review}
+\begin{tabular}{@{}p{0.30\linewidth}p{0.62\linewidth}@{}}
+\toprule
+Tool & Purpose \\
+\midrule
+\texttt{audit\_module}   & Ask what a curation pass would ask (offline, reads only) \\
+\texttt{review\_queue}   & Rank the rows where somebody overruled a source \\
+\texttt{review\_logs}    & Show what is in the module's logs (publishing them is permanent) \\
+\texttt{study\_facts}    & Per-study facts the GWAS pass wrote into \texttt{gwas\_effects.csv} \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\begin{center}
-\small
-\begin{tabular}{@{}ll@{}}
+\begin{table}[ht]
+\centering
+\scriptsize
+\caption{Integrity group: compare, sign, verify, and reverse modules.}
+\label{tab:tools-integrity}
+\begin{tabular}{@{}p{0.30\linewidth}p{0.62\linewidth}@{}}
+\toprule
+Tool & Purpose \\
+\midrule
+\texttt{compare\_modules}        & What moved between two spec directories (offline) \\
+\texttt{compare\_to\_published}  & Is local data ahead of the catalog, and how? \\
+\texttt{module\_signature}       & Content signature of raw authored data (no compile, no network) \\
+\texttt{verify\_artifact}        & Re-hash every file in a compiled artifact and recompute the digest \\
+\texttt{reverse\_module}         & Turn a compiled artifact back into an authored spec directory \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\scriptsize
+\caption{Catalog group: read the registry.}
+\label{tab:tools-catalog}
+\begin{tabular}{@{}p{0.32\linewidth}p{0.60\linewidth}@{}}
+\toprule
+Tool & Purpose \\
+\midrule
+\texttt{registry\_search}              & Search published modules (read-only, no token) \\
+\texttt{registry\_get\_module}          & Fetch one module's full record: card, readme, versions, manifest \\
+\texttt{registry\_health}              & Is this registry instance up, and which instance is it? \\
+\texttt{registry\_is\_published}        & Has this authored data been published under any name? \\
+\texttt{registry\_namespace\_available} & Check whether a namespace is legal and unclaimed \\
+\texttt{registry\_download}            & Download and integrity-verify a published module version \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\scriptsize
+\caption{Publish group: write to the registry (token required).}
+\label{tab:tools-publish}
+\begin{tabular}{@{}p{0.32\linewidth}p{0.60\linewidth}@{}}
+\toprule
+Tool & Purpose \\
+\midrule
+\texttt{registry\_whoami}           & Confirm the token is accepted and report the account \\
+\texttt{registry\_validate}         & Validate a spec on the registry without publishing \\
+\texttt{registry\_check}            & Full publish dry run: validation plus network checks \\
+\texttt{registry\_publish}          & Publish a spec directory as a module version \\
+\texttt{registry\_amend\_readme}    & Replace a published version's readme (no version bump) \\
+\texttt{registry\_claim\_namespace} & Claim a publishing namespace (irreversible on production) \\
+\texttt{registry\_yank}             & Stop recommending a version (stays fetchable for pinned users) \\
+\texttt{registry\_unyank}           & Restore a yanked version to listings \\
+\texttt{registry\_delete\_version}  & Hard-delete one rehearsed version from the polygon \\
+\texttt{registry\_delete\_module}   & Hard-delete all rehearsed versions from the polygon \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\scriptsize
+\caption{Closing group: finish and describe.}
+\label{tab:tools-closing}
+\begin{tabular}{@{}p{0.30\linewidth}p{0.62\linewidth}@{}}
+\toprule
+Tool & Purpose \\
+\midrule
+\texttt{close\_module}        & Declare authoring finished, bound to its authored bytes \\
+\texttt{describe\_spec\_file} & Describe \texttt{module\_spec.yaml}: every key and block it carries \\
+\texttt{authoring\_reference} & The complete generated description of the authoring DSL as JSON \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Skills (20)}
+
+Skills are markdown documents loaded into the assistant's context when
+needed. Seven are \textbf{commands}---user-invocable via \texttt{/name} in
+the assistant's prompt---and thirteen are \textbf{guides} loaded
+automatically by a router when the assistant reaches the corresponding
+stage.
+
+\begin{table}[ht]
+\centering
+\scriptsize
+\caption{User-invocable commands (7). Each is typed as
+\texttt{/name} in the assistant prompt.}
+\label{tab:skills-commands}
+\begin{tabular}{@{}p{0.25\linewidth}p{0.67\linewidth}@{}}
 \toprule
 Command & Purpose \\
 \midrule
-\texttt{/create-module} & begin or continue creating a module \\
-\texttt{/module-status} & inspect a directory and identify the next decision \\
-\texttt{/module-revise} & begin another pass over an existing module \\
-\texttt{/find-evidence} & find and read evidence for a row \\
-\texttt{/module-publish} & rehearse and then publish \\
-\texttt{/module-symptom} & explain a message from the toolchain \\
-\texttt{/module-install-local} & install a compiled module without a catalog \\
+\texttt{/create-module}         & Router: begin or continue creating a module from any starting point \\
+\texttt{/module-status}         & Inspect a directory and identify the next decision \\
+\texttt{/module-revise}         & Begin another pass over an existing module \\
+\texttt{/find-evidence}         & Find and read evidence for a row \\
+\texttt{/module-publish}        & Rehearse on the polygon, then publish to the catalog \\
+\texttt{/module-symptom}        & Explain a message from the toolchain \\
+\texttt{/module-install-local}  & Install a compiled module into Just-DNA-Lite locally \\
 \bottomrule
 \end{tabular}
-\end{center}
+\end{table}
 
-The first version of the menu exposed twenty stage names. That forced a person
-to choose between terms such as \texttt{module-curate} and
-\texttt{module-enrich} before the system had explained either one. The seven
-commands now route to thirteen guides. A guide contains the procedure for one
-stage and is loaded by path when the assistant reaches that stage.
-
-\texttt{/create-module} is therefore a router. It examines what the author has
-already provided and selects the next stage. If the request shows that the
-person first needs an explanation, the router loads the overview guide. The
-overview is not a menu command because a new author would not know its internal
-name.
+\begin{table}[ht]
+\centering
+\scriptsize
+\caption{Guides (13). Each is loaded by a router or a preceding skill
+rather than invoked by the user directly.}
+\label{tab:skills-guides}
+\begin{tabular}{@{}p{0.22\linewidth}p{0.70\linewidth}@{}}
+\toprule
+Guide & Purpose \\
+\midrule
+\texttt{module-101}      & High-level map: what a module is, what the plugin can and cannot do \\
+\texttt{module-start}    & Stage 0--1: triage, licence, the spec \\
+\texttt{module-draft}    & Stage 2: draft rows from evidence or a provider \\
+\texttt{module-curate}   & Stage 3: curate scientific decisions \\
+\texttt{module-enrich}   & Stage 4: enrich with coordinates, identifiers, and sidecars \\
+\texttt{module-check}    & Stage 5: cross-check against reference databases \\
+\texttt{module-compile}  & Stage 6: validate and compile to Parquet \\
+\texttt{module-close}    & Stage 6b: declare authoring finished and bind to authored bytes \\
+\texttt{module-refresh}  & Re-run anything that already ran \\
+\texttt{module-diff}     & What moved, and the reading that means a source changed its answer \\
+\texttt{module-tables}   & Which table kind, where every file sits, the three on-disk shapes \\
+\texttt{module-weights}  & The weight column everyone fills and nobody declares \\
+\texttt{module-consumer} & The annotation consumer's side of the seam \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \end{document}

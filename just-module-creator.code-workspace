@@ -17,6 +17,9 @@
 		},
 		{
 			"path": "../ClawBio"
+		},
+		{
+			"path": "../dna-seq-claude-marketplace"
 		}
 	],
 	"settings": {}

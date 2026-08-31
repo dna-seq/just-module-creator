@@ -4,7 +4,7 @@ Genomic annotation connects variant calls to the knowledge that gives them meani
 
 Researchers increasingly use AI coding assistants such as Claude Code and Codex for this kind of work. These tools are powerful, but when asked to analyze variants they typically generate a script: code that may fabricate identifiers , attach a real PMID to the wrong paper , reverse an allele, or bypass established filters. Each session may produce slightly different code, and the result must be reviewed for correctness, efficiency, and security before it can be trusted. The output is a one-off answer tied to one session, not a reusable resource.
 
-This paper presents the Just-DNA ecosystem, which gives these same assistants a different job. Instead of generating code, the assistant produces structured data: a *module* of editable CSV tables where each variant is linked to its studies, citations, effect sizes, and supporting passages. The input can be anything the assistant can read, from a single sentence describing a trait to a collection of papers or a summary from another model. Every variant is verified against reference databases such as dbSNP; dedicated checking tools validate gene symbols against HGNC, trait identifiers against ontology services, and flag decisions that require domain expertise. The result contains no executable code. Once compiled into Parquet, a columnar format optimized for fast queries, Just-DNA-Lite joins the module to a personal genome and returns annotated results in under a minute . Modules are versioned and shareable: they can be kept locally, rehearsed in a staging registry, or published for others to install and use. The same files can also be written or edited entirely by hand.
+This paper presents the Just-DNA ecosystem, which gives these same assistants a different job. Instead of generating code, the assistant produces structured data: a *module* of editable CSV tables where each variant is linked to its studies, citations, effect sizes, and supporting passages. The input can be anything the assistant can read, from a single sentence describing a trait to a collection of papers or a summary from another model. Every variant is verified against reference databases such as dbSNP; dedicated checking tools validate gene symbols against HGNC, trait identifiers against ontology services, and flag decisions that require domain expertise. Once compiled to Parquet, Just-DNA-Lite joins the module to a personal genome . Modules are versioned and shareable: they can be kept locally, rehearsed in a staging registry, or published for others to install and use. The same files can also be written or edited entirely by hand.
 
 This paper makes four contributions:
 
@@ -63,7 +63,7 @@ At the artifact boundary, a just-dna annotation module is an editable directory.
 
 The authored files are ordinary YAML, CSV, Markdown, and optional image files. A domain expert can open them in a spreadsheet to review and correct an AI draft without special tools. just-module-creator operates on this same directory rather than introducing a separate format for AI-produced content. The module describes how a genotype or measurement should be interpreted if a consumer encounters it. Just-DNA-Lite, or another compatible consumer, supplies the genome or measurement later.
 
-The author does not need to supply this directory, or any CSV file, at the start of a session. The conversation may begin with only a trait, a gene, or an idea. It may instead include a deep research report, paper, PDF, link, or custom file; request rows from a provider such as ClinVar, CPIC, or ClinPGx; or point to an existing module on disk or in the catalog. The `/create-module` router identifies the appropriate entry point. From an idea alone, the assistant can search the catalog and literature before selecting table kinds from the live schema. Scaffolding and row authoring then create the editable directory described above.
+The author does not need to supply this directory, or any CSV file, at the start of a session. Figure <a href="#fig:conversation-to-module" data-reference-type="ref" data-reference="fig:conversation-to-module">1</a> shows how a conversation entry—which can range from a trait name to a collection of papers—moves through routing, scaffolding, and review to a compiled module. The `/create-module` router identifies the appropriate entry point and stage.
 
 <figure id="fig:conversation-to-module" data-latex-placement="ht">
 
@@ -85,7 +85,7 @@ On the sample path, Just-DNA-Lite converts VCF input to Parquet and joins it wit
 
 Within `just-module-creator`, the language model participates only in the knowledge path. It can search and read sources, draft module rows, and help review disagreements. VCF filtering, module joins, and polygenic scoring remain ordinary software steps with explicit inputs and repeatable code.
 
-No single package implements the whole path. Each component owns a boundary that another component can call without reimplementing its rules. Within the module toolchain, dependencies point inward: enricher $`\rightarrow`$ compiler $`\rightarrow`$ format. The format and compiler do not fetch remote data. The enricher performs source lookups and writes the derived sidecars used later by the compiler. The registry publishes the compiled result, and Just-DNA-Lite consumes it in a separate application.
+Dependencies point inward: enricher $`\rightarrow`$ compiler $`\rightarrow`$ format. Table <a href="#tab:packages" data-reference-type="ref" data-reference="tab:packages">2</a> lists each component’s responsibility and boundary. `just-module-creator` is the agent-facing authoring entry point examined in this paper, distributed as a plugin for Claude Code and Codex.
 
 <div id="tab:packages">
 
@@ -102,41 +102,51 @@ Responsibilities across the Just-DNA ecosystem.
 
 </div>
 
-Of these components, just-module-creator is the agent-facing authoring entry point examined most closely in this paper. It is distributed as a plugin for Claude Code and Codex, exposing the same MCP tools and workflow in both hosts.
-
 ## Determinism, evidence, and responsibility
 
-A module passes through drafting, curation, enrichment, checking, compilation, and closure before it reaches a store. Each layer guarantees something different, and a reviewer or auditing agent can read the boundaries between them to know exactly what has been established and what still requires expert judgment.
+The compiler establishes structural validity and reproducibility: schema conformance, coordinate resolution, and a deterministic content signature . What it does not establish is whether the authored claims agree with the literature. A false association in valid syntax compiles perfectly. Three properties keep the evidence chain auditable.
 
-#### What the compiler guarantees.
+First, authored values and their checks are kept independent. The workflow does not fill a value from the source that will later check it, because such a check compares the source with itself. The design test is: *could this check have failed?* If not, it measured nothing (Section <a href="#sec:checks" data-reference-type="ref" data-reference="sec:checks">4</a>).
 
-Within one compiler version, `just-dna-compiler` guarantees a round-trip: a valid specification can be compiled to Parquet, reversed back to CSV, and compiled again without changing its *content signature*—a normalized hash over the authored rows, independent of file ordering, whitespace, and column position. `just-module-creator` calls that compiler with full resolution always enabled.
+Second, disagreements with reference archives are preserved rather than silently resolved. ClinVar may lag a retraction; when the authored value should remain, `record_override` logs the difference and the reason.
 
-The compiler therefore establishes structural validity and reproducibility: the module conforms to the schema, identifiers resolve to coordinates, and the build is deterministic. What it does not—and is not designed to—establish is whether the authored claims agree with the literature. If an assistant writes a false association in valid syntax, the compiler preserves it perfectly. Distinguishing a correct row from a well-formed wrong one is the work of the next two layers.
+Third, unknown results are distinguished from clean ones. A source timeout produces a null, not a pass. The identifier check writes an attestation to `verification.json` so a reviewer can tell an empty report from one with no findings.
 
-#### What the evidence tools enforce.
+The assistant may locate a verbatim `provenance_quote` from retrieved full text and follow citations into supplementary tables to find per-variant statistics. A `curator` field records who located each quote—a name or model identifier—so a reviewer can direct scrutiny where it is most needed. Attribution does not transfer responsibility: the human author holds accountability regardless.
 
-Correctness depends on the evidence chain, and the toolchain enforces three properties that keep that chain auditable.
-
-Authored values and their checks are kept independent. The workflow does not fill a value from the source that will later check it, because such a check compares the source with itself. The same principle catches a subtler pattern: when every study row for a PMID carries the article’s title as its `provenance_quote`, the quote-verification check matches on every row, because a title always appears in its own full text. The enricher’s literature pass detects this; the plugin’s own lint flags any PMID whose quoted rows all carry the identical passage. The design test is: *could this check have failed?* If not, it measured nothing.
-
-Disagreements with reference archives are preserved rather than silently resolved. ClinVar may lag a retraction; a meta-analysis may overturn a prior classification. When the authored value should remain, `record_override` logs which field differs, what the source said, who decided, and why—making the reasoning available to any reviewer or auditing agent that later inspects the module.
-
-Unknown results are distinguished from clean ones. A source timeout or an absent file produces a null, not a pass. The identifier check writes an attestation to `verification.json` recording whether the registries were reachable, so a reviewer can tell an empty report from a report with no findings.
-
-#### What remains visible for expert review.
-
-The assistant may read retrieved full text and locate a verbatim passage as a `provenance_quote`—the reading is real, performed through the same retrieval the enricher uses. It can also follow a citation into its supplementary tables to locate per-variant statistics—effect sizes, p-values, and allele frequencies—that the main text often defers to its supplements. Once the text has been read, the quote-found check on that row becomes a citation-pairing check: it confirms the passage appears under the correct PMID, and a reviewer or auditing agent evaluates whether it supports the claim.
-
-The `curator` field on each study row records who located the quote—a name, a handle, or a model identifier—so that a reviewer can direct scrutiny where it is most needed. The field is not checked by any gate; it is legible to a person or an auditing agent, not to a build. Attribution does not transfer responsibility: the human author holds accountability for the module regardless of who located each passage.
-
-The compiler reports problems but does not edit authored values. `just-module-creator`, as the authoring application, permits edits—bounded by the same three rules: every tool-mediated override is logged, no value is filled from the source that will check it, and disagreements are preserved for review. Curation follows drafting precisely because a drafted row may still carry decisions the source cannot make—which genotype the claim concerns, how a weight should be interpreted, and how the conclusion should be worded—and these are the decisions the workflow surfaces for domain experts rather than resolving silently.
+Curation follows drafting because a drafted row may still carry decisions the source cannot make—genotype, weight interpretation, conclusion wording—and these are surfaced for domain experts rather than resolved silently.
 
 ## Local and shared module stores
 
 A compiled module can reach a consumer through three routes (Figure <a href="#fig:architecture" data-reference-type="ref" data-reference="fig:architecture">2</a>): local installation into a Just-DNA-Lite checkout for testing with a VCF, publication to the staging registry (the polygon, `target=test`) for a deletable rehearsal, or publication to the immutable production catalog. The registry runs its own enrichment and strict compilation on publish, so the stored artifact is the one the server produced, not a locally claimed digest. Inclusion in either catalog distributes a module; it is not scientific review, clinical validation, or endorsement.
 
+## Evaluation dimensions
+
+Three dimensions are relevant for evaluating AI-authored modules against expert-curated ground truth: variant recall (which rsID–genotype pairs were recovered), citation identity (whether each PMID names the intended paper, not merely exists), and weight-sign agreement (whether the effect direction matches). The adjudicated set is not yet large enough for a performance claim; we report these dimensions as a framework for future evaluation.
+
 # Results
+
+The plugin can be installed from its GitHub repository in a single command (`/install-plugin` in Claude Code, or a repository URL in the Codex plugin marketplace). Once installed, the assistant gains access to 60 typed MCP tools (Appendix <a href="#app:tools" data-reference-type="ref" data-reference="app:tools">9</a>) and 20 skills—written workflow instructions that teach the assistant when to call which tool. In both Claude Code and Codex, skills marked as commands can be invoked directly by typing `/name` in the prompt.
+
+With the plugin active, the assistant calls typed tools instead of generating code (Figure <a href="#fig:conversation-to-module" data-reference-type="ref" data-reference="fig:conversation-to-module">1</a>): enrichment adds coordinates and derived sidecars, compilation validates against the live schema, and the compiled artifact can be published to the registry and immediately applied to a personal genome. The checks described in Section 3.3 catch citation misattributions, identifier drift, and schema violations in practice—a measurement across 33 upstream `studies.csv` files (44,342 rows) found 3,668 rows where the `provenance_quote` was the article’s title, a passage that always matches its own full text and evidences nothing.
+
+## Command menu
+
+Seven of the 20 skills are user-invocable commands, exposing the workflow through intentions rather than internal stages. The remaining thirteen are guides loaded automatically by a router when the assistant reaches the corresponding lifecycle stage.
+
+<div class="center">
+
+| Command | Purpose |
+|:---|:---|
+| `/create-module` | begin or continue creating a module |
+| `/module-status` | inspect a directory and identify the next decision |
+| `/module-revise` | begin another pass over an existing module |
+| `/find-evidence` | find and read evidence for a row |
+| `/module-publish` | rehearse and then publish |
+| `/module-symptom` | explain a message from the toolchain |
+| `/module-install-local` | install a compiled module without a catalog |
+
+</div>
 
 ## Production catalog
 
@@ -160,21 +170,7 @@ Modules published to the production registry as of August 2026. All modules targ
 
 </div>
 
-The modules span three independent namespaces from three owners. The largest module (`risk_impulsivity_snps`, 474 variants across 325 genes) and the smallest (`lactose_tolerance`, 2 variants in 1 gene) both compiled with strict resolution and fully resolved coordinates. The `big_five_personality_snps` module went through four published versions, illustrating the revision workflow: extraction, schema completion, score references, and weight correction.
-
-AI-authored modules are identified in their manifest authorship records. Three modules were authored by people who are not the plugin’s developers, indicating that the tool surface is usable beyond the original team.
-
-## Evaluation protocol
-
-The creation evaluation begins with an expert-checked fixture. Each fixture contains a free-text prompt and the `module_spec.yaml`, `variants.csv`, and `studies.csv` that the assistant should recover. The generated module is compared with the fixture on three questions:
-
-- Variant recall is the fraction of ground-truth $`(\textit{rsID},\textit{genotype})`$ rows present in the generated module.
-
-- Citation identity requires every cited PMID to exist and to name the paper indicated by the title returned during search. Existence alone is insufficient.
-
-- Weight-sign accuracy measures whether the generated effect direction agrees with the fixture. Magnitude is reported separately because a module weight is an authored choice and is not copied from a GWAS beta.
-
-A larger adjudicated set and repeated runs are needed to support a performance claim. We therefore report no recall or precision estimate in this paper and present the protocol as a framework for future evaluation.
+The modules span three namespaces from three owners; three were authored by people outside the development team. Module sizes range from 2 to 474 variants. Four versions of `big_five_personality_snps` show that iterative revision works in practice. Two modules on the same trait (`placebo_response` via Codex, `placebo_response_claude` via Claude Code) were created by the same author to compare the two assistants; both compiled against the same schema and are published side by side.
 
 # Discussion
 
@@ -204,44 +200,208 @@ The software is open-source and intended for research use only.
 
 - The production catalog and staging polygon are live at URLs provided in the anonymized repositories.
 
+# Appendix
+
 # Research use only
 
 Annotation modules summarize published association findings. They are not clinical-grade evidence. The authoring plugin does not make individual-level predictions and does not open a genome. Just-DNA-Lite and `just-prs` process sample data for research and educational use; their reports and scores are not diagnoses or medical advice. Language that implies causation, such as “causes” or “guarantees,” is outside the scope of a module written with this plugin.
 
-# Tools and command menu
+# Plugin surface: tools and skills
 
-## Command menu reduction
+A Claude Code or Codex plugin is a bundle of two kinds of asset. **MCP tools** are typed operations the assistant can call—each has a name, typed inputs, and a structured return value. **Skills** are written instructions loaded into the assistant’s context on demand; they teach the workflow that the tools serve, including when to call which tool and what to do with the result. Together, 60 tools and 20 skills make up the `just-module-creator` plugin surface.
 
-The command redesign reduced prompt content by 76% (from twenty entries to seven) while keeping every guide reachable through routing.
+## Tools (60)
 
-## The title-as-quote observation
+The tools are organized into a core set (always listed) and nine optional groups that a session can reveal incrementally via `toolbox`. Table <a href="#tab:tools-core" data-reference-type="ref" data-reference="tab:tools-core">4</a> lists the 18 core and meta tools; Tables <a href="#tab:tools-evidence" data-reference-type="ref" data-reference="tab:tools-evidence">5</a>–<a href="#tab:tools-closing" data-reference-type="ref" data-reference="tab:tools-closing">13</a> list the nine groups. Registry writes require a token obtained through `authenticate`. Literature and enrichment requests share a single pacing gate, including the NCBI budget.
 
-A measurement across 33 `studies.csv` files (44,342 rows) in the upstream repository found that 3,668 rows carried a `provenance_quote` that was the article’s title verbatim. Since a title always appears in its own full text, the quote-verification check matched on all 3,668 rows while evidencing nothing about whether anyone located support for the row’s claim. This observation led to the attribution requirement described in Section 3.3: a quote must name who located it in `StudyRow.curator` so that a reviewer can distinguish a machine-located passage from a human-read one.
+<div id="tab:tools-core">
 
-## Tools available to the assistant
-
-The MCP tools are grouped by task: authoring, research, checks, enrichment, comparison, and registry work. The listing can be narrowed so the agent sees only the groups relevant to its current stage. Registry writes require a token.
-
-Literature and enrichment requests share a pacing gate, including the NCBI budget used by several lookups. The literature search fills a gap left by the enricher. The enricher can verify a PMID that an author already has, but it does not search for the paper. `literature_search` returns titles so the assistant can check identity. The existence of a PMID alone says nothing about whether it is the intended article. Supplementary-table retrieval extends the evidence path: the assistant can fetch, list, and inspect supplementary files attached to a cited paper, reaching the per-variant rows that GWAS main texts typically defer to their supplements.
-
-## How a person enters the workflow
-
-A person usually knows what they want to accomplish, not which internal stage performs it. They may want to create a module, understand an inherited directory, find a paper, revise a published module, or decode an error message. The command menu uses those intentions as its entries.
-
-<div class="center">
-
-| Command | Purpose |
+| Tool | Purpose |
 |:---|:---|
-| `/create-module` | begin or continue creating a module |
-| `/module-status` | inspect a directory and identify the next decision |
-| `/module-revise` | begin another pass over an existing module |
-| `/find-evidence` | find and read evidence for a row |
-| `/module-publish` | rehearse and then publish |
-| `/module-symptom` | explain a message from the toolchain |
-| `/module-install-local` | install a compiled module without a catalog |
+| `list_tables` | List authorable table kinds and what each row represents |
+| `describe_table` | Describe one table kind: every column, type, vocabulary, and pick-list |
+| `table_requirements` | The three shapes of requiredness for a table kind |
+| `describe_machine_table` | Describe a machine-written sidecar: columns, types, vocabulary |
+| `get_template` | Get a CSV template (header only, or header plus stub rows) |
+| `scaffold_module` | Create `module_spec.yaml` plus stub CSVs; never overwrites |
+| `lint_rows` | Lint CSV text against a table kind (writes nothing) |
+| `validate_module` | Pre-flight a spec directory (writes nothing) |
+| `compile_module` | Compile a spec directory into Parquet plus `manifest.json` |
+| `draft_from_clinvar` | Draft `variants.csv` and `studies.csv` from ClinVar |
+| `enrich_module` | Resolve rsIDs to coordinates and mint VRS identifiers |
+| `literature_search` | Find papers behind a row; confirm a PMID names the intended paper |
+| `lookup_citation` | Check a PMID or DOI and read back which paper it names |
+| `lookup_variant` | Look up one variant: loci, alleles, ClinVar calls, rsID currency |
+| `record_override` | Log that an authored value deliberately outranks a source |
+| `registry_register` | Create a registry account and mint its API key |
+| `authenticate` | Provide a registry token to unlock write tools for this session |
+| `toolbox` | List optional tool groups and reveal them to the session |
+
+Core tools (always listed) and the meta-tool.
 
 </div>
 
-The first version of the menu exposed twenty stage names. That forced a person to choose between terms such as `module-curate` and `module-enrich` before the system had explained either one. The seven commands now route to thirteen guides. A guide contains the procedure for one stage and is loaded by path when the assistant reaches that stage.
+<div id="tab:tools-evidence">
 
-`/create-module` is therefore a router. It examines what the author has already provided and selects the next stage. If the request shows that the person first needs an explanation, the router loads the overview guide. The overview is not a menu command because a new author would not know its internal name.
+| Tool | Purpose |
+|:---|:---|
+| `lookup_open_access` | Where a paper may legally be read, and on what terms |
+| `fetch_fulltext` | Retrieve a paper’s text so the assistant can read and quote it |
+| `paper_citations` | Papers that cite this one, or the papers it cites |
+| `list_supplementary` | Inventory the supplementary files attached to a paper |
+| `fetch_supplementary` | Download one supplementary file to the cache |
+| `describe_supplementary` | Sheets in a downloaded workbook and their column names |
+
+Evidence group: read a paper, its citations, and its supplementary tables.
+
+</div>
+
+<div id="tab:tools-identifiers">
+
+| Tool | Purpose |
+|:---|:---|
+| `check_identifiers` | Check every gene symbol (HGNC) and trait CURIE (OLS4) in a spec |
+| `lookup_identifier` | Check one gene symbol or trait CURIE |
+
+Identifiers group: check gene symbols and ontology CURIEs.
+
+</div>
+
+<div id="tab:tools-pgx">
+
+| Tool | Purpose |
+|:---|:---|
+| `draft_from_cpic` | Draft haplotypes, allele function, and diplotypes from CPIC |
+| `draft_from_clinpgx` | Draft `pharm_variants.csv` from a ClinPGx snapshot |
+
+Pharmacogenomics (PGx) group: draft from curated PGx sources.
+
+</div>
+
+<div id="tab:tools-passes">
+
+| Tool | Purpose |
+|:---|:---|
+| `enrich_facts` | Fill frequency, constraint, and dosage sidecars |
+| `enrich_literature_pass` | Resolve every citation in `studies.csv` into `literature.csv` |
+| `enrich_gwas_effects` | Record the GWAS Catalog’s published effect sizes for the module’s rsIDs |
+| `refresh_sidecar` | Re-derive one sidecar against its source, keeping curated rows |
+
+Passes group: fill or re-derive machine-written sidecars.
+
+</div>
+
+<div id="tab:tools-review">
+
+| Tool | Purpose |
+|:---|:---|
+| `audit_module` | Ask what a curation pass would ask (offline, reads only) |
+| `review_queue` | Rank the rows where somebody overruled a source |
+| `review_logs` | Show what is in the module’s logs (publishing them is permanent) |
+| `study_facts` | Per-study facts the GWAS pass wrote into `gwas_effects.csv` |
+
+Review group: read a module back and surface decisions.
+
+</div>
+
+<div id="tab:tools-integrity">
+
+| Tool | Purpose |
+|:---|:---|
+| `compare_modules` | What moved between two spec directories (offline) |
+| `compare_to_published` | Is local data ahead of the catalog, and how? |
+| `module_signature` | Content signature of raw authored data (no compile, no network) |
+| `verify_artifact` | Re-hash every file in a compiled artifact and recompute the digest |
+| `reverse_module` | Turn a compiled artifact back into an authored spec directory |
+
+Integrity group: compare, sign, verify, and reverse modules.
+
+</div>
+
+<div id="tab:tools-catalog">
+
+| Tool | Purpose |
+|:---|:---|
+| `registry_search` | Search published modules (read-only, no token) |
+| `registry_get_module` | Fetch one module’s full record: card, readme, versions, manifest |
+| `registry_health` | Is this registry instance up, and which instance is it? |
+| `registry_is_published` | Has this authored data been published under any name? |
+| `registry_namespace_available` | Check whether a namespace is legal and unclaimed |
+| `registry_download` | Download and integrity-verify a published module version |
+
+Catalog group: read the registry.
+
+</div>
+
+<div id="tab:tools-publish">
+
+| Tool | Purpose |
+|:---|:---|
+| `registry_whoami` | Confirm the token is accepted and report the account |
+| `registry_validate` | Validate a spec on the registry without publishing |
+| `registry_check` | Full publish dry run: validation plus network checks |
+| `registry_publish` | Publish a spec directory as a module version |
+| `registry_amend_readme` | Replace a published version’s readme (no version bump) |
+| `registry_claim_namespace` | Claim a publishing namespace (irreversible on production) |
+| `registry_yank` | Stop recommending a version (stays fetchable for pinned users) |
+| `registry_unyank` | Restore a yanked version to listings |
+| `registry_delete_version` | Hard-delete one rehearsed version from the polygon |
+| `registry_delete_module` | Hard-delete all rehearsed versions from the polygon |
+
+Publish group: write to the registry (token required).
+
+</div>
+
+<div id="tab:tools-closing">
+
+| Tool | Purpose |
+|:---|:---|
+| `close_module` | Declare authoring finished, bound to its authored bytes |
+| `describe_spec_file` | Describe `module_spec.yaml`: every key and block it carries |
+| `authoring_reference` | The complete generated description of the authoring DSL as JSON |
+
+Closing group: finish and describe.
+
+</div>
+
+## Skills (20)
+
+Skills are markdown documents loaded into the assistant’s context when needed. Seven are **commands**—user-invocable via `/name` in the assistant’s prompt—and thirteen are **guides** loaded automatically by a router when the assistant reaches the corresponding stage.
+
+<div id="tab:skills-commands">
+
+| Command | Purpose |
+|:---|:---|
+| `/create-module` | Router: begin or continue creating a module from any starting point |
+| `/module-status` | Inspect a directory and identify the next decision |
+| `/module-revise` | Begin another pass over an existing module |
+| `/find-evidence` | Find and read evidence for a row |
+| `/module-publish` | Rehearse on the polygon, then publish to the catalog |
+| `/module-symptom` | Explain a message from the toolchain |
+| `/module-install-local` | Install a compiled module into Just-DNA-Lite locally |
+
+User-invocable commands (7). Each is typed as `/name` in the assistant prompt.
+
+</div>
+
+<div id="tab:skills-guides">
+
+| Guide | Purpose |
+|:---|:---|
+| `module-101` | High-level map: what a module is, what the plugin can and cannot do |
+| `module-start` | Stage 0–1: triage, licence, the spec |
+| `module-draft` | Stage 2: draft rows from evidence or a provider |
+| `module-curate` | Stage 3: curate scientific decisions |
+| `module-enrich` | Stage 4: enrich with coordinates, identifiers, and sidecars |
+| `module-check` | Stage 5: cross-check against reference databases |
+| `module-compile` | Stage 6: validate and compile to Parquet |
+| `module-close` | Stage 6b: declare authoring finished and bind to authored bytes |
+| `module-refresh` | Re-run anything that already ran |
+| `module-diff` | What moved, and the reading that means a source changed its answer |
+| `module-tables` | Which table kind, where every file sits, the three on-disk shapes |
+| `module-weights` | The weight column everyone fills and nobody declares |
+| `module-consumer` | The annotation consumer’s side of the seam |
+
+Guides (13). Each is loaded by a router or a preceding skill rather than invoked by the user directly.
+
+</div>
