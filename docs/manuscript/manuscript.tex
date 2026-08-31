@@ -386,28 +386,22 @@ the boundary between them.
   \node[lbl, left=0.1cm of sources, anchor=east] {\textbf{Knowledge}};
   \node[lbl, left=0.1cm of vcf, anchor=east] {\textbf{Sample}};
 \end{tikzpicture}
-\caption{The two paths of the Just-DNA ecosystem. The knowledge path
-produces a compiled module; the sample path joins selected modules with a
-local genome via Parquet-to-Parquet joins in DuckDB.}
+\caption{The two paths of the Just-DNA ecosystem.}
 \label{fig:architecture}
 \end{figure}
 
-On the sample path, Just-DNA-Lite converts VCF input to Parquet and joins it
-with compiled modules using DuckDB, producing annotated reports and enriched
-data that the user can filter. A whole-genome VCF is annotated in under
+On the sample path (Figure~\ref{fig:architecture}), Just-DNA-Lite converts VCF
+input to Parquet and joins it with compiled modules using DuckDB, producing
+annotated reports and enriched data that the user can filter. A whole-genome VCF is annotated in under
 40~seconds; the companion paper~\citep{companion2026justdnalite} describes the
 sample path and polygenic risk score computation in detail.
 
-Within \texttt{just-module-creator}, the language model participates only in the
-knowledge path. It can search and read sources, draft module rows, and help
-review disagreements. VCF filtering, module joins, and polygenic scoring
-remain ordinary software steps with explicit inputs and repeatable code.
+Within \texttt{just-module-creator} the language model participates only in the
+knowledge path: it searches, reads and drafts. VCF filtering, module joins and
+polygenic scoring remain ordinary software steps with explicit inputs and
+repeatable code.
 
-Dependencies point inward: enricher $\rightarrow$ compiler $\rightarrow$
-format. Table~\ref{tab:packages} lists each component's responsibility and
-boundary. \texttt{just-module-creator} is the agent-facing authoring entry
-point examined in this paper, distributed as a plugin for Claude Code and
-Codex.
+Table~\ref{tab:packages} lists each component's responsibility and boundary.
 
 \begin{table}[ht]
 \centering
@@ -435,23 +429,18 @@ signature~\citep{justdnaformat2026}. What it does not establish is whether the
 authored claims agree with the literature. A false association in valid syntax
 compiles perfectly. Three properties keep the evidence chain auditable.
 
-First, authored values and their checks are kept independent. The workflow
-does not fill a value from the source that will later check it, because such
-a check compares the source with itself. The design test is: \emph{could this
-check have failed?} If not, it measured nothing
-(Section~\ref{sec:checks}).
+First, authored values and their checks are kept independent: a value filled
+from the source that will later check it makes the check compare the source
+with itself. The design test is: \emph{could this check have failed?} If not,
+it measured nothing (Section~\ref{sec:checks}).
 
 Second, disagreements with reference archives are preserved rather than
 silently resolved. ClinVar may lag a retraction; when the authored value
 should remain, \texttt{record\_override} logs the difference and the reason.
 
-Third, unknown results are distinguished from clean ones. Every check in the
-ecosystem has three possible answers rather than two: it passed, it failed, or
-it never ran. The third is recorded as a null, and a null is not a \emph{no}.
-Reading it as one reports a failure nobody observed; reading it as a pass
-reports a check nobody performed. A source that timed out leaves exactly this
-null, so the module says the question was never put rather than answering it.
-The identifier check writes an attestation to \texttt{verification.json} so a
+Third, a check has three answers, not two: it passed, it failed, or it never
+ran. The third is recorded as a null, and a null is not a \emph{no}. The
+identifier check writes an attestation to \texttt{verification.json} so a
 reviewer can tell an empty report from one with no findings.
 
 The assistant may locate a verbatim \texttt{provenance\_quote} from retrieved
@@ -677,14 +666,14 @@ paper~\citep{companion2026justdnalite}.
 \section{Conclusion}
 % ================================================================
 
-People are already using AI assistants to interpret genomic data, and the volume
-of such use will only grow. The Just-DNA ecosystem channels that work into
-versioned, schema-validated modules that accumulate as shared infrastructure
-rather than evaporating with each chat session. The registry makes genomic
-annotation knowledge composable: an author publishes once, and others install,
-extend, and build on the result. Eight modules from five independent namespaces
-show that the path from first draft to published, reusable annotation is
-functional today.
+Annotation knowledge that lives in a chat session dies with it. The Just-DNA
+ecosystem gives an AI assistant a different job---producing a versioned,
+schema-validated module instead of a script---so the work survives review,
+correction and reuse by someone else. What makes that more than a file format
+is the seam: authored claims stay separable from derived records, a check that
+could not run says so, and every published module carries the evidence for its
+own rows. Eight modules from five namespaces, three from authors outside the
+development team, show the path is functional today.
 
 The software is open-source and intended for research use only.
 
