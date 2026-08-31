@@ -265,7 +265,7 @@ Ordered by how likely a first-timer is to hit them.
 
 - **`just-prs` — nothing.** Grepping the whole repo for `pgs.csv`, `pgs.parquet`, `PgsRow`, `just_dna`,
   `match_rate_floor`, `research_tier`, `training_ancestry` yields only the HuggingFace dataset paths
-  `just-dna-seq/pgs-catalog` and `just-dna-seq/prs-percentiles` (e.g. `just-prs/AGENTS.md:73`,
+  `anon-org/pgs-catalog` and `anon-org/prs-percentiles` (e.g. `just-prs/AGENTS.md:73`,
   `docs/DAGSTER.md:60`) — an org name that looks like a hit and is not one. There is no module reader,
   no manifest reader, no just-dna dependency.
 - **`just-prs-mcp` — nothing.** Same grep; the only `match_rate` hits are its own computed results.

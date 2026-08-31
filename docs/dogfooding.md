@@ -732,7 +732,7 @@ an advisory lock over the read-modify-write window, which is the whole run.
 
 `compare_to_published`, `registry_is_published` and `registry_search` all answer about the
 module registry. Six of `just-dna-lite`'s modules have been published for months on
-HuggingFace at `just-dna-seq/annotators`, where each carries a `manifest.json` today, and
+HuggingFace at `anon-org/annotators`, where each carries a `manifest.json` today, and
 that is where that repo's discovery tier actually reads modules from.
 `registry_is_published` returns `free_to_publish: true` for them. That verdict is true
 about the registry and **false about the world**, so for every module in that repo the

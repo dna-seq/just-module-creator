@@ -37,8 +37,8 @@ Or for a single session, straight from a checkout: `claude --plugin-dir /path/to
 Add the DNA Seq marketplace, install the plugin, then start a new task:
 
 ```bash
-codex plugin marketplace add dna-seq/dna-seq-claude-marketplace
-codex plugin add just-module-creator@dna-seq
+codex plugin marketplace add anon-org/anon-marketplace
+codex plugin add just-module-creator@anon-org
 ```
 
 Every skill appears in Codex's skill picker, and every skill is invocable as a slash command by its own name.
@@ -57,7 +57,7 @@ three seconds, because the environment is warm.
 Warm it yourself right after installing or upgrading and it never happens:
 
 ```bash
-uv sync --project ~/.claude/plugins/cache/dna-seq/just-module-creator/<version>
+uv sync --project ~/.claude/plugins/cache/anon-org/just-module-creator/<version>
 ```
 
 If you would rather raise the limit, `MCP_TIMEOUT` is read from **Claude Code's own environment**, not

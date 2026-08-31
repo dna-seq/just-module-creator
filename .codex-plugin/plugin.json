@@ -3,11 +3,11 @@
   "version": "0.27.0",
   "description": "Author, validate, compile, and publish research-use just-dna annotation modules with schema-aware tools and literature search.",
   "author": {
-    "name": "DNA Seq",
-    "url": "https://github.com/dna-seq"
+    "name": "Anon Org",
+    "url": "https://anonymous.4open.science/r/just-module-creator"
   },
-  "homepage": "https://github.com/dna-seq/just-module-creator",
-  "repository": "https://github.com/dna-seq/just-module-creator",
+  "homepage": "https://anonymous.4open.science/r/just-module-creator",
+  "repository": "https://anonymous.4open.science/r/just-module-creator",
   "license": "MIT",
   "keywords": [
     "genomics",
@@ -38,13 +38,13 @@
     "displayName": "just-dna Module Creator",
     "shortDescription": "Author evidence-backed just-dna modules",
     "longDescription": "Scaffold, research, validate, compile, and publish research-use just-dna annotation modules with live schema guidance and literature search.",
-    "developerName": "DNA Seq",
+    "developerName": "Anon Org",
     "category": "Research",
     "capabilities": [
       "Research",
       "Write"
     ],
-    "websiteURL": "https://github.com/dna-seq/just-module-creator",
+    "websiteURL": "https://anonymous.4open.science/r/just-module-creator",
     "brandColor": "#6435C9",
     "defaultPrompt": [
       "Create a just-dna annotation module from these sources.",

@@ -144,7 +144,7 @@ appears twice, byte-identical).
 
 The nine hand-drawn ones are not samples — they are exactly the nine logos that were published, byte
 for byte: their sha256s match `manifest.logo.sha256` in
-`/data/sources/just-dna-registry/data/mirror/just-dna-seq/*/‹version›/manifest.json` (e.g. cardio
+`/data/sources/just-dna-registry/data/mirror/anon-org/*/‹version›/manifest.json` (e.g. cardio
 `sha256:3ed8ec7ee29d…`, vo2max `sha256:4daacafff694…`). That mirror is a 2026-08-08 pull of the old
 0.9.1 deployment; those nine modules are **not** on the live registry today.
 
@@ -377,7 +377,7 @@ both live instances (`registry 0.18.2 / format 0.6.1 / compiler 0.6.1`): product
 `logo_url: null`. The polygon holds 0 modules. None of the 16 reference examples in
 `just-dna-format/reference_examples/` contains any image file, and neither does
 `just-module-creator/assets/`. The only modules that ever shipped a logo are the nine
-`just-dna-seq/*` in the 2026-08-08 registry mirror, which were never republished.
+`anon-org/*` in the 2026-08-08 registry mirror, which were never republished.
 
 ## Blanks for just-dna-lite
 

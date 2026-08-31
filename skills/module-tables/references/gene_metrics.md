@@ -324,7 +324,7 @@ same gene, same MANE transcript (ENRICHER.md:1029-1037; re-measured from the loc
 
 **Which route a plain run takes today (2026-08-19, enricher 0.6.4):** the **v4.1 snapshot**.
 `resolve_constraint_reference(None)` finds `~/.cache/just-dna-pipelines/gnomad_constraint`, and on a
-fresh cache `download.ensure_constraint_snapshot` pulls `just-dna-seq/gnomad_constraint` from
+fresh cache `download.ensure_constraint_snapshot` pulls `anon-org/gnomad_constraint` from
 HuggingFace — probed live, HTTP 200, one 866 KB parquet plus `release.json`. The v2.1.1 path is
 reached only when HF is unreachable (best-effort, logs *"snapshot provisioning failed … continuing
 with the live API, which serves v2.1.1 rather than v4.1"*) or per-gene as above. Note the local
