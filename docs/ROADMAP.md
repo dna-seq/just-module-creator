@@ -271,7 +271,7 @@ grading recommendations; and `S52`'s answer decides whether a severity change fo
 > **finding about us**, not about the module — the enricher already fetches ancestry and nothing here
 > surfaces it. Tracked as `RM22`.
 
-Carried out of `docs/HANDOFF-antonkulaga-quotes.md` before that file was deleted. **A published version
+Carried out of `docs/HANDOFF-author-quotes.md` before that file was deleted. **A published version
 is immutable, so none of this is a repair** — each item is a decision about what a *next* version says,
 or about whether one is worth cutting at all. Nothing below was touched.
 

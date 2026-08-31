@@ -1,6 +1,6 @@
 # The four published modules: what is left to decide
 
-For Anton Kulaga. Written 2026-08-20.
+For the module author. Written 2026-08-20.
 
 `aggression_anger_snps`, `big_five_personality_snps`, `cognitive_intelligence` and
 `risk_impulsivity_snps` were read closely while the plugin's own attestation rules were being

@@ -5,7 +5,7 @@ description = "MCP server and skills for authoring and publishing just-dna annot
 readme = "README.md"
 requires-python = ">=3.13"
 license = { file = "LICENSE" }
-authors = [{ name = "winternewt", email = "anton.kulaga@uni-rostock.de" }]
+authors = [{ name = "anonymous" }]
 keywords = ["mcp", "fastmcp", "just-dna", "genomics", "annotation", "agent", "llm"]
 
 dependencies = [

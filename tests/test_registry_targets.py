@@ -193,7 +193,7 @@ def test_the_unauthenticated_message_names_the_instance_and_its_variable():
     [
         ({"namespace": "test-modules"}, True),
         ({"name": "test_panel"}, True),
-        ({"namespace": "eric-mods", "name": "lactose_tolerance"}, False),
+        ({"namespace": "author-b", "name": "lactose_tolerance"}, False),
         # The hyphen/underscore split is upstream's, not a normalisation we may
         # apply: a module named `test-panel` is refused as an illegal name long
         # before anything asks whether it is test data.
@@ -206,10 +206,10 @@ def test_production_refuses_test_data_by_its_own_spelling(kwargs, expected):
 
 
 def test_an_unprefixed_polygon_rehearsal_is_advised_not_refused():
-    note = polygon_naming_note("test", namespace="eric-mods", name="lactose_tolerance")
+    note = polygon_naming_note("test", namespace="author-b", name="lactose_tolerance")
     assert note is not None and "purge-test-data" in note
     assert polygon_naming_note("test", namespace="test-mods", name="test_lactose") is None
-    assert polygon_naming_note("prod", namespace="eric-mods") is None
+    assert polygon_naming_note("prod", namespace="author-b") is None
 
 
 # --------------------------------------------------------------------------- #
@@ -292,9 +292,9 @@ async def test_the_delete_verbs_refuse_production_before_sending_anything(make_c
         for tool, args in (
             (
                 "registry_delete_version",
-                {"namespace": "eric-mods", "name": "lactose_tolerance", "version": "1.0.0"},
+                {"namespace": "author-b", "name": "lactose_tolerance", "version": "1.0.0"},
             ),
-            ("registry_delete_module", {"namespace": "eric-mods", "name": "lactose_tolerance"}),
+            ("registry_delete_module", {"namespace": "author-b", "name": "lactose_tolerance"}),
         ):
             result = await client.call_tool(tool, {**args, "target": "prod"})
             payload = result.structured_content or {}
@@ -629,7 +629,7 @@ def test_a_card_carries_the_gene_count_that_says_its_gene_list_is_a_sample() -> 
 
     card = _module_card(
         {
-            "namespace": "antonkulaga",
+            "namespace": "author-a",
             "name": "aggression_anger_snps",
             "version": "2.1.0",
             "genes": ["ALCAM", "ARL17B", "ARPP21"],
@@ -709,11 +709,11 @@ async def test_group_and_namespace_reach_the_registry_query(make_client, monkeyp
     async with make_client(settings=settings) as client:
         await client.call_tool(
             "registry_search",
-            {"target": "test", "group": "test", "namespace": "test-sheep"},
+            {"target": "test", "group": "test", "namespace": "test-ns"},
         )
 
     assert stub.seen.get("group") == "test"
-    assert stub.seen.get("namespace") == "test-sheep"
+    assert stub.seen.get("namespace") == "test-ns"
 
 
 async def test_an_unfiltered_zero_says_which_namespaces_it_left_out(make_client, monkeypatch):
@@ -749,7 +749,7 @@ def test_a_scoped_zero_is_not_blamed_on_the_default_exclusion() -> None:
     from just_module_creator.tools.research import _search_next_step
 
     unfiltered = _search_next_step(total=0, group=None, namespace=None)
-    scoped = _search_next_step(total=0, group=None, namespace="test-sheep")
+    scoped = _search_next_step(total=0, group=None, namespace="test-ns")
     grouped = _search_next_step(total=0, group="test", namespace=None)
 
     assert 'group="test"' in unfiltered

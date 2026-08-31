@@ -1,8 +1,8 @@
 [
   {
     "target": "test",
-    "canonical_id": "test-sheep/fto_bmi@1.0.0",
-    "namespace": "test-sheep",
+    "canonical_id": "test-ns/fto_bmi@1.0.0",
+    "namespace": "test-ns",
     "name": "fto_bmi",
     "version": "1.0.0",
     "owner": null,

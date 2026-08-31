@@ -774,7 +774,7 @@ The "no mitigation is possible" below was true when written and is now false: se
 `ModuleDetail.readme` is declared, stored with a `''` default, and returned by
 `services/catalog.py` — and `grep -rn 'readme=' --include=*.py` over `just_dna_registry/` finds
 exactly one hit, which is that read. There is no writer. Every card is blank, including
-production's `eric-mods/lactose_tolerance@1.0.0`.
+production's `author-b/lactose_tolerance@1.0.0`.
 
 **Why we cannot mitigate it.** `client.gather_spec_files` already uploads `.md` (it skips only
 `*.parquet` and `manifest.json`), so `README.md` reaches the server and lands nowhere. There is no
@@ -1083,7 +1083,7 @@ gets wrong: length cannot separate a 17-word title from a 17-word sentence.
 
 Measured across every `studies.csv` in `../just-dna-format` (33 files, 44342 rows) while auditing our
 own `S11`. The ten `reference_examples/` do not carry `provenance_quote` at all. The four
-`data/output/corrected_modules/` — the published `antonkulaga/*` modules — carry one on **every** row,
+`data/output/corrected_modules/` — the published `author-a/*` modules — carry one on **every** row,
 3668 of 3668, and in all four there is **exactly one distinct quote per PMID** (81 PMIDs, 7–17 words).
 It is the article title, verbatim: `pmid 24489884` carries *"Genome-wide association study of proneness
 to anger."*, which is byte-for-byte what `lookup_citation` returns as `title`, trailing period included.
@@ -1145,7 +1145,7 @@ or a geneticist put it there.
 > **Measured correction, 2026-08-20 — "does not travel with the module" was wrong, and the truth is
 > more useful.** This entry said the record could only go to `logs/`, which does not travel. Both
 > halves are false. Verified by publishing a remediated module to the polygon and reading the
-> manifest back (`test-sheep/test_aggression_anger_snps@1.0.0`): **three** records survive a publish.
+> manifest back (`test-ns/test_aggression_anger_snps@1.0.0`): **three** records survive a publish.
 >
 > | Where | Grain | On the published manifest |
 > |---|---|---|
@@ -1205,7 +1205,7 @@ already-published module keeps reporting zero until somebody re-runs the pass.
 
 **The sharpest reproduction, on a module we published ourselves.** After remediating
 `big_five_personality`'s quotes we published to the polygon and read the manifest back
-(`test-sheep/test_big_five_personality_snps@1.0.0`, compiled by the registry's own server). It says
+(`test-ns/test_big_five_personality_snps@1.0.0`, compiled by the registry's own server). It says
 both of these, in one document:
 
 ```
@@ -1221,7 +1221,7 @@ sidecar's, and nothing looked at both. **Not filed upstream**, deliberately: `S5
 answered and fixed in tree by the time this was measured, and the process rule is that answered prose
 stays byte-for-byte. It is recorded here as the reproduction to point at if the fix ever regresses.
 
-Measured on the four published `antonkulaga/*` modules while remediating one of them:
+Measured on the four published `author-a/*` modules while remediating one of them:
 
 ```
 module                    studies rows   rows with a quote   lit rows   quotes_authored   quotes_found   quote_source
@@ -1347,7 +1347,7 @@ tells an author what `icon_set` accepts and says nothing about the field that be
 card's subtitle.
 
 Measured on the live production catalog: six of seven published `description`s run 25–79 words, two to
-five sentences, rendered whole. Only `eric-mods/lactose_tolerance` at 8 words is inside the readable
+five sentences, rendered whole. Only `author-b/lactose_tolerance` at 8 words is inside the readable
 band. Four of the five reference specs end with the byte-identical *"Curated from the GWAS Catalog
 (GRCh38), allele/strand-validated against dbSNP with a gnomAD r4 second witness."* — the field's one
 differentiating job spent on a sentence four cards share.

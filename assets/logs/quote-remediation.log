@@ -8,7 +8,7 @@ who                   claude-opus-5 (Claude Code agent), unattended
 role                  edited
 kind                  ai, agent
 human_confirmation    none — no human read any of these articles in this run
-source_module         antonkulaga/aggression_anger_snps 2.1.0 (production), read-only copy
+source_module         author-a/aggression_anger_snps 2.1.0 (production), read-only copy
 tooling               just-module-creator MCP: lookup_citation, lookup_open_access,
                       fetch_fulltext, describe_table, validate_module, enrich_module,
                       compile_module, registry_publish

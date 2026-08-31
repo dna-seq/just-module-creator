@@ -216,9 +216,91 @@ The paper's evaluation protocol is **Section 4.2**, not 4.4 — the numbering mo
 when two subsections went to the appendix. `docs/manuscript/reviewer.md:28` still
 carries the old pointer.
 
-Section 4.2 used to end *"We therefore report no recall or precision estimate in
-this paper and present the protocol as a framework for future evaluation."* It now
-describes the framework and shows it working, which is a **smaller** claim than
-that sentence promised and a defensible one: reviewer recommendation #6 asks for
-the protocol run and reported, and what is reported is that the instrument
-measures something, on prep runs, with the round still to come.
+| Fixture | Variants | Source | Notes |
+|---|---|---|---|
+| `lactose_tolerance` | 2 rsIDs | `author-b/lactose_tolerance@1.0.1` | Smallest published module. Download via `registry_download`. |
+| `aggression_anger` | 28 rsIDs | `author-a/aggression_anger_snps@2.0.0` | Medium, single-trait GWAS extraction. |
+| `big_five_personality` | 330 rsIDs | `author-a/big_five_personality_snps@2.1.0` | Largest. Good stress test for recall at scale. |
+
+### From ClawBio's AD ground truth (new)
+
+| Fixture | Variants | Source | Notes |
+|---|---|---|---|
+| `ad_bellenguez` | 10 lead SNPs, 34 genes | ClawBio `ad_ground_truth.json` | Needs conversion: ClawBio has gene-level ground truth; we need (rsID, genotype) rows. The 10 lead variants with coordinates are directly usable. |
+
+---
+
+## How a benchmark run works
+
+```
+1.  Pick a fixture (e.g. longevity_2026)
+2.  Read prompt.txt
+3.  Run /create-module with that prompt
+      (the agent calls scaffold, draft, curate, enrich, compile)
+4.  Collect the generated spec directory
+5.  Run ModuleScorer against the expected files
+6.  Record: variant_recall, variant_precision, variant_f1,
+            citation_accuracy, direction_accuracy,
+            tier_breakdown, time_seconds, tool_calls
+7.  Repeat N=3 times per fixture (to show variance across runs)
+```
+
+For the manuscript, even N=1 per fixture across the two existing assets
+(`fto_bmi`, `longevity_2026`) gives a concrete number where the paper currently
+says "we report no recall or precision estimate."
+
+---
+
+## What this addresses in the reviewer feedback
+
+| Reviewer point | What the benchmark provides |
+|---|---|
+| #2: "No creation evaluation was actually run" | Concrete numbers on variant recall, citation accuracy, direction agreement |
+| #6: "Run the proposed evaluation on at least the two named fixtures" | `fto_bmi` and `longevity_2026` are the two named fixtures |
+| #8: "Report token / cost / time per module" | The run logs tool calls and wall-clock time |
+| #9: "Build a proper evaluation set" | The fixture format scales to 5-10 traits |
+
+---
+
+## What this does NOT measure
+
+- **Biological correctness of conclusions.** The `conclusion` column is free text;
+  there is no automated judge for whether the interpretation is right. That
+  requires expert review.
+- **Comparison to PubMind-DB.** Reviewer point #7 asks for variant overlap with
+  PubMind. That is a separate analysis using their published database, not a
+  creation benchmark.
+- **Cross-model comparison.** The benchmark is model-agnostic in principle (any
+  MCP client could run the prompt and produce a module), but we would need to
+  wire the scorer to a non-Claude host to test that.
+- **User study metrics.** Task timing and error rate with human subjects is
+  Tier 3 in the reviewer recommendations and not part of this automated
+  benchmark.
+
+---
+
+## Implementation order
+
+1. **Define `ModuleScorer`** — the three `score_*` methods, taking CSV rows as
+   input. Pure Python, no network needed for axes 1 and 3. Test against the two
+   existing fixtures by comparing them with themselves (score = 1.0) and with
+   deliberate perturbations (dropped rows, flipped signs, wrong PMIDs).
+
+2. **Build `metadata.json` for `fto_bmi` and `longevity_2026`** — tier
+   assignments, decoy variants, and thresholds. The expected CSVs are the
+   existing `variants.csv` and `studies.csv` in `assets/`.
+
+3. **Write `prompt.txt` for each** — the bare instruction an agent would see,
+   with no rsID hints.
+
+4. **Run N=3 per fixture on Claude Opus** — record the outputs, score them, and
+   report the table. This is the minimum that fills the manuscript's gap.
+
+5. **Add 2-3 fixtures from published modules** — download from the registry,
+   build metadata, write prompts. This grows the N for the "proper evaluation
+   set" recommendation.
+
+6. **Adapt ClawBio's AD ground truth** — convert the 10 lead variants with
+   GRCh38 coordinates into expected `variants.csv` rows (3 genotypes each =
+   30 rows). Write a prompt about Alzheimer's GWAS. This is the cross-project
+   fixture.

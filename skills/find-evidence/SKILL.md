@@ -174,7 +174,7 @@ witness.
 The general signature, and it is worth checking your own work against: **one identical string
 across every row citing a PMID is not a located passage.** A real passage varies with the claim,
 because different rows cite the same paper for different findings. Measured on the four published
-`antonkulaga/*` modules — 3668 rows, 81 PMIDs, exactly one distinct quote per PMID, and every one of
+`author-a/*` modules — 3668 rows, 81 PMIDs, exactly one distinct quote per PMID, and every one of
 them the article's title verbatim (`F42` / upstream `S54`). That is what a rule against
 machine-located quotes produced when it met an author who needed the column filled.
 
@@ -316,7 +316,7 @@ every quote on it: **unchecked, not refuted**, and not a reason to delete them.
 
 **And do not read `quotes_authored` as a check on any of this.** It records what the literature pass
 saw *when it last ran*, and the sidecar is merge-not-clobber, so on a module whose quotes were
-authored after that run it stays at `0` — measured at `0` on all four published `antonkulaga/*`
+authored after that run it stays at `0` — measured at `0` on all four published `author-a/*`
 modules beside 3668 authored quotes, with the manifest summing the nulls into a confident zero (`F49`
 / upstream `S56`). Format 0.6.5 warns when the counter disagrees with `studies.csv`, naming both
 numbers, and publishes `quotes_unchecked` beside the other two so the zero is no longer confident —

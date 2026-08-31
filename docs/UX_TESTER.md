@@ -27,10 +27,10 @@ docstring or doc *promises* something the code does not do.
 
 ## Credentials — polygon: yes. Production: still none.
 
-**Changed 2026-08-11.** You now hold a **polygon** account: `sheep`, registered with the *existing*
+**Changed 2026-08-11.** You now hold a **polygon** account: `tester`, registered with the *existing*
 `JMC_INSTALL_ID` (the result reported `install_id_origin: "environment"`, so no new id was ground and
 the old one still identifies you), token saved in `.env` as `JMC_TEST_API_KEY`. The namespace
-**`test-sheep` is claimed.** Production is untouched — no account, no token, nothing claimed — and the
+**`test-ns` is claimed.** Production is untouched — no account, no token, nothing claimed — and the
 paragraphs below about it are all still current.
 
 State only. **How to obtain and save a token is the skill's job**, not this file's:
@@ -53,7 +53,7 @@ you are aiming at:
 | what it is | the catalog everyone installs from | the rehearsal instance |
 | `test-` names | `422 test_data_on_prod` | accepted |
 | deleting a bad publish | impossible | `registry_delete_version` |
-| token env var | `JMC_API_KEY` (**still cleared**) | `JMC_TEST_API_KEY` — **set 2026-08-11**, account `sheep` |
+| token env var | `JMC_API_KEY` (**still cleared**) | `JMC_TEST_API_KEY` — **set 2026-08-11**, account `tester` |
 
 **Rehearse on the polygon.** A production publish is immutable *and* claims its authored
 data by a content hash that `yank` does not release, so one botched publish burns the
@@ -102,7 +102,7 @@ the write-up.
 | F19 | `dogfooding.md` | Nine essentials tools missing → the stdio process was 3h older than HEAD. **Nothing on the surface reports the server's version**, so this was indistinguishable from "the skill documents a tool that does not exist" without `ps` + `git log` + a grep. Suggested fix: append the version to `server.INSTRUCTIONS`, not a `server_info` tool — instructions are always in context, a tool has to be called by someone who already suspects the problem. |
 | **S21** / F20 | **both halves shipped** → `previous_issues.md` | `sources.csv` is the one sidecar a human must hand-write; `list_tables` advertises it and `describe_table`/`get_template` reject the name, and `authoring_reference()` omits `SourceRow` entirely. Columns had to be read from `model_fields`. Two separate defects — fixing upstream will not fix ours. **Both done in 0.5.4**: `sources.csv` is in `DRAFTABLE` upstream, and our hardcoded sidecar literal is gone, which it had to be — with upstream's half alone it appeared as a table kind *and* as a do-not-hand-author sidecar. |
 | **S23** / F21 | **shipped in 0.5.4** → `previous_issues.md` | The `sources.csv` rule is **inverted**: the pubmed/europepmc rows draw *"declares 2 source(s) no table in this module uses"*, and deleting the file entirely warns about **nothing**. Compliance is warned, omission is silent — and the tidy fix is to delete provenance. **Inverted correctly in 0.5.4**, re-verified on the asset's real rows: compliance silent, omission warns. Skill text corrected. |
-| F22 | `dogfooding.md` | low. `published.json` — the receipt we tell the author to commit — records `owner: null`, though the claim and `registry_get_module` both know `sheep`. |
+| F22 | `dogfooding.md` | low. `published.json` — the receipt we tell the author to commit — records `owner: null`, though the claim and `registry_get_module` both know `tester`. |
 | **S22** | upstream | Longshot, filed at the user's direction as low priority: literature reports hg19, modules must be GRCh38, no supported path. Argued **out from under RM15** (that is `❌ — 1.0` and is about supporting another build; this is a one-way authoring-time conversion) and argued that **rsID recovery beats liftover** — liftover is only reachable when there is no rsID, i.e. exactly when its output cannot be cross-checked. |
 
 **What held up, and is not worth re-probing:** every refusal fired (`lookup_variant`'s withheld
@@ -144,7 +144,7 @@ Small, and each belongs to the second agent rather than upstream:
 ## In flight
 
 **`assets/fto_bmi/` — done through the rehearsal.** Authored, enriched, strict-compiled, and published
-to `test-sheep/fto_bmi@1.0.0` on the polygon; server-side recompile reproduced our digest. **Two things
+to `test-ns/fto_bmi@1.0.0` on the polygon; server-side recompile reproduced our digest. **Two things
 remain open on it:**
 
 1. **The production decision is the user's and has not been made.** They chose "polygon first, then
@@ -156,7 +156,7 @@ remain open on it:**
    committed `assets/fto_bmi/published.json` is therefore a *historical* receipt; its README says so, so
    nobody reads the 404 as a regression.
 
-The namespace `test-sheep` is left claimed — it *is* `test-`prefixed, so the operator's sweep collects
+The namespace `test-ns` is left claimed — it *is* `test-`prefixed, so the operator's sweep collects
 it, and there is no unclaim operation anyway.
 
 `assets/htt_cag_repeats/` — scaffolded, **not yet authored**. `module_spec.yaml` still

@@ -1067,7 +1067,7 @@ have been questions.
   real module would have had.
 
 - **"There is no restriction I'd say 5-15 words length is optimum otherwise it looks bloated."**
-  Said 2026-08-21 of `module.description`, after `antonkulaga/cognitive_intelligence`'s card ran to
+  Said 2026-08-21 of `module.description`, after `author-a/cognitive_intelligence`'s card ran to
   fourteen rows. The norm now lives in `skills/module-tables/references/module_spec.md` and is repeated
   at the one point an author meets the field, `scaffold_module`'s `next_step`. Two things make it worth
   keeping here rather than only there. **The user named the absence of a restriction and asked for a
@@ -1244,7 +1244,7 @@ have been questions.
   rather than trusting this list.
 - **We hold a POLYGON credential and no production one, as of 2026-08-12.**
   `JMC_TEST_API_KEY` is set in `.env` and `registry_whoami(target="test")` answers
-  **account `sheep`, namespace `test-sheep`** — so a polygon rehearsal needs no
+  **account `tester`, namespace `test-ns`** — so a polygon rehearsal needs no
   `registry_register` and no namespace claim. Production is still empty: the
   `test-creator` account and its `test-modules` namespace are **gone from
   production**, which now refuses `test-`prefixed data outright, and `JMC_API_KEY`
@@ -1257,16 +1257,16 @@ have been questions.
   `registry_health(target="prod")`, whose `catalog` block answers this in one call and is cheaper than
   a search. The polygon carries 9 modules / 13 versions / 4 namespaces. Both instances serve registry
   **0.18.2** and both confirm their own mode, so `mode_matches_target` is `True` on each. New since
-  2026-08-20: `antonkulaga/bodybuilding@1.0.0` and `ksuha-dna/placebo_response_claude@1.0.0` — the
+  2026-08-20: `author-a/bodybuilding@1.0.0` and `author-c/placebo_response_claude@1.0.0` — the
   second is a namespace that did not exist before, so the catalog is now taking modules from outside
   the two known authors. **This line said FIVE for a day, which is exactly what it warns about.**
-  Earlier measurement, 2026-08-20, kept because the four `antonkulaga/*` are still the worked
+  Earlier measurement, 2026-08-20, kept because the four `author-a/*` are still the worked
   examples: measured with `registry_search(target="prod")` — which took no `target` at the time and
   defaulted to prod; since 0.18.0 the argument is required and there is no default to fall back on.
-  Four are `antonkulaga/*` at `2.0.0`/`2.1.0` — `aggression_anger_snps` (28 variants),
+  Four are `author-a/*` at `2.0.0`/`2.1.0` — `aggression_anger_snps` (28 variants),
   `big_five_personality_snps` (330), `cognitive_intelligence` (32), `risk_impulsivity_snps` (474) —
-  and `eric-mods/lactose_tolerance` is now at **`1.0.1`**, not the `1.0.0` this file said until today.
-  The `antonkulaga` four are the published outputs of the four authoring transcripts, so they are the
+  and `author-b/lactose_tolerance` is now at **`1.0.1`**, not the `1.0.0` this file said until today.
+  The `author-a` four are the published outputs of the four authoring transcripts, so they are the
   worked examples of *what an outside driver actually ships*, and `lactose_tolerance` is still the
   smallest readable real spec. **This line goes stale the moment somebody publishes — re-run
   `registry_search(target="prod")` rather than quoting it**, which is exactly how it came to claim
@@ -1346,7 +1346,7 @@ have been questions.
 - **Both live registry instances now serve `format: 0.6.1` / `registry: 0.18.x`, verified 2026-08-19,
   and the 0.5.4 contract block is over.** The installed client is **0.18.2** as of 2026-08-20 — this
   line said 0.18.1 for a day. Every version-guarded call works again — a `download` of
-  `eric-mods/lactose_tolerance` returns its manifest where it 409'd a day earlier, and
+  `author-b/lactose_tolerance` returns its manifest where it 409'd a day earlier, and
   `assert_compatible()` passes on prod and polygon alike. `targets.instance_note` stays: it is a
   suffix on an existing `except RegistryError` arm, costs nothing while the contract agrees, and is
   there if an instance is rolled back. **Re-probe with `curl -s <url>/api/v1/version`, never assume** —
@@ -1428,7 +1428,7 @@ have been questions.
 - **The old no-machine-quote rule produced title-as-quote on 3668 published rows — measured 2026-08-20.**
   Across every `studies.csv` in `../just-dna-format` (33 files, 44342 rows): the ten
   `reference_examples/` do not carry the column at all, and the four `data/output/corrected_modules/`
-  — the published `antonkulaga/*` four — carry a `provenance_quote` on **every** row, 3668 of 3668.
+  — the published `author-a/*` four — carry a `provenance_quote` on **every** row, 3668 of 3668.
   Exactly **one distinct quote per PMID** in all four (81 PMIDs), 7–17 words, and it is the article
   **title** verbatim: `pmid 24489884` carries *"Genome-wide association study of proneness to anger."*
   and `lookup_citation` returns that same string as `title`, trailing period included. A title always
@@ -1451,13 +1451,13 @@ have been questions.
   failed on a non-matching path so the commit never executed, which was luck rather than safety. **Use
   absolute paths in git commands**, and remember every git grant is bounded to this repository.
 - **The polygon carries two remediated rehearsals from the 2026-08-20 quote work**:
-  `test-sheep/test_aggression_anger_snps@1.0.0` and `test-sheep/test_big_five_personality_snps@1.0.0`.
+  `test-ns/test_aggression_anger_snps@1.0.0` and `test-ns/test_big_five_personality_snps@1.0.0`.
   Both are `test-`prefixed on both halves, so `purge-test-data` will collect them; they are rehearsals
   of a remediation, not a correction of anything published. Both were published **knowingly carrying a
   stale `literature.csv`** — correcting it needed extended-tier tools at the time (`F47`; the tier went
   in 0.21.0, so `enrich_literature_pass` is simply there now), and a rehearsal that
   waited for that would have measured nothing. **Nothing in the four production
-  `antonkulaga/*` modules was touched** — a published version is immutable.
+  `author-a/*` modules was touched** — a published version is immutable.
 - **`logs/authoring.log` now has a writer, and it publishes.** `record_override` appends to it and every
   compile sweeps `logs/**.log` up with no opt-out. So never write an absolute path, a token or a
   transcript fragment into that file: it travels to the catalog verbatim.

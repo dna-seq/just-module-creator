@@ -29,7 +29,7 @@ on the only real published version chain it turns 990 changed rows into one line
 than the changelog the publisher wrote*.
 
 **The strongest argument for building is that the corpus already contains a change nobody recorded.**
-`antonkulaga/big_five_personality_snps` has four published versions. The prototype found that 1.0.1
+`author-a/big_five_personality_snps` has four published versions. The prototype found that 1.0.1
 rewrote `state` on all 990 variant rows while its changelog names three other columns, and that 2.0.0
 silently reverted that rewrite while its changelog says only "variant set unchanged from 1.0.0". Both
 facts are true, neither is written down anywhere, and both fall out of one command. That is the gap
@@ -118,7 +118,7 @@ inputs on disk, which is `registry_download`'s cost, so the result names the exa
 
 `registry_is_published` should be called first and often makes this unnecessary: it already answers
 "is my exact content published, under any name". Verified — `lookup_by_signature` on a local copy of
-2.1.0 returns `antonkulaga/big_five_personality_snps@2.1.0`, and on `hfe_hemochromatosis` returns
+2.1.0 returns `author-a/big_five_personality_snps@2.1.0`, and on `hfe_hemochromatosis` returns
 nothing.
 
 **Build `compare_modules` first.** It is useful alone; `compare_to_published` without it is a signature
@@ -578,7 +578,7 @@ zeros being unaffected.
 
 **The published version chain.** `client.versions`, then `client.manifest` per version, then
 `client.download(..., include_inputs=True, layout="flat")` per version, for
-`antonkulaga/big_five_personality_snps`.
+`author-a/big_five_personality_snps`.
 → four versions. 1.0.0 compiled by 0.5.4, the rest by 0.6.1. `content_signature`
 `83ee4657…` / `c197eaf2…` / `cc4b7fb2…` / `657aa303…`, all four **recomputing identically** with
 `compiler.content_signature` on the installed 0.6.1. `resolution_signature sha256:4d47d18f…`,

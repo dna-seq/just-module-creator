@@ -182,7 +182,7 @@ Ordered by how likely a first-timer is to hit them.
 1. **The article's own title passes every quote check there is.** A title occurs in its own
    fulltext, so `quote_matches` finds it, `quotes_found` counts it, and the module reports quote
    coverage over a string obtainable from `esummary` without retrieving a word of the article.
-   Measured across the four published `antonkulaga/*` modules: 3668 of 3668 rows carry a
+   Measured across the four published `author-a/*` modules: 3668 of 3668 rows carry a
    `provenance_quote`, 81 PMIDs, and there is **exactly one distinct quote per PMID** — the title,
    verbatim, trailing period included, byte-for-byte what `lookup_citation` returns as `title`
    (`F42` / upstream `S54`).

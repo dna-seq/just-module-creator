@@ -265,7 +265,7 @@ def test_a_contact_address_is_never_invented(monkeypatch) -> None:
         assert services.contact_email() == net.DEFAULT_CONTACT_EMAIL
         # Pinned as a literal on purpose: a derived default would pass an
         # equality-against-the-constant check while still being synthesised.
-        assert net.DEFAULT_CONTACT_EMAIL == "just.dna.seq@gmail.com"
+        assert net.DEFAULT_CONTACT_EMAIL == "contact@example.org"
     finally:
         services.close()
 

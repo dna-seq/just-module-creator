@@ -371,9 +371,9 @@ Registry side:
 
 **And the verdict on real modules: nothing published today has one.** *Measured 2026-08-19* against
 both live instances (`registry 0.18.2 / format 0.6.1 / compiler 0.6.1`): production
-(`module-registry.just-dna.life`) holds 5 modules — `antonkulaga/aggression_anger_snps`,
-`antonkulaga/big_five_personality_snps`, `antonkulaga/cognitive_intelligence`,
-`antonkulaga/risk_impulsivity_snps`, `eric-mods/lactose_tolerance` — and every one reports
+(`module-registry.just-dna.life`) holds 5 modules — `author-a/aggression_anger_snps`,
+`author-a/big_five_personality_snps`, `author-a/cognitive_intelligence`,
+`author-a/risk_impulsivity_snps`, `author-b/lactose_tolerance` — and every one reports
 `logo_url: null`. The polygon holds 0 modules. None of the 16 reference examples in
 `just-dna-format/reference_examples/` contains any image file, and neither does
 `just-module-creator/assets/`. The only modules that ever shipped a logo are the nine

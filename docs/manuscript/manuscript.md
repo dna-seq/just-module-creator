@@ -186,7 +186,7 @@ Genomic data is becoming personally accessible, and people already use AI assist
 
 The safety concern is real but cuts deeper than AI. Candidate-gene studies have failed to replicate , GWAS effect sizes routinely shrink in independent cohorts , direct-to-consumer tests have produced false-positive rates above 40% , and variant reclassifications have led to genetic misdiagnoses . The ecosystem is therefore explicitly research-only: a module that faithfully reflects a study which later fails to replicate is not wrong on its own terms, but a user acting on it may be harmed all the same.
 
-The registry turns individual effort into shared infrastructure, and the plugin’s MCP tools are listed on biocontext.ai so other agent platforms can use them independently. What travels through it is genomic-data-agnostic knowledge: a module carries no individual-level data.
+The registry turns individual effort into shared infrastructure: authors version, extend, correct, and republish modules—the pattern software engineering solved with package registries. The catalog already holds modules from independent authors, and the plugin’s MCP tools are listed on a public listing service so other agent platforms can use them independently. Modules contain no individual-level data; Just-DNA-Lite applies them locally, so a person’s VCF never leaves their machine and annotation runs raise no GDPR concerns. The knowledge travels through the registry; the genome does not.
 
 #### Limitations.
 

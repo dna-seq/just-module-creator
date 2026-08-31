@@ -154,7 +154,7 @@ omits them. `license:` is only checked against `licensing.csv` when that file ex
   `README.md`) and because it is the half that repeats. Four of the five reference specs end with the
   byte-identical *"Curated from the GWAS Catalog (GRCh38), allele/strand-validated against dbSNP with a
   gnomAD r4 second witness."* — fifteen words that make four cards look alike. The eight-word
-  `eric-mods/lactose_tolerance` is the calibration case *for*.
+  `author-b/lactose_tolerance` is the calibration case *for*.
 
   A long one is **not** a defect to repair: `description` sits inside the attestation binding, so
   editing it costs a version. On a module already published it is a line for the decision list, never a

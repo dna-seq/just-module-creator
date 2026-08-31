@@ -1258,7 +1258,7 @@ the reader to discount warnings.
 6:26090951 C>G, `rsid_state: live`. `lookup_identifier` reports `MCM6` approved and `FAM58A` **retired
 → CCNQ**, a real HGNC rename. Both registry instances answer, serve **0.18.2**, and confirm their own
 mode, so `mode_matches_target` is `True` rather than assumed; the polygon token resolves to account
-`sheep` / namespace `test-sheep`.
+`tester` / namespace `test-ns`.
 
 **Workspace fact corrected:** production holds **seven** modules, not five — `CLAUDE.md` said five for
 a day, which is precisely the staleness that line warns about. Two are new, and one is from a
@@ -1754,7 +1754,7 @@ the row's own claim, and **say who located it**.
 
 Measured what the prohibition actually produced, across every `studies.csv` upstream (33 files, 44342
 rows): the ten reference examples do not carry the column at all, and the four published
-`antonkulaga/*` modules carry a quote on **all 3668 rows** — with exactly **one distinct string per
+`author-a/*` modules carry a quote on **all 3668 rows** — with exactly **one distinct string per
 PMID** across 81 PMIDs, and that string is the article's **title**, verbatim from `esummary`. A title
 always appears in its own fulltext, so `quotes_found` matches every one and the modules report
 complete quote coverage while witnessing nothing. The refusal did not produce human-read quotes; it
@@ -1775,9 +1775,9 @@ does too.
 
 ### The remediation track: one module's quotes made honest, and four findings from doing it
 
-A dogfooding run took `antonkulaga/aggression_anger_snps` — one of the four modules `S54` measured —
+A dogfooding run took `author-a/aggression_anger_snps` — one of the four modules `S54` measured —
 and replaced its title-quotes with what the articles actually say, end to end through this surface,
-publishing to the polygon as `test-sheep/test_aggression_anger_snps@1.0.0`. Only `provenance_quote`
+publishing to the polygon as `test-ns/test_aggression_anger_snps@1.0.0`. Only `provenance_quote`
 was touched. The yield is **1 real quote from 69 rows**, and that is the honest number: 65 rows cite
 a paper whose text names none of their variants, because the associations live in its supplementary
 data, and 3 cite a paywalled paper whose abstract names no rsID. The three paywalled rows are named in
@@ -1810,7 +1810,7 @@ data, and 3 cite a paywalled paper whose abstract names no rsID. The three paywa
   a decision nobody has taken belongs where open work is listed.
 
 A second module, `big_five_personality`, was then remediated the same way and published as
-`test-sheep/test_big_five_personality_snps@1.0.0` — 859 rows, 21 quoted, 21 distinct strings. It is
+`test-ns/test_big_five_personality_snps@1.0.0` — 859 rows, 21 quoted, 21 distinct strings. It is
 where the interesting cases live, because `aggression_anger` is 1:1 variant-to-row and hides them:
 
 - **The yield is 2–3% and the relationship is inverse.** All 26 cited PMIDs were retrieved and every
@@ -2214,7 +2214,7 @@ green, `ruff` clean.
 instances answered `format: 0.5.4` against our 0.6.1 client. **Both are now on `0.6.1`, and both are
 serving registry 0.18.1.** Re-probed rather than assumed, and then driven end to end: the exact call
 that came back `409 just-dna-format contract mismatch: server 0.5.4, client 0.6.1` — a
-`download` of `eric-mods/lactose_tolerance@1.0.0` — now returns its manifest, and
+`download` of `author-b/lactose_tolerance@1.0.0` — now returns its manifest, and
 `assert_compatible()` passes against production and the polygon alike.
 
 Nothing in our code changed for this, which is the point: `targets.instance_note` is a suffix on an
@@ -2324,7 +2324,7 @@ rather than one.
 deployed instances answer `format: 0.5.4` today, so on this release every version-guarded registry
 call — publish, import, download, validate, check, is_published — is refused until the operator
 upgrades them. Confirmed live rather than reasoned about: `registry_download` of
-`eric-mods/lactose_tolerance@1.0.0` comes back `409 just-dna-format contract mismatch: server 0.5.4,
+`author-b/lactose_tolerance@1.0.0` comes back `409 just-dna-format contract mismatch: server 0.5.4,
 client 0.6.1`.
 
 That is correct behaviour — a 0.6 artifact genuinely cannot be published to a 0.5 catalog — but
@@ -2538,7 +2538,7 @@ sending an author to fetch a token for a call that could never succeed is a dead
 had it backwards and the new tests caught it — they asserted refusals and got an unauthenticated
 result instead.
 
-**Run against the real waiting caller**, not a fixture: `test-sheep/longevity_2026@1.0.0` went from a
+**Run against the real waiting caller**, not a fixture: `test-ns/longevity_2026@1.0.0` went from a
 zero-length readme to 6860 characters, and the artifact digest afterwards was byte-identical to the
 one `published.json` recorded at publish time. That is the tool's central claim, so it is worth
 having actually run.
@@ -2547,7 +2547,7 @@ having actually run.
 
 `download(include_inputs=…)` is new, and upstream's default is `false` — which means the compiled
 parquets and `manifest.json` arrive and the *authored spec does not*. Measured against
-`eric-mods/lactose_tolerance@1.0.0`: 4 files without, 7 with, the three extra being
+`author-b/lactose_tolerance@1.0.0`: 4 files without, 7 with, the three extra being
 `module_spec.yaml`, `variants.csv` and `studies.csv`.
 
 **Our `registry_download` defaults it to `true`**, and the docstring says it differs from the client
@@ -2682,7 +2682,7 @@ upstream names stay hand-maintained, because no field of ours can name them.
 Thirteen longevity rsIDs, 19 authored rows, grounded in five papers that are all 2025 or 2026 — one
 of them a bioRxiv preprint, cited by the PMID the NIH preprint pilot gives it. Written end to end by
 an agent through the MCP surface, `authorship: [ai, agent]`, and rehearsed to
-`test-sheep/longevity_2026@1.0.0` on the polygon, where the server's own recompile reproduced the
+`test-ns/longevity_2026@1.0.0` on the polygon, where the server's own recompile reproduced the
 local `artifact_digest` exactly.
 
 It complements `assets/fto_bmi` rather than repeating it. `fto_bmi` is the *triage* example — seven

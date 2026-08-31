@@ -427,11 +427,11 @@ same position; `ROADMAP.md:359` still names the module-detail view as its intend
 **Live measurement, production registry `0.18.2` / format `0.6.1`, 2026-08-19:**
 
 ```
-antonkulaga/aggression_anger_snps      1.0.0 1.0.1 1.1.0 2.0.0   logs=0
-antonkulaga/big_five_personality_snps  1.0.0 1.0.1 2.0.0 2.1.0   logs=0
-antonkulaga/cognitive_intelligence     1.0.0 1.0.1 2.0.0         logs=0
-antonkulaga/risk_impulsivity_snps      1.0.0 1.0.1 2.0.0         logs=0
-eric-mods/lactose_tolerance            1.0.0 1.0.1               logs=0
+author-a/aggression_anger_snps      1.0.0 1.0.1 1.1.0 2.0.0   logs=0
+author-a/big_five_personality_snps  1.0.0 1.0.1 2.0.0 2.1.0   logs=0
+author-a/cognitive_intelligence     1.0.0 1.0.1 2.0.0         logs=0
+author-a/risk_impulsivity_snps      1.0.0 1.0.1 2.0.0         logs=0
+author-b/lactose_tolerance            1.0.0 1.0.1               logs=0
 ```
 
 16 versions, 5 modules, **not one log entry**. The polygon holds 0 modules. The 16 reference examples

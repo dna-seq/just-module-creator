@@ -965,18 +965,18 @@ from PyPI, where there is no tree to compare against.
 
 ## F22 — `published.json`, the receipt we tell the author to commit, records `owner: null`
 
-**Found:** 2026-08-11, rehearsing `test-sheep/fto_bmi@1.0.0` · **Severity:** low · **Status:** open
+**Found:** 2026-08-11, rehearsing `test-ns/fto_bmi@1.0.0` · **Severity:** low · **Status:** open
 
 `registry_publish` says *"Identity recorded in published.json; commit it with the spec"*, and the file
 it writes carries:
 
 ```json
-{ "target": "test", "canonical_id": "test-sheep/fto_bmi@1.0.0", "owner": null, … }
+{ "target": "test", "canonical_id": "test-ns/fto_bmi@1.0.0", "owner": null, … }
 ```
 
 `owner` is null in both the tool result and the committed receipt. The registry does know it — a
-`registry_get_module` on the same module one call later reports `"owner": "sheep"`, and
-`registry_claim_namespace` had already returned `{"namespace": "test-sheep", "owner": "sheep"}`. So the
+`registry_get_module` on the same module one call later reports `"owner": "tester"`, and
+`registry_claim_namespace` had already returned `{"namespace": "test-ns", "owner": "tester"}`. So the
 value was available on the claim and is absent from the publish payload we persist.
 
 Low severity because nothing depends on it and `canonical_id` carries the namespace, from which the
@@ -1510,7 +1510,7 @@ is the recipe.
 
 ## F58 — nothing tells an author how long a `description` should be, and six of seven published cards are paragraphs
 
-**Found:** 2026-08-21, from the owner reading `antonkulaga/cognitive_intelligence`'s catalog card ·
+**Found:** 2026-08-21, from the owner reading `author-a/cognitive_intelligence`'s catalog card ·
 **Severity:** medium · **Status:** mitigated here in `8fb2825` — the norm is homed in
 `skills/module-tables/references/module_spec.md` and repeated at `scaffold_module`'s `next_step`. The
 upstream half is open as format-tree `S63` and is tracked in `docs/just-dna-format-pending-fixes.md`;
@@ -1527,13 +1527,13 @@ for the same reason.
 modules, word count of `description`:
 
 ```
- 79 words  antonkulaga/aggression_anger_snps@2.0.0
- 60 words  antonkulaga/cognitive_intelligence@2.0.0     <- the fourteen-row card
- 45 words  antonkulaga/bodybuilding@1.0.0
- 38 words  antonkulaga/big_five_personality_snps@2.1.0
- 36 words  ksuha-dna/placebo_response_claude@1.0.0
- 25 words  antonkulaga/risk_impulsivity_snps@2.0.0
-  8 words  eric-mods/lactose_tolerance@1.0.1
+ 79 words  author-a/aggression_anger_snps@2.0.0
+ 60 words  author-a/cognitive_intelligence@2.0.0     <- the fourteen-row card
+ 45 words  author-a/bodybuilding@1.0.0
+ 38 words  author-a/big_five_personality_snps@2.1.0
+ 36 words  author-c/placebo_response_claude@1.0.0
+ 25 words  author-a/risk_impulsivity_snps@2.0.0
+  8 words  author-b/lactose_tolerance@1.0.1
 ```
 
 One of seven is inside the band, and it is the outside author's two-variant module. **Measure the

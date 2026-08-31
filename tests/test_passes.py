@@ -272,11 +272,11 @@ async def test_an_unknown_fact_pass_names_the_valid_ones(make_client, tmp_path) 
 # The registry owns module identity, so a receipt has to survive the session
 # --------------------------------------------------------------------------- #
 class FakeIdentity:
-    canonical_id = "eric-mods/lactose_tolerance@1.0.0"
-    namespace = "eric-mods"
+    canonical_id = "author-b/lactose_tolerance@1.0.0"
+    namespace = "author-b"
     name = "lactose_tolerance"
     version = "1.0.0"
-    owner = "eric"
+    owner = "author-b-owner"
 
 
 class FakeArtifact:
@@ -300,15 +300,15 @@ def test_a_publish_receipt_is_written_beside_the_spec(tmp_path) -> None:
         identity=FakeIdentity(),
         artifact=FakeArtifact(),
         manifest=FakeManifest(),
-        fallback=("eric-mods", "lactose_tolerance", "1.0.0"),
+        fallback=("author-b", "lactose_tolerance", "1.0.0"),
     )
 
     path = tmp_path / RECEIPTS_FILE
     assert path.is_file(), "a receipt that does not survive the session is not a record"
     stored = json.loads(path.read_text())
     assert stored == [receipt]
-    assert receipt["canonical_id"] == "eric-mods/lactose_tolerance@1.0.0"
-    assert receipt["owner"] == "eric"
+    assert receipt["canonical_id"] == "author-b/lactose_tolerance@1.0.0"
+    assert receipt["owner"] == "author-b-owner"
     assert receipt["artifact_digest"] == "sha256:8173dab7"
     # ISO-8601 UTC, never a naive local timestamp.
     assert receipt["published_at"].endswith("+00:00")
@@ -324,7 +324,7 @@ def test_a_second_version_appends_rather_than_replacing(tmp_path) -> None:
             identity=None,
             artifact=None,
             manifest=None,
-            fallback=("eric-mods", "lactose_tolerance", version),
+            fallback=("author-b", "lactose_tolerance", version),
         )
     stored = json.loads((tmp_path / RECEIPTS_FILE).read_text())
     assert [r["version"] for r in stored] == ["1.0.0", "1.1.0"]
@@ -339,7 +339,7 @@ def test_a_republished_version_keeps_the_original_and_reports_the_difference(tmp
         identity=FakeIdentity(),
         artifact=FakeArtifact(),
         manifest=FakeManifest(),
-        fallback=("eric-mods", "lactose_tolerance", "1.0.0"),
+        fallback=("author-b", "lactose_tolerance", "1.0.0"),
     )
 
     class Moved:
@@ -352,7 +352,7 @@ def test_a_republished_version_keeps_the_original_and_reports_the_difference(tmp
         identity=FakeIdentity(),
         artifact=Moved(),
         manifest=FakeManifest(),
-        fallback=("eric-mods", "lactose_tolerance", "1.0.0"),
+        fallback=("author-b", "lactose_tolerance", "1.0.0"),
     )
 
     assert kept == first, "the original receipt must not be overwritten"

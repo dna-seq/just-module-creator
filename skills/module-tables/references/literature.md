@@ -283,7 +283,7 @@ Ordered by how likely a first-timer is to hit them.
    that quote checking works on your module.
 
 7. **`quotes_authored: 0` also happens beside a `studies.csv` full of quotes, and nothing compares
-   the two files.** Measured on the four published `antonkulaga/*` modules (2026-08-20): every
+   the two files.** Measured on the four published `author-a/*` modules (2026-08-20): every
    `literature.csv` row carries `quotes_authored=0`, an empty `quotes_found` and an empty
    `quote_source`, while their `studies.csv` files carry a `provenance_quote` on **3668 of 3668**
    rows. The mechanism is gotcha 1 doing its job — the literature pass ran while the column was

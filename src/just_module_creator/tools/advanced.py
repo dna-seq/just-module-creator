@@ -207,7 +207,7 @@ def register_artifact_reads(
         download is the compiled parquets and `manifest.json` alone, and the
         authored CSVs stay on the server — so the published spec, which is the most
         instructive thing a registry holds, would not arrive. Measured against
-        `eric-mods/lactose_tolerance@1.0.0`: 4 files without, 7 with, and the three
+        `author-b/lactose_tolerance@1.0.0`: 4 files without, 7 with, and the three
         extra are `module_spec.yaml`, `variants.csv` and `studies.csv`. Pass
         `false` when you genuinely want only the artifact.
 

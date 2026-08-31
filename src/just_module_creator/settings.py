@@ -60,7 +60,7 @@ DEFAULT_POLYGON_URL = "https://module-polygon.just-dna.life"
 #: Unpaywall meter and contact *per address*, so a shared default concentrates both
 #: the budget and any abuse report. ``.env.template`` says so where an author will
 #: read it. Setting your own is the polite thing and costs one line.
-DEFAULT_CONTACT_EMAIL = "just.dna.seq@gmail.com"
+DEFAULT_CONTACT_EMAIL = "contact@example.org"
 
 
 class Settings(BaseSettings):

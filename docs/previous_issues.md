@@ -441,7 +441,7 @@ order and its stated reason: sending an author to fetch a token for a call that 
 succeeded is a dead end. The first draft had that backwards and the tests caught it — they were
 written to assert refusals and instead got an unauthenticated result.
 
-**Verified on the waiting caller rather than a fixture.** `test-sheep/longevity_2026@1.0.0` on the
+**Verified on the waiting caller rather than a fixture.** `test-ns/longevity_2026@1.0.0` on the
 polygon went from `readme` of length 0 to 6860 characters, and the artifact digest afterwards was
 byte-identical to the one `published.json` recorded at publish time:
 
