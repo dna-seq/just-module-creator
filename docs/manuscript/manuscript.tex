@@ -43,15 +43,17 @@ without specialized tools.
 This paper presents the plugin ecosystem that makes this possible. The
 authoring plugin, \textbf{just-module-creator}, runs inside the AI coding
 assistants that bioinformaticians and developers already use daily, so module
-authoring requires no new infrastructure. The underlying toolchain validates
-authored files against a live schema, checks identifiers against reference
-databases, and compiles modules into a portable artifact. A shared registry lets
-independent authors publish, version, and exchange modules---the package-registry
+authoring requires no new infrastructure. The validated files compile into a
+portable artifact, and a shared registry lets
+authors publish, version, and exchange modules---the package-registry
 pattern applied to genomic annotation knowledge. Once installed, a module can be
 applied to a genome in under a minute; the annotation consumer,
 Just-DNA-Lite, is the subject of a companion
-paper~\citep{companion2026justdnalite}. The software is open-source and available at
-\url{https://anonymous.4open.science/r/just-dna-registry} (anonymized for review).
+paper~\citep{companion2026justdnalite}. The software is
+open-source.\footnote{Anonymized repositories:
+\url{https://anonymous.4open.science/r/just-module-creator},
+\url{https://anonymous.4open.science/r/just-dna-format},
+\url{https://anonymous.4open.science/r/just-dna-registry}.}
 \end{abstract}
 
 % ================================================================
