@@ -87,7 +87,7 @@ gene symbols against HGNC, trait identifiers against ontology services, and flag
 decisions that require domain expertise.
 Once compiled to Parquet, Just-DNA-Lite joins the module to a
 genome~\citep{companion2026justdnalite}. Modules are versioned and
-shareable: they can be kept locally, rehearsed in a staging registry, or
+shareable: they can be kept locally, rehearsed in a test registry, or
 published for others to install and use. The same files can also be written or
 edited entirely by hand.
 
@@ -111,7 +111,7 @@ This paper makes four contributions:
     decisions that still require review.
     \item It defines an evaluation protocol for variant recovery, citation
     identity, and effect-direction agreement, and reports catalog statistics
-    from the first eight published modules across five independent namespaces.
+    from the first eight published modules across three independent namespaces.
 \end{enumerate}
 
 % ================================================================
@@ -294,7 +294,7 @@ and stage.
     compile, and close. Later evidence or reviewer feedback re-enters this
     workflow at the stage it affects.};
   \node[layer, below=of review] (destinations) {\textbf{Destinations:}
-    local installation, rehearsal on the staging registry, or publication to
+    local installation, rehearsal on the test registry, or publication to
     the public catalog; a consumer later joins the compiled module to a genome.};
   \draw[arr] (entry) -- (route);
   \draw[arr] (route) -- (scaffold);
@@ -458,7 +458,7 @@ these are surfaced for domain experts rather than resolved silently.
 
 A compiled module can reach a consumer through three routes
 (Figure~\ref{fig:architecture}): local installation into a Just-DNA-Lite
-checkout for testing with a VCF, publication to the staging registry for a
+checkout for testing with a VCF, publication to the test registry for a
 deletable rehearsal, or publication to the immutable public catalog. The registry runs its own enrichment and
 strict compilation on publish, so the stored artifact is the one the server
 produced, not a locally claimed digest. Inclusion in either catalog
@@ -473,13 +473,12 @@ paper, not merely exist), and effect-direction agreement, against an
 expert's curation rather than a system output---scoring authored modules
 against a module the same system authored measures agreement with itself.
 
-Three measurement choices are load-bearing. Recall is reported at two
+Two measurement choices are load-bearing. Recall is reported at two
 grains, because recovering the right variant with wrong genotypes and
 recovering half the variants exactly are distinct failures that partial
 credit averages away. \emph{Decoy rate} replaces precision: a variant
 absent from one curation may still be correct, whereas a decoy is one an
-expert designated non-associated. A metric with an empty denominator is
-reported as not computed, its threshold undefined rather than passed.
+expert designated non-associated.
 
 \begin{table}[ht]
 \centering
@@ -514,12 +513,12 @@ validator names the missing genotype and a written rule states that a zero
 weight is a claim where a blank is not, so convergence shows the workflow
 is prescriptive, not that its output is confirmed.
 
-Two further papers have no reference; there the scorer reports what a
-module asserts against what it withholds. That reading corrected our
-prediction that a paper running no association test should yield no variant
-rows: a run produced sixty, each recording the observation with direction
-and significance withheld. Row count is therefore not scored; whether the
-cells assert more than the source supports is.
+A module can also be scored where no reference curation exists, by reading
+what it asserts against what it withholds. That reading corrected a
+prediction of ours: we expected a paper running no association test to yield
+no variant rows, and a run produced sixty---each recording the observation
+with direction and significance withheld. Row count is therefore not scored;
+whether the cells assert more than the source supports is.
 
 % ================================================================
 \section{Results}
@@ -562,8 +561,7 @@ is unreachable rather than merely quiet.
 \subsection{Production catalog}
 
 At the time of writing, the public catalog holds eight published modules
-across 19 versions and five independent namespaces (three distinct
-owners). Table~\ref{tab:catalog} summarizes the published modules.
+across 19 versions and three independent namespaces. Table~\ref{tab:catalog} summarizes the published modules.
 
 \begin{table}[ht]
 \centering
@@ -589,8 +587,9 @@ lactose\_tolerance      &  2  &   8 &   1 & 2 \\
 \end{tabular}
 \end{table}
 
-Three were authored by people outside the development team, and module
-sizes range from 2 to 474 variants. Four versions of \texttt{big\_five\_personality\_snps} show that
+Two of the three namespaces belong to authors outside the development team,
+and four of the eight modules are theirs. Module sizes range from 2 to 474
+variants. Four versions of \texttt{big\_five\_personality\_snps} show that
 iterative revision works in practice. Two modules on the same trait
 (\texttt{placebo\_response} via Codex, \texttt{placebo\_response\_claude} via
 Claude Code) were created by the same author to compare the two assistants;
@@ -649,8 +648,8 @@ correction and reuse by someone else. What makes that more than a file format
 is what a module keeps separate: authored claims stay distinct from derived
 records, a check that
 could not run says so, and every published module carries the evidence for its
-own rows. Eight modules from five namespaces, three from authors outside the
-development team, show the path is functional today.
+own rows. Eight modules from three namespaces, half of them from authors
+outside the development team, show the path is functional today.
 
 The software is open-source and intended for research use only.
 
@@ -674,7 +673,7 @@ The software is open-source and intended for research use only.
     \url{https://anonymous.4open.science/r/just-dna-lite}
     (local VCF processing, annotation, and reporting; described in the
     companion paper~\citep{companion2026justdnalite}).
-    \item The public catalog and the staging registry are live at URLs
+    \item The public catalog and the test registry are live at URLs
     provided in the anonymized repositories.
 \end{itemize}
 
@@ -704,8 +703,7 @@ tools} are typed operations the assistant can call---each has a name, typed
 inputs, and a structured return value. \textbf{Skills} are written
 instructions loaded into the assistant's context on demand; they teach the
 workflow that the tools serve, including when to call which tool and what to
-do with the result. Together, 60 tools and 20 skills make up the
-\texttt{just-module-creator} plugin surface.
+do with the result.
 
 \subsection*{Tools (60)}
 
