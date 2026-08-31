@@ -27,30 +27,30 @@ Just-DNA Ecosystem}
 \maketitle
 
 \begin{abstract}
-Genome annotation depends on curated knowledge that changes as papers and
-databases publish new variant-trait associations. The Just-DNA ecosystem stores
-this knowledge in genomic annotation modules: versioned data packages that
-describe which genotype a claim concerns, what evidence supports it, and how a
-consumer should present it. A module can be written and edited manually. An AI
-assistant can also draft one from a paper, a variant list, or a description of
-a topic, but its output remains an editable data artifact rather than generated
-analysis code. Unlike extracted data that requires further engineering to use,
-a compiled module can be applied to real genomes within minutes, producing
-annotated reports immediately.
+Genome analysis is an iterative workflow---ask, select data, score, annotate,
+inspect, and revise---and it is increasingly done inside AI coding assistants
+rather than fixed graphical interfaces. But general-purpose language models are
+unreliable when used directly for genomics: they fabricate variant identifiers,
+misassign effect directions, and attach real PMIDs to the wrong paper. The
+Just-DNA ecosystem redirects these assistants from generating disposable code to
+producing structured, versioned data: \emph{genomic annotation modules} where
+every variant is linked to its genotype, evidence, effect size, and a verbatim
+passage from the source paper. The output is an editable data artifact, not
+generated analysis code, and a domain expert can review it in a spreadsheet
+without specialized tools.
 
-The authoring plugin, \textbf{just-module-creator}, runs inside Claude Code and
-Codex---AI coding assistants that bioinformaticians and developers already use
-daily---so module authoring requires no new infrastructure beyond installing a
-plugin. The underlying toolchain validates authored files against a live schema,
-compiles them, and publishes versions to a shared registry. Just-DNA-Lite then
-joins selected modules to matching genotypes in a local VCF file; its design is
-the subject of a companion paper~\citep{companion2026justdnalite}.
-
-This paper describes the module lifecycle from source material to shared
-registry and local use, proposes an evaluation protocol for variant recovery,
-citation identity, and effect-direction agreement, and reports catalog
-statistics from the first published modules. The software is open-source and
-intended for research use only.
+This paper presents the plugin ecosystem that makes this possible. The
+authoring plugin, \textbf{just-module-creator}, runs inside the AI coding
+assistants that bioinformaticians and developers already use daily, so module
+authoring requires no new infrastructure. The underlying toolchain validates
+authored files against a live schema, checks identifiers against reference
+databases, and compiles modules into a portable artifact. A shared registry lets
+independent authors publish, version, and exchange modules---the package-registry
+pattern applied to genomic annotation knowledge. Once installed, a module can be
+applied to a personal genome within minutes; the annotation consumer,
+Just-DNA-Lite, is the subject of a companion
+paper~\citep{companion2026justdnalite}. The software is open-source and available at
+\url{https://anonymous.4open.science/r/just-dna-registry} (anonymized for review).
 \end{abstract}
 
 % ================================================================
@@ -540,7 +540,10 @@ An assistant may read retrieved full text and locate a
 \texttt{provenance\_quote}. It must copy the passage verbatim and identify who
 located it in \texttt{StudyRow.curator}. This attribution helps a reviewer
 decide where to look closely. It does not transfer responsibility away from
-the human author.
+the human author. The assistant can also follow a citation into its
+supplementary tables to locate per-variant statistics---effect sizes, p-values,
+and allele frequencies---that the main text often summarizes but does not
+reproduce row by row.
 
 \subsection{Local and shared module stores}
 
@@ -604,8 +607,7 @@ lactose\_tolerance      &  2  &   8 &   1 & 2 \\
 \end{tabular}
 \end{table}
 
-The modules span three independent namespaces (\texttt{antonkulaga},
-\texttt{eric-mods}, \texttt{ksuha-dna}) from three owners. The largest module
+The modules span three independent namespaces from three owners. The largest module
 (\texttt{risk\_impulsivity\_snps}, 474 variants across 325 genes) and the
 smallest (\texttt{lactose\_tolerance}, 2 variants in 1 gene) both compiled with
 strict resolution and fully resolved coordinates. The
@@ -616,9 +618,8 @@ added polygenic score references, and 2.1.0 corrected the weight normalization.
 
 Modules authored with \texttt{just-module-creator} carry
 \texttt{curator: ai-module-creator} in their manifest authorship records.
-Three modules were authored by people who are not the plugin's developers
-(\texttt{eric-mods}, \texttt{ksuha-dna}), indicating that the tool surface
-is usable beyond the original team.
+Three modules were authored by people who are not the plugin's developers,
+indicating that the tool surface is usable beyond the original team.
 
 \subsection{Proposed evaluation protocol}
 
@@ -735,22 +736,18 @@ The software is open-source and intended for research use only.
 \label{app:code}
 
 \begin{itemize}
-    \item \textbf{just-module-creator}:
-    \url{https://github.com/dna-seq/just-module-creator}
-    (MCP server, Claude Code and Codex plugin manifests, skills; MIT).
     \item \textbf{just-dna-format, just-dna-compiler, and just-dna-enricher}:
-    \url{https://github.com/dna-seq/just-dna-format}
+    \url{https://anonymous.4open.science/r/just-dna-compiler}
     (schema, reference compiler, and enricher).
-    \item \textbf{just-dna-registry}: production catalog at
-    \url{https://module-registry.just-dna.life} and polygon at
-    \url{https://module-polygon.just-dna.life}.
+    \item \textbf{just-module-creator}:
+    \url{https://anonymous.4open.science/r/just-dna-registry}
+    (MCP server, Claude Code and Codex plugin manifests, skills; MIT).
     \item \textbf{Just-DNA-Lite}:
-    \url{https://github.com/dna-seq/just-dna-lite}
+    \url{https://anonymous.4open.science/r/just-dna-lite}
     (local VCF processing, annotation, and reporting; described in the
-    companion platform paper~\citep{companion2026justdnalite}).
-    \item \textbf{just-prs}:
-    \url{https://github.com/dna-seq/just-prs}
-    (polygenic risk-score computation library).
+    companion paper~\citep{companion2026justdnalite}).
+    \item The production catalog and staging polygon are live at URLs
+    provided in the anonymized repositories.
 \end{itemize}
 
 \section{Research use only}
@@ -809,7 +806,10 @@ budget used by several lookups. The literature search fills a gap left by the
 enricher. The enricher can verify a PMID that an author already has, but it does
 not search for the paper. \texttt{literature\_search} returns titles so the
 assistant can check identity. The existence of a PMID alone says nothing about
-whether it is the intended article.
+whether it is the intended article. Supplementary-table retrieval extends the
+evidence path: the assistant can fetch, list, and inspect supplementary files
+attached to a cited paper, reaching the per-variant rows that GWAS main texts
+typically defer to their supplements.
 
 \subsection*{How a person enters the workflow}
 
