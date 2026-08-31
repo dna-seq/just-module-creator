@@ -28,7 +28,7 @@ Table <a href="#tab:comparison" data-reference-type="ref" data-reference="tab:c
 
 | System | Kind / primary task |  |  |  |  |  |
 |:---|:---|:--:|:--:|:--:|:--:|:--:|
-| Ensembl VEP | annotation engine / consequence prediction against a callset | – | – | – | – |  |
+| Ensembl VEP / ANNOVAR | annotation engine / consequence prediction against a callset | – | – | – | – |  |
 | OpenCRAVAT / OakVar | annotation platform / user-supplied annotation extensions |  |  | – | – |  |
 | CIViC | curated knowledgebase / expert-crowdsourced clinical interpretation | – |  |  | – |  |
 | PubMind-DB | text-mined database / LLM extraction of variant–disease–pathogenicity records | – |  |  |  |  |
