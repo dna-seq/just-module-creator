@@ -102,6 +102,23 @@ rather than false. `lookup_variant` — the one caller that sees both halves —
 **`<rsid>: position remains unset`** once at the end, and only when nothing placed the variant. If you
 grep for the old composite phrase, grep for these three instead.
 
+**`status: not_found` in `resolution.csv`, for an rsID `lookup_variant` finds instantly**
+Read it as *the alleles did not match*, not as *the rsID does not exist* — the row says `not_found`
+either way, and chasing the second question is a dead end because the answer is always "yes, it
+exists". The usual cause is a **strand difference**: a paper annotated on GRCh37/hg19 often prints the
+reverse complement of what GRCh38 records, so `G/A` in the supplementary is `C/T` in the resolver's
+allele set and an authored genotype drawn from the paper matches nothing at a variant the resolver
+found perfectly well. Resolution is allele-aware, which is why this is caught at all — and it is one
+of the highest-value catches in the pass, because a module that silently kept the wrong-strand alleles
+compiles green and then matches no VCF.
+
+**What to do:** put the rsID through `lookup_variant`. If it comes back with an allele set that is the
+exact reverse complement of yours, reverse-complement the authored genotypes and re-enrich — and log
+it with `record_override`, because the alleles are an authored cell. If the allele set is unrelated to
+yours rather than flipped, the row was written from a different variant and the rsID is the thing to
+re-check. Measured on five rows of a 64-variant module, 2026-08-31; filed upstream as `S85`, since the
+word `not_found` is the enricher's and the state deserves its own.
+
 **`cannot host the authored genotype … The event sizes differ`**
 A real contradiction, and a decidable one: re-anchoring an indel never changes how many bases it adds or
 removes, so this is a different variant sharing the rsID rather than another spelling of yours. One rsID

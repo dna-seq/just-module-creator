@@ -14,6 +14,36 @@ is usable, and what is missing.
 
 ---
 
+## F82 — the dogfooding loop burns its own benchmark papers, and the fixture cannot be un-briefed
+
+**Found by a run flagging it against its own interest, 2026-08-31.** A benchmark run on the
+centenarian paper reported, unprompted, that `skills/module-curate/GUIDE.md` names **the paper it had
+just been given**: *"Measured on PMID 41057961 … `rs61849494` is `chr10:51613269 G/A` on GRCh37 and
+`chr10:45982565 C/T` on GRCh38 — 5.6 Mb apart and strand-flipped"*, plus *"Two independent runs met
+this on the same paper and both excluded 47 rows."* `skills/module-start/GUIDE.md:130` carries the same
+variant. So the run's two headline decisions — rsID-only identity, and excluding the coordinate-only
+variants — were **pre-briefed by artifacts of earlier runs on the same paper**, not independently
+reached. It said so itself and separated them from the catches that were genuinely its own.
+
+**This is structural, not an oversight.** §7 says to finish each dogfooding probe as a committed
+reference example that names what it broke, and the skills are where a measurement becomes guidance.
+The benchmark corpus is made of the papers those probes ran on. So **every paper this project learns
+from ends up in the guidance the next run reads**, and a fixture is burned as an unbriefed measurement
+the moment its lesson is worth keeping. The two are the same pipeline pointed in opposite directions.
+
+**The repair is not to mask the skill.** Masking would break §2's real-identifiers rule and gut a
+worked example that is product — and the guidance is *correct*, which is why it is there. Nor is the
+repair to stop writing measurements down. What changes is the claim a centenarian score may carry:
+`assets/benchmarks/centenarian/metadata.json` now records `pre_briefed: true` with the two skill
+locations, so its runs measure **guidance-following** (`F81`'s narrower claim) rather than unbriefed
+authoring. Run-to-run agreement remains measurable, because the briefing is constant across runs.
+
+**What it costs, stated rather than designed around.** An unbriefed fixture has to be a paper the
+skills have never seen, and it stays unbriefed only until somebody writes down what it taught. There
+are three papers in the corpus; `sirt6` is where the adjudicated reference lives and its answer cell
+reached `CLAUDE.md` (see the runbook's pitfall 1), and now `centenarian` is briefed in two skills.
+**Budget a fresh paper per round rather than expecting the corpus to keep.**
+
 ## F79 — the CURIE verifier turns a wrong guess into a confident wrong answer, because nothing finds one
 
 **Found:** 2026-08-31 · **Severity:** medium · **Status:** ours to build, deferred as `RM28` with the

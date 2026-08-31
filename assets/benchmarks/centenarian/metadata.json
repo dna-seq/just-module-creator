@@ -22,5 +22,12 @@
   },
   "scoring": {
     "minimum_acceptable": {}
+  },
+  "pre_briefed": {
+    "briefed": true,
+    "since": "2026-08-31",
+    "what": "The skills a run loads name this paper and its hardest decision. skills/module-curate/GUIDE.md gives PMID 41057961, rs61849494's two builds (chr10:51613269 G/A on GRCh37, chr10:45982565 C/T on GRCh38, 5.6 Mb apart and strand-flipped) and reports that two earlier runs on this paper both excluded 47 coordinate-only rows; skills/module-start/GUIDE.md:130 repeats the variant.",
+    "consequence": "A run's rsID-only identity choice and its exclusion of the coordinate-only variants are guidance-following, not independent judgement. Score these runs for consistency against each other, never as evidence that an unbriefed author would reach the same answer. The briefing is constant across runs, so run-to-run agreement stays measurable. See F82; the narrower claim is F81's.",
+    "detected_by": "a benchmark run flagging it against its own interest, 2026-08-31"
   }
 }
