@@ -3,6 +3,75 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased
+
+### The benchmark scorer becomes a tested module, and the paper reports a number
+
+`scripts/bench_score.py` was a one-off outside `testpaths` and pyright's `include`, so it had never
+been collected or type-checked. It is `src/just_module_creator/bench.py` now, beside `compare.py` and
+`audit.py`, with the script kept as an argv shim because the round's already-produced numbers were
+generated against that contract.
+
+**Moving it exposed a crash it had been hiding.** `score()` filtered on `presence == "both"` and then
+summed `keys_shared`, but an *unkeyed* table — the binning kinds, whose `hints.key_fields` rule is
+`overlap` rather than `equality` — is `presence="both"` with every count `None`. `TypeError` on the
+first binning module it would ever have met. The docstring already promised that a table nothing
+could be counted over is reported as absent; that was true of one-sided tables only. Both tests were
+written against the moved-but-unfixed code and watched to raise before the filter changed.
+
+**`--fixture` is new and is the primary mode**: variant recovery, citation identity and direction
+agreement against an adjudicated reference — the manuscript's own three questions. It does not wrap
+`_compare`, because tier weighting needs to know *which* rows were missed and the comparison reports
+counts. What it does import is upstream's loader and upstream's `draft.natural_key`: the manuscript's
+"(rsID, genotype) pair" **is** that key, and it is never spelled out here.
+
+Four judgements the pre-round design got wrong:
+
+- **No partial credit for a right rsID with a wrong genotype.** `pair_recall` and `rsid_recall` are
+  two numbers. Every SIRT6 run scores `rsid_recall` 1.00 while `pair_recall` splits 0.33 / 1.00 /
+  0.33 — the gap *is* the "right variant, wrong genotypes" signal, and half a point averages it into
+  a number saying neither thing.
+- **`decoy_rate`, not precision, is the false-positive measure.** A fixture is one curation, not the
+  set of all correct rows, so an unexpected variant is reported and not counted against the run. A
+  decoy is an rsID an expert asserted does *not* belong — `rs2802292`, a real FOXO3 longevity variant
+  absent from this paper, catches a run importing general knowledge instead of reading its source.
+- **Citation identity is three-valued offline.** `null` means UNCHECKED, so a PMID the fixture lacks
+  is `unrecognised` and never `hallucinated`; `recall` is the sound number and `accuracy` stays
+  `null` until a resolver exists.
+- **An unasked question never passes.** `thresholds_met` is `bool | None` and is `None` exactly where
+  its metric is, with a reason in `unscored`.
+
+**The census now separates three things it was collapsing into two.** A column absent from a header
+whose model *has* the field is an authoring choice (`assets/fto_bmi` carries no `stat_significance`);
+a column that is not a field of the table's model at all is a category error; and neither is a file
+full of withheld cells. Withheld splits too — `assets/longevity_2026` writes the literal `unknown` on
+9 of 19 `direction` rows and leaves the same 9 `weight` cells blank, and both withhold while only one
+says so on purpose. `off_vocabulary` is the third case, read from `hints.field_vocabularies`.
+
+**The corpus moved out of `data/` and is committed** at `assets/benchmarks/`: three papers, six runs,
+one adjudicated reference, reachable by a test for the first time. `build/` does not travel and
+`*.parquet` is now in `.gitignore` — a compile is deterministic, so only the digests are worth
+keeping and they are in each fixture's `metadata.json`.
+
+**`load_fixture` refuses five ways a fixture can lie about what it scores**, each silent if it is not
+raised at load: a tier naming an rsID the reference lacks, a decoy that is also expected, an rsID in
+two tiers, a scored table that cannot be paired, and an absolute `expected_spec` that would not
+travel. An expected variant in no tier is *not* refused — it weighs 1.0 and is counted, because
+adding a variant to a reference must not break its fixture.
+
+Two seams are declared and neither is implemented: `RowJudge` for the cells a string comparison
+cannot score, and `CitationResolver` for existence and title. A judge never moves a row out of
+`unscored` into a pass.
+
+### The paper stops promising an evaluation and reports one
+
+Section 4.2 said *"we report no recall or precision estimate."* It now carries a table of three runs
+against the adjudicated reference, and the method above it — because scoring modules this system
+authored against a module this system authored would measure agreement with itself, and the human
+adjudication is what breaks that. `docs/manuscript/claw-bio-inspired-benchmark.md` is rewritten from
+a pre-round design into a description of what was built and measured. Limitations says plainly that
+three runs of one prompt is a demonstration rather than a performance estimate.
+
 ## 0.26.0 — 2026-08-31
 
 ### Five surfaces that told an author something other than what happened
