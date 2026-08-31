@@ -122,7 +122,27 @@ A compiled module can reach a consumer through three routes (Figure <a href="#f
 
 ## Evaluation dimensions
 
-Three dimensions are relevant for evaluating AI-authored modules against expert-curated ground truth: variant recall (which rsID–genotype pairs were recovered), citation identity (whether each PMID names the intended paper, not merely exists), and weight-sign agreement (whether the effect direction matches). The adjudicated set is not yet large enough for a performance claim; we report these dimensions as a framework for future evaluation.
+Three dimensions are relevant for evaluating AI-authored modules against expert-curated ground truth: variant recall (which rsID–genotype pairs were recovered), citation identity (whether each PMID names the intended paper, not merely exists), and weight-sign agreement (whether the effect direction matches). A scorer implementing them ships with the plugin.
+
+Constructing ground truth is the difficulty, and one property of the task makes it tractable. Given a byte-identical prompt and one paper, two runs produced complementary rather than competing modules: one agreed with the other on every shared cell while covering a third of the row keys, and the second covered every key while agreeing on a third of the cells. Neither is a reference. A domain expert read the differences and merged the stronger half of each, and that adjudicated module is the ground truth scored against—an expert curation informed by the runs, rather than a run promoted to an answer. Scoring authored modules against a module the same system authored would measure agreement with itself.
+
+Table <a href="#tab:scores" data-reference-type="ref" data-reference="tab:scores">3</a> reports three runs of one prompt against that reference. Two properties of the result matter more than the values. First, every run recovered the correct variant while differing on which genotypes it authored, so recall at the rsID and at the rsID–genotype grain are reported separately; a single score with partial credit for a recovered variant with wrong genotypes conflates two different failures. Second, one run withheld the effect direction the reference asserts, which leaves no row where both sides state one. That is reported as not computed rather than as disagreement—an empty denominator is not a failed check, and the corresponding threshold is likewise undefined rather than passed.
+
+<div id="tab:scores">
+
+| Run | rsID recall | Pair recall | Decoy rate | Citation recall | Direction |
+|:----|------------:|------------:|-----------:|----------------:|----------:|
+| A   |        1.00 |        0.33 |       0.00 |            1.00 |      1.00 |
+| B   |        1.00 |        1.00 |       0.00 |            1.00 |      1.00 |
+| C   |        1.00 |        0.33 |       0.00 |            0.50 |       n/c |
+
+Three runs of one prompt scored against a human-adjudicated reference module. Recall is reported at two grains; *decoy rate* is the fraction of expert-designated non-associated variants that appear, and is the sound false-positive measure, since an unexpected variant may be correct and merely absent from one curation.
+
+</div>
+
+Citation recall separates the runs on a behaviour worth naming. The assigned paper’s longevity claim replicates an earlier study; run A retrieved that earlier paper unprompted and carried it as a second study row, and run C did not. Retrieving an unprompted primary source is therefore not stable behaviour across runs of one prompt, which an evaluation of the module alone would not have shown.
+
+Three runs of one prompt over one paper is not a performance estimate, and we make no such claim. The two remaining papers in the set have no adjudicated reference; for those, the scorer reports what a module asserts against what it withholds, without a reference. That reference-free reading corrected our own prediction: we expected a paper running no association test to yield no variant rows, and a run produced sixty, each recording the observation with the direction and significance explicitly withheld. The rows are appropriate and the prediction was wrong. Row count is therefore not scored; whether the cells assert more than the source supports is.
 
 # Results
 
@@ -150,7 +170,7 @@ Seven of the 20 skills are user-invocable commands, exposing the workflow throug
 
 ## Production catalog
 
-At the time of writing, the production registry holds eight published modules across 19 versions and five independent namespaces (three distinct owners). Table <a href="#tab:catalog" data-reference-type="ref" data-reference="tab:catalog">3</a> summarizes the published modules.
+At the time of writing, the production registry holds eight published modules across 19 versions and five independent namespaces (three distinct owners). Table <a href="#tab:catalog" data-reference-type="ref" data-reference="tab:catalog">4</a> summarizes the published modules.
 
 <div id="tab:catalog">
 
@@ -182,7 +202,7 @@ The registry turns individual effort into shared infrastructure: authors version
 
 #### Limitations.
 
-The module system launched in August 2026 and the catalog is less than a month old. We are developing mechanisms to involve genetic counselors and domain-expert agents in quality evaluation, and to communicate to citizen scientists that many modules reflect early-stage research rather than clinical-grade evidence. Just-DNA-Lite provides an extensive FAQ and science-literacy guide; the module catalog needs comparable guidance. The evaluation contains no creation accuracy estimate; the available fixtures are too small for a performance claim. The authoring workflow targets GRCh38 and does not perform liftover. Runtime benchmarks are in the companion paper .
+The module system launched in August 2026 and the catalog is less than a month old. We are developing mechanisms to involve genetic counselors and domain-expert agents in quality evaluation, and to communicate to citizen scientists that many modules reflect early-stage research rather than clinical-grade evidence. Just-DNA-Lite provides an extensive FAQ and science-literacy guide; the module catalog needs comparable guidance. The scored set is three runs of one prompt over one paper against one adjudicated reference, which is a demonstration of the protocol rather than a performance estimate, and we make no accuracy claim from it; two further papers in the set have no adjudicated reference. Every run scored here used one model through one host, so the results say nothing about model or host sensitivity. Free-text conclusions are not scored at all, and the assistant’s judgement about whether a source supports a claim remains a reviewer’s question. The authoring workflow targets GRCh38 and does not perform liftover. Runtime benchmarks are in the companion paper .
 
 # Conclusion
 
@@ -212,7 +232,7 @@ A Claude Code or Codex plugin is a bundle of two kinds of asset. **MCP tools** a
 
 ## Tools (60)
 
-The tools are organized into a core set (always listed) and nine optional groups that a session can reveal incrementally via `toolbox`. Table <a href="#tab:tools-core" data-reference-type="ref" data-reference="tab:tools-core">4</a> lists the 18 core and meta tools; Tables <a href="#tab:tools-evidence" data-reference-type="ref" data-reference="tab:tools-evidence">5</a>–<a href="#tab:tools-closing" data-reference-type="ref" data-reference="tab:tools-closing">13</a> list the nine groups. Registry writes require a token obtained through `authenticate`. Literature and enrichment requests share a single pacing gate, including the NCBI budget.
+The tools are organized into a core set (always listed) and nine optional groups that a session can reveal incrementally via `toolbox`. Table <a href="#tab:tools-core" data-reference-type="ref" data-reference="tab:tools-core">5</a> lists the 18 core and meta tools; Tables <a href="#tab:tools-evidence" data-reference-type="ref" data-reference="tab:tools-evidence">6</a>–<a href="#tab:tools-closing" data-reference-type="ref" data-reference="tab:tools-closing">14</a> list the nine groups. Registry writes require a token obtained through `authenticate`. Literature and enrichment requests share a single pacing gate, including the NCBI budget.
 
 <div id="tab:tools-core">
 
