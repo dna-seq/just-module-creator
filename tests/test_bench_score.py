@@ -75,6 +75,7 @@ def test_pair_recall_and_rsid_recall_are_two_numbers_because_they_fail_apart(
     score = score_ground_truth(fixture, SIRT6 / "runs" / "a")
 
     assert score.variants.rsid_recall == 1.0, "it found the right variant"
+    assert score.variants.pair_recall is not None
     assert score.variants.pair_recall < 1.0, "and not all of its genotypes"
     assert score.variants.missing_pairs == ["rs117385980:C/C", "rs117385980:T/T"]
 
