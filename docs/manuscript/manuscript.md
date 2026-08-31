@@ -112,7 +112,7 @@ First, authored values and their checks are kept independent. The workflow does 
 
 Second, disagreements with reference archives are preserved rather than silently resolved. ClinVar may lag a retraction; when the authored value should remain, `record_override` logs the difference and the reason.
 
-Third, unknown results are distinguished from clean ones. A source timeout produces a null, not a pass. The identifier check writes an attestation to `verification.json` so a reviewer can tell an empty report from one with no findings.
+Third, unknown results are distinguished from clean ones. Every check in the ecosystem has three possible answers rather than two: it passed, it failed, or it never ran. The third is recorded as a null, and a null is not a *no*. Reading it as one reports a failure nobody observed; reading it as a pass reports a check nobody performed. A source that timed out leaves exactly this null, so the module says the question was never put rather than answering it. The identifier check writes an attestation to `verification.json` so a reviewer can tell an empty report from one with no findings.
 
 The assistant may locate a verbatim `provenance_quote` from retrieved full text and follow citations into supplementary tables to find per-variant statistics. A `curator` field records who located each quote—a name or model identifier—so a reviewer can direct scrutiny where it is most needed. Attribution does not transfer responsibility: the human author holds accountability regardless.
 
