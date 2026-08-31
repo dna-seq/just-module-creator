@@ -14,7 +14,7 @@ This paper makes four contributions:
 
 3.  It defines how modules move between a local store, a deletable test registry, and the production registry while preserving provenance and decisions that still require review.
 
-4.  It proposes an evaluation protocol for variant recovery, citation identity, and effect-direction agreement, and reports catalog statistics from the first eight published modules across five independent namespaces.
+4.  It defines an evaluation protocol for variant recovery, citation identity, and effect-direction agreement, and reports catalog statistics from the first eight published modules across five independent namespaces.
 
 # Related work
 
@@ -164,7 +164,7 @@ The modules span three independent namespaces from three owners. The largest mod
 
 AI-authored modules are identified in their manifest authorship records. Three modules were authored by people who are not the plugin’s developers, indicating that the tool surface is usable beyond the original team.
 
-## Proposed evaluation protocol
+## Evaluation protocol
 
 The creation evaluation begins with an expert-checked fixture. Each fixture contains a free-text prompt and the `module_spec.yaml`, `variants.csv`, and `studies.csv` that the assistant should recover. The generated module is compared with the fixture on three questions:
 
@@ -175,14 +175,6 @@ The creation evaluation begins with an expert-checked fixture. Each fixture cont
 - Weight-sign accuracy measures whether the generated effect direction agrees with the fixture. Magnitude is reported separately because a module weight is an authored choice and is not copied from a GWAS beta.
 
 A larger adjudicated set and repeated runs are needed to support a performance claim. We therefore report no recall or precision estimate in this paper and present the protocol as a framework for future evaluation.
-
-## How to read a green result
-
-Several outputs look reassuring while answering a narrower question than a reader may expect. Strict compilation checks reproducibility and applies the compiler’s blocking rules; it does not establish biological correctness. A digest match likewise shows that bytes or authored content agree under a specified comparison.
-
-A source timeout produces an unknown result, not a negative one and not a pass. The tools preserve this distinction with null and unknown values. The title-as-quote observation above is another illustration: a green check can mean that the instrument could not have failed rather than that it found something.
-
-The proposed evaluation protocol counts none of these as evidence of accurate extraction. Compiler round-trip behaviour is tested by `just-dna-compiler` and is not counted again as module creation accuracy.
 
 # Discussion
 
