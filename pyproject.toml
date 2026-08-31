@@ -98,6 +98,12 @@ filterwarnings = [
 [tool.ruff]
 line-length = 100
 target-version = "py313"
+# `assets/` is committed fixture material, not our code. The benchmark corpus
+# carries the scratch scripts the runs wrote for themselves — an agent's own xlsx
+# reader, its row builders — and those are evidence of what the tool could not do
+# for them, which is the point of keeping them. Linting somebody else's working
+# notes tells us nothing and would pressure us to edit the record.
+exclude = ["assets"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
