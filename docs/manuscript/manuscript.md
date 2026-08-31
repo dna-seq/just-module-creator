@@ -154,21 +154,7 @@ With the plugin active, the assistant calls typed tools instead of generating co
 
 ## Command menu
 
-Seven of the 20 skills are user-invocable commands, exposing the workflow through intentions rather than internal stages. The remaining thirteen are guides, which a router loads by naming their path when the assistant reaches the corresponding lifecycle stage. A guide is deliberately not matched from its own description: that is what keeps thirteen documents out of every session’s prompt, and it is why a guide nothing links to is unreachable rather than merely quiet.
-
-<div class="center">
-
-| Command | Purpose |
-|:---|:---|
-| `/create-module` | begin or continue creating a module |
-| `/module-status` | inspect a directory and identify the next decision |
-| `/module-revise` | begin another pass over an existing module |
-| `/find-evidence` | find and read evidence for a row |
-| `/module-publish` | rehearse and then publish |
-| `/module-symptom` | explain a message from the toolchain |
-| `/module-install-local` | install a compiled module without a catalog |
-
-</div>
+Seven of the 20 skills are user-invocable commands (Table <a href="#tab:skills-commands" data-reference-type="ref" data-reference="tab:skills-commands">15</a>), exposing the workflow through intentions rather than internal stages. The remaining thirteen are guides, which a router loads by naming their path when the assistant reaches the corresponding lifecycle stage. A guide is deliberately not matched from its own description: that is what keeps thirteen documents out of every session’s prompt, and it is why a guide nothing links to is unreachable rather than merely quiet.
 
 ## Production catalog
 
@@ -204,7 +190,7 @@ The registry turns individual effort into shared infrastructure, and the plugin�
 
 #### Limitations.
 
-The module system launched in August 2026 and the catalog is less than a month old. We are developing mechanisms to involve genetic counselors and domain-expert agents in quality evaluation, and to communicate to citizen scientists that many modules reflect early-stage research rather than clinical-grade evidence. Every run scored here used one model through one host, so the results say nothing about model or host sensitivity. Free-text conclusions are not scored at all, and the assistant’s judgement about whether a source supports a claim remains a reviewer’s question. Coordinates are declared rather than translated: `module_spec.yaml` names a `genome_build` and the toolchain refuses to infer one. Liftover belongs to the source or the consumer; the PGS Catalog already distributes per-assembly positions . Runtime benchmarks are in the companion paper .
+The module system launched in August 2026. We are developing mechanisms to involve genetic counselors and domain-expert agents in quality evaluation, and to communicate to citizen scientists that many modules reflect early-stage research rather than clinical-grade evidence. Every run scored here used one model through one host, so the results say nothing about model or host sensitivity. Free-text conclusions are not scored at all, and the assistant’s judgement about whether a source supports a claim remains a reviewer’s question. Coordinates are declared rather than translated: `module_spec.yaml` names a `genome_build` and the toolchain refuses to infer one. Liftover belongs to the source or the consumer; the PGS Catalog already distributes per-assembly positions . Runtime benchmarks are in the companion paper .
 
 # Conclusion
 

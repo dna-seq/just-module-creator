@@ -550,30 +550,13 @@ matches its own full text and evidences nothing.
 
 \subsection{Command menu}
 
-Seven of the 20 skills are user-invocable commands, exposing the workflow
-through intentions rather than internal stages. The remaining thirteen are
-guides, which a router loads by naming their path when the assistant reaches
-the corresponding lifecycle stage. A guide is deliberately not matched from
-its own description: that is what keeps thirteen documents out of every
-session's prompt, and it is why a guide nothing links to is unreachable
-rather than merely quiet.
-
-\begin{center}
-\small
-\begin{tabular}{@{}ll@{}}
-\toprule
-Command & Purpose \\
-\midrule
-\texttt{/create-module} & begin or continue creating a module \\
-\texttt{/module-status} & inspect a directory and identify the next decision \\
-\texttt{/module-revise} & begin another pass over an existing module \\
-\texttt{/find-evidence} & find and read evidence for a row \\
-\texttt{/module-publish} & rehearse and then publish \\
-\texttt{/module-symptom} & explain a message from the toolchain \\
-\texttt{/module-install-local} & install a compiled module without a catalog \\
-\bottomrule
-\end{tabular}
-\end{center}
+Seven of the 20 skills are user-invocable commands (Table~\ref{tab:skills-commands}),
+exposing the workflow through intentions rather than internal stages. The
+remaining thirteen are guides, which a router loads by naming their path when
+the assistant reaches the corresponding lifecycle stage. A guide is
+deliberately not matched from its own description: that is what keeps thirteen
+documents out of every session's prompt, and it is why a guide nothing links to
+is unreachable rather than merely quiet.
 
 \subsection{Production catalog}
 
@@ -641,8 +624,7 @@ them independently. What travels through it is genomic-data-agnostic knowledge:
 a module carries no individual-level data.
 
 \paragraph{Limitations.}
-The module system launched in August 2026 and the catalog is less than a month
-old. We are developing mechanisms to involve genetic counselors and
+The module system launched in August 2026. We are developing mechanisms to involve genetic counselors and
 domain-expert agents in quality evaluation, and to communicate to citizen
 scientists that many modules reflect early-stage research rather than
 clinical-grade evidence. Every run scored here used one model
