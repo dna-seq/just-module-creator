@@ -136,6 +136,18 @@ before crediting the run.**
    answer before each round, not once**: an evidence quote is exactly the shape a leak arrives in,
    and the person writing it is trying to be rigorous.
 2. **Runs span versions.** See step 1 of *Running a round*.
+
+   **And a fix made mid-round does not reach the running server.** The MCP server is a long-lived
+   stdio process that imported its modules when the session connected; editing the checkout, bumping
+   the three version files and running `uv sync` change nothing about what it serves. On 2026-08-31 a
+   pair was launched onto a 0.28.0 tree through a process that had started 43 minutes before the first
+   of those edits, and every other signal agreed with the tree — `pyproject.toml`,
+   both plugin manifests, and `importlib.metadata.version` all said 0.28.0. **Restart the transport
+   between the fix and the next pair**, and confirm the version from the server's own instructions
+   header rather than from the disk. This is the whole reason step 1 puts the expected version in the
+   prompt: both runs of that pair read the header, saw 0.27.0, and stopped without authoring anything.
+   The pin is the only check in the round that can see a stale process, so never drop it as a
+   formality.
 3. **Layout is not uniform.** Runs have put the spec at the run root, under `spec/`, and under
    `longevity_*/`. All satisfy the ask; `locate_spec` finds it and refuses rather than guessing when
    two exist.
