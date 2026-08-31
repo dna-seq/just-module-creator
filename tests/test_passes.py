@@ -973,3 +973,95 @@ def test_the_use_vocabulary_is_the_formats_own_and_not_a_literal_here():
     from just_dna_format.vocab import VALID_DECLARED_USE
 
     assert set(VALID_USE) == set(VALID_DECLARED_USE)
+
+
+async def test_a_strict_refusal_survives_the_heartbeats_task_group(
+    make_client, tmp_path, monkeypatch
+) -> None:
+    """`strict` is the mode the skills teach, and it was the mode that returned nothing.
+
+    Measured on a benchmark run, 2026-08-31: `enrich_module(strict=true)` failed twice
+    with `unhandled errors in a TaskGroup (1 sub-exception)` — no message, no unresolved
+    list, nothing to act on. The identical spec under `strict=false` succeeded and named
+    the five unresolved rsIDs. The author diagnosed it by running the upstream CLI by
+    hand, which is the surface teaching a step it cannot run.
+
+    The cause is ours, not upstream's. `enrich()` raises `EnrichmentError` in strict mode
+    exactly as documented, but the heartbeat wraps it in `anyio.create_task_group()`, and
+    a task group re-raises as `ExceptionGroup` — which `except EnrichmentError` does not
+    catch. So the one arm written to turn a refusal into a structured report was dead for
+    every strict run that had anything to refuse, and only for those: a clean strict run
+    raises nothing and looks fine, which is why it shipped.
+    """
+    from just_dna_enricher.enrich import EnrichmentError
+
+    from just_module_creator.tools import passes
+
+    spec = tmp_path / "spec"
+    spec.mkdir()
+    (spec / "module_spec.yaml").write_text("module:\n  name: spec\n", encoding="utf-8")
+
+    refusal = "strict enrichment: 5 variant(s) unresolved after the chain"
+
+    def _refuse(*_args, **_kwargs):
+        raise EnrichmentError(refusal)
+
+    monkeypatch.setattr(passes, "enrich", _refuse)
+
+    async with make_client(offline_settings()) as client:
+        result = await client.call_tool("enrich_module", {"spec_dir": str(spec), "strict": True})
+
+    report = result.data
+    assert report.success is False
+    assert any(refusal in w for w in report.warnings), (
+        f"the strict refusal did not reach the caller: {report.warnings!r} — "
+        "a task group turned a typed refusal into an unhandled ExceptionGroup"
+    )
+
+
+async def test_a_not_found_row_is_not_counted_as_resolved(
+    make_client, tmp_path, monkeypatch
+) -> None:
+    """`resolved: 64` was printed beside five unresolved keys on a 64-subject module.
+
+    Measured on a benchmark run, 2026-08-31. The number was `len(result.rows)` — the
+    length of `resolution.csv` — but upstream writes a `status: not_found` row for a
+    subject it *also* appends to `unresolved` (`enrich.py`, the `source="ensembl"`
+    arm). So the two fields overlapped, and the pair read as "all sixty-four reached a
+    coordinate, and also five did not". The author read it as the former and went
+    looking for the wrong defect.
+
+    The name is the contract here: a field called `resolved` sitting beside `unresolved`
+    is read as an outcome, whatever the description says it counts.
+    """
+    from just_module_creator.tools import passes
+
+    spec = tmp_path / "spec"
+    spec.mkdir()
+    (spec / "module_spec.yaml").write_text("module:\n  name: spec\n", encoding="utf-8")
+
+    class _Row:
+        def __init__(self, status: str) -> None:
+            self.status = status
+
+    class _Result:
+        rows = [_Row("resolved")] * 3 + [_Row("not_found"), _Row("ambiguous")]
+        unresolved = ["rs1", "rs2"]
+        sources = ["ensembl"]
+        ref_mismatches: list[str] = []
+        clin_sig_conflicts: list[str] = []
+        clin_sig_not_checked = None
+        stale_rsids: list[str] = []
+        vrs = None
+
+    monkeypatch.setattr(passes, "enrich", lambda *_a, **_k: _Result())
+
+    async with make_client(offline_settings()) as client:
+        report = (await client.call_tool("enrich_module", {"spec_dir": str(spec)})).data
+
+    assert report.resolved == 3, (
+        f"resolved={report.resolved} counts rows written, not loci that reached a "
+        "coordinate — a not_found row is written AND listed in unresolved, so the two "
+        "fields double-count the same subject"
+    )
+    assert len(report.unresolved) == 2

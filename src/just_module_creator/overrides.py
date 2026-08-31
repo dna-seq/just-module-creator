@@ -380,7 +380,9 @@ class QueuedOverride(BaseModel):
             "**Three-valued, and `null` is not `false`.** `true`: the reason still "
             "describes the value. `false`: the value was edited again, so the two have "
             "come apart — stale by construction, exactly like a verification record over "
-            "moved bytes. `null`: there is no such cell to compare, because the row is "
+            "moved bytes. A variant is several rows, so a record may name one cell's "
+            "value or the joined rendering `current_value` shows for all of them; both "
+            "bind. `null`: there is no such cell to compare, because the row is "
             "gone or `variants.csv` does not carry that column at all, so the question "
             "could not be put. Reporting that as `false` would accuse an author of an "
             "edit nobody made."
@@ -424,8 +426,24 @@ def review_queue(spec_dir: Path) -> list[QueuedOverride]:
         values = by_field.setdefault(record.field, authored_values(spec_dir, record.field))
         current = values.get(record.variant_key) or set()
         one = sorted(current)[0] if len(current) == 1 else None
+        rendered = ", ".join(sorted(current)) or None
         # Three-valued: no cell to compare is `unknown`, never `false`.
-        bound = any(record.bound_to(value) for value in current) if current else None
+        #
+        # A variant is several rows, so a column like `genotype` has several current
+        # values and `current_value` below renders them joined. That rendering is the
+        # only string this surface ever SHOWS for such a record — and recording it back
+        # verbatim used to hash to nothing, so `still_bound` said `false`: "the value was
+        # edited again", of a module where nothing had been. Measured on a benchmark run,
+        # five records, all five reported unbound with the file untouched. So the joined
+        # form binds as well as any single cell does.
+        #
+        # A value matching neither stays `false`: the record names something no cell
+        # holds, which is the signal this field exists for.
+        bound = (
+            any(record.bound_to(value) for value in current) or record.bound_to(rendered)
+            if current
+            else None
+        )
         state = "unknown"
         if record.field == "clin_sig" and record.variant_key in archive:
             said = archive[record.variant_key]

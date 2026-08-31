@@ -448,12 +448,29 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
                         ),
                     )
 
-            async with anyio.create_task_group() as beat:
-                beat.start_soon(_heartbeat)
-                result = await run_sync(
-                    lambda: enrich(target, mode=mode, offline=eff_offline, write=True)
-                )
-                beat.cancel_scope.cancel()
+            # `except*`, not `except`: the heartbeat's task group re-raises whatever the
+            # enrichment threw wrapped in an `ExceptionGroup`, and a plain `except
+            # EnrichmentError` does not catch a group. It did not, for every strict run
+            # that had something to refuse — the caller got `unhandled errors in a
+            # TaskGroup (1 sub-exception)` with no message and no unresolved list, while
+            # the same spec under `best_effort` named all five. A clean strict run raises
+            # nothing, so the dead arm was invisible until a module failed to resolve.
+            try:
+                async with anyio.create_task_group() as beat:
+                    beat.start_soon(_heartbeat)
+                    result = await run_sync(
+                        lambda: enrich(target, mode=mode, offline=eff_offline, write=True)
+                    )
+                    beat.cancel_scope.cancel()
+            except* Exception as group:
+                # Unwrap ANY lone exception, not just `EnrichmentError`: every error the
+                # enrichment can raise reaches its caller through this group, and a group
+                # loses the type that every arm downstream — and every reader — matches
+                # on. A group carrying more than one is re-raised whole, because picking
+                # one of several would be discarding a failure to make a tidier message.
+                if len(group.exceptions) == 1:
+                    raise group.exceptions[0] from None
+                raise
         except EnrichmentError as exc:
             return EnrichReport(
                 success=False,
@@ -488,7 +505,16 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
             spec_dir=str(target),
             mode=mode,
             offline=eff_offline,
-            resolved=len(getattr(result, "rows", []) or []),
+            # `rows` is what was WRITTEN, and upstream writes a `status: not_found` row
+            # for a subject it also lists in `unresolved` — so the row count reported
+            # `resolved: 64` beside five unresolved keys on a 64-subject module, which
+            # reads as "all of them, and also not five of them". Count the outcome, not
+            # the file's length.
+            resolved=sum(
+                1
+                for row in getattr(result, "rows", []) or []
+                if getattr(row, "status", None) == "resolved"
+            ),
             unresolved=[str(u) for u in getattr(result, "unresolved", []) or []],
             sources=[str(s) for s in getattr(result, "sources", []) or []],
             ref_mismatches=mismatches,

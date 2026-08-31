@@ -1254,7 +1254,12 @@ class EnrichReport(BaseModel):
     spec_dir: str = Field(description="The spec directory.")
     mode: str = Field(description="strict | best_effort.")
     offline: bool = Field(description="Whether this ran cache-only.")
-    resolved: int = Field(description="Loci recorded in resolution.csv.")
+    resolved: int = Field(
+        description="Loci that reached a coordinate — `status: resolved` rows only. It is "
+        "NOT the row count of resolution.csv: a `not_found` or `ambiguous` row is written "
+        "too, and is also listed in `unresolved`. Read the two together; they no longer "
+        "sum past the subject count."
+    )
     unresolved: list[str] = Field(description="Variant keys that reached no coordinate.")
     sources: list[str] = Field(description="Which tiers contributed.")
     ref_mismatches: list[str] = Field(

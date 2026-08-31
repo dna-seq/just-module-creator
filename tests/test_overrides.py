@@ -495,3 +495,25 @@ async def test_the_returned_note_describes_the_mode_the_call_actually_used(
     logged = (module / "logs" / "authoring.log").read_text()
     assert "authored rs1801133 weight=" in logged
     assert "outranks clinvar ('benign')" in logged
+
+
+def test_the_only_value_the_queue_shows_for_a_multi_row_variant_can_bind(module: Path):
+    """Five records, five `still_bound: false`, and nothing had been edited.
+
+    Measured on a benchmark run, 2026-08-31. A variant is several rows, so a column
+    like `genotype` has several current values, and `current_value` renders them
+    joined — `"C/C, C/T, T/T"`. That joined string is the only value this surface ever
+    shows for such a record, and recording it back verbatim used to hash to nothing,
+    because `bound_to` was asked one cell at a time. The queue then reported the signal
+    it calls *the one to read first* — the authored cell was edited again — over a file
+    nobody had touched. The proof was arithmetic: the stored `value_sha256` was
+    byte-identical to the digest of the rendering the same call printed.
+    """
+    rendered = "C/C, C/T, T/T"
+    overrides.upsert(module, _record(field="genotype", authored_value=rendered))
+    entry = overrides.review_queue(module)[0]
+    assert entry.current_value == rendered, "the queue's own rendering changed"
+    assert entry.still_bound is True, (
+        f"still_bound={entry.still_bound!r} for the exact string the queue prints — "
+        "recording back what the surface shows must not read as an edit nobody made"
+    )
