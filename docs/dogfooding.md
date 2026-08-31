@@ -63,6 +63,19 @@ all three lines then writes the wrong coordinate into `resolution.csv`; and
 already does the right thing, and the hole is that the diagnosis is discarded before the compiler sees
 it. Filed as `S78`. Our own default is `best_effort`, which is the path that meets this.
 
+**The ask filed is broader than the coordinate**, on the owner's framing: *a `compile --strict` over a
+`resolution.csv` produced by a `best_effort` enrichment should be blocked.* The two strict flags
+promise different things — the enricher's means every row was checked against the reference, the
+compiler's means the artifact is reproducible — and a module that ran `best_effort` then compiled
+`--strict` collects the second stamp without the first having been earned, with nothing in the
+artifact recording which happened. That makes the mode a property of the **sidecar** rather than of
+the run: `resolution.csv` should carry the mode that wrote it. Refusal rather than a warning, because
+the softer option has already failed once here — upstream's diagnosis is excellent and a green
+artifact still came out the end, since a report nobody must read is not a gate. Migration cost is
+real and stated in the item: an existing sidecar carries no stamp, so absent must read as *unknown*
+rather than as `best_effort`, or the rule retroactively blocks recompiling published modules — `None`
+is not `False`, at the artifact level.
+
 **Surface it, and the fix is prose plus possibly a check.**
 
 - **The prose fix, which is ours and cheap:** `module-curate` and `module-start` should say that a
