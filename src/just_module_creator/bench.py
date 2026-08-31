@@ -185,7 +185,11 @@ class BenchFixture(BaseModel):
         description="Natural keys per table, from upstream's `draft.natural_key`. The "
         "manuscript's '(rsID, genotype) pair' IS that key — it is never spelled out here.",
     )
-    expected_rows: dict[str, dict[tuple, object]] = Field(default_factory=dict)
+    expected_rows: dict[str, dict[tuple, BaseModel]] = Field(
+        default_factory=dict,
+        description="The expected rows themselves, keyed, so a metric can compare a cell "
+        "rather than only a key.",
+    )
     tier_of: dict[str, str] = Field(
         default_factory=dict, description="rsID -> tier name, for the weighted recall."
     )
@@ -232,21 +236,29 @@ def load_fixture(path: Path) -> BenchFixture:
             raise BenchFixtureError(
                 f"{meta_path}: expected_spec must be relative to the fixture, got {raw_spec!r}"
             )
-        reference = (path / raw_spec).resolve()
+        reference = (path / str(raw_spec)).resolve()
         if not (reference / "module_spec.yaml").is_file():
             raise BenchFixtureError(f"{meta_path}: no module_spec.yaml at {reference}")
 
     scored_tables = list(meta.get("scored_tables") or [])
     for name in scored_tables:
-        rule = hints.key_fields(name).rule
-        if rule != "equality":
+        # `None` where upstream has no key for the name at all — a table we cannot
+        # pair for a different reason, and refused with a different sentence rather
+        # than folded into the overlap case.
+        key = hints.key_fields(name)
+        if key is None:
             raise BenchFixtureError(
-                f"{meta_path}: {name} is keyed on the {rule!r} rule, so its rows cannot be "
+                f"{meta_path}: {name} has no natural key upstream, so its rows cannot be "
+                "paired and it cannot be a scored table."
+            )
+        if key.rule != "equality":
+            raise BenchFixtureError(
+                f"{meta_path}: {name} is keyed on the {key.rule!r} rule, so its rows cannot be "
                 "paired one to one and it cannot be a scored table."
             )
 
     expected_keys: dict[str, set[tuple]] = {}
-    expected_rows: dict[str, dict[tuple, object]] = {}
+    expected_rows: dict[str, dict[tuple, BaseModel]] = {}
     expected_rsids: set[str] = set()
     if reference is not None:
         loaded = compare.authored_tables(reference)
