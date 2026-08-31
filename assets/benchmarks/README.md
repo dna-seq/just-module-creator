@@ -80,6 +80,14 @@ honest rows both pass; sixty rows asserting a direction fails.
 - **Not an independent ground truth for the two fixtures with no reference.** `centenarian` and
   `ards` carry `expected_spec: null` deliberately: one adjudicated case out of three is what exists,
   and claiming more would be the thing this corpus is built to avoid.
+- **Not unbriefed, for `centenarian`.** Its `metadata.json` carries `pre_briefed`, because two skills
+  a run loads name this paper, its PMID, `rs61849494`'s coordinates on both builds, and what two
+  earlier runs on it decided. A run's rsID-only identity and its exclusion of the coordinate-only
+  variants are therefore guidance-following rather than independent judgement — the briefing is
+  constant across runs, so run-to-run agreement still measures something, but no score here says an
+  unbriefed author would land in the same place. `F82`: this is structural, not an accident. Every
+  paper a dogfooding probe learns from ends up in the guidance the next run reads, so **budget a fresh
+  paper per round rather than expecting the corpus to keep.**
 - **Not a comparison against another system.** In particular there is no PubMind axis here and there
   should not be: upstream measured that relationship and concluded PubMind is *"a **source**, of the
   same kind as ClinVar, gnomAD or the GWAS Catalog"*, one-directionally upstream of this project.

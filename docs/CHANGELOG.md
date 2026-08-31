@@ -3,7 +3,45 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## Unreleased
+## 0.28.0 — 2026-08-31
+
+### A paired benchmark round found three defects in this layer, and one in the corpus
+
+Two runs on 0.27.0 — one centenarian paper, one ARDS paper, launched together from the same wrapper.
+Every finding below is theirs; each fix has a test that was watched to fail against the broken code.
+
+- **`enrich_module(strict=true)` returned `unhandled errors in a TaskGroup (1 sub-exception)`** and
+  nothing else, for every strict run that had something to refuse. The heartbeat's `anyio` task group
+  re-raises as `ExceptionGroup`, and `except EnrichmentError` does not catch a group — so the arm
+  written to turn a typed refusal into a structured report was dead, invisibly, because a clean strict
+  run raises nothing. `strict` is the mode the skills teach. The run diagnosed it by driving the
+  upstream CLI by hand, which is the surface teaching a step it cannot run. `except*` now unwraps any
+  lone exception, not just this one: every error the pass can raise arrives through that group, and a
+  group loses the type every arm and every reader matches on.
+- **`resolved` counted the rows written rather than the loci resolved.** Upstream writes a
+  `status: not_found` row for a subject it also puts in `unresolved`, so a 64-subject module reported
+  `resolved: 64` beside five unresolved keys — all of them, and also not five of them.
+- **`still_bound: false` fired on all five override records of a module nobody had edited.** A variant
+  is several rows, so `genotype` has several values and `current_value` renders them joined; that
+  rendering — the only string the surface ever shows for such a record — hashed to nothing, because
+  `bound_to` was asked one cell at a time. The stored digest was byte-identical to the joined form the
+  same call printed. Both bind now; several cells matching none stays `false`, which is a real signal.
+
+**`F82` — the dogfooding loop burns its own benchmark papers.** A run reported, against its own
+interest, that two skills it loads name the paper it had just been given — its PMID, `rs61849494` on
+both builds, and what two earlier runs on it decided. So its two headline decisions were
+guidance-following rather than independent judgement. This is structural: §7 turns every probe into
+committed guidance, and the corpus is made of the papers those probes ran on. The skills stay as they
+are — they are correct, and masking a real identifier to protect a fixture is the wrong trade — and
+`assets/benchmarks/centenarian/metadata.json` records `pre_briefed` instead. **Budget a fresh paper per
+round rather than expecting the corpus to keep.**
+
+Filed upstream as **`S85`**: the enricher writes `status: not_found` for an rsID the source has, when
+what failed was allele-aware matching against a paper's GRCh37 strand. That is a third state collapsed
+into a word `enrich.py`'s own neighbouring branches refuse to write for exactly this reason, and it
+cost the run its largest diagnosis detour. The reading is in `SYMPTOMS.md` so the next author is sent
+to the strand rather than to dbSNP.
+
 
 ### Benchmarking gets a runbook, after two ways a round can leak
 
