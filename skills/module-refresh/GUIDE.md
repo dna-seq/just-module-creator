@@ -78,7 +78,7 @@ and reports the rest instead of losing them, which is the whole difference betwe
 
 | Sidecar | A re-run… | Delete to re-derive when | Deleting costs |
 |---|---|---|---|
-| `resolution.csv` | skips every `variant_key` already covered | an identity column changed, or a locus resolved wrongly | **hand-authored `source=manual` rows** — real, and not reproducible. `reference_examples/cyp2c9_warfarin_grch37` carries three |
+| `resolution.csv` | skips every `variant_key` already covered, and **asks about every one it does not** — a subject with no row has nothing to merge onto, so a table that came back short is refilled by re-running rather than entrenched by it | an identity column changed, or a locus resolved wrongly | **hand-authored `source=manual` rows** — real, and not reproducible. `reference_examples/cyp2c9_warfarin_grch37` carries three |
 | `frequencies.csv` | merges; existing rows win | the variant set changed, or you want a newer gnomAD | normally nothing hand-written |
 | `gene_metrics.csv` | merges, and a `source="manual"` row suppresses the fetch for its `(gene, dataset)` since enricher 0.6.6 | the gene set changed | curator overrides |
 | `literature.csv` | refetches nothing, and **will not back-fill** the 0.6 licence columns onto older rows | you need the licence columns, or a `doi_checked` verdict re-put | a curator's deliberate **blank**, which merge cannot distinguish from an absent value |
