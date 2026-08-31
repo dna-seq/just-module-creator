@@ -120,7 +120,7 @@ Curation follows drafting because a drafted row may still carry decisions the so
 
 ## Local and shared module stores
 
-A compiled module can reach a consumer through three routes (Figure <a href="#fig:architecture" data-reference-type="ref" data-reference="fig:architecture">2</a>): local installation into a Just-DNA-Lite checkout for testing with a VCF, publication to the staging registry (the polygon, `target=test`) for a deletable rehearsal, or publication to the immutable public catalog. The registry runs its own enrichment and strict compilation on publish, so the stored artifact is the one the server produced, not a locally claimed digest. Inclusion in either catalog distributes a module; it is not scientific review, clinical validation, or endorsement.
+A compiled module can reach a consumer through three routes (Figure <a href="#fig:architecture" data-reference-type="ref" data-reference="fig:architecture">2</a>): local installation into a Just-DNA-Lite checkout for testing with a VCF, publication to the staging registry for a deletable rehearsal, or publication to the immutable public catalog. The registry runs its own enrichment and strict compilation on publish, so the stored artifact is the one the server produced, not a locally claimed digest. Inclusion in either catalog distributes a module; it is not scientific review, clinical validation, or endorsement.
 
 ## Evaluation dimensions
 
@@ -142,7 +142,7 @@ Three runs of one prompt scored against an expert-curated reference module, plug
 
 Table <a href="#tab:scores" data-reference-type="ref" data-reference="tab:scores">3</a> reports three runs of one prompt on one paper. All three recovered the variant the paper supports, cited both it and the earlier study it replicates, agreed on effect direction, and introduced no decoy. Two matched the reference on every genotype row, including a homozygous row that asserts nothing because neither cohort observed a carrier. All three declined to propagate the seed paper’s description of the variant as stop-gained, which the study it cites classifies as intronic at the same coordinate.
 
-The one divergence is a significance verdict at $`p \approx 0.07`$, read as *suggestive* by two runs and *not significant* by the third—a vocabulary ambiguity reported upstream, which an aggregate score would have hidden. Agreement also measures the guidance and not only the runs: the validator names the missing genotype and a written rule states that a zero weight is a claim where a blank is not, so convergence shows the workflow is prescriptive, not that its output is confirmed.
+The one divergence is a significance verdict at $`p \approx 0.07`$, read as *suggestive* by two runs and *not significant* by the third, which an aggregate score would have hidden. Agreement also measures the guidance and not only the runs: the validator names the missing genotype and a written rule states that a zero weight is a claim where a blank is not, so convergence shows the workflow is prescriptive, not that its output is confirmed.
 
 Two further papers have no reference; there the scorer reports what a module asserts against what it withholds. That reading corrected our prediction that a paper running no association test should yield no variant rows: a run produced sixty, each recording the observation with direction and significance withheld. Row count is therefore not scored; whether the cells assert more than the source supports is.
 
@@ -150,7 +150,7 @@ Two further papers have no reference; there the scorer reports what a module ass
 
 The plugin can be installed from its GitHub repository in a single command (`/install-plugin` in Claude Code, or a repository URL in the Codex plugin marketplace). Once installed, the assistant gains access to 60 typed MCP tools (Appendix <a href="#app:tools" data-reference-type="ref" data-reference="app:tools">9</a>) and 20 skills—written workflow instructions that teach the assistant when to call which tool. In both Claude Code and Codex, skills marked as commands can be invoked directly by typing `/name` in the prompt.
 
-With the plugin active, the assistant calls typed tools instead of generating code (Figure <a href="#fig:conversation-to-module" data-reference-type="ref" data-reference="fig:conversation-to-module">1</a>): enrichment adds coordinates and derived sidecars, compilation validates against the live schema, and the compiled artifact can be published to the registry and immediately applied to a genome. The checks described in Section 3.3 catch citation misattributions, identifier drift, and schema violations in practice—a measurement across 33 upstream `studies.csv` files (44,342 rows) found 3,668 rows where the `provenance_quote` was the article’s title, a passage that always matches its own full text and evidences nothing.
+With the plugin active, the assistant calls typed tools instead of generating code (Figure <a href="#fig:conversation-to-module" data-reference-type="ref" data-reference="fig:conversation-to-module">1</a>): enrichment adds coordinates and derived sidecars, compilation validates against the live schema, and the compiled artifact can be published to the registry and immediately applied to a genome. The checks described in Section 3.3 catch citation misattributions, identifier drift, and schema violations in practice—a measurement across 33 published `studies.csv` files (44,342 rows) found 3,668 rows where the `provenance_quote` was the article’s title, a passage that always matches its own full text and evidences nothing.
 
 ## Command menu
 
@@ -194,7 +194,7 @@ The module system launched in August 2026. We are developing mechanisms to invol
 
 # Conclusion
 
-Annotation knowledge that lives in a chat session dies with it. The Just-DNA ecosystem gives an AI assistant a different job—producing a versioned, schema-validated module instead of a script—so the work survives review, correction and reuse by someone else. What makes that more than a file format is the seam: authored claims stay separable from derived records, a check that could not run says so, and every published module carries the evidence for its own rows. Eight modules from five namespaces, three from authors outside the development team, show the path is functional today.
+Annotation knowledge that lives in a chat session dies with it. The Just-DNA ecosystem gives an AI assistant a different job—producing a versioned, schema-validated module instead of a script—so the work survives review, correction and reuse by someone else. What makes that more than a file format is what a module keeps separate: authored claims stay distinct from derived records, a check that could not run says so, and every published module carries the evidence for its own rows. Eight modules from five namespaces, three from authors outside the development team, show the path is functional today.
 
 The software is open-source and intended for research use only.
 
@@ -206,7 +206,7 @@ The software is open-source and intended for research use only.
 
 - **Just-DNA-Lite**: <https://anonymous.4open.science/r/just-dna-lite> (local VCF processing, annotation, and reporting; described in the companion paper ).
 
-- The public catalog and staging polygon are live at URLs provided in the anonymized repositories.
+- The public catalog and the staging registry are live at URLs provided in the anonymized repositories.
 
 # Appendix
 

@@ -294,8 +294,8 @@ and stage.
     compile, and close. Later evidence or reviewer feedback re-enters this
     workflow at the stage it affects.};
   \node[layer, below=of review] (destinations) {\textbf{Destinations:}
-    local installation, rehearsal on the polygon, or publication to the
-    public catalog; a consumer later joins the compiled module to a genome.};
+    local installation, rehearsal on the staging registry, or publication to
+    the public catalog; a consumer later joins the compiled module to a genome.};
   \draw[arr] (entry) -- (route);
   \draw[arr] (route) -- (scaffold);
   \draw[arr] (scaffold) -- (workspace);
@@ -458,9 +458,8 @@ these are surfaced for domain experts rather than resolved silently.
 
 A compiled module can reach a consumer through three routes
 (Figure~\ref{fig:architecture}): local installation into a Just-DNA-Lite
-checkout for testing with a VCF, publication to the staging registry (the
-polygon, \texttt{target=test}) for a deletable rehearsal, or publication to
-the immutable public catalog. The registry runs its own enrichment and
+checkout for testing with a VCF, publication to the staging registry for a
+deletable rehearsal, or publication to the immutable public catalog. The registry runs its own enrichment and
 strict compilation on publish, so the stored artifact is the one the server
 produced, not a locally claimed digest. Inclusion in either catalog
 distributes a module; it is not scientific review, clinical validation, or
@@ -509,9 +508,8 @@ the variant as stop-gained, which the study it cites classifies as intronic
 at the same coordinate.
 
 The one divergence is a significance verdict at $p \approx 0.07$, read as
-\emph{suggestive} by two runs and \emph{not significant} by the third---a
-vocabulary ambiguity reported upstream, which an aggregate score would have
-hidden. Agreement also measures the guidance and not only the runs: the
+\emph{suggestive} by two runs and \emph{not significant} by the third, which
+an aggregate score would have hidden. Agreement also measures the guidance and not only the runs: the
 validator names the missing genotype and a written rule states that a zero
 weight is a claim where a blank is not, so convergence shows the workflow
 is prescriptive, not that its output is confirmed.
@@ -543,7 +541,7 @@ coordinates and derived sidecars, compilation validates against the live
 schema, and the compiled artifact can be published to the registry and
 immediately applied to a genome. The checks described in
 Section~3.3 catch citation misattributions, identifier drift, and schema
-violations in practice---a measurement across 33 upstream
+violations in practice---a measurement across 33 published
 \texttt{studies.csv} files (44,342 rows) found 3,668 rows where the
 \texttt{provenance\_quote} was the article's title, a passage that always
 matches its own full text and evidences nothing.
@@ -648,7 +646,8 @@ Annotation knowledge that lives in a chat session dies with it. The Just-DNA
 ecosystem gives an AI assistant a different job---producing a versioned,
 schema-validated module instead of a script---so the work survives review,
 correction and reuse by someone else. What makes that more than a file format
-is the seam: authored claims stay separable from derived records, a check that
+is what a module keeps separate: authored claims stay distinct from derived
+records, a check that
 could not run says so, and every published module carries the evidence for its
 own rows. Eight modules from five namespaces, three from authors outside the
 development team, show the path is functional today.
@@ -675,7 +674,7 @@ The software is open-source and intended for research use only.
     \url{https://anonymous.4open.science/r/just-dna-lite}
     (local VCF processing, annotation, and reporting; described in the
     companion paper~\citep{companion2026justdnalite}).
-    \item The public catalog and staging polygon are live at URLs
+    \item The public catalog and the staging registry are live at URLs
     provided in the anonymized repositories.
 \end{itemize}
 
