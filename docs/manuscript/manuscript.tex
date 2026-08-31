@@ -126,9 +126,10 @@ variant--disease associations from the literature through manual review, though
 the public version updates infrequently and does not include explicit
 pathogenicity calls~\citep{stenson2020hgmd}. ClinGen provides expert
 variant curation within the ACMG/AMP
-framework~\citep{rehm2015clingen,richards2015acmg}. PharmGKB and CPIC supply
+framework~\citep{rehm2015clingen,richards2015acmg}. ClinPGx, which since 2025
+consolidates PharmGKB, CPIC and PharmCAT into one resource, supplies
 pharmacogenomic annotations including diplotype-level clinical
-recommendations~\citep{whirl2012pharmgkb}. The GA4GH Genomic Knowledge
+recommendations~\citep{whirl2012pharmgkb,clinpgx2025}. The GA4GH Genomic Knowledge
 Standards define interoperable representations for variant
 annotations~\citep{ga4gh2022gks}. The problem addressed here begins before the
 join: selected evidence must be turned into a reviewable, machine-checkable
@@ -480,25 +481,32 @@ against---an expert curation informed by the runs, rather than a run
 promoted to an answer. Scoring authored modules against a module the same
 system authored would measure agreement with itself.
 
-Table~\ref{tab:scores} reports three runs of one prompt against that
-reference. Two properties of the result matter more than the values.
-First, every run recovered the correct variant while differing on which
-genotypes it authored, so recall at the rsID and at the rsID--genotype
-grain are reported separately; a single score with partial credit for a
-recovered variant with wrong genotypes conflates two different failures.
-Second, one run withheld the effect direction the reference asserts, which
-leaves no row where both sides state one. That is reported as not computed
-rather than as disagreement---an empty denominator is not a failed check,
-and the corresponding threshold is likewise undefined rather than passed.
+Table~\ref{tab:scores} illustrates the framework on three preparatory
+runs. These runs were exploratory: they informed revisions to the authoring
+prompts and to the upstream schema, and the plugin changed between them, so
+the values demonstrate that the instrument discriminates rather than
+measuring authoring quality. Two properties of the output matter more than
+the values. First, every run recovered the correct variant while differing
+on which genotypes it authored, so recall at the rsID and at the
+rsID--genotype grain are reported separately; a single score with partial
+credit for a recovered variant with wrong genotypes conflates two different
+failures. Second, one run withheld the effect direction the reference
+asserts, which leaves no row where both sides state one. That is reported
+as not computed rather than as disagreement---an empty denominator is not a
+failed check, and the corresponding threshold is likewise undefined rather
+than passed.
 
 \begin{table}[ht]
 \centering
 \small
-\caption{Three runs of one prompt scored against a human-adjudicated
-reference module. Recall is reported at two grains; \emph{decoy rate} is the
+\caption{Three preparatory runs of one prompt scored against a
+human-adjudicated reference module, illustrating the framework's output.
+The runs predate a stable plugin version and are not a performance
+estimate. Recall is reported at two grains; \emph{decoy rate} is the
 fraction of expert-designated non-associated variants that appear, and is
 the sound false-positive measure, since an unexpected variant may be
-correct and merely absent from one curation.}
+correct and merely absent from one curation. \emph{n/c} marks a metric
+whose denominator was empty.}
 \label{tab:scores}
 \begin{tabular}{@{}lrrrrr@{}}
 \toprule
@@ -518,15 +526,17 @@ row, and run C did not. Retrieving an unprompted primary source is
 therefore not stable behaviour across runs of one prompt, which an
 evaluation of the module alone would not have shown.
 
-Three runs of one prompt over one paper is not a performance estimate, and
-we make no such claim. The two remaining papers in the set have no
-adjudicated reference; for those, the scorer reports what a module asserts
-against what it withholds, without a reference. That reference-free reading
-corrected our own prediction: we expected a paper running no association
-test to yield no variant rows, and a run produced sixty, each recording the
-observation with the direction and significance explicitly withheld. The
-rows are appropriate and the prediction was wrong. Row count is therefore
-not scored; whether the cells assert more than the source supports is.
+The two remaining papers in the set have no adjudicated reference; for
+those, the scorer reports what a module asserts against what it withholds,
+without a reference. That reference-free reading corrected our own
+prediction: we expected a paper running no association test to yield no
+variant rows, and a run produced sixty, each recording the observation with
+the direction and significance explicitly withheld. The rows are
+appropriate and the prediction was wrong. Row count is therefore not
+scored; whether the cells assert more than the source supports is. A scored
+round over a stable plugin version, with repeated runs per prompt and a
+second agent host, is the evaluation this framework was built to carry and
+is future work.
 
 % ================================================================
 \section{Results}
@@ -657,10 +667,10 @@ domain-expert agents in quality evaluation, and to communicate to citizen
 scientists that many modules reflect early-stage research rather than
 clinical-grade evidence. Just-DNA-Lite provides an extensive FAQ and
 science-literacy guide; the module catalog needs comparable guidance.
-The scored set is three runs of one prompt over one paper against one
-adjudicated reference, which is a demonstration of the protocol rather than a
-performance estimate, and we make no accuracy claim from it; two further papers
-in the set have no adjudicated reference. Every run scored here used one model
+The runs scored here are preparatory and predate a stable plugin version, so
+they demonstrate the framework rather than measure authoring accuracy, and we
+make no accuracy claim from them; two further papers in the set have no
+adjudicated reference. Every run scored here used one model
 through one host, so the results say nothing about model or host sensitivity.
 Free-text conclusions are not scored at all, and the assistant's judgement about
 whether a source supports a claim remains a reviewer's question. The authoring
