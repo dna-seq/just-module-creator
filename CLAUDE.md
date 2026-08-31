@@ -768,7 +768,9 @@ uv run manuscript manuscript    # manuscript.tex → manuscript.md + manuscript.
 ```
 
 Edit `manuscript.tex`, then rebuild both PDF and Markdown. After a `.tex` change,
-always regenerate both. The empty template is the section order to follow
+always regenerate both — **except where the PDF cannot be built at all, which is
+the case on this host**: `uv run manuscript manuscript --nopdf` (or `--no-pdf`)
+writes the Markdown alone. See §11 for why. The empty template is the section order to follow
 (Introduction, Related work, Method, Results, Discussion, Conclusion) — not the
 retired `just-dna-agents` outline in
 `../just-dna-lite/docs/manuscript/v0.2/paper2-dna-agents.md`, which is inspiration
@@ -1281,6 +1283,17 @@ have been questions.
   filling `/`. If a tool fails that way, set the variable — never delete the guard. The
   live V2 GraphQL endpoint currently 404s and the client falls back to REST — expected,
   not a defect.
+- **PDFs cannot be built on this host, and the failure names the wrong thing.** The bundled
+  `tectonic` needs GLIBC 2.36/2.38/2.39; this box has 2.35, so `uv run manuscript manuscript`
+  dies with three `version not found` lines from the dynamic linker before it renders a page.
+  The Markdown is written first, so the command half-succeeds and then exits 1 — and `pdfinfo`
+  on the untouched `manuscript.pdf` will happily answer about the **committed** file, which is
+  how a stale page count gets read as a fresh measurement. Use
+  `uv run manuscript manuscript --nopdf`, and treat any pagination question (a widow, a page
+  budget, where the references start) as **unanswerable here**: hand it to a machine that
+  renders. `docs/manuscript/manuscript.pdf` is therefore routinely behind `manuscript.tex`;
+  check `git log -1 -- docs/manuscript/manuscript.pdf` against the `.tex` log before quoting a
+  page number from it.
 - A transitive dependency ships a top-level `tests` package that shadows this
   repo's, so test helpers import as `from conftest import ...`.
 - **Format 0.6.6 / compiler 0.6.6 / enricher 0.6.6 / registry 0.18.2 — adopted 2026-08-21 (our
