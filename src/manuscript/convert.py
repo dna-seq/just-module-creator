@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -21,6 +22,18 @@ TECTONIC_MISSING = (
 )
 
 
+def _extract_abstract(source: Path) -> str | None:
+    """Extract the abstract body from a LaTeX file, converting it to Markdown."""
+    tex = source.read_text(encoding="utf-8")
+    m = re.search(
+        r"\\begin\{abstract\}(.*?)\\end\{abstract\}", tex, re.DOTALL
+    )
+    if not m:
+        return None
+    abstract_tex = m.group(1).strip()
+    return pypandoc.convert_text(abstract_tex, "gfm", format="latex", extra_args=["--wrap=none"])
+
+
 def latex_to_markdown(source: Path, output: Path | None = None) -> Path:
     """Convert a LaTeX file to Markdown next to the source (or to ``output``)."""
     if not source.exists():
@@ -28,12 +41,20 @@ def latex_to_markdown(source: Path, output: Path | None = None) -> Path:
 
     dest = output if output is not None else source.with_suffix(".md")
     dest.parent.mkdir(parents=True, exist_ok=True)
+
+    abstract_md = _extract_abstract(source)
+
     pypandoc.convert_file(
         str(source),
         "gfm",
         outputfile=str(dest),
         extra_args=["--wrap=none"],
     )
+
+    if abstract_md:
+        body = dest.read_text(encoding="utf-8")
+        dest.write_text(f"## Abstract\n\n{abstract_md.strip()}\n\n{body}", encoding="utf-8")
+
     return dest
 
 

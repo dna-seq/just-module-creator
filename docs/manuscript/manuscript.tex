@@ -467,11 +467,12 @@ endorsement.
 
 \subsection{Evaluation dimensions}
 
-A scorer ships with the plugin. It measures variant recall over
-rsID--genotype pairs, citation identity (each PMID must name the intended
-paper, not merely exist), and effect-direction agreement, against an
-expert's curation rather than a system output---scoring authored modules
-against a module the same system authored measures agreement with itself.
+The plugin includes a scorer. It evaluates variant recall over
+rsID--genotype pairs, citation identity (each PMID must resolve to the
+intended paper, not merely exist as a valid identifier), and
+effect-direction agreement. The reference standard is a human curation.
+Scoring modules against a module the same system authored would measure
+agreement with itself.
 
 Two measurement choices are load-bearing. Recall is reported at two
 grains, because recovering the right variant with wrong genotypes and
@@ -513,12 +514,14 @@ validator names the missing genotype and a written rule states that a zero
 weight is a claim where a blank is not, so convergence shows the workflow
 is prescriptive, not that its output is confirmed.
 
-A module can also be scored where no reference curation exists, by reading
-what it asserts against what it withholds. That reading corrected a
-prediction of ours: we expected a paper running no association test to yield
-no variant rows, and a run produced sixty---each recording the observation
-with direction and significance withheld. Row count is therefore not scored;
-whether the cells assert more than the source supports is.
+Scoring does not require a reference curation. A module can be evaluated by
+reading what its cells claim against what they withhold. That reading
+corrected a prediction of ours: we expected a paper reporting no association
+test to produce no variant rows, yet one run produced sixty. Each recorded
+the observed allele but withheld effect direction and statistical
+significance. The blanks are honest: with no association test, there was
+nothing to report. Row count is therefore not part of the score; whether the
+filled cells claim more than the source supports is.
 
 % ================================================================
 \section{Results}

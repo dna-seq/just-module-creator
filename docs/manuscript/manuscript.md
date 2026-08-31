@@ -1,3 +1,9 @@
+## Abstract
+
+Genome analysis is an iterative workflow—ask, select data, score, annotate, inspect, and revise—and it is increasingly done inside AI coding assistants rather than fixed graphical interfaces. But general-purpose language models are unreliable when used directly for genomics: they fabricate variant identifiers, misassign effect directions, and attach real PMIDs to the wrong paper. The Just-DNA ecosystem redirects these assistants from generating disposable code to producing structured, versioned data: *genomic annotation modules* where every variant is linked to its genotype, evidence, effect size, and a verbatim passage from the source paper. The output is an editable data artifact, not generated analysis code, and a domain expert can review it in a spreadsheet without specialized tools.
+
+This paper presents the plugin ecosystem that makes this possible. The authoring plugin, **just-module-creator**, runs inside the AI coding assistants that bioinformaticians and developers already use daily, so module authoring requires no new infrastructure. The underlying toolchain validates authored files against a live schema, checks identifiers against reference databases, and compiles modules into a portable artifact. A shared registry lets independent authors publish, version, and exchange modules—the package-registry pattern applied to genomic annotation knowledge. Once installed, a module can be applied to a genome in under a minute; the annotation consumer, Just-DNA-Lite, is the subject of a companion paper . The software is open-source and available at <https://anonymous.4open.science/r/just-dna-registry> (anonymized for review).
+
 # Introduction
 
 Genomic annotation connects variant calls to the knowledge that gives them meaning: trait associations, clinical classifications, effect sizes, and the evidence behind each claim. This knowledge is scattered across papers, databases, and preprints, and it changes as new studies appear. Turning it into something a computational pipeline can use requires structured, validated records with unambiguous variant identifiers, genome-build coordinates, and traceable citations.
@@ -124,7 +130,7 @@ A compiled module can reach a consumer through three routes (Figure <a href="#f
 
 ## Evaluation dimensions
 
-A scorer ships with the plugin. It measures variant recall over rsID–genotype pairs, citation identity (each PMID must name the intended paper, not merely exist), and effect-direction agreement, against an expert’s curation rather than a system output—scoring authored modules against a module the same system authored measures agreement with itself.
+The plugin includes a scorer. It evaluates variant recall over rsID–genotype pairs, citation identity (each PMID must resolve to the intended paper, not merely exist as a valid identifier), and effect-direction agreement. The reference standard is a human curation. Scoring modules against a module the same system authored would measure agreement with itself.
 
 Two measurement choices are load-bearing. Recall is reported at two grains, because recovering the right variant with wrong genotypes and recovering half the variants exactly are distinct failures that partial credit averages away. *Decoy rate* replaces precision: a variant absent from one curation may still be correct, whereas a decoy is one an expert designated non-associated.
 
@@ -144,7 +150,7 @@ Table <a href="#tab:scores" data-reference-type="ref" data-reference="tab:score
 
 The one divergence is a significance verdict at $`p \approx 0.07`$, read as *suggestive* by two runs and *not significant* by the third, which an aggregate score would have hidden. Agreement also measures the guidance and not only the runs: the validator names the missing genotype and a written rule states that a zero weight is a claim where a blank is not, so convergence shows the workflow is prescriptive, not that its output is confirmed.
 
-A module can also be scored where no reference curation exists, by reading what it asserts against what it withholds. That reading corrected a prediction of ours: we expected a paper running no association test to yield no variant rows, and a run produced sixty—each recording the observation with direction and significance withheld. Row count is therefore not scored; whether the cells assert more than the source supports is.
+Scoring does not require a reference curation. A module can be evaluated by reading what its cells claim against what they withhold. That reading corrected a prediction of ours: we expected a paper reporting no association test to produce no variant rows, yet one run produced sixty. Each recorded the observed allele but withheld effect direction and statistical significance. The blanks are honest: with no association test, there was nothing to report. Row count is therefore not part of the score; whether the filled cells claim more than the source supports is.
 
 # Results
 
