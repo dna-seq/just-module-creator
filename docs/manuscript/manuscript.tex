@@ -650,11 +650,9 @@ through one host, so the results say nothing about model or host sensitivity.
 Free-text conclusions are not scored at all, and the assistant's judgement about
 whether a source supports a claim remains a reviewer's question. Coordinates
 are declared rather than translated: \texttt{module\_spec.yaml} names a
-\texttt{genome\_build}, the toolchain refuses to infer one, and a build other
-than GRCh38 enters the content signature. Liftover is a real operation on sites
-and sources already perform it---the PGS Catalog distributes positions
-harmonized per assembly~\citep{lambert2021pgs}---so it belongs to the source or
-the consumer rather than to authoring. Runtime benchmarks are in the companion
+\texttt{genome\_build} and the toolchain refuses to infer one. Liftover belongs
+to the source or the consumer; the PGS Catalog already distributes per-assembly
+positions~\citep{lambert2021pgs}. Runtime benchmarks are in the companion
 paper~\citep{companion2026justdnalite}.
 
 % ================================================================
