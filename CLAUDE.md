@@ -1283,17 +1283,21 @@ have been questions.
   filling `/`. If a tool fails that way, set the variable — never delete the guard. The
   live V2 GraphQL endpoint currently 404s and the client falls back to REST — expected,
   not a defect.
-- **PDFs cannot be built on this host, and the failure names the wrong thing.** The bundled
-  `tectonic` needs GLIBC 2.36/2.38/2.39; this box has 2.35, so `uv run manuscript manuscript`
-  dies with three `version not found` lines from the dynamic linker before it renders a page.
-  The Markdown is written first, so the command half-succeeds and then exits 1 — and `pdfinfo`
-  on the untouched `manuscript.pdf` will happily answer about the **committed** file, which is
-  how a stale page count gets read as a fresh measurement. Use
-  `uv run manuscript manuscript --nopdf`, and treat any pagination question (a widow, a page
-  budget, where the references start) as **unanswerable here**: hand it to a machine that
-  renders. `docs/manuscript/manuscript.pdf` is therefore routinely behind `manuscript.tex`;
-  check `git log -1 -- docs/manuscript/manuscript.pdf` against the `.tex` log before quoting a
-  page number from it.
+- **The wheel's `tectonic` does not run here; the static one does, and `MANUSCRIPT_TECTONIC`
+  points at it.** `tecto` publishes exactly one version (0.16.9) and its manylinux build wants
+  GLIBC 2.36/2.38/2.39 against this box's 2.35, so there is no downgrade — but the same release
+  ships a **musllinux** wheel that is statically linked and runs anywhere. It is installed at
+  `~/.local/bin/tectonic-musl` and named in `.env`; `manuscript/cli.py` loads `.env`, so
+  `uv run manuscript manuscript` just works. Set `TECTONIC_CACHE_DIR` too — the TeX bundle is
+  large and `/` sits at 93%.
+
+  **The trap this replaced is still worth knowing**: without the override the command
+  half-succeeds — the Markdown is written before tectonic runs — so it exits 1 having left a
+  stale `manuscript.pdf` in place, and `pdfinfo` then answers about the *committed* file. That is
+  how a page count from three commits ago gets read as a fresh measurement. If a render is ever
+  impossible again, `scripts/page_budget.py` estimates the body length by calibrating against a
+  commit whose PDF was a true render; it agreed with the real number to within 0.3 pages.
+
 - A transitive dependency ships a top-level `tests` package that shadows this
   repo's, so test helpers import as `from conftest import ...`.
 - **Format 0.6.6 / compiler 0.6.6 / enricher 0.6.6 / registry 0.18.2 — adopted 2026-08-21 (our

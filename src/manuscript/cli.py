@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from dotenv import load_dotenv
 
 from manuscript.convert import (
     MANUSCRIPT_TEX,
@@ -21,12 +22,23 @@ app = typer.Typer(
 )
 
 
+def _load_env() -> None:
+    """Load ``.env`` before the build reads any configuration.
+
+    ``override=False`` so an exported variable still wins. This is what lets
+    ``MANUSCRIPT_TECTONIC`` and ``TECTONIC_CACHE_DIR`` live beside the rest of
+    the toolchain's settings instead of being retyped on every invocation.
+    """
+    load_dotenv(override=False)
+
+
 def _build(
     source: Path,
     markdown_output: Path | None,
     pdf_output: Path | None,
     build_pdf: bool = True,
 ) -> None:
+    _load_env()
     try:
         markdown_path = latex_to_markdown(source, markdown_output)
         pdf_path = latex_to_pdf(source, pdf_output) if build_pdf else None

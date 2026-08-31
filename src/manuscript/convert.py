@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -13,7 +14,11 @@ MANUSCRIPT_DIR = Path(__file__).resolve().parent.parent.parent / "docs" / "manus
 TEMPLATE_TEX = MANUSCRIPT_DIR / "template.tex"
 MANUSCRIPT_TEX = MANUSCRIPT_DIR / "manuscript.tex"
 LOG_TAIL_LINES = 40
-TECTONIC_MISSING = "tectonic not found. Install dev dependencies with: uv sync"
+TECTONIC_ENV_VAR = "MANUSCRIPT_TECTONIC"
+TECTONIC_MISSING = (
+    f"tectonic not found. Install dev dependencies with: uv sync, "
+    f"or set {TECTONIC_ENV_VAR} to a working binary."
+)
 
 
 def latex_to_markdown(source: Path, output: Path | None = None) -> Path:
@@ -62,6 +67,21 @@ def latex_to_pdf(source: Path, output: Path | None = None) -> Path:
 
 
 def _resolve_tectonic() -> Path:
+    """Find a tectonic to run, letting the environment override the venv's.
+
+    The override exists because the wheel's binary is not portable: `tecto`
+    publishes one manylinux build, and it needs a newer glibc than some hosts
+    have, with nothing older on PyPI to fall back to. The same release also
+    ships a static musllinux build that runs anywhere, so the fix is to point
+    this variable at one rather than to change the dependency.
+    """
+    override = os.environ.get(TECTONIC_ENV_VAR)
+    if override:
+        candidate = Path(override).expanduser()
+        if not candidate.is_file():
+            raise FileNotFoundError(f"{TECTONIC_ENV_VAR}={override} is not a file")
+        return candidate
+
     venv_bin = Path(sys.executable).resolve().parent
     for name in ("tectonic", "tecto"):
         candidate = venv_bin / name
