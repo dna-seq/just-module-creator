@@ -25,15 +25,17 @@ def _build(
     source: Path,
     markdown_output: Path | None,
     pdf_output: Path | None,
+    build_pdf: bool = True,
 ) -> None:
     try:
         markdown_path = latex_to_markdown(source, markdown_output)
-        pdf_path = latex_to_pdf(source, pdf_output)
+        pdf_path = latex_to_pdf(source, pdf_output) if build_pdf else None
     except (FileNotFoundError, RuntimeError) as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(1) from exc
     typer.echo(f"Wrote {markdown_path}")
-    typer.echo(f"Wrote {pdf_path}")
+    if pdf_path is not None:
+        typer.echo(f"Wrote {pdf_path}")
 
 
 @app.command("template")
@@ -53,9 +55,16 @@ def build_template(
             help="Output PDF file. Defaults to docs/manuscript/template.pdf.",
         ),
     ] = None,
+    no_pdf: Annotated[
+        bool,
+        typer.Option(
+            "--no-pdf",
+            help="Write only the Markdown. Use when reviewing prose without churning the PDF.",
+        ),
+    ] = False,
 ) -> None:
     """Build Markdown and PDF from the EASRP template."""
-    _build(TEMPLATE_TEX, output, pdf_output)
+    _build(TEMPLATE_TEX, output, pdf_output, build_pdf=not no_pdf)
 
 
 @app.command("manuscript")
@@ -75,9 +84,16 @@ def build_manuscript(
             help="Output PDF file. Defaults to docs/manuscript/manuscript.pdf.",
         ),
     ] = None,
+    no_pdf: Annotated[
+        bool,
+        typer.Option(
+            "--no-pdf",
+            help="Write only the Markdown. Use when reviewing prose without churning the PDF.",
+        ),
+    ] = False,
 ) -> None:
     """Build Markdown and PDF from the paper LaTeX."""
-    _build(MANUSCRIPT_TEX, output, pdf_output)
+    _build(MANUSCRIPT_TEX, output, pdf_output, build_pdf=not no_pdf)
 
 
 if __name__ == "__main__":
