@@ -1478,7 +1478,8 @@ have been questions.
 - **When benchmark runs converge on our reference, that partly measures how prescriptive our own
   skills are.** Two runs matched the adjudicated SIRT6 reference cell-for-cell on all three
   genotypes, and one of them volunteered why: `validate_module` names the missing row outright
-  (*"a gap in a set the author started … e.g. rs117385980 T/T"*) and
+  (*"a gap in a set the author started … e.g. <the fixture's rsID> T/T"* — quoted with the
+  variant masked, because this file reaches every benchmark subagent unasked) and
   `skills/module-weights/GUIDE.md:122` says *"A zero is a claim too… different from a blank."* The
   supportable claim is that the workflow is prescriptive enough to produce consistent output from
   independent runs — **not** that two judgements agreed and the answer is therefore right, which is

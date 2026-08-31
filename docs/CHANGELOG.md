@@ -26,8 +26,16 @@ Three scored runs on 0.27.0 turned up two problems with the *setup* rather than 
   claim that survives is that the workflow is prescriptive enough to produce consistent output from
   independent runs, not that the output is thereby confirmed correct.
 
-Both were caught by agents volunteering against their own interest, which is not a control — hence
-the transcript audit in the runbook, which depends on nobody's honesty. It parses `tool_use` inputs
+**The write-up of the first then re-created it.** Quoting the `validate_module` warning verbatim put
+the SIRT6 answer variant into `CLAUDE.md` §11 and into the memory index — both injected into every
+subagent — sixteen minutes after the last scored run of that round. No run in the round read it; any
+SIRT6 run started between then and the mask would have been void. Masked to `<the fixture's rsID>`,
+which costs the quote nothing: the point is that the tool names a missing genotype, not which one.
+The runbook now says to grep the injected context for the answer **before each round**, because an
+evidence quote is the shape a leak arrives in.
+
+Both original findings were caught by agents volunteering against their own interest, which is not a
+control — hence the transcript audit in the runbook, which depends on nobody's honesty. It parses `tool_use` inputs
 rather than counting name mentions: `registry_download` and `registry_search` appeared 18 times in
 one transcript with zero invocations, the hits being tool-schema text.
 
