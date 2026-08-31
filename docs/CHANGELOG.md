@@ -30,7 +30,12 @@ for blunt feedback. None is a wrong computation; each is a place a tool's accoun
   `ambiguous_spec_layout` with a 422 two steps later. A warning rather than a refusal: real modules
   here use that layout and their artifacts are fine.
 
-`F71b`, `F71c`, `F74`, `F75`, `F76` in `docs/dogfooding.md`.
+- **A PMC accession arrived in two spellings in one session.** `literature_search` returned
+  `"pmc-id: PMC12624115;"` — PubMed's esummary spelling, label and semicolon included — where
+  `fetch_fulltext` returned `PMC12624115`. `pmcid_token` now mirrors `doi_token` at all three parse
+  sites, and returns `None` rather than a wrapper that looks like an id.
+
+`F71b`, `F71c`, `F74`, `F75`, `F76`, `F78` in `docs/dogfooding.md`.
 
 ### The version handshake does not mean your rows will be accepted
 

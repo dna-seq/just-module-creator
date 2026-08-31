@@ -14,6 +14,41 @@ is usable, and what is missing.
 
 ---
 
+## F79 — the CURIE verifier turns a wrong guess into a confident wrong answer, because nothing finds one
+
+**Found:** 2026-08-31 · **Severity:** medium · **Status:** ours to build, deferred as `RM28` with the
+reason recorded there.
+
+`lookup_identifier` verifies a trait CURIE you already hold. Nothing produces candidates, and its own
+docstring says writing an id from memory is the failure it exists to prevent — so the only source of a
+candidate is the thing the tool forbids. A run guessed four times: `EFO_0007796` is "parental
+longevity", `EFO_0007797` is "language measurement", `HP_0025153` is "Transient".
+
+**The first guess is the finding.** "Parental longevity" is a real, current EFO term, so
+`lookup_identifier` answers `current` — a green verification of a CURIE naming a different trait, with
+nothing in the answer able to say so. That is a check that cannot fail for the error actually being
+made. The id the module carries, `OBA_VT0005372`, was reached only through the **obsolete**
+`EFO_0004300`, whose record names its successor.
+
+**Surface it rather than patch it.** Making `lookup_identifier` return near-misses would blur verify
+and search; a hardcoded map of common traits is the hardcoded-vocabulary defect. The tool is a
+search against OLS4, which `check_identifiers` already reaches — `RM28`. And whatever ships must
+**report** obsoletion rather than filter on it: the obsolete record was the only one that led anywhere.
+
+## F78 — one PMC accession, two spellings, one session
+
+**Found:** 2026-08-31 · **Severity:** low · **Status:** fixed here, 0.26.0.
+
+`literature_search` returned `pmcid` as `"pmc-id: PMC12624115;"` while `fetch_fulltext` returned
+`PMC12624115` for the same article, in the same session. Not a service disagreeing with itself:
+PubMed's esummary spells the `pmcid` idtype with its label and a trailing semicolon, Europe PMC and
+the OA service return the bare accession, and all three reached the caller verbatim because only
+`doi` had a normalizer.
+
+`pmcid_token` now mirrors `doi_token` at all three parse sites. It returns **`None`** for a string
+with no accession rather than handing the wrapper back — a value that is not an id but looks like one
+is worse than nothing, which is the same reason the DOI helper does it.
+
 ## F77 — the version handshake certifies a registry pair that then refuses our own rows, and our workspace note said the opposite
 
 **Found:** 2026-08-31, in a single-run SIRT6 benchmark on plugin 0.25.0 · **Severity:** high ·

@@ -37,6 +37,7 @@ from just_module_creator.discovery import (
     parse_openalex,
     parse_pubmed_summaries,
     parse_semantic_scholar,
+    pmcid_token,
     reconstruct_abstract,
     resolve_sources,
 )
@@ -663,3 +664,40 @@ def test_the_arxiv_query_is_translated_not_forwarded() -> None:
     # search into something the caller did not ask for.
     assert arxiv_query('lactase "persistence"') == 'all:"lactase persistence"'
     assert arxiv_query("") == ""
+
+
+def test_a_pmcid_is_normalized_to_the_bare_accession() -> None:
+    """PubMed hands back the label, the id and a semicolon in one field.
+
+    `pmc-id: PMC12624115;` is what esummary spells for the `pmcid` idtype on a real
+    record (PMID 41249831); Europe PMC and the OA service return the bare accession for
+    the same article. Both used to reach a caller verbatim, so one session saw two
+    spellings of one identifier and only one of them addresses anything.
+
+    Returning `None` for a string with no accession is the deliberate half: a wrapper
+    handed back as an id is worse than nothing, because it looks like one.
+    """
+    assert pmcid_token("pmc-id: PMC12624115;") == "PMC12624115"
+    assert pmcid_token("PMC12624115") == "PMC12624115"
+    assert pmcid_token("pmc12624115") == "PMC12624115"
+    assert pmcid_token("  PMC12624115  ") == "PMC12624115"
+    assert pmcid_token("no accession here") is None
+    assert pmcid_token("") is None
+    assert pmcid_token(None) is None
+
+
+def test_every_parser_normalizes_the_pmcid_it_reads() -> None:
+    """The fix belongs at all three parse sites, not at one.
+
+    PubMed, Europe PMC and Semantic Scholar each carry a PMC accession under a different
+    key and a different spelling, and a caller cannot know which service answered.
+    """
+    for candidate in parse_pubmed_summaries(load("pubmed_esummary.json")):
+        if candidate.pmcid is not None:
+            assert candidate.pmcid == pmcid_token(candidate.pmcid)
+    for candidate in parse_europepmc(load("europepmc_search.json")):
+        if candidate.pmcid is not None:
+            assert candidate.pmcid == pmcid_token(candidate.pmcid)
+    for candidate in parse_semantic_scholar(load("semanticscholar_search.json")):
+        if candidate.pmcid is not None:
+            assert candidate.pmcid == pmcid_token(candidate.pmcid)

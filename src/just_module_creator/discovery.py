@@ -236,6 +236,27 @@ def doi_token(raw: str | None) -> str | None:
     return match.group(0).lower().rstrip(".") if match else None
 
 
+#: PubMed's esummary spells the `pmcid` idtype as `pmc-id: PMC12624115;` — the label,
+#: the id and a semicolon in one field — while Europe PMC and the OA service return the
+#: bare accession. Both reached callers verbatim, so one record carried two spellings of
+#: one id inside a single session and only one of them addresses anything (`F78`).
+PMCID_PATTERN = re.compile(r"PMC\d+", re.IGNORECASE)
+
+
+def pmcid_token(raw: str | None) -> str | None:
+    """The bare `PMC12624115` accession, whatever wrapper the source put around it.
+
+    Same shape as `doi_token` and for the same reason: an identifier is only useful
+    normalized, and the caller cannot know which service answered. Returns `None` when
+    there is no accession in the string rather than handing back the wrapper — a value
+    that is not an id is worse than nothing here, because it looks like one.
+    """
+    if not raw:
+        return None
+    match = PMCID_PATTERN.search(raw)
+    return match.group(0).upper() if match else None
+
+
 def _text(value: Any) -> str | None:
     """Coerce to a stripped string, mapping empty to None."""
     if value is None:
@@ -292,7 +313,7 @@ def parse_pubmed_summaries(payload: dict) -> list[LiteratureCandidate]:
         out.append(
             LiteratureCandidate(
                 pmid=uid,
-                pmcid=ids.get("pmcid"),
+                pmcid=pmcid_token(ids.get("pmcid")),
                 doi=ids.get("doi"),
                 title=_title(record.get("title")),
                 authors=[
@@ -326,7 +347,7 @@ def parse_europepmc(payload: dict) -> list[LiteratureCandidate]:
             LiteratureCandidate(
                 # A preprint record has no PMID; keep it None rather than "".
                 pmid=_text(record.get("pmid")),
-                pmcid=_text(record.get("pmcid")),
+                pmcid=pmcid_token(_text(record.get("pmcid"))),
                 doi=_text(record.get("doi")),
                 title=_title(record.get("title")),
                 authors=[name for name in [_text(record.get("authorString"))] if name is not None],
@@ -356,7 +377,7 @@ def parse_semantic_scholar(payload: dict) -> list[LiteratureCandidate]:
         out.append(
             LiteratureCandidate(
                 pmid=_text(external.get("PubMed")),
-                pmcid=_text(external.get("PubMedCentral")),
+                pmcid=pmcid_token(_text(external.get("PubMedCentral"))),
                 doi=_text(external.get("DOI")),
                 arxiv_id=_text(external.get("ArXiv")),
                 title=_title(record.get("title")),

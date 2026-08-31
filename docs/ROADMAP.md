@@ -14,6 +14,34 @@ something and invites a workaround where a note was owed. A probe belongs in
 
 ---
 
+## RM28 — nothing finds a trait CURIE, and `lookup_identifier` only verifies one you already hold
+
+**Opened 2026-08-31** from `F79`, the one finding of the `a2` benchmark run that is a missing
+capability rather than a defect. Deferred deliberately, with the reason written down rather than the
+work started at the end of a long session.
+
+**What happened.** An agent needed `trait_efo_id` for a longevity module. `lookup_identifier` verifies
+a CURIE you name, and its own docstring says writing one from memory is the failure it exists to
+prevent — while memory is the only place a candidate can come from. Four guesses:
+`EFO_0007796` = "parental longevity" (**wrong trait, and it would have verified as `current`, which is
+the dangerous half**), `EFO_0007797` = "language measurement", `HP_0025153` = "Transient". The one
+that worked was the *obsolete* `EFO_0004300`, because its record names its successor —
+`OBA_VT0005372`, "life span determination trait", which is what the module carries.
+
+**So the verifier turns a wrong guess into a confident wrong answer**, which is worse than no tool:
+`lookup_identifier` answered `current` for a CURIE naming a different trait, and nothing in that
+answer could have said so. A search would have shown the candidates side by side with their labels.
+
+**What it needs, and why it is not tonight's work.** A networked tool against OLS4 (which
+`check_identifiers` already reaches), ranked results carrying label, ontology and obsoletion status,
+a `toolbox.GROUPS` entry, a docstring saying what it costs, and tests. It is a new name on the tool
+surface, so a minor, and it is `§11`'s "ours to build" case rather than anything to file upstream —
+the ontologies are public and nobody else's schema is involved.
+
+**One design note to carry forward, from the case above:** obsoletion is not a failure state here. The
+obsolete record was the only one that led anywhere, so a search that hides obsolete terms would have
+hidden the answer. Report the status; never filter on it.
+
 ## RM16 — capture the outrank reason, and write `provenance.json` (absorbs RM14)
 
 **Severity:** high · **Status:** **the capture shipped 2026-08-20 (night run); the residue below is open** · **Owner:** agent B · **Opened** 2026-08-20
