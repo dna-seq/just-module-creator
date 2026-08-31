@@ -478,7 +478,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         process-wide on the server. Use `offline=true` for a large panel: it has
         **no variant ceiling**, because it issues no request for one to bound.
         Online above the ceiling comes back as a refusal that still carries the
-        module-level half.
+        module-level half. `offline=true` clamps the REGISTRY's egress, not ours:
+        this call still reaches the registry and can still be rate-limited, because
+        asking it anything is a network call whatever it then does.
 
         The optional passes are off by default and each costs egress.
         `identifiers=true` never moves the verdict — a publish does not run that

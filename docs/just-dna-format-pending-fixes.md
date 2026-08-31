@@ -72,6 +72,39 @@ the installed packages, not the sibling checkouts** — which is the check this 
 exists to force, and the reason its status lines name both halves.
 
 
+## F85 — an unresolvable rsID reports `not_found` whoever asked, and the warning names the wrong reason (upstream `S85`, fixed in tree, uncut)
+
+**State: accepted both halves, shipped in the upstream tree as `RM154`, and NOT in a cut release —
+`0.7.0` is uncut, we install `0.6.6`.** So the mitigation stays until `uv sync` carries it. Filed and
+answered on 2026-08-31, inside the hour.
+
+**What we reported.** `enrich` writes `status: not_found`, `source: ensembl` for an rsID the source
+plainly has, when what failed is allele-aware matching — five rows of a 64-variant module whose paper
+annotates on GRCh37, so its alleles are the reverse complement of GRCh38's. `not_found` sends the
+author to *does this rsID exist*, whose answer is always yes.
+
+**What upstream added, which we had not seen.** A snapshot that genuinely lacks the rsID writes a
+**byte-identical row** — so the two states are indistinguishable in the artifact, not merely
+mislabelled. And the warning our run actually read was wrong in a second way:
+`hosting_verdict` returns `False` from two arms and asserted the second arm's reason for both, so five
+1 bp substitutions were told *"The event sizes differ, which re-anchoring cannot change"*. That
+sentence is what sent the run to dbSNP.
+
+**The fix, and why it is not a new status.** `EnrichmentResult.allele_mismatches` carries
+`AlleleMismatch(rsid, genotype, loci, offered, strand_flip)` — the shape `ref_mismatches` and
+`stale_rsids` already have — rather than a new `VALID_RESOLUTION_STATUS` member, which every reader of
+a published `resolution.csv` would share. Deleting the row was measured and rejected: `variant_key`
+and `rsid` are `RESOLUTION_FACT_FIELDS` while `status` is not, so removing a row moves
+`resolution_signature` and changing its status is free. The rows stay `not_found` and `unresolved`
+stays right; only the reason moved.
+
+**Our mitigation, in place now.** `skills/module-101/references/SYMPTOMS.md` carries the reading: a
+`not_found` row on an rsID `lookup_variant` finds is an allele mismatch, usually a strand flip from a
+GRCh37 source — put it through `lookup_variant`, reverse-complement if the allele set is the exact
+complement, and log it with `record_override`. **Do not remove that entry when 0.7.0 lands** until the
+version we install carries `allele_mismatches`; verify by symbol against the installed package, not
+against the sibling checkout.
+
 ## F53 — a module without `variants.csv` cannot be found by gene (upstream `S57`)
 
 **Status: CLOSED 2026-08-21 — released in compiler 0.6.6 as their `RM121`, installed, and adopted

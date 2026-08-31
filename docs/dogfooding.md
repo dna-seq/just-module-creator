@@ -14,6 +14,99 @@ is usable, and what is missing.
 
 ---
 
+## The 2026-08-31/09-01 round: what four runs asked for, and how many asked
+
+Four authoring runs, two papers, two builds (0.27.0 and 0.28.0). Every one was asked the same
+usability question at the end. **These are corroborations on findings that already have ids, not new
+ones** — the count is the point, because a gap four independent runs hit is a different priority from
+one a single run mentioned.
+
+| Asked for | Runs | Finding |
+|---|---|---|
+| A way to read rows out of a downloaded `.xlsx` | **4 of 4** | `F68` — every one hand-wrote a zip+XML parser or reached for `uv run --with openpyxl`; no spreadsheet engine exists in the venv (`openpyxl`, `pandas`, `xlrd` absent, `polars.read_excel` has no backend) |
+| `lint_rows` taking a path instead of CSV text | **4 of 4** | `F66` — files were 79–129 KB; two runs skipped the taught `lint_rows → validate_module` step entirely rather than round-trip the table through the model |
+| `lookup_citation(doi=…)` to return a title | **4 of 4** | new below | 
+| A trait CURIE **search**, not just verification | 3 of 4 | `F79` / `F29` — one run guessed four EFO ids, all four obsolete, before finding the live one |
+| `registry_check` not reporting `study_count: 0` when the file failed to parse | 3 of 4 | `F60`-adjacent; three-valued rule, `null` is the honest answer |
+| `review_queue` showing a real `authored_value` | 3 of 4 | `F71c` — confirmed unchanged |
+| An earlier warning than `registry_check` for the `curator`/0.6.1 refusal | 2 of 4 | `F77` — both runs correctly refused to drop the column |
+| A liftover, or any warning that the paper is GRCh37 | 2 of 4 | `F73` — cost one run 40% of its module |
+| `list_supplementary`'s Europe PMC rung to return URLs that resolve | 2 of 4 | new below |
+
+**`lookup_citation(doi=…)` returns `doi_exists: true` and null title, journal, year, author** — and
+all four runs arrived holding a DOI, because that is what the prompt gives them. Each identified the
+paper by putting the DOI through `literature_search` as free text instead. The tool's own thesis is
+that *existence never settles identity, only a title does*; on the DOI path it hands back existence
+and no title, which is the one shape it exists to refuse. This is the highest-count finding in the
+round with no id of its own.
+
+**`list_supplementary`'s Europe PMC rung returned 13 URLs that all 404**, on two runs and two papers,
+while the rung it labels *"bounded by a guess"* worked every time and returned sizes. The notes tell
+the caller to prefer the EPMC inventory, and the 404 has no entry — the guidance names what a **403**
+means. One run blind-downloaded a 50 MB file it never used, because the EPMC listing carried
+`size_bytes: null`.
+
+## F83 — two runs picked the identical 49 variants and split on all 49 reference-homozygote rows
+
+**Measured 2026-09-01, one paper, two independent runs** (`10.1007/s11357-025-02044-3`). The agreement
+is the striking half and the disagreement is the useful one:
+
+| | `run-ards-c` | `run-ards-d` |
+|---|---|---|
+| rsIDs selected | 49 of the paper's 263 | the same 49 |
+| `(rsid, genotype)` pairs | 147 | the same 147, `key_jaccard` **1.00** |
+| `stat_significance` | — | agrees on **147/147** |
+| `direction` | — | agrees on **98/147** |
+
+**Every one of the 49 disagreements is the same cell**: the reference homozygote. `run-ards-c` wrote
+`direction: neutral` there; `run-ards-d` wrote the variant's own direction. Both wrote
+`state: neutral`, `weight: 0.0` and `effect_allele: A` on that row, so the two runs agree on
+everything except what `direction` is *about*.
+
+**The schema settles it and no skill of ours said so.** `describe_table` returns `direction` as
+*"orthogonal to `state`"* and `effect_allele` as *"the allele that `direction`/`weight`/`effect_size`
+refer to"* — a property of the allele, which repeats across the variant's genotype rows. `run-ards-d`
+is right. `run-ards-c` read `direction` as per-genotype, which is `state`'s job, and produced a row
+whose `direction: neutral` silently answers a different question from the two rows above it.
+`skills/module-tables/references/variants.md` carried the orthogonality bullet and never named the
+subject; it does now, with the ref-hom row called out as the case that tempts.
+
+**Why this is worth an F rather than a note.** It is a 100% systematic split, not noise: same paper,
+same tool surface, opposite readings on every instance, and both compiled green under `--strict`. A
+consumer reading `effective_direction` gets a different answer per run for the same genotype at the
+same locus. **A vocabulary being closed and validated does not make its subject unambiguous**, and
+nothing in the gates can catch a column that is filled consistently with the wrong question in mind.
+
+*(A cosmetic tail: `run-ards-d`'s ref-hom weights are `-0.0000` — negative zero, from dosage-scaling a
+negative beta by zero copies. Harmless to the compiler and ugly in a published CSV.)*
+
+## F84 — `trait_tally: {checked: 0}` reads as a clean run, and a corrected diagnosis is why it is here
+
+**Found 2026-09-01, and the version that survived verification is narrower than the version reported.**
+A run said `check_identifiers`' trait check *never runs*, because it does not read
+`studies.csv:trait_efo_id` — and reported that its own wrong CURIE (`EFO_0007796`, which is *parental*
+longevity) had therefore passed every gate.
+
+**Half of that is wrong and the transcript says so.** The check ran three times: `checked: 0` on the
+first call, then `checked: 1, clean: 1` on the two after it. The `0` was honest for what it read — at
+that moment `variants.csv` had no `trait_efo_id` column at all; the run added it later. And the wrong
+CURIE never reached a gate: the run's own `lookup_identifier` call caught it before the column existed.
+**Recorded because the correction is the lesson** — a run's self-report is evidence, not a finding, and
+this one would have gone into the queue as a dead check if the tool calls had not been read back. Same
+rule as `F65`.
+
+**What survives is real, and it is two things.** The roster is `module_trait_ids(variants)`, so trait
+ids living only in `studies.csv` — which has carried `trait_efo_id` since 0.3 — are never checked. And
+`checked: 0, clean: 0, flagged: 0` is **indistinguishable from a module that declares no trait at all**,
+which is the three-valued rule at a finer grain: a check that read an empty roster is not a check that
+passed. The gene half is the same defect (a `gene` on a binning row is never checked), noted in our own
+prose audit on 2026-08-20 and never filed, which was our mistake. Both filed together as format-tree
+`S86`.
+
+**Ours to improve too, and cheap**: our wrapper sees both tables, so it can say *"`studies.csv` carries
+N trait ids this check does not read"* beside the tally. That is a plaster over a scope question that is
+upstream's, and it is worth having anyway, because the `0` is what a reader acts on.
+
 ## F82 — the dogfooding loop burns its own benchmark papers, and the fixture cannot be un-briefed
 
 **Found by a run flagging it against its own interest, 2026-08-31.** A benchmark run on the

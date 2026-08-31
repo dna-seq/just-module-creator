@@ -172,6 +172,16 @@ it drags in when present:
 - **`direction` / `state`** — orthogonal axes, not two spellings. `state` is the legacy required
   column; `direction` is the 0.3 axis. `effective_direction` derives one from the other *at read time*
   and the compiler **does not materialize the derivation** — the parquet column is a pure passthrough.
+
+  **`direction` is about the `effect_allele`, not about the row's genotype — so it repeats unchanged
+  across a variant's genotype rows, including the reference homozygote.** The schema says so twice:
+  `direction` is *"orthogonal to `state`"*, and `effect_allele` is *"the allele that
+  `direction`/`weight`/`effect_size` refer to"*. The row that tempts you is the ref-hom, where
+  `state: neutral` and `weight: 0.0` are both right and `direction: neutral` looks like it agrees with
+  them — but it is answering `state`'s question, which is what "orthogonal" forbids. Write the
+  variant's direction there and let `state` and `weight` carry the "this genotype does nothing"
+  claim. Measured: two independent runs on one paper picked the same 49 variants and the same 147
+  genotype rows, then split on all 49 ref-hom rows and nothing else.
 - **`effect_allele`** — which allele `direction`/`weight`/`effect_size` are *about*. `intent_bearing`:
   nothing can infer it and nothing checks it. Blank means the orientation of every magnitude on the row
   is unstated.
