@@ -46,7 +46,7 @@ down** — `record_override` is where it goes, after the mismatch has been repor
 |---|---|
 | `genotype` | Sources publish **alleles, not genotypes**. Whether one copy is informative follows from the condition's inheritance mode. **Except on a non-diploid contig**, where only one genotype is expressible and `draft-panel` writes it for you |
 | `state` (when stubbed) | The record is `uncertain_significance` and **no vocabulary member means "undecided"** — `neutral` says benign, `risk` says a direction. If you can justify neither, **drop the row** rather than pick one to make the compile pass |
-| `weight`, `direction`, `effect_size` | Your model of the finding. ClinVar publishes no effect statistic. [`module-weights`](../module-weights/GUIDE.md) owns the whole question |
+| `weight`, `direction`, `effect_size` | Your model of the finding. ClinVar publishes no effect statistic. [`module-weights`](../module-weights/GUIDE.md) owns the whole question. **`direction` has a case of its own — see below** |
 | `trait_efo_id` | A source's condition is free text or MedGen. Mapping it to an ontology is inference |
 | `conclusion` | What the module *says*. Keep it hedged where the biology is — penetrance, tissue, co-factors |
 
@@ -132,6 +132,28 @@ conventions in different places**:
 So the rule is not *know your source*, it is **know which field of your source**. A number lifted from a
 UCSC table dump or a `pysam` `.start` is already one lower than `start` wants, and subtracting again is
 not what goes wrong — **not adding one back** is.
+
+### `direction` when the sign is not established
+
+**If the effect interval contains the null, or the row's own `negatives` records a counter-direction,
+`direction` is a judgement rather than a reading.** Both `risk` and `unknown` are defensible there and
+neither is the safe default — so **say which you took, and why, in the row's `conclusion`**. This is
+the one cell where withholding and asserting are equally arguable, and the reader cannot tell from the
+value alone which of the two you did on purpose.
+
+It is not a statistical rule and this skill is not the tier that would write one. It is the
+surface-it discriminator applied to a cell where nothing surfaced anything: `direction` and
+`stat_significance` are **orthogonal columns**, so `suggestive` already carries "not established" and
+does not settle the sign, and `module-weights`' "withholding is correct when the direction is unknown"
+is circular at exactly the moment you need it.
+
+**The worked case, and it is why this paragraph exists.** SIRT6 `rs117385980`: two cohorts, both
+trends in the same direction, p ≈ 0.073 and 0.074, OR 3.58 with a **95% CI of 0.96–13.4** — an
+interval containing 1 — at 28.4% power by the authors' own analysis, and a `negatives` entry recording
+that the same allele runs the *other* way among robust participants, with `flags: pleiotropic` beside
+it. Two independent runs of the same prompt over the same paper wrote `risk` and `unknown`. Neither
+was wrong; only the silence about which was chosen was. Filed upstream as `S83`, asking whether the
+vocabulary wants a member for a concordant trend whose sign is not established — or, more cheaply, whether the field description should simply say that a non-significant trend still has a direction.
 
 **The other direction has a decoy: VCF anchors an indel on the base before it.** An insertion a paper
 describes at position X appears in VCF at `POS` X−1, with the anchor base leading both `ref` and `alts`

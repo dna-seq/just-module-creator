@@ -370,7 +370,22 @@ Ordered by how likely a first-timer is to hit them.
   is a gap the docs do not mention, and it looks like a genuine upstream defect worth filing.
 - **No column recording *why* a source was consulted**, and no column recording that a source was
   read by a human rather than fetched. `source` is free text, so the honest way to record a hand-read
-  source is to write the row yourself — nothing marks it as hand-written.
+  source is to write the row yourself — nothing marks it as hand-written. **Except a literature
+  service, which has no row at any layer**: Crossref, Europe PMC, OpenAlex, PubMed and Unpaywall read
+  by hand still record nothing here, because their terms are per *article* and live on
+  `literature.csv`. See *Who populates what*. The two rules meet here and it used to read as a
+  contradiction — write the row yourself, at the one layer that is forbidden — which is exactly what
+  the benchmark reference did before this was scoped.
+
+  **The principle that settles it is upstream's own, from `S77`/`RM142`:** a pass that put no row in a
+  table records no source. Consultation is not consumption, and reading a service that yielded nothing
+  creates no obligation to record.
+
+  **The residue is real and is stated rather than designed around.** A literature service you read by
+  hand which yields no `literature.csv` row leaves *no trace anywhere* — not the licence table, not
+  the manifest, not the log. `logs/authoring.log` is the natural home and nothing writes a "consulted
+  X, took nothing" line into it; `record_override` only writes about cells. That is authoring work
+  with nowhere to go, and it is put to upstream as `S82` rather than invented here — asking how they see a consultation being recorded, with *"it should not be"* named as a complete answer.
 - **No re-check that a recorded `dataset` is still the source's current release.** Named as an open
   item (`ROADMAP_0_7.md:1083`, RM85): *"`SourceRow.dataset` records the release, so the fact is
   nearly there. What is missing is anything that acts on it."*

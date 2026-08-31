@@ -69,13 +69,37 @@ recompiled. `content_signature` and the closure hash are unchanged (`licensing.c
 compiles with two, both documented there, one of them the compiler's own partial message filed as
 `S79`.
 
+### Two rules of ours that met badly, mended and then put upstream
+
+**`licensing.md` said both "nobody, ever — the `literature` layer" and "the honest way to record a
+hand-read source is to write the row yourself".** For a hand-read data source the second is fine; for
+a literature service the only layer that fits is the forbidden one, so jointly they said *record it,
+and there is nowhere to record it* — which is what the reference module did. The rule is scoped now,
+on upstream's own `S77`/`RM142` principle that a pass contributing no row records no source:
+consultation is not consumption.
+
+**The residue is stated rather than designed around, and it is the part worth reading.** A literature
+service read by hand that yields no article row leaves no trace anywhere — not the licence table, not
+the manifest, not `logs/`. That is real authoring work with nowhere to go, and it is `S82`, asked as
+an open question with *"it should not be recorded"* named as a complete answer.
+
+**`direction` has no member for a concordant trend whose sign is not established.** Two runs of a
+byte-identical prompt over one paper wrote `risk` and `unknown` for the same variant: two cohorts
+trending the same way, p ≈ 0.073 and 0.074, OR 3.58 with a 95% CI of 0.96–13.4, and a `negatives`
+entry recording the opposite direction in another stratum. `unknown` covers *not assessed*,
+*conflicting* and *does not exclude either sign* with one word. `module-curate` now carries the
+procedural half — where the interval contains the null or the row records a counter-direction, say
+which value you chose and why in the `conclusion` — and `S83` asks whether the vocabulary or just the
+field description is short. `reference-sirt6`'s decision list carries the disagreement.
+
 ### Filed upstream
 
-`S79` (the licence-disagreement warning prints only the sources that mismatch, so a declaration
-matching one of two annotation-layer rows reads as matching none) and `S80` (`state` publishes six
-values flat while `derive.py` calls two of them retired — 377 `risk` and 4 `neutral` across the 16
-reference examples, and zero uses of `alt`, `ref` or `significant`) in the format tree; `S18` in the
-registry's.
+Format tree: `S79` (the licence-disagreement warning prints only the sources that mismatch, so a
+declaration matching one of two annotation-layer rows reads as matching none) and `S80` (`state`
+publishes six values flat while `derive.py` calls two retired — 377 `risk` and 4 `neutral` across the
+16 reference examples, zero uses of `alt`, `ref` or `significant`), **both accepted and shipped in
+their tree the same day** as `RM144` and `RM145`; plus `S82` and `S83` above, open. Registry tree:
+`S18`, open.
 
 ## 0.25.0 — 2026-08-31
 
