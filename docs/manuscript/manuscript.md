@@ -80,10 +80,10 @@ Module authoring and sample analysis remain separate until Just-DNA-Lite joins a
 
 <figure id="fig:architecture" data-latex-placement="ht">
 
-<figcaption>The two paths of the Just-DNA ecosystem. The knowledge path produces a compiled module; the sample path joins selected modules with a local genome via Parquet-to-Parquet joins in DuckDB.</figcaption>
+<figcaption>The two paths of the Just-DNA ecosystem.</figcaption>
 </figure>
 
-On the sample path, Just-DNA-Lite converts VCF input to Parquet and joins it with compiled modules using DuckDB, producing annotated reports and enriched data that the user can filter. A whole-genome VCF is annotated in under 40 seconds; the companion paper  describes the sample path and polygenic risk score computation in detail.
+On the sample path (Figure <a href="#fig:architecture" data-reference-type="ref" data-reference="fig:architecture">2</a>), Just-DNA-Lite converts VCF input to Parquet and joins it with compiled modules using DuckDB, producing annotated reports and enriched data that the user can filter. A whole-genome VCF is annotated in under 40 seconds; the companion paper  describes the sample path and polygenic risk score computation in detail.
 
 Within `just-module-creator` the language model participates only in the knowledge path: it searches, reads and drafts. VCF filtering, module joins and polygenic scoring remain ordinary software steps with explicit inputs and repeatable code.
 
@@ -112,7 +112,7 @@ First, authored values and their checks are kept independent: a value filled fro
 
 Second, disagreements with reference archives are preserved rather than silently resolved. ClinVar may lag a retraction; when the authored value should remain, `record_override` logs the difference and the reason.
 
-Third, unknown results are distinguished from clean ones. A source timeout produces a null, not a pass. The identifier check writes an attestation to `verification.json` so a reviewer can tell an empty report from one with no findings.
+Third, a check has three answers, not two: it passed, it failed, or it never ran. The third is recorded as a null, and a null is not a *no*. The identifier check writes an attestation to `verification.json` so a reviewer can tell an empty report from one with no findings.
 
 The assistant may locate a verbatim `provenance_quote` from retrieved full text and follow citations into supplementary tables to find per-variant statistics. A `curator` field records who located each quote—a name or model identifier—so a reviewer can direct scrutiny where it is most needed. Attribution does not transfer responsibility: the human author holds accountability regardless.
 
@@ -178,7 +178,7 @@ Modules published to the public catalog as of August 2026. All modules target GR
 
 </div>
 
-The modules span three namespaces from three owners; three were authored by people outside the development team. Module sizes range from 2 to 474 variants. Four versions of `big_five_personality_snps` show that iterative revision works in practice. Two modules on the same trait (`placebo_response` via Codex, `placebo_response_claude` via Claude Code) were created by the same author to compare the two assistants; both compiled against the same schema and are published side by side.
+Two of the three namespaces belong to authors outside the development team, and four of the eight modules are theirs. Module sizes range from 2 to 474 variants. Four versions of `big_five_personality_snps` show that iterative revision works in practice. Two modules on the same trait (`placebo_response` via Codex, `placebo_response_claude` via Claude Code) were created by the same author to compare the two assistants; both compiled against the same schema and are published side by side.
 
 # Discussion
 
@@ -186,7 +186,7 @@ Genomic data is becoming personally accessible, and people already use AI assist
 
 The safety concern is real but cuts deeper than AI. Candidate-gene studies have failed to replicate , GWAS effect sizes routinely shrink in independent cohorts , direct-to-consumer tests have produced false-positive rates above 40% , and variant reclassifications have led to genetic misdiagnoses . The ecosystem is therefore explicitly research-only: a module that faithfully reflects a study which later fails to replicate is not wrong on its own terms, but a user acting on it may be harmed all the same.
 
-The registry turns individual effort into shared infrastructure: authors version, extend, correct, and republish modules—the pattern software engineering solved with package registries. The catalog already holds modules from independent authors, and the plugin’s MCP tools are listed on biocontext.ai so other agent platforms can use them independently. Modules contain no individual-level data; Just-DNA-Lite applies them locally, so a person’s VCF never leaves their machine and annotation runs raise no GDPR concerns. The knowledge travels through the registry; the genome does not.
+The registry turns individual effort into shared infrastructure, and the plugin’s MCP tools are listed on biocontext.ai so other agent platforms can use them independently. What travels through it is genomic-data-agnostic knowledge: a module carries no individual-level data.
 
 #### Limitations.
 
@@ -374,7 +374,7 @@ Closing group: finish and describe.
 
 ## Skills (20)
 
-Skills are markdown documents loaded into the assistant’s context when needed. Seven are **commands**—user-invocable via `/name` in the assistant’s prompt—and thirteen are **guides** loaded automatically by a router when the assistant reaches the corresponding stage.
+Skills are markdown documents loaded into the assistant’s context when needed. Seven are **commands**—user-invocable via `/name` in the assistant’s prompt—and thirteen are **guides**, which a router loads by naming their path when the assistant reaches the corresponding stage.
 
 <div id="tab:skills-commands">
 
