@@ -85,7 +85,7 @@ collection of papers or a summary from another model. Every variant is verified
 against reference databases such as dbSNP; dedicated checking tools validate
 gene symbols against HGNC, trait identifiers against ontology services, and flag
 decisions that require domain expertise.
-Once compiled to Parquet, Just-DNA-Lite joins the module to a personal
+Once compiled to Parquet, Just-DNA-Lite joins the module to a
 genome~\citep{companion2026justdnalite}. Modules are versioned and
 shareable: they can be kept locally, rehearsed in a staging registry, or
 published for others to install and use. The same files can also be written or
@@ -497,7 +497,7 @@ reported as not computed, its threshold undefined rather than passed.
 \centering
 \small
 \caption{Three runs of one prompt scored against an expert-curated
-reference module, plugin version fixed. \emph{n/c}: empty denominator.}
+reference module, plugin version fixed.}
 \label{tab:scores}
 \begin{tabular}{@{}lrrrrr@{}}
 \toprule
@@ -616,9 +616,8 @@ lactose\_tolerance      &  2  &   8 &   1 & 2 \\
 \end{tabular}
 \end{table}
 
-The modules span three namespaces from three owners; three were authored by
-people outside the development team. Module sizes range from 2 to 474
-variants. Four versions of \texttt{big\_five\_personality\_snps} show that
+Three were authored by people outside the development team, and module
+sizes range from 2 to 474 variants. Four versions of \texttt{big\_five\_personality\_snps} show that
 iterative revision works in practice. Two modules on the same trait
 (\texttt{placebo\_response} via Codex, \texttt{placebo\_response\_claude} via
 Claude Code) were created by the same author to compare the two assistants;

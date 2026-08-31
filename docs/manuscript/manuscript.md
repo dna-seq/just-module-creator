@@ -4,7 +4,7 @@ Genomic annotation connects variant calls to the knowledge that gives them meani
 
 Researchers increasingly use AI coding assistants such as Claude Code and Codex for this kind of work. These tools are powerful, but when asked to analyze variants they typically generate a script: code that may fabricate identifiers , attach a real PMID to the wrong paper , reverse an allele, or bypass established filters. Each session may produce slightly different code, and the result must be reviewed for correctness, efficiency, and security before it can be trusted. The output is a one-off answer tied to one session, not a reusable resource.
 
-This paper presents the Just-DNA ecosystem, which gives these same assistants a different job. Instead of generating code, the assistant produces structured data: a *module* of editable CSV tables where each variant is linked to its studies, citations, effect sizes, and supporting passages. The input can be anything the assistant can read, from a single sentence describing a trait to a collection of papers or a summary from another model. Every variant is verified against reference databases such as dbSNP; dedicated checking tools validate gene symbols against HGNC, trait identifiers against ontology services, and flag decisions that require domain expertise. Once compiled to Parquet, Just-DNA-Lite joins the module to a personal genome . Modules are versioned and shareable: they can be kept locally, rehearsed in a staging registry, or published for others to install and use. The same files can also be written or edited entirely by hand.
+This paper presents the Just-DNA ecosystem, which gives these same assistants a different job. Instead of generating code, the assistant produces structured data: a *module* of editable CSV tables where each variant is linked to its studies, citations, effect sizes, and supporting passages. The input can be anything the assistant can read, from a single sentence describing a trait to a collection of papers or a summary from another model. Every variant is verified against reference databases such as dbSNP; dedicated checking tools validate gene symbols against HGNC, trait identifiers against ontology services, and flag decisions that require domain expertise. Once compiled to Parquet, Just-DNA-Lite joins the module to a genome . Modules are versioned and shareable: they can be kept locally, rehearsed in a staging registry, or published for others to install and use. The same files can also be written or edited entirely by hand.
 
 This paper makes four contributions:
 
@@ -136,7 +136,7 @@ Three measurement choices are load-bearing. Recall is reported at two grains, be
 | 2   |        1.00 |        1.00 |       0.00 |            1.00 |      1.00 |
 | 3   |        1.00 |        1.00 |       0.00 |            1.00 |      1.00 |
 
-Three runs of one prompt scored against an expert-curated reference module, plugin version fixed. *n/c*: empty denominator.
+Three runs of one prompt scored against an expert-curated reference module, plugin version fixed.
 
 </div>
 
@@ -192,7 +192,7 @@ Modules published to the public catalog as of August 2026. All modules target GR
 
 </div>
 
-The modules span three namespaces from three owners; three were authored by people outside the development team. Module sizes range from 2 to 474 variants. Four versions of `big_five_personality_snps` show that iterative revision works in practice. Two modules on the same trait (`placebo_response` via Codex, `placebo_response_claude` via Claude Code) were created by the same author to compare the two assistants; both compiled against the same schema and are published side by side.
+Three were authored by people outside the development team, and module sizes range from 2 to 474 variants. Four versions of `big_five_personality_snps` show that iterative revision works in practice. Two modules on the same trait (`placebo_response` via Codex, `placebo_response_claude` via Claude Code) were created by the same author to compare the two assistants; both compiled against the same schema and are published side by side.
 
 # Discussion
 
