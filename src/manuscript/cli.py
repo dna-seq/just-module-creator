@@ -59,6 +59,7 @@ def build_template(
         bool,
         typer.Option(
             "--no-pdf",
+            "--nopdf",
             help="Write only the Markdown. Use when reviewing prose without churning the PDF.",
         ),
     ] = False,
@@ -88,6 +89,7 @@ def build_manuscript(
         bool,
         typer.Option(
             "--no-pdf",
+            "--nopdf",
             help="Write only the Markdown. Use when reviewing prose without churning the PDF.",
         ),
     ] = False,
