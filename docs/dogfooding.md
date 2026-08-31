@@ -14,6 +14,58 @@ is usable, and what is missing.
 
 ---
 
+## F73 — a paper's published coordinates are GRCh37 and nothing warns you; two independent runs caught it, and neither was told to look
+
+**Found:** 2026-08-31, both centenarian benchmark runs, independently · **Severity:** high ·
+**Status:** open. The behaviour is correct at every layer; the gap is that nothing *says* so in time.
+
+Both runs authoring from PMID 41057961 discovered the paper publishes **GRCh37/hg19** coordinates
+while the module declares **GRCh38**, and both reached the same repair: author `rsid` only, never
+paste the paper's `chrom`/`start`/`ref`/`alts`.
+
+**Verified here, not taken on trust** (live Ensembl, both assemblies):
+
+| rsID | GRCh37 | GRCh38 | delta |
+|---|---|---|---|
+| `rs61849494` | `chr10:51613269 G/A` | `chr10:45982565 C/T` | **5.6 Mb, and strand-flipped** |
+| `rs11228733` | `chr11:56468368 C/T` | `chr11:56700892 C/T` | 232 kb |
+
+**Why this is worse than an ordinary mistake.** A pasted GRCh37 coordinate is a *well-formed* row.
+`lint_rows` passes it, `validate_module` passes it, and the compile is green — because
+`compiler.resolution._verify` compares an authored coordinate against the resolver's, and an author
+who pastes both a GRCh37 `chrom/start` **and** the matching GRCh37 `ref` has written a
+self-consistent pair. The module then annotates nothing, or worse, annotates the wrong locus. `F73`
+is the coordinate half of the same shape as the `provenance_quote` title problem: a check that
+passes over a value nobody could have got wrong in the way the check tests for.
+
+**One run put the rule in its own words**, which is the phrasing worth keeping: *"author rsid-only
+rows; never paste the paper's chrom/start/ref/alt"*. The other reached it from the methods section
+and cross-checked one variant. Two independent arrivals at the same repair, from the same paper, with
+nothing in the prompt pointing either of them at it.
+
+**They also agreed on a second consequence.** The paper's supplementary carries **47 variants with no
+rsID**, which are unusable without a liftover this plugin does not do. Both excluded them and said so
+rather than pasting the GRCh37 positions. That is the right call and it is a real capability gap: a
+module cannot carry a position-only variant from a GRCh37 source at all.
+
+**What the skills say today, and why it was not enough.** `module-enrich` covers the off-by-one
+signature and the *recovery* of an rsID from an old-assembly coordinate — the repair after the fact.
+`module-curate` warns about the coordinate mistake no offline gate catches. Neither says *check the
+source's assembly before you author a coordinate at all*, which is the moment the decision is made.
+Both runs got there by reading the paper's methods, not by being told.
+
+**Surface it, and the fix is prose plus possibly a check.**
+
+- **The prose fix, which is ours and cheap:** `module-curate` and `module-start` should say that a
+  source's genome build is a triage question, and that the safe authoring default from any paper is
+  **rsID-only** — let resolution supply the coordinate, so the compiler's rsid-vs-coordinate check has
+  something independent to compare. That is the rule both runs invented.
+- **A check is harder than it looks and may be upstream's.** "Does this authored coordinate match the
+  declared build" is exactly what resolution already answers — but only for rows that carry an rsID.
+  A position-only row from a GRCh37 source has nothing to disagree with. That may be worth an `S`
+  once we can state the ask precisely; not filed yet, because we have not established what upstream
+  could check that it does not already.
+
 ## F72 — a corpus-sized `enrich` is indistinguishable from a hang, and the fix is upstream's but not ours to wait for
 
 **Found:** 2026-08-31 · **Severity:** medium · **Status:** worked around here, with a dismantle note.
