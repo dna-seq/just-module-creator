@@ -95,8 +95,9 @@ Upstream's real fix is `S66` ask 4, accepted and shipping in **0.7** (`RM128`).
 
 A 263-rsID module ran **20+ minutes** inside `enrich_module` writing nothing. `enrich()` persists
 `resolution.csv` only at the end, so silence is the expected appearance of work — and an operator
-watching it cannot tell that from a dead process. That ambiguity is what led to killing the run,
-which produced the partial sidecar in `F70`.
+watching it cannot tell that from a dead process. The run that left the short sidecar in `F70` died
+during one of these silences — though the sidecar itself turned out to be a completed write, so the
+ambiguity is what made the death invisible, not what shortened the file.
 
 **Upstream already owns this and already answered it.** `S66` ask 4 is the progress callback; it is
 accepted, minor-legal, and lands in 0.7 with the transaction and the `flock`. Verified against the
@@ -158,41 +159,57 @@ as 'outranks [the sources]' when I passed no `source_value` and was recording au
 cell, not overriding a source. That wording publishes verbatim."* A run asked for blunt feedback about
 the surface produced a defect report about the surface.
 
-## F70 — an interrupted `enrich` leaves a partial `resolution.csv` that nothing marks as partial
+## F70 — a completed `enrich` can leave a `resolution.csv` covering fewer subjects than the module authored, and nothing in the file says so
 
-**Found:** 2026-08-31, when six benchmark agents were killed mid-run by a quota limit ·
-**Severity:** medium · **Status:** filed upstream as format-tree `S76`. The detector half may be ours.
+**Found:** 2026-08-31, in the benchmark round · **Severity:** medium ·
+**Status:** filed upstream as format-tree `S76`, withdrawn there as a duplicate of `S66`, and the
+withdrawal's arithmetic was **wrong in the reporter's favour** — corrected upstream 2026-08-31 under
+the same entry. The reading that closes it is upstream's `RM141`, which is **in the 0.7.0 tree and not
+installable**: 0.7.0 is bumped and untagged, and `uv sync` still gives 0.6.6.
 
-One run was authoring 789 variant rows over **263 distinct rsIDs** and was killed during `enrich`. It
-left a `resolution.csv` of 203 rows covering **201 rsIDs** — well-formed, every row correct, every
-`status=resolved`. **Nothing on disk says it covers 201 of 263.** No marker, no count, no sentinel.
+**The heading and the mechanism both changed. What was reported first, and why it was wrong.** The
+original write-up said an *interrupted* `enrich` left a *partial* file, that merge-not-clobber made
+re-running entrench it, and that the correct recovery was to delete the sidecar or `refresh_sidecar`
+first. Two of those three are false, and the preserved artifact is what says so.
 
-**Merge-not-clobber is what makes it dangerous.** The natural recovery — run it again — merges onto the
-stale 201 and reports success, because from the merge's view the present rows need nothing and the
-absent ones were never recorded as attempted. The correct recovery (delete, or `refresh_sidecar`) is
-documented; the problem is that the failure is **undetectable**, so nothing prompts anyone into it.
+**Proven, from the file** (`evidence-S76-partial-resolution/resolution.partial.csv`, hash-verified):
+203 rows over **201 distinct rsIDs**, against **263** authored in that run's `variants.csv`. The rows
+are sorted by rsid end to end and the last line terminates with a clean CRLF, and the 62 absent rsIDs
+scatter across the whole alphabetical range of the authored set rather than falling off the tail. That
+is a **complete write of an incomplete resolution set**, not a truncated file.
 
-Second artifact in the same directory: `verification.json` was written before the interruption, so the
-module carries an attestation over bytes a completed enrich will change. That half is at least loud —
-the stale-verification warning fires — which is the contrast worth noting: an interrupted run leaves
-two disagreeing artifacts, one that announces itself and one that does not.
+**Why the enricher produces one, by design.** `_write_resolution_csv` runs once, at the end. A subject
+whose live request could not be *made* joins `unreachable_rsids` and is written as **no row at all** —
+deliberately, because `status="not_found"` would state that a source was asked and said no, which is a
+negative nobody established. So an ordinary `best_effort` run over a source that stops answering
+produces exactly this file, with no interruption anywhere.
 
-**We surfaced it rather than repairing it**, because deleting a sidecar is destructive and
-`resolution.csv` can carry hand-curated `source="manual"` rows. `refresh_sidecar` is the safe path and
-exists for exactly this, but it is a repair, not a detector.
+**Re-running is the correct recovery, and the original advice to delete first was wrong.** In the
+installed 0.6.6, `need_pos` and `need_rsid` skip only the subjects an existing row already covers
+(`enrich.py`, the partition below the merge). The 62 missing subjects are not in `existing`, have
+nothing to merge onto, and go to the resolver like any other. Upstream measured the same on their tree
+and on `v0.6.6` from its own tag. **Do not delete a sidecar to recover from this** — that is the
+destructive move `refresh_sidecar` exists to make safe, and here it buys nothing.
 
-**Surface it, and why the candidates are wrong except one.**
+**What survives, and it is the whole finding.** Nothing in the file, its header or any sibling records
+that it covers 201 of 263. A reader opening the directory has to count distinct authored rsIDs and diff
+the two sets. The `verification.json` half also survives for 0.6.6: it was written before the run ended
+and attests bytes a completed enrich would change, and that half at least announces itself through the
+stale-verification warning. Upstream reports the two are inside one commit block in 0.7.
 
-- **Have `enrich` refuse when a sidecar looks short.** It cannot tell a partial write from a
-  legitimately smaller one — an author who resolved a subset deliberately, or injected a curated
-  sidecar for the rows they care about, are both supported today. This breaks a working practice to
-  catch a crash. Argued against ourselves in `S76`.
-- **A lint of ours comparing the two counts.** Cheap and it is a *reading*, which is our layer — but
-  it belongs beside `audit_module`'s decision list rather than in `lint_rows`, and it needs the
-  three-valued treatment: `unknown` where the authored subject set cannot be determined, never `0`.
-  Held until upstream answers, because if they write atomically the detector has nothing to detect.
-- **Atomic write upstream** — temp file then rename — is the smallest fix, needs no new field, and
-  closes the reported failure outright. That is what `S76` asks for.
+**Where the fix actually comes from, which the first write-up got wrong too.** This is not `S66`'s
+family: `RM128`'s transaction and atomic write cannot prevent a file that was never half-written.
+`RM141` is what closes it — `validate --strict` refuses a table that cannot place every authored
+subject and names them, `validate` warns per uncovered row — and it is a **reading computed from the
+spec beside the table**, not a marker in it. Upstream refuses a durable partial marker on the grounds
+that it is a fact about a *run* living in a table of facts about *variants*, and that a killed process
+writes no marker anyway. Both arguments hold.
+
+**Ours, until 0.7 is installable.** Count `resolution.csv`'s distinct subjects against the authored
+set before trusting anything downstream — which is what `enrich_module`'s own refusal text already
+tells a caller to do. A detector of ours would belong beside `audit_module`'s decision list, three-valued,
+with `unknown` where the authored subject set cannot be determined; it is **not worth building**, because
+upstream's own `validate` answers it in the command our loop already runs first.
 
 ## F69 — a `p_value` and an `effect_size` on one row are asserted to belong together, and nothing records or checks that they do
 

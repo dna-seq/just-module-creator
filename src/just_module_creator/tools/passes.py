@@ -412,8 +412,9 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
             # has no `progress` parameter, verified by signature rather than by
             # changelog. Until then `enrich()` is one opaque blocking call: a 263-rsID
             # module ran 20+ minutes writing nothing, and an operator watching it could
-            # not tell work from a hang. That ambiguity is what killed a benchmark run
-            # and produced the partial sidecar in F70.
+            # not tell work from a hang. A benchmark run died inside one of those
+            # silences; the short sidecar it left (F70) was a completed write, so the
+            # silence hid the death rather than causing the file.
             #
             # This reports ELAPSED TIME, never a fraction. We cannot know the
             # denominator — upstream's resolver batches inside `resolver.py` rather than
