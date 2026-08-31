@@ -49,6 +49,62 @@ the OA service return the bare accession, and all three reached the caller verba
 with no accession rather than handing the wrapper back — a value that is not an id but looks like one
 is worse than nothing, which is the same reason the DOI helper does it.
 
+## F80 — a benchmark's isolation was breached by our own memory index, and by "read" not covering "list"
+
+**Found:** 2026-08-31, running three scored benchmark runs on 0.27.0 · **Severity:** high ·
+**Status:** memory entry retired the same day; runbook in `docs/BENCHMARKING.md`.
+
+Every benchmark prompt banned reading `data/interim/` and `assets/benchmarks/`, where the
+adjudicated reference and the sibling runs live. Two things got past that, and neither is the
+agents' fault.
+
+**The project memory told each run to open the answer key.** A memory entry read *"read
+`data/interim/repro-bench-2/HANDOFF.md` first"* — the round's own handoff, naming the reference, the
+scores and the findings. One run flagged the contradiction and refused; nothing in the setup would
+have detected compliance. **The prompt is not the isolation boundary**: `CLAUDE.md`, the memory
+index and the skills all reach a subagent unasked.
+
+**"Read" did not cover "list".** A run's first bundled command included `ls data/interim/` and it
+saw five directory names. Names only, no contents, it never descended, and it disclosed this before
+being asked — but the clause has to say *list* too.
+
+**Neither voided a run, and that is why they are worth writing down.** Both were caught by an agent
+volunteering against its own interest, which is not a control.
+
+**Surface it, and the candidates that are wrong.** Rewriting prompts is necessary and not
+sufficient, since the leak was in injected context. Removing the memory entirely loses a real
+pointer. What is built instead is a transcript audit that does not depend on anyone's honesty —
+parse `tool_use` inputs in the subagent JSONL for forbidden paths, check which tool first surfaced
+the answer, and ask for the reasoning chain separately, since grep cannot tell a derivation from a
+reconstruction. **Counting name mentions does not work**: `registry_download` and `registry_search`
+appeared 18 times in one transcript with zero invocations, the hits being tool-schema text.
+
+## F81 — runs converging on our reference partly measure our own guidance
+
+**Found:** 2026-08-31 · **Severity:** medium, and it is an interpretation defect rather than a code
+one · **Status:** stated in the manuscript, `docs/BENCHMARKING.md` and `CLAUDE.md` §11.
+
+Two of three runs matched the adjudicated SIRT6 reference **cell-for-cell on all three genotype
+rows**, including the homozygous row that asserts nothing because neither cohort observed a carrier.
+The obvious reading is that two independent judgements agreed and the reference is therefore sound.
+
+**One of the runs volunteered the deflation, and it verifies.** `validate_module` names the missing
+row explicitly — *"1 genotype(s) at 1 site(s) have no row… a gap in a set the author started rather
+than a rule that fires once — e.g. rs117385980 T/T"* — and `skills/module-weights/GUIDE.md:122`
+states *"A zero is a claim too — it says this genotype changes nothing, which is different from a
+blank."* Its own summary: *"an expert following the same rulebook and receiving the same warning has
+a fairly narrow path to anywhere else."*
+
+So the supportable claim is narrower: **the workflow is prescriptive enough to produce consistent
+output from independent runs.** That is worth having and it is not confirmation the output is
+correct — it is the self-agreement shape the title-as-quote finding already taught us to distrust,
+and upstream states the same about a module drafted from PubMind and checked against PubMind.
+
+**The rule this leaves:** when a benchmark scores well, go find the tool output or skill line that
+produced the score before crediting the run. The residual variance in this round was a single cell
+(`suggestive` vs `not_significant` at p ≈ 0.07, upstream `S83`) that an aggregate score would have
+hidden entirely.
+
 ## F77 — the version handshake certifies a registry pair that then refuses our own rows, and our workspace note said the opposite
 
 **Found:** 2026-08-31, in a single-run SIRT6 benchmark on plugin 0.25.0 · **Severity:** high ·

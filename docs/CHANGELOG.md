@@ -3,6 +3,34 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased
+
+### Benchmarking gets a runbook, after two ways a round can leak
+
+`docs/BENCHMARKING.md` — how to run a round, the isolation clauses a prompt must carry, and how to
+prove afterwards that a run did not read the answer. Separate from
+`docs/manuscript/claw-bio-inspired-benchmark.md`, which describes what the scorer measures.
+
+Three scored runs on 0.27.0 turned up two problems with the *setup* rather than the tool (`F80`,
+`F81`):
+
+- **Our own memory index told every benchmark run to read the answer key** — an entry opening *"read
+  `data/interim/repro-bench-2/HANDOFF.md` first"*, which is the round's handoff naming the reference
+  and its findings. One run flagged the conflict and refused; nothing would have caught compliance.
+  Retired. The lesson is that **the prompt is not the isolation boundary**: `CLAUDE.md`, the memory
+  index and the skills all reach a subagent unasked. And the ban must name **listing** as well as
+  reading — a run took `ls data/interim/` as permitted.
+- **Convergence on the reference partly measures our own guidance.** Two runs matched the
+  adjudicated reference cell-for-cell; one volunteered why, and it verified — `validate_module`
+  names the missing genotype outright and `module-weights/GUIDE.md:122` dictates blank-over-zero. The
+  claim that survives is that the workflow is prescriptive enough to produce consistent output from
+  independent runs, not that the output is thereby confirmed correct.
+
+Both were caught by agents volunteering against their own interest, which is not a control — hence
+the transcript audit in the runbook, which depends on nobody's honesty. It parses `tool_use` inputs
+rather than counting name mentions: `registry_download` and `registry_search` appeared 18 times in
+one transcript with zero invocations, the hits being tool-schema text.
+
 ## 0.27.0 — 2026-08-31
 
 ### The benchmark scorer becomes a tested module, and the framework is ready for a real round

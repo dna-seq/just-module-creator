@@ -1462,6 +1462,28 @@ have been questions.
   compile sweeps `logs/**.log` up with no opt-out. So never write an absolute path, a token or a
   transcript fragment into that file: it travels to the catalog verbatim.
 
+- **A benchmark agent's isolation is only as good as the quietest thing injected into it, and our
+  own memory index breached it.** A memory entry read *"read `data/interim/repro-bench-2/HANDOFF.md`
+  first"* — the round's handoff, which names the adjudicated reference and its findings — so every
+  benchmark run was being told to open the answer key by context it never asked for. A run on
+  2026-08-31 flagged the conflict and declined; nothing would have caught it if it had complied.
+  Retired the same day. **The prompt is not the boundary**: `CLAUDE.md`, the memory index and the
+  skills all reach a subagent unasked, and an isolation clause has to be checked against all of them.
+  Two narrower lessons from the same round: the ban must name **listing** as well as reading (a run
+  took `ls data/interim/` as permitted), and **verify from the transcript rather than the
+  self-report** — parse `tool_use` blocks in
+  `~/.claude/projects/<slug>/subagents/agent-<id>.jsonl`, because counting name mentions is
+  worthless (`registry_download` appeared 18 times in one transcript and was invoked zero times, the
+  hits being tool-schema text). Runbook in `docs/BENCHMARKING.md`.
+- **When benchmark runs converge on our reference, that partly measures how prescriptive our own
+  skills are.** Two runs matched the adjudicated SIRT6 reference cell-for-cell on all three
+  genotypes, and one of them volunteered why: `validate_module` names the missing row outright
+  (*"a gap in a set the author started … e.g. rs117385980 T/T"*) and
+  `skills/module-weights/GUIDE.md:122` says *"A zero is a claim too… different from a blank."* The
+  supportable claim is that the workflow is prescriptive enough to produce consistent output from
+  independent runs — **not** that two judgements agreed and the answer is therefore right, which is
+  the same self-agreement defect as the title-as-quote finding. **When a benchmark scores well, find
+  the tool output or skill line that made it score well before crediting the run.**
 - **A plugin `commands/<name>.md` SHADOWS `skills/<name>/SKILL.md`, and the skill body never
   loads.** Found 2026-08-22, and it had disabled nine of twenty skills including
   `create-module`, the entry point `server.INSTRUCTIONS` names. Each shim's whole body was
