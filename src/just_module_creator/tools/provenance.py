@@ -91,7 +91,10 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
         behind a module that is right and current) and marking a row outranked *before*
         the mismatch is reported destroys the only signal that catches the first.
         Omitted, this is an *edit log*: you changed a cell and are recording who and
-        why, which is the server's rule 2 and waits for nothing. One call is one
+        why, which is the server's rule 2 and waits for nothing — and it is written as
+        an authored move, not an outranking one, with `provenance.json`'s `outranks`
+        map left empty. Claiming a dispute you never had dilutes the signal a reviewer
+        routes scrutiny by, and this log publishes verbatim. One call is one
         `(variant_key, field)` pair with no bulk form, so a column-wide correction is
         that many calls — where the set is too large, write one record and say in
         `reason` how the set was derived. `reason` is prose with no vocabulary on
@@ -120,9 +123,21 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
             path, replaced = overrides.upsert(target, record)
             append_move(
                 target,
-                f"{record.recorded_at} override {record.variant_key} {record.field}="
-                f"{authored_value!r} outranks {source_name}"
-                + (f" ({source_value!r})" if source_value else "")
+                # Two verbs, because this tool has two jobs and the log published
+                # only one of them. `source_value` is the discriminator: with one,
+                # the author read a source and disagreed; without, they authored a
+                # cell no source supplies — a weight, a conclusion — and calling
+                # that "outranks" claims a dispute that never happened. Six of the
+                # seven records in a 2026-08-31 benchmark were the second kind, and
+                # this file publishes verbatim (`F71`).
+                f"{record.recorded_at} "
+                + (
+                    f"override {record.variant_key} {record.field}="
+                    f"{authored_value!r} outranks {source_name} ({source_value!r})"
+                    if source_value
+                    else f"authored {record.variant_key} {record.field}="
+                    f"{authored_value!r} (judged; no value from {source_name} to disagree with)"
+                )
                 + f" by={recorded_by} human_reviewed={str(human_reviewed).lower()}"
                 + (" [replaced an earlier record]" if replaced else ""),
             )

@@ -102,6 +102,45 @@ def test_the_column_is_written_where_a_reader_who_is_not_us_can_find_it():
     assert back[0].field == "clin_sig"
     assert back[0].value_sha256 == value_digest("risk_factor")
 
+def test_a_judged_cell_claims_no_dispute_it_did_not_have():
+    """No `source_value` means no disagreement, so `outranks` stays empty.
+
+    Upstream scopes the field precisely — "per-column justification for this row
+    deliberately DISAGREEING with a source" — and a key's *presence* is the
+    machine-readable bit. We were writing one for every record, including the cells no
+    source can supply: a `weight`, a `conclusion`, a `direction`. That put a
+    non-disagreement in a disagreement field and diluted the signal the map exists to
+    carry.
+
+    Measured 2026-08-31: six of seven records across two benchmark runs were judged
+    cells, and `provenance.json` publishes. One agent reported the wording itself
+    without being asked. `F71`.
+    """
+    judged = overrides.OverrideRecord(
+        variant_key="rs117385980",
+        field="weight",
+        authored_value="-0.2",
+        source_name="no source consulted",
+        source_value=None,
+        reason="Two underpowered cohorts, both non-significant; the sign is a judgement.",
+        recorded_at="2026-08-31T00:00:00Z",
+        recorded_by="claude-opus-5",
+        human_reviewed=False,
+        value_sha256=value_digest("-0.2"),
+    )
+    item = overrides.to_items([judged])[0]
+
+    assert item.outranks == {}, "a judged cell must not claim it outranks anything"
+    # The judgement is still recorded and still travels — it goes to `rationale`,
+    # which upstream documents as "why this annotation was made".
+    assert "judgement" in (item.rationale or "")
+    # And it still round-trips, so nothing is lost by not claiming a dispute.
+    back, foreign = overrides.from_items([item])
+    assert not foreign
+    assert back[0].field == "weight"
+    assert back[0].value_sha256 == value_digest("-0.2")
+
+
 def test_the_file_validates_as_upstreams_provenance_document(module: Path):
     """It must be *their* file, not a lookalike: the registry recognises this name."""
     overrides.write_records(module, [_record()])

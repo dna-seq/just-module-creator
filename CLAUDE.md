@@ -1270,9 +1270,17 @@ have been questions.
   `registry_search(target="prod")` rather than quoting it**, which is exactly how it came to claim
   "one module" for nine days. The `target` is not optional on a read since 0.18.0, and omitting it
   raises rather than guessing.
-- The enricher's Ensembl cache lands in
-  `~/.cache/just-dna-pipelines/ensembl_variations`. The live V2 GraphQL endpoint
-  currently 404s and the client falls back to REST — expected, not a defect.
+- **The enricher's snapshot caches go to `/data/just-dna-cache`, and the variable that
+  puts them there is `JUST_DNA_PIPELINES_CACHE_DIR`. Unset is not "no cache" — it falls
+  back to platformdirs (`~/.cache/just-dna-pipelines`) silently**, and the Ensembl
+  snapshot alone is ~14 GB. On 2026-08-31 an unset value filled the root filesystem to
+  91% during a benchmark, and the failure is invisible until the disk is gone: every
+  tool keeps working, just into the wrong volume. It is set in `.env` and documented in
+  `.env.template`. **A guard exists and it is deliberate**: `~/.cache/just-dna-pipelines`
+  is a read-only *file*, so `mkdir` under it raises `NotADirectoryError` rather than
+  filling `/`. If a tool fails that way, set the variable — never delete the guard. The
+  live V2 GraphQL endpoint currently 404s and the client falls back to REST — expected,
+  not a defect.
 - A transitive dependency ships a top-level `tests` package that shadows this
   repo's, so test helpers import as `from conftest import ...`.
 - **Format 0.6.6 / compiler 0.6.6 / enricher 0.6.6 / registry 0.18.2 — adopted 2026-08-21 (our

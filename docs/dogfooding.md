@@ -14,6 +14,46 @@ is usable, and what is missing.
 
 ---
 
+## F71 — `record_override` logged every authored cell as "outranks", claiming disputes that never happened
+
+**Found:** 2026-08-31, reading six benchmark runs' `logs/authoring.log` · **Severity:** medium ·
+**Status:** fixed here. Not upstream's — their field is scoped correctly and we were misusing it.
+
+`record_override` has two jobs, stated in its own docstring: *"outranks a source, **or** that you
+edited"*. `server.INSTRUCTIONS` rule 2 tells every agent to call it for **every** hand edit. Both
+outputs said only the first thing:
+
+```
+override rs117385980 weight='-0.2 on C/T…' outranks authored judgement, no source consulted
+```
+
+**Six of seven records across two runs were judged cells** — `weight`, `conclusion`, `genotype`,
+`state`, `stat_significance`, `direction` — cells no source supplies. One record was a real
+disagreement (`effect_size='3.58' outranks pmid:28399814 ('3.53')`). The agents were compliant; the
+surface mislabelled them.
+
+**Both artifacts publish.** `logs/**.log` is swept into every compile with no opt-out, and
+`provenance.json` is in `RECOGNIZED_SPEC_FILES`. So a module reaches the catalog asserting its author
+overruled sources they never consulted — and it corrodes the signal `overrides.py` exists to protect:
+if most records say *outranks* but mean *authored*, the real disputes stop standing out.
+
+**Upstream is not at fault and there is no `S` to file.** `ProvenanceItem.outranks` is documented as
+*"per-column justification for this row deliberately disagreeing with a source"*, and *"a key's
+presence is what a tool may read"*. That is exact. We were writing a key for records that are not
+disagreements. `rationale` — *"why this annotation was made"* — is the right shelf and every record
+already filled it.
+
+**The fix, and it needed no schema change:** `source_value is None` already separated the two cases.
+The log now writes `authored … (judged; no value from X to disagree with)` where there is no source
+value, and `to_items` leaves `outranks` empty for those records while still writing the reason to
+`rationale`. Verified by reverting the fix and watching
+`test_a_judged_cell_claims_no_dispute_it_did_not_have` fail.
+
+**One agent diagnosed this unprompted**, which is the part worth keeping: *"the log renders my entries
+as 'outranks [the sources]' when I passed no `source_value` and was recording authorship of a judged
+cell, not overriding a source. That wording publishes verbatim."* A run asked for blunt feedback about
+the surface produced a defect report about the surface.
+
 ## F70 — an interrupted `enrich` leaves a partial `resolution.csv` that nothing marks as partial
 
 **Found:** 2026-08-31, when six benchmark agents were killed mid-run by a quota limit ·

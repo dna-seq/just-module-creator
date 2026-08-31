@@ -183,10 +183,21 @@ def to_items(records: Iterable[OverrideRecord]) -> list[ProvenanceItem]:
                 variant_key=record.variant_key,
                 rationale=f"{record.reason.rstrip()}{said}{_marker(record)}",
                 human_reviewed=record.human_reviewed,
-                # Upstream's own per-column slot (0.6.5). The prose is the reason a
-                # human reads; the key's presence is what a tool may read, and it is
-                # what stops the column name being legible only to our own regex.
-                outranks={record.field: f"{record.reason.rstrip()}{said}".strip()},
+                # Upstream's own per-column slot (0.6.5), and it is narrower than we
+                # were treating it: its field description reads "per-column
+                # justification for this row deliberately DISAGREEING with a source",
+                # and a key's *presence* is the machine-readable bit. So a record with
+                # no `source_value` — an authored weight, a judged conclusion, a cell
+                # no source supplies — does not belong here at all. Writing one put a
+                # non-disagreement in a disagreement field and diluted the very signal
+                # the map exists to carry. It goes to `rationale` alone, which upstream
+                # documents as "why this annotation was made" and which every record
+                # already fills. `F71`, 2026-08-31.
+                outranks=(
+                    {record.field: f"{record.reason.rstrip()}{said}".strip()}
+                    if record.source_value
+                    else {}
+                ),
             )
         )
     return items
