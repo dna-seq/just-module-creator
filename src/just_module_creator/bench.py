@@ -55,7 +55,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from just_dna_compiler import hints
+from just_dna_compiler import draft, hints
+from pydantic import BaseModel, Field
 
 from just_module_creator.tools.comparison import _compare
 
@@ -87,6 +88,71 @@ ASSERTION_COLUMNS = (
 _WITHHELD = ("", "unknown")
 
 
+class Unscored(BaseModel):
+    """One question this report did not answer, and why. Never a silent zero."""
+
+    subject: str = Field(description="What could not be scored — `variants.csv:stat_significance`.")
+    reason: str = Field(description="Why the question could not be put.")
+
+
+class ColumnCensus(BaseModel):
+    """One watched column in one table: what it asserts and what it withholds."""
+
+    column: str
+    values: dict[str, int] = Field(
+        description="Every value and its count, key-sorted. Emitted from a sorted "
+        "dict rather than set iteration, because the payload is compared."
+    )
+    asserted: int = Field(description="Rows carrying a value that claims something.")
+    withheld_blank: int = Field(description="Rows with an empty cell.")
+    withheld_unknown: int = Field(
+        description="Rows carrying the literal `unknown`. Counted APART from blank: "
+        "both withhold, and only one of them says so on purpose."
+    )
+    off_vocabulary: list[str] = Field(
+        default_factory=list,
+        description="Values outside the column's closed vocabulary, sorted. Not "
+        "counted as asserted — a cell nothing recognises claims nothing. The "
+        "vocabulary is upstream's `hints.field_vocabularies`, never a list here.",
+    )
+
+
+class TableCensus(BaseModel):
+    """One authored table, and the three ways a watched column can be absent."""
+
+    csv: str
+    rows: int
+    columns: list[ColumnCensus] = Field(
+        description="Watched columns this CSV actually carries, sorted by name."
+    )
+    columns_not_carried: list[str] = Field(
+        default_factory=list,
+        description="Watched columns the table's model HAS and this file's header "
+        "does not. A missing column is not a file full of withheld cells — nothing "
+        "was asserted and nothing was withheld, because the question was never put.",
+    )
+    columns_absent_from_table_kind: list[str] = Field(
+        default_factory=list,
+        description="Watched columns that are not fields of this table's model at "
+        "all. Different from the above: not an authoring choice, a category error.",
+    )
+
+
+class Census(BaseModel):
+    """What a run asserts, with no reference. Reports; does not judge."""
+
+    run: str
+    tables: list[TableCensus]
+    note: str = Field(
+        default=(
+            "Reports and does not judge. The expectation for a given paper is a "
+            "sentence in the round's results, never a threshold in here: a source "
+            "running no association test should produce rows asserting no "
+            "direction, and zero rows and sixty honest rows are both passes."
+        )
+    )
+
+
 def locate_spec(path: Path) -> Path:
     """The directory holding `module_spec.yaml`, at or beneath `path`."""
     if (path / "module_spec.yaml").is_file():
@@ -100,36 +166,82 @@ def locate_spec(path: Path) -> Path:
     raise SystemExit(f"several spec directories beneath {path}: {listed}")
 
 
-def census(run: Path) -> dict:
+def _column_census(column: str, rows: list[dict], vocabulary: dict | None) -> ColumnCensus:
+    """One column's tally. Read from raw bytes, checked against the live schema.
+
+    The values are what the author wrote, including one the model would reject —
+    which is the point, and is why `off_vocabulary` exists rather than the value
+    being silently counted as an assertion.
+    """
+    values = Counter((r.get(column) or "").strip() for r in rows)
+    options = set(vocabulary["options"]) if vocabulary and vocabulary.get("closed") else None
+    off = sorted(
+        v for v in values if v and v not in _WITHHELD and options is not None and v not in options
+    )
+    return ColumnCensus(
+        column=column,
+        values=dict(sorted(values.items())),
+        asserted=sum(n for v, n in values.items() if v not in _WITHHELD and v not in off),
+        withheld_blank=values.get("", 0),
+        withheld_unknown=values.get("unknown", 0),
+        off_vocabulary=off,
+    )
+
+
+def census(run: Path) -> Census:
     """Count what a run's authored CSVs assert. Reference-free, report-only.
 
     Machine-written sidecars are skipped, because the question is what the *run*
     asserted and a fact pass's `p_value` is the source's claim rather than the
     author's. The roster is upstream's own `hints.DERIVED_TABLE_MODELS`, never a
     list here: a sidecar we did not know about would otherwise be counted as
-    authored, which is the reading the census exists to avoid.
+    authored, which is the reading the census exists to avoid — and it is what
+    absorbs a new sidecar (0.7 adds PubMind's) without an edit.
+
+    **A watched column can be absent in two different ways and they are reported
+    apart**, because collapsing them is the shape this whole file exists to avoid.
+    `assets/fto_bmi/variants.csv` carries no `stat_significance`, while
+    `stat_significance` *is* a field of `VariantRow` — so the author did not carry
+    it, which is a choice. A column that is not a field of the table's model at all
+    is a category error instead. Neither is a file full of withheld cells: nothing
+    was asserted and nothing was withheld, because the question was never put.
     """
     derived = set(hints.DERIVED_TABLE_MODELS)
-    tables = []
+    tables: list[TableCensus] = []
     for path in sorted(run.glob("*.csv")):
         if path.name in derived:
             continue
         with path.open(newline="", encoding="utf-8") as handle:
             rows = list(csv.DictReader(handle))
-        header = rows[0].keys() if rows else []
+        header = set(rows[0]) if rows else set()
+
+        model = draft.DRAFTABLE.get(path.name)
+        # `None` is not `set()`: a table kind we cannot resolve tells us nothing
+        # about which columns it could have carried, so nothing is claimed about it.
+        fields = set(hints.authored_field_names(model)) if model is not None else None
+        vocabularies = hints.field_vocabularies(model) if model is not None else {}
+
         present = [c for c in ASSERTION_COLUMNS if c in header]
-        if not present:
+        not_carried = sorted(
+            c for c in ASSERTION_COLUMNS
+            if c not in header and (fields is None or c in fields)
+        )
+        wrong_kind = sorted(
+            c for c in ASSERTION_COLUMNS
+            if c not in header and fields is not None and c not in fields
+        )
+        if not present and not not_carried and not wrong_kind:
             continue
-        columns = {}
-        for column in present:
-            values = Counter((r.get(column) or "").strip() for r in rows)
-            columns[column] = {
-                "values": dict(sorted(values.items())),
-                "withheld": sum(values[v] for v in _WITHHELD),
-                "asserted": sum(n for v, n in values.items() if v not in _WITHHELD),
-            }
-        tables.append({"csv": path.name, "rows": len(rows), "columns": columns})
-    return {"run": str(run), "tables": tables}
+        tables.append(
+            TableCensus(
+                csv=path.name,
+                rows=len(rows),
+                columns=[_column_census(c, rows, vocabularies.get(c)) for c in sorted(present)],
+                columns_not_carried=not_carried,
+                columns_absent_from_table_kind=wrong_kind,
+            )
+        )
+    return Census(run=str(run), tables=tables)
 
 
 def _score_table(table) -> dict:
@@ -226,13 +338,17 @@ def main(argv: list[str]) -> int:
         if len(args) < 2:
             sys.stderr.write(__doc__ or "")
             return 2
-        out = [census(locate_spec(Path(a).resolve())) for a in args[1:]]
+        out: list[dict] = [
+            census(locate_spec(Path(a).resolve())).model_dump() for a in args[1:]
+        ]
     else:
         if len(args) < 2:
             sys.stderr.write(__doc__ or "")
             return 2
         reference = locate_spec(Path(args[0]).resolve())
         out = [score(reference, locate_spec(Path(a).resolve())) for a in args[1:]]
+    # `sort_keys` on top of the deterministic ordering inside the models, so the
+    # payload is byte-stable and two runs can be diffed rather than eyeballed.
     print(json.dumps(out, indent=2, sort_keys=True))
     return 0
 
