@@ -581,9 +581,12 @@ matches its own full text and evidences nothing.
 \subsection{Command menu}
 
 Seven of the 20 skills are user-invocable commands, exposing the workflow
-through intentions rather than internal stages. The remaining thirteen
-are guides loaded automatically by a router when the assistant reaches
-the corresponding lifecycle stage.
+through intentions rather than internal stages. The remaining thirteen are
+guides, which a router loads by naming their path when the assistant reaches
+the corresponding lifecycle stage. A guide is deliberately not matched from
+its own description: that is what keeps thirteen documents out of every
+session's prompt, and it is why a guide nothing links to is unreachable
+rather than merely quiet.
 
 \begin{center}
 \small
@@ -964,8 +967,8 @@ Tool & Purpose \\
 
 Skills are markdown documents loaded into the assistant's context when
 needed. Seven are \textbf{commands}---user-invocable via \texttt{/name} in
-the assistant's prompt---and thirteen are \textbf{guides} loaded
-automatically by a router when the assistant reaches the corresponding
+the assistant's prompt---and thirteen are \textbf{guides}, which a router
+loads by naming their path when the assistant reaches the corresponding
 stage.
 
 \begin{table}[ht]

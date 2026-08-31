@@ -154,7 +154,7 @@ With the plugin active, the assistant calls typed tools instead of generating co
 
 ## Command menu
 
-Seven of the 20 skills are user-invocable commands, exposing the workflow through intentions rather than internal stages. The remaining thirteen are guides loaded automatically by a router when the assistant reaches the corresponding lifecycle stage.
+Seven of the 20 skills are user-invocable commands, exposing the workflow through intentions rather than internal stages. The remaining thirteen are guides, which a router loads by naming their path when the assistant reaches the corresponding lifecycle stage. A guide is deliberately not matched from its own description: that is what keeps thirteen documents out of every session’s prompt, and it is why a guide nothing links to is unreachable rather than merely quiet.
 
 <div class="center">
 
@@ -388,7 +388,7 @@ Closing group: finish and describe.
 
 ## Skills (20)
 
-Skills are markdown documents loaded into the assistant’s context when needed. Seven are **commands**—user-invocable via `/name` in the assistant’s prompt—and thirteen are **guides** loaded automatically by a router when the assistant reaches the corresponding stage.
+Skills are markdown documents loaded into the assistant’s context when needed. Seven are **commands**—user-invocable via `/name` in the assistant’s prompt—and thirteen are **guides**, which a router loads by naming their path when the assistant reaches the corresponding stage.
 
 <div id="tab:skills-commands">
 
