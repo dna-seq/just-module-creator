@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "name": "centenarian",
+  "trait": "Human longevity / exceptional survival",
+  "description": "Whole-genome sequencing of long-lived individuals with no control group.",
+  "expected_spec": null,
+  "scored_tables": [
+    "variants.csv",
+    "studies.csv"
+  ],
+  "source_references": [
+    "Wang et al. 2025, Hum Genomics (doi 10.1186/s40246-025-00772-3)"
+  ],
+  "provenance": {
+    "kind": "no_reference",
+    "why": "No reference: neither run was adjudicated. run a is the instructive one \u2014 it wrote 60 rows, every one direction: unknown, carrying the observation and withholding the inference, which is what corrected this round's scoring criterion from row count to cell content. run b never got past <<REPLACE>> placeholders."
+  },
+  "variant_tiers": {},
+  "decoy_variants": {
+    "description": "Not established without a reference.",
+    "rsids": []
+  },
+  "scoring": {
+    "minimum_acceptable": {}
+  }
+}

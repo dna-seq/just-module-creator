@@ -1,0 +1,2 @@
+rsid,chrom,start,ref,pmid,population,p_value,conclusion,study_design,stat_significance,effect_size,effect_measure,effect_allele,trait_efo_id,doi,provenance_quote,provenance_regex,curator,p_value_num
+,,,,<<REPLACE>>,,,,,,,,,,,,,,

@@ -1,0 +1,29 @@
+schema_version: '1.0'
+module:
+  title: Centenarian Shared Coding Variants
+  description: Coding variants shared by 21 centenarians and supercentenarians in one 2025 cohort study.
+  report_title: Exceptional Longevity — Shared Coding Variants
+  icon: dna
+  icon_set: fomantic
+  color: '#6435c9'
+  name: longevity_centenarian
+defaults:
+  curator: claude-opus-5
+  method: literature-review
+genome_build: GRCh38
+license: CC-BY-NC-ND-4.0
+authorship:
+  - who: claude-opus-5
+    role: created
+    kind:
+      - ai
+      - agent
+    at: '2026-08-31'
+weighting:
+  scale: No weights are assigned; the weight column is deliberately left empty on every row.
+  method: >-
+    None. The single source study reports no effect size, no effect allele, no direction and no
+    association statistic for any variant, so there is nothing from which a weight could be derived.
+  note: >-
+    These rows carry no score contribution and must not be summed. They record that a variant was
+    observed in an exceptional-longevity cohort, not that it causes or predicts longevity.

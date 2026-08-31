@@ -68,6 +68,15 @@ cover/
 # credentials, 73 lines.
 !assets/logs/*.log
 local_settings.py
+# Compiled module artifacts. CLAUDE.md forbids committing parquet and a compile is
+# deterministic, so an artifact is reproducible from its spec and only its digests are
+# worth keeping — those live in the fixtures' metadata.json. Enforced here rather than
+# remembered: the benchmark corpus under assets/benchmarks/ is a spec tree that a
+# recompile fills with build/*.parquet, and one `git add` of a run directory would
+# otherwise sweep 29 of them in.
+*.parquet
+assets/benchmarks/**/build/
+
 db.sqlite3
 db.sqlite3-journal
 

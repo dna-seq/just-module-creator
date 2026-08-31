@@ -1,0 +1,60 @@
+rsid	rsid_state	n_loci	chrom	start	ref	alts	findings
+rs1778159	live	1	1	149012717	T	A	
+rs2762745	live	1	1	148953159	G	A	
+rs235468	live	1	1	171545592	C	G	
+rs4925583	live	1	1	247949507	A	G	
+rs61834268	live	1	1	248638477	A	T	
+rs1889565	live	1	10	110507065	C	A,T	
+rs61849498	live	1	10	45982920	A	G	
+rs61849494	live	1	10	45982565	C	T	
+rs73463994	live	1	11	48325239	C	T	
+rs74589050	live	1	11	48325410	A	G	
+rs73464001	live	1	11	48325515	C	T	
+rs73465911	live	1	11	48325754	G	T	
+rs297081	live	1	11	55820035	A	C,G,T	
+rs11228733	live	1	11	56700892	C	T	
+rs4237768	live	1	11	5986042	G	A	
+rs4354673	live	1	11	5986383	G	A,C,T	
+rs2857919	live	1	11	7000929	A	G,T	
+rs612593	live	1	12	9999043	T	C	
+rs3759301	live	1	12	31982507	T	A,C,G	
+rs1110719	live	1	12	53288099	A	C,G,T	
+rs962976	live	1	12	68326847	G	A,T	
+rs4941543	live	1	13	46134156	T	A,C	
+rs4982419	live	1	14	21155677	G	A	
+rs3100906	live	1	14	49832244	T	A,C,G	
+rs4027402	live	1	14	64030031	C	T	
+rs8010911	live	1	14	64055956	G	C	
+rs335689	live	0	UNKNOWN				info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | warning: live Ensembl could not be reached, so its answer is unchecked rather than empty - re-run before reading this as an rsID Ensembl does not have | info: position remains unset
+rs2139440	live	0	UNKNOWN				info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | warning: live Ensembl could not be reached, so its answer is unchecked rather than empty - re-run before reading this as an rsID Ensembl does not have | info: position remains unset
+rs7184427	live	1	16	88738326	A	G	info: not in the injected Ensembl snapshot
+rs2363198	live	1	17	21314201	G	A	info: not in the injected Ensembl snapshot
+rs76265595	live	1	17	21415757	G	A	info: not in the injected Ensembl snapshot
+rs75029097	live	1	17	21415775	G	A	info: not in the injected Ensembl snapshot
+rs76684759	live	0	UNKNOWN				info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | warning: live Ensembl could not be reached, so its answer is unchecked rather than empty - re-run before reading this as an rsID Ensembl does not have | info: position remains unset
+rs7218599	live	0	UNKNOWN				info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | warning: live Ensembl could not be reached, so its answer is unchecked rather than empty - re-run before reading this as an rsID Ensembl does not have | info: position remains unset
+rs6503018	live	1	17	7388788	G	A	info: not in the injected Ensembl snapshot
+rs7406494	live	0	UNKNOWN				info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | warning: live Ensembl could not be reached, so its answer is unchecked rather than empty - re-run before reading this as an rsID Ensembl does not have | info: position remains unset
+rs76328545	live	0	UNKNOWN				info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | warning: live Ensembl could not be reached, so its answer is unchecked rather than empty - re-run before reading this as an rsID Ensembl does not have | info: position remains unset
+rs7248674	live	1	19	23745300	C	G,T	info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | info: 1 locus/loci from live ensembl-rest - not from a pinned snapshot, so re-running may differ as Ensembl advances
+rs439676	live	1	19	43966268	T	C	info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | info: 1 locus/loci from live ensembl-rest - not from a pinned snapshot, so re-running may differ as Ensembl advances
+rs3746319	live	0	UNKNOWN				info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | warning: live Ensembl could not be reached, so its answer is unchecked rather than empty - re-run before reading this as an rsID Ensembl does not have | info: position remains unset
+rs1366257	live	1	19	52438287	G	A,T	info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | info: 1 locus/loci from live ensembl-rest - not from a pinned snapshot, so re-running may differ as Ensembl advances
+rs1366258	live	1	19	52438365	A	C,T	info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | info: 1 locus/loci from live ensembl-rest - not from a pinned snapshot, so re-running may differ as Ensembl advances
+rs76379993	live	1	2	95860002	T	A	info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | info: 1 locus/loci from live ensembl-rest - not from a pinned snapshot, so re-running may differ as Ensembl advances
+rs77658288	live	1	2	95860007	A	T	info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | info: 1 locus/loci from live ensembl-rest - not from a pinned snapshot, so re-running may differ as Ensembl advances
+rs74765991	live	0	UNKNOWN				info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | warning: live Ensembl could not be reached, so its answer is unchecked rather than empty - re-run before reading this as an rsID Ensembl does not have | info: position remains unset
+rs584855	live	1	20	58218650	G	A,T	info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | info: 1 locus/loci from live ensembl-rest - not from a pinned snapshot, so re-running may differ as Ensembl advances
+rs9840993	live	1	3	123739046	G	A	info: not in the injected Ensembl snapshot
+rs1803155	live	0	UNKNOWN				info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | warning: live Ensembl could not be reached, so its answer is unchecked rather than empty - re-run before reading this as an rsID Ensembl does not have | info: position remains unset
+rs58374767	live	1	4	102901247	G	A	info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | info: 1 locus/loci from live ensembl-rest - not from a pinned snapshot, so re-running may differ as Ensembl advances
+rs4862653	live	0	UNKNOWN				info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | warning: live Ensembl could not be reached, so its answer is unchecked rather than empty - re-run before reading this as an rsID Ensembl does not have | info: position remains unset
+rs6831040	live	1	4	81046034	C	G,T	info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | info: 1 locus/loci from live ensembl-rest - not from a pinned snapshot, so re-running may differ as Ensembl advances
+rs316019	live	1	6	160249250	A	C,T	info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | info: 1 locus/loci from live ensembl-rest - not from a pinned snapshot, so re-running may differ as Ensembl advances
+rs9885913	live	1	6	60499337	A	G	info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | info: 1 locus/loci from live ensembl-rest - not from a pinned snapshot, so re-running may differ as Ensembl advances
+rs9885916	live	1	6	60499346	A	G	info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | info: 1 locus/loci from live ensembl-rest - not from a pinned snapshot, so re-running may differ as Ensembl advances
+rs73714276	live	0	UNKNOWN				info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | warning: live Ensembl could not be reached, so its answer is unchecked rather than empty - re-run before reading this as an rsID Ensembl does not have | info: position remains unset
+rs796389673	live	0	UNKNOWN				info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | warning: live Ensembl could not be reached, so its answer is unchecked rather than empty - re-run before reading this as an rsID Ensembl does not have | info: position remains unset
+rs575564328	live	2	7	142384398	G	T	info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | info: 2 locus/loci from live ensembl-rest - not from a pinned snapshot, so re-running may differ as Ensembl advances | info: ClinVar snapshot unreadable, clin_sig unchecked
+rs575564328	live	2	HSCHR7_2_CTG6	367994	G	T	info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | info: 2 locus/loci from live ensembl-rest - not from a pinned snapshot, so re-running may differ as Ensembl advances | info: ClinVar snapshot unreadable, clin_sig unchecked
+rs6960270	live	0	UNKNOWN				info: not in the injected Ensembl snapshot | info: not in the injected ClinVar snapshot | warning: live Ensembl could not be reached, so its answer is unchecked rather than empty - re-run before reading this as an rsID Ensembl does not have | info: position remains unset

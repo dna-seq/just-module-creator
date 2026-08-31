@@ -1,0 +1,642 @@
+[
+{
+"vid": "chr1:144871755:A/T:1",
+"chrom": "chr1",
+"pos": "144871755",
+"dbsnp": "rs1778159",
+"variant": "A/T",
+"gene": "PDE4DIP",
+"novel": "No",
+"ref": "https://pubmed.ncbi.nlm.nih.gov/26480299/"
+},
+{
+"vid": "chr1:144931330:C/T:1",
+"chrom": "chr1",
+"pos": "144931330",
+"dbsnp": "rs2762745",
+"variant": "C/T",
+"gene": "PDE4DIP",
+"novel": "No",
+"ref": "https://pubmed.ncbi.nlm.nih.gov/35135143/"
+},
+{
+"vid": "chr1:171514731:C/G:1",
+"chrom": "chr1",
+"pos": "171514731",
+"dbsnp": "rs235468",
+"variant": "C/G",
+"gene": "PRRC2C",
+"novel": "No",
+"ref": "https://pubmed.ncbi.nlm.nih.gov/37247280/"
+},
+{
+"vid": "chr1:248112809:A/G:1",
+"chrom": "chr1",
+"pos": "248112809",
+"dbsnp": "rs4925583",
+"variant": "A/G",
+"gene": "OR2L8",
+"novel": "No",
+"ref": "https://pubmed.ncbi.nlm.nih.gov/38248819/"
+},
+{
+"vid": "chr1:248801778:A/T:1",
+"chrom": "chr1",
+"pos": "248801778",
+"dbsnp": "rs61834268",
+"variant": "A/T",
+"gene": "OR2T35",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr10:112266823:C/T:1",
+"chrom": "chr10",
+"pos": "112266823",
+"dbsnp": "rs1889565",
+"variant": "C/T",
+"gene": "DUSP5",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr10:51612914:T/C:1",
+"chrom": "chr10",
+"pos": "51612914",
+"dbsnp": "rs61849498",
+"variant": "T/C",
+"gene": "TIMM23",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr10:51613269:G/A:1",
+"chrom": "chr10",
+"pos": "51613269",
+"dbsnp": "rs61849494",
+"variant": "G/A",
+"gene": "TIMM23",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr11:48346791:C/T:1",
+"chrom": "chr11",
+"pos": "48346791",
+"dbsnp": "rs73463994",
+"variant": "C/T",
+"gene": "OR4C3",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr11:48346962:A/G:1",
+"chrom": "chr11",
+"pos": "48346962",
+"dbsnp": "rs74589050",
+"variant": "A/G",
+"gene": "OR4C3",
+"novel": "No",
+"ref": "https://scispace.com/pdf/identification-of-somatic-mutations-in-lgl-leukemia-through-46lj8zlg2k.pdf"
+},
+{
+"vid": "chr11:48347067:C/T:1",
+"chrom": "chr11",
+"pos": "48347067",
+"dbsnp": "rs73464001",
+"variant": "C/T",
+"gene": "OR4C3",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr11:48347306:G/T:1",
+"chrom": "chr11",
+"pos": "48347306",
+"dbsnp": "rs73465911",
+"variant": "G/T",
+"gene": "OR4C3",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr11:55587511:A/G:1",
+"chrom": "chr11",
+"pos": "55587511",
+"dbsnp": "rs297081",
+"variant": "A/G",
+"gene": "OR5D18",
+"novel": "No",
+"ref": "https://scispace.com/pdf/bone-and-phosphate-in-relation-to-health-survival-and-2xptfjw13f.pdf"
+},
+{
+"vid": "chr11:56468368:C/T:1",
+"chrom": "chr11",
+"pos": "56468368",
+"dbsnp": "rs11228733",
+"variant": "C/T",
+"gene": "OR9G1",
+"novel": "No",
+"ref": "https://www.ahajournals.org/doi/pdf/10.1161/JAHA.119.012875"
+},
+{
+"vid": "chr11:6007272:A/G:1",
+"chrom": "chr11",
+"pos": "6007272",
+"dbsnp": "rs4237768",
+"variant": "A/G",
+"gene": "OR52L1",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr11:6007613:T/G:1",
+"chrom": "chr11",
+"pos": "6007613",
+"dbsnp": "rs4354673",
+"variant": "T/G",
+"gene": "OR52L1",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr11:7022160:A/G:1",
+"chrom": "chr11",
+"pos": "7022160",
+"dbsnp": "rs2857919",
+"variant": "A/G",
+"gene": "ZNF214",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr12:10151642:T/C:1",
+"chrom": "chr12",
+"pos": "10151642",
+"dbsnp": "rs612593",
+"variant": "T/C",
+"gene": "CLEC1B",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr12:32135441:T/C:1",
+"chrom": "chr12",
+"pos": "32135441",
+"dbsnp": "rs3759301",
+"variant": "T/C",
+"gene": "KIAA1551",
+"novel": "No",
+"ref": "https://pubmed.ncbi.nlm.nih.gov/36643868/"
+},
+{
+"vid": "chr12:53681883:A/T:1",
+"chrom": "chr12",
+"pos": "53681883",
+"dbsnp": "rs1110719",
+"variant": "A/T",
+"gene": "ESPL1",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr12:68720627:G/A:1",
+"chrom": "chr12",
+"pos": "68720627",
+"dbsnp": "rs962976",
+"variant": "G/A",
+"gene": "MDM1",
+"novel": "No",
+"ref": "https://pubmed.ncbi.nlm.nih.gov/18805803/"
+},
+{
+"vid": "chr13:46708291:T/C:1",
+"chrom": "chr13",
+"pos": "46708291",
+"dbsnp": "rs4941543",
+"variant": "T/C",
+"gene": "LCP1",
+"novel": "No",
+"ref": "https://doi.org/10.1158/1535-7163.MCT-13-0646"
+},
+{
+"vid": "chr14:21623836:G/A:1",
+"chrom": "chr14",
+"pos": "21623836",
+"dbsnp": "rs4982419",
+"variant": "G/A",
+"gene": "OR5AU1",
+"novel": "No",
+"ref": "https://doi.org/10.1371/journal.pone.0261572"
+},
+{
+"vid": "chr14:50298962:T/A:1",
+"chrom": "chr14",
+"pos": "50298962",
+"dbsnp": "rs3100906",
+"variant": "T/A",
+"gene": "NEMF",
+"novel": "No",
+"ref": "https://doi.org/10.1093/brain/awy039"
+},
+{
+"vid": "chr14:64496749:C/T:1",
+"chrom": "chr14",
+"pos": "64496749",
+"dbsnp": "rs4027402",
+"variant": "C/T",
+"gene": "SYNE2",
+"novel": "No",
+"ref": "https://pubmed.ncbi.nlm.nih.gov/27502069/"
+},
+{
+"vid": "chr14:64522674:G/C:1",
+"chrom": "chr14",
+"pos": "64522674",
+"dbsnp": "rs8010911",
+"variant": "G/C",
+"gene": "SYNE2",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr15:76191802:G/A:1",
+"chrom": "chr15",
+"pos": "76191802",
+"dbsnp": "rs335689",
+"variant": "G/A",
+"gene": "UBE2Q2",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr15:78633595:T/G:1",
+"chrom": "chr15",
+"pos": "78633595",
+"dbsnp": "rs2139440",
+"variant": "T/G",
+"gene": "CRABP1",
+"novel": "No",
+"ref": "https://scispace.com/pdf/identification-of-somatic-mutations-in-lgl-leukemia-through-46lj8zlg2k.pdf"
+},
+{
+"vid": "chr16:88804734:A/G:1",
+"chrom": "chr16",
+"pos": "88804734",
+"dbsnp": "rs7184427",
+"variant": "A/G",
+"gene": "PIEZO1",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr17:21217513:G/A:1",
+"chrom": "chr17",
+"pos": "21217513",
+"dbsnp": "rs2363198",
+"variant": "G/A",
+"gene": "MAP2K3",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr17:21319069:G/A:1",
+"chrom": "chr17",
+"pos": "21319069",
+"dbsnp": "rs76265595",
+"variant": "G/A",
+"gene": "KCNJ12",
+"novel": "No",
+"ref": "https://doi.org/10.1016/j.cancergen.2017.11.011"
+},
+{
+"vid": "chr17:21319087:G/A:1",
+"chrom": "chr17",
+"pos": "21319087",
+"dbsnp": "rs75029097",
+"variant": "G/A",
+"gene": "KCNJ12",
+"novel": "No",
+"ref": "https://doi.org/10.1016/j.cancergen.2017.11.011"
+},
+{
+"vid": "chr17:21319439:T/G:1",
+"chrom": "chr17",
+"pos": "21319439",
+"dbsnp": "rs76684759",
+"variant": "T/G",
+"gene": "KCNJ12",
+"novel": "No",
+"ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6016334/"
+},
+{
+"vid": "chr17:42248346:A/T:1",
+"chrom": "chr17",
+"pos": "42248346",
+"dbsnp": "rs7218599",
+"variant": "A/T",
+"gene": "ASB16",
+"novel": "No",
+"ref": "https://pubmed.ncbi.nlm.nih.gov/36916446/"
+},
+{
+"vid": "chr17:7292107:G/A:1",
+"chrom": "chr17",
+"pos": "7292107",
+"dbsnp": "rs6503018",
+"variant": "G/A",
+"gene": "TNK1",
+"novel": "No",
+"ref": "https://inria.hal.science/hal-02473825/document"
+},
+{
+"vid": "chr17:79615225:G/T:1",
+"chrom": "chr17",
+"pos": "79615225",
+"dbsnp": "rs7406494",
+"variant": "G/T",
+"gene": "TSPAN10",
+"novel": "No",
+"ref": "http://canprovar2.zhang-lab.org/inforprotein.php?id=TSPAN10"
+},
+{
+"vid": "chr19:22363615:T/C:1",
+"chrom": "chr19",
+"pos": "22363615",
+"dbsnp": "rs76328545",
+"variant": "T/C",
+"gene": "ZNF676",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr19:23928102:C/G:1",
+"chrom": "chr19",
+"pos": "23928102",
+"dbsnp": "rs7248674",
+"variant": "C/G",
+"gene": "ZNF681",
+"novel": "No",
+"ref": "https://zhanggroup.org/ADDRESS/MutationOnSeq012.html"
+},
+{
+"vid": "chr19:44470420:T/C:1",
+"chrom": "chr19",
+"pos": "44470420",
+"dbsnp": "rs439676",
+"variant": "T/C",
+"gene": "ZNF221",
+"novel": "No",
+"ref": "https://patents.google.com/patent/WO2006022636A1/en"
+},
+{
+"vid": "chr19:44612231:A/G:1",
+"chrom": "chr19",
+"pos": "44612231",
+"dbsnp": "rs3746319",
+"variant": "A/G",
+"gene": "ZNF224",
+"novel": "No",
+"ref": "https://doi.org/10.1016/j.neurobiolaging.2016.02.016"
+},
+{
+"vid": "chr19:52941540:G/A:1",
+"chrom": "chr19",
+"pos": "52941540",
+"dbsnp": "rs1366257",
+"variant": "G/A",
+"gene": "ZNF534",
+"novel": "No",
+"ref": "https://eprints.qut.edu.au/122903/1/Nesli_Avgan_Thesis.pdf"
+},
+{
+"vid": "chr19:52941618:A/C:1",
+"chrom": "chr19",
+"pos": "52941618",
+"dbsnp": "rs1366258",
+"variant": "A/C",
+"gene": "ZNF534",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr2:96525750:T/A:1",
+"chrom": "chr2",
+"pos": "96525750",
+"dbsnp": "rs76379993",
+"variant": "T/A",
+"gene": "ANKRD36C",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr2:96525755:A/T:1",
+"chrom": "chr2",
+"pos": "96525755",
+"dbsnp": "rs77658288",
+"variant": "A/T",
+"gene": "ANKRD36C",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr20:29632715:T/G:1",
+"chrom": "chr20",
+"pos": "29632715",
+"dbsnp": "rs74765991",
+"variant": "T/G",
+"gene": "FRG1B",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr20:56793706:G/A:1",
+"chrom": "chr20",
+"pos": "56793706",
+"dbsnp": "rs584855",
+"variant": "G/A",
+"gene": "ANKRD60",
+"novel": "No",
+"ref": "https://zhanggroup.org/ADDRESS/MutationOnSeq013.html"
+},
+{
+"vid": "chr3:123457893:G/A:1",
+"chrom": "chr3",
+"pos": "123457893",
+"dbsnp": "rs9840993",
+"variant": "G/A",
+"gene": "MYLK",
+"novel": "No",
+"ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9063969/"
+},
+{
+"vid": "chr3:151545601:G/A:1",
+"chrom": "chr3",
+"pos": "151545601",
+"dbsnp": "rs1803155",
+"variant": "G/A",
+"gene": "AADAC",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr4:103822404:G/A:1",
+"chrom": "chr4",
+"pos": "103822404",
+"dbsnp": "rs58374767",
+"variant": "G/A",
+"gene": "SLC9B1",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr4:187077206:A/G:1",
+"chrom": "chr4",
+"pos": "187077206",
+"dbsnp": "rs4862653",
+"variant": "A/G",
+"gene": "FAM149A",
+"novel": "No",
+"ref": "https://zhanggroup.org/ADDRESS/MutationOnSeq.html"
+},
+{
+"vid": "chr4:81967188:C/T:1",
+"chrom": "chr4",
+"pos": "81967188",
+"dbsnp": "rs6831040",
+"variant": "C/T",
+"gene": "BMP3",
+"novel": "No",
+"ref": "https://pubmed.ncbi.nlm.nih.gov/31242667/"
+},
+{
+"vid": "chr6:160670282:A/C:1",
+"chrom": "chr6",
+"pos": "160670282",
+"dbsnp": "rs316019",
+"variant": "A/C",
+"gene": "SLC22A2",
+"novel": "No",
+"ref": "https://pubmed.ncbi.nlm.nih.gov/36032496/"
+},
+{
+"vid": "chr6:57467084:A/G:1",
+"chrom": "chr6",
+"pos": "57467084",
+"dbsnp": "rs9885913",
+"variant": "A/G",
+"gene": "PRIM2",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr6:57467093:A/G:1",
+"chrom": "chr6",
+"pos": "57467093",
+"dbsnp": "rs9885916",
+"variant": "A/G",
+"gene": "PRIM2",
+"novel": "No",
+"ref": "https://macau.uni-kiel.de/servlets/MCRFileNodeServlet/dissertation_derivate_00005728/Diss_nbadarinarayan_Oct2014_PhDthesis.pd"
+},
+{
+"vid": "chr7:100608370:A/C:1",
+"chrom": "chr7",
+"pos": "100608370",
+"dbsnp": "rs73714276",
+"variant": "A/C",
+"gene": "MUC3A",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr7:142206520:C/A:1",
+"chrom": "chr7",
+"pos": "142206520",
+"dbsnp": "rs796389673",
+"variant": "C/A",
+"gene": "TRBV10-2",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr7:142247546:C/A:1",
+"chrom": "chr7",
+"pos": "142247546",
+"dbsnp": "rs575564328",
+"variant": "C/A",
+"gene": "TRBV7-3",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr7:151680072:T/C:1",
+"chrom": "chr7",
+"pos": "151680072",
+"dbsnp": "rs6960270",
+"variant": "T/C",
+"gene": "GALNTL5",
+"novel": "No",
+"ref": null
+},
+{
+"vid": "chr7:151970856:T/A:1",
+"chrom": "chr7",
+"pos": "151970856",
+"dbsnp": "rs10454320",
+"variant": "T/A",
+"gene": "KMT2C",
+"novel": "No",
+"ref": "https://pubmed.ncbi.nlm.nih.gov/26014803/"
+},
+{
+"vid": "chr7:48086077:C/T:1",
+"chrom": "chr7",
+"pos": "48086077",
+"dbsnp": "rs2708912",
+"variant": "C/T",
+"gene": "C7orf57",
+"novel": "No",
+"ref": "https://pubmed.ncbi.nlm.nih.gov/19193627/"
+},
+{
+"vid": "chr7:64451699:T/C:1",
+"chrom": "chr7",
+"pos": "64451699",
+"dbsnp": "rs4717229",
+"variant": "T/C",
+"gene": "ERV3-1",
+"novel": "No",
+"ref": "https://gong_lab.hzau.edu.cn/PancanQTL/survival?page=559"
+},
+{
+"vid": "chr9:125512575:G/A:1",
+"chrom": "chr9",
+"pos": "125512575",
+"dbsnp": "rs4838012",
+"variant": "G/A",
+"gene": "OR1L6",
+"novel": "No",
+"ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11592857/"
+},
+{
+"vid": "chr9:6328947:T/C:1",
+"chrom": "chr9",
+"pos": "6328947",
+"dbsnp": "rs3847262",
+"variant": "T/C",
+"gene": "TPD52L3",
+"novel": "No",
+"ref": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2932441/"
+},
+{
+"vid": "chr9:67968476:C/T:1",
+"chrom": "chr9",
+"pos": "67968476",
+"dbsnp": "rs62542472",
+"variant": "C/T",
+"gene": "ANKRD20A1",
+"novel": "No",
+"ref": null
+}
+]

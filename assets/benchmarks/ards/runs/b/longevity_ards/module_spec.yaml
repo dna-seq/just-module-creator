@@ -1,0 +1,37 @@
+schema_version: '1.0'
+module:
+  title: Age-Related Disease Factor and Longevity
+  description: 263 lead variants of a shared age-related disease factor enriched for longevity
+  report_title: Shared genetic architecture of age-related disease (mvARD)
+  icon: heartbeat
+  icon_set: fomantic
+  color: '#6435c9'
+  name: longevity_ards
+defaults:
+  curator: claude-opus-5 (agent)
+  method: supplementary-table transcription
+genome_build: GRCh38
+license: CC-BY-4.0
+authorship:
+  - who: claude-opus-5 (agent)
+    role: created
+    kind:
+      - ai
+      - agent
+    at: '2026-08-31T00:00:43Z'
+weighting:
+  scale: >-
+    Bounded roughly [-1, +1]; positive is protective, per this format's convention.
+    Per effect allele the weight is -(mvARD beta) / 0.0824633 * 0.5, and a homozygote
+    carries twice the per-allele value. Observed range in this module: -0.5510 to +1.0000.
+  method: >-
+    Linear rescaling of the published per-allele mvARD beta (source Supplementary Table S9)
+    so that the largest absolute beta in the set maps to 0.5 per allele, with the sign
+    inverted so a disease-liability-increasing allele scores negative. No judgement was
+    applied per variant: every weight is a deterministic function of the published beta.
+  note: >-
+    Ordinal within this module only and NOT comparable with any other module's weights.
+    These are not polygenic-score coefficients: mvARD betas are on the scale of a latent
+    factor over five diseases, not log-odds for any single disease, and this module does
+    not compute a score. An additive dosage model is assumed because the source reports
+    per-allele effects only; no genotype-specific effects were published.

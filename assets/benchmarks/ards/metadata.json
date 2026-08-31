@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "name": "ards",
+  "trait": "Age-related disease liability",
+  "description": "A multivariate GWAS whose per-variant statistics live in a supplementary workbook.",
+  "expected_spec": null,
+  "scored_tables": [
+    "variants.csv",
+    "studies.csv"
+  ],
+  "source_references": [
+    "Sun et al. 2025, GeroScience (doi 10.1007/s11357-025-02044-3)"
+  ],
+  "provenance": {
+    "kind": "no_reference",
+    "why": "No reference: run a was killed before writing and its partial output is void (see VOID.md \u2014 789 rows, no artifact, a verification.json attesting bytes never finished; it must never be scored, and its bytes are not committed). run b is partial."
+  },
+  "variant_tiers": {},
+  "decoy_variants": {
+    "description": "Not established without a reference.",
+    "rsids": []
+  },
+  "scoring": {
+    "minimum_acceptable": {}
+  }
+}

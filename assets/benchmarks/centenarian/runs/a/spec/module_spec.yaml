@@ -1,0 +1,13 @@
+schema_version: '1.0'
+module:
+  title: <<REPLACE>>
+  description: <<REPLACE>>
+  report_title: <<REPLACE>>
+  icon: database
+  icon_set: fomantic
+  color: '#6435c9'
+  name: longevity_centenarian
+defaults:
+  curator: ai-module-creator
+  method: literature-review
+genome_build: GRCh38

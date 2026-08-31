@@ -1,0 +1,2 @@
+rsid,chrom,start,ref,alts,genotype,weight,state,conclusion,negatives,priority,gene,phenotype,category,clinvar,pathogenic,benign,curator,method,direction,stat_significance,effect_size,effect_measure,effect_allele,flags,trait_efo_id,clin_sig,requires_callable,acmg_sf,actionability,callable_from,quality_from,min_quality
+<<REPLACE>>,,,,,<<REPLACE>>,,<<REPLACE>>,<<REPLACE>>,,,,,,,,,,,,,,,,,,,,,,,,

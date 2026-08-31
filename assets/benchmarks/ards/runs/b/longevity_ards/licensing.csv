@@ -1,0 +1,7 @@
+source,layer,license,license_url,license_sha256,attribution,notice,share_alike,commercial_use,redistribution,declared_use,dataset,fetched_at,draft_digest
+geroscience_10.1007_s11357-025-02044-3,annotation,CC-BY-4.0,https://creativecommons.org/licenses/by/4.0/,,"Dinh P-A, Han H, Kim S, Guo Q, Zhang ZD, Vijg J, Suh Y. Genetic links between multimorbidity and human aging. GeroScience (2025). doi:10.1007/s11357-025-02044-3. Licensed CC BY 4.0.","Variant rows and provenance quotes are transcribed from Supplementary Tables S5 and S9 of this article (file 11357_2025_2044_MOESM2_ESM.xlsx). Research use only; not for diagnosis or medical decision-making.",false,true,true,unstated,MOESM2_ESM.xlsx (Supplementary Tables S5 and S9),2026-08-31T00:00:43Z,
+pubmed,literature,,https://www.ncbi.nlm.nih.gov/home/about/policies/,,"Courtesy of the U.S. National Library of Medicine.",Metadata only; no PubMed text is reproduced in this module.,,,,unstated,,,
+europepmc,literature,,https://europepmc.org/Copyright,,"Europe PMC",Metadata and abstract retrieval only; no Europe PMC text is reproduced in this module.,,,,unstated,,,
+crossref,literature,,https://www.crossref.org/documentation/retrieve-metadata/rest-api/,,"Crossref",Metadata only.,,,,unstated,,,
+openalex,literature,,https://openalex.org/terms,,"OpenAlex",Metadata only.,,,,unstated,,,
+unpaywall,literature,,https://unpaywall.org/legal,,"Unpaywall (OurResearch)",Open-access location and licence lookup only.,,,,unstated,,,
