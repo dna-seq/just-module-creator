@@ -125,6 +125,16 @@ before crediting the run.**
    2026-08-31. **Audit the injected context, not only the prompt**: `CLAUDE.md`, the memory index and
    the skills all reach the agent unasked, and a benchmark's isolation is only as good as the
    quietest of them.
+
+   **Then the write-up of that lesson re-created it.** The field note recording pitfall 1 quoted the
+   `validate_module` warning that produced the convergence — *verbatim*, so `rs117385980` was in
+   `CLAUDE.md` §11 and in the memory index, injected into every subagent this project ever runs. It
+   landed at 09:04 on 2026-08-31, sixteen minutes after the last scored SIRT6 run, so no run in that
+   round read it; every SIRT6 run after it and before the mask on 2026-08-31 would have been void.
+   Both quotes are masked now (`<the fixture's rsID>`), which loses nothing — the point of the quote
+   is that the tool names a missing genotype, not which one. **Grep the injected context for the
+   answer before each round, not once**: an evidence quote is exactly the shape a leak arrives in,
+   and the person writing it is trying to be rigorous.
 2. **Runs span versions.** See step 1 of *Running a round*.
 3. **Layout is not uniform.** Runs have put the spec at the run root, under `spec/`, and under
    `longevity_*/`. All satisfy the ask; `locate_spec` finds it and refuses rather than guessing when
