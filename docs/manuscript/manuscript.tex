@@ -131,7 +131,12 @@ variant--disease associations from the literature through manual review, though
 the public version updates infrequently and does not include explicit
 pathogenicity calls~\citep{stenson2020hgmd}. ClinGen provides expert
 variant curation within the ACMG/AMP
-framework~\citep{rehm2015clingen,richards2015acmg}. ClinPGx, which since 2025
+framework~\citep{rehm2015clingen,richards2015acmg}. CIViC crowdsources the
+clinical interpretation of cancer variants from expert curators, anchoring
+every evidence item to a source publication~\citep{griffith2017civic}; its
+releases are database-wide rather than installable per-topic units, which
+makes it a source this ecosystem can consume rather than an alternative to
+it. ClinPGx, which since 2025
 consolidates PharmGKB, CPIC and PharmCAT into one resource, supplies
 pharmacogenomic annotations including diplotype-level clinical
 recommendations~\citep{whirl2012pharmgkb,clinpgx2025}. The GA4GH Genomic Knowledge
@@ -141,8 +146,9 @@ join: selected evidence must be turned into a reviewable, machine-checkable
 collection that can be distributed and applied consistently.
 
 Table~\ref{tab:comparison} narrows the comparison to systems adjacent to the
-authoring task: extension-based annotation platforms, structured literature
-extraction, unconstrained model drafting, and \texttt{just-module-creator}.
+authoring task: annotation engines, extension-based annotation platforms,
+expert-curated knowledgebases, structured literature extraction, unconstrained
+model drafting, and \texttt{just-module-creator}.
 
 \begin{table}[ht]
 \centering
@@ -162,8 +168,12 @@ System & Kind / primary task
 & \rotatebox{70}{AI-assisted authoring}
 & \rotatebox{70}{Shared catalog} \\
 \midrule
+Ensembl VEP & annotation engine / consequence prediction against a callset
+  & -- & -- & -- & -- & \checkmark \\
 OpenCRAVAT / OakVar & annotation platform / user-supplied annotation extensions
   & \checkmark & \checkmark & -- & -- & \checkmark \\
+CIViC & curated knowledgebase / expert-crowdsourced clinical interpretation
+  & -- & \checkmark & \checkmark & -- & \checkmark \\
 PubMind-DB & text-mined database / LLM extraction of variant--disease--pathogenicity records
   & -- & \checkmark & \checkmark & \checkmark & \checkmark \\
 Raw LLM & general-purpose model / unconstrained drafting
