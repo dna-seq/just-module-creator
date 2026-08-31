@@ -11,7 +11,11 @@ every *tool* returns a model from `models.py`, and `overrides.py` is the precede
 for a pydantic model at engine level. If a `bench_score` tool is ever added, its
 return type moves to `models.py` and these become its inputs.
 
-**Two modes, because two questions are being asked.** Scoring is
+**Three modes, in rank order, because three questions are being asked.**
+`--fixture` is the **primary** one and is the manuscript's own protocol: did this
+run recover the adjudicated answer — the right rows, the right directions. The
+default mode is **secondary** and needs no adjudication: run-to-run agreement,
+which is
 reference-relative and answers *did this run reproduce that one*. The census is
 reference-free and answers *what does this run assert* — which is the only form
 available to a paper that will never have a reference, and it is the shape the
@@ -334,6 +338,117 @@ def locate_spec(path: Path) -> Path:
     raise SystemExit(f"several spec directories beneath {path}: {listed}")
 
 
+class TierBreakdown(BaseModel):
+    """One evidence tier's own recall, so a weighted number can be read back apart."""
+
+    tier: str
+    weight: float
+    expected_pairs: int
+    recovered_pairs: int
+    recall: float | None = Field(
+        description="None where the tier expects nothing — an empty denominator, never a zero."
+    )
+
+
+class VariantRecovery(BaseModel):
+    """Did the run author the rows the reference has, and none it asserts do not belong.
+
+    **`pair_recall` and `rsid_recall` are two numbers on purpose.** A run that finds
+    the right variant and gets its genotypes wrong, and one that finds half the
+    variants perfectly, are different failures — the gap between the two numbers is
+    that signal, and a single score with partial credit destroys it.
+
+    **`decoy_rate` is the sound false-positive number, not `precision_over_fixture`.**
+    A fixture is one expert's curation of one trait, not the set of all correct rows,
+    so a variant the reference does not carry is usually just a variant the reference
+    does not carry. A decoy is different: an rsID an expert asserted does *not* belong.
+    """
+
+    csv: str
+    expected_pairs: int
+    generated_pairs: int
+    recovered_pairs: int
+    missing_pairs: list[str] = Field(
+        description="Which keys were missed, sorted — not how many. Tier weighting "
+        "needs the identities, which is why this axis does not wrap `_compare`."
+    )
+    missing_rsids: list[str]
+    extra_pairs: list[str] = Field(
+        description="Authored, not expected, not a decoy. Reported and NOT scored as "
+        "wrong: the fixture is one curation, not the set of all correct rows."
+    )
+    decoys_present: list[str]
+    pair_recall: float | None
+    rsid_recall: float | None
+    precision_over_fixture: float | None = Field(
+        description="Named for its denominator. It is agreement with one curation, "
+        "not correctness."
+    )
+    f1_over_fixture: float | None
+    weighted_recall: float | None = Field(
+        description="Tier weight of what was recovered over tier weight of what was "
+        "expected. Untiered rows weigh 1.0."
+    )
+    decoy_rate: float | None
+    tiers: list[TierBreakdown]
+    unscored: list[Unscored] = Field(default_factory=list)
+
+
+class DirectionAgreement(BaseModel):
+    """Sign agreement on the rows where BOTH sides asserted one.
+
+    A withheld row leaves the denominator rather than counting against either side.
+    The four tallies are what make that visible: a run writing `unknown` everywhere
+    scores `agreement: None` with every reference assertion sitting in
+    `reference_asserted_run_withheld`, which reads as nothing rather than as perfect.
+    """
+
+    column: str
+    pairs_compared: int
+    both_asserted: int
+    agreeing: int
+    disagreeing: int
+    reference_asserted_run_withheld: int
+    run_asserted_reference_withheld: int
+    both_withheld: int
+    agreement: float | None
+    disagreements: list[str]
+    unscored: list[Unscored] = Field(default_factory=list)
+
+
+class WeightSignAgreement(BaseModel):
+    """Sign only. Magnitude is reported and is never a pass or a fail.
+
+    A module weight is an authored choice rather than a GWAS beta copied across, so
+    the size of it is a judgement and only its direction is checkable. `0.0` is its
+    own sign and is never folded into blank.
+    """
+
+    pairs_compared: int
+    both_present: int
+    agreeing_sign: int
+    disagreeing_sign: int
+    reference_present_run_blank: int
+    run_present_reference_blank: int
+    both_blank: int
+    sign_agreement: float | None
+    mean_absolute_error: float | None
+    unscored: list[Unscored] = Field(default_factory=list)
+
+
+def _sign(value) -> int | None:
+    return None if value is None else (0 if value == 0 else (1 if value > 0 else -1))
+
+
+def _pair(key: tuple) -> str:
+    return ":".join(str(part) for part in key)
+
+
+def _asserted(value) -> bool:
+    """A cell claims something when it is neither blank nor the withheld token."""
+    return value is not None and str(value).strip() not in _WITHHELD
+
+
 def _column_census(column: str, rows: list[dict], vocabulary: dict | None) -> ColumnCensus:
     """One column's tally. Read from raw bytes, checked against the live schema.
 
@@ -410,6 +525,297 @@ def census(run: Path) -> Census:
             )
         )
     return Census(run=str(run), tables=tables)
+
+
+def score_variant_recovery(
+    fixture: BenchFixture, run_rows: dict[tuple, BaseModel]
+) -> VariantRecovery:
+    """Set arithmetic over natural keys, plus the tier weights. See `VariantRecovery`."""
+    csv_name = "variants.csv"
+    expected = fixture.expected_keys.get(csv_name, set())
+    generated = set(run_rows)
+    recovered = expected & generated
+
+    def rsids(keys) -> set[str]:
+        return {str(k[0]) for k in keys if k}
+
+    expected_rsids, generated_rsids = rsids(expected), rsids(generated)
+    decoys_present = sorted(set(fixture.decoys) & generated_rsids)
+    extra = sorted(
+        _pair(k) for k in generated - expected if str(k[0]) not in set(fixture.decoys)
+    )
+
+    def weight_of(key) -> float:
+        return fixture.tier_weights.get(fixture.tier_of.get(str(key[0]), ""), 1.0)
+
+    expected_weight = sum(weight_of(k) for k in expected)
+    tiers = []
+    for tier, weight in sorted(fixture.tier_weights.items()):
+        in_tier = {k for k in expected if fixture.tier_of.get(str(k[0])) == tier}
+        hit = len(in_tier & generated)
+        tiers.append(
+            TierBreakdown(
+                tier=tier,
+                weight=weight,
+                expected_pairs=len(in_tier),
+                recovered_pairs=hit,
+                recall=round(hit / len(in_tier), 4) if in_tier else None,
+            )
+        )
+
+    unscored: list[Unscored] = []
+    if not expected:
+        unscored.append(
+            Unscored(
+                subject=f"{csv_name}:recovery",
+                reason="the fixture has no adjudicated reference, so there is nothing to recover",
+            )
+        )
+    return VariantRecovery(
+        csv=csv_name,
+        expected_pairs=len(expected),
+        generated_pairs=len(generated),
+        recovered_pairs=len(recovered),
+        missing_pairs=sorted(_pair(k) for k in expected - generated),
+        missing_rsids=sorted(expected_rsids - generated_rsids),
+        extra_pairs=extra,
+        decoys_present=decoys_present,
+        pair_recall=round(len(recovered) / len(expected), 4) if expected else None,
+        rsid_recall=(
+            round(len(expected_rsids & generated_rsids) / len(expected_rsids), 4)
+            if expected_rsids
+            else None
+        ),
+        precision_over_fixture=(
+            round(len(recovered) / len(generated), 4) if generated else None
+        ),
+        f1_over_fixture=(
+            round(2 * len(recovered) / (len(expected) + len(generated)), 4)
+            if expected and generated
+            else None
+        ),
+        weighted_recall=(
+            round(sum(weight_of(k) for k in recovered) / expected_weight, 4)
+            if expected_weight
+            else None
+        ),
+        decoy_rate=(
+            round(len(decoys_present) / len(fixture.decoys), 4) if fixture.decoys else None
+        ),
+        tiers=tiers,
+        unscored=unscored,
+    )
+
+
+def score_direction(
+    fixture: BenchFixture, run_rows: dict[tuple, BaseModel], column: str = "direction"
+) -> DirectionAgreement:
+    """Agreement over the rows both sides asserted. See `DirectionAgreement`."""
+    expected = fixture.expected_rows.get("variants.csv", {})
+    shared = sorted(set(expected) & set(run_rows))
+    unscored: list[Unscored] = []
+    if shared and not any(hasattr(expected[k], column) for k in shared):
+        unscored.append(
+            Unscored(
+                subject=f"variants.csv:{column}",
+                reason=f"{column} is not a field of this table's model, so nothing was asked",
+            )
+        )
+
+    both = agree = disagree = ref_only = run_only = neither = 0
+    disagreements: list[str] = []
+    for key in shared:
+        left, right = getattr(expected[key], column, None), getattr(run_rows[key], column, None)
+        left_says, right_says = _asserted(left), _asserted(right)
+        if left_says and right_says:
+            both += 1
+            if str(left).strip() == str(right).strip():
+                agree += 1
+            else:
+                disagree += 1
+                disagreements.append(f"{_pair(key)} reference={left} run={right}")
+        elif left_says:
+            ref_only += 1
+        elif right_says:
+            run_only += 1
+        else:
+            neither += 1
+
+    return DirectionAgreement(
+        column=column,
+        pairs_compared=len(shared),
+        both_asserted=both,
+        agreeing=agree,
+        disagreeing=disagree,
+        reference_asserted_run_withheld=ref_only,
+        run_asserted_reference_withheld=run_only,
+        both_withheld=neither,
+        agreement=round(agree / both, 4) if both else None,
+        disagreements=sorted(disagreements),
+        unscored=unscored,
+    )
+
+
+def score_weight_sign(
+    fixture: BenchFixture, run_rows: dict[tuple, BaseModel]
+) -> WeightSignAgreement:
+    """Sign agreement, with the magnitude reported beside it and never gating.
+
+    `0.0` is a real weight and its own sign — an explicit zero says *this genotype
+    carries no effect*, which is a claim, where a blank says nobody decided.
+    """
+    expected = fixture.expected_rows.get("variants.csv", {})
+    shared = sorted(set(expected) & set(run_rows))
+
+    both = agree = disagree = ref_only = run_only = neither = 0
+    errors: list[float] = []
+    for key in shared:
+        left = getattr(expected[key], "weight", None)
+        right = getattr(run_rows[key], "weight", None)
+        if left is not None and right is not None:
+            both += 1
+            errors.append(abs(float(left) - float(right)))
+            if _sign(left) == _sign(right):
+                agree += 1
+            else:
+                disagree += 1
+        elif left is not None:
+            ref_only += 1
+        elif right is not None:
+            run_only += 1
+        else:
+            neither += 1
+
+    return WeightSignAgreement(
+        pairs_compared=len(shared),
+        both_present=both,
+        agreeing_sign=agree,
+        disagreeing_sign=disagree,
+        reference_present_run_blank=ref_only,
+        run_present_reference_blank=run_only,
+        both_blank=neither,
+        sign_agreement=round(agree / both, 4) if both else None,
+        mean_absolute_error=round(sum(errors) / len(errors), 4) if errors else None,
+    )
+
+
+class GroundTruthScore(BaseModel):
+    """The primary measurement: did this run recover the adjudicated answer.
+
+    `thresholds_met` is `bool | None` per metric and is `None` exactly where the
+    metric is — **an unasked question never passes**, which is the same rule the
+    tools apply to a check that could not run.
+    """
+
+    fixture: str
+    reference: str | None
+    run: str
+    comparable: bool = Field(
+        description="False where the two declare different genome builds. The natural key "
+        "is build-independent, so 'nothing changed' across two assemblies is the dangerous "
+        "answer rather than a reassuring one."
+    )
+    reference_build: str | None
+    run_build: str | None
+    variants: VariantRecovery
+    direction: DirectionAgreement
+    weight_sign: WeightSignAgreement
+    thresholds_met: dict[str, bool | None]
+    unscored: list[Unscored]
+    note: str = Field(
+        default=(
+            "Scored against one adjudicated curation, not against the set of all "
+            "correct rows. Read decoy_rate as the false-positive signal and "
+            "precision_over_fixture for what its name says. Free-text conclusions "
+            "are not scored here at all."
+        )
+    )
+
+
+def _run_rows(run: Path, csv_name: str) -> dict[tuple, BaseModel]:
+    """A run's rows, keyed by upstream's own natural key, or empty where unreadable."""
+    table = compare.authored_tables(run).get(csv_name)
+    if table is None or not table.readable:
+        return {}
+    return {key: row for row in table.rows if (key := draft.natural_key(row)) is not None}
+
+
+def score_ground_truth(
+    fixture: BenchFixture,
+    run: Path,
+    *,
+    judge: object | None = None,
+) -> GroundTruthScore:
+    """Score a run against a fixture's adjudicated reference.
+
+    **This axis does not wrap `_compare`, and that is deliberate.** The comparison
+    reports `added`/`removed` as counts and truncates its examples, while tier
+    weighting needs to know *which* rows were missed. What must never be hand-rolled
+    is the notion of what makes two rows the same row, and that is exactly what is
+    imported: `compare.authored_tables` for the loading, with its `defaults:` fold,
+    and `draft.natural_key` for the identity.
+
+    `judge` is the seam an LLM adjudicator would fill for the cells a string
+    comparison cannot score — a free-text `conclusion`, a `direction` both sides
+    withheld for different reasons. Nothing implements it, and where it is absent a
+    metric it would own reports `None` with a reason rather than a pass.
+    """
+    run_rows = _run_rows(run, "variants.csv")
+    variants = score_variant_recovery(fixture, run_rows)
+    direction = score_direction(fixture, run_rows)
+    weight_sign = score_weight_sign(fixture, run_rows)
+
+    unscored = list(variants.unscored) + list(direction.unscored) + list(weight_sign.unscored)
+    if judge is None:
+        unscored.append(
+            Unscored(
+                subject="variants.csv:conclusion",
+                reason="free text needs a judge and none was supplied; not scored, not passed",
+            )
+        )
+
+    measured: dict[str, float | None] = {
+        "pair_recall": variants.pair_recall,
+        "rsid_recall": variants.rsid_recall,
+        "decoy_rate": variants.decoy_rate,
+        "direction_agreement": direction.agreement,
+        "weight_sign_agreement": weight_sign.sign_agreement,
+    }
+    thresholds_met: dict[str, bool | None] = {}
+    for metric, floor in sorted(fixture.thresholds.items()):
+        value = measured.get(metric)
+        if value is None:
+            thresholds_met[metric] = None
+            unscored.append(
+                Unscored(
+                    subject=f"threshold:{metric}",
+                    reason="the metric could not be computed, so the threshold was not tested",
+                )
+            )
+        else:
+            # `decoy_rate` is the one metric where the floor is a ceiling: a decoy
+            # is an rsID an expert said does not belong, so fewer is better.
+            thresholds_met[metric] = value <= floor if metric == "decoy_rate" else value >= floor
+
+    # Upstream's own reader, so a spec whose YAML will not parse reports `None`
+    # rather than raising here — unknown, not a mismatch.
+    reference_build = (
+        compare.read_build(fixture.reference)[0] if fixture.reference else None
+    )
+    run_build = compare.read_build(run)[0]
+    return GroundTruthScore(
+        fixture=fixture.name,
+        reference=str(fixture.reference) if fixture.reference else None,
+        run=str(run),
+        comparable=reference_build is not None and reference_build == run_build,
+        reference_build=reference_build,
+        run_build=run_build,
+        variants=variants,
+        direction=direction,
+        weight_sign=weight_sign,
+        thresholds_met=thresholds_met,
+        unscored=sorted(unscored, key=lambda u: (u.subject, u.reason)),
+    )
 
 
 def _score_table(table) -> dict:
@@ -502,13 +908,20 @@ def score(reference: Path, run: Path) -> dict:
 
 def main(argv: list[str]) -> int:
     args = argv[1:]
-    if args and args[0] == "--census":
+    if args and args[0] == "--fixture":
+        if len(args) < 3:
+            sys.stderr.write(__doc__ or "")
+            return 2
+        fixture = load_fixture(Path(args[1]).resolve())
+        out: list[dict] = [
+            score_ground_truth(fixture, locate_spec(Path(a).resolve())).model_dump()
+            for a in args[2:]
+        ]
+    elif args and args[0] == "--census":
         if len(args) < 2:
             sys.stderr.write(__doc__ or "")
             return 2
-        out: list[dict] = [
-            census(locate_spec(Path(a).resolve())).model_dump() for a in args[1:]
-        ]
+        out = [census(locate_spec(Path(a).resolve())).model_dump() for a in args[1:]]
     else:
         if len(args) < 2:
             sys.stderr.write(__doc__ or "")
