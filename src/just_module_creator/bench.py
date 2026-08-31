@@ -58,6 +58,7 @@ from pathlib import Path
 from just_dna_compiler import draft, hints
 from pydantic import BaseModel, Field
 
+from just_module_creator import compare
 from just_module_creator.tools.comparison import _compare
 
 #: Columns whose disagreement is not evidence about the run. `fetched_at` is a
@@ -150,6 +151,161 @@ class Census(BaseModel):
             "running no association test should produce rows asserting no "
             "direction, and zero rows and sixty honest rows are both passes."
         )
+    )
+
+
+class BenchFixtureError(Exception):
+    """A fixture that cannot be trusted to score anything. Raised at load, never later."""
+
+
+class BenchFixture(BaseModel):
+    """A prompt, an expected answer, and the provenance of how it became one.
+
+    **The expected answer is a directory, never a pair of loose CSVs.** A bare
+    `expected_variants.csv` has no `module_spec.yaml`, so no `defaults:` block to
+    fold and no `genome_build` — which makes every comparison against it
+    not-comparable and disagrees with `content_signature` on rows nobody changed.
+    So `expected_spec` points at a real spec directory and the rows are read
+    through `compare.authored_tables`, the same loader the comparison uses.
+    """
+
+    model_config = {"arbitrary_types_allowed": True}
+
+    name: str
+    path: Path = Field(description="The fixture directory, holding metadata.json and prompt.txt.")
+    trait: str
+    reference: Path | None = Field(
+        description="The adjudicated spec directory, or None where no reference exists yet. "
+        "None is honest rather than empty: two of this corpus's three papers have no "
+        "adjudicated answer, and claiming otherwise is what the decoys exist to prevent."
+    )
+    scored_tables: list[str]
+    expected_keys: dict[str, set[tuple]] = Field(
+        default_factory=dict,
+        description="Natural keys per table, from upstream's `draft.natural_key`. The "
+        "manuscript's '(rsID, genotype) pair' IS that key — it is never spelled out here.",
+    )
+    expected_rows: dict[str, dict[tuple, object]] = Field(default_factory=dict)
+    tier_of: dict[str, str] = Field(
+        default_factory=dict, description="rsID -> tier name, for the weighted recall."
+    )
+    tier_weights: dict[str, float] = Field(default_factory=dict)
+    untiered_rsids: list[str] = Field(
+        default_factory=list,
+        description="Expected rsIDs no tier names. Not an error — they weigh 1.0 — but "
+        "counted, because forcing a tier on every row would make adding a variant to the "
+        "reference break the fixture.",
+    )
+    decoys: list[str] = Field(
+        default_factory=list,
+        description="Real rsIDs an expert asserts do NOT belong. This is the only sound "
+        "false-positive signal: a fixture is one curation, not the set of all correct rows.",
+    )
+    thresholds: dict[str, float] = Field(default_factory=dict)
+    prompt: str = ""
+    provenance: dict = Field(default_factory=dict)
+
+
+def load_fixture(path: Path) -> BenchFixture:
+    """Read a fixture and refuse it loudly if it cannot be trusted.
+
+    Every refusal below is a way a fixture scores something other than what it
+    claims to, and each one is silent if it is not checked here:
+
+    * a tier naming an rsID the reference lacks inflates the weighted denominator;
+    * a decoy that is also expected makes `decoy_rate` and recall contradict;
+    * overlapping tiers give one rsID two weights;
+    * a `scored_tables` entry whose key rule is not `equality` cannot be paired at
+      all, so it would report `None` that nobody reads as a refusal;
+    * an absolute `expected_spec` is a fixture that does not travel to another
+      machine, which is the whole reason the corpus was committed.
+    """
+    meta_path = path / "metadata.json"
+    if not meta_path.is_file():
+        raise BenchFixtureError(f"no metadata.json in {path}")
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+
+    raw_spec = meta.get("expected_spec")
+    reference: Path | None = None
+    if raw_spec is not None:
+        if Path(raw_spec).is_absolute():
+            raise BenchFixtureError(
+                f"{meta_path}: expected_spec must be relative to the fixture, got {raw_spec!r}"
+            )
+        reference = (path / raw_spec).resolve()
+        if not (reference / "module_spec.yaml").is_file():
+            raise BenchFixtureError(f"{meta_path}: no module_spec.yaml at {reference}")
+
+    scored_tables = list(meta.get("scored_tables") or [])
+    for name in scored_tables:
+        rule = hints.key_fields(name).rule
+        if rule != "equality":
+            raise BenchFixtureError(
+                f"{meta_path}: {name} is keyed on the {rule!r} rule, so its rows cannot be "
+                "paired one to one and it cannot be a scored table."
+            )
+
+    expected_keys: dict[str, set[tuple]] = {}
+    expected_rows: dict[str, dict[tuple, object]] = {}
+    expected_rsids: set[str] = set()
+    if reference is not None:
+        loaded = compare.authored_tables(reference)
+        for name in scored_tables:
+            table = loaded.get(name)
+            if table is None or not table.readable:
+                raise BenchFixtureError(
+                    f"{meta_path}: {name} is missing or unreadable in {reference}"
+                )
+            keyed = {
+                key: row for row in table.rows if (key := draft.natural_key(row)) is not None
+            }
+            expected_keys[name] = set(keyed)
+            expected_rows[name] = keyed
+            expected_rsids |= {
+                rsid for row in table.rows if (rsid := getattr(row, "rsid", None))
+            }
+
+    tier_of: dict[str, str] = {}
+    tier_weights: dict[str, float] = {}
+    for tier, body in sorted((meta.get("variant_tiers") or {}).items()):
+        tier_weights[tier] = float(body.get("weight", 1.0))
+        for rsid in body.get("rsids") or []:
+            if rsid in tier_of:
+                raise BenchFixtureError(
+                    f"{meta_path}: {rsid} is in both {tier_of[rsid]!r} and {tier!r}, so it has "
+                    "two weights."
+                )
+            if reference is not None and rsid not in expected_rsids:
+                raise BenchFixtureError(
+                    f"{meta_path}: tier {tier!r} names {rsid}, which the reference does not "
+                    "carry — a tier over a row that is not expected inflates the denominator."
+                )
+            tier_of[rsid] = tier
+
+    decoys = sorted((meta.get("decoy_variants") or {}).get("rsids") or [])
+    overlap = sorted(set(decoys) & expected_rsids)
+    if overlap:
+        raise BenchFixtureError(
+            f"{meta_path}: {', '.join(overlap)} is both expected and a decoy, so recall and "
+            "decoy_rate would contradict each other."
+        )
+
+    prompt_path = path / "prompt.txt"
+    return BenchFixture(
+        name=meta.get("name") or path.name,
+        path=path,
+        trait=meta.get("trait", ""),
+        reference=reference,
+        scored_tables=scored_tables,
+        expected_keys=expected_keys,
+        expected_rows=expected_rows,
+        tier_of=tier_of,
+        tier_weights=tier_weights,
+        untiered_rsids=sorted(expected_rsids - set(tier_of)),
+        decoys=decoys,
+        thresholds=dict((meta.get("scoring") or {}).get("minimum_acceptable") or {}),
+        prompt=prompt_path.read_text(encoding="utf-8") if prompt_path.is_file() else "",
+        provenance=meta.get("provenance") or {},
     )
 
 
