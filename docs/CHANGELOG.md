@@ -3,6 +3,48 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## Unreleased
+
+### The second pair of the round: what agreed, what split, and one report that did not survive
+
+Two more runs (`run-centenarian-d`, `run-ards-d`) on 0.28.0, completing a four-run round over two
+papers. **The three 0.28.0 fixes held in a real run**: `review_queue` returned `unbound: 0,
+subject_absent: 2` where the same surface had reported five-of-five falsely unbound. The strict-enrich
+fix was not exercised — that run resolved everything and never asked strict to refuse — so it still
+rests on its unit test alone.
+
+**`F83` — the headline.** Two independent ARDS runs selected the identical 49 rsIDs and identical 147
+`(rsid, genotype)` pairs, agreed on `stat_significance` for all 147, and split on `direction` for
+exactly 49 rows — every one of them the reference homozygote, and nothing else. Both wrote
+`state: neutral`, `weight: 0.0` and the same `effect_allele` on that row. The schema settles it:
+`direction` is *"orthogonal to `state`"* and `effect_allele` is *"the allele that
+`direction`/`weight`/`effect_size` refer to"*, so `direction` repeats across a variant's genotype rows
+and the ref-hom carries the variant's. `skills/module-tables/references/variants.md` had the
+orthogonality bullet and never named the subject; it does now. **A closed, validated vocabulary does
+not make its subject unambiguous** — both readings compiled green under `--strict`.
+
+**`F84` — and the correction is the finding.** A run reported that `check_identifiers`' trait check
+never runs and that its wrong CURIE had passed every gate. The transcript says otherwise: the check ran
+three times, `checked: 0` then `checked: 1, clean: 1`, and the run's own `lookup_identifier` caught the
+wrong id before `variants.csv` had the column at all. What survives is narrower and real — the roster
+is `module_trait_ids(variants)`, so a trait id living only in `studies.csv` is never checked, and
+`checked: 0, clean: 0, flagged: 0` cannot be told apart from a module with no traits. Filed with the
+gene half (a binning row's `gene`, in our own notes since 2026-08-20 and never filed) as format-tree
+`S86`.
+
+**The round tally is in `docs/dogfooding.md`**, and the counts are the point: 4 of 4 runs asked for a
+way to read rows out of a downloaded `.xlsx`, 4 of 4 for `lint_rows` to take a path, 4 of 4 for
+`lookup_citation(doi=…)` to return a title it currently nulls.
+
+**`F85`** records upstream's answer to `S85`, accepted both halves within the hour and shipped in their
+tree as `RM154` — **uncut**, so our `SYMPTOMS.md` mitigation stays until an installed release carries
+`allele_mismatches`. They found a second defect we had not: a snapshot that genuinely lacks the rsID
+writes a byte-identical row, and the warning our run read asserted the wrong one of two arms' reasons.
+
+`registry_check`'s docstring now says that `offline=true` clamps the registry's egress and not ours, so
+the call still reaches the registry and can still be rate-limited. The code comment said it; the
+docstring did not, and a run read the difference as a contradiction.
+
 ## 0.28.0 — 2026-08-31
 
 ### A paired benchmark round found three defects in this layer, and one in the corpus
