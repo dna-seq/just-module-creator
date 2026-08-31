@@ -154,7 +154,7 @@ With the plugin active, the assistant calls typed tools instead of generating co
 
 ## Command menu
 
-Seven of the 20 skills are user-invocable commands (Table <a href="#tab:skills-commands" data-reference-type="ref" data-reference="tab:skills-commands">15</a>), exposing the workflow through intentions rather than internal stages. The remaining thirteen are guides, which a router loads by naming their path when the assistant reaches the corresponding lifecycle stage. A guide is deliberately not matched from its own description: that is what keeps thirteen documents out of every session’s prompt, and it is why a guide nothing links to is unreachable rather than merely quiet.
+Seven of the 20 skills are user-invocable commands (Table <a href="#tab:skills-commands" data-reference-type="ref" data-reference="tab:skills-commands">15</a>), exposing the workflow through intentions rather than internal stages. `/create-module` is the entry point: it reads where the author is actually standing—a trait, a handed bundle, a directory somebody else left—and routes to the stage that owns the work. The remaining thirteen skills are guides, which a router loads by naming their path when the assistant reaches the corresponding lifecycle stage. A guide is deliberately not matched from its own description: that is what keeps thirteen documents out of every session’s prompt, and it is why a guide nothing links to is unreachable rather than merely quiet.
 
 ## Production catalog
 

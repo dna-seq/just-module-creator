@@ -551,8 +551,11 @@ matches its own full text and evidences nothing.
 \subsection{Command menu}
 
 Seven of the 20 skills are user-invocable commands (Table~\ref{tab:skills-commands}),
-exposing the workflow through intentions rather than internal stages. The
-remaining thirteen are guides, which a router loads by naming their path when
+exposing the workflow through intentions rather than internal stages.
+\texttt{/create-module} is the entry point: it reads where the author is
+actually standing---a trait, a handed bundle, a directory somebody else
+left---and routes to the stage that owns the work. The remaining thirteen
+skills are guides, which a router loads by naming their path when
 the assistant reaches the corresponding lifecycle stage. A guide is
 deliberately not matched from its own description: that is what keeps thirteen
 documents out of every session's prompt, and it is why a guide nothing links to
