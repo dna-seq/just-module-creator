@@ -206,9 +206,11 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
 
         `still_bound` is three-valued and `null` is not `false`. **`false` is the one to
         read first**: the authored cell was edited again after the record was written, so
-        the reason on file no longer describes the value it is attached to. **`null` means
-        there is no such cell to compare** — the row is gone, or `variants.csv` does not
-        carry that column — so nobody edited anything and the question could not be put.
+        the reason on file no longer describes the value it is attached to. A variant is
+        several rows, so a record may name one cell's value or the joined rendering
+        `current_value` shows for all of them; both bind. **`null` means there is no such
+        cell to compare** — the row is gone, or `variants.csv` does not carry that
+        column — so nobody edited anything and the question could not be put.
         Those are counted separately, as `unbound` and `subject_absent`.
         """
         target = resolve_dir(spec_dir, settings)
