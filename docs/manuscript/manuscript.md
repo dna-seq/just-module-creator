@@ -70,7 +70,7 @@ The author does not need to supply this directory, or any CSV file, at the start
 <figcaption>From conversation to a usable module. Module files are intermediate artifacts created by the workflow, not required user inputs. Authored claims remain distinct from derived source records inside the editable workspace.</figcaption>
 </figure>
 
-The table kind follows the subject of the claim. For example, in format 0.6.6 used for this manuscript, a single-variant claim belongs in `variants.csv`; evidence for those rows belongs in `studies.csv`. Pharmacogenomic diplotypes, copy-number ranges, repeat counts, and published polygenic-score identifiers use other tables. The manuscript does not reproduce their column lists. The plugin calls `describe_table` and `table_requirements`, which read the installed pydantic models. An author therefore sees the schema accepted by the compiler running in that session.
+Different claim types—variant associations, study evidence, pharmacogenomic diplotypes, copy-number ranges—belong to separate tables, each with its own schema. The plugin reads column definitions from the installed schema, so an author always sees the version accepted by the current compiler.
 
 ## Architecture and lifecycle
 
@@ -78,21 +78,10 @@ Module authoring and sample analysis remain separate until Just-DNA-Lite joins a
 
 <figure id="fig:architecture" data-latex-placement="ht">
 
-<figcaption>The two paths of the Just-DNA ecosystem. The knowledge path (top) produces a compiled module from sources; the sample path (bottom) joins that module to a local genome. The compiler is deterministic and offline. The dashed arrow marks the point where the two paths meet: a published or locally installed module is consumed by Just-DNA-Lite.</figcaption>
+<figcaption>The two paths of the Just-DNA ecosystem. The knowledge path produces a compiled module; the sample path joins selected modules with a local genome via Parquet-to-Parquet joins in DuckDB.</figcaption>
 </figure>
 
-<div id="tab:paths">
-
-| Path | Stages |
-|:---|:---|
-| Module lifecycle | papers and databases $`\rightarrow`$ manual editing or AI draft $`\rightarrow`$ enrichment and compilation $`\rightarrow`$ local store or registry |
-| Sample annotation | VCF $`\rightarrow`$ normalization and quality filtering $`\rightarrow`$ joins with selected modules and reference data $`\rightarrow`$ annotated tables and report |
-
-The module lifecycle and the two sample-processing paths.
-
-</div>
-
-On the sample path, normalization gives equivalent variants a consistent representation and computes the genotype used by later joins. Configured quality filters can remove calls that fail VCF filter status, depth, or quality criteria. The pipeline writes the normalized data to Parquet, so each selected module can use a streaming join instead of independently parsing the original VCF. The companion platform paper  describes the sample path in detail, including annotation speed benchmarks (a whole-genome VCF annotated in under 40 seconds) and polygenic risk score computation via `just-prs`.
+On the sample path, Just-DNA-Lite converts VCF input to Parquet and joins it with compiled modules using DuckDB, producing annotated reports and enriched data that the user can filter. A whole-genome VCF is annotated in under 40 seconds; the companion paper  describes the sample path and polygenic risk score computation in detail.
 
 Within `just-module-creator`, the language model participates only in the knowledge path. It can search and read sources, draft module rows, and help review disagreements. VCF filtering, module joins, and polygenic scoring remain ordinary software steps with explicit inputs and repeatable code.
 
@@ -113,57 +102,45 @@ Responsibilities across the Just-DNA ecosystem.
 
 </div>
 
-Of these components, just-module-creator is the agent-facing authoring entry point examined most closely in this paper. It is distributed as an application whose public contract is the MCP tool surface and the accompanying workflow documents. The same source tree ships plugin manifests for Claude Code and Codex. Both hosts launch the same server and load the same skills.
+Of these components, just-module-creator is the agent-facing authoring entry point examined most closely in this paper. It is distributed as a plugin for Claude Code and Codex, exposing the same MCP tools and workflow in both hosts.
 
 ## Determinism, evidence, and responsibility
 
-Within one compiler version, `just-dna-compiler` tests that a valid specification can be compiled, reversed, and compiled again without changing its authored content signature. just-module-creator calls that compiler and pins the resolution setting. [^1] It does not implement a second compiler or present the upstream round-trip tests as evidence that an assistant extracted a paper correctly.
+A module passes through drafting, curation, enrichment, checking, compilation, and closure before it reaches a store. Each layer guarantees something different, and a reviewer or auditing agent can read the boundaries between them to know exactly what has been established and what still requires expert judgment.
 
-This separation avoids a circular evaluation. If an assistant writes a wrong claim in valid syntax, the compiler may preserve it perfectly. Reproducible output shows that the compiler kept the input stable; it does not show that the input agrees with the literature.
+#### What the compiler guarantees.
 
-The workflow follows the module from an idea to one of its destinations:
+Within one compiler version, `just-dna-compiler` guarantees a round-trip: a valid specification can be compiled to Parquet, reversed back to CSV, and compiled again without changing its *content signature*—a normalized hash over the authored rows, independent of file ordering, whitespace, and column position. `just-module-creator` calls that compiler with full resolution always enabled.
 
-<div class="center">
+The compiler therefore establishes structural validity and reproducibility: the module conforms to the schema, identifiers resolve to coordinates, and the build is deterministic. What it does not—and is not designed to—establish is whether the authored claims agree with the literature. If an assistant writes a false association in valid syntax, the compiler preserves it perfectly. Distinguishing a correct row from a well-formed wrong one is the work of the next two layers.
 
-`origin `$`\rightarrow`$` scaffold `$`\rightarrow`$` draft `$`\rightarrow`$` curate `$`\rightarrow`$` enrich `$`\rightarrow`$` check `$`\rightarrow`$` compile `$`\rightarrow`$` close `$`\rightarrow`$` rehearse `$`\rightarrow`$` publish`
+#### What the evidence tools enforce.
 
-</div>
+Correctness depends on the evidence chain, and the toolchain enforces three properties that keep that chain auditable.
 
-The origin determines where the work begins. A source such as ClinVar, CPIC, or ClinPGx may already publish rows, in which case a drafting tool can prepare a partial table. A paper or a free-text request instead begins with evidence search and manual authoring. Scaffolding creates the files and placeholders required for the selected table kind.
+Authored values and their checks are kept independent. The workflow does not fill a value from the source that will later check it, because such a check compares the source with itself. The same principle catches a subtler pattern: when every study row for a PMID carries the article’s title as its `provenance_quote`, the quote-verification check matches on every row, because a title always appears in its own full text. The enricher’s literature pass detects this; the plugin’s own lint flags any PMID whose quoted rows all carry the identical passage. The design test is: *could this check have failed?* If not, it measured nothing.
 
-Curation follows drafting because a drafted row may still contain decisions that the source cannot make for the module: which genotype the claim concerns, how a weight should be interpreted, and how the conclusion should be worded. These are the decisions where domain expertise has the most leverage. The workflow presents them to the author rather than silently choosing values that merely satisfy the schema.
+Disagreements with reference archives are preserved rather than silently resolved. ClinVar may lag a retraction; a meta-analysis may overturn a prior classification. When the authored value should remain, `record_override` logs which field differs, what the source said, who decided, and why—making the reasoning available to any reviewer or auditing agent that later inspects the module.
 
-Enrichment resolves identifiers and writes sidecars such as `resolution.csv` and `literature.csv`. These files record the source answers used for later offline compilation. Compilation itself does not use the network.
+Unknown results are distinguished from clean ones. A source timeout or an absent file produces a null, not a pass. The identifier check writes an attestation to `verification.json` recording whether the registries were reachable, so a reviewer can tell an empty report from a report with no findings.
 
-After compilation, `close` records a statement in `verification.json` and binds it to the authored files. Editing those files invalidates the closure. In the current 0.x format a module can still compile and publish without a closure, but it carries a warning. Closing is an attributed declaration of completion. It does not prove that the module is correct.
+#### What remains visible for expert review.
 
-Most modules return to this workflow. A later source release, a new paper, or a reviewer’s correction begins a revision pass. The router inspects the existing directory so that the assistant does not treat a revision as a blank first draft and overwrite decisions whose history matters.
+The assistant may read retrieved full text and locate a verbatim passage as a `provenance_quote`—the reading is real, performed through the same retrieval the enricher uses. It can also follow a citation into its supplementary tables to locate per-variant statistics—effect sizes, p-values, and allele frequencies—that the main text often defers to its supplements. Once the text has been read, the quote-found check on that row becomes a citation-pairing check: it confirms the passage appears under the correct PMID, and a reviewer or auditing agent evaluates whether it supports the claim.
 
-The compiler reports problems but does not edit authored values. just-module-creator is the authoring application, so its workflow permits edits. That permission comes with limits.
+The `curator` field on each study row records who located the quote—a name, a handle, or a model identifier—so that a reviewer can direct scrutiny where it is most needed. The field is not checked by any gate; it is legible to a person or an auditing agent, not to a build. Attribution does not transfer responsibility: the human author holds accountability for the module regardless of who located each passage.
 
-First, tool-mediated overrides append a record to `logs/authoring.log` and preserve a reason in `provenance.json`. A general hand edit is not captured automatically. The server therefore instructs an assistant to call `record_override` after such a change. This is a known gap between the desired provenance record and what the current tools can enforce.
-
-Second, the workflow does not fill a value from the source that will later be used to check that same value. Such a check would compare the source with itself. The same problem appears when a row uses an article title as its `provenance_quote`: the title is guaranteed to occur in the article, so the resulting match provides no evidence that anyone located support for the row’s claim.
-
-Third, disagreement with an archive requires review of both sides. An archive may lag a retraction, a meta-analysis, or a later reclassification. Replacing the module’s value with the archive’s value can therefore make a module worse. `record_override` stores which field differs, what the source said, who made the decision, and why the authored value should remain. The record does not turn the disagreement into a passed check.
-
-An assistant may read retrieved full text and locate a `provenance_quote`. It must copy the passage verbatim and identify who located it in `StudyRow.curator`. This attribution helps a reviewer decide where to look closely. It does not transfer responsibility away from the human author. The assistant can also follow a citation into its supplementary tables to locate per-variant statistics—effect sizes, p-values, and allele frequencies—that the main text often summarizes but does not reproduce row by row.
+The compiler reports problems but does not edit authored values. `just-module-creator`, as the authoring application, permits edits—bounded by the same three rules: every tool-mediated override is logged, no value is filled from the source that will check it, and disagreements are preserved for review. Curation follows drafting precisely because a drafted row may still carry decisions the source cannot make—which genotype the claim concerns, how a weight should be interpreted, and how the conclusion should be worded—and these are the decisions the workflow surfaces for domain experts rather than resolving silently.
 
 ## Local and shared module stores
 
-In this paper, a module store is a place from which a compiled module can be installed or discovered. A local installation is useful during authoring. The registry provides two shared stores for publication rehearsal and release.
-
-The registry has two independent instances. Production is the catalog used by consumers. The staging registry, called the polygon and selected with `target=test`, is a rehearsal environment where an author can delete a test publication. Writes default to the polygon. Catalog reads require an explicit target so that an author does not publish to one instance, read from the other, and mistake the missing result for a failed publication.
-
-The production catalog is immutable. Publishing a version also claims its authored content by hash, and yanking the version does not release that claim. The workflow therefore rehearses on the polygon and asks separately before a production publish. The registry accepts the specification, runs its own enrichment and strict compilation, and stores the artifact it produced. It does not rely on a locally claimed digest, and it does not require the author to sign the local artifact. Inclusion in either catalog distributes a module; it is not scientific review, clinical validation, or endorsement.
-
-Publication is not the only way to use a module. `/module-install-local` installs a compiled artifact into a Just-DNA-Lite checkout so it can be tested with a local VCF. This route tests the annotation connection between the module and the consumer. A polygon publication tests the separate connection between the module and the registry.
+A compiled module can reach a consumer through three routes (Figure <a href="#fig:architecture" data-reference-type="ref" data-reference="fig:architecture">2</a>): local installation into a Just-DNA-Lite checkout for testing with a VCF, publication to the staging registry (the polygon, `target=test`) for a deletable rehearsal, or publication to the immutable production catalog. The registry runs its own enrichment and strict compilation on publish, so the stored artifact is the one the server produced, not a locally claimed digest. Inclusion in either catalog distributes a module; it is not scientific review, clinical validation, or endorsement.
 
 # Results
 
 ## Production catalog
 
-At the time of writing, the production registry holds eight published modules across 19 versions and five independent namespaces (three distinct owners). Table <a href="#tab:catalog" data-reference-type="ref" data-reference="tab:catalog">4</a> summarizes the published modules.
+At the time of writing, the production registry holds eight published modules across 19 versions and five independent namespaces (three distinct owners). Table <a href="#tab:catalog" data-reference-type="ref" data-reference="tab:catalog">3</a> summarizes the published modules.
 
 <div id="tab:catalog">
 
@@ -183,9 +160,9 @@ Modules published to the production registry as of August 2026. All modules targ
 
 </div>
 
-The modules span three independent namespaces from three owners. The largest module (`risk_impulsivity_snps`, 474 variants across 325 genes) and the smallest (`lactose_tolerance`, 2 variants in 1 gene) both compiled with strict resolution and fully resolved coordinates. The `big_five_personality_snps` module went through four published versions (1.0.0 through 2.1.0), illustrating the revision workflow: 1.0.0 was the initial GWAS Catalog extraction, 1.0.1 back-populated schema axes, 2.0.0 added polygenic score references, and 2.1.0 corrected the weight normalization.
+The modules span three independent namespaces from three owners. The largest module (`risk_impulsivity_snps`, 474 variants across 325 genes) and the smallest (`lactose_tolerance`, 2 variants in 1 gene) both compiled with strict resolution and fully resolved coordinates. The `big_five_personality_snps` module went through four published versions, illustrating the revision workflow: extraction, schema completion, score references, and weight correction.
 
-Modules authored with `just-module-creator` carry `curator: ai-module-creator` in their manifest authorship records. Three modules were authored by people who are not the plugin’s developers, indicating that the tool surface is usable beyond the original team.
+AI-authored modules are identified in their manifest authorship records. Three modules were authored by people who are not the plugin’s developers, indicating that the tool surface is usable beyond the original team.
 
 ## Proposed evaluation protocol
 
@@ -197,7 +174,7 @@ The creation evaluation begins with an expert-checked fixture. Each fixture cont
 
 - Weight-sign accuracy measures whether the generated effect direction agrees with the fixture. Magnitude is reported separately because a module weight is an authored choice and is not copied from a GWAS beta.
 
-The development fixtures `fto_bmi` (one locus at rs1421085) and `longevity_2026` are available in the repository. A larger adjudicated set and repeated runs are needed to support a performance claim. We therefore report no recall or precision estimate in this paper and present the protocol as a framework for future evaluation.
+A larger adjudicated set and repeated runs are needed to support a performance claim. We therefore report no recall or precision estimate in this paper and present the protocol as a framework for future evaluation.
 
 ## How to read a green result
 
@@ -243,7 +220,7 @@ Annotation modules summarize published association findings. They are not clinic
 
 ## Command menu reduction
 
-The command redesign reduced the text placed in every session from 14,688 characters for twenty entries to 3,464 characters for seven entries, a 76% reduction. A test walks the links from those seven commands and confirms that every guide remains reachable. The smaller menu therefore removes repeated prompt content without making a stage inaccessible.
+The command redesign reduced prompt content by 76% (from twenty entries to seven) while keeping every guide reachable through routing.
 
 ## The title-as-quote observation
 
@@ -251,9 +228,7 @@ A measurement across 33 `studies.csv` files (44,342 rows) in the upstream reposi
 
 ## Tools available to the assistant
 
-The MCP tools are grouped by task: authoring, research, checks, enrichment, comparison, and registry work. The default configuration lists the full surface. An optional layered configuration initially lists the core authoring loop and a `toolbox` command that reveals the other groups. Tool search can reduce the listing further. These discovery options change what the agent sees in its context; they do not create a separate implementation of the workflow.
-
-Registry writes require a token, with one necessary exception: `registry_register` creates the token and therefore cannot require one in advance. Tools whose cost depends on a large source corpus state that cost in their descriptions.
+The MCP tools are grouped by task: authoring, research, checks, enrichment, comparison, and registry work. The listing can be narrowed so the agent sees only the groups relevant to its current stage. Registry writes require a token.
 
 Literature and enrichment requests share a pacing gate, including the NCBI budget used by several lookups. The literature search fills a gap left by the enricher. The enricher can verify a PMID that an author already has, but it does not search for the paper. `literature_search` returns titles so the assistant can check identity. The existence of a PMID alone says nothing about whether it is the intended article. Supplementary-table retrieval extends the evidence path: the assistant can fetch, list, and inspect supplementary files attached to a cited paper, reaching the per-variant rows that GWAS main texts typically defer to their supplements.
 
@@ -278,5 +253,3 @@ A person usually knows what they want to accomplish, not which internal stage pe
 The first version of the menu exposed twenty stage names. That forced a person to choose between terms such as `module-curate` and `module-enrich` before the system had explained either one. The seven commands now route to thirteen guides. A guide contains the procedure for one stage and is loaded by path when the assistant reaches that stage.
 
 `/create-module` is therefore a router. It examines what the author has already provided and selects the next stage. If the request shows that the person first needs an explanation, the router loads the overview guide. The overview is not a menu command because a new author would not know its internal name.
-
-[^1]: The plugin always calls the compiler with `resolve_with_ensembl=True`. The parameter name is misleading: setting it to false disables all resolution, including an injected `resolution.csv`, and the compiler can then succeed with null coordinates that cannot match a VCF.
