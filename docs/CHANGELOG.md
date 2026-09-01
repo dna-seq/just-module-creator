@@ -3,7 +3,47 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## 0.29.0 — 2026-09-01
+## 0.30.0 — 2026-09-01
+
+### `lookup_allele_identity`: what allele a source's bare variant NAME denotes
+
+Upstream published `docs/probes/IDENTITY_FROM_A_NAME.md` — the source-agnostic procedure for turning
+`N150fs (c.448delA)` or `IVS2+1G>A` into an allele identity, derived from two probes over 43 records
+and 313 queries. It is evidence, not contract, and no code upstream implements it.
+
+**One rung of it is mechanical and nothing here could do it.** `lookup_variant` needs an rsID or a
+coordinate, which is exactly what a name-only record does not have, so the ClinGen Allele Registry was
+the one service in that ladder we had no route to at all. `lookup_allele_identity(expressions=[…])`
+asks it and reports what came back.
+
+**Five outcomes, kept apart because they are different claims**, each verified against the live
+service rather than taken from the prose:
+
+- `unregistered` is **not** "does not exist" — and the registry answers an allele it does not hold
+  with **HTTP 200**, a populated payload and a blank-node id, so the outcome is decided on the
+  identifier and never on the status. 9 of 20 identities in that survey had no external
+  cross-reference at all: registration is not fame.
+- `reference_mismatch` is the most informative answer the service gives. It names the base actually
+  at that position, which is how an inverted ref/alt is caught, and the opposite expression is the
+  one the locus can host. Rendering it as a failed request throws the finding away.
+- `malformed` means no allele was asked about, so no negative may be recorded from it. A position
+  past the end of a transcript returns **500** here — a 400 in disguise, and left to the retry layer
+  it spends the budget three times to learn the same thing.
+- `collapsed` answers the legacy-insertion problem for free: `c.204_205insG` and `c.203_204insG` both
+  return `CA913189244`, so there was never a choice. Send every candidate reading in one call.
+
+**The tool asks; it does not decide.** Reading the name, pinning the transcript *per gene* rather than
+per record, constructing the readings and choosing between two that both register stay with the
+author — that survey needed a human for four of its 33 identities, and its §08 lists ten decisions the
+procedure reaches and hands back. Those live in
+`skills/find-evidence/references/IDENTITY_FROM_A_NAME.md`, with the ranked discriminators written as
+*what each one cannot settle*, which is the half that matters.
+
+**A live run caught what the fixtures could not.** `communityStandardTitle` comes back as a **list**,
+and the frozen fixture said `str` — so the first real call raised a validation error a green suite had
+passed over. Same defect shape as a check that compares a convention against itself; the fixture is
+corrected and a test pins the list form.
+
 
 ### `read_supplementary`: the ladder finally reaches the cells
 

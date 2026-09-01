@@ -2,7 +2,7 @@
 name: find-evidence
 description: >-
   Find, verify and read the papers behind a row — search PubMed, Europe PMC, Semantic Scholar and the preprint index, confirm a PMID names the paper you meant, find a legal open-access copy, reach the supplementary tables a GWAS paper's per-variant numbers actually live in, and decide what may honestly be quoted.
-  Triggers: "find papers", "what is the evidence", "search the literature", "is this PMID real", "which paper is this", "get the full text", "can I quote this", "find a study for this variant", "provenance_quote", "open access", "preprint", "citations", "supplementary table", "supplementary data", "additional file", "the rsIDs are not in the text", "MOESM", "ESM", "the paper only gives a summary", "where are the effect sizes", "download the xlsx".
+  Triggers: "find papers", "what is the evidence", "search the literature", "is this PMID real", "which paper is this", "get the full text", "can I quote this", "find a study for this variant", "provenance_quote", "open access", "preprint", "citations", "supplementary table", "supplementary data", "additional file", "the rsIDs are not in the text", "MOESM", "ESM", "the paper only gives a summary", "where are the effect sizes", "download the xlsx", "the source has no rsID", "only a variant name", "HGVS", "what allele is this", "c.448delA", "IVS2+1G>A", "allele registry", "CAID", "which transcript", "ref and alt look swapped".
 ---
 
 # Finding the evidence behind a row
@@ -90,6 +90,7 @@ that table — and it warns rather than refuses. [`module-refresh`](../module-re
 | **openalex** | The broadest index here, 250M+ works, and it returns a PMID, a DOI, open-access status and a citation count in one hit. Good when PubMed's clinical framing is too narrow — population genetics, methods, anything not indexed as clinical. | Its abstracts are reconstructed from an inverted index, so read them as a gist rather than quoting them. Never quote from one. |
 | **crossref** | DOIs, and the registered metadata behind them. Worth asking precisely because it is DOI-first: a DOI is the handle that reaches Unpaywall, so a hit here can become a legal full text that a PMID-only search would never have found. | No full text and **no open-access verdict at all** — `is_open_access` comes back null, which is unknown and not "closed". |
 | **unpaywall** | DOI → legal open-access copies, **and the article's licence**. | Not a search engine — it takes a DOI you already have. |
+| **ClinGen Allele Registry** (`lookup_allele_identity`) | What allele an **HGVS expression** names, when a source published a name and no identifier. Also the direction test: it rejects the expression whose reference base is wrong. | Which reading a curator *meant*, when two spellings name different alleles. It answers about expressions you constructed; constructing them is [`IDENTITY_FROM_A_NAME.md`](references/IDENTITY_FROM_A_NAME.md). |
 
 `sources` narrows which are asked. `JMC_LITERATURE_SOURCES` is the deployment ceiling and a per-call
 `sources` can only narrow it further, never widen it.
@@ -197,11 +198,10 @@ associations live in its supplementary data and downloadable summary statistics.
 **`fetch_fulltext` returns the JATS body and no supplementary file — a limit of the tool, not of what
 is in reach. Corrected 2026-08-30; this passage used to end "there is nothing in reach to quote, and
 the honest cell is empty".** That was wrong on its own example: PMID 29500382's workbook is two HTTP
-requests from the DOI, openly served under CC-BY, and **42 of those 65 rsIDs are in it** with the
-p-values the rows assert. All 65 shipped carrying the title instead. Go and get it — the ladder, the
-routes that look right and fail, and what a workbook quote does to `quotes_found` are in
-[`references/SUPPLEMENTARY.md`](references/SUPPLEMENTARY.md) — and since 0.25.0 it is three tools rather
-than a procedure: `list_supplementary`, `fetch_supplementary`, `describe_supplementary`. The honest
+requests from the DOI, openly CC-BY, and **42 of those 65 rsIDs are in it** with the p-values the rows
+assert. All 65 shipped carrying the title instead. Go and get it: `list_supplementary`,
+`fetch_supplementary`, `describe_supplementary`, `read_supplementary`, with the ladder and the routes
+that look right and fail in [`references/SUPPLEMENTARY.md`](references/SUPPLEMENTARY.md). The honest
 empty cell comes *after* you have called them, not instead of it.
 
 ### 3. An empty cell is a result, and there are four kinds
@@ -224,6 +224,16 @@ quote.
 also scores `0`, because the checker searches the article body only — reporting "absent from the
 paper" for a passage verbatim in that paper's own workbook. Nothing separates the two, so record the
 source file yourself: [`references/SUPPLEMENTARY.md`](references/SUPPLEMENTARY.md).
+
+### 3c. A variant NAME and no identifier is not an unresolvable record
+
+`N150fs (c.448delA)`, `IVS2+1G>A`, `D1709N`. `lookup_variant` needs an rsID or a coordinate, which is
+exactly what the record lacks — but a `c.` or protein fragment plus the gene's numbering frame **is**
+an allele, and an allele registry holds it: 35 of 43 such records resolved in the survey behind this.
+`lookup_allele_identity` asks that registry; constructing the expressions and choosing between two
+that both register are yours. Do not start from the tool —
+[`references/IDENTITY_FROM_A_NAME.md`](references/IDENTITY_FROM_A_NAME.md) has the procedure, and
+sending a source's legacy name unmodified resolves 0 of 14.
 
 ### 3b. If the article names the variant but reports a different trait, STOP
 
@@ -441,17 +451,12 @@ around, not squeamishness.
 
 ## Preprints
 
-**Some preprints have a PMID, and the tooling currently says otherwise.** bioRxiv and medRxiv
-postings are indexed in PubMed under the NIH preprint pilot, so they get a real PMID and often a
-PMCID: `41427385` is a bioRxiv posting with both. A preprint from the arXiv index typically has
-neither, and that is where the old rule came from.
-
-So the honest statement is: **check the record, do not assume the class.** A preprint result carrying
-a PMID *can* ground a `studies.csv` row — the schema requires a PubMed token and it has one.
-
-> `literature_search` emits a warning reading *"Some results are preprints: not peer-reviewed, and
-> they carry no PMID, so they cannot ground a studies.csv row"* — and it fires on results that do
-> carry one. Read the `pmid` field, not the warning. Filed as `F28`.
+**Some preprints have a PMID, so check the record and do not assume the class.** bioRxiv and medRxiv
+postings are indexed in PubMed under the NIH preprint pilot and get a real PMID, often a PMCID
+(`41427385` has both); an arXiv posting typically has neither, which is where the old rule came from.
+A preprint carrying a PMID *can* ground a `studies.csv` row — the schema requires a PubMed token and
+it has one. `literature_search`'s warning that preprints *"carry no PMID"* fires on results that do:
+read the `pmid` field, not the warning (`F28`).
 
 What remains true, and is the part that matters: **a preprint is not peer reviewed.** Grounding a row
 on one is legitimate and must be said out loud in the `conclusion`, because a reader cannot tell from
