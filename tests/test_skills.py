@@ -196,6 +196,51 @@ def test_the_body_stays_under_the_size_where_it_stops_being_read(skill: Path):
     )
 
 
+#: Where a skill delegated a whole subject to a reference, the stub left behind must
+#: stay a stub. `find-evidence` is the measured case: it hit the 500-line ceiling on
+#: 2026-09-01 and three of its four subjects had already grown past the point where a
+#: section is a summary rather than a signpost. Each entry is (skill, heading, ceiling).
+_DELEGATED_SECTIONS = (
+    ("find-evidence", "## What may honestly go in `provenance_quote`", 30),
+    ("find-evidence", "## Copyright: free to read is not free to reuse", 30),
+)
+
+
+@pytest.mark.parametrize(
+    ("skill_name", "heading", "ceiling"),
+    _DELEGATED_SECTIONS,
+    ids=lambda v: v if isinstance(v, str) else str(v),
+)
+def test_a_delegated_section_stays_a_signpost(skill_name: str, heading: str, ceiling: int):
+    """The body ceiling is a whole-file budget, so one section can eat it silently.
+
+    `find-evidence` reached 520 lines with 197 of them under one heading — the quote
+    rules, which by then were a reference living inside a skill. Trimming the file to
+    fit would have kept the shape and only shortened the prose, which is how the
+    monolith grew the first time: the fix is that the subject moved out and what stays
+    is a signpost carrying the one fact that decides whether to open it.
+
+    A stub over this ceiling means the section is re-growing. Move the new material
+    into the reference it delegates to, rather than raising the number here.
+    """
+    document = _document(SKILLS / skill_name)
+    body = document.read_text(encoding="utf-8")
+    assert heading in body, f"{skill_name} no longer has {heading!r} — update this guard"
+    section = body.split(heading, 1)[1]
+    section = section.split("\n## ", 1)[0]
+    lines = len([line for line in section.splitlines() if line.strip()])
+    assert lines <= ceiling, (
+        f"{skill_name}'s {heading!r} is {lines} non-blank lines, over {ceiling}. It "
+        "delegates to a reference, so it must stay a signpost — move the detail there. "
+        "The whole-file ceiling cannot catch this: one section can grow while the file "
+        "shrinks elsewhere."
+    )
+    assert "references/" in section, (
+        f"{skill_name}'s {heading!r} delegates its subject but names no reference, "
+        "so a reader has a summary and no way to the full rules"
+    )
+
+
 @pytest.mark.parametrize("skill", ALL, ids=lambda p: p.name)
 def test_every_skill_it_names_actually_ships(skill: Path):
     """A pointer to a skill that does not exist is a dead end an agent cannot recover from."""

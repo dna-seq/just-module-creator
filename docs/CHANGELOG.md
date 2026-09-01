@@ -3,7 +3,32 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## 0.30.0 — 2026-09-01
+## Unreleased
+
+### `find-evidence` splits: the skill keeps the loop, three references keep the subjects
+
+It hit the 500-line ceiling adding `lookup_allele_identity` and the honest reading was that three of
+its four subjects had already outgrown a section. `provenance_quote` alone was **197 lines** — a
+reference living inside a skill, loaded whole by every session that wanted to know which sources to
+search. Trimming prose to fit would have kept that shape, which is how the monolith grew the first
+time.
+
+**505 lines → 250, and nothing was rewritten.** The quote rules moved to `references/QUOTING.md`
+(221) and the copyright, `licensing.csv`-by-hand and no-legal-copy sections to `references/LICENSING.md`
+(113), both byte-preserved apart from relative links; `references/IDENTITY_FROM_A_NAME.md` (233) is
+new with 0.30.0. The skill keeps what a reader needs *without* a subject in hand: existence is not
+identity, the loop, which source answers which question, what you may write and from where, preprints.
+
+**Each stub carries the one fact that decides whether to open the reference** — that a title-as-quote
+passes `quotes_found` every time and cost 3668 published rows; that a `null` licence is free to read
+with no reuse grant and drops a whole module's `commercial_use` to `null`. A pointer that only points
+gets skipped, which is the failure `test_a_referenced_job_is_cued_from_a_door_not_only_linked_to`
+already records for `SUPPLEMENTARY.md`.
+
+`test_a_delegated_section_stays_a_signpost` is new and pins both stubs at 30 lines, because **the
+whole-file ceiling cannot catch this**: one section can grow past being a signpost while the file
+shrinks elsewhere. Verified by pasting the reference back into the stub and watching it fail.
+
 
 ### `lookup_allele_identity`: what allele a source's bare variant NAME denotes
 
