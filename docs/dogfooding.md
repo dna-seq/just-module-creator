@@ -14,6 +14,49 @@ is usable, and what is missing.
 
 ---
 
+## F86 — LitVar2 is the rsID↔CAID bridge we lack, and it is DEFERRED to upstream's 0.7
+
+**Not a defect. A probed capability, parked deliberately on 2026-09-01** so the notes are not
+re-measured. Upstream is building it as **`RM167`**, proposed BUILDS in 0.8, drafted not decided; the
+right move here is to consume theirs rather than ship a second client. **Do not start this without
+checking `RM167`'s state first** — and check the *installed* package, not their tree.
+
+**Why it was worth probing at all.** `lookup_allele_identity` (0.30.0) answers *what allele does this
+HGVS name*, in CAIDs. `lookup_variant` answers *what is at this rsID*. **Nothing joins the two**, and
+LitVar2 does: `variant/get/litvar@rs1801133##` returns `clingen_ids: ["CA170990"]` beside the rsID,
+the gene, `hgvs: c.677C>T` and `1:11796321`. That is the conversion the identity work left open, plus
+a literature axis — 8,951 PMIDs on that rsID, variants indexed *as mentioned in papers*, which a
+keyword search does not reach.
+
+**What the probe established, all against the live service:**
+
+- **The base URL is `https://www.ncbi.nlm.nih.gov/research/litvar2-api`.** The `bionlp/litvar2/api`
+  path 404s; `bionlp/litvar/api/v1/` exists, is a *different* Django app, and its `entity/` routes
+  502 or time out. Its `health/` answers `{"healthcheck": "OK"}` while `entity/search` is down, so
+  **that health endpoint does not cover the routes anyone would call.**
+- **A LitVar id has SLOTS**, `litvar@<clingen_id>#<rsid>#<gene_id>`, unfilled ones collapsing to a
+  bare `#`. So `litvar@rs1800562##` is the **position** node and `litvar@CA113795#rs1800562##` is the
+  **allele** node beside it — two records, not one id with a suffix. Reading the trailing `##` as
+  decoration is the misreading upstream's own earlier draft made, and it produced the opposite
+  conclusion about whether the source is adoptable.
+- **The tiers answer differently and the answerable tier is a property of the locus.** BRAF
+  `rs113488022` carries three CAIDs — three ALTs at one position. HFE `rs1800562`'s allele node
+  returns `clingen_ids: None` and `data_clinical_significance: None` where its position node returns
+  both.
+- **`data_clinical_significance` is position-level only.** Populated on position nodes, `None` on
+  every allele node measured. It is a verdict channel, and it is **not usable as an allele
+  authority** — on a multi-allelic rsID it is not a claim about the author's allele. It would also
+  land in `clin_sig`, which `enricher.clinical.verify_clin_sig` checks against ClinVar, so writing it
+  from here makes that check compare a convention against itself.
+- **`variant/search/gene/<GENE>` returns line-delimited Python `repr()`** — single-quoted keys —
+  under `Content-Type: application/json`. `.json()` raises `JSONDecodeError`. MTHFR: 1,526 lines.
+  The other endpoints are well-formed JSON. **Pinned before anyone writes a client.**
+- **`variant/get/<id>/publications` returns `{pmids, pmcids, pmids_count}`** — bare id lists, 8,951
+  and 4,585 for `rs1801133`. Corpus-sized, and a PMID list is not a table kind.
+
+**Terms are NCBI's policy rather than a licence**, so there is no `licensing.csv` row to write from
+it and no gating axis to declare — which is itself a thing to state rather than leave blank.
+
 ## The 2026-08-31/09-01 round: what four runs asked for, and how many asked
 
 Four authoring runs, two papers, two builds (0.27.0 and 0.28.0). Every one was asked the same
