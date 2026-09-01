@@ -1204,6 +1204,63 @@ class SupplementaryDescription(BaseModel):
     note: str | None = Field(default=None)
 
 
+class AlleleIdentity(BaseModel):
+    """One expression's outcome at the allele registry. Read `outcome`, not the count."""
+
+    expression: str = Field(description="The HGVS expression asked, exactly as sent.")
+    outcome: str = Field(
+        description=(
+            "`registered` — the registry holds this allele and names it. `unregistered` — "
+            "well-formed and not held, which is NOT 'does not exist': 9 of 20 identities in "
+            "the survey behind this tool carried no external cross-reference at all. "
+            "`reference_mismatch` — the base asserted as reference is not the one at that "
+            "position, which is evidence about direction rather than a failed request. "
+            "`malformed` — the expression could not be read, so no allele was asked about and "
+            "no negative may be recorded. `unavailable` — the service did not answer."
+        )
+    )
+    caid: str | None = Field(
+        default=None, description="The canonical allele identifier, when one was named."
+    )
+    title: str | None = Field(
+        default=None,
+        description=(
+            "The registry's own title, which it writes in the newest transcript version it "
+            "knows. A title reading `.4:c.198_221del` for a `.3:c.197_220del` you sent is the "
+            "3' rule renormalizing inside a repeat plus that retitling — two behaviours that "
+            "read as one version-shift story. It is not evidence your numbering is off by one."
+        ),
+    )
+    external_records: list[str] = Field(
+        default_factory=list,
+        description="Which external databases carry it. Absence is not evidence against.",
+    )
+    detail: str | None = Field(default=None, description="What the outcome means for this row.")
+
+
+class AlleleIdentityReport(BaseModel):
+    """Every expression asked, and what having more than one identifier means.
+
+    Asks; it does not decide. Constructing the expressions, and choosing between
+    two that both register, are judgements about the row being authored.
+    """
+
+    answers: list[AlleleIdentity] = Field(description="One per expression, in the order asked.")
+    distinct_ids: list[str] = Field(
+        default_factory=list, description="Distinct canonical identifiers across the answers."
+    )
+    collapsed: bool = Field(
+        description=(
+            "True when every registered expression named ONE allele — different spellings of "
+            "the same thing, so there was never a choice to make. This is the step that "
+            "dissolves most apparent ambiguity for free."
+        )
+    )
+    note: str | None = Field(
+        default=None, description="Present when the answers name different alleles."
+    )
+
+
 class SupplementaryRows(BaseModel):
     """One sheet's cells. The last rung of the ladder, and it stops at the cells.
 

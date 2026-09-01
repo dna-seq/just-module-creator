@@ -41,7 +41,7 @@ from just_dna_enricher.locations import default_ensembl_cache_dir
 from just_dna_registry import RegistryError
 from mcp.types import ToolAnnotations
 
-from just_module_creator import supplementary
+from just_module_creator import alleles, supplementary
 from just_module_creator.discovery import (
     DEFAULT_EUROPEPMC_BASE,
     fulltext,
@@ -50,6 +50,8 @@ from just_module_creator.discovery import (
 )
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
+    AlleleIdentity,
+    AlleleIdentityReport,
     CitationLookup,
     DuplicateCheck,
     FullTextResult,
@@ -977,6 +979,95 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         reported as this reader's limit — never as a file with no rows.
         """
         return await run_sync(lambda: _read_workbook(path, sheet, offset, limit))
+
+    # The one MECHANICAL rung of upstream's `IDENTITY_FROM_A_NAME` handout, and the
+    # scope line is deliberate. That procedure reads a variant name, pins a
+    # transcript by measurement, generates candidate readings and ranks eight
+    # discriminators — and its §08 hands ten decisions back to a human, four of
+    # which were needed for the 33 identities it actually produced. Asking a
+    # registry is the part with no judgement in it, and it is also the part nothing
+    # here could do: `lookup_variant` needs an rsID or a coordinate, which is
+    # exactly what a name-only record does not have. The rest stays a skill.
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Resolve HGVS expressions to canonical allele ids",
+            readOnlyHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def lookup_allele_identity(expressions: list[str]) -> AlleleIdentityReport:
+        """Ask the ClinGen Allele Registry what allele each HGVS expression names.
+
+        The route in when a source publishes a **name** and no identifier —
+        `N150fs (c.448delA)`, `IVS2+1G>A`, `D1709N` — where `lookup_variant` cannot
+        help because it needs an rsID or a coordinate. Send transcript-level HGVS
+        (`NM_000551.3:c.499C>T`) or genomic (`NC_000003.12:g.10142012C>T`).
+
+        **Send every candidate reading at once.** A legacy `c.204insG` does not say
+        which side of position 204 the base goes, so both `c.204_205insG` and
+        `c.203_204insG` are readings of it — and they usually return the **same**
+        id, which is `collapsed: true` and means there was never a choice. Never
+        send the legacy form itself: it is a 400, and in one measured corpus
+        legacy-spelled insertions resolved 0 of 14 against ~83% overall.
+
+        **Five outcomes, kept apart because they mean different things.**
+        `unregistered` is not "does not exist" — registration is not fame, and in
+        that survey 9 of 20 resolved identities had no external cross-reference at
+        all. `reference_mismatch` is the useful one: it says the base you called
+        reference is not there, which is how an inverted ref/alt is caught, and the
+        opposite expression is the one the locus can host. `malformed` means no
+        allele was asked about, so no negative may be recorded from it.
+
+        **This asks; it does not decide.** Constructing the expressions is yours,
+        and so is choosing between two that both register — the survey this comes
+        from needed a human for four of its 33 identities. Load `find-evidence`
+        for the procedure that builds the expressions and ranks the discriminators.
+        """
+        _require_network("Allele registry lookup")
+        if not expressions:
+            raise ToolError("Give at least one HGVS expression.")
+        service = _allele_service(services)
+        answers = [
+            await run_sync(lambda expr=expr: alleles.lookup_allele(service, expr))
+            for expr in expressions
+        ]
+        ids, note = alleles.collapse(answers)
+        return AlleleIdentityReport(
+            answers=[
+                AlleleIdentity(
+                    expression=a.expression,
+                    outcome=a.outcome,
+                    caid=a.caid,
+                    title=a.title,
+                    external_records=a.external_records,
+                    detail=a.detail,
+                )
+                for a in answers
+            ],
+            distinct_ids=ids,
+            collapsed=len(ids) == 1,
+            note=note,
+        )
+
+
+def _allele_service(services: NetworkServices) -> HttpService:
+    """The ClinGen Allele Registry as a paced service, built once.
+
+    Its own gate: read-only, credential-free, and not NCBI, so it is not metered
+    against the shared budget the enricher and our PubMed search divide. One
+    request per second is courtesy rather than a published limit.
+    """
+    for existing in services._extra:  # noqa: SLF001 — the registry is ours
+        if existing.name == "clingen_allele_registry":
+            return existing
+    return services.register(
+        HttpService(
+            name="clingen_allele_registry",
+            base_url=alleles.REGISTRY_HOST,
+            gate=ServiceGate(interval=1.0),
+            headers={"User-Agent": f"just-module-creator (mailto:{services.contact_email()})"},
+        )
+    )
 
 
 def _esm_service(services: NetworkServices) -> HttpService:
