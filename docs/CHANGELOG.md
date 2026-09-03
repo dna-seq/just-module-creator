@@ -13,9 +13,16 @@ on our side, so agents in sibling repos are not surprised.
 adoption, and moving a floor to an uncut version publishes a lie. Reversal is deleting the block and
 `uv sync`.
 
-The point of the branch is to find integration problems while they are still cheap to move, and the
-count so far is **four notes filed**: format `S87`, registry `S19`, `S20`, `S21` — carried here as
-`F87`, `F88`, `F89`.
+The point of the branch is to find integration problems while they are still cheap to move. **Six
+notes filed, one already answered and shipped**: format `S87` (accepted, shipped the same day as
+`RM180`, verified against our install), `S88` and `S89`; registry `S19`, `S20` and `S21`. Carried here
+as `F87`, `F88` and `F89`, with `F89` already closed.
+
+**The cadence is the thing to plan for rather than a surprise.** `S87` was filed, answered, decided
+with the maintainer, shipped and re-verified inside two hours — so a status line written at filing
+time was stale before the session ended, which is exactly what
+`docs/just-dna-format-pending-fixes.md` warns about and the reason this branch re-reads both inboxes
+before quoting its own state.
 
 **`registry_health` reports the format contract, and that is the shipped change.** Running 0.7 against
 the live instances, `registry_check` and `registry_validate` return
