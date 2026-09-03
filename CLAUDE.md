@@ -1343,6 +1343,19 @@ have been questions.
   quote. Filed as registry-tree `S18` and `F77`; the symptom is in
   `skills/module-101/references/SYMPTOMS.md`. **A 0.7 client against a 0.6 server is the case the
   handshake itself would refuse**, so re-probe at the next minor too.
+
+  **Re-probed 2026-09-03 on the `preview-0.7` branch, and the prediction holds in the worst form.**
+  With format 0.7.0 installed, both instances still answering `format: 0.6.1`: `registry_check` and
+  `registry_validate` return `HTTP 409: just-dna-format contract mismatch`, while `registry_health`,
+  `registry_search`, `registry_whoami`, `registry_get_module` and `registry_namespace_available` all
+  answer normally — `assert_compatible` runs on the guarded calls only. So the failure looks like a
+  partial outage rather than a version skew, and **`status: "ok"` is not the answer to whether you
+  can work with an instance**: `registry_health` now reports `server_format`, `client_format` and a
+  tri-state `contract_compatible`, and that is the field to read. No consumer declares an upper bound
+  on `just-dna-format`, ours included, so on the day 0.7 reaches PyPI a clean `uv sync` of the
+  released plugin loses its write surface. Asked as registry-tree `S20`; `F87` carries the state, and
+  whether `main` should take a `<0.8` ceiling is an open question for the user rather than a decision
+  taken here.
 - **Both live registry instances now serve `format: 0.6.1` / `registry: 0.18.x`, verified 2026-08-19,
   and the 0.5.4 contract block is over.** The installed client is **0.18.2** as of 2026-08-20 — this
   line said 0.18.1 for a day. Every version-guarded call works again — a `download` of

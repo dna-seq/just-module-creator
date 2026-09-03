@@ -9,7 +9,9 @@ on our side, so agents in sibling repos are not surprised.
 
 **Branch only — not on `main`, and the version is not bumped.** `pyproject.toml` carries a
 `[tool.uv.sources]` block taking `just-dna-format` / `-compiler` / `-enricher` editable from
-`../just-dna-format`'s 0.7 branch at `f4a9b14`. The floors stay `>=0.6.6`: a source override is not an
+`../just-dna-format`'s 0.7 branch. **Editable means it tracks their HEAD, so the commit is a
+measurement and not a pin**: first measured at `f4a9b14`, gates last green at `67db26c` — which moved
+seven times during one session, twice because of notes filed from here. The floors stay `>=0.6.6`: a source override is not an
 adoption, and moving a floor to an uncut version publishes a lie. Reversal is deleting the block and
 `uv sync`.
 
