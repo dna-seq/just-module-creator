@@ -12,13 +12,41 @@ from fastmcp.exceptions import ToolError
 
 
 async def test_validate_passes_on_a_complete_spec(client, spec_dir):
+    """Lenient, because the fixture carries no `resolution.csv` and strict now says so.
+
+    This asserted `strict=True` until upstream 0.7. It was encoding a defect: the same
+    fixture has always been refused by `compile(strict=True)` two tests below, so a
+    green strict validate immediately preceded a red strict compile. Upstream's RM141
+    calls one predicate from both sides, and the pair agrees now — which is what
+    `test_strict_validate_agrees_with_strict_compile` asserts directly.
+    """
     result = await client.call_tool(
-        "validate_module", {"spec_dir": str(spec_dir), "strict": True}
+        "validate_module", {"spec_dir": str(spec_dir), "strict": False}
     )
     assert result.data.valid
     assert result.data.errors == []
-    assert result.data.strict is True
+    assert result.data.strict is False
     assert result.data.stats["module_name"] == "lactose_test"
+
+
+async def test_strict_validate_agrees_with_strict_compile(client, spec_dir, tmp_path):
+    """A pre-flight that blesses what the build refuses is worse than no pre-flight.
+
+    The fixture has no `resolution.csv`, so no variant has a position and strict means
+    the parquet bytes are not reproducible. Both sides must reach that verdict, and
+    both must name it — an agent reading only "invalid" cannot tell which tool to run.
+    """
+    validated = await client.call_tool(
+        "validate_module", {"spec_dir": str(spec_dir), "strict": True}
+    )
+    compiled = await client.call_tool(
+        "compile_module",
+        {"spec_dir": str(spec_dir), "output_dir": str(tmp_path / "out"), "strict": True},
+    )
+    assert validated.data.valid is False
+    assert compiled.data.success is False
+    assert any("unresolved" in e for e in validated.data.errors), validated.data.errors
+    assert any("unresolved" in e for e in compiled.data.errors), compiled.data.errors
 
 
 async def test_validate_reports_the_mode_it_answered_for(client, spec_dir):

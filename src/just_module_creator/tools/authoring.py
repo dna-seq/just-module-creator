@@ -105,6 +105,15 @@ _SUBJECTS: dict[str, str] = {
     # `sources.csv` is the deprecated one and inherits this entry rather than
     # repeating it, so the two can never describe themselves differently.
     "licensing.csv": "the terms one source's data came under",
+    # Draftable as of upstream 0.7 (RM124). It is the odd one in this map: every other
+    # entry names a biological or bibliographic subject, and this one names a *decision*
+    # — which derived cell the author judged wrong, and what it should read instead. It
+    # is authored, its `reason` is required, and it is the only authored table whose
+    # rows are about another table's rows.
+    "overrides.csv": (
+        "one correction to one derived cell — which table, which row, which column, "
+        "and why the author overrode it"
+    ),
 }
 
 

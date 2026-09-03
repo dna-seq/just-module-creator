@@ -86,6 +86,17 @@ build-backend = "uv_build"
 [tool.uv.build-backend]
 module-name = ["just_module_creator", "manuscript"]
 
+# PREVIEW BRANCH ONLY — do not merge to main. The three just-dna packages are
+# taken from the sibling checkout's unreleased 0.7 branch rather than from PyPI,
+# so this tree is a preview build against a release that has not been cut. The
+# floors above still say >=0.6.6 deliberately: a source override is not an
+# adoption, and bumping the floor to an uncut version would publish a lie.
+# Reversal: delete this block and `uv sync`.
+[tool.uv.sources]
+just-dna-format = { path = "../just-dna-format/schema", editable = true }
+just-dna-compiler = { path = "../just-dna-format/compiler", editable = true }
+just-dna-enricher = { path = "../just-dna-format/enricher", editable = true }
+
 [dependency-groups]
 dev = [
     "pytest>=8",

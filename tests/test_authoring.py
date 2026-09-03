@@ -332,6 +332,21 @@ async def test_lint_normalized_csv_never_invents_a_value(client):
 # --------------------------------------------------------------------------- #
 # RM10 — three answers restated a schema fact instead of generating it
 # --------------------------------------------------------------------------- #
+#: The two files the 0.7 compiler reads from a spec directory that no released
+#: registry recognises. Filed as registry-tree `S19` on 2026-09-03 and open there;
+#: `overrides.csv` is the third and is missing from their list too, but it is
+#: draftable so it never reaches the sidecar roster.
+#:
+#: This is a **lag**, not a disagreement: both sides are right about their own
+#: release, and a re-publish through a registry that does not recognise a file drops
+#: it. Naming the set here keeps the two-producer comparison doing its job — it is
+#: still a real comparison, over everything except the names we have measured and
+#: reported — instead of being deleted because it went red for a true reason.
+_REGISTRY_LAGS_BEHIND = frozenset(
+    {"clin_sig_concordance.csv", "clin_sig_authority_calls.csv"}
+)
+
+
 def _key_columns(keyed_on: str) -> list[str]:
     """The column tokens out of a `keyed_on` string like `(gene, repeat_unit)`."""
     return [token.strip() for token in keyed_on.strip("()").split(",") if token.strip()]
@@ -350,7 +365,9 @@ async def test_the_sidecar_roster_is_derived_from_the_installed_toolchain(client
     from just_dna_compiler import draft
     from just_dna_registry import specfiles
 
-    expected = {specfiles.RESOLUTION_CSV, *specfiles.FACT_CSVS} - set(draft.DRAFTABLE)
+    expected = (
+        {specfiles.RESOLUTION_CSV, *specfiles.FACT_CSVS} | _REGISTRY_LAGS_BEHIND
+    ) - set(draft.DRAFTABLE)
     result = await client.call_tool("list_tables", {})
     assert set(result.data.sidecars) == expected
     assert result.data.sidecars == sorted(result.data.sidecars)  # deterministic order
@@ -478,9 +495,15 @@ def test_the_produced_roster_agrees_with_the_registry_that_recognises_the_same_f
     from just_module_creator.tools.authoring import _PRODUCED_CSVS, _PRODUCED_MODELS
 
     assert set(_PRODUCED_MODELS) == set(_PRODUCED_CSVS)
-    assert set(_PRODUCED_CSVS) == {specfiles.RESOLUTION_CSV, *specfiles.FACT_CSVS} - set(
-        draft.DRAFTABLE
-    )
+    assert set(_PRODUCED_CSVS) == (
+        {specfiles.RESOLUTION_CSV, *specfiles.FACT_CSVS} | _REGISTRY_LAGS_BEHIND
+    ) - set(draft.DRAFTABLE)
+    # The lag is stated, not assumed: every name we excuse must still be one the
+    # compiler reads and the registry does not. When the registry catches up, this
+    # fails and the constant comes out — which is the point of naming it.
+    for name in _REGISTRY_LAGS_BEHIND:
+        assert name in hints.DERIVED_TABLE_MODELS
+        assert not specfiles.is_spec_file(name), f"registry now recognises {name}"
     for csv_name, model in _PRODUCED_MODELS.items():
         assert hints.derived_model_for(csv_name) is model
 
