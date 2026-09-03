@@ -428,3 +428,49 @@ def test_claude_md_names_every_skill_that_ships():
         f"CLAUDE.md's asset table does not name {missing}. A skill absent from the roster "
         "is one the next agent rebuilds from scratch"
     )
+
+
+# --------------------------------------------------------------------------- #
+# A restated closed vocabulary goes stale the release after it is written
+# --------------------------------------------------------------------------- #
+def test_no_shipped_prose_enumerates_a_closed_vocabulary_upstream_owns():
+    """Spell a vocabulary out and you have hand-kept it, whatever you called it.
+
+    Found by format 0.7 adding `contested` to `VALID_DIRECTIONS` (RM150). Two
+    places had written the four members out — `describe_table`'s own docstring,
+    which is the tool whose whole claim is that it generates them, and the
+    `activity_phenotype` dossier. Both became wrong the moment the vocabulary
+    grew, and neither had anything that would say so.
+
+    Scoped to *complete* enumerations on one line: naming a member to make a
+    point ("`direction: neutral` looks like it agrees") is not a restatement, and
+    the variants dossier does that legitimately several times. Only listing all
+    of them is a claim about the set, and only that claim can go stale.
+    """
+    from just_dna_format import vocab
+
+    sets = {
+        name: frozenset(getattr(vocab, name))
+        for name in dir(vocab)
+        if name.startswith("VALID_") and isinstance(getattr(vocab, name), frozenset | set)
+    }
+    assert sets, "no vocabularies found — the module moved and this test stopped testing"
+
+    roots = [SKILLS, SKILLS.parent / "src"]
+    offenders: list[str] = []
+    for root in roots:
+        for path in sorted(root.rglob("*")):
+            if path.suffix not in {".md", ".py"} or not path.is_file():
+                continue
+            if path.name == Path(__file__).name:
+                continue
+            for lineno, line in enumerate(path.read_text().splitlines(), 1):
+                for vocab_name, members in sets.items():
+                    if len(members) < 3:
+                        continue  # a one- or two-member set is a fact, not a list
+                    if all(f"`{m}`" in line or f"{m}/" in line or f"/{m}" in line for m in members):
+                        rel = path.relative_to(SKILLS.parent)
+                        offenders.append(f"{rel}:{lineno} spells out {vocab_name}")
+    assert not offenders, (
+        "ask the tool for these instead of writing them down:\n  " + "\n  ".join(offenders)
+    )

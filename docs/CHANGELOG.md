@@ -5,6 +5,48 @@ on our side, so agents in sibling repos are not surprised.
 
 ## Unreleased
 
+### `preview-0.7`: a branch built against a release that has not been cut
+
+**Branch only — not on `main`, and the version is not bumped.** `pyproject.toml` carries a
+`[tool.uv.sources]` block taking `just-dna-format` / `-compiler` / `-enricher` editable from
+`../just-dna-format`'s 0.7 branch at `f4a9b14`. The floors stay `>=0.6.6`: a source override is not an
+adoption, and moving a floor to an uncut version publishes a lie. Reversal is deleting the block and
+`uv sync`.
+
+The point of the branch is to find integration problems while they are still cheap to move, and the
+count so far is **four notes filed**: format `S87`, registry `S19`, `S20`, `S21` — carried here as
+`F87`, `F88`, `F89`.
+
+**`registry_health` reports the format contract, and that is the shipped change.** Running 0.7 against
+the live instances, `registry_check` and `registry_validate` return
+`HTTP 409: just-dna-format contract mismatch: server 0.6.1, client 0.7.0`, while health, search,
+whoami and get_module all answer normally — upstream's guard runs on the guarded calls only. So the one
+tool an author runs to ask *can I work with this instance* was reporting `status: ok`,
+`mode_matches_target: true` and nothing about the number that decides it. It now carries
+`server_format`, `client_format`, a tri-state `contract_compatible` and upstream's own sentence;
+`skills/module-publish/SKILL.md` and `SYMPTOMS.md` say to read that field rather than `status`. `F87`.
+
+**Two restated vocabularies went stale in one release, and now a test says so.**
+`VALID_DIRECTIONS` gained `contested` (their RM150), which made `describe_table`'s own docstring wrong
+— the tool whose whole claim is that it generates vocabularies had four of the five members typed into
+its description — and the `activity_phenotype` dossier with it.
+`test_no_shipped_prose_enumerates_a_closed_vocabulary_upstream_owns` walks every `.md` and `.py` under
+`skills/` and `src/` for a line naming *all* the members of any `vocab.VALID_*` set, and found two more
+nobody was looking for (`VALID_AUTHOR_ROLES`, `VALID_RESOLUTION_STATUS`). Naming a member to make a
+point is still fine; listing the set is the claim that rots.
+
+**`overrides.csv` is answerable and deliberately not taught.** The overlay is draftable in 0.7 (RM124),
+so `list_tables` offered it with no subject line; it has one now. It is *not* in any skill's procedure,
+because no released registry recognises the filename and a re-publish drops it silently while the
+module recompiles green — `F88`. An agent that asks `describe_table` gets the truth; nothing routes an
+author into writing a file that does not survive.
+
+**One of our tests was encoding a defect.** `validate_module(strict=True)` was asserted green on a
+fixture `compile_module(strict=True)` has always refused — a pre-flight blessing what the build
+rejects. Upstream's RM141 calls one predicate from both sides, and the assertion is now the agreement
+itself.
+
+
 ### `find-evidence` splits: the skill keeps the loop, three references keep the subjects
 
 It hit the 500-line ceiling adding `lookup_allele_identity` and the honest reading was that three of

@@ -524,8 +524,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
         Generated from the live pydantic models, so it cannot drift from what the
         compiler accepts. Ask before writing any vocabulary cell — several are not what
-        intuition suggests (`direction` is an axis: neutral/protective/risk/unknown,
-        never increase/decrease). `redundancy_bearing` names the columns a later check
+        intuition suggests, and `direction` is the one that catches everybody: it is an
+        axis, never increase/decrease, and the pick-list this tool returns is the whole
+        of it. `redundancy_bearing` names the columns a later check
         compares against a source, so author those independently: filling one from the
         source that checks it makes the check vacuous. `attestation_bearing` is a subset
         and the stronger case — those cells assert that somebody read something, so

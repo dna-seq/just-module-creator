@@ -72,6 +72,105 @@ the installed packages, not the sibling checkouts** — which is the check this 
 exists to force, and the reason its status lines name both halves.
 
 
+## F89 — an overlay `reason` is inside `content_signature`, so fixing a typo mints a new content identity (format `S87`)
+
+**State: filed 2026-09-03, open, and it is a before-the-cut ask rather than a bug.** Nothing is broken
+today; the window is what closes.
+
+**What we measured.** On `reference_examples/hboc_palb2`, with no compile and no network:
+
+| spec | `content_signature` |
+| --- | --- |
+| no overlay | `sha256:43ad8ac1…` |
+| `+ overrides.csv` (`faf95 → 0.0001`) | `sha256:aed031fd…` |
+| same row, value `0.0002` | `sha256:b9399ab8…` |
+| same row, same value, **reason text changed only** | `sha256:950a4edc…` |
+
+The first three movements are correct — the overlay is authored input and its `value` changes what the
+module asserts, which `spec_tables`' own comment says. The fourth is the finding: `reason`,
+`decided_by` and `decided_at` carry no `exclude=True`, so prose and a timestamp reach the content hash.
+
+**Why we think it is the wrong side of the line, using upstream's own argument.**
+`base.stamped_identity_field` states the rule — a value that adds nothing to a *content* identity is
+excluded, because moving the signature of an already-published module "is the one thing a content-dedup
+key may not do" — and `compile_module` keeps `README.md` out of both identity halves on `S25`'s
+reasoning that fixing a caveat is a patch. An overlay `reason` is prose about a correction, and it is
+exactly the cell an author improves on a second pass.
+
+**Why now.** No published module carries an `overrides.csv`, so excluding the three fields today moves
+nothing. After the cut, excluding them moves every overlay-carrying module's signature — the movement
+that comment says is unavailable.
+
+**We filed the counter-argument with it**, because it may be decisive: unlike a README, this prose sits
+in a data table that compiles to parquet, so excluding it makes two modules with one
+`content_signature` whose `overrides.parquet` differs. If that asymmetry is worse, the consistent
+answer is to say so in `spec_tables`' comment, which today justifies including the overlay without
+distinguishing the value cell from the provenance cells.
+
+**No mitigation and none needed** — we carry no module with an overlay, and `F88` is why.
+
+## F87 — every write to a live registry dies the day format 0.7 is cut (registry `S20`; `S21` beside it)
+
+**State: filed 2026-09-03, open. This is not mitigable here and the branch does not pretend otherwise.**
+Found on `preview-0.7`, which installs the uncut 0.7 branch (`f4a9b14`) editable beside the registry
+client 0.18.2 from PyPI.
+
+**What we measured.** Both live instances answer `/api/v1/version` with `format: 0.6.1`. With format
+0.7.0 installed, `registry_check` and `registry_validate` come back
+`HTTP 409: just-dna-format contract mismatch: server 0.6.1, client 0.7.0`, while `registry_health`,
+`registry_search`, `registry_whoami`, `registry_get_module` and `registry_namespace_available` all
+answer normally — the guard runs on the guarded calls only.
+
+**Why it is a finding rather than the guard working.** The guard is right and its message is the best
+error in the ecosystem; we asked for no change to it. The finding is the *sequencing*: no consumer
+declares an upper bound on `just-dna-format`, ours included (`>=0.6.6`, no ceiling), so on the day 0.7
+reaches PyPI a clean `uv sync` of the **released** plugin resolves to 0.7 and loses publish, validate,
+check, download and import against both instances — with the reads still working, which reads as a
+partial outage rather than a version skew. Inside a minor this costs one column (`F77`); across one it
+costs the write surface.
+
+**What we shipped instead of a mitigation, because there is no honest one.** `registry_health` read
+`/health` and never `/version`, so an author's first diagnostic said `status: ok`,
+`mode_matches_target: true` and nothing about the contract. It now reports `server_format`,
+`client_format`, a tri-state `contract_compatible` and upstream's own sentence, and
+`skills/module-publish/SKILL.md` and `SYMPTOMS.md` say to read that field rather than `status`. **That
+makes the wall visible, not passable.**
+
+**The open question is not ours to settle.** Should a client carry `just-dna-format<0.8`? It would
+turn a dead write surface into a resolver holding you at 0.6.x, which is a much better failure — and
+it would also hold back every consumer wanting 0.7 for unrelated reasons. Asked in registry `S20`; not
+added here, because guessing at ecosystem policy from a downstream repo is how a pin nobody agreed to
+gets frozen in.
+
+**`S21` rides beside it and is smaller.** The registry's `S18` answer declined to name a refused
+column's release because it had no column-to-release map and would not hand-keep one. Format 0.7 ships
+exactly that, generated: `base.field_first_seen(model)`, per `(model, field)` — which matters, because
+`curator` is `0.2.0` on `VariantRow` and `0.6.5` on `StudyRow`, the very field that produced `S18`.
+
+## F88 — a 0.7 spec directory loses three files on a re-publish, and one of them is an author's correction (registry `S19`)
+
+**State: filed 2026-09-03, open. Not present in registry 0.18.2 as installed, nor in their 0.23.0
+tree.**
+
+**What we measured.** `specfiles.is_spec_file` answers `False` for `overrides.csv`,
+`clin_sig_concordance.csv` and `clin_sig_authority_calls.csv` — all three read by the 0.7 compiler
+from a spec directory. Two of our roster tests, which compare the compiler's list against the
+registry's precisely because a hand-kept list on either side drifts, went red on the pair.
+
+**Why the overlay is the serious half.** The two concordance tables are derived, so a drop is the
+`licensing.csv` cost: a silently shrunken module, recoverable by re-running `enrich`. `overrides.csv`
+is **authored** — an author's recorded judgement that a derived value is wrong, with a required
+`reason`. The compiler applies it at compile time, so losing the file fails nothing: the module
+recompiles green and the parquet quietly carries the value the author rejected. A correction that
+disappears while the build stays green is the one failure an author cannot catch by looking.
+
+**Our mitigation, and it is a refusal rather than a workaround.** The lag is named as
+`_REGISTRY_LAGS_BEHIND` in `tests/test_authoring.py`, so the two-producer comparison keeps working over
+everything else and fails again the day either side moves. We have **not** taught `overrides.csv` as an
+authoring step in any skill, because teaching an author to write a file a re-publish drops is teaching
+them to lose work. `describe_table` answers it — an agent that asks gets the truth — and nothing routes
+to it.
+
 ## F85 — an unresolvable rsID reports `not_found` whoever asked, and the warning names the wrong reason (upstream `S85`, fixed in tree, uncut)
 
 **State: accepted both halves, shipped in the upstream tree as `RM154`, and NOT in a cut release —
