@@ -46,8 +46,13 @@ It is **not a table**. There is no CSV, no parquet, no `describe_table` entry, a
 
 There is no author column here. Use these words:
 
-- **enricher pass — seven commands, fifteen of the seventeen check members.** Verified by AST walk
-  over the **installed** `just_dna_enricher 0.6.4`, not from a docstring:
+- **enricher pass — the commands below, covering all but two of the vocabulary.** Ask
+  `vocab.VALID_VERIFICATION_CHECKS` for the members rather than counting them here; the set grew by
+  eight in format 0.7 alone and a number written down is a number that rots. Verified by AST walk
+  over the **installed** enricher, not from a docstring — 23 of 25 members are named as a literal
+  there as of 2026-09-03 (format 0.7.0, uncut), the two exceptions being `dosage_sensitivity` and
+  `gene_disease_validity`, which are RESERVED. The table below is the 0.6.4 walk and names fewer
+  commands than 0.7 ships:
 
   | command | members it can emit |
   |---|---|
@@ -183,9 +188,11 @@ filed for 1.0 and is **blocked** there, because `reverse` cannot re-emit the doc
 
 ## The fields that carry judgement
 
-- **`check`** — closed vocabulary, `vocab.VALID_VERIFICATION_CHECKS` (`vocab.py:687`), 17 members as
-  of format 0.6.1. Closed because "free-string check names would recreate RM44 one level down — one
-  spelling from the enricher, another from a registry, a substring match from a consumer".
+- **`check`** — closed vocabulary, `vocab.VALID_VERIFICATION_CHECKS`. **Ask it for the members**: the
+  set is the list, and it grew from 17 to 25 across format 0.6.1 to 0.7.0, so anything validating a
+  check name against a hand-copied set was refusing real records for two releases. Closed because
+  "free-string check names would recreate RM44 one level down — one spelling from the enricher,
+  another from a registry, a substring match from a consumer".
 - **`subjects` / `findings`** — **two counts, never a boolean, never one union-typed slot.** `subjects`
   is the denominator. `subjects=0` with `skipped=null` means *the check ran and had nothing in scope*.
   That is not the same statement as `skipped` being set, and they can never occupy one value
@@ -249,12 +256,14 @@ Ordered by how likely a first-timer is to hit them.
    no longer exist". Newest-wins still holds `ran`→`ran` (measured: 13→99) and `skip`→`skip`.
 5. **The corpus's own README is stale about which checks exist, and it is the most-cited source.**
    `reference_examples/hboc_palb2/README.md:37-56` says *"five of seven checking passes attest
-   nothing"* and *"of `VALID_VERIFICATION_CHECKS`' seventeen members, five can ever be emitted"*, with
-   a twelve-name "never emitted by anything" table. That was true on 2026-08-14 and was **fixed by
-   RM72, shipped in 0.6 PT2 on 2026-08-17** (`docs/RM_TOC.md:273`). Verified against the *installed*
-   enricher 0.6.4 by AST walk: **15 of the 17 members have live emitters**; only
-   `gene_disease_validity` and `dosage_sensitivity` do not. The README was never corrected. Treat it
-   as a historical probe record, not as current behaviour.
+   nothing"* and that only five of the vocabulary's members can ever be emitted, with a twelve-name
+   "never emitted by anything" table. That was true on 2026-08-14 and was **fixed by RM72, shipped in
+   0.6 PT2 on 2026-08-17** (`docs/RM_TOC.md:273`). Re-measured on 2026-09-03 against the installed
+   enricher (format 0.7.0, uncut) by AST walk: **all but `gene_disease_validity` and
+   `dosage_sensitivity` are named as literals** — 23 of 25, where the same walk answered 15 of 17
+   under 0.6.4. The README was never corrected. Treat it as a historical probe record, not as current
+   behaviour — and note that both numbers in that sentence moved, which is why the ratio is the wrong
+   thing to quote and the two RESERVED names are the right thing.
 6. **`vrs_allele_id` is wired to a command that can only ever emit a skip.** `_mint_record`
    (`enricher/.../cli.py:1694`) returns `skipped("vrs_allele_id", "nothing_to_check")`
    unconditionally — there is no `ran` path. The reasoning is exactly right and worth reading: the

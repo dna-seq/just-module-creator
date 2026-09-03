@@ -37,7 +37,7 @@ multiplying by *total* CN gets it wrong (`schema/src/just_dna_format/pgx.py:15-1
 | Fact signature | **none.** Authored tables have no fact set and no manifest block. `describe_table` will not show you one because there isn't one |
 | In `content_signature`? | **yes** — `_TABLE_KINDS` feeds `compiler.content_signature` (`compiler.py:3848`) |
 | In `artifact.digest`? | **yes** — `allele_function.parquet` is in `ARTIFACT_PARQUETS` (`compiler.py:278`) and in `LEAD_PARQUETS` (`compiler.py:308`), so a module carrying only this table is still a module |
-| Attestation | `verification.json` check name `allele_function`, written by `enrich_pgx._attest` (`enricher/src/just_dna_enricher/pgx.py:578`). It is one of the fifteen wired members of `vocab.VALID_VERIFICATION_CHECKS` |
+| Attestation | `verification.json` check name `allele_function`, written by `enrich_pgx._attest` (`enricher/src/just_dna_enricher/pgx.py:578`). It is one of the wired members of `vocab.VALID_VERIFICATION_CHECKS` — all of them except the two RESERVED names |
 
 ## Who populates what
 
