@@ -55,6 +55,14 @@ recoverable where it used to be wasted.
 that `carried` is tri-state, because an empty summary means either no warnings or an unclassifying
 compiler, and reading null as empty turns "nobody asked" into "nothing is carried".
 
+**Six new authored columns are visible to `describe_table` and swept into no skill — named here so
+the deferral is not silent.** `statistical_test`, `confidence` and `confidence_unit` on
+`studies.csv`; `requires_callable` on `haplotypes.csv` and `pharm_variants.csv`; `pmid` on
+`pharm_variants.csv`; and the `authority_precedence:` block in `module_spec.yaml`. All are optional
+and absent-means-nothing-was-said, so no module is wrong for lacking one — but a floor bump is not an
+adoption, and `weighting:` shipped invisible for two releases by exactly this route. They are the
+first sweep to do if this branch is taken forward.
+
 **One of our tests was encoding a defect.** `validate_module(strict=True)` was asserted green on a
 fixture `compile_module(strict=True)` has always refused — a pre-flight blessing what the build
 rejects. Upstream's RM141 calls one predicate from both sides, and the assertion is now the agreement

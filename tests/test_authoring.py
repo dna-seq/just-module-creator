@@ -508,6 +508,29 @@ def test_the_produced_roster_agrees_with_the_registry_that_recognises_the_same_f
         assert hints.derived_model_for(csv_name) is model
 
 
+def test_the_overlay_is_still_a_file_a_republish_would_drop():
+    """The un-defer trigger for `F88`, and it needs its own test to exist at all.
+
+    `overrides.csv` is draftable, so it never reaches the sidecar roster and the
+    lag set above cannot see it — while it is the one of the three whose loss
+    costs an author something a re-run cannot restore. That is the whole reason
+    no skill teaches writing one: a re-publish through a registry that does not
+    recognise the name drops it silently, the module recompiles green, and the
+    parquet quietly carries the derived value the author rejected.
+
+    So this fails the day the registry catches up, and the failure means *go
+    teach the overlay*, not *fix this test*. Filed as registry-tree `S19`.
+    """
+    from just_dna_compiler import draft
+    from just_dna_registry import specfiles
+
+    assert "overrides.csv" in draft.DRAFTABLE, "upstream stopped offering it — re-read RM124"
+    assert not specfiles.is_spec_file("overrides.csv"), (
+        "the registry now recognises overrides.csv: S19 has landed, so the overlay is safe "
+        "to publish and `module-curate` owes it a step — see F88"
+    )
+
+
 async def test_every_machine_produced_sidecar_answers_its_columns(client):
     """The hole RM11 closed: an author reads these files and could not ask what is in them.
 
