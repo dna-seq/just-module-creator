@@ -1493,6 +1493,32 @@ class InstanceHealth(BaseModel):
         ),
     )
     catalog: dict = Field(default_factory=dict, description="Its module/version counts, if given.")
+    server_format: str | None = Field(
+        default=None,
+        description=(
+            "The `just-dna-format` contract this deployment serves. **This, not `version`, is "
+            "what decides whether you can publish to it**: an instance can be up, healthy and "
+            "the right mode while refusing every write, because compiled artifacts do not "
+            "interoperate across a 0.x minor. null means it is too old to report one."
+        ),
+    )
+    client_format: str | None = Field(
+        default=None,
+        description="The `just-dna-format` this server is running, for the comparison beside it.",
+    )
+    contract_compatible: bool | None = Field(
+        default=None,
+        description=(
+            "Whether the two formats interoperate. **False means every publish, validate, check, "
+            "download and import refuses with a 409 while the cheap reads keep working** — so a "
+            "green `status` above is not the answer to 'can I work with this instance'. null "
+            "means the deployment did not report a version, which is not a pass."
+        ),
+    )
+    contract_note: str | None = Field(
+        default=None,
+        description="Upstream's own sentence about the mismatch, verbatim, when there is one.",
+    )
     message: str = Field(description="What this means, in one line.")
 
 
