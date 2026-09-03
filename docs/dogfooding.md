@@ -17,9 +17,32 @@ is usable, and what is missing.
 ## F86 — LitVar2 is the rsID↔CAID bridge we lack, and it is DEFERRED to upstream's 0.7
 
 **Not a defect. A probed capability, parked deliberately on 2026-09-01** so the notes are not
-re-measured. Upstream is building it as **`RM167`**, proposed BUILDS in 0.8, drafted not decided; the
-right move here is to consume theirs rather than ship a second client. **Do not start this without
-checking `RM167`'s state first** — and check the *installed* package, not their tree.
+re-measured. Upstream is building it as **`RM167`**; the right move here is to consume theirs rather
+than ship a second client. **Do not start this without checking `RM167`'s state first** — and check
+the *installed* package, not their tree.
+
+> **Checked 2026-09-03: BUILT in their `0.7` branch, and NOT installable.**
+> `enricher/src/just_dna_enricher/litvar.py` exists on branch `0.7` with 31 tests, a recorded fixture
+> slice and a `just-dna-enricher litvar coverage` CLI command. **But 0.7.0 is in-tree only** — the
+> newest tag is `v0.6.6`, PyPI's newest is `0.6.6`, and `from just_dna_enricher import litvar` raises
+> in our venv. This is §8's *fixed in tree ≠ released* state, so nothing can be wrapped yet.
+>
+> **It covers everything below and more.** `LitvarClient` is the reusable primitive: `node(id)` returns
+> the raw record where `clingen_ids` lives (rsID → CAID), `allele_node(caid).rsid` goes the other way,
+> `pmids(node_id)` is the literature axis, and `gene_nodes(gene)` wraps the repr route through
+> `ast.literal_eval`. Both of our corrections are independently theirs, and their `LITVAR_API_BASE`
+> comment records the same wrong-base trap costing them two hours.
+>
+> **Two things a consumer must not assume.** The field is `clingen_ids` **plural** on `variant/get`
+> and `clingen_id` **singular** on `autocomplete`; `LitvarNode.parse` reads only the singular, so
+> `position_node(rsid).clingen_id` is `None` and the conversion runs through `node()`'s raw dict —
+> which their docstring states outright. And their entry point `check_literature_coverage` is a
+> **coverage checker that writes an attestation and no rows**, not a conversion tool: it answers
+> *allele-resolved / position-only / absent* per locus. The client is what we would wrap; the pass is
+> not.
+>
+> **No overlap with our 0.30.0 work.** Their `ClingenAlleleClient.resolve()` is CAID → coordinates;
+> our `lookup_allele_identity` is HGVS → CAID. Opposite directions, and both are wanted.
 
 **Why it was worth probing at all.** `lookup_allele_identity` (0.30.0) answers *what allele does this
 HGVS name*, in CAIDs. `lookup_variant` answers *what is at this rsID*. **Nothing joins the two**, and
