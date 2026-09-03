@@ -41,6 +41,20 @@ because no released registry recognises the filename and a re-publish drops it s
 module recompiles green — `F88`. An agent that asks `describe_table` gets the truth; nothing routes an
 author into writing a file that does not survive.
 
+**The enrich heartbeat reports work instead of time, and the docstring stopped being wrong.**
+0.7 gives `enrich()` a `progress` callback over subjects with the total known up front — our `S66`
+ask 4 — so the elapsed-seconds heartbeat, which reported a duration precisely because we had no
+denominator and would not invent one, now reports `(done, total)`. The timer itself stays: upstream's
+resolver batches, so the silences the heartbeat existed for are still there, and a caller with an idle
+timeout needs a tick on the wall clock rather than on somebody else's progress. And the docstring's
+*"nothing is written until the very end, so an interrupted run persists nothing"* became false with
+RM128 — answers are staged as they arrive and the next run resumes from them, so a killed run is
+recoverable where it used to be wasted.
+
+**`warnings_summary`, `carried` and `actionable` on `compile_module`.** See the commit; the care is
+that `carried` is tri-state, because an empty summary means either no warnings or an unclassifying
+compiler, and reading null as empty turns "nobody asked" into "nothing is carried".
+
 **One of our tests was encoding a defect.** `validate_module(strict=True)` was asserted green on a
 fixture `compile_module(strict=True)` has always refused — a pre-flight blessing what the build
 rejects. Upstream's RM141 calls one predicate from both sides, and the assertion is now the agreement

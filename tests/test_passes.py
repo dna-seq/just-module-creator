@@ -1065,3 +1065,69 @@ async def test_a_not_found_row_is_not_counted_as_resolved(
         "fields double-count the same subject"
     )
     assert len(report.unresolved) == 2
+
+
+# --------------------------------------------------------------------------- #
+# The progress callback (upstream RM128, our `S66` ask 4)
+# --------------------------------------------------------------------------- #
+def test_upstream_still_takes_a_progress_callback():
+    """Asserted against the installed signature, not a remembered one.
+
+    The heartbeat this replaced reported elapsed seconds because there was no
+    denominator to report and inventing one would have been a fabricated
+    measurement of somebody else's work. `progress` is where the denominator
+    comes from, so a rename upstream must fail here rather than silently put the
+    duration back.
+    """
+    import inspect
+
+    from just_dna_enricher.enrich import enrich
+
+    assert "progress" in inspect.signature(enrich).parameters
+
+
+async def test_enrich_hands_upstream_a_callback_and_survives_being_called(
+    make_client, tmp_path, monkeypatch
+):
+    """We pass it, and a call from the worker thread does not break the run.
+
+    The bridge is a plain cell rather than a portal: upstream calls back on the
+    thread `run_sync` gave it, and the heartbeat reads the cell on the event
+    loop. What has to hold is that the callback is (a) supplied, (b) callable
+    with `(done, total)`, and (c) harmless — upstream does not swallow an
+    exception from it, so a callback of ours that raised would abort a real
+    enrichment.
+    """
+    from just_module_creator.tools import passes
+
+    spec = tmp_path / "spec"
+    spec.mkdir()
+    (spec / "module_spec.yaml").write_text("module:\n  name: spec\n", encoding="utf-8")
+
+    seen: dict = {}
+
+    class _Result:
+        rows: list = []
+        unresolved: list[str] = []
+        sources: list[str] = []
+        ref_mismatches: list[str] = []
+        clin_sig_conflicts: list[str] = []
+        clin_sig_not_checked = None
+        stale_rsids: list[str] = []
+        vrs = None
+
+    def _fake_enrich(*_a, progress=None, **_k):
+        seen["callback"] = progress
+        assert progress is not None, "no progress callback reached upstream"
+        progress(0, 12)
+        progress(7, 12)
+        progress(12, 12)
+        return _Result()
+
+    monkeypatch.setattr(passes, "enrich", _fake_enrich)
+
+    async with make_client(offline_settings()) as client:
+        report = (await client.call_tool("enrich_module", {"spec_dir": str(spec)})).data
+
+    assert report.success
+    assert callable(seen["callback"])
