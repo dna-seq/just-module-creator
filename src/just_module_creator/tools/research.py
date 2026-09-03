@@ -39,7 +39,7 @@ from just_dna_enricher import lookup as enricher_lookup
 from just_dna_enricher.literature import EuropePmcClient
 from just_dna_enricher.locations import default_ensembl_cache_dir
 from just_dna_registry import RegistryError
-from just_dna_registry.version import compatibility_error
+from just_dna_registry.version import VersionInfo, compatibility_error
 from mcp.types import ToolAnnotations
 
 from just_module_creator import alleles, supplementary
@@ -680,7 +680,7 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
 
         url = settings.registry_url_for(target)
 
-        def _health() -> tuple[dict, object, object]:
+        def _health() -> tuple[dict, VersionInfo | None, VersionInfo]:
             with client_for(target, settings) as client:
                 # Two calls, because they answer different questions and the second is
                 # the one a publish actually turns on. `server_version` returns None

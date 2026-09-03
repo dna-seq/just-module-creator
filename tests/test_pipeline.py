@@ -196,3 +196,63 @@ async def test_reverse_round_trip_preserves_the_content_signature(
         "module_signature", {"spec_dir": reversed_.data.data["spec_dir"]}
     )
     assert original.data.content_signature == recovered.data.content_signature
+
+
+# --------------------------------------------------------------------------- #
+# The coded-warning channel (upstream RM131)
+# --------------------------------------------------------------------------- #
+async def test_a_compile_says_which_warnings_the_author_can_actually_clear(
+    client, spec_dir, tmp_path
+):
+    """`carried` is the discriminator that used to need substring-matching prose.
+
+    The fixture compiles green with warnings, and at least one of them is carried:
+    a module with no closure and no resolution table draws findings an author
+    cannot edit away without doing the work the finding names. The assertion is
+    the relationship rather than a count — a code list upstream tunes must not
+    date this — and the two lists must partition the whole.
+    """
+    result = await client.call_tool(
+        "compile_module",
+        {"spec_dir": str(spec_dir), "output_dir": str(tmp_path / "out"), "strict": False},
+    )
+    data = result.data
+    assert data.success
+    assert data.warnings, "the fixture must draw warnings or this asserts nothing"
+
+    assert data.warnings_summary, "a 0.7 compiler classifies; an empty summary here is a lie"
+    assert sum(data.warnings_summary.values()) == len(data.warnings), (
+        "upstream's contract: the summary is complete or it is empty, never short"
+    )
+
+    assert data.carried is not None, "classified, so the carried question was answered"
+    assert data.actionable is not None
+    # The partition, which is the whole point: nothing may be in both, and together
+    # they must be the warning list. An author reading `actionable` has to be able to
+    # trust that nothing was dropped on the way.
+    assert not set(data.carried) & set(data.actionable)
+    assert set(data.carried) | set(data.actionable) == set(data.warnings)
+
+
+async def test_a_warning_of_ours_is_never_reported_as_upstreams_to_carry(
+    client, spec_dir, tmp_path
+):
+    """Our own layout warning is about the arguments, so it is always actionable.
+
+    This is why `actionable` is derived here rather than read off the manifest: no
+    compiler can classify a warning about a call it did not receive, and folding
+    ours into upstream's list would make it either uncounted or wrongly carried.
+    """
+    inside = spec_dir / "build"
+    result = await client.call_tool(
+        "compile_module",
+        {"spec_dir": str(spec_dir), "output_dir": str(inside), "strict": False},
+    )
+    data = result.data
+    ours = [w for w in data.warnings if "ambiguous_spec_layout" in w]
+    assert ours, "the layout warning must still fire or this test moved"
+    assert data.actionable is not None
+    assert set(ours) <= set(data.actionable)
+    assert not set(ours) & set(data.carried or [])
+    # And it stays outside upstream's count, which is over upstream's own list.
+    assert sum(data.warnings_summary.values()) == len(data.warnings) - len(ours)

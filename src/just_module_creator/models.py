@@ -677,6 +677,34 @@ class CompileReport(BaseModel):
     output_dir: str | None = Field(default=None, description="Where the artifact landed.")
     errors: list[str] = Field(description="Refusals.")
     warnings: list[str] = Field(description="Read these — a green compile is not a correct module.")
+    warnings_summary: dict[str, int] = Field(
+        default_factory=dict,
+        description=(
+            "`warnings` counted by kind, on upstream's own closed code vocabulary. **Empty is "
+            "two different answers** — no warnings at all, or a compiler that did not classify "
+            "them — so read it beside `warnings`. One code names one finding and one "
+            "remediation, so this is what to switch on rather than matching a phrase."
+        ),
+    )
+    carried: list[str] | None = Field(
+        default=None,
+        description=(
+            "The warnings **no edit to the spec directory can clear**: a limit of this tier or a "
+            "fact of a source. Empty is a real answer and means every warning is somebody's to "
+            "act on. **null means unclassified**, not none — a compiler that did not classify "
+            "cannot say what is carried, and reading null as an empty list turns 'nobody asked' "
+            "into 'nothing is carried'."
+        ),
+    )
+    actionable: list[str] | None = Field(
+        default=None,
+        description=(
+            "`warnings` minus `carried` — what the author still owes. Derived here rather than "
+            "read off the manifest, because this tool prepends warnings of its own about the "
+            "arguments you passed, which are actionable and which no compiler can know about. "
+            "null whenever `carried` is null, for the same reason."
+        ),
+    )
     stats: dict = Field(description="Counts from the compile.")
     artifact_digest: str | None = Field(
         default=None, description="Merkle root over the artifact files: its content identity."
