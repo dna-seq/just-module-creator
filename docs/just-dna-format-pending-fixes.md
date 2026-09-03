@@ -74,8 +74,28 @@ exists to force, and the reason its status lines name both halves.
 
 ## F89 — an overlay `reason` is inside `content_signature`, so fixing a typo mints a new content identity (format `S87`)
 
-**State: filed 2026-09-03, open, and it is a before-the-cut ask rather than a bug.** Nothing is broken
-today; the window is what closes.
+**State: CLOSED the same day. Accepted, decided with the maintainer and shipped in the uncut 0.7.0 as
+`RM180`, verified against our own install — `f4a9b14` when filed, `9b615cd` when re-measured.** Filed
+and answered inside the hour, which is the ordinary upstream cadence and the reason this file's status
+lines rot.
+
+Re-measured here after the fix, on the same example: rewording `reason` and changing
+`decided_by`/`decided_at` both leave `content_signature` identical, and changing the `value` still
+moves it. `base.content_identity_exclusions(OverrideRow)` returns exactly
+`{reason, decided_by, decided_at}`.
+
+**Our candidate fix was refused, and the reason is worth carrying.** We proposed `exclude=True`, the
+stamped-column idiom. Their suite caught what we did not: `exclude=True` empties those cells in every
+writer that serializes through `model_dump()` — the drafter among them — so a drafted overlay row
+would have failed its own compile on the blank the tool wrote, and `reason` is required. The mechanism
+shipped instead is a field marker (`base.OUTSIDE_CONTENT_IDENTITY`, walked by
+`content_identity_exclusions`) that only `integrity.content_signature` reads. **A candidate fix is
+worth filing and is not worth trusting** — this is the second time a probe of ours proposed the
+nearest-looking mechanism and the producer's own suite found the arm it broke.
+
+**Nothing to do here.** No published module carries an overlay, so no signature moved. The one line to
+remember: if you ever compute the signature yourself rather than calling
+`integrity.content_signature`, drop the three columns via `content_identity_exclusions(OverrideRow)`.
 
 **What we measured.** On `reference_examples/hboc_palb2`, with no compile and no network:
 
