@@ -14,9 +14,11 @@ adoption, and moving a floor to an uncut version publishes a lie. Reversal is de
 `uv sync`.
 
 The point of the branch is to find integration problems while they are still cheap to move. **Six
-notes filed, one already answered and shipped**: format `S87` (accepted, shipped the same day as
-`RM180`, verified against our install), `S88` and `S89`; registry `S19`, `S20` and `S21`. Carried here
-as `F87`, `F88` and `F89`, with `F89` already closed.
+notes filed and two answered, fixed and verified within the session**: format `S87` (shipped as
+`RM180` — an overlay's `reason` is out of `content_signature`) and `S88` (shipped as `RM183` —
+`needs_recompile` answers the unknown arm on an unstamped compiler version instead of raising
+`AttributeError`). Still open: format `S89`, registry `S19`, `S20`, `S21`. Carried here as `F87`,
+`F88`, `F89` and `F90`, of which `F89` and `F90` are already closed.
 
 **The cadence is the thing to plan for rather than a surprise.** `S87` was filed, answered, decided
 with the maintainer, shipped and re-verified inside two hours — so a status line written at filing

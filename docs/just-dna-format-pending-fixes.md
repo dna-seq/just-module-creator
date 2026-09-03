@@ -129,6 +129,23 @@ distinguishing the value cell from the provenance cells.
 
 **No mitigation and none needed** — we carry no module with an overlay, and `F88` is why.
 
+## F90 — `needs_recompile` crashed on an unstamped compiler version (format `S88`, fixed same day)
+
+**State: CLOSED. Filed 2026-09-03, shipped in the uncut 0.7.0 as `RM183`, verified against our
+install.** `Compilation.compiler_version` is `str | None`, so a manifest that stamped nothing is
+well-formed and round-trips through `read_manifest` — and `needs_recompile(None, current)` raised
+`AttributeError: 'NoneType' object has no attribute 'strip'` from an internal `.strip()`, with `""`
+raising `ValueError` for the same fact. The consumer the API names is a registry walking manifests it
+did not produce, so `None` is not an edge case there; it is Tuesday.
+
+Both now answer the unknown arm — every axis `None`, `complete=False` — which is the shape the API
+already used for a version it has no record of. Re-measured here after the fix.
+
+**Do not adopt it yet regardless.** We found this while deciding whether `module-revise` and
+`compare_to_published` should call `needs_recompile`, and that question is still open: it is the right
+derivation for *does this artifact need recompiling*, but nothing of ours asks that question today,
+and adding a surface to answer it is a design decision rather than a sweep.
+
 ## F87 — every write to a live registry dies the day format 0.7 is cut (registry `S20`; `S21` beside it)
 
 **State: filed 2026-09-03, open. This is not mitigable here and the branch does not pretend otherwise.**
