@@ -575,18 +575,18 @@ def test_the_clear_list_covers_every_variable_settings_reads() -> None:
     # by naming the fourteen, which would rebuild the hand-kept list upstream retired,
     # but by asserting the derivation still covers what the registry declares. A lane
     # added upstream must arrive here on its own.
-    from just_dna_enricher.caches import CACHE_LANES
-    from just_dna_enricher.locations import CACHE_BASE_VAR
+    from conftest import CACHE_BASE_VAR, CACHE_LANES
 
-    declared = {lane.env_var for lane in CACHE_LANES} | {CACHE_BASE_VAR}
+    declared = {lane.env_var for lane in CACHE_LANES} | {CACHE_BASE_VAR} - {""}
     assert declared <= set(_ECOSYSTEM_VARS), (
         "a cache variable the enricher reads is not cleared: "
         f"{sorted(declared - set(_ECOSYSTEM_VARS))}"
     )
-    assert CACHE_BASE_VAR not in {lane.env_var for lane in CACHE_LANES}, (
-        "the shared base is deliberately not a lane attribute — if it became one, the "
-        "union above is doing nothing and the second term should go"
-    )
+    if CACHE_LANES:
+        assert CACHE_BASE_VAR not in {lane.env_var for lane in CACHE_LANES}, (
+            "the shared base is deliberately not a lane attribute — if it became one, "
+            "the union above is doing nothing and the second term should go"
+        )
 
 
 async def test_building_a_server_cannot_repopulate_the_environment_from_dotenv():

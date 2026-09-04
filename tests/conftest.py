@@ -22,12 +22,24 @@ import pytest
 from fastmcp.client import Client
 from just_dna_compiler import draft as _draft
 from just_dna_compiler import hints as _hints
-from just_dna_enricher.caches import CACHE_LANES
 from just_dna_enricher.enrich import enrich as _enrich
-from just_dna_enricher.locations import CACHE_BASE_VAR
 from just_dna_format import base as _format_base
 from just_dna_format.manifest import Compilation as _Compilation
 from just_dna_registry import specfiles as _specfiles
+
+# The cache registry is 0.7's (RM176) and the whole MODULE is absent on 0.6.6, so this
+# is the guarded module-level import `CLAUDE.md` § 2 allows for an optional dependency —
+# and it is genuinely optional only for the length of this interval. On the older
+# toolchain there is nothing to clear, because the lanes those variables steer do not
+# exist yet.
+#
+# **Delete the guard, not the import, when the floor moves to 0.7.**
+try:
+    from just_dna_enricher.caches import CACHE_LANES
+    from just_dna_enricher.locations import CACHE_BASE_VAR
+except ImportError:  # pragma: no cover — only on a pre-0.7 enricher
+    CACHE_LANES = ()
+    CACHE_BASE_VAR = ""
 
 from just_module_creator.server import build_server
 from just_module_creator.settings import Settings
@@ -55,7 +67,7 @@ _UPSTREAM_VARS = (
 #: it had been possible for weeks, and the repair was to stop reasoning about which
 #: variables matter. A derived list costs one expression and removes the question.
 _CACHE_VARS = tuple(
-    sorted({lane.env_var for lane in CACHE_LANES} | {CACHE_BASE_VAR})
+    sorted({lane.env_var for lane in CACHE_LANES} | {CACHE_BASE_VAR} - {""})
 )
 
 #: **Capability probes, never a version string.** Six assertions below are about
