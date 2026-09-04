@@ -1354,8 +1354,10 @@ have been questions.
   tri-state `contract_compatible`, and that is the field to read. No consumer declares an upper bound
   on `just-dna-format`, ours included, so on the day 0.7 reaches PyPI a clean `uv sync` of the
   released plugin loses its write surface. Asked as registry-tree `S20`; `F87` carries the state, and
-  whether `main` should take a `<0.8` ceiling is an open question for the user rather than a decision
-  taken here.
+  **the user decided it on 2026-09-04: `main` carries `just-dna-format>=0.6.6,<0.8`** on all three
+  packages, and `F87` records why. The ceiling is ours to hold whatever the registry answers, because
+  a floor cannot express *one minor, both ends* — and the cost is deliberate: 0.8 does not arrive on
+  its own, so adopting it is an explicit bump.
 - **Both live registry instances now serve `format: 0.6.1` / `registry: 0.18.x`, verified 2026-08-19,
   and the 0.5.4 contract block is over.** The installed client is **0.18.2** as of 2026-08-20 — this
   line said 0.18.1 for a day. Every version-guarded call works again — a `download` of

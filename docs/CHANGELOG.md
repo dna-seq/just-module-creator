@@ -5,15 +5,36 @@ on our side, so agents in sibling repos are not surprised.
 
 ## Unreleased
 
-### `preview-0.7`: a branch built against a release that has not been cut
+### 0.7 adopted, and a `<0.8` ceiling so cut day is not an outage
 
-**Branch only — not on `main`, and the version is not bumped.** `pyproject.toml` carries a
+**Merged from `preview-0.7`. The version is not bumped**, and the floors stay `>=0.6.6`, because 0.7
+is not cut — moving a floor to an uncut release publishes a lie.
+
+**`main` installs from PyPI; the preview lives on the branch.** `preview-0.7` carries a
 `[tool.uv.sources]` block taking `just-dna-format` / `-compiler` / `-enricher` editable from
-`../just-dna-format`'s 0.7 branch. **Editable means it tracks their HEAD, so the commit is a
-measurement and not a pin**: first measured at `f4a9b14`, gates last green at `67db26c` — which moved
-seven times during one session, twice because of notes filed from here. The floors stay `>=0.6.6`: a source override is not an
-adoption, and moving a floor to an uncut version publishes a lie. Reversal is deleting the block and
-`uv sync`.
+`../just-dna-format`'s 0.7 branch, and **that block is deliberately absent here** — a source override
+pointing at a sibling checkout makes a clean install resolve to a path nobody else has. Enter the
+preview with `git checkout preview-0.7 && uv sync`, and leave it the same way.
+
+**Editable means the branch tracks their HEAD, so a commit there is a measurement and not a pin**:
+first measured at `f4a9b14`, gates last green at `67db26c` — which moved seven times during one
+session, twice because of notes filed from it.
+
+**Everything below is verified on both toolchains from one commit**: 662 passed against the 0.7 tree,
+and **656 passed with 6 skipped** here on `main` against 0.6.6 from PyPI, which is what a user
+installing today gets. Every skip names the symbol it looked for rather than a version:
+
+```
+tests/test_authoring.py:512  installed compiler does not draft overrides.csv (RM124)
+tests/test_passes.py:1073    installed enricher has no progress callback (RM128)
+tests/test_passes.py:1090    installed enricher has no progress callback (RM128)
+tests/test_pipeline.py:33    installed format predates 0.7 (no OUTSIDE_CONTENT_IDENTITY)
+tests/test_pipeline.py:206   installed compiler writes no warnings_summary (RM131)
+tests/test_pipeline.py:240   installed compiler writes no warnings_summary (RM131)
+```
+
+The day 0.7 lands, those six start running and nothing else changes — which is the property that made
+the merge safe, and it was measured in a throwaway worktree before it was claimed.
 
 The point of the branch is to find integration problems while they are still cheap to move. **Six
 notes filed; all three into the format tree were answered, fixed and verified within a day, and that

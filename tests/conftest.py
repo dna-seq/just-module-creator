@@ -16,7 +16,9 @@ from __future__ import annotations
 
 import inspect as _inspect
 import sys
+from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 import pytest
 from fastmcp.client import Client
@@ -27,22 +29,29 @@ from just_dna_format import base as _format_base
 from just_dna_format.manifest import Compilation as _Compilation
 from just_dna_registry import specfiles as _specfiles
 
-# The cache registry is 0.7's (RM176) and the whole MODULE is absent on 0.6.6, so this
-# is the guarded module-level import `CLAUDE.md` § 2 allows for an optional dependency —
-# and it is genuinely optional only for the length of this interval. On the older
-# toolchain there is nothing to clear, because the lanes those variables steer do not
-# exist yet.
-#
-# **Delete the guard, not the import, when the floor moves to 0.7.**
-try:
-    from just_dna_enricher.caches import CACHE_LANES
-    from just_dna_enricher.locations import CACHE_BASE_VAR
-except ImportError:  # pragma: no cover — only on a pre-0.7 enricher
-    CACHE_LANES = ()
-    CACHE_BASE_VAR = ""
-
 from just_module_creator.server import build_server
 from just_module_creator.settings import Settings
+
+# The cache registry is 0.7's (RM176) and the whole MODULE is absent on 0.6.6, so this is
+# the guarded module-level import `CLAUDE.md` § 2 allows for an optional dependency — and
+# it is genuinely optional only for the length of this interval. On the older toolchain
+# there is nothing to clear, because the lanes those variables steer do not exist yet.
+#
+# It sits below the other imports so the fallbacks are bound and annotated first: the
+# names then exist unconditionally for a reader and for pyright, which cannot resolve a
+# module the installed package does not have and would otherwise report the import rather
+# than the interval. Every suppression here is scoped to its own line and goes with the
+# guard.
+#
+# **Delete the guard, not the import, when the floor moves to 0.7.**
+CACHE_LANES: Sequence[Any] = ()
+CACHE_BASE_VAR: str = ""
+try:
+    from just_dna_enricher.caches import CACHE_LANES  # type: ignore[no-redef]  # noqa: E402
+    from just_dna_enricher.locations import CACHE_BASE_VAR  # type: ignore[no-redef]  # noqa: E402
+except ImportError:  # pragma: no cover — only on a pre-0.7 enricher
+    pass
+
 
 #: Variables read by code we do **not** control, so no field on our model names them
 #: and nothing can derive them. Hand-maintained by necessity; a test asserts the three

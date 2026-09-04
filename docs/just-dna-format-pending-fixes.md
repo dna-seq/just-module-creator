@@ -196,11 +196,13 @@ costs the write surface.
 `skills/module-publish/SKILL.md` and `SYMPTOMS.md` say to read that field rather than `status`. **That
 makes the wall visible, not passable.**
 
-**The open question is not ours to settle.** Should a client carry `just-dna-format<0.8`? It would
-turn a dead write surface into a resolver holding you at 0.6.x, which is a much better failure — and
-it would also hold back every consumer wanting 0.7 for unrelated reasons. Asked in registry `S20`; not
-added here, because guessing at ecosystem policy from a downstream repo is how a pin nobody agreed to
-gets frozen in.
+**The open question was put to the user and answered on 2026-09-04: the ceiling is ours.** All three
+packages read `>=0.6.6,<0.8` on `main`. It turns a dead write surface into a resolver holding you at
+0.6.x, which is the failure a user can act on, and the reasoning that made it ours rather than
+upstream's is that a floor cannot express *one minor, both ends* — the same 409 fires when the
+instances move ahead of us, so the bound is needed on the top side whoever ships it. The cost is
+deliberate: 0.8 does not arrive on its own. Registry `S20` still asks whether their client should
+carry one too, which is a different question and theirs.
 
 **`S21` rides beside it and is smaller.** The registry's `S18` answer declined to name a refused
 column's release because it had no column-to-release map and would not hand-keep one. Format 0.7 ships
