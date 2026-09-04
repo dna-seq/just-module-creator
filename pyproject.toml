@@ -33,9 +33,27 @@ dependencies = [
     # thing that sees the condition — it holds the rsIDs the run is deliberately
     # writing by coordinate, which no file-level predicate can reconstruct, because a
     # coordinate row carries no rsid (upstream S45, our F36).
-    "just-dna-compiler>=0.6.6",
-    "just-dna-format>=0.6.6",
-    "just-dna-enricher>=0.6.6",
+    #
+    # **The `<0.8` ceiling is the S20 decision, and it is about the registry rather
+    # than about us.** A registry serves ONE `just-dna-format` contract and refuses a
+    # client on a different `0.x` minor in either direction — measured 2026-09-03:
+    # with 0.7 installed against instances serving 0.6.1, `registry_check`,
+    # `registry_validate`, publish, download and import all return
+    # `HTTP 409: just-dna-format contract mismatch`, while health, search, whoami and
+    # get_module answer normally. Nothing here declared an upper bound, so the day 0.7
+    # reaches PyPI a clean `uv sync` would have resolved to it and taken the write
+    # surface off every install, with the reads still working so it reads as a partial
+    # outage rather than a version skew.
+    #
+    # A ceiling turns that into the resolver holding the pair together, which is the
+    # failure a user can act on. **It costs the obvious thing and the cost is
+    # deliberate**: 0.8 does not arrive here on its own, so adopting it is an explicit
+    # bump — which is right, because the same 409 fires in the other direction the
+    # moment the instances move ahead of us. Asked upstream as registry-tree `S20`; the
+    # ceiling is ours either way, since a floor cannot express "one minor, both ends".
+    "just-dna-compiler>=0.6.6,<0.8",
+    "just-dna-format>=0.6.6,<0.8",
+    "just-dna-enricher>=0.6.6,<0.8",
     # 0.17.0 is the release that adopts format 0.6, and the floor has to move with ours:
     # its client reads `just_dna_format.layout` and the new manifest blocks unguarded, so a
     # 0.14 client beside a 0.6 format install is an AttributeError waiting inside a download.
@@ -85,6 +103,17 @@ build-backend = "uv_build"
 # after the project; the list is what ships both.
 [tool.uv.build-backend]
 module-name = ["just_module_creator", "manuscript"]
+
+# PREVIEW BRANCH ONLY — do not merge to main. The three just-dna packages are
+# taken from the sibling checkout's unreleased 0.7 branch rather than from PyPI,
+# so this tree is a preview build against a release that has not been cut. The
+# floors above still say >=0.6.6 deliberately: a source override is not an
+# adoption, and bumping the floor to an uncut version would publish a lie.
+# Reversal: delete this block and `uv sync`.
+[tool.uv.sources]
+just-dna-format = { path = "../just-dna-format/schema", editable = true }
+just-dna-compiler = { path = "../just-dna-format/compiler", editable = true }
+just-dna-enricher = { path = "../just-dna-format/enricher", editable = true }
 
 [dependency-groups]
 dev = [

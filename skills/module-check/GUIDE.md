@@ -144,8 +144,11 @@ Two `clin_sig` skip reasons that read alike and are not:
   any.** Drop the pin the moment a human edits those calls.
 - *"no ClinVar snapshot this run"* — nothing was compared because there was nothing to compare against.
 
-**15 of 17 check members have live emitters** (RM72, enricher 0.6.4). The widely-cited *"five of
-seventeen"* is stale.
+**Every check member has a live emitter except `gene_disease_validity` and `dosage_sensitivity`,
+which are RESERVED** (RM72). Name the two exceptions rather than a ratio: measured on 2026-09-03
+against the installed enricher it is 23 of 25, and the same walk answered 15 of 17 under 0.6.4 — both
+halves moved, so a fraction copied out of either is wrong twice over. The widely-cited *"five of
+seventeen"* is stale in the corpus README.
 
 ## Attestations that record a check nobody could have run
 

@@ -105,6 +105,15 @@ _SUBJECTS: dict[str, str] = {
     # `sources.csv` is the deprecated one and inherits this entry rather than
     # repeating it, so the two can never describe themselves differently.
     "licensing.csv": "the terms one source's data came under",
+    # Draftable as of upstream 0.7 (RM124). It is the odd one in this map: every other
+    # entry names a biological or bibliographic subject, and this one names a *decision*
+    # — which derived cell the author judged wrong, and what it should read instead. It
+    # is authored, its `reason` is required, and it is the only authored table whose
+    # rows are about another table's rows.
+    "overrides.csv": (
+        "one correction to one derived cell — which table, which row, which column, "
+        "and why the author overrode it"
+    ),
 }
 
 
@@ -515,8 +524,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
         Generated from the live pydantic models, so it cannot drift from what the
         compiler accepts. Ask before writing any vocabulary cell — several are not what
-        intuition suggests (`direction` is an axis: neutral/protective/risk/unknown,
-        never increase/decrease). `redundancy_bearing` names the columns a later check
+        intuition suggests, and `direction` is the one that catches everybody: it is an
+        axis, never increase/decrease, and the pick-list this tool returns is the whole
+        of it. `redundancy_bearing` names the columns a later check
         compares against a source, so author those independently: filling one from the
         source that checks it makes the check vacuous. `attestation_bearing` is a subset
         and the stronger case — those cells assert that somebody read something, so
@@ -978,6 +988,16 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             destructiveHint=False,
         )
     )
+    # Why the warning channel is three fields rather than one list (upstream RM131):
+    # `warnings` keeps its exact text so nothing that greps a phrase breaks, and the two
+    # beside it are what a consumer had been re-deriving from that prose. A code names
+    # the FINDING, never the emission site, so a refactor upstream cannot rename a
+    # published key and one code carries one remediation. The vocabulary is a one-way
+    # door and closed: a consumer pinned to an older `just-dna-format` refuses a manifest
+    # carrying a code minted after their pin, because `warnings_summary`'s validator
+    # checks its keys — which is why the schema package is upgraded alongside the
+    # compilers whose manifests it reads, and is the same shape as the contract mismatch
+    # `registry_health` reports.
     async def compile_module(
         spec_dir: str,
         output_dir: str,
@@ -994,7 +1014,10 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         `warnings`, since a genotype whose alleles are not at its locus compiles cleanly
         under best-effort. Read `resolution_subjects` beside `fully_resolved` — over an
         empty list that flag is vacuously true, and all five counters are null on a
-        pre-0.6 artifact, where **null never means zero**.
+        pre-0.6 artifact, where **null never means zero**. `warnings_summary` counts
+        those warnings by kind and `carried` names the ones no edit can clear, so
+        `actionable` is what the author still owes — switch on a code rather than a
+        phrase, and read `carried: null` as *unclassified*, never as *none*.
         """
         source = resolve_dir(spec_dir, settings)
         out = resolve_dir(output_dir, settings, must_exist=False)
@@ -1034,6 +1057,28 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         manifest = result.manifest
         comp = getattr(manifest, "compilation", None) if manifest else None
         artifact = getattr(manifest, "artifact", None) if manifest else None
+
+        # The coded-warning channel (upstream RM131), read off the manifest rather than
+        # re-derived. It has to be, twice over: a `CodedWarning` is a `str` subclass that
+        # loses its code at any pydantic field, so the codes cannot survive this model's
+        # own `warnings` list; and `findings.classify` withholds rather than
+        # part-classifying, so calling it on a list we have already prepended to would
+        # answer about the wrong list.
+        #
+        # **An empty summary is two answers and only one of them is "nothing".** A
+        # compiler that did not classify emits none, and so does a compile with no
+        # warnings. Telling them apart is what keeps `carried: null` from being read as
+        # "nothing is carried" — the same null-is-not-zero rule the five resolution
+        # counters below carry, at a different grain.
+        summary = dict(getattr(comp, "warnings_summary", None) or {})
+        upstream_warnings = list(result.warnings)
+        classified = bool(summary) or not upstream_warnings
+        carried = list(getattr(comp, "carried", None) or []) if classified else None
+        all_warnings = layout_note + upstream_warnings
+        actionable = (
+            [w for w in all_warnings if w not in set(carried)] if carried is not None else None
+        )
+
         return CompileReport(
             success=result.success,
             output_dir=str(result.output_dir) if result.output_dir else None,
@@ -1041,7 +1086,10 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             # Ours first: it is about this call's arguments and is actionable now,
             # where the compiler's are about the module. Never merged into the
             # compiler's list — a warning of ours must be legible as ours.
-            warnings=layout_note + list(result.warnings),
+            warnings=all_warnings,
+            warnings_summary=summary,
+            carried=carried,
+            actionable=actionable,
             stats=jsonable(result.stats),
             artifact_digest=getattr(artifact, "digest", None),
             content_signature=getattr(manifest, "content_signature", None),

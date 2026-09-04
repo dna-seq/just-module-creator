@@ -267,7 +267,9 @@ owns what goes in it.
 
 Two axes, and there is **no `ai-writer` / `ai-curator` value** — it is the cross-product:
 
-- `role` — **closed**: `created` | `edited` | `audited` | `reviewed`.
+- `role` — **closed**, and short enough that spelling it here would be the whole set:
+  `authoring_reference` returns the members (`vocab.VALID_AUTHOR_ROLES`). They name what a
+  contributor *did*, which is the axis, not how expert they are.
 - `kind` — **open, seeded**: the human ladder `human` → `human_expert` → `human_certified`, or `ai`
   plus a scale tag `agent` / `team` / `swarm`.
 - `at` — ISO-8601, optional and worth writing.

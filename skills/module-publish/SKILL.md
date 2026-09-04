@@ -33,6 +33,13 @@ so a rehearsal cannot prove somebody *else's* identical data would be refused.
 their own mode**, so a target is verified rather than declared, and a publish aimed at the polygon that
 would land on production refuses before spending anything.
 
+**Read `contract_compatible` on that answer, not `status`.** A registry serves one `just-dna-format`
+contract and refuses a client on a different `0.x` minor — but only on the guarded calls, so an
+instance in that state answers health, search and whoami normally and refuses every publish. `false`
+means stop: no edit to the spec and no recompile changes it, and the repair is a deployment upgrade or
+a client pinned to the contract the instance serves. `null` means the deployment did not say, which is
+not a pass.
+
 ## Three pre-flights that cost nothing
 
 ```

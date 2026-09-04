@@ -57,6 +57,17 @@ So never write into one:
 hand it: a reason, not a paste. If a move genuinely needs a path recorded, record it **relative to
 the spec directory**.
 
+**Do not confuse it with `overrides.csv`, which format 0.7 adds — the two names collide and the
+questions do not.** `record_override` is about an **authored** cell: you wrote a value, a source
+disagrees, and you are recording that yours outranks it or that you edited it. It changes no data and
+silences no check, which is the point. `overrides.csv` is about a **derived** cell: an enricher wrote
+a value, you judge it wrong, and the overlay is what makes a re-run stop restoring it. Upstream is
+explicit that the first is not superseded yet — `ProvenanceItem.outranks` is filed for succession at
+1.0 (their RM135) and only once the overlay reaches authored tables, so *"if you read it, keep reading
+it"*. **Today neither one answers the other's question.** `describe_table("overrides.csv")` describes
+the overlay; nothing here routes you into writing one, because no released registry recognises the
+filename and a re-publish drops it silently (`F88`, registry-tree `S19`).
+
 ## Identity card
 
 | | |

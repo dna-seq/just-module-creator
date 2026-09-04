@@ -530,6 +530,14 @@ and a `0.7` client against a `0.6` server refuses. **Nothing about the spec will
 recompiling will not either** — either the deployment is upgraded, or the registry is driven from a
 checkout pinned to the contract it serves. An operator's call, not an author's.
 
+**Ask `registry_health` before concluding anything, and read `contract_compatible` rather than
+`status`.** The guard runs on the guarded calls only — publish, validate, check, download, import — so
+an instance in this state answers `search`, `whoami`, `get_module` and health itself perfectly well.
+Measured 2026-09-03 with format 0.7.0 installed: both live instances reported `status: "ok"`,
+`mode_matches_target: true` and `contract_compatible: false`, and every write refused. **A green
+status is not the answer to "can I work with this instance"** — the format contract is, and it is the
+one number `/health` never carried.
+
 **`<table>.csv line N [<column>]: Extra inputs are not permitted` from the registry, while every local
 gate passed.** Not a typo, and usually not your spec. The instance validates against the format
 version **it** runs, and it can be several patch releases behind the one you compiled with — measured
@@ -546,7 +554,14 @@ which is the per-row record of *who located a quote* — remove it and the modul
 silently lost the attribution the field exists for. The honest options are: wait for the instance to
 catch up; publish without the column and say in the README that it was dropped for the registry's
 format version, not because it was unknown; or ask the operator to upgrade. Filed as registry-tree
-`S18`, asking that the refusal name the version gap instead of reading like a typo.
+`S18`, asking that the refusal name the version gap instead of reading like a typo — answered and
+shipped in registry 0.22.0, which adds `format_version` to every validation report and a
+`format_advisory` naming both versions.
+
+**Above a whole minor this stops being a column at a time and becomes the whole write surface.** A
+`0.7` client against the `0.6.1` both instances serve does not get this message at all: the handshake
+refuses first, with the contract-mismatch 409 above. So the two symptoms are the same gap read at two
+distances — inside one minor you lose a column, across one you lose publishing.
 
 **`Registry error: … That is a refusal to act on an instance other than the one you named.`**
 The guard working. Every registry tool declares a `target` and the server verifies it against the

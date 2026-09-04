@@ -428,3 +428,113 @@ def test_claude_md_names_every_skill_that_ships():
         f"CLAUDE.md's asset table does not name {missing}. A skill absent from the roster "
         "is one the next agent rebuilds from scratch"
     )
+
+
+# --------------------------------------------------------------------------- #
+# A restated closed vocabulary goes stale the release after it is written
+# --------------------------------------------------------------------------- #
+def test_no_shipped_prose_enumerates_a_closed_vocabulary_upstream_owns():
+    """Spell a vocabulary out and you have hand-kept it, whatever you called it.
+
+    Found by format 0.7 adding `contested` to `VALID_DIRECTIONS` (RM150). Two
+    places had written the four members out — `describe_table`'s own docstring,
+    which is the tool whose whole claim is that it generates them, and the
+    `activity_phenotype` dossier. Both became wrong the moment the vocabulary
+    grew, and neither had anything that would say so.
+
+    Scoped to *complete* enumerations on one line: naming a member to make a
+    point ("`direction: neutral` looks like it agrees") is not a restatement, and
+    the variants dossier does that legitimately several times. Only listing all
+    of them is a claim about the set, and only that claim can go stale.
+    """
+    from just_dna_format import vocab
+
+    sets = {
+        name: frozenset(getattr(vocab, name))
+        for name in dir(vocab)
+        if name.startswith("VALID_") and isinstance(getattr(vocab, name), frozenset | set)
+    }
+    assert sets, "no vocabularies found — the module moved and this test stopped testing"
+
+    roots = [SKILLS, SKILLS.parent / "src"]
+    offenders: list[str] = []
+    for root in roots:
+        for path in sorted(root.rglob("*")):
+            if path.suffix not in {".md", ".py"} or not path.is_file():
+                continue
+            if path.name == Path(__file__).name:
+                continue
+            for lineno, line in enumerate(path.read_text().splitlines(), 1):
+                for vocab_name, members in sets.items():
+                    if len(members) < 3:
+                        continue  # a one- or two-member set is a fact, not a list
+                    if all(f"`{m}`" in line or f"{m}/" in line or f"/{m}" in line for m in members):
+                        rel = path.relative_to(SKILLS.parent)
+                        offenders.append(f"{rel}:{lineno} spells out {vocab_name}")
+    assert not offenders, (
+        "ask the tool for these instead of writing them down:\n  " + "\n  ".join(offenders)
+    )
+
+
+#: English number words a dossier actually uses, for the counted-claim guard below.
+_NUMBER_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7,
+    "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
+    "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18,
+    "nineteen": 19, "twenty": 20, "twenty-one": 21, "twenty-two": 22,
+    "twenty-three": 23, "twenty-four": 24, "twenty-five": 25,
+}
+
+
+def test_a_counted_claim_about_a_vocabulary_still_counts_it_right():
+    """`VALID_VERIFICATION_CHECKS` went 17 to 25 in one release, in eight dossier lines.
+
+    CLAUDE.md § 8 already names this shape — *"a counted claim in prose rots exactly
+    like a hand-kept list"* — with four worked examples, all of them found by hand.
+    This is the mechanical half, and it is narrower than the enumeration guard beside
+    it: it only fires on `<N> members` sitting on the same line as the vocabulary's
+    own identifier, which is the sentence that asserts a size.
+
+    A dated count is still allowed, because a measurement carrying its date stays true
+    — but only if the date is on the same line, which is what makes it a measurement
+    rather than a claim.
+    """
+    import re
+
+    from just_dna_format import vocab
+
+    sets = {
+        name: frozenset(getattr(vocab, name))
+        for name in dir(vocab)
+        if name.startswith("VALID_") and isinstance(getattr(vocab, name), frozenset | set)
+    }
+    counted = re.compile(
+        r"\b(\d{1,3}|" + "|".join(sorted(_NUMBER_WORDS, key=len, reverse=True)) + r")\s+members\b",
+        re.IGNORECASE,
+    )
+    dated = re.compile(r"\bas of\b|\b20\d\d-\d\d-\d\d\b", re.IGNORECASE)
+
+    offenders: list[str] = []
+    for root in (SKILLS, SKILLS.parent / "src", SKILLS.parent / "docs"):
+        for path in sorted(root.rglob("*.md")) + sorted(root.rglob("*.py")):
+            for lineno, line in enumerate(path.read_text().splitlines(), 1):
+                for name, members in sets.items():
+                    if name not in line:
+                        continue
+                    for token in counted.findall(line):
+                        claimed = _NUMBER_WORDS.get(token.lower())
+                        if claimed is None:
+                            claimed = int(token) if token.isdigit() else None
+                        if claimed is None or claimed == len(members):
+                            continue
+                        if dated.search(line):
+                            continue  # a dated measurement is allowed to age
+                        rel = path.relative_to(SKILLS.parent)
+                        offenders.append(
+                            f"{rel}:{lineno} says {token} members of {name}, which has "
+                            f"{len(members)}"
+                        )
+    assert not offenders, (
+        "state the rule and let the reader run the call, or date the measurement:\n  "
+        + "\n  ".join(offenders)
+    )

@@ -937,3 +937,82 @@ async def test_yank_defaults_to_the_polygon_like_every_other_write(make_client):
         schemas = {t.name: t.inputSchema for t in await client.list_tools()}
         for name in ("registry_yank", "registry_unyank"):
             assert schemas[name]["properties"]["target"]["default"] == "test"
+
+
+# --------------------------------------------------------------------------- #
+# A healthy instance that refuses every write (0.7 preview)
+# --------------------------------------------------------------------------- #
+#: Measured 2026-09-03 against both live instances while running format 0.7.0:
+#: `/api/v1/version` answers `format: 0.6.1` on prod and polygon alike, so
+#: `registry_check` and `registry_validate` come back `HTTP 409: just-dna-format
+#: contract mismatch` while `registry_health`, `registry_search`, `registry_whoami`
+#: and `registry_get_module` all answer normally. Upstream's guard is deliberate and
+#: its message is good; what was ours is that the one tool an author runs to ask "can
+#: I work with this instance" reported `status: ok`, `mode_matches_target: true` and
+#: nothing else, because it read `/health` and never `/version`.
+
+
+class _StubVersion:
+    def __init__(self, fmt: str) -> None:
+        self.api = "v1"
+        self.format = fmt
+        self.compiler = fmt
+        self.mode = "test"
+        self.registry = "0.18.2"
+
+
+class _StubHealthClient:
+    """Answers `/health` and `/version` the way a lagging deployment does."""
+
+    def __init__(self, server_format: str, client_format: str) -> None:
+        self._server = _StubVersion(server_format)
+        self.local_version = _StubVersion(client_format)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def health(self):
+        return {"status": "ok", "version": "0.18.2", "mode": "test", "catalog": {"modules": 17}}
+
+    def server_version(self):
+        return self._server
+
+
+async def _health_against(make_client, monkeypatch, *, server: str, client: str):
+    from just_module_creator.tools import research
+
+    stub = _StubHealthClient(server, client)
+    monkeypatch.setattr(research, "client_for", lambda *a, **kw: stub)
+    settings = Settings(offline=False, _env_file=None, api_key=None)  # type: ignore[call-arg]
+    async with make_client(settings=settings) as connected:
+        result = await connected.call_tool("registry_health", {"target": "test"})
+    return result.data
+
+
+async def test_health_reports_a_contract_mismatch_a_green_status_would_hide(
+    make_client, monkeypatch
+):
+    """`status: ok` and `mode_matches_target: true` while every write is dead."""
+    health = await _health_against(make_client, monkeypatch, server="0.6.1", client="0.7.0")
+
+    assert health.status == "ok", "the instance really is up — that is the trap"
+    assert health.mode_matches_target is True
+    assert health.contract_compatible is False
+    assert health.server_format == "0.6.1"
+    assert health.client_format == "0.7.0"
+    # The verdict has to be readable without decoding two version strings, and it
+    # has to name what stops working — an author told only "mismatch" retries.
+    assert "CONTRACT DOES NOT MATCH" in health.message
+    assert "publish" in health.message and "409" in health.message
+
+
+async def test_a_matching_contract_says_so_rather_than_staying_silent(make_client, monkeypatch):
+    """True and null are different answers, so the compatible case must assert one."""
+    health = await _health_against(make_client, monkeypatch, server="0.7.0", client="0.7.0")
+
+    assert health.contract_compatible is True
+    assert health.contract_note is None
+    assert "CONTRACT DOES NOT MATCH" not in health.message

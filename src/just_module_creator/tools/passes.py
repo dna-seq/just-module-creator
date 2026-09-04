@@ -36,6 +36,8 @@ whole task on it, which is what the flag did.
 
 from __future__ import annotations
 
+import inspect
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -375,14 +377,13 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
         `ref mismatch: N row(s) — coordinate shifted 1 base`. **Read that as being about
         `start`, not `ref`** — it is what subtracting one from a VCF position produces —
         and it is a floor rather than a total, since only rows whose neighbouring base
-        differs from `ref` are visible. **It blocks, with no task id to poll**, and
-        nothing is written until the very end, so an interrupted run persists nothing
-        and can still overwrite this file after you gave up on it: if a call timed out,
-        count the rows in `resolution.csv` against the authored subject count before
-        trusting anything downstream. Curate first — a `<<REPLACE>>` anywhere makes this
-        refuse, deliberately, since forward resolution is allele-aware. `offline=true`
-        restricts to local caches, where the ref check does not run at all, and a check
-        that could not run is not a check that passed.
+        differs from `ref` are visible. **It blocks, with no task id to poll**, and it
+        reports progress in subjects; a killed run leaves its staged answers behind and
+        the next run resumes from them rather than starting over. Two runs over one spec
+        directory cannot overlap — the second is refused, not queued. Curate first — a
+        `<<REPLACE>>` anywhere makes this refuse, deliberately, since forward resolution
+        is allele-aware. `offline=true` restricts to local caches, where the ref check
+        does not run at all, and a check that could not run is not a check that passed.
         """
         target = resolve_dir(spec_dir, settings)
         eff_offline = offline_for(settings, offline)
@@ -413,25 +414,30 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
             # is the point: `run_sync` defaults to `abandon_on_cancel=False`, so the await
             # does not unwind until the thread returns. The claim therefore outlives an
             # aborted request for exactly as long as the write it is protecting against.
-            # WORKAROUND — remove when the enricher's own `progress` callback ships.
-            # Upstream accepted it as ask 4 of S66 and it lands in 0.7 (RM128); 0.6.6
-            # has no `progress` parameter, verified by signature rather than by
-            # changelog. Until then `enrich()` is one opaque blocking call: a 263-rsID
-            # module ran 20+ minutes writing nothing, and an operator watching it could
-            # not tell work from a hang. A benchmark run died inside one of those
-            # silences; the short sidecar it left (F70) was a completed write, so the
-            # silence hid the death rather than causing the file.
             #
-            # This reports ELAPSED TIME, never a fraction. We cannot know the
-            # denominator — upstream's resolver batches inside `resolver.py` rather than
-            # looping per subject, which is precisely why they have not settled what the
-            # callback counts — and inventing a percentage would be a fabricated
-            # measurement of somebody else's work. A heartbeat says "alive, N seconds
-            # in", which is the whole question being asked.
+            # The denominator arrives from upstream now (0.7, RM128, our `S66` ask 4):
+            # `progress` is called `(done, total)` over SUBJECTS, with `total` known
+            # before the first call. So the elapsed-seconds heartbeat this replaces —
+            # which reported time because we had no denominator and refused to invent one
+            # — reports work instead.
             #
-            # TO DISMANTLE AT 0.7: delete `_heartbeat` and this task group, pass
-            # `progress=` into `enrich()`, and report real (done, total). The subject
-            # count then comes from upstream instead of being unknown.
+            # **The timer stays and only what it says has changed**, which is deliberate
+            # and is not what the dismantle note predicted. Upstream's callback fires when
+            # a subject completes, and the resolver batches, so the silences the heartbeat
+            # existed for are still there — a caller with an idle timeout needs a tick on
+            # the wall clock, not on somebody else's progress. What it can now say inside
+            # that tick is a real (done, total) rather than a duration.
+            #
+            # The callback runs on the worker thread and `ctx.report_progress` is async on
+            # the event loop, so the two meet through a plain cell rather than a portal: a
+            # tuple assignment is atomic, the reader tolerates a stale read by definition
+            # (it is a progress report), and `anyio.from_thread` would need a portal held
+            # open for the whole call to gain nothing.
+            latest: list[tuple[int, int] | None] = [None]
+
+            def _note_progress(done: int, total: int) -> None:
+                latest[0] = (done, total)
+
             async def _heartbeat() -> None:
                 if ctx is None:
                     return
@@ -439,12 +445,28 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
                 while True:
                     await anyio.sleep(_HEARTBEAT_SECONDS)
                     seconds = int((datetime.now(UTC) - started).total_seconds())
+                    seen = latest[0]
+                    if seen is None:
+                        # Before the first subject completes there is no denominator, so
+                        # this says elapsed time and says why — which is the honest answer
+                        # rather than a zero that looks like stalled work.
+                        await ctx.report_progress(
+                            progress=seconds,
+                            message=(
+                                f"enrich still running, {seconds}s elapsed — no subject "
+                                "has completed yet, so there is no total to count "
+                                "against. Expected on a first pass, not a stall."
+                            ),
+                        )
+                        continue
+                    done, total = seen
                     await ctx.report_progress(
-                        progress=seconds,
+                        progress=done,
+                        total=total,
                         message=(
-                            f"enrich still running, {seconds}s elapsed — resolving rsIDs "
-                            "against Ensembl. It writes resolution.csv only when it "
-                            "finishes, so no output yet is expected, not a stall."
+                            f"enrich: {done}/{total} subjects, {seconds}s elapsed. "
+                            "Answers are staged as they arrive, so a killed run resumes "
+                            "from them rather than starting over."
                         ),
                     )
 
@@ -459,7 +481,13 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
                 async with anyio.create_task_group() as beat:
                     beat.start_soon(_heartbeat)
                     result = await run_sync(
-                        lambda: enrich(target, mode=mode, offline=eff_offline, write=True)
+                        lambda: enrich(
+                            target,
+                            mode=mode,
+                            offline=eff_offline,
+                            write=True,
+                            **_progress_kwarg(_note_progress),
+                        )
                     )
                     beat.cancel_scope.cancel()
             except* Exception as group:
@@ -547,6 +575,25 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
 #: long enough that a normal small module finishes without emitting one at all.
 #: Paired with the workaround in `enrich_module`; both go at 0.7.
 _HEARTBEAT_SECONDS = 30.0
+
+#: Whether the installed enricher takes the `progress` callback (RM128, our `S66` ask
+#: 4). Probed once, by signature against the INSTALLED package — never by version
+#: string, which says nothing about what `uv sync` actually put in the venv.
+#:
+#: **This exists only while the declared floor is below 0.7**, which is where it has to
+#: stay until 0.7 is cut: passing a keyword an installed 0.6.6 has never heard of is a
+#: `TypeError` on the one call that costs an author twenty minutes. It is an optional
+#: keyword's capability probe, not an era branch — there is one code path, and the older
+#: toolchain gets a heartbeat with no denominator, which is exactly what it had.
+#:
+#: **Delete this and pass `progress=` outright the moment the floor moves to 0.7.**
+_ENRICH_TAKES_PROGRESS = "progress" in inspect.signature(enrich).parameters
+
+
+def _progress_kwarg(callback: Callable[[int, int], None]) -> dict[str, Any]:
+    """`{"progress": callback}` where upstream accepts it, and `{}` where it does not."""
+    return {"progress": callback} if _ENRICH_TAKES_PROGRESS else {}
+
 
 _ENRICHMENTS_IN_FLIGHT: dict[Path, str] = {}
 

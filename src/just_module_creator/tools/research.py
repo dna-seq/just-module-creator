@@ -39,6 +39,7 @@ from just_dna_enricher import lookup as enricher_lookup
 from just_dna_enricher.literature import EuropePmcClient
 from just_dna_enricher.locations import default_ensembl_cache_dir
 from just_dna_registry import RegistryError
+from just_dna_registry.version import VersionInfo, compatibility_error
 from mcp.types import ToolAnnotations
 
 from just_module_creator import alleles, supplementary
@@ -664,18 +665,30 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
 
         `mode_matches_target` is null in exactly that case — never false, because
         an instance that did not answer is not an instance that disagreed.
+
+        **`contract_compatible: false` is the answer that matters most and the one
+        `status: "ok"` hides.** A registry serves one `just-dna-format` contract and
+        refuses a client on a different 0.x minor in either direction. The cheap
+        reads — this call, search, whoami, get_module — never touch that guard and
+        keep answering, so an instance can look healthy while every publish,
+        validate, check and download comes back 409. Read the two format strings
+        beside each other, and treat a mismatch as an operator's job: no edit to a
+        spec and no recompile changes it.
         """
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
 
         url = settings.registry_url_for(target)
 
-        def _health() -> dict:
+        def _health() -> tuple[dict, VersionInfo | None, VersionInfo]:
             with client_for(target, settings) as client:
-                return client.health()
+                # Two calls, because they answer different questions and the second is
+                # the one a publish actually turns on. `server_version` returns None
+                # rather than raising when the deployment predates `/version`.
+                return client.health(), client.server_version(), client.local_version
 
         try:
-            payload = await run_sync(_health)
+            payload, server_versions, client_versions = await run_sync(_health)
         except RegistryError as exc:
             return InstanceHealth(
                 reachable=False,
@@ -698,6 +711,22 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
                 f"MISMATCH: you asked for {target!r} and it reports {str(mode)!r}. Writes will "
                 "refuse before spending anything; fix the configured URL."
             )
+        server_format = getattr(server_versions, "format", None)
+        client_format = getattr(client_versions, "format", None)
+        contract_note = (
+            compatibility_error(server_versions, client_versions)
+            if server_versions is not None
+            else None
+        )
+        compatible = None if server_versions is None else contract_note is None
+        if compatible is False:
+            note = (
+                f"{note} But the CONTRACT DOES NOT MATCH: it serves just-dna-format "
+                f"{server_format} and this process runs {client_format}, so every publish, "
+                "validate, check and download refuses with a 409 while the reads above keep "
+                "working. Nothing about a spec changes that — the deployment is upgraded, or "
+                "the client is pinned to the contract it serves."
+            )
         return InstanceHealth(
             reachable=True,
             target=target,
@@ -707,6 +736,10 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             mode=str(mode) if mode is not None else None,
             mode_matches_target=matches,
             catalog=dict(payload.get("catalog") or {}),
+            server_format=server_format,
+            client_format=client_format,
+            contract_compatible=compatible,
+            contract_note=contract_note,
             message=(
                 f"{payload.get('status', 'unknown')}, registry "
                 f"{payload.get('version')}. {note}"

@@ -5,6 +5,108 @@ on our side, so agents in sibling repos are not surprised.
 
 ## Unreleased
 
+### `preview-0.7`: a branch built against a release that has not been cut
+
+**Branch only — not on `main`, and the version is not bumped.** `pyproject.toml` carries a
+`[tool.uv.sources]` block taking `just-dna-format` / `-compiler` / `-enricher` editable from
+`../just-dna-format`'s 0.7 branch. **Editable means it tracks their HEAD, so the commit is a
+measurement and not a pin**: first measured at `f4a9b14`, gates last green at `67db26c` — which moved
+seven times during one session, twice because of notes filed from here. The floors stay `>=0.6.6`: a source override is not an
+adoption, and moving a floor to an uncut version publishes a lie. Reversal is deleting the block and
+`uv sync`.
+
+The point of the branch is to find integration problems while they are still cheap to move. **Six
+notes filed; all three into the format tree were answered, fixed and verified within a day, and that
+inbox is empty again**: `S87` → `RM180` (an overlay's `reason` is out of `content_signature`),
+`S88` → `RM183` (`needs_recompile` answers the unknown arm on an unstamped compiler version instead
+of raising `AttributeError`), `S89` → `RM184` (`CacheLane.env_var`). **Still open, all three with the
+registry**: `S19`, `S20`, `S21`. Carried here as `F87`–`F91`, of which `F89`, `F90` and `F91` are
+closed.
+
+**The cadence is the thing to plan for rather than a surprise.** `S87` was filed, answered, decided
+with the maintainer, shipped and re-verified inside two hours — so a status line written at filing
+time was stale before the session ended, which is exactly what
+`docs/just-dna-format-pending-fixes.md` warns about and the reason this branch re-reads both inboxes
+before quoting its own state.
+
+**`registry_health` reports the format contract, and that is the shipped change.** Running 0.7 against
+the live instances, `registry_check` and `registry_validate` return
+`HTTP 409: just-dna-format contract mismatch: server 0.6.1, client 0.7.0`, while health, search,
+whoami and get_module all answer normally — upstream's guard runs on the guarded calls only. So the one
+tool an author runs to ask *can I work with this instance* was reporting `status: ok`,
+`mode_matches_target: true` and nothing about the number that decides it. It now carries
+`server_format`, `client_format`, a tri-state `contract_compatible` and upstream's own sentence;
+`skills/module-publish/SKILL.md` and `SYMPTOMS.md` say to read that field rather than `status`. `F87`.
+
+**Two restated vocabularies went stale in one release, and now a test says so.**
+`VALID_DIRECTIONS` gained `contested` (their RM150), which made `describe_table`'s own docstring wrong
+— the tool whose whole claim is that it generates vocabularies had four of the five members typed into
+its description — and the `activity_phenotype` dossier with it.
+`test_no_shipped_prose_enumerates_a_closed_vocabulary_upstream_owns` walks every `.md` and `.py` under
+`skills/` and `src/` for a line naming *all* the members of any `vocab.VALID_*` set, and found two more
+nobody was looking for (`VALID_AUTHOR_ROLES`, `VALID_RESOLUTION_STATUS`). Naming a member to make a
+point is still fine; listing the set is the claim that rots.
+
+**`overrides.csv` is answerable and deliberately not taught.** The overlay is draftable in 0.7 (RM124),
+so `list_tables` offered it with no subject line; it has one now. It is *not* in any skill's procedure,
+because no released registry recognises the filename and a re-publish drops it silently while the
+module recompiles green — `F88`. An agent that asks `describe_table` gets the truth; nothing routes an
+author into writing a file that does not survive.
+
+**The `<0.8` ceiling, which is the `S20` decision.** All three just-dna packages are now
+`>=0.6.6,<0.8`. A registry serves one `just-dna-format` contract and refuses a client on a different
+`0.x` minor **in either direction**, so an unbounded floor meant cut day would take the write surface
+off every install — with the reads still working, so it reads as a partial outage. The ceiling turns
+that into the resolver holding the pair together. It costs the obvious thing deliberately: 0.8 does
+not arrive on its own, and adopting it is an explicit bump, which is right because the same 409 fires
+when the instances move ahead of us.
+
+**Six assertions and one keyword now probe a capability rather than a version, so this branch is
+honest on either toolchain.** Measured before merging: with the preview sources removed and 0.6.6
+resolved from PyPI, eight tests failed — six asserting 0.7 behaviour, plus one restated vocabulary the
+guard only catches on the older set (`module-curate` named all four `VALID_DIRECTIONS` members, which
+is right on 0.6.6 and wrong on 0.7), and one that was a real production break: `enrich()` on 0.6.6 has
+no `progress` parameter, so passing it is a `TypeError` on the one call that costs an author twenty
+minutes. Each probe asks the narrowest symbol that answers its own question, against the **installed**
+package — `hasattr`, not a version string — and every one of them is marked for deletion the day the
+floor moves to 0.7. `_REGISTRY_LAGS_BEHIND` stopped being a literal pair and became a computed set,
+which is better than a skip: the two packages move on their own cadence, so the lag is empty on 0.6.6
+and two names on 0.7, and `KNOWN_REGISTRY_LAG` is what keeps the comparison a guard by failing when a
+third name appears.
+
+**The suite's cache clear-list is derived now** (`F91`). `CacheLane.env_var` shipped from our `S89`,
+so the fourteen `JUST_DNA_*_CACHE` variables plus the shared base come from the registry rather than
+from a list — upstream's own recommended expression. It fixed nothing that was broken: exporting all
+fourteen changed no assertion. What it removes is the question, which is the `F24` shape.
+
+**The enrich heartbeat reports work instead of time, and the docstring stopped being wrong.**
+0.7 gives `enrich()` a `progress` callback over subjects with the total known up front — our `S66`
+ask 4 — so the elapsed-seconds heartbeat, which reported a duration precisely because we had no
+denominator and would not invent one, now reports `(done, total)`. The timer itself stays: upstream's
+resolver batches, so the silences the heartbeat existed for are still there, and a caller with an idle
+timeout needs a tick on the wall clock rather than on somebody else's progress. And the docstring's
+*"nothing is written until the very end, so an interrupted run persists nothing"* became false with
+RM128 — answers are staged as they arrive and the next run resumes from them, so a killed run is
+recoverable where it used to be wasted.
+
+**`warnings_summary`, `carried` and `actionable` on `compile_module`.** See the commit; the care is
+that `carried` is tri-state, because an empty summary means either no warnings or an unclassifying
+compiler, and reading null as empty turns "nobody asked" into "nothing is carried".
+
+**Six new authored columns are visible to `describe_table` and swept into no skill — named here so
+the deferral is not silent.** `statistical_test`, `confidence` and `confidence_unit` on
+`studies.csv`; `requires_callable` on `haplotypes.csv` and `pharm_variants.csv`; `pmid` on
+`pharm_variants.csv`; and the `authority_precedence:` block in `module_spec.yaml`. All are optional
+and absent-means-nothing-was-said, so no module is wrong for lacking one — but a floor bump is not an
+adoption, and `weighting:` shipped invisible for two releases by exactly this route. They are the
+first sweep to do if this branch is taken forward.
+
+**One of our tests was encoding a defect.** `validate_module(strict=True)` was asserted green on a
+fixture `compile_module(strict=True)` has always refused — a pre-flight blessing what the build
+rejects. Upstream's RM141 calls one predicate from both sides, and the assertion is now the agreement
+itself.
+
+
 ### `find-evidence` splits: the skill keeps the loop, three references keep the subjects
 
 It hit the 500-line ceiling adding `lookup_allele_identity` and the honest reading was that three of

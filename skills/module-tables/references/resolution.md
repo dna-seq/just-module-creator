@@ -195,7 +195,8 @@ Ask the live schema for the column list. These are the ones whose *meaning* is r
   joins on. Empty is a real answer: `authored`, `reversed` and `manual` have no external authority to
   declare (`licensing.py:264-274`). Before the split existed, the compiler string-compared `source`
   against `sources.csv` and every enriched module was told `ensembl-rest` has no terms recorded (RM33).
-- **`status`** — `resolved` / `not_found` / `ambiguous` (`vocab.VALID_RESOLUTION_STATUS`).
+- **`status`** — a closed vocabulary; ask `describe_machine_table` for the members
+  (`vocab.VALID_RESOLUTION_STATUS`). The distinction worth carrying is the one below.
   `not_found` means *a source was asked and does not have it*, never *unchecked*.
 - **`rsid_alternates`** — the full sorted candidate list when a reverse back-fill hit several rsIDs for
   the **same exact allele** (a real dbSNP merge). `rsid` then carries the deterministic lowest pick.
