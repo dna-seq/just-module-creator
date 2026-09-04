@@ -273,8 +273,10 @@ hand against `ref` and `alts`, and never read "no genotype warnings" as "every g
 - **A `risk` weight is negative.** `weight` contributes to a wellness-style score, not a hazard ratio,
   so `state='risk'` or `direction='risk'` wants `weight < 0` and `protective` wants `weight > 0`.
   Getting it backwards is a **warning**, so it compiles.
-- **`direction` is not a magnitude.** Its members are the same axis as `state` —
-  `neutral` / `protective` / `risk` / `unknown` — not `increase` / `decrease`.
+- **`direction` is not a magnitude.** Its members are the same axis as `state`, never
+  `increase` / `decrease` — ask `describe_table` for them. Format 0.7 added a fifth (`contested`,
+  their RM150: the sources disagree about the *sign*, where `unknown` means nobody assessed it), and
+  this line named the four until it did.
 - **`direction` is authored or it is empty; nothing computes it.** `state` is required; the compiler
   never fills a blank `direction` from `state`, because that would assert a claim you did not make
   (`state='significant'` names no direction at all). So a module carrying only `state` compiles fine and

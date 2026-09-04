@@ -570,6 +570,24 @@ def test_the_clear_list_covers_every_variable_settings_reads() -> None:
     assert {"JMC_API_KEY_HEADER", "JMC_TRANSPORT", "JMC_PORT"} <= set(_ECOSYSTEM_VARS)
     assert {"JUST_DNA_CONTACT_EMAIL", "NCBI_API_KEY", "REGISTRY_TOKEN"} <= set(_ECOSYSTEM_VARS)
 
+    # The cache half is derived too, since format 0.7 gave `CacheLane` the variable its
+    # own resolver reads (our `S89`, their RM184). Pinned the same way as our half: not
+    # by naming the fourteen, which would rebuild the hand-kept list upstream retired,
+    # but by asserting the derivation still covers what the registry declares. A lane
+    # added upstream must arrive here on its own.
+    from just_dna_enricher.caches import CACHE_LANES
+    from just_dna_enricher.locations import CACHE_BASE_VAR
+
+    declared = {lane.env_var for lane in CACHE_LANES} | {CACHE_BASE_VAR}
+    assert declared <= set(_ECOSYSTEM_VARS), (
+        "a cache variable the enricher reads is not cleared: "
+        f"{sorted(declared - set(_ECOSYSTEM_VARS))}"
+    )
+    assert CACHE_BASE_VAR not in {lane.env_var for lane in CACHE_LANES}, (
+        "the shared base is deliberately not a lane attribute — if it became one, the "
+        "union above is doing nothing and the second term should go"
+    )
+
 
 async def test_building_a_server_cannot_repopulate_the_environment_from_dotenv():
     """`F24`'s other half: `delenv` is only safe while nothing re-reads `.env` mid-test.

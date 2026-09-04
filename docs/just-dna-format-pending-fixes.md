@@ -146,6 +146,29 @@ already used for a version it has no record of. Re-measured here after the fix.
 derivation for *does this artifact need recompiling*, but nothing of ours asks that question today,
 and adding a surface to answer it is a design decision rather than a sweep.
 
+## F91 — `CACHE_LANES` published every attribute of a lane except the variable that steers it (format `S89`, fixed same day)
+
+**State: CLOSED. Filed 2026-09-03, shipped in the uncut 0.7.0 as `RM184`, adopted here.** All three
+notes filed into the format tree from `preview-0.7` were answered inside a day, and the format inbox
+is empty again.
+
+`CacheLane.env_var` carries each lane's variable, and the string literals moved out of the resolvers
+into `locations.<LANE>_CACHE_VAR` constants that both the resolver and the registry read — so the
+field cannot name a variable the resolver ignores. **One difference from our candidate, and it is the
+better call**: it is `str`, not `str | None`. Every lane has a variable and a lane steered only by the
+shared base is not a state that exists, so an optional would have invented one — the same reasoning
+RM87 applied to `locus_count`.
+
+**Adopted in `tests/conftest.py`**: the suite's clear-list now derives the cache half as
+`{lane.env_var for lane in CACHE_LANES} | {locations.CACHE_BASE_VAR}`, which is upstream's own
+recommended expression. `CACHE_BASE_VAR` is deliberately not a lane attribute, and a test asserts that
+too — if it ever became one, the union's second term would be doing nothing.
+
+**It fixed nothing that was broken here, and that is worth stating.** We never hand-kept the fourteen
+names, and exporting all of them changed no assertion (measured, 658 passed). What it removes is the
+*question* — the `F24` shape was a leak found weeks after it became possible, and the repair then was
+to stop reasoning about which variables matter. One derived expression costs less than the reasoning.
+
 ## F87 — every write to a live registry dies the day format 0.7 is cut (registry `S20`; `S21` beside it)
 
 **State: filed 2026-09-03, open. This is not mitigable here and the branch does not pretend otherwise.**

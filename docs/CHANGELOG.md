@@ -16,11 +16,12 @@ adoption, and moving a floor to an uncut version publishes a lie. Reversal is de
 `uv sync`.
 
 The point of the branch is to find integration problems while they are still cheap to move. **Six
-notes filed and two answered, fixed and verified within the session**: format `S87` (shipped as
-`RM180` — an overlay's `reason` is out of `content_signature`) and `S88` (shipped as `RM183` —
-`needs_recompile` answers the unknown arm on an unstamped compiler version instead of raising
-`AttributeError`). Still open: format `S89`, registry `S19`, `S20`, `S21`. Carried here as `F87`,
-`F88`, `F89` and `F90`, of which `F89` and `F90` are already closed.
+notes filed; all three into the format tree were answered, fixed and verified within a day, and that
+inbox is empty again**: `S87` → `RM180` (an overlay's `reason` is out of `content_signature`),
+`S88` → `RM183` (`needs_recompile` answers the unknown arm on an unstamped compiler version instead
+of raising `AttributeError`), `S89` → `RM184` (`CacheLane.env_var`). **Still open, all three with the
+registry**: `S19`, `S20`, `S21`. Carried here as `F87`–`F91`, of which `F89`, `F90` and `F91` are
+closed.
 
 **The cadence is the thing to plan for rather than a surprise.** `S87` was filed, answered, decided
 with the maintainer, shipped and re-verified inside two hours — so a status line written at filing
@@ -51,6 +52,32 @@ so `list_tables` offered it with no subject line; it has one now. It is *not* in
 because no released registry recognises the filename and a re-publish drops it silently while the
 module recompiles green — `F88`. An agent that asks `describe_table` gets the truth; nothing routes an
 author into writing a file that does not survive.
+
+**The `<0.8` ceiling, which is the `S20` decision.** All three just-dna packages are now
+`>=0.6.6,<0.8`. A registry serves one `just-dna-format` contract and refuses a client on a different
+`0.x` minor **in either direction**, so an unbounded floor meant cut day would take the write surface
+off every install — with the reads still working, so it reads as a partial outage. The ceiling turns
+that into the resolver holding the pair together. It costs the obvious thing deliberately: 0.8 does
+not arrive on its own, and adopting it is an explicit bump, which is right because the same 409 fires
+when the instances move ahead of us.
+
+**Six assertions and one keyword now probe a capability rather than a version, so this branch is
+honest on either toolchain.** Measured before merging: with the preview sources removed and 0.6.6
+resolved from PyPI, eight tests failed — six asserting 0.7 behaviour, plus one restated vocabulary the
+guard only catches on the older set (`module-curate` named all four `VALID_DIRECTIONS` members, which
+is right on 0.6.6 and wrong on 0.7), and one that was a real production break: `enrich()` on 0.6.6 has
+no `progress` parameter, so passing it is a `TypeError` on the one call that costs an author twenty
+minutes. Each probe asks the narrowest symbol that answers its own question, against the **installed**
+package — `hasattr`, not a version string — and every one of them is marked for deletion the day the
+floor moves to 0.7. `_REGISTRY_LAGS_BEHIND` stopped being a literal pair and became a computed set,
+which is better than a skip: the two packages move on their own cadence, so the lag is empty on 0.6.6
+and two names on 0.7, and `KNOWN_REGISTRY_LAG` is what keeps the comparison a guard by failing when a
+third name appears.
+
+**The suite's cache clear-list is derived now** (`F91`). `CacheLane.env_var` shipped from our `S89`,
+so the fourteen `JUST_DNA_*_CACHE` variables plus the shared base come from the registry rather than
+from a list — upstream's own recommended expression. It fixed nothing that was broken: exporting all
+fourteen changed no assertion. What it removes is the question, which is the `F24` shape.
 
 **The enrich heartbeat reports work instead of time, and the docstring stopped being wrong.**
 0.7 gives `enrich()` a `progress` callback over subjects with the total known up front — our `S66`

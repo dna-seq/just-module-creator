@@ -14,11 +14,20 @@ stays deterministic even though half the tool surface is network-capable.
 
 from __future__ import annotations
 
+import inspect as _inspect
 import sys
 from pathlib import Path
 
 import pytest
 from fastmcp.client import Client
+from just_dna_compiler import draft as _draft
+from just_dna_compiler import hints as _hints
+from just_dna_enricher.caches import CACHE_LANES
+from just_dna_enricher.enrich import enrich as _enrich
+from just_dna_enricher.locations import CACHE_BASE_VAR
+from just_dna_format import base as _format_base
+from just_dna_format.manifest import Compilation as _Compilation
+from just_dna_registry import specfiles as _specfiles
 
 from just_module_creator.server import build_server
 from just_module_creator.settings import Settings
@@ -32,6 +41,67 @@ _UPSTREAM_VARS = (
     "JUST_DNA_CONTACT_EMAIL",
     "NCBI_API_KEY",
 )
+
+#: Every cache location the enricher reads from the environment — **derived**, since
+#: format 0.7 (our ``S89``, their RM184). ``CacheLane.env_var`` is the same constant the
+#: lane's own resolver reads, so a lane added upstream arrives here with its variable
+#: attached; ``CACHE_BASE_VAR`` is the shared base, deliberately not a lane attribute
+#: because no lane owns it.
+#:
+#: **Nothing in the suite asserts differently with these set today** — measured on
+#: 2026-09-03 by exporting all fourteen at a scratch path: 658 passed, unchanged. They
+#: are cleared anyway, and the reason is the shape of the leak rather than a known one:
+#: ``F24`` was a bare ``Settings()`` reading a developer's real token, found only after
+#: it had been possible for weeks, and the repair was to stop reasoning about which
+#: variables matter. A derived list costs one expression and removes the question.
+_CACHE_VARS = tuple(
+    sorted({lane.env_var for lane in CACHE_LANES} | {CACHE_BASE_VAR})
+)
+
+#: **Capability probes, never a version string.** Six assertions below are about
+#: behaviour format 0.7 introduced, and this branch runs against an uncut 0.7 while a
+#: released install is still on 0.6.6 — so they must skip honestly rather than fail on
+#: the toolchain a user actually has. Each probes the narrowest symbol that answers its
+#: own question, because `CLAUDE.md` § 8's rule holds here too: a version string says
+#: nothing about what is installed, and `hasattr` against the *installed* package does.
+#:
+#: `_FORMAT_0_7` is the one stand-in. `OUTSIDE_CONTENT_IDENTITY` is RM180's field marker,
+#: used because the two behaviours it gates — RM141's shared strict predicate and the
+#: overlay's presence in the content hash — ship no symbol of their own. **Delete every
+#: one of these the day the floor moves to 0.7**; they exist for the interval, not
+#: forever.
+_FORMAT_0_7 = hasattr(_format_base, "OUTSIDE_CONTENT_IDENTITY")
+_ENRICH_TAKES_PROGRESS = "progress" in _inspect.signature(_enrich).parameters
+_COMPILER_CODES_WARNINGS = "warnings_summary" in _Compilation.model_fields
+_COMPILER_DRAFTS_OVERLAY = "overrides.csv" in _draft.DRAFTABLE
+
+needs_format_0_7 = pytest.mark.skipif(
+    not _FORMAT_0_7, reason="installed format predates 0.7 (no OUTSIDE_CONTENT_IDENTITY)"
+)
+needs_progress_callback = pytest.mark.skipif(
+    not _ENRICH_TAKES_PROGRESS, reason="installed enricher has no progress callback (RM128)"
+)
+needs_coded_warnings = pytest.mark.skipif(
+    not _COMPILER_CODES_WARNINGS, reason="installed compiler writes no warnings_summary (RM131)"
+)
+needs_overlay = pytest.mark.skipif(
+    not _COMPILER_DRAFTS_OVERLAY, reason="installed compiler does not draft overrides.csv (RM124)"
+)
+
+#: The spec files the installed compiler reads and the installed registry does not
+#: recognise — **computed, because both sides move on their own cadence** and a literal
+#: pair would be wrong on either toolchain. Empty on 0.6.6; the two concordance tables
+#: on 0.7. A file here is one a re-publish drops silently (registry-tree `S19`, `F88`).
+def registry_lag() -> set[str]:
+    return {
+        name for name in _hints.DERIVED_TABLE_MODELS if not _specfiles.is_spec_file(name)
+    }
+
+
+#: What the lag is *allowed* to be. Computing the lag makes the roster tests work on
+#: either toolchain; this keeps them a guard rather than a tautology, by failing when a
+#: THIRD name joins — which would be a new file nobody has reported yet.
+KNOWN_REGISTRY_LAG = frozenset({"clin_sig_concordance.csv", "clin_sig_authority_calls.csv"})
 
 #: Every environment variable that could change what a test asserts, cleared for the
 #: whole suite by ``_hermetic_configuration``.
@@ -48,9 +118,11 @@ _UPSTREAM_VARS = (
 #: papered over into a list of unprefixed names that clear nothing.
 _ENV_PREFIX = Settings.model_config.get("env_prefix") or ""
 
-_ECOSYSTEM_VARS = tuple(
-    f"{_ENV_PREFIX}{name}".upper() for name in Settings.model_fields
-) + _UPSTREAM_VARS
+_ECOSYSTEM_VARS = (
+    tuple(f"{_ENV_PREFIX}{name}".upper() for name in Settings.model_fields)
+    + _UPSTREAM_VARS
+    + _CACHE_VARS
+)
 
 
 def _refuse_dotenv(*args: object, **kwargs: object) -> bool:

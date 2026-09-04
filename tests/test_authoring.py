@@ -12,6 +12,7 @@ import json
 from importlib import metadata
 
 import pytest
+from conftest import KNOWN_REGISTRY_LAG, needs_overlay, registry_lag
 
 # The versions the stamp must report, computed here rather than pasted. A literal
 # would be the very defect these tests guard: a version written down once agrees
@@ -332,19 +333,18 @@ async def test_lint_normalized_csv_never_invents_a_value(client):
 # --------------------------------------------------------------------------- #
 # RM10 — three answers restated a schema fact instead of generating it
 # --------------------------------------------------------------------------- #
-#: The two files the 0.7 compiler reads from a spec directory that no released
-#: registry recognises. Filed as registry-tree `S19` on 2026-09-03 and open there;
-#: `overrides.csv` is the third and is missing from their list too, but it is
-#: draftable so it never reaches the sidecar roster.
+#: The files the installed compiler reads from a spec directory that the installed
+#: registry does not recognise — **computed in `conftest`, never listed**, because the
+#: two packages move on their own cadence and a literal pair is wrong on one of them:
+#: empty against a released 0.6.6, the two concordance tables against 0.7.
 #:
-#: This is a **lag**, not a disagreement: both sides are right about their own
-#: release, and a re-publish through a registry that does not recognise a file drops
-#: it. Naming the set here keeps the two-producer comparison doing its job — it is
-#: still a real comparison, over everything except the names we have measured and
-#: reported — instead of being deleted because it went red for a true reason.
-_REGISTRY_LAGS_BEHIND = frozenset(
-    {"clin_sig_concordance.csv", "clin_sig_authority_calls.csv"}
-)
+#: This is a **lag**, not a disagreement: both sides are right about their own release,
+#: and a re-publish through a registry that does not recognise a file drops it. Excusing
+#: the computed set keeps the two-producer comparison doing its job over everything
+#: else, and `KNOWN_REGISTRY_LAG` is what keeps it a guard rather than a tautology — a
+#: third name appearing is a file nobody has reported yet. Filed as registry-tree `S19`
+#: on 2026-09-03 and open there; `overrides.csv` is missing from their list too, but it
+#: is draftable, so it never reaches this roster and has its own test below.
 
 
 def _key_columns(keyed_on: str) -> list[str]:
@@ -366,7 +366,7 @@ async def test_the_sidecar_roster_is_derived_from_the_installed_toolchain(client
     from just_dna_registry import specfiles
 
     expected = (
-        {specfiles.RESOLUTION_CSV, *specfiles.FACT_CSVS} | _REGISTRY_LAGS_BEHIND
+        {specfiles.RESOLUTION_CSV, *specfiles.FACT_CSVS} | registry_lag()
     ) - set(draft.DRAFTABLE)
     result = await client.call_tool("list_tables", {})
     assert set(result.data.sidecars) == expected
@@ -496,18 +496,20 @@ def test_the_produced_roster_agrees_with_the_registry_that_recognises_the_same_f
 
     assert set(_PRODUCED_MODELS) == set(_PRODUCED_CSVS)
     assert set(_PRODUCED_CSVS) == (
-        {specfiles.RESOLUTION_CSV, *specfiles.FACT_CSVS} | _REGISTRY_LAGS_BEHIND
+        {specfiles.RESOLUTION_CSV, *specfiles.FACT_CSVS} | registry_lag()
     ) - set(draft.DRAFTABLE)
-    # The lag is stated, not assumed: every name we excuse must still be one the
-    # compiler reads and the registry does not. When the registry catches up, this
-    # fails and the constant comes out — which is the point of naming it.
-    for name in _REGISTRY_LAGS_BEHIND:
-        assert name in hints.DERIVED_TABLE_MODELS
-        assert not specfiles.is_spec_file(name), f"registry now recognises {name}"
+    # Computing the lag makes this work on either toolchain; this is what keeps it a
+    # guard. A name we have measured and reported may be excused; a third one appearing
+    # is a file nobody has told the registry about yet, and it must stop the suite.
+    assert registry_lag() <= KNOWN_REGISTRY_LAG, (
+        "a spec file the compiler reads and the registry does not recognise, beyond the "
+        f"pair filed as S19: {sorted(registry_lag() - KNOWN_REGISTRY_LAG)}"
+    )
     for csv_name, model in _PRODUCED_MODELS.items():
         assert hints.derived_model_for(csv_name) is model
 
 
+@needs_overlay
 def test_the_overlay_is_still_a_file_a_republish_would_drop():
     """The un-defer trigger for `F88`, and it needs its own test to exist at all.
 
@@ -521,10 +523,8 @@ def test_the_overlay_is_still_a_file_a_republish_would_drop():
     So this fails the day the registry catches up, and the failure means *go
     teach the overlay*, not *fix this test*. Filed as registry-tree `S19`.
     """
-    from just_dna_compiler import draft
     from just_dna_registry import specfiles
 
-    assert "overrides.csv" in draft.DRAFTABLE, "upstream stopped offering it — re-read RM124"
     assert not specfiles.is_spec_file("overrides.csv"), (
         "the registry now recognises overrides.csv: S19 has landed, so the overlay is safe "
         "to publish and `module-curate` owes it a step — see F88"
