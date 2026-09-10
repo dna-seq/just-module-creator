@@ -211,8 +211,14 @@ exactly that, generated: `base.field_first_seen(model)`, per `(model, field)` �
 
 ## F88 — a 0.7 spec directory loses three files on a re-publish, and one of them is an author's correction (registry `S19`)
 
-**State: filed 2026-09-03, open. Not present in registry 0.18.2 as installed, nor in their 0.23.0
-tree.**
+**State: FIXED IN THEIR TREE, NOT RELEASED — re-checked 2026-09-11.** `specfiles.py` now carries
+`overrides.csv`, `clin_sig_concordance.csv` and `clin_sig_authority_calls.csv`; PyPI is still
+`just-dna-registry 0.18.2`, which has none of them, and that is what `uv sync` gives us. State 2 of
+the three, and the one this file exists to keep honest: **the un-defer test is correct to stay green,
+and it flips when a release carrying the fix enters our lockfile — not when their tree looks right.**
+The note itself is still open in their inbox; they acted before replying, which is their usual order.
+
+*(Original state, 2026-09-03: not present in registry 0.18.2 as installed, nor in their 0.23.0 tree.)*
 
 **What we measured.** `specfiles.is_spec_file` answers `False` for `overrides.csv`,
 `clin_sig_concordance.csv` and `clin_sig_authority_calls.csv` — all three read by the 0.7 compiler

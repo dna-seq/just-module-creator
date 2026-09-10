@@ -3,7 +3,7 @@
 | Section | Answers |
 |---|---|
 | [What is wrapped, and what is not](#what-is-wrapped-and-what-is-not) | task → MCP tool → CLI equivalent, and the seven things only the CLI can do |
-| [`just-dna-compiler`](#just-dna-compiler-offline-never-fetches) | scaffold, template, validate, compile, signature, reverse, keygen, sign, close, verify |
+| [`just-dna-compiler`](#just-dna-compiler-offline-never-fetches) | scaffold, template, validate, compile, signature, reverse, keygen, sign, close, verify, sweep |
 | [`just-dna-enricher`](#just-dna-enricher-the-only-tier-that-fetches) | enrich, the fact passes, the three drafters, the cross-checks, `hint recover`, `vrs mint` |
 | [`registry-client`](#registry-client) | the client commands, which instance it drives, and what the CLI still owns alone |
 | [Environment](#environment) | the variables the enricher reads straight from the process environment |
@@ -63,6 +63,7 @@ Install: `pip install just-dna-enricher` pulls the compiler and the format tier.
 | `sign <dir> --private-key K` | signs `artifact.digest`, writes the signature into the manifest |
 | `close <dir>` | write the `closure` into `verification.json`, bound to the authored bytes. `--by`, `--private-key`. Refuses a spec that does not validate; does **not** refuse on warnings |
 | `verify <dir>` | re-hash every file, recompute the digest, check the signature. `--public-key`, `--no-require-marketplace`, `--check-inputs/-logs/-provenance/-logo/-readme/-derived` |
+| `sweep BEFORE AFTER` | what a *release* changed about compiled output, per axis. `--spec-root`, `--release` (runs the release gate: a measured movement no `ReleaseRecord` declares exits 1), `--json`. It needs the previous release actually installed, so it is a release-sequence command rather than a test — and it is the producer's, not an author's |
 
 **`verify`'s `--require-marketplace` defaults to on, and that is the registry's policy, not yours.**
 A bare `verify` rejects every locally-compiled module — ours included — because the reference
@@ -97,16 +98,37 @@ kind, so the compile succeeds and writes a module whose every row has no `chrom`
 | `check-acmg <dir>` | `acmg_sf` vs the ACMG SF list. `--sf-list` (strongly preferred), `--offline`, `--url`. Records the question like `check-identifiers` |
 | `pgx <dir>` | `function_status` vs PharmVar + CPIC. `--no-pharmvar`, `--no-cpic`, `--use` |
 | `clinpgx check <dir> --snapshot S` | `pharm_variants.csv` vs the ClinPGx snapshot, offline-capable |
+| `check-repeat-bands <dir>` | an authored repeat band table vs STRchive. Reads a provisioned snapshot with no flag |
+| `clinpgx check-labels <dir>` | a drug claim vs five regulators' labels |
+| `alphagenome check <spec>` | a module's variants vs AlphaGenome's precomputed impact scores. Reports, never repairs; offline unless `--threshold` names a cut the local snapshot cannot decide, and it refuses to refine more than `--refinement-cap` rows over the network |
+| `litvar coverage\|gene` | which papers a variant-literature index holds for a module's alleles, and at which tier. Reports only |
+| `draft-repeats <dir>` | STRchive → `repeat_alleles.csv` identity rows |
 | `hint variant\|citation\|trait\|gene` | look up one identifier. Writes nothing. `--json`, `--offline`, `--ambiguity`, `--frequencies` |
 | `vrs mint <dir>` | stamp `ga4gh:VA.…` ids onto `resolution.csv` (substitutions offline, indels online) |
 | `enrich-and-compile <dir> <out>` | enrich + compile in one call. `--frequencies`, `--gene-metrics` |
+| `template` | print an authored table's header row |
 
 The three sources this server reaches that the enricher does not — Semantic Scholar, arXiv and
 Unpaywall — have no CLI equivalent anywhere in the toolchain. Discovery is an app-surface feature;
 the enricher's literature tier verifies citations you already have and deliberately does not search.
 
-Snapshot builders (dev/publisher surface): `clinvar build|citations|publish`, `clinpgx build`,
-`acmg build`, `gnomad constraint`, `cpic build`, `pharmvar build`, `cache status|pull`, `upload`.
+**Snapshot builders and the cache lanes (dev/publisher surface).** One command group per lane, and
+the roster below is what `caches.CACHE_LANES` declares — **ask that rather than this list**, which is
+the hand-kept copy that had gone six groups stale before format 0.7:
+`clinvar`, `clinpgx`, `acmg`, `gnomad`, `cpic`, `pharmvar`, `civic`, `pubmind`, `mane`, `strchive`,
+`mitomap`, `alphagenome`, `atlas`, plus `cache` and `upload`.
+
+Three of them are worth knowing about by name:
+
+- **`cache prepare` is the one a deployment wants**, not `cache pull`. `pull` fetches the published
+  snapshots and stops, and several lanes are unpublished for recorded reasons, so a machine that only
+  pulled has been running with those caches absent and the checks reading them skipping themselves.
+  `prepare` pulls what is published and builds the rest, and leaves a present cache alone.
+- **`atlas generate` runs once per checkout** and needs the `[atlas]` extra plus the dev group. A
+  released wheel carries the bindings already; a source build generates them.
+- **`alphagenome build` takes `--input` and has no default URL.** The source artifact sits behind a
+  sign-in whose eligibility clause bars classes of holder, so acquiring it is the operator's own act
+  and this tier never fetches it.
 
 Every pass takes `--strict` / `--best-effort`, and every pass that can degrade takes `--offline`.
 `--offline` is the only switch; an explicit `--*-cache` path is the inject-only escape hatch and is

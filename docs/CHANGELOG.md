@@ -21,8 +21,10 @@ first measured at `f4a9b14`, gates last green at `67db26c` — which moved seven
 session, twice because of notes filed from it.
 
 **Everything below is verified on both toolchains from one commit**: 662 passed against the 0.7 tree,
-and **656 passed with 6 skipped** here on `main` against 0.6.6 from PyPI, which is what a user
-installing today gets. Every skip names the symbol it looked for rather than a version:
+and **657 passed with 6 skipped** here on `main` against 0.6.6 from PyPI, which is what a user
+installing today gets. (Re-measured 2026-09-11 after the AlphaGenome sync: 663 on the 0.7 tree, 657
+plus the same 6 here — the CLI guard runs on both, since a document naming more commands than the
+installed toolchain ships is the safe direction.) Every skip names the symbol it looked for rather than a version:
 
 ```
 tests/test_authoring.py:512  installed compiler does not draft overrides.csv (RM124)
@@ -73,6 +75,48 @@ so `list_tables` offered it with no subject line; it has one now. It is *not* in
 because no released registry recognises the filename and a re-publish drops it silently while the
 module recompiles green — `F88`. An agent that asks `describe_table` gets the truth; nothing routes an
 author into writing a file that does not survive.
+
+**Re-synced against the AlphaGenome round (RM191–RM199), 2026-09-11.** Upstream's 0.7 branch took 46
+commits in a week and is at `99f4737`; the branch's gates are green against it unchanged, which is the
+whole answer for this plugin — **AlphaGenome adds no column, no table, no manifest field and no
+signature.** It touches us in exactly one place, and that place is an author's publish:
+
+- **`variant_impact_agreement` is a new `VALID_VERIFICATION_CHECKS` member** (RM193), and
+  `VerificationRecord.check` is validated against that vocabulary by a field validator rather than
+  merely annotated with it — so a reader older than the writer refuses the **whole record**, not one
+  cell. Upstream measured a real 0.6.6 refusing it where `rsid_currency` is accepted. No reference
+  module runs `alphagenome check`, so the corpus never shows it, which is why it reaches an author
+  before it reaches a test. `SYMPTOMS.md` carries the reading beside the two contract entries it
+  belongs with.
+- The vocabulary is now **26 members, up from 17 at 0.6.1**. The three dossier lines that quote a
+  measurement are re-dated: 24 of 26 named as literals against the installed enricher, where the same
+  walk answered 23 of 25 eight days earlier and 15 of 17 under 0.6.4. **The two RESERVED names have
+  not moved once while the ratio has moved three times**, which is the argument for stating the
+  exception rather than the fraction, now with three data points instead of two.
+- **`just-dna-enricher[alphagenome]` is deleted and `[atlas]` replaces it** (255 MB and 81 packages
+  down to 19 MB and 2). We declare no extras, and nothing in `.env.template`, `README.md`, the
+  `justfile` or `pyproject.toml` names the old one — checked rather than assumed.
+- **The enricher's build backend moved to hatchling** (RM196) and its gRPC bindings are generated at
+  build time from `.proto` sources fetched and sha256-verified rather than vendored. Our editable
+  install of their checkout is unaffected, because their tree carries the generated files; **a clean
+  clone of `preview-0.7` on another machine needs that one fetch**, which is worth knowing before
+  somebody meets it offline.
+
+**`CLI.md` had gone ten commands short, and now a test says so.** It claims to be *the* CLI surface,
+and was missing `alphagenome`, `atlas`, `civic`, `pubmind`, `mane`, `strchive`, `mitomap`, `litvar`,
+`check-repeat-bands`, `draft-repeats` and the compiler's `sweep` — every one of them from a release we
+had already adopted, which is the floor-bump-is-not-adoption shape at document scale. The hand-kept
+"snapshot builders" line is replaced by a pointer to `caches.CACHE_LANES` plus the three commands
+worth knowing by name (`cache prepare` over `cache pull`, `atlas generate` once per checkout,
+`alphagenome build --input` with no default URL). The guard enumerates both **installed** Typer apps
+and fails on a command the document does not name — it asks only that a command be named, because
+whether it is described well is not a thing a test can hold.
+
+**`F88` moved to state 2 and its status line was the thing that rots.** The registry's tree carries
+all three 0.7 spec files now (`33fabd7`); PyPI is still 0.18.2, which carries none. The un-defer test
+is correct to stay green and flips when a release reaches our lockfile, not when their tree looks
+right. Corroborated on their `S19` rather than filed as anything new — they acted before replying,
+which is their usual order.
 
 **The `<0.8` ceiling, which is the `S20` decision.** All three just-dna packages are now
 `>=0.6.6,<0.8`. A registry serves one `just-dna-format` contract and refuses a client on a different

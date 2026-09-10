@@ -538,3 +538,45 @@ def test_a_counted_claim_about_a_vocabulary_still_counts_it_right():
         "state the rule and let the reader run the call, or date the measurement:\n  "
         + "\n  ".join(offenders)
     )
+
+
+# --------------------------------------------------------------------------- #
+# A reference that claims to be the full CLI surface must stay the full surface
+# --------------------------------------------------------------------------- #
+def test_the_cli_reference_names_every_command_both_toolchain_clis_ship():
+    """`CLI.md` says it is *the* CLI surface, and it had gone ten commands short.
+
+    Measured 2026-09-11 against the installed toolchain: `alphagenome`, `atlas`,
+    `civic`, `pubmind`, `mane`, `strchive`, `mitomap`, `litvar`,
+    `check-repeat-bands` and `draft-repeats` were all absent, along with the
+    compiler's `sweep`. Every one arrived in a release we adopted — which is the
+    point: a floor bump is not an adoption, and a document promising completeness
+    is the one that must not be hand-kept against a surface that grows.
+
+    Enumerated from the **installed** Typer apps rather than from `--help` text or
+    a remembered list, so a command added upstream fails here on the next sync.
+    Naming a command is all this asks; whether it is described *well* is the
+    document's own business, and no test can hold that.
+    """
+    from just_dna_compiler import cli as compiler_cli
+    from just_dna_enricher import cli as enricher_cli
+
+    def commands(app) -> set[str]:
+        named = {
+            c.name or (c.callback.__name__.replace("_", "-") if c.callback else "")
+            for c in app.registered_commands
+        }
+        groups = {
+            g.name or (g.typer_instance.info.name if g.typer_instance else "")
+            for g in app.registered_groups
+        }
+        return {n for n in named | groups if n}
+
+    surface = commands(enricher_cli.app) | commands(compiler_cli.app)
+    assert len(surface) > 25, "the enumeration found almost nothing — the app moved"
+
+    text = (SKILLS / "module-101" / "references" / "CLI.md").read_text()
+    missing = sorted(name for name in surface if name not in text)
+    assert not missing, (
+        "commands the toolchain ships and `CLI.md` does not name: " + ", ".join(missing)
+    )
