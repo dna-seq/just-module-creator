@@ -563,6 +563,16 @@ shipped in registry 0.22.0, which adds `format_version` to every validation repo
 refuses first, with the contract-mismatch 409 above. So the two symptoms are the same gap read at two
 distances — inside one minor you lose a column, across one you lose publishing.
 
+**`verification.json` has the same shape and one member is the sharp case.** `VerificationRecord.check`
+is validated against `vocab.VALID_VERIFICATION_CHECKS` by a field validator rather than merely
+annotated with it, so a reader older than the writer refuses the **whole record**, not one cell. The
+vocabulary went 17 → 26 across 0.6.1 to 0.7, and `variant_impact_agreement` (RM193) is the one to
+know about: it is written by `alphagenome check`, and upstream measured a real 0.6.6 refusing it
+where `rsid_currency` is accepted. **No reference module runs that check**, so the corpus never shows
+it — which is exactly why it reaches an author before it reaches a test. If you ran the check and the
+instance is behind, the record is the thing being refused; deleting it is deleting an attestation,
+and the honest options are the same three as for a refused column above.
+
 **`Registry error: … That is a refusal to act on an instance other than the one you named.`**
 The guard working. Every registry tool declares a `target` and the server verifies it against the
 instance's reported mode before acting. Check which one you named: **the polygon and production share

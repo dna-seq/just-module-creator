@@ -48,11 +48,12 @@ There is no author column here. Use these words:
 
 - **enricher pass — the commands below, covering all but two of the vocabulary.** Ask
   `vocab.VALID_VERIFICATION_CHECKS` for the members rather than counting them here; the set grew by
-  eight in format 0.7 alone and a number written down is a number that rots. Verified by AST walk
-  over the **installed** enricher, not from a docstring — 23 of 25 members are named as a literal
-  there as of 2026-09-03 (format 0.7.0, uncut), the two exceptions being `dosage_sensitivity` and
-  `gene_disease_validity`, which are RESERVED. The table below is the 0.6.4 walk and names fewer
-  commands than 0.7 ships:
+  nine across format 0.7 and a number written down is a number that rots. Verified by AST walk over
+  the **installed** enricher, not from a docstring — as of 2026-09-11 (format 0.7.0, uncut) 24 of 26
+  members are named as a literal there, the two exceptions being `dosage_sensitivity` and
+  `gene_disease_validity`, which are RESERVED. **That exception list is the durable statement and the
+  ratio is not**: it read 23 of 25 eight days earlier and 15 of 17 under 0.6.4, while the two names
+  never moved. The table below is the 0.6.4 walk and names fewer commands than 0.7 ships:
 
   | command | members it can emit |
   |---|---|
@@ -189,8 +190,12 @@ filed for 1.0 and is **blocked** there, because `reverse` cannot re-emit the doc
 ## The fields that carry judgement
 
 - **`check`** — closed vocabulary, `vocab.VALID_VERIFICATION_CHECKS`. **Ask it for the members**: the
-  set is the list, and it grew from 17 to 25 across format 0.6.1 to 0.7.0, so anything validating a
-  check name against a hand-copied set was refusing real records for two releases. Closed because
+  set is the list, and it grew from 17 to 26 between format 0.6.1 and 0.7.0 — the last of them
+  `variant_impact_agreement` (RM193), added nine days before the cut — so anything validating a check
+  name against a hand-copied set was refusing real records for two releases. **`VerificationRecord.check`
+  is validated against the vocabulary by a field validator rather than merely annotated with it**,
+  which is what makes each new member a compatibility event: a `just-dna-format` older than the writer
+  refuses the whole record. Closed because
   "free-string check names would recreate RM44 one level down — one spelling from the enricher,
   another from a registry, a substring match from a consumer".
 - **`subjects` / `findings`** — **two counts, never a boolean, never one union-typed slot.** `subjects`
@@ -258,12 +263,13 @@ Ordered by how likely a first-timer is to hit them.
    `reference_examples/hboc_palb2/README.md:37-56` says *"five of seven checking passes attest
    nothing"* and that only five of the vocabulary's members can ever be emitted, with a twelve-name
    "never emitted by anything" table. That was true on 2026-08-14 and was **fixed by RM72, shipped in
-   0.6 PT2 on 2026-08-17** (`docs/RM_TOC.md:273`). Re-measured on 2026-09-03 against the installed
+   0.6 PT2 on 2026-08-17** (`docs/RM_TOC.md:273`). Re-measured on 2026-09-11 against the installed
    enricher (format 0.7.0, uncut) by AST walk: **all but `gene_disease_validity` and
-   `dosage_sensitivity` are named as literals** — 23 of 25, where the same walk answered 15 of 17
-   under 0.6.4. The README was never corrected. Treat it as a historical probe record, not as current
-   behaviour — and note that both numbers in that sentence moved, which is why the ratio is the wrong
-   thing to quote and the two RESERVED names are the right thing.
+   `dosage_sensitivity` are named as literals** — 24 of 26, where the same walk answered 23 of 25 on
+   2026-09-03 and 15 of 17 under 0.6.4. The README was never corrected. Treat it as a historical probe
+   record, not as current behaviour — and note that both numbers in that sentence have now moved
+   three times while the two RESERVED names have not moved once, which is why the ratio is the wrong
+   thing to quote and the exception is the right thing.
 6. **`vrs_allele_id` is wired to a command that can only ever emit a skip.** `_mint_record`
    (`enricher/.../cli.py:1694`) returns `skipped("vrs_allele_id", "nothing_to_check")`
    unconditionally — there is no `ran` path. The reasoning is exactly right and worth reading: the
