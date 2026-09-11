@@ -43,7 +43,10 @@ from just_module_creator.settings import Settings
 # than the interval. Every suppression here is scoped to its own line and goes with the
 # guard.
 #
-# **Delete the guard, not the import, when the floor moves to 0.7.**
+# **The condition is NOT "the floor moved to 0.7".** `just_dna_enricher.caches` was added
+# 2026-09-02, two days after the enricher was stamped `0.7.0` — so `>=0.7.0` is satisfied
+# by an install without it and no floor says otherwise. The guard comes out when no install
+# we support can be missing the module; `routing.py` carries the measurement.
 CACHE_LANES: Sequence[Any] = ()
 CACHE_BASE_VAR: str = ""
 try:

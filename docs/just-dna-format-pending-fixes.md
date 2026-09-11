@@ -88,6 +88,17 @@ three-state rule does not cover.** It is present in the format **source tree** a
 The probe is therefore the behaviour: `sidecar_spellings("licensing.csv")` carrying an alias. Found
 2026-09-11 when the registry hit it in a note of their own that named the symbol as available.
 
+**Two of our own scheduled deletions were wrong on that state, measured 2026-09-11.** Grepping for
+the *shape* rather than the action — a note naming a **time** instead of a **condition** — found both
+in an hour: `routing.py` and `tests/conftest.py` each said *"delete the guard when the floor moves to
+0.7"*, and `just_dna_enricher.caches` was added two days **after** the enricher was stamped `0.7.0`,
+so `>=0.7.0` is satisfied by an install without the module. Obeying that note deletes a guarded import
+of a **whole absent module**, which takes the server down at start-up. The second said *"delete this
+once the floor moves to 0.25"*, and seven of the nine proxy methods landed on the registry's client
+**after** its `0.25.0` stamp — the stamp is 03:45 and the methods are 04:09 the same morning. Both now
+state the condition: no install we support can be missing the symbol, which is a claim about installs
+rather than about a release.
+
 **And the state below the rungs: a version floor cannot express a mid-release split.** The registry
 measured it on the neighbouring seam — `VariantHint.checked` was split into `checked` + `snapshots`
 **after `0.7.0` already existed as a version**, so an install satisfying `just-dna-enricher>=0.7.0`

@@ -54,7 +54,15 @@ log = get_logger()
 #: registry is the old world, where a pass looks where it looks and nothing can report on
 #: it; saying *this machine holds no snapshots* would be a measurement nobody took.
 #:
-#: **Delete the guard, not the import, when the floor moves to 0.7.**
+#: **The condition to delete this guard is NOT "the floor moved to 0.7", and the note here
+#: said exactly that until it was measured.** `just_dna_enricher.caches` was added
+#: 2026-09-02, **two days after** the enricher was stamped `0.7.0` (2026-08-31) — so
+#: `just-dna-enricher>=0.7.0` is satisfied by an install that does not have this module,
+#: and there is no version to raise the floor to that would say otherwise. Delete the
+#: guard when no install we support can be missing the module, which is a claim about
+#: installs rather than about a release, and remember what it costs to get wrong: an
+#: unguarded import of a whole absent module takes the server down at start-up rather
+#: than failing later as a missing attribute.
 try:
     from just_dna_enricher.caches import CACHE_LANES
 except ImportError:  # pragma: no cover — only on a pre-0.7 enricher
@@ -128,7 +136,13 @@ def local_lane_presence() -> dict[str, bool] | None:
 #: activates by itself the day 0.25.0 reaches PyPI and refuses with a named reason until
 #: then — no era branch, and `main` ships this code inert rather than not shipping it.
 #:
-#: **Delete this and call the methods outright once the floor moves to 0.25.** Grep
+#: **And the condition to delete it is not "the floor moved to 0.25" — measured, because
+#: this note said that first.** Seven of these nine (`draft` and all six `hint_*`) landed
+#: on their client **after** the registry was stamped `0.25.0`: the stamp is 03:45 and
+#: `60bab83` is 04:09 the same morning. So a `0.25.0` exists that carries two of the nine,
+#: and a floor naming it would assert a surface it does not pin. Delete this probe when
+#: every method is present on every install we support — `proxy_gap` already answers that
+#: question by symbol, which is why the code was right while the note was not. Grep
 #: `_PROXY_METHODS` and `proxy_gap`.
 _PROXY_METHODS: tuple[str, ...] = (
     "cache_status",
