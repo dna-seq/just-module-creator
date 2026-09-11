@@ -703,7 +703,7 @@ def test_the_registry_hint_models_are_theirs_so_a_translation_is_owed():
     """Measured, because it is the reason a translation layer exists at all.
 
     Their `VariantHintReport` flattens `rsid_status` into `rsid_state`/`rsid_current`,
-    maps `checked`'s absolute snapshot paths to lane names under `cost.served_from`, and
+    reports what was consulted under `cost.served_from` rather than as `checked`, and
     promotes `ambiguous` — a `@property` upstream, which does not survive serialization
     — to a real field. Reading their model as the enricher's would drop three answers.
     """
@@ -712,6 +712,150 @@ def test_the_registry_hint_models_are_theirs_so_a_translation_is_owed():
     fields = set(VariantHintReport.model_fields)
     assert "rsid_status" not in fields, "if this reappears, the flattening was reverted"
     assert {"rsid_state", "cost"} <= fields
+
+
+def _live_fields(shape: Any) -> set[str]:
+    """Declared field names off a pydantic model or a dataclass, whichever this is."""
+    import dataclasses
+
+    model_fields = getattr(shape, "model_fields", None)
+    if model_fields is not None:
+        return set(model_fields)
+    if dataclasses.is_dataclass(shape):
+        return {f.name for f in dataclasses.fields(shape)}
+    raise AssertionError(f"{shape!r} is neither a pydantic model nor a dataclass")
+
+
+def test_every_upstream_field_this_layer_reads_by_name_still_exists():
+    """One guard over **every** shape the translation reads, not the one that prompted it.
+
+    The reads are `getattr(obj, "name", default)` throughout, which is right at a version
+    boundary and silent at a rename: a renamed field returns the default forever and the
+    tool keeps answering, about nothing. That is the failure mode with no symptom — worse
+    than a loud one, because the values look like answers.
+
+    **The list is hand-kept on purpose and that is the point of putting it in a test.**
+    It cannot be generated: our field names are ours, and the mapping from theirs to ours
+    is the thing under test. So a rename upstream fails here naming the symbol, instead of
+    surfacing as a null in somebody's module. Prompted by the registry finding the same
+    gap on their side, 2026-09-11 — their parity guard covered one hint shape of four.
+    """
+    import dataclasses
+
+    from just_dna_enricher.lookup import CitationHint, RsidStatus, VariantHint
+
+    reads: list[tuple[Any, set[str]]] = [
+        # routing.variant_fields, local branch — plus `snapshots`, which is READ to reverse
+        # the label map and never serialized (see the no-path guard below).
+        (
+            VariantHint,
+            {
+                "rsid",
+                "rsid_status",
+                "loci",
+                "rsid_candidates",
+                "clin_sig",
+                "populations",
+                "pubmind",
+                "vrs_id",
+                "checked",
+                "snapshots",
+                "findings",
+                "alterations",
+            },
+        ),
+        (RsidStatus, {"state", "current"}),
+        # tools/research.py::lookup_citation — twelve names, and a rename in any of them
+        # nulls a field an author reads as "the source does not say".
+        (
+            CitationHint,
+            {
+                "pmid",
+                "doi",
+                "pmid_exists",
+                "doi_exists",
+                "registry_doi",
+                "pmcid",
+                "open_access",
+                "abstract_available",
+                "title",
+                "journal",
+                "year",
+                "first_author",
+                "findings",
+                "alterations",
+            },
+        ),
+    ]
+
+    if routing.proxy_gap() is None:
+        from just_dna_registry.models.api import (
+            CacheLaneStatus,
+            CacheStatusReport,
+            HintCost,
+            VariantHintBatchResponse,
+            VariantHintReport,
+        )
+
+        reads += [
+            # routing.variant_fields, proxied branch
+            (
+                VariantHintReport,
+                {
+                    "rsid",
+                    "rsid_state",
+                    "rsid_current",
+                    "loci",
+                    "rsid_candidates",
+                    "clin_sig",
+                    "populations",
+                    "pubmind",
+                    "vrs_id",
+                    "ambiguous",
+                    "cost",
+                    "findings",
+                    "alterations",
+                },
+            ),
+            (HintCost, {"charged", "limit", "waited_seconds", "served_from", "remedy"}),
+            # research.py reads the batch's list by name; proxy.py walks the cache report.
+            (VariantHintBatchResponse, {"results"}),
+            (CacheStatusReport, {"lanes"}),
+            (
+                CacheLaneStatus,
+                {"name", "serves", "state", "licence_skip", "route_reason", "build_command"},
+            ),
+        ]
+
+    for shape, names in reads:
+        live = _live_fields(shape)
+        missing = sorted(names - live)
+        assert not missing, (
+            f"{shape.__name__} no longer declares {missing} — this layer reads those by "
+            f"name with a default, so a rename returns the default silently. Live fields: "
+            f"{sorted(live)}"
+        )
+
+    # `ambiguous` is a @property on the enricher's dataclass and a real field on theirs,
+    # which is why `variant_fields` takes `proxied` rather than sniffing for it.
+    assert "ambiguous" not in {f.name for f in dataclasses.fields(VariantHint)}
+    assert isinstance(VariantHint.ambiguous, property)
+
+
+@needs_lanes
+def test_every_lane_attribute_this_layer_reads_is_still_a_lane_attribute():
+    """The other producer on the local side, and it is a module 0.6.6 does not ship.
+
+    `env_var` is the load-bearing one: it exists precisely so a caller cannot name a
+    variable the resolver ignores, and `JUST_DNA_<NAME>_CACHE` is a guess that is already
+    wrong for `constraint`. A rename here would put us back to guessing.
+    """
+    for attribute in ("name", "serves", "resolve", "env_var", "build_command"):
+        for lane in routing.CACHE_LANES:
+            assert hasattr(lane, attribute), (
+                f"lane {lane.name!r} no longer carries {attribute!r} — `_lane_rows` and "
+                "`local_lane_presence` both read it"
+            )
 
 
 # --------------------------------------------------------------------------- #

@@ -275,9 +275,12 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
                         if v is not None
                     }
                     batch = await run_sync(lambda: client.hint_variants(keys=[key]))
-                    # `results` is the field; `hints` is tried first only so a rename
-                    # on their side degrades to a fall-back rather than an empty list.
-                    reports = list(getattr(batch, "results", None) or getattr(batch, "hints", []))
+                    # `results` is the field, pinned by a parity test rather than hedged
+                    # here. The `or getattr(batch, "hints", …)` this used to carry was a
+                    # guess at a second spelling that has never existed, and a guess that
+                    # cannot fire is not a fallback — it is a rename arriving as an empty
+                    # list, which this path then reports as a registry miss.
+                    reports = list(getattr(batch, "results", None) or [])
                     hint = reports[0] if reports else None
                 if hint is None:
                     raise LookupError("the batch came back with no report for this key")
