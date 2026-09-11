@@ -139,11 +139,18 @@ def registry_lag() -> set[str]:
 #: `expression_effects.csv` arrived in the AlphaGenome round (format RM194/RM200) into
 #: `hints.DERIVED_TABLE_MODELS` and `ARTIFACT_PARQUETS` — 23 parquets, not the 22
 #: `INTEGRATION_0_7.md` § 2.2 states — and into **none** of the registry's three
-#: rosters. Filed as registry-tree `S22` on 2026-09-11 with both sub-questions we would
-#: not guess at: whether the omission is deliberate (the lane is Atlas-gated, so a
-#: deployment may be unable to re-derive the table) and, if not, whether it wants
-#: `FACT_CSVS` or only recognition. Until that is answered the table gets no dossier and
-#: no refresh entry: a table a publish drops is not one to route an author at.
+#: rosters. Filed as registry-tree `S22` on 2026-09-11 and **answered the same day**: it is a
+#: fact table (compiler `_FACT_TABLES`), so it wants `FACT_CSVS`, and it is absent from
+#: `_INPUT_FILES`, so a drop never moves `content_signature`. It is deliberately **not**
+#: added to the registry's rosters yet — their `test_fact_tables_match_the_compiler` asserts
+#: an equality with the compiler their wheels pin, so the name would advertise a file that
+#: cannot exist there and would prevent nothing. That trigger then fired the same afternoon:
+#: their tree carries the name in all three rosters (uncommitted there as of 15:25), so
+#: `registry_lag()` is **empty** on this branch's editable install. The name stays in this
+#: set because the assertion is a `<=` and an install on PyPI 0.18.2 still lags — shrinking
+#: the lag must never fail the suite, and a name arriving that nobody reported must. What the
+#: table still does not get is a dossier or a `refresh.ROSTER` entry, and the reason moved:
+#: its producer is gated on an Atlas credential, which is `UNREFRESHABLE`'s third kind.
 KNOWN_REGISTRY_LAG = frozenset(
     {"expression_effects.csv", "clin_sig_concordance.csv", "clin_sig_authority_calls.csv"}
 )

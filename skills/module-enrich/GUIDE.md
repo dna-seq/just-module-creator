@@ -55,7 +55,9 @@ server merges rather than clobbering, so a hand-curated `source="manual"` row no
 and comes back — and `decisions` is every row your files carry that the returned tree does not. Those
 are **not applied**: a missing row is either the source withdrawing an answer or the remote run being
 unable to ask, and only you can tell those apart. The previous bytes are captured and the capture is
-read back and hashed before anything is replaced.
+read back and hashed before anything is replaced. A table you already carry under its **deprecated
+spelling** is written to that file rather than beside it, so this never leaves you two copies of one
+table; a spec already carrying both is refused before anything is written.
 
 **It runs what a publish runs, which is less than a check.** No frequency, literature, identifier,
 ACMG or PGx pass — those are egress spent on a verdict, and this call is for the bytes. So

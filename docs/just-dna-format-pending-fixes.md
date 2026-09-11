@@ -72,6 +72,53 @@ the installed packages, not the sibling checkouts** — which is the check this 
 exists to force, and the reason its status lines name both halves.
 
 
+## F93 — `sidecar_write_path` follows the file you read only if you ask by the table key (format `S96`)
+
+**State: FIXED HERE; ANSWERED AND FIXED IN THE UPSTREAM TREE THE SAME HOUR — STATE 2, so the
+mitigation stays.** Accepted as their **RM224** and shipped in the uncut 0.7.0:
+`sidecar_spellings(name)` now normalises through a filename → key map published as
+`layout.sidecar_key`, so `sidecar_write_path`, `resolve_sidecar`, `sidecar_candidates` and
+`preferred_spelling` all answer the same for either spelling, and their reply says outright *"delete
+the shim; your asymmetry test should now fail, which is the signal you built it to give."*
+
+**It does not get deleted yet, and the reason is §8's three states.** Our floor is 0.6.6 and `main`
+installs from PyPI, where the defect is present — a fix in a sibling checkout is not a fix our users
+have. So the test that announced the turnover was **reshaped rather than removed**: it probes for
+`layout.sidecar_key` and asserts the matching upstream answer either way, so a third behaviour fails
+instead of being absorbed, and `_dest_for` is asserted correct on both toolchains. **Delete
+`_TABLE_KEY_FOR`, `_dest_for` and that probe when the release carrying `sidecar_key` is what
+`uv sync` gives us** — the same cut that drops the `<0.8` ceiling debate.
+
+**What we measured**, format 0.7.0:
+
+```
+layout.sidecar_write_path(spec_dir, "licensing.csv").name  -> 'licensing.csv'   # spec_dir holds sources.csv
+layout.sidecar_write_path(spec_dir, "sources.csv").name    -> 'sources.csv'     # same directory
+layout.SIDECAR_SPELLINGS  ->  {'sources.csv': ('sources.csv', 'licensing.csv')}
+```
+
+The map is keyed on the **table key** `sources.csv` — the name `sources.parquet` and
+`manifest.sources` keep — so `sidecar_spellings("licensing.csv")` carries no alias and
+`resolve_sidecar` never sees the deprecated copy. The docstring's promise ("the copy that exists,
+else the preferred spelling") holds for the *directory* and not for the *argument*, and nothing in it
+says the argument is a different namespace from the filenames on disk.
+
+**Why we met it and the next consumer will too.** A caller holding bytes has a filename, not a key:
+`'licensing.csv' in DERIVED_FILES` is `True` and `'sources.csv' in DERIVED_FILES` is `False`, so the
+registry's own roster hands you exactly the spelling that does not resolve. `remote_derive` reads the
+member name out of a tar.
+
+**What it cost us, and the write was the milder half.** The displacement diff looked for
+`licensing.csv`, found nothing on a spec carrying `sources.csv`, and reported **no rows leaving the
+table** while the replacement went ahead under the other name — a silent wrong write, and the one
+thing the capture rule exists to make impossible. The write half would have left two spellings of one
+table, which `revalidate` refuses rather than merges, so that one is loud.
+
+**Mitigation:** `_TABLE_KEY_FOR` and `_dest_for` in `tools/proxy.py`, comprehended from
+`SIDECAR_SPELLINGS` so a second aliased table needs no edit here. Three tests pin it and one of them
+asserts **upstream's** asymmetry as well as our translation — the day the map is keyed both ways that
+test fails and says the shim is redundant, which is the only trigger to delete it.
+
 ## F89 — an overlay `reason` is inside `content_signature`, so fixing a typo mints a new content identity (format `S87`)
 
 **State: CLOSED the same day. Accepted, decided with the maintainer and shipped in the uncut 0.7.0 as
@@ -211,8 +258,9 @@ exactly that, generated: `base.field_first_seen(model)`, per `(model, field)` �
 
 ## F92 — `expression_effects.csv` is `F88` one table over, and it arrived after the fix (registry `S22`)
 
-**State: OPEN, filed 2026-09-11.** Found while sweeping the 0.7 authored surface into the tables
-skill, which is exactly the pass `F88` had deferred — so the deferral paid for itself by finding the
+**State: ANSWERED 2026-09-11, and the answer is that both readings are right: it is a fact table,
+and the name waits for a wheel bump rather than being added now.** Found while sweeping the 0.7
+authored surface into the tables skill, which is exactly the pass `F88` had deferred — so the deferral paid for itself by finding the
 next instance of the defect it was about.
 
 **What we measured**, on format/compiler/enricher 0.7.0 beside registry 0.25.0, both editable from
@@ -247,11 +295,48 @@ routed an author at `just-dna-enricher expression` — a table a publish may dro
 `LAYOUT.md` carries it as a 🚧 ROADWORKS entry with the guard stated, which is the honest shape: the
 author is told the limit rather than protected from it by silence.
 
-**Two sub-questions are in the note and we are not guessing at either.** Whether the omission is
-deliberate — the lane is Atlas-gated and licence-bound, so a deployment may be unable to re-derive
-the table, which would be a good reason we would like written down — and, if not, whether it wants
-`FACT_CSVS` (re-derivable) or only recognition. The second decides whether our refresh roster gains
-an entry, since that is what it is pinned against.
+**Both sub-questions were answered off their tree rather than guessed at.** It is a **fact table**:
+`expression_effects.csv` is in the compiler's `_FACT_TABLES` beside the two concordance tables, so it
+wants `FACT_CSVS`, which folds it into `RECOGNIZED_SPEC_FILES` and `DERIVED_FILES` both. It is **not**
+in `_INPUT_FILES`, so it never reaches `content_signature` — which confirms the milder reading above:
+a drop is recoverable by re-running `enrich`, and the cost is a re-publish silently shrinking the
+module.
+
+**And the name should not be added yet, for a reason better than either reading we offered.** Their
+`test_fact_tables_match_the_compiler` asserts an **equality** with the compiler their wheels pin —
+dated 09-09, before the AlphaGenome round — not a subset. Adding the name there would advertise a
+file that cannot exist under that compiler, and would prevent nothing, because a table the compiler
+does not read is a table nothing produces and therefore nothing can drop. That test goes red at their
+wheel bump, which is exactly when the name becomes both necessary and testable, and its docstring now
+names this `S22` so whoever meets it red reads it as the prompt rather than as a break.
+
+**Then the trigger fired the same afternoon, and the reason to hold changed rather than going away.**
+Their working tree carried the name into `FACT_CSVS`, `DERIVED_FILES` and `RECOGNIZED_SPEC_FILES`
+within the hour (uncommitted there as of 15:25), and our own roster guard went red naming it — which
+is the guard working: *a new fact table must fail this suite, not be silently unrefreshable*. So the
+drop risk is closed and `registry_lag()` is empty on this branch's editable install, while
+`KNOWN_REGISTRY_LAG` keeps the name because the assertion is a `<=` and an install on PyPI 0.18.2
+still lags.
+
+**What it earned is a refusal with a new reason, and it is a third kind rather than either existing
+one.** `expression_effects.csv` now has an `UNREFRESHABLE` entry in `tools/refresh.py`: its producer
+is the enricher's `expression` pass, which is gated on an AlphaGenome Atlas credential and a
+`declared_use` licence check (`missing_credential_reason`, `check_declared_use`,
+`ATLAS_CLIENT_AVAILABLE` are all public there), and this server wraps no tool that calls it. The
+refresh shape is delete-then-re-derive, so on an install without that access the re-derivation writes
+nothing and the classification afterwards would report every real row as one the source withdrew —
+§2's *never classify against a partial re-derivation*, exactly. The capture would restore the bytes
+and the author would still be handed an answer about the credential rather than about the source.
+**The reversal is a tool, not a roster line**: when an `enrich_expression` exists here that can report
+*"no credential"* as a refusal rather than as an empty table, delete the entry and add a `ROSTER`
+member with `EXPRESSION_FACT_FIELDS` as its `fact_fields`. Still no dossier and no author routing —
+the reason moved from *a publish may drop it* to *its producer needs a credential most installs lack*.
+
+**What the report changed on their side was a roster nobody was comparing.** The existing equality
+covers *derived* tables against a private compiler symbol; nothing compared their roster to
+`draft.DRAFTABLE`, the fourteen **authored** kinds, where a drop loses the author's own work rather
+than something a re-run recreates. That check now exists over the public surface, beside a second
+asserting that coverage is never bought by widening `SIGNATURE_INPUTS`. Registry commit `989bde0`.
 
 **The part worth keeping is the cross-tree guard**, offered as a shape rather than a request:
 `hints.DERIVED_TABLE_MODELS` is public and is the producer's own answer to which CSVs are

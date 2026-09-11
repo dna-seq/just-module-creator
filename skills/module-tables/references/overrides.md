@@ -132,11 +132,13 @@ Two shapes fall out of that and both matter. A table with `member_field=None` is
 the group-scoped `update` and the refused group-wide `suppress` do not arise. Everything else is
 grouped, and `member` is the within-group discriminator in that table's own column.
 
-**`expression_effects.csv` is in the roster and is not yet teachable here.** It is an overlay target
-and a compiler-recognised derived table whose parquet is in `ARTIFACT_PARQUETS`, and it is in
-**none** of the registry's three rosters — so a server-side rebuild drops the sidecar. Filed as
-registry-tree `S22` on 2026-09-11. Until that is answered, an overlay against it is a correction to
-a table a publish may not carry.
+**`expression_effects.csv` is an overlay target and the sidecar behind it is a special case.** It is
+a compiler-recognised derived table whose parquet is in `ARTIFACT_PARQUETS`, and for one afternoon it
+was in none of the registry's three rosters, so a rebuild dropped the sidecar and an overlay against
+it corrected a table the publish did not carry — registry-tree `S22`, filed and closed 2026-09-11.
+What remains is narrower: the sidecar's producer is the enricher's `expression` pass, gated on an
+AlphaGenome Atlas credential, and nothing here wraps it — so an overlay row against this table is
+fine, and `refresh_sidecar` will refuse to rebuild the table under it.
 
 ## What this is NOT: `record_override` and `logs/authoring.log`
 

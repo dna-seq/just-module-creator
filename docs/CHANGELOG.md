@@ -3,6 +3,52 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.31.1] — 2026-09-11
+
+### A derived table lands on the spelling the author already has
+
+`remote_derive` asked `sidecar_write_path` with the filename the archive uses, and that is not how
+the helper follows the file you read: `SIDECAR_SPELLINGS` is keyed on the table key `sources.csv` —
+the name `sources.parquet` and `manifest.sources` keep — so asking with `licensing.csv` finds no
+alias at all. On a module carrying the deprecated spelling the write created the **second** copy,
+which the next upload refuses rather than merges.
+
+**The write was the loud half. The read failed silently**, and that is the one that matters: the
+displacement diff looked for `licensing.csv`, found nothing, and reported no rows leaving the table
+while the replacement went ahead under the other name — the exact silent wrong write the capture rule
+exists to prevent. Fixed by translating filename → table key through their own map (`_dest_for`), so
+a second aliased table costs no edit here. A spec already carrying **both** spellings is now a
+refusal passed through from upstream's `SidecarCollision` before anything is written, because two
+copies of one table are two claims and neither can be preferred.
+
+So the third case in 0.31.0's capture rule below is **closed rather than surfaced**: the residual
+list is a pass that could not reach its source, and the concordance pair.
+
+**Filed as format-tree `S96`, and answered within the hour — their RM224, in the uncut 0.7.0.**
+`sidecar_spellings` now normalises through a filename → key map published as `layout.sidecar_key`, so
+every caller is right for either spelling and their reply says *"delete the shim."* It stays: our
+floor is 0.6.6, `main` installs from PyPI, and a fix in a sibling checkout is not a fix our users
+have. The test that announced the turnover was **reshaped rather than deleted** — it probes for
+`sidecar_key` and asserts the matching upstream answer either way, so a third behaviour fails instead
+of being absorbed. `F93` carries the deletion trigger.
+
+### `expression_effects.csv` earns a refusal with a third reason
+
+`S22` closed too: it is a fact table, it never touches `content_signature`, and the registry carried
+the name into all three rosters the same afternoon — so a publish no longer drops it and
+`registry_lag()` is empty on this branch. **Our roster guard went red naming it**, which is the guard
+working rather than breaking: *a new fact table must fail this suite, not be silently unrefreshable*.
+
+It gets an `UNREFRESHABLE` entry, and the reason is neither of the two that were there. `sources.csv`
+is refused because nothing can put it back; the concordance pair because its producer rewrites both
+tables whole. This one has a producer that works — and it is gated on an AlphaGenome Atlas credential
+and a declared licence use, and nothing here wraps it. Delete-then-re-derive on an install without
+that access writes **nothing**, and the classification afterwards would report every real row as one
+the source withdrew: §2's *never classify against a partial re-derivation*, exactly. The bytes would
+come back from the capture and the author would still be handed an answer about the credential rather
+than about the source. The refusal names `just-dna-enricher expression` instead, and the reversal is
+a tool rather than a roster line.
+
 ## [0.31.0] — 2026-09-11
 
 ### Two-way mode: thick where the snapshots are, thin where they are not

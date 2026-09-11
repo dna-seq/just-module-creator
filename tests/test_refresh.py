@@ -263,6 +263,12 @@ _WHOLE_REWRITE_SIDECARS = frozenset(
     {"clin_sig_concordance.csv", "clin_sig_authority_calls.csv"}
 )
 
+#: The third recorded kind, and it is intersected with the live roster for the same reason
+#: the pair above is: the name reached the registry's `FACT_CSVS` in the AlphaGenome round
+#: (our `S22`), so an install on PyPI 0.18.2 does not see it and an equality written
+#: without the intersection would pass on one toolchain and fail on the other.
+_CREDENTIAL_GATED_SIDECARS = frozenset({"expression_effects.csv"})
+
 
 def test_the_roster_covers_every_public_sidecar_or_says_why_not() -> None:
     """A new fact table must fail this suite, not be silently unrefreshable.
@@ -271,18 +277,25 @@ def test_the_roster_covers_every_public_sidecar_or_says_why_not() -> None:
     interchangeable.** `sources.csv` is refused because nothing can put it back; the
     concordance pair is refused because there is nothing to protect and the refresh shape
     is wrong for them — their producer replaces both tables whole, and the judgement about
-    a contested subject lives in `overrides.csv`. A future table that lands in `FACT_CSVS`
-    fails here until somebody writes down which of those it is, or gives it a pass.
+    a contested subject lives in `overrides.csv`; `expression_effects.csv` is refused
+    because its producer is gated on an Atlas credential, so on an install without one the
+    re-derivation writes nothing and the classification would measure the credential
+    rather than the source. A future table that lands in `FACT_CSVS` fails here until
+    somebody writes down which of those it is, or gives it a pass.
     """
     # Nothing is refreshable that the producers' own roster does not name.
     assert set(ROSTER) - UNPRODUCED <= set(REFRESHABLE_ROSTER), (
         f"a roster entry no public roster names: {sorted(set(ROSTER) - set(REFRESHABLE_ROSTER))}"
     )
-    # And every public name we do not cover is one of exactly two recorded kinds.
+    # And every public name we do not cover is one of exactly three recorded kinds.
     uncovered = set(REFRESHABLE_ROSTER) - set(ROSTER)
-    assert uncovered == {SOURCES_CSV} | (_WHOLE_REWRITE_SIDECARS & set(REFRESHABLE_ROSTER)), (
-        "an unaccounted-for fact table: "
-        f"{sorted(uncovered - {SOURCES_CSV} - _WHOLE_REWRITE_SIDECARS)}"
+    accounted = (
+        {SOURCES_CSV}
+        | (_WHOLE_REWRITE_SIDECARS & set(REFRESHABLE_ROSTER))
+        | (_CREDENTIAL_GATED_SIDECARS & set(REFRESHABLE_ROSTER))
+    )
+    assert uncovered == accounted, (
+        f"an unaccounted-for fact table: {sorted(uncovered - accounted)}"
     )
     assert uncovered <= set(UNREFRESHABLE), (
         "a fact table with neither a refresh pass nor a written reason: "

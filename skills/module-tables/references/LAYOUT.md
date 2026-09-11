@@ -56,17 +56,24 @@ and `resolution.csv`.
 ([`clin_sig_concordance.md`](clin_sig_concordance.md)). All three arrived in registry 0.25.0, which
 was our `S19`.
 
-> 🚧 **ROADWORKS — `expression_effects.csv` is in the compiler's rosters and in none of the
-> registry's.** Its parquet is in `ARTIFACT_PARQUETS` (**23** on this install, not the 22
-> `INTEGRATION_0_7.md` § 2.2 states — the AlphaGenome round landed after that count was taken), the
-> CSV is in `hints.DERIVED_TABLE_MODELS`, and it is absent from `RECOGNIZED_SPEC_FILES`,
-> `DERIVED_FILES` and `FACT_CSVS` alike. **So a server-side rebuild drops it** — the
-> `licensing.csv`-before-registry-0.16.2 failure exactly: not refused, dropped, and the only symptom
-> is a module that quietly stops carrying a table it compiled with.
-> **Guard:** do not put an `expression_effects.csv` in a module you intend to publish, and do not
-> route an author at `just-dna-enricher expression` yet. Filed as registry-tree `S22` on 2026-09-11
-> with both readings open — whether the omission is deliberate (the lane is Atlas-gated, so a
-> deployment may be unable to re-derive the table) or an oversight.
+> ✅ **CLOSED 2026-09-11 — `expression_effects.csv` was in the compiler's rosters and in none of the
+> registry's, and the registry's caught up the same afternoon.** Its parquet is in
+> `ARTIFACT_PARQUETS` (**23** on this install, not the 22 `INTEGRATION_0_7.md` § 2.2 states — the
+> AlphaGenome round landed after that count was taken) and
+> the CSV is in `hints.DERIVED_TABLE_MODELS`. For one afternoon it was in none of
+> `RECOGNIZED_SPEC_FILES`, `DERIVED_FILES` or `FACT_CSVS`, which meant **a server-side rebuild
+> dropped it** — the `licensing.csv`-before-registry-0.16.2 failure exactly: not refused, dropped,
+> and the only symptom a module that quietly stops carrying a table it compiled with. Filed as
+> registry-tree `S22` on 2026-09-11
+> and **answered and closed the same day**: it is a fact table (the compiler's `_FACT_TABLES`, beside
+> the two concordance tables), it is absent from `_INPUT_FILES` so a drop never moves
+> `content_signature`, and the registry then carried the name into all three rosters within the hour.
+> **So a publish no longer drops it, and the remaining limit is a different one**: its producer is the
+> enricher's `expression` pass, gated on an AlphaGenome Atlas credential and a declared licence use,
+> and nothing here wraps it. `refresh_sidecar` refuses the table with that sentence rather than
+> deleting bytes it could not re-derive.
+> **Guard, narrowed:** the table is fine to carry and fine to publish; do not expect `refresh_sidecar`
+> to rebuild it, and run `just-dna-enricher expression` on a machine holding the credential instead.
 
 **One transient directory is new and is not a roster member.** `enrich` stages its raw answers in
 `.<name>.staging/` (format `RM128`) and removes it on a successful commit unless `--keep-staging`.

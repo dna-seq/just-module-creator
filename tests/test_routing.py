@@ -420,6 +420,151 @@ def test_the_archive_reader_takes_only_recognised_sidecars_by_basename():
     assert not any("evil" in name for name in tables)
 
 
+_LICENSING_HEADER = "source,layer,license,fetched_at\n"
+
+
+def _licensing(rows: list[tuple[str, str]]) -> bytes:
+    """A minimal real `licensing.csv` — the keyed columns are `(source, layer)`."""
+    body = "".join(
+        f"{source},{layer},CC0-1.0,2026-09-11T00:00:00Z\n" for source, layer in rows
+    )
+    return (_LICENSING_HEADER + body).encode()
+
+
+def test_an_incoming_table_lands_on_the_spelling_the_author_already_has():
+    """`sources.csv` on disk and `licensing.csv` in the archive is ONE table, not two.
+
+    **`_dest_for` is a mitigation with a deletion trigger, and the trigger is a release
+    rather than an upstream tree.** Filed as format-tree `S96` and fixed the same hour as
+    their RM224: `sidecar_spellings` now normalises through a filename → key map, published
+    as `layout.sidecar_key`, so every caller is right for either spelling and their reply
+    says outright *"delete the shim"*. It stays until that reaches PyPI, because our own
+    floor is 0.6.6 and an install from PyPI still has the defect — §8's rule, and the whole
+    reason a fix in a sibling checkout is not a fix our users have.
+
+    So the upstream half is asserted **by symbol**, both ways round: on a toolchain with
+    `sidecar_key` the helper must already follow the file you read, and without it the
+    answer must be the second spelling. A third behaviour fails here rather than being
+    absorbed, and either way `_dest_for` answers the same.
+    """
+    import tempfile
+
+    from just_dna_format import layout
+
+    from just_module_creator.tools.proxy import _dest_for
+
+    upstream_normalises = hasattr(layout, "sidecar_key")
+    expected_upstream = "sources.csv" if upstream_normalises else "licensing.csv"
+
+    with tempfile.TemporaryDirectory() as raw:
+        spec_dir = Path(raw)
+        (spec_dir / "sources.csv").write_bytes(_licensing([("ensembl", "resolution")]))
+
+        assert _dest_for(spec_dir, "licensing.csv").name == "sources.csv"
+        assert layout.sidecar_write_path(spec_dir, "licensing.csv").name == expected_upstream, (
+            "upstream's own answer is neither of the two recorded states — re-read "
+            "`layout.SIDECAR_SPELLINGS` and F93 before touching `_dest_for`"
+        )
+
+    with tempfile.TemporaryDirectory() as raw:
+        spec_dir = Path(raw)
+        (spec_dir / "licensing.csv").write_bytes(_licensing([("ensembl", "resolution")]))
+        assert _dest_for(spec_dir, "licensing.csv").name == "licensing.csv"
+
+    with tempfile.TemporaryDirectory() as raw:
+        assert _dest_for(Path(raw), "licensing.csv").name == "licensing.csv"
+
+
+def test_a_displaced_deprecated_spelling_still_produces_its_decision_lines():
+    """The diff has to find the file too, not only the write.
+
+    Looking for `licensing.csv` over a spec carrying `sources.csv` finds nothing, reports
+    no displacement and captures nothing — so the author's rows would be replaced with no
+    line naming what left. Same translation, and this is the half that fails silently.
+    """
+    import tempfile
+
+    from just_module_creator.tools.proxy import _displacement_lines
+
+    with tempfile.TemporaryDirectory() as raw:
+        spec_dir = Path(raw)
+        (spec_dir / "sources.csv").write_bytes(
+            _licensing([("ensembl", "resolution"), ("clinvar", "clinical_assertions")])
+        )
+        lines, displaced = _displacement_lines(
+            spec_dir, {"licensing.csv": _licensing([("ensembl", "resolution")])}
+        )
+
+    assert [path.name for path in displaced] == ["sources.csv"]
+    assert len(lines) == 1, lines
+    assert "clinvar" in lines[0] and "sources.csv" in lines[0]
+
+
+def test_a_spec_carrying_both_spellings_is_refused_rather_than_chosen_between():
+    """Two copies of one table are two claims, and neither can be preferred.
+
+    Upstream raises `SidecarCollision` for exactly that reason; the refusal is passed
+    through because there is no correct silent behaviour available to us either.
+    """
+    import tempfile
+
+    from just_dna_format.layout import SidecarCollision
+
+    from just_module_creator.tools.proxy import _displacement_lines
+
+    with tempfile.TemporaryDirectory() as raw:
+        spec_dir = Path(raw)
+        rows = _licensing([("ensembl", "resolution")])
+        (spec_dir / "sources.csv").write_bytes(rows)
+        (spec_dir / "licensing.csv").write_bytes(rows)
+        with pytest.raises(SidecarCollision):
+            _displacement_lines(spec_dir, {"licensing.csv": rows})
+
+
+@needs_proxy
+async def test_remote_derive_writes_over_the_deprecated_spelling_not_beside_it(
+    monkeypatch, make_client, tmp_path
+):
+    """Asserted through the tool, because the write is the thing that leaves two files.
+
+    The capture lands under the workspace rather than the developer's cache, and the
+    installed name is the author's spelling — a module that arrived carrying
+    `sources.csv` goes on carrying exactly one table.
+    """
+    from just_module_creator.tools import proxy
+
+    spec_dir = tmp_path / "module"
+    spec_dir.mkdir()
+    (spec_dir / "module_spec.yaml").write_text("module:\n  name: x\n")
+    (spec_dir / "sources.csv").write_bytes(_licensing([("ensembl", "resolution")]))
+
+    incoming = _licensing([("ensembl", "resolution"), ("clinvar", "clinical_assertions")])
+    archive = _archive({"derived/licensing.csv": incoming})
+
+    class _Stub:
+        def derived(self, namespace, name, spec_dir):
+            return archive
+
+    monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Stub())
+
+    async with make_client(offline_settings(workspace=str(tmp_path))) as client:
+        result = await client.call_tool(
+            "remote_derive",
+            {
+                "spec_dir": str(spec_dir),
+                "namespace": "test-sheep",
+                "name": "test_lactose",
+                "dry_run": False,
+            },
+        )
+    report = result.data
+
+    assert report.installed == ["sources.csv"]
+    assert not (spec_dir / "licensing.csv").exists(), "two spellings is an error, not a merge"
+    assert (spec_dir / "sources.csv").read_bytes() == incoming
+    assert report.capture_dir is not None, "the displaced file must have been captured first"
+
+
 async def test_remote_derive_refuses_with_the_release_name_when_it_cannot_proxy(
     make_client,
 ):

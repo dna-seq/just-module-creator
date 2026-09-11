@@ -17,8 +17,9 @@ needs an argument the local form does not, since the archive is addressed
 spec carries the existing sidecars, and the server runs the enricher's own `enrich_spec`,
 which gap-fills rather than clobbers — so a hand-curated `source="manual"` row normally
 travels up and comes back. Normally is not always: a pass that could not reach its source,
-the `licensing.csv`/`sources.csv` two-spellings collision the archive's own note warns
-about, and the concordance pair, which is rewritten whole by design. So the local bytes are
+and the concordance pair, which is rewritten whole by design. (The third case used to be the
+`licensing.csv`/`sources.csv` two spellings, and that one is closed rather than surfaced —
+`_dest_for` writes to the file the author already has.) So the local bytes are
 captured and **the capture is read back and hashed** before a single file is replaced, and
 any row the incoming tree does not carry is a decision line rather than an applied edit.
 """
@@ -37,7 +38,11 @@ from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from just_dna_compiler import hints
-from just_dna_format.layout import sidecar_write_path
+from just_dna_format.layout import (
+    SIDECAR_SPELLINGS,
+    SidecarCollision,
+    sidecar_write_path,
+)
 from just_dna_registry.specfiles import DERIVED_FILES, RECOGNIZED_SPEC_FILES
 from mcp.types import ToolAnnotations
 
@@ -156,6 +161,32 @@ def _read_local_keys(
     return keys, rows
 
 
+#: Filename back to the key `sidecar_write_path` answers about. **Asking it with the
+#: filename the archive uses does NOT follow the file you read**, which is the opposite of
+#: what its docstring promises a careless reader: `SIDECAR_SPELLINGS` is keyed on the table
+#: key `sources.csv` — the name `sources.parquet` and `manifest.sources` keep — so
+#: `sidecar_spellings("licensing.csv")` is a one-tuple with no alias in it, and a write over
+#: a spec carrying `sources.csv` creates the *second* spelling instead of following the
+#: first. Measured 2026-09-11 on format 0.7.0. Derived from their map rather than written
+#: out, so a second aliased table needs nothing here.
+_TABLE_KEY_FOR: dict[str, str] = {
+    spelling: key
+    for key, spellings in SIDECAR_SPELLINGS.items()
+    for spelling in spellings
+}
+
+
+def _dest_for(directory: Path, csv_name: str) -> Path:
+    """Where an incoming derived table goes — the spelling already on disk, else upstream's.
+
+    One line of translation, and it is the difference between installing over the author's
+    `sources.csv` and leaving them two copies of one table, which the next upload refuses
+    rather than merges. `SidecarCollision` propagates: a spec already carrying both is a
+    refusal, not something to pick a side in.
+    """
+    return sidecar_write_path(directory, _TABLE_KEY_FOR.get(csv_name, csv_name))
+
+
 def _displacement_lines(
     spec_dir: Path, incoming: dict[str, bytes]
 ) -> tuple[list[str], list[Path]]:
@@ -170,7 +201,7 @@ def _displacement_lines(
     lines: list[str] = []
     displaced: list[Path] = []
     for csv_name, data in sorted(incoming.items()):
-        local_path = sidecar_write_path(spec_dir, csv_name)
+        local_path = _dest_for(spec_dir, csv_name)
         if not local_path.is_file():
             continue
         displaced.append(local_path)
@@ -457,7 +488,13 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
             ) from exc
 
         tables, extras = _unpack(archive)
-        lines, displaced = _displacement_lines(source, tables)
+        try:
+            lines, displaced = _displacement_lines(source, tables)
+        except SidecarCollision as exc:
+            raise ToolError(
+                f"{exc} Nothing was written, and the derived tree is still on the "
+                "server — this call is safe to re-run once one copy is gone."
+            ) from exc
 
         if ctx:
             await ctx.report_progress(progress=2, total=3)
@@ -503,7 +540,7 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
                 )
 
             for csv_name, data in sorted(tables.items()):
-                dest = sidecar_write_path(source, csv_name)
+                dest = _dest_for(source, csv_name)
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_bytes(data)
                 installed.append(dest.name)
@@ -521,9 +558,9 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
             if dry_run
             else (
                 f"Installed {len(installed)} table(s). Run `validate_module` then "
-                "`compile_module(strict=true)`. If `licensing.csv` arrived beside an "
-                "existing `sources.csv`, those are two spellings of one table and the "
-                "next upload refuses rather than choosing — keep one."
+                "`compile_module(strict=true)`. A table you already carry under its "
+                "deprecated spelling was written to that file rather than beside it, so "
+                "this never leaves you two copies of one table."
             )
         )
 

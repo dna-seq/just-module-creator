@@ -452,6 +452,38 @@ _CONCORDANCE_REFUSAL = (
 UNREFRESHABLE["clin_sig_concordance.csv"] = _CONCORDANCE_REFUSAL
 UNREFRESHABLE["clin_sig_authority_calls.csv"] = _CONCORDANCE_REFUSAL
 
+#: A third kind of refusal, and it is neither of the two above. `sources.csv` has no
+#: producer anywhere; the concordance pair has one whose shape makes a capture pointless.
+#: `expression_effects.csv` has a producer that works — `just_dna_enricher.expression`'s
+#: `enrich_expression` — and **this server wraps no tool that calls it**, because the pass
+#: needs an AlphaGenome Atlas credential and passes a `declared_use` licence check before
+#: it will write a row (`missing_credential_reason`, `check_declared_use`, and
+#: `ATLAS_CLIENT_AVAILABLE` are all in that module's public surface).
+#:
+#: That gate is what makes a refresh entry actively unsafe rather than merely missing. The
+#: refresh shape is delete-then-re-derive, and on an install with no Atlas access the
+#: re-derivation writes **nothing** — which §2 already names: never classify against a
+#: partial re-derivation, because a table that was never filled reports every real row as
+#: one the source withdrew. The capture would restore the bytes, so no data is lost, and
+#: the author would still be handed a classification that measured the credential rather
+#: than the source.
+#:
+#: **The reversal is a tool, not a roster line.** When this server wraps the expression
+#: pass — the trigger is an `enrich_expression` that can report *"no credential"* as a
+#: refusal rather than as an empty table — delete this entry and add a `ROSTER` member
+#: with `EXPRESSION_FACT_FIELDS` (`just_dna_format.expression`) as its `fact_fields`.
+#: Until then, the route that works is the enricher's own CLI, and the refusal names it.
+UNREFRESHABLE["expression_effects.csv"] = (
+    "no pass here derives this table. Its producer is the enricher's `expression` pass, "
+    "which needs an AlphaGenome Atlas credential and a declared licence use before it "
+    "writes a row — so on an install without that access, re-deriving writes nothing and "
+    "the classification afterwards would report every real row as one the source "
+    "withdrew. Your bytes would be restored, and the answer would still be about the "
+    "credential rather than the source. Run `just-dna-enricher expression` directly, on a "
+    "machine that holds the credential, and re-run validate_module and compile_module "
+    "afterwards."
+)
+
 
 # --------------------------------------------------------------------------- #
 # Row identity, derived from the live models
