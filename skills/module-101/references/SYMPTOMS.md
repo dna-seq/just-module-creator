@@ -223,6 +223,19 @@ A real finding: a source contributed facts and the module records no terms for i
 own `sources.csv` row, and merging never clobbers a row you wrote by hand. A `resolution.csv` written
 before the `authority` column existed simply says nothing here; re-enrich to fill it.
 
+**`EXPRESSION FAILED: existing licensing.csv is invalid`** (enricher 0.7.0, `alphagenome expression`)
+**The data table was still written.** The pass commits `expression_effects.csv` and only then records
+its licence row, so an invalid `licensing.csv` splits the two: you are left with a full sidecar of
+AlphaGenome Atlas rows and **no `alphagenome_atlas` row in `licensing.csv`**. The Atlas output is
+non-commercial only, so the module is now carrying non-commercial data with nothing for the compile
+gate to read. The word FAILED is about the licence step, not about the query.
+
+**What to do:** check `expression_effects.csv`'s mtime and row count *before* re-running — a re-run
+merges rather than clobbers, so the first run's rows fold in silently and you cannot tell afterwards
+which run wrote them. Fix `licensing.csv` (on a freshly scaffolded module this is the `<<REPLACE>>`
+stub row, which reproduces the failure every time), delete the sidecar if you want a clean derivation,
+then re-run. Our `F95`, filed upstream as format-tree `S98`.
+
 ## Validation and compile
 
 **`validate` says `valid` and `compile` then refuses**

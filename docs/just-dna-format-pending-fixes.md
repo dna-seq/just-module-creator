@@ -1962,3 +1962,70 @@ leads with a code-anchored mechanism instead. A parallel filing into the registr
 same way: five candidates, one filed, four refuted (see `F65` in [dogfooding.md](dogfooding.md)).
 Between the two intakes, **ten of nineteen candidate claims did not survive contact with the source.**
 
+
+---
+
+## F95 — `alphagenome expression` commits the data table before recording its licence
+
+**Filed upstream as format-tree `S98`, 2026-09-12. Open.** Found while building a real APOE-locus
+module against 0.7.0 (installed from `../just-dna-format/dist/`) to exercise the AlphaGenome surface
+before the release is cut.
+
+`enricher/src/just_dna_enricher/expression.py`, tail of the pass:
+
+```python
+if write and result.written:
+    _write_csv(out, output_path)        # data committed here
+    merge_sources_file(...)             # raises ExpressionError here
+```
+
+An invalid `licensing.csv` splits the two: `expression_effects.csv` lands with 12,003 rows while the
+`alphagenome_atlas` licence row is never written, and the command exits `EXPRESSION FAILED`. The Atlas
+output is **non-commercial only**, so what remains on disk is a module carrying non-commercial data
+with nothing in `licensing.csv` for the compile gate to read.
+
+It contradicts 0.7's own § 2.7 (*"an enrichment run is now a transaction"*, *"a refused strict run
+commits nothing"*), and it is on the default path rather than an edge: a scaffolded module carries a
+`<<REPLACE>>` placeholder licence row by construction, so **scaffold → expression reproduces it every
+time**.
+
+**Our side:** nothing to mitigate in code — we do not wrap this pass (see `F96`). What we owe is the
+symptom, so an author who sees `EXPRESSION FAILED` knows to check whether the data table landed
+anyway. Added to `skills/module-101/references/SYMPTOMS.md`.
+
+**Do not read the failure as "nothing happened"** — check the mtime and row count of
+`expression_effects.csv` before re-running, because a re-run merges rather than clobbers and will
+fold the first run's rows in silently.
+
+## F96 — the plugin does not wrap AlphaGenome at all
+
+**Ours, not upstream's. Open.** 0.7's headline consumer-facing feature is
+`just-dna-enricher alphagenome expression|check`, and the MCP surface has no tool for either —
+`grep -ril alphagenome src/just_module_creator/` hits only `provisioning.py`, `tools/refresh.py` and
+`models.py`, none of which is a wrapper. `expression_effects.csv` does appear in `list_tables`'
+`sidecars`, so the surface names a sidecar an author has no tool to fill.
+
+An author driving the plugin therefore cannot reach the feature, and the dogfooding rule says the gap
+is the result rather than an obstacle to route around: this run drove the enricher CLI directly, which
+is exactly the ad-hoc route the product is supposed to remove. Two further costs measured while doing
+it — the `--use non-commercial` requirement and the per-gene cost report are both invisible to a
+plugin-driven author, and so is the `alphagenome_avi` / `alphagenome_atlas` licence-class split that
+decides whether the finished module is sellable.
+
+**Blocked on a decision rather than on upstream:** wrapping it means the plugin acquires a
+non-commercial-by-default data path, and where that sits against the sellable-module story is a
+question for the owner, not a mechanical port.
+
+## F97 — `atlas generate` cannot run in an editable install
+
+**Ours to work around; upstream's to fix if they care. Open, not filed.**
+`just-dna-enricher atlas generate` shells `python -m grpc_tools.protoc` and `grpcio-tools` is declared
+build-time only (`enricher/pyproject.toml`, the comment above the `atlas` extra says so deliberately).
+In an editable install the build hook never runs, so the bindings are absent and the command dies with
+a bare `CalledProcessError` naming a protoc argv — no sentence saying `grpcio-tools` is what is
+missing.
+
+Worked around here with `uv add --dev grpcio-tools`, after which `atlas generate` succeeds and
+`just_dna_enricher.generated._alphagenome_atlas_protos.atlas_service_pb2_grpc` imports. Not filed
+upstream: it only bites a source checkout, a released wheel carries the bindings already, and the
+remedy is one line. Worth a remedy sentence in the error if the cost is ever re-measured.

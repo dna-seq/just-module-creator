@@ -53,7 +53,7 @@ dependencies = [
     # ceiling is ours either way, since a floor cannot express "one minor, both ends".
     "just-dna-compiler>=0.6.6,<0.8",
     "just-dna-format>=0.6.6,<0.8",
-    "just-dna-enricher>=0.6.6,<0.8",
+    "just-dna-enricher[atlas]>=0.6.6,<0.8",
     # 0.17.0 is the release that adopts format 0.6, and the floor has to move with ours:
     # its client reads `just_dna_format.layout` and the new manifest blocks unguarded, so a
     # 0.14 client beside a 0.6 format install is an AttributeError waiting inside a download.
@@ -134,6 +134,7 @@ dev = [
     "pyright>=1.1.380",
     "pypandoc-binary>=1.17",
     "tecto>=0.16.9",
+    "grpcio-tools>=1.83.1",
 ]
 
 [tool.pytest.ini_options]
