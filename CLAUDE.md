@@ -485,21 +485,23 @@ serve both this server and the enricher it shells into. New configurable values
 are read from env with sensible defaults, documented in `.env.template`, and
 mentioned here.
 
-**A first-run offer may not require configuration the author has no reason to have done.**
-`provision_caches` withheld everything until `JUST_DNA_PIPELINES_CACHE_DIR` was set, and
-that was the wrong gate: unset is the default location, not a defect, and the small set
-fits there. What may withhold is a location that cannot be **written** — and then the
-obstruction is named with the one `.env` line that moves it, as a fix rather than a
-prerequisite. Size is per lane, so a cramped volume declines the 14 GB pull and still
-builds the 15 MB one. Generalise it: *"no regular user sets envs as a first move; that is
-a dev mindset, not users."*
+**A new env-backed preference is three-valued and documented, and its BEHAVIOUR is not
+written here.** `JMC_CACHE_PREWARM` / `JMC_CACHE_FULL` are `bool | None` because null
+means *not asked* and `False` means *asked and declined*; both go in `.env.template`.
+When and how an author is asked lives in the skill that ships — `skills/module-start/GUIDE.md`
+for these two — because **this file reaches nobody's install**. A plugin deployment gets the
+skills and the tool descriptions; a rule about how the agent talks to an author is inert
+here and is only in force where it ships. Put the design constraint in this file and the
+conduct in the skill, and never split one rule across the two.
 
-**An offer the author has answered is never made again.** `JMC_CACHE_PREWARM` and
-`JMC_CACHE_FULL` are three-valued for that reason — null is *not asked*, `False` is
-*asked and declined* — and the agent writes them into `.env` when the author answers,
-the same way it writes `JMC_USER_EMAIL`. A full-surface offer needs the small one
-**accepted**, never merely unrefused: escalating from 15 MB to 14 GB after a no is how a
-first-run prompt gets turned off for good. Any new first-run question owes the same pair.
+**A first-run question may not require configuration the author has no reason to have
+done**, which is the design half of the above and is why the pair exists at all.
+`provision_caches` withheld its whole offer until `JUST_DNA_PIPELINES_CACHE_DIR` was set:
+unset is the default location, not a defect. *"No regular user sets envs as a first move;
+that is a dev mindset, not users."* So a tool may withhold on a condition it can **name
+and repair** — a path that cannot be written — never on an unset variable, and a cost
+ceiling is per item so a cramped disk declines the expensive one and still does the cheap
+one.
 
 **Timestamps: store ISO-8601 UTC, display local.** Never a naive
 `YYYY-MM-DD HH:MM:SS` — it is misparsed as local time and breaks string
