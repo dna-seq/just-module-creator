@@ -39,11 +39,17 @@ transitively. Both are read where the install has them and our table is the fall
 
 ### Not asking is a feature, and three shapes of it
 
-- **Unset cache directory withholds the whole offer.** `JUST_DNA_PIPELINES_CACHE_DIR` unset is not
-  "no cache": it falls back to a platformdirs path under `$HOME`, which is how a 14 GB snapshot once
-  filled a root filesystem. Free space is read at the nearest *existing* ancestor and never falls
-  back to `/` — a number from the wrong volume is worse than no number, and this is the one place
-  being wrong means offering to fill somebody's root.
+- **An unset cache directory withholds nothing.** Requiring `JUST_DNA_PIPELINES_CACHE_DIR` first was
+  a developer's mindset wearing a prompt — nobody configures an environment as their opening move, and
+  it made the offer conditional on the one thing an author has no reason to have done. Unset is a
+  **default**: `cache_dir` names where the lanes already resolve, the 15 MB set fits there, and `fits`
+  declines per lane on a cramped volume. What does withhold is a location that cannot be *written* —
+  `cache_dir_usable` is three-valued and `False` names the obstruction with the one `.env` line that
+  moves it, which is a fix rather than a prerequisite. (Some boxes keep a read-only file at the
+  platformdirs path on purpose, so an unconfigured run raises instead of filling the root filesystem;
+  that is the case this state exists for.) Free space is read at the nearest *existing* ancestor and
+  stops before `/`, so a variable pointing into an unmounted volume reports null rather than the root
+  disk's number — a number from the wrong volume is worse than no number.
 - **A lane that does not fit is reported with both numbers and never offered.** Ensembl's 14 GB on an
   8 GB volume is the canonical nag; the answer is a bigger volume, not a smaller ask, so it is said
   rather than silently dropped. `fits` is three-valued: an unpriced lane and an unreadable disk are

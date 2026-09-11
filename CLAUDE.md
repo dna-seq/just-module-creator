@@ -485,6 +485,15 @@ serve both this server and the enricher it shells into. New configurable values
 are read from env with sensible defaults, documented in `.env.template`, and
 mentioned here.
 
+**A first-run offer may not require configuration the author has no reason to have done.**
+`provision_caches` withheld everything until `JUST_DNA_PIPELINES_CACHE_DIR` was set, and
+that was the wrong gate: unset is the default location, not a defect, and the small set
+fits there. What may withhold is a location that cannot be **written** — and then the
+obstruction is named with the one `.env` line that moves it, as a fix rather than a
+prerequisite. Size is per lane, so a cramped volume declines the 14 GB pull and still
+builds the 15 MB one. Generalise it: *"no regular user sets envs as a first move; that is
+a dev mindset, not users."*
+
 **An offer the author has answered is never made again.** `JMC_CACHE_PREWARM` and
 `JMC_CACHE_FULL` are three-valued for that reason — null is *not asked*, `False` is
 *asked and declined* — and the agent writes them into `.env` when the author answers,

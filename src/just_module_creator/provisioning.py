@@ -172,6 +172,33 @@ def cache_root() -> Path | None:
     return next(iter(parents))
 
 
+def cache_dir_usable(path: Path | None) -> bool | None:
+    """Whether the caches can actually be written where they resolve to.
+
+    **Three-valued, and the middle state is the one worth a sentence.** `True`: the
+    directory exists and is writable, or the nearest ancestor that exists is, so a first
+    run creates it. `False`: something is in the way — a non-directory at that exact path,
+    or an ancestor nobody may write to. `None`: unanswerable.
+
+    The `False` case is not hypothetical and is not always a mistake: this box keeps a
+    read-only **file** at `~/.cache/just-dna-pipelines` on purpose, so that a run with the
+    variable unset raises instead of quietly filling the root filesystem. An author who
+    meets that needs the obstruction named and one `.env` line, not a lecture about
+    configuring their environment first.
+    """
+    if path is None:
+        return None
+    for candidate in (path, *path.parents):
+        if not candidate.exists():
+            continue
+        if candidate == path and not candidate.is_dir():
+            return False
+        if not candidate.is_dir():
+            return False
+        return os.access(candidate, os.W_OK)
+    return None
+
+
 def free_mb_at(path: Path | None) -> float | None:
     """Free space on the volume that would hold ``path``, or ``None`` if unanswerable.
 
@@ -283,6 +310,7 @@ def plan(*, declared_use: str = "unstated", settings: Settings | None = None) ->
     root = cache_root()
     configured = bool(os.environ.get(CACHE_DIR_VAR, "").strip())
     free = free_mb_at(root)
+    usable = cache_dir_usable(root)
     state_by_lane = {
         (status.lane.name if hasattr(status.lane, "name") else str(status.lane)): status
         for status in lane_status()
@@ -349,7 +377,9 @@ def plan(*, declared_use: str = "unstated", settings: Settings | None = None) ->
             )
         )
 
-    return _decide(rows, root=root, configured=configured, free=free, settings=settings)
+    return _decide(
+        rows, root=root, configured=configured, usable=usable, free=free, settings=settings
+    )
 
 
 def _offerable(row: CachePlanLane) -> bool:
@@ -399,6 +429,7 @@ def _decide(
     *,
     root: Path | None,
     configured: bool,
+    usable: bool | None,
     free: float | None,
     settings: Settings | None,
 ) -> CachePlan:
@@ -426,12 +457,22 @@ def _decide(
         pull += sum(r.estimate_mb or 0.0 for r in rows if r.lane in extra)
         return round(own, 2), round(pull, 1)
 
+    # **An unset variable is NOT a reason to say nothing, and it used to be.** Nobody
+    # configures an environment as their first act; expecting it made the offer conditional
+    # on the one thing an author has no reason to have done, which is a developer's
+    # mindset wearing a prompt. Unset simply means the location the resolvers already
+    # chose, `cache_dir` names it, and the small offer fits under `$HOME` anyway. What
+    # still withholds is a location that cannot be *used* — and then the obstruction is
+    # named with the one `.env` line that moves it, which is a fix rather than a
+    # prerequisite. Size is handled by `fits`, per lane, so a cramped `$HOME` declines
+    # Ensembl and still builds the 15 MB set.
     withheld: str | None = None
-    if not configured:
+    if usable is False:
         withheld = (
-            f"{CACHE_DIR_VAR} is unset, so the caches would go to the platformdirs "
-            "fallback under $HOME — which is where a 14 GB Ensembl snapshot once filled a "
-            "root filesystem. Set it to a volume with room before anything is offered."
+            f"The caches resolve to {root}, and that path cannot be written: something "
+            "that is not a directory is in the way, or nothing there is writable. One line "
+            f"in `.env` moves them — {CACHE_DIR_VAR}=<a directory on a volume with room> — "
+            "and nothing here is offered until they have somewhere to go."
         )
     elif free is None:
         withheld = (
@@ -468,6 +509,7 @@ def _decide(
             for r in rows
             if r.fits is False
         ],
+        cache_dir_usable=usable,
         prewarm_answered=None if settings is None else settings.cache_prewarm,
         full_answered=None if settings is None else settings.cache_full,
         offer=_offer(
@@ -481,14 +523,25 @@ def _decide(
             "JMC_CACHE_PREWARM=false   # declined; do not ask again",
             "JMC_CACHE_FULL=true       # provisioned the whole surface",
             "JMC_CACHE_FULL=false      # declined the whole surface",
+            # Last, and only when somebody wants the caches somewhere else. It is not a
+            # prerequisite for anything above: unset means the location `cache_dir`
+            # already names.
+            f"{CACHE_DIR_VAR}=/path/with/room   # only to MOVE the caches",
         ],
         offer_withheld=withheld,
-        note=_note(rows, prewarm, full),
+        note=_note(
+            rows, prewarm, full, configured=configured, root_note=str(root) if root else "nowhere"
+        ),
     )
 
 
 def _note(
-    rows: list[CachePlanLane], prewarm: list[CachePlanLane], full: list[CachePlanLane]
+    rows: list[CachePlanLane],
+    prewarm: list[CachePlanLane],
+    full: list[CachePlanLane],
+    *,
+    configured: bool,
+    root_note: str,
 ) -> str:
     held = sum(1 for r in rows if r.state == "present")
     occupied = [r.lane for r in rows if r.state == "occupied"]
@@ -502,6 +555,12 @@ def _note(
             "snapshot, and provisioning refuses rather than building over it: "
             f"{', '.join(occupied)}. "
             "Move it aside or `cache prune --only <lane>`."
+        )
+    if not configured:
+        parts.append(
+            f"The caches resolve to {root_note} because {CACHE_DIR_VAR} is unset — which is "
+            "a default, not a problem, and the small set fits there. Worth moving before a "
+            "multi-gigabyte pull, and one line in `.env` does it."
         )
     parts.append(
         "Every size but one is an estimate measured on a provisioned box on 2026-09-11, not a "

@@ -251,10 +251,18 @@ overwrite a value already there.
 **Never name a lane the plan did not offer.** `unavailable` and `too_large` carry the producer's own
 reason for each one, and they are there to be *said*, not worked around: suggesting a 14 GB download
 to a box with 8 GB free, or an 88.5 GB artifact behind a sign-in whose eligibility clause bars
-classes of holder, is the nag this whole shape exists to prevent. If `offer_withheld` is set —
-usually `JUST_DNA_PIPELINES_CACHE_DIR` unset, which silently aims every lane at a platformdirs path
-under `$HOME` — say that instead of offering anything. An offer that cannot state its cost is not an
-offer.
+classes of holder, is the nag this whole shape exists to prevent. If `offer_withheld` is set, say
+that instead of offering anything — an offer that cannot state its cost is not an offer.
+
+**Do not ask anybody to configure a cache directory first.** `JUST_DNA_PIPELINES_CACHE_DIR` unset is
+a **default, not a problem**: `cache_dir` names where the lanes already resolve to, the 15 MB set
+fits there, and `fits` declines per lane if the volume is cramped. Nobody sets an environment
+variable as their opening move, and requiring it made the offer conditional on the one thing an
+author has no reason to have done. Two things are worth saying, in the right places: mention moving
+the caches **before a multi-gigabyte pull** (one `.env` line, in `record_with`), and if
+`cache_dir_usable` is false — something that is not a directory is in the way, which some boxes keep
+there deliberately so an unconfigured run raises rather than filling the root filesystem — hand over
+that line as **the fix**, with the path the plan named.
 
 ## Create the spec
 

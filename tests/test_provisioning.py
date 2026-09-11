@@ -44,6 +44,7 @@ def _empty_box(monkeypatch, tmp_path: Path, *, free_mb: float = 5000.0) -> None:
     monkeypatch.setenv(provisioning.CACHE_DIR_VAR, str(tmp_path))
     monkeypatch.setattr(provisioning, "cache_root", lambda: tmp_path)
     monkeypatch.setattr(provisioning, "free_mb_at", lambda _path: free_mb)
+    # Real `tmp_path`, so usability is answered by the filesystem rather than faked.
     monkeypatch.setattr(
         provisioning,
         "lane_status",
@@ -92,20 +93,63 @@ def test_a_derived_lane_prices_the_parent_it_pins_separately(monkeypatch, tmp_pa
     assert derived.total_mb > derived.estimate_mb * 100
 
 
-def test_nothing_is_offered_when_the_cache_directory_is_unset(monkeypatch, tmp_path):
-    """The one case where measuring a disk would measure the wrong one.
+def test_an_unset_cache_directory_still_gets_the_offer(monkeypatch, tmp_path):
+    """**Nobody sets an environment variable as their first act**, and this used to require it.
 
-    Unset is not "no cache": it falls back to a platformdirs path under `$HOME`, which is
-    how a 14 GB snapshot once filled a root filesystem. So the offer is withheld with the
-    variable named, rather than made against whatever volume `$HOME` happens to be on.
+    The offer was withheld until `JUST_DNA_PIPELINES_CACHE_DIR` was configured, which made
+    it conditional on the one thing an author has no reason to have done — a developer's
+    mindset wearing a prompt. Unset means the place the resolvers already use, and the
+    15 MB set fits there. The location is reported, and moving it is a suggestion before a
+    multi-gigabyte pull rather than a step to take first.
     """
     _empty_box(monkeypatch, tmp_path)
     monkeypatch.delenv(provisioning.CACHE_DIR_VAR, raising=False)
     plan = provisioning.plan(settings=offline_settings())
 
     assert plan.cache_dir_configured is False
+    assert plan.offer_withheld is None
+    assert plan.offer == "prewarm"
+    assert plan.prewarm_lanes
+    # The fact is reported, with the variable named for whoever does want to move them.
+    assert plan.cache_dir and plan.cache_dir in plan.note
+    assert any(provisioning.CACHE_DIR_VAR in line for line in plan.record_with)
+
+
+def test_a_cache_directory_that_cannot_be_written_withholds_and_names_what_is_in_the_way(
+    monkeypatch, tmp_path
+):
+    """The real blocker, and it is a path rather than a missing variable.
+
+    Some boxes keep a read-only **file** at the platformdirs location on purpose, so an
+    unconfigured run raises instead of quietly filling the root filesystem. An author who
+    meets that needs the obstruction named and one `.env` line — not a prerequisite.
+    """
+    blocked = tmp_path / "in-the-way"
+    blocked.write_bytes(b"not a directory")
+    monkeypatch.setenv(provisioning.CACHE_DIR_VAR, str(blocked))
+    monkeypatch.setattr(provisioning, "cache_root", lambda: blocked)
+    monkeypatch.setattr(
+        provisioning,
+        "lane_status",
+        lambda *_a, **_k: [_Status(lane=lane, state="absent") for lane in routing.CACHE_LANES],
+    )
+    plan = provisioning.plan(settings=offline_settings())
+
+    assert plan.cache_dir_usable is False
     assert plan.offer is None
-    assert plan.offer_withheld and provisioning.CACHE_DIR_VAR in plan.offer_withheld
+    assert plan.offer_withheld
+    assert str(blocked) in plan.offer_withheld
+    assert provisioning.CACHE_DIR_VAR in plan.offer_withheld
+
+
+def test_usability_is_three_valued_and_a_first_run_creates_the_directory(tmp_path):
+    """A directory that does not exist yet is usable — that is the ordinary first run."""
+    assert provisioning.cache_dir_usable(tmp_path / "not-yet") is True
+    assert provisioning.cache_dir_usable(tmp_path) is True
+    blocked = tmp_path / "file"
+    blocked.write_bytes(b"x")
+    assert provisioning.cache_dir_usable(blocked) is False
+    assert provisioning.cache_dir_usable(None) is None
 
 
 def test_a_lane_too_large_for_the_disk_is_reported_and_never_offered(monkeypatch, tmp_path):

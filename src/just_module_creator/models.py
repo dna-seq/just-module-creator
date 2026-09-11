@@ -2950,9 +2950,19 @@ class CachePlan(BaseModel):
     )
     cache_dir_configured: bool = Field(
         default=False,
-        description="Whether the cache directory was set deliberately. Unset is not 'no "
-        "cache': it falls back to a platformdirs path under $HOME, which is how a 14 GB "
-        "snapshot once filled a root filesystem, so nothing is offered until it is set.",
+        description="Whether somebody chose this location deliberately. **False blocks "
+        "nothing** — unset means the place the resolvers already use, and the small offer "
+        "fits there. Mention moving it before a multi-gigabyte pull, never as a step to do "
+        "first: nobody configures an environment as their opening move.",
+    )
+    cache_dir_usable: bool | None = Field(
+        default=None,
+        description="Whether that location can actually be written — the directory exists "
+        "and is writable, or the nearest ancestor that exists is, so a first run creates "
+        "it. **False is what withholds the offer**, and it names what is in the way: a "
+        "non-directory at that exact path (some boxes keep a read-only file there on "
+        "purpose, so an unconfigured run raises instead of filling the root filesystem) or "
+        "an ancestor nobody may write to. Null means unanswerable.",
     )
     cache_dir_var: str | None = Field(
         default=None, description="The variable to set, named so it need not be remembered."
