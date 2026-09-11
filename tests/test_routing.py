@@ -513,10 +513,17 @@ def test_an_incoming_table_lands_on_the_spelling_the_author_already_has():
     floor is 0.6.6 and an install from PyPI still has the defect — §8's rule, and the whole
     reason a fix in a sibling checkout is not a fix our users have.
 
-    So the upstream half is asserted **by symbol**, both ways round: on a toolchain with
-    `sidecar_key` the helper must already follow the file you read, and without it the
-    answer must be the second spelling. A third behaviour fails here rather than being
-    absorbed, and either way `_dest_for` answers the same.
+    So the upstream half is asserted both ways round: where the alias map answers for the
+    preferred *filename*, the helper must already follow the file you read, and where it
+    does not, the answer must be the second spelling. A third behaviour fails here rather
+    than being absorbed, and either way `_dest_for` answers the same.
+
+    **The probe is the behaviour, not the symbol that arrived with it.** `sidecar_key` is
+    the published half of RM224 and the obvious thing to `hasattr`, but it is present in
+    the format *source tree* and absent from the wheels the registry pins — one release,
+    two answers — so a symbol probe reads the toolchain we happen to install rather than
+    the fact we depend on. `sidecar_spellings` carrying an alias for `licensing.csv` **is**
+    that fact.
     """
     import tempfile
 
@@ -524,7 +531,7 @@ def test_an_incoming_table_lands_on_the_spelling_the_author_already_has():
 
     from just_module_creator.tools.proxy import _dest_for
 
-    upstream_normalises = hasattr(layout, "sidecar_key")
+    upstream_normalises = len(layout.sidecar_spellings("licensing.csv")) > 1
     expected_upstream = "sources.csv" if upstream_normalises else "licensing.csv"
 
     with tempfile.TemporaryDirectory() as raw:

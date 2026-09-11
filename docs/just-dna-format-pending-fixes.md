@@ -81,6 +81,13 @@ mitigation stays.** Accepted as their **RM224** and shipped in the uncut 0.7.0:
 `preferred_spelling` all answer the same for either spelling, and their reply says outright *"delete
 the shim; your asymmetry test should now fail, which is the signal you built it to give."*
 
+**`sidecar_key` is the wrong thing to probe for, and the reason is a third state this file's own
+three-state rule does not cover.** It is present in the format **source tree** and absent from the
+**wheels** the registry builds against — one release number, two answers, neither of them PyPI — so a
+`hasattr` on it reads which toolchain we happen to have installed rather than the fact we depend on.
+The probe is therefore the behaviour: `sidecar_spellings("licensing.csv")` carrying an alias. Found
+2026-09-11 when the registry hit it in a note of their own that named the symbol as available.
+
 **It does not get deleted yet, and the reason is §8's three states.** Our floor is 0.6.6 and `main`
 installs from PyPI, where the defect is present — a fix in a sibling checkout is not a fix our users
 have. So the test that announced the turnover was **reshaped rather than removed**: it probes for
