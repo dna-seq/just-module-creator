@@ -29,6 +29,8 @@ instead of hiding the tool from the sessions most likely to need it.
 * ``register_artifact_reads`` — ``registry_download`` and ``reverse_module``:
   getting somebody else's published module onto disk, the entry point to a review.
 * ``register_citation_graph`` — ``paper_citations``, whose work the corpus sizes.
+* ``register_caches``     — ``provision_caches``: what the snapshot lanes would cost
+  on this machine, and building the five nothing publishes.
 * ``register_refresh``    — ``refresh_sidecar``: capture, delete, re-derive,
   reapply what is provably the author's, report the rest.
 
@@ -65,6 +67,7 @@ from just_module_creator.tools.advanced import (
     register_citation_graph,
 )
 from just_module_creator.tools.authoring import register_essentials
+from just_module_creator.tools.caches import register_caches
 from just_module_creator.tools.checks import register_checks
 from just_module_creator.tools.comparison import register_comparison
 from just_module_creator.tools.passes import register_bulk_passes, register_passes
@@ -197,6 +200,11 @@ def build_server(
     # by name with "Unknown tool", which teaches the caller nothing — the dead end the
     # tier axis cost us four times over.
     register_proxy(mcp, settings)
+    # Always on, and the one tool here that reads a disk. Five lanes are unpublishable —
+    # PharmVar, PubMind, MANE, ACMG and the mitomap join — so neither a pull nor a proxy
+    # can serve them and building locally is the only route; `provision_caches` prices
+    # that and is what the onboarding flow asks before it offers anything.
+    register_caches(mcp, settings)
     register_toolbox(mcp, settings)
     if settings.toolbox == "layered":
         hide_layer_two(mcp)

@@ -2838,3 +2838,207 @@ class DraftArchiveReport(BaseModel):
         "only one is fixed by provisioning.",
     )
     next_step: str = Field(description="What to do now.")
+
+
+# --------------------------------------------------------------------------- #
+# Provisioning the snapshot lanes on this machine  (RM30, the local half)
+# --------------------------------------------------------------------------- #
+class CachePlanLane(BaseModel):
+    """One lane priced: where it stands, how it would arrive, and what it would cost."""
+
+    lane: str = Field(description="The lane's name, as `caches.CACHE_LANES` declares it.")
+    serves: str | None = Field(
+        default=None, description="What having it gets you, in the producer's own words."
+    )
+    state: str | None = Field(
+        default=None,
+        description="`present`, `absent`, or `occupied` — the third being a directory that "
+        "exists and holds no snapshot, which provisioning refuses to build over rather "
+        "than deleting. Null when the installed enricher cannot be asked.",
+    )
+    route: str = Field(
+        description="How it would arrive: `present` (nothing to do), `pull` (published, "
+        "so downloading is right), `build` (nothing publishes it, so building here is the "
+        "only route there will ever be), or `none`.",
+    )
+    why_no_route: str | None = Field(
+        default=None,
+        description="The producer's own sentence for why neither route exists — Ensembl "
+        "is built by just-dna-pipelines, not here.",
+    )
+    caution: str | None = Field(
+        default=None,
+        description="What this lane cannot do here, in the producer's own words, even though "
+        "it has a route — Ensembl can be pulled but is built by just-dna-pipelines rather "
+        "than here, and AlphaGenome's input is behind a sign-in the operator accepts "
+        "themselves. Read it before offering the lane to anybody.",
+    )
+    licence_skip: str | None = Field(
+        default=None,
+        description="Why the terms stop this fetch under the `declared_use` you passed. "
+        "A source that forbids sale is skipped on an `unstated` declaration rather than "
+        "assumed: the tool may not assert a purpose on your behalf.",
+    )
+    estimate_mb: float | None = Field(
+        default=None,
+        description="Estimated size. The lane's own `approx_mb` where the installed enricher "
+        "declares one, else a measurement taken on a provisioned box and dated in the "
+        "source — `estimate_basis` says which. Null means nobody has answered for this "
+        "lane, which is not the same as small.",
+    )
+    estimate_basis: str | None = Field(
+        default=None,
+        description="Where the estimate came from: measured here, or stated by the producer.",
+    )
+    measured_mb: float | None = Field(
+        default=None,
+        description="What the lane actually occupies, when it is already here. Better data "
+        "than the estimate for a lane you hold, and reported beside it rather than instead.",
+    )
+    parents_absent: list[str] = Field(
+        default_factory=list,
+        description="Lanes this one is derived from that are not here yet. A derived lane's "
+        "real price is dominated by these: `mitomap_miss` is 0.06 MB built and pins ClinVar, "
+        "which is 270 MB to pull.",
+    )
+    parents_mb: float | None = Field(
+        default=None, description="What those absent parents would cost, summed."
+    )
+    total_mb: float | None = Field(
+        default=None, description="Its own estimate plus its absent parents'."
+    )
+    fits: bool | None = Field(
+        default=None,
+        description="Whether the volume holding the caches has room, with headroom. "
+        "**Null is not false**: a lane nobody could price and a disk nobody could read "
+        "both give null, and neither is a lane that failed to fit.",
+    )
+    build_command: str | None = Field(
+        default=None,
+        description="How to build it by hand, as typed. Not derivable from the lane name.",
+    )
+    env_var: str | None = Field(
+        default=None, description="The variable that moves this lane's location."
+    )
+    release: str | None = Field(
+        default=None, description="Which snapshot is here, when one is."
+    )
+    occupied_path: str | None = Field(
+        default=None,
+        description="The directory to move aside, when the state is `occupied`.",
+    )
+
+
+class CachePlan(BaseModel):
+    """What provisioning the snapshot caches here would cost, and whether to ask at all.
+
+    Read-only unless you asked it to build. The offer it describes has two sizes: the
+    lanes nothing publishes — which a registry proxy cannot serve either, so they are the
+    ones worth building before a session — and the whole provisionable surface, for a box
+    with room. **An offer is withheld rather than shrunk** when the cost cannot be stated.
+    """
+
+    lanes_known: bool = Field(
+        description="False when the installed enricher predates the lane registry, in "
+        "which case nothing was measured — a different answer from there being no lanes.",
+    )
+    cache_dir: str | None = Field(
+        default=None,
+        description="Where the lanes go, taken from each lane's own resolver rather than "
+        "rebuilt from the variable — the subdirectories are not the lane names "
+        "(`constraint` lives in `gnomad_constraint`).",
+    )
+    cache_dir_configured: bool = Field(
+        default=False,
+        description="Whether the cache directory was set deliberately. Unset is not 'no "
+        "cache': it falls back to a platformdirs path under $HOME, which is how a 14 GB "
+        "snapshot once filled a root filesystem, so nothing is offered until it is set.",
+    )
+    cache_dir_var: str | None = Field(
+        default=None, description="The variable to set, named so it need not be remembered."
+    )
+    free_mb: float | None = Field(
+        default=None,
+        description="Free space on the volume that would hold the caches, measured at the "
+        "nearest existing ancestor. Null rather than a number from the wrong volume.",
+    )
+    lanes: list[CachePlanLane] = Field(
+        default_factory=list, description="Every lane, in the registry's own order."
+    )
+    prewarm_lanes: list[str] = Field(
+        default_factory=list,
+        description="The offer worth making first: absent lanes that nothing publishes, so "
+        "building here is the only route — and the lanes a registry proxy cannot serve "
+        "either. Cheap, and each carries its own recorded reason upstream.",
+    )
+    prewarm_mb: float = Field(
+        default=0.0, description="What that set costs in total, parents counted once."
+    )
+    prewarm_build_mb: float = Field(
+        default=0.0,
+        description="The disk the built lanes occupy — around 15 MB for all five, which is "
+        "why the offer is worth making. **Not a claim that nothing is downloaded**: four of "
+        "the five fetch their own inputs, they just do not keep them.",
+    )
+    prewarm_pull_mb: float = Field(
+        default=0.0,
+        description="The part that is still a download: the parents a derived lane pins. "
+        "`mitomap_miss` is 0.06 MB built and pins ClinVar at 270 MB, so **state this number "
+        "separately** — an author who said yes to 13 MB did not say yes to a quarter of a "
+        "gigabyte. Zero when the parents are already here, which is the common case.",
+    )
+    full_lanes: list[str] = Field(
+        default_factory=list,
+        description="Every absent lane that could be provisioned at all and fits, pulls "
+        "included. The second-run offer, for a box with room.",
+    )
+    full_mb: float = Field(
+        default=0.0, description="What the whole surface costs, parents counted once."
+    )
+    unavailable: list[str] = Field(
+        default_factory=list,
+        description="Lanes no offer may name, each with the producer's reason — no route, "
+        "terms that stop the fetch, or an artifact so large that taking it is the operator's "
+        "own deliberate act rather than a yes at a prompt. Say these out loud rather than "
+        "silently omitting them: a lane absent from an offer with no reason reads as an "
+        "oversight. Provisioned only when a caller names the lane.",
+    )
+    too_large: list[str] = Field(
+        default_factory=list,
+        description="Lanes this disk cannot hold, with both numbers. **Never offer one** — "
+        "and never hide it either, because the answer is a bigger volume, not a smaller ask.",
+    )
+    provisioned: list[str] = Field(
+        default_factory=list,
+        description="One line per lane actually attempted, carrying upstream's own verdict "
+        "verbatim. Empty on a plan.",
+    )
+    prewarm_answered: bool | None = Field(
+        default=None,
+        description="Whether the small offer has been answered — null is *not asked yet*, "
+        "false is *asked and declined*, and the difference is the whole point: an offer "
+        "already refused is never raised again.",
+    )
+    full_answered: bool | None = Field(
+        default=None, description="The same, for the whole-surface offer."
+    )
+    offer: str | None = Field(
+        default=None,
+        description="Which offer is open right now — `prewarm`, `full`, or null for *say "
+        "nothing*. Null covers every quiet case: already answered, already provisioned, "
+        "nothing that fits, or the small set declined, after which the big one is never "
+        "raised. **Ask only when this names an offer, and ask once.**",
+    )
+    record_with: list[str] = Field(
+        default_factory=list,
+        description="The `.env` lines that record an answer, whichever way it goes — write "
+        "the one that matches what the author said, into `.env` and nowhere else. Recording "
+        "a refusal matters more than recording a yes: it is what stops the next session "
+        "asking again.",
+    )
+    offer_withheld: str | None = Field(
+        default=None,
+        description="Why no offer should be made at all — the cache directory is unset, or "
+        "free space could not be read. An offer that cannot state its cost is not an offer.",
+    )
+    note: str = Field(description="What this measured and what it is estimating.")

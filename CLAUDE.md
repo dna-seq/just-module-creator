@@ -432,7 +432,9 @@ design depends on.
 ```
 src/just_module_creator/   source (src layout). `routing.py` is the thick/thin
                            decision and the hint translation; `tools/proxy.py` the
-                           three tools that talk to a registry's caching proxy
+                           three tools that talk to a registry's caching proxy;
+                           `provisioning.py` prices this machine's snapshot lanes
+                           and decides whether to offer anything at all
 tests/                     pytest suite — in-memory, offline
 docs/                      all markdown except this file and README.md
 skills/<name>/             one directory per skill — the map, the two doors, the stage spine,
@@ -482,6 +484,13 @@ of output, and every CLI **loads `.env` via `python-dotenv`** (`_load_env`,
 serve both this server and the enricher it shells into. New configurable values
 are read from env with sensible defaults, documented in `.env.template`, and
 mentioned here.
+
+**An offer the author has answered is never made again.** `JMC_CACHE_PREWARM` and
+`JMC_CACHE_FULL` are three-valued for that reason — null is *not asked*, `False` is
+*asked and declined* — and the agent writes them into `.env` when the author answers,
+the same way it writes `JMC_USER_EMAIL`. A full-surface offer needs the small one
+**accepted**, never merely unrefused: escalating from 15 MB to 14 GB after a no is how a
+first-run prompt gets turned off for good. Any new first-run question owes the same pair.
 
 **Timestamps: store ISO-8601 UTC, display local.** Never a naive
 `YYYY-MM-DD HH:MM:SS` — it is misparsed as local time and breaks string

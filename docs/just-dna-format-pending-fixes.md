@@ -72,6 +72,36 @@ the installed packages, not the sibling checkouts** — which is the check this 
 exists to force, and the reason its status lines name both halves.
 
 
+## F94 — no lane declares its size, so an offer had to `du` a provisioned box to price one (format `S97`)
+
+**State: ANSWERED AND FIXED IN THE UPSTREAM TREE WITHIN THE HOUR — STATE 2, so our table stays.**
+Filed 2026-09-11 while building `provision_caches`; `CacheLane` gained **`approx_mb: int | None`**
+and the module gained **`provisioning_closure(lane)`** the same afternoon, both in the 0.7 source
+tree. Neither is in a release, and `main` installs from PyPI where the whole `just_dna_enricher.caches`
+module is absent, so the mitigation is gated on the **release** and not on the symbol (the standing
+rule — the editable sibling install reads their working tree).
+
+**What we needed and could not ask for.** A first-run offer has to state what it costs. `CacheLane`
+carried fifteen fields about *whether* and *how* a lane arrives and none about *how much*, so
+`provisioning._LANE_KB` is a dated `du` over this box — the same hand-kept shape their own RM176
+retired for lane *names*, and a size drifts faster than a name does. The measurement is now the
+**fallback**: `_kb_for` reads `lane.approx_mb` where the install declares one and reports which
+answered in `estimate_basis`, so the two cannot be confused.
+
+**The half that was a doc gap rather than a missing field.** `mitomap_miss` declares `parents` and
+is about a megabyte built, and its parents are `mitomap` and ClinVar — 300 MB. Nothing in the
+docstrings said a derived lane's provisioning cost is dominated by a parent it pins; `parents` read
+as a correctness fact (which digests get recorded) rather than a cost one. Their `provisioning_closure`
+answers it transitively and the docstring now says so. We report build cost and pull cost as two
+numbers either way, because "about 15 MB" is true of the build and false of the session.
+
+**Retire this entry** when the floor in `pyproject.toml` names a published enricher carrying
+`approx_mb`, at which point `_LANE_KB`, `_DECLARED_KB` and the `provisioning_closure` fallback all
+come out together — and delete them because the fact is then unconditional, never because the floor
+"guarantees" it: `approx_mb` landed *after* the 0.7.0 stamp, so `>=0.7.0` is satisfied by installs on
+both sides of it.
+
+
 ## F93 — `sidecar_write_path` follows the file you read only if you ask by the table key (format `S96`)
 
 **State: FIXED HERE; ANSWERED AND FIXED IN THE UPSTREAM TREE THE SAME HOUR — STATE 2, so the

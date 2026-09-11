@@ -3,6 +3,67 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.32.0] — 2026-09-11
+
+### Five lanes nobody may publish, priced before anybody is asked
+
+Ten of the fifteen snapshot lanes are published parquet: a pull, or a registry acting as a caching
+proxy for a box that holds none of them. **Five are not ours to publish, and each carries the reason
+in `lane.unpublished`** — PharmVar's bulk data is behind a personal key, PubMind's ANNOVAR source
+states no terms, NCBI states a policy rather than a licence for MANE, the ACMG SF list is Elsevier
+supplementary material, and `mitomap_miss` is a join nobody distributes. For those five there is no
+pull and no proxy: building locally is the only route there will ever be, and together they are
+**about 15 MB**. Pre-building them beats spending a metered round trip per question for the rest of a
+session.
+
+`provision_caches` prices that and, on a yes, does it. The route is never ours to choose — upstream's
+`prepare_lane` already encodes the ladder (pull what is published, build what is not, say why when
+neither), licence check included, so this calls it rather than restating it. What is ours is the part
+upstream does not answer: **does it fit, what does it cost, and should the author be asked at all.**
+
+**The offer has two numbers, because a derived lane's price is dominated by a parent it pins.**
+`mitomap_miss` is a megabyte built and pins ClinVar, which is 300 MB to pull, so "about 15 MB" is
+true of the build and false of the session. `prewarm_build_mb` and `prewarm_pull_mb` are reported
+apart: somebody who said yes to 15 MB did not say yes to a third of a gigabyte. Neither number means
+*no network* — four of the five fetch their own inputs, they just do not keep them, which is why
+`dry_run=false` is refused under `JMC_OFFLINE`.
+
+**No lane declared its size** — `CacheLane` carried fifteen fields about whether and how and none
+about how much — so `_LANE_KB` is measured, dated and carries the `du` that produced it, and a
+present lane reports what it *actually* measures beside the estimate rather than instead of it. Asked
+upstream as **`S97`**, for an order of magnitude on the lane, and **answered in their tree the same
+afternoon**: `CacheLane.approx_mb` and `provisioning_closure(lane)`, the second walking parents
+transitively. Both are read where the install has them and our table is the fallback, with
+`estimate_basis` naming which answered — gated on the **release**, not on the symbol, because
+`main` installs from PyPI where the whole `caches` module is absent (`F94`).
+
+### Not asking is a feature, and three shapes of it
+
+- **Unset cache directory withholds the whole offer.** `JUST_DNA_PIPELINES_CACHE_DIR` unset is not
+  "no cache": it falls back to a platformdirs path under `$HOME`, which is how a 14 GB snapshot once
+  filled a root filesystem. Free space is read at the nearest *existing* ancestor and never falls
+  back to `/` — a number from the wrong volume is worse than no number, and this is the one place
+  being wrong means offering to fill somebody's root.
+- **A lane that does not fit is reported with both numbers and never offered.** Ensembl's 14 GB on an
+  8 GB volume is the canonical nag; the answer is a bigger volume, not a smaller ask, so it is said
+  rather than silently dropped. `fits` is three-valued: an unpriced lane and an unreadable disk are
+  both `None`, and neither is a lane that failed to fit.
+- **A declined small offer is never escalated to the big one.** The full surface needs the small set
+  *satisfied* — accepted, or on disk with nothing left to build — not merely unrefused. A refusal
+  answers whether they want caches at all, and coming back with a bigger number is what gets a
+  first-run prompt turned off for good. `JMC_CACHE_PREWARM` / `JMC_CACHE_FULL` record it, three-valued
+  either way: null is *not asked*, false is *asked and declined*, and **recording the refusal is the
+  half that matters**.
+
+Above a documented ceiling a lane is reported with its price instead of offered, even where it fits:
+AlphaGenome's AVI artifact is 88.5 GB behind a sign-in whose eligibility clause bars classes of
+holder outright, taken under the operator's own acceptance. A prompt cannot accept terms for
+somebody. It is provisioned only when a caller names the lane.
+
+The offer joins `skills/module-start/GUIDE.md` beside the contact-address question and inherits its
+discipline exactly: ask once, only when nothing is answered, write the answer into `.env` and nowhere
+else, and never raise it again.
+
 ## [0.31.3] — 2026-09-11
 
 ### A check that ran, was attested, and reached nobody

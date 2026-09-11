@@ -135,6 +135,23 @@ class Settings(BaseSettings):
     # tell "unset" from "set", and pass None on to let upstream do its own read.
     user_email: str | None = None
 
+    # Whether the author has answered the cache offer, and the two halves are separate
+    # questions with separate answers. `None` is "not asked yet", `False` is "asked and
+    # declined" — folding them would either re-ask somebody who said no or treat silence
+    # as a refusal, and the first is the nag this whole pair exists to prevent.
+    #
+    # `cache_prewarm` is the small offer: the lanes nothing publishes, built locally.
+    # `cache_full` is the second-run offer, made only once the first was accepted and the
+    # disk has room for the rest. Two fields rather than one vocabulary because a box can
+    # legitimately sit at "built the small set, never been asked about the big one" for
+    # months, and no single value says that without being read as a refusal.
+    #
+    # Written into `.env` by the agent, exactly as the contact address is, and read from
+    # nowhere else. There is no default-on: an unset value asks once and takes no for an
+    # answer.
+    cache_prewarm: bool | None = None
+    cache_full: bool | None = None
+
     # The two registry endpoints. `registry_url` is production — the catalog
     # everyone installs from — and `registry_test_url` is the polygon, where a
     # publish can be rehearsed and then deleted.

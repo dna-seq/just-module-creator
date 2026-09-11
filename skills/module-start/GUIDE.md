@@ -207,6 +207,55 @@ not from the registry account. An address the author did not offer is personal d
 their behalf, and a wrong guess misattributes traffic to a real stranger. *"I'd rather not"* is a
 complete answer and the default handles it.
 
+## Offer the caches — same visit, same discipline
+
+`provision_caches()` first, before saying anything. It measures the disk and prices every lane, and
+**`offer` is the whole answer**: `prewarm`, `full`, or null. Null means *say nothing* — already
+answered, already on disk, nothing that fits — and there is no case where raising it anyway is
+helpful.
+
+**Why there is anything to offer.** Ten of the fifteen snapshot lanes are published parquet: a pull,
+or a registry proxy answering for a box that holds none of them. **Five are not ours to publish** —
+PharmVar's bulk data is behind a personal key, PubMind's ANNOVAR source states no terms, NCBI states
+a policy rather than a licence for MANE, the ACMG SF list is Elsevier supplementary material, and
+`mitomap_miss` is a join nobody distributes. Each carries that sentence in the plan. So for those
+five there is no pull and no proxy: **building them here is the only route there will ever be**, and
+they are small.
+
+**State both numbers, because the offer has two.** `prewarm_build_mb` is the disk the built lanes
+occupy — around 15 MB for all five. `prewarm_pull_mb` is what a *parent* still costs: `mitomap_miss`
+is a megabyte built and pins ClinVar, which is 300 MB. Quote the total and the split; somebody who
+said yes to 15 MB did not say yes to a third of a gigabyte. (Neither number means "no network": four
+of the five fetch their own inputs, they just do not keep them, which is also why `dry_run=false` is
+refused under `JMC_OFFLINE`.)
+
+**Pass the author's licence declaration if they gave one.** Four lanes forbid sale, and with nothing
+declared their fetch — download *and* build — is skipped rather than assumed, so PharmVar simply is
+not in the offer. `declared_use="non_commercial"` puts it back. Never declare a purpose on somebody's
+behalf.
+
+Then `provision_caches(dry_run=false)` on a yes. It builds the `prewarm` set when you name no lanes,
+each through the enricher's own route, and it leaves a lane that is already there alone.
+
+**`full` is the second-run offer and it only arrives on its own.** The plan offers it when the small
+set is done and the disk has room for the rest — Ensembl's 14 GB included, since that is the lane
+`enrich` cannot work without. It is never offered to somebody who **declined** the small set: a
+refusal answers the question of whether they want caches at all, and coming back with a bigger
+number is what gets a first-run prompt turned off for good.
+
+**Record the answer in `.env`, whichever way it went.** `JMC_CACHE_PREWARM=true` or `=false`,
+`JMC_CACHE_FULL` the same; the plan's `record_with` carries the lines. **Recording a refusal matters
+more than recording a yes** — it is the only thing that stops the next session asking again. Never
+overwrite a value already there.
+
+**Never name a lane the plan did not offer.** `unavailable` and `too_large` carry the producer's own
+reason for each one, and they are there to be *said*, not worked around: suggesting a 14 GB download
+to a box with 8 GB free, or an 88.5 GB artifact behind a sign-in whose eligibility clause bars
+classes of holder, is the nag this whole shape exists to prevent. If `offer_withheld` is set —
+usually `JUST_DNA_PIPELINES_CACHE_DIR` unset, which silently aims every lane at a platformdirs path
+under `$HOME` — say that instead of offering anything. An offer that cannot state its cost is not an
+offer.
+
 ## Create the spec
 
 Check first whether the module already exists:
