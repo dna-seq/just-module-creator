@@ -2749,6 +2749,15 @@ class DerivedTreeReport(BaseModel):
         "refusal here rather than an empty archive: this route's contract is to "
         "produce, unlike `registry_validate`, whose contract is to report.",
     )
+    not_produced: list[str] | None = Field(
+        default=None,
+        description="Derived names the run did not produce, from its own report. "
+        "**\"Not produced here\", never \"this module has none\"** — a pass whose "
+        "credential the deployment lacks writes nothing and says nothing, so an entry "
+        "may be a question about the server rather than about your module; "
+        "`registry_caches` answers the snapshot half. **Null means the archive carried "
+        "no report**, which is a question that could not be put rather than a clean run.",
+    )
     notes: list[str] = Field(default_factory=list, description="What the run reported.")
     next_step: str = Field(description="What to do now.")
 

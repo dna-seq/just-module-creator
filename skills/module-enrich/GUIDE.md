@@ -59,6 +59,13 @@ read back and hashed before anything is replaced. A table you already carry unde
 spelling** is written to that file rather than beside it, so this never leaves you two copies of one
 table; a spec already carrying both is refused before anything is written.
 
+**Read `not_produced` too, and read it as a question.** It lists every derived table the run did not
+produce, and an entry means *"not produced here"* rather than *"your module has none"* — a pass gated
+on a credential that deployment does not hold writes nothing and records no reason at all.
+`registry_caches` answers the snapshot half of that and nothing answers the credential half, so this
+is one to put in front of a person. **`null` there is not an empty list**: it means the archive
+carried no report, so the question could not be put.
+
 **It runs what a publish runs, which is less than a check.** No frequency, literature, identifier,
 ACMG or PGx pass — those are egress spent on a verdict, and this call is for the bytes. So
 `enrich_facts`, `enrich_literature_pass` and `enrich_gwas_effects` have **no thin path** and each

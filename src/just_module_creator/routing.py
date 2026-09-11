@@ -387,13 +387,45 @@ def missed_at_registry(route: Route, *, detail: str) -> Route:
     )
 
 
+def _labels_only(values: Any, *, snapshots: Any = None) -> list[str]:
+    """What was consulted, as LABELS — one vocabulary on both sides of the seam.
+
+    `VariantHint.checked` changed meaning under an unchanged name: before the enricher's
+    RM205 it mixed `str(reference)` — an absolute snapshot path — with live-source labels
+    like `ensembl-live`; after it, labels only, with the paths in `snapshots`. So this
+    reverses the producer's **own** map where there is one, and otherwise keeps the entries
+    that are already labels.
+
+    **A bare path on a pre-split enricher is WITHHELD rather than emitted, and nothing is
+    lost by that**: there is no map to recover its lane from, inventing one would be a
+    vocabulary of ours in a field that is upstream's, and *that a snapshot answered* is
+    already said twice over — by `route.answered_by` and by the enricher's own findings.
+    What a withheld entry must never become is a filesystem path in a payload.
+    """
+    by_path = {str(path): label for label, path in dict(snapshots or {}).items()}
+    labels: set[str] = set()
+    for value in values or ():
+        text = str(value)
+        if text in by_path:
+            labels.add(by_path[text])
+        elif "/" not in text and "\\" not in text:
+            labels.add(text)
+    return sorted(labels)
+
+
 def cost_from(hint: Any) -> dict[str, Any] | None:
     """Their `HintCost` as a plain mapping, or ``None`` when nothing was proxied.
 
     **`served_from` holds lane NAMES and never a path**, which is the producer mapping
-    our own finding out: their `VariantHint.checked` carries absolute snapshot paths and
+    our own finding out: `VariantHint.checked` used to carry absolute snapshot paths and
     one finding interpolated one into prose, so a payload that cannot leak a filesystem
     layout is safe by construction rather than by audit. Do not reconstruct paths from it.
+
+    **The enricher then split the field the same way (their RM205, our `S93`)**: `checked`
+    is labels only and `snapshots` is the label → path map, *"the one place a path lives in
+    the payload, so a host that does not want to publish its layout drops this field"*. So
+    the two sides now agree, which is a change of meaning under an unchanged name — see
+    `_labels_only`, which reads it on both toolchains.
     """
     cost = getattr(hint, "cost", None)
     if cost is None:
@@ -412,10 +444,10 @@ def variant_fields(hint: Any, *, proxied: bool) -> dict[str, Any]:
 
     **The two shapes are genuinely different and this is why a translation is owed.**
     The registry's models are theirs, not the enricher's: `rsid_status` is flattened into
-    `rsid_state` + `rsid_current`, `checked`'s absolute snapshot paths become
-    `cost.served_from` lane names, and `ambiguous` — a `@property` upstream, which does
-    not survive serialization — is a real field there. Reading one as the other drops
-    three answers silently.
+    `rsid_state` + `rsid_current`, what was consulted arrives as `cost.served_from` rather
+    than as `checked`, and `ambiguous` — a `@property` upstream, which does not survive
+    serialization — is a real field there. Reading one as the other drops three answers
+    silently.
 
     So this reads whichever is in front of it and returns our names. `proxied` picks the
     shape rather than sniffing for a field, because a sniff would guess wrong on the day
@@ -433,11 +465,11 @@ def variant_fields(hint: Any, *, proxied: bool) -> dict[str, Any]:
             "pubmind": list(getattr(hint, "pubmind", []) or []),
             "vrs_id": getattr(hint, "vrs_id", None),
             "ambiguous": getattr(hint, "ambiguous", None),
-            # Lane names, deliberately — see `cost_from`. On the local side the same
-            # field carries the enricher's own `checked`, which is paths; the two are
-            # not the same vocabulary and the `route` beside them says which you have.
-            "checked": sorted(
-                str(c) for c in (getattr(getattr(hint, "cost", None), "served_from", []) or [])
+            # Lane names, deliberately — see `cost_from`. The local side reads the
+            # enricher's `checked` through `_labels_only`, so both halves speak labels
+            # and the `route` beside them says which half answered.
+            "checked": _labels_only(
+                getattr(getattr(hint, "cost", None), "served_from", []) or []
             ),
         }
 
@@ -453,5 +485,7 @@ def variant_fields(hint: Any, *, proxied: bool) -> dict[str, Any]:
         "pubmind": list(getattr(hint, "pubmind", []) or []),
         "vrs_id": getattr(hint, "vrs_id", None),
         "ambiguous": getattr(hint, "ambiguous", None),
-        "checked": sorted(str(c) for c in (getattr(hint, "checked", set()) or set())),
+        "checked": _labels_only(
+            getattr(hint, "checked", ()), snapshots=getattr(hint, "snapshots", None)
+        ),
     }

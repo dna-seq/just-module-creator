@@ -43,7 +43,11 @@ from just_dna_format.layout import (
     SidecarCollision,
     sidecar_write_path,
 )
-from just_dna_registry.specfiles import DERIVED_FILES, RECOGNIZED_SPEC_FILES
+from just_dna_registry.specfiles import (
+    DERIVED_FILES,
+    DERIVED_REPORT_FILE,
+    RECOGNIZED_SPEC_FILES,
+)
 from mcp.types import ToolAnnotations
 
 from just_module_creator import routing
@@ -243,15 +247,22 @@ def _read_local_keys_from_bytes(
     return {tuple((row.get(c) or "").strip() for c in columns) for row in rows}, rows
 
 
-def _unpack(archive: bytes) -> tuple[dict[str, bytes], list[str]]:
-    """The sidecars out of the tar, plus the extra members, by name.
+def _unpack(archive: bytes) -> tuple[dict[str, bytes], list[str], list[str] | None]:
+    """The sidecars out of the tar, the extra members by name, and what was NOT produced.
 
     Members are taken by their basename under `derived/` and nothing else is written, so
     a path traversal in a member name cannot reach outside the spec directory — the
     archive is a third party's bytes and is treated as such.
+
+    **The third answer is three-valued and that is the point.** `None` means the archive
+    carried no report, so the question could not be put; `[]` means it was put and nothing
+    was missing. Collapsing the two would report an old deployment's silence as a clean
+    run — and the whole reason the field exists is that a gated pass writes nothing and
+    says nothing, so silence is exactly the state that must stay distinguishable.
     """
     tables: dict[str, bytes] = {}
     extras: list[str] = []
+    absent: list[str] | None = None
     with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as tar:
         for member in tar.getmembers():
             if not member.isfile():
@@ -266,8 +277,31 @@ def _unpack(archive: bytes) -> tuple[dict[str, bytes], list[str]]:
                 if base in DERIVED_FILES:
                     tables[base] = data
                 continue
-            extras.append(Path(name).name)
-    return tables, extras
+            base = Path(name).name
+            extras.append(base)
+            if base == DERIVED_REPORT_FILE:
+                absent = _absent_from(data)
+    return tables, extras, absent
+
+
+def _absent_from(report: bytes) -> list[str] | None:
+    """`files_absent` out of the run's own report, or `None` when it does not say.
+
+    A third party's bytes, so a report that is not JSON, is not an object, or carries the
+    key as something other than a list of strings answers `None` — *it did not say* —
+    rather than raising or being read as an empty list. Same reason as `_unpack`'s: the
+    two silences are different facts.
+    """
+    try:
+        parsed = json.loads(report.decode("utf-8-sig"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(parsed, dict):
+        return None
+    listed = parsed.get("files_absent")
+    if not isinstance(listed, list):
+        return None
+    return sorted({str(item) for item in listed})
 
 
 #: Every spec file name a draft archive may legitimately carry, so a member outside the
@@ -487,7 +521,7 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
                 "archive, and `registry_validate` is the tool that reports instead."
             ) from exc
 
-        tables, extras = _unpack(archive)
+        tables, extras, absent = _unpack(archive)
         try:
             lines, displaced = _displacement_lines(source, tables)
         except SidecarCollision as exc:
@@ -548,19 +582,37 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         if ctx:
             await ctx.report_progress(progress=3, total=3)
 
+        # `not_produced` is a decision but not a ROW decision, so it stays out of
+        # `decisions` — mixing the two grains is what makes a list unreadable. The
+        # sentence below is what turns an enumerable fact into something to act on:
+        # upstream deliberately refuses to say WHY a name is absent (a gated pass leaves
+        # no note at all), so naming the two readings is ours to do and guessing between
+        # them is not.
+        missing = (
+            " "
+            + (
+                f"{len(absent)} derived table(s) the run did not produce are in "
+                "`not_produced` — that may be a gated pass or a snapshot this deployment "
+                "lacks rather than anything about your module, and `registry_caches` "
+                "answers the snapshot half."
+            )
+            if absent
+            else ""
+        )
+
         next_step = (
             (
                 "Nothing was written. Read `decisions`: each line is a row your files "
                 "carry and the new tree does not, and a `source=\"manual\"` one is hand "
                 "curation nothing will re-derive. Re-run with `dry_run=false` when you "
-                "have decided, then `validate_module` and `compile_module`."
+                "have decided, then `validate_module` and `compile_module`." + missing
             )
             if dry_run
             else (
                 f"Installed {len(installed)} table(s). Run `validate_module` then "
                 "`compile_module(strict=true)`. A table you already carry under its "
                 "deprecated spelling was written to that file rather than beside it, so "
-                "this never leaves you two copies of one table."
+                "this never leaves you two copies of one table." + missing
             )
         )
 
@@ -570,6 +622,7 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
             installed=installed,
             capture_dir=str(capture) if capture else None,
             decisions=lines,
+            not_produced=absent,
             dry_run=dry_run,
             validation_errors=[],
             notes=[f"archive carried {m}" for m in sorted(extras)],

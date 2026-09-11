@@ -413,11 +413,82 @@ def test_the_archive_reader_takes_only_recognised_sidecars_by_basename():
             "WHERE-THIS-CAME-FROM.md": b"# note",
         }
     )
-    tables, extras = _unpack(archive)
+    tables, extras, absent = _unpack(archive)
 
     assert set(tables) == {"resolution.csv"}
     assert "check.json" in extras and "WHERE-THIS-CAME-FROM.md" in extras
     assert not any("evil" in name for name in tables)
+    # `{}` is a report that does not say, which is not the same fact as a clean run.
+    assert absent is None
+
+
+def test_what_the_run_did_not_produce_is_read_and_kept_three_valued():
+    """A table missing from the archive is not a table with nothing in it.
+
+    Upstream's own note: `files_absent` means *"not produced here"*, never *"this module
+    has none"* — a gated source whose credential the deployment lacks writes nothing and
+    records no reason at all, so the absence has two readings and the archive cannot tell
+    them apart. What it can do is enumerate, and what we must not do is flatten the three
+    states: a report that lists nothing is a clean run, and **no report at all is a
+    question that could not be put**.
+    """
+    from just_module_creator.tools.proxy import _absent_from, _unpack
+
+    archive = _archive(
+        {
+            "derived/resolution.csv": _resolution([("2-135851076-G-A", "rs4988235", "ensembl")]),
+            "check.json": b'{"files_absent": ["expression_effects.csv", "frequencies.csv"]}',
+        }
+    )
+    _, _, absent = _unpack(archive)
+    assert absent == ["expression_effects.csv", "frequencies.csv"]
+
+    clean = _archive({"check.json": b'{"files_absent": []}'})
+    assert _unpack(clean)[2] == [], "a report that lists nothing is a clean run"
+
+    # A third party's bytes: every malformed shape answers "it did not say" rather than
+    # raising or being read as an empty list.
+    for payload in (b"not json at all", b"[1, 2]", b'{"files_absent": "frequencies.csv"}'):
+        assert _absent_from(payload) is None, payload
+
+
+@needs_proxy
+async def test_a_table_the_run_could_not_produce_reaches_the_caller_as_a_question(
+    monkeypatch, make_client, tmp_path
+):
+    """And the sentence names both readings, because upstream deliberately names neither.
+
+    The pass may be gated on a credential this deployment lacks, or the snapshot may be
+    missing — `registry_caches` answers the second and nothing answers the first, so the
+    honest output is the enumerable fact plus what it does not settle.
+    """
+    from just_module_creator.tools import proxy
+
+    (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
+    archive = _archive(
+        {
+            "derived/resolution.csv": _resolution([("2-135851076-G-A", "rs4988235", "ensembl")]),
+            "check.json": b'{"files_absent": ["expression_effects.csv"]}',
+        }
+    )
+
+    class _Stub:
+        def derived(self, namespace, name, spec_dir):
+            return archive
+
+    monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Stub())
+
+    async with make_client(offline_settings(workspace=str(tmp_path))) as client:
+        result = await client.call_tool(
+            "remote_derive",
+            {"spec_dir": str(tmp_path), "namespace": "test-sheep", "name": "test_lactose"},
+        )
+    report = result.data
+
+    assert report.not_produced == ["expression_effects.csv"]
+    assert "not_produced" in report.next_step
+    assert "registry_caches" in report.next_step
+    assert report.decisions == [], "a file nobody produced is not a row decision"
 
 
 _LICENSING_HEADER = "source,layer,license,fetched_at\n"
@@ -730,6 +801,61 @@ def test_the_local_translation_flattens_the_enrichers_own_status_object():
     # `ambiguous` is a @property here, and reading it is legitimate in-process — it is
     # only serialization that drops it, which is why the far side promoted it.
     assert fields["ambiguous"] in (True, False)
+
+
+def test_what_was_consulted_is_labels_on_both_sides_and_never_a_path():
+    """`VariantHint.checked` changed meaning under an unchanged name, and this pins it.
+
+    Before the enricher's RM205 (our `S93`) it mixed `str(reference)` — an absolute
+    snapshot path — with live-source labels; after it, labels only, with the paths moved
+    to `snapshots`, *"the one place a path lives in the payload"*. So a reader written
+    against either shape is right about one toolchain and wrong about the other, and the
+    field a host is expected to **drop** is the one we must never serialize.
+
+    Both shapes are asserted as data rather than probed for, because the point is the
+    output vocabulary: labels, whichever side and whichever release answered.
+    """
+    from just_module_creator import routing as r
+
+    # Post-split: the producer's own map is reversed rather than a lane name guessed.
+    assert r._labels_only(
+        {"/data/just-dna-cache/ensembl/ensembl.db", "ensembl-live"},
+        snapshots={"ensembl": "/data/just-dna-cache/ensembl/ensembl.db"},
+    ) == ["ensembl", "ensembl-live"]
+
+    # Pre-split: no map exists, so the path is WITHHELD rather than emitted or guessed at.
+    assert r._labels_only({"/data/just-dna-cache/clinvar/clinvar.db", "ensembl-live"}) == [
+        "ensembl-live"
+    ]
+    assert r._labels_only(None) == []
+
+
+def test_the_local_side_serializes_no_snapshot_path_and_no_snapshot_map():
+    """Read off the enricher's real dataclass, so it is the installed contract being pinned.
+
+    Two separate promises. The values we emit are labels — asserted by shape (no separator
+    can appear) rather than against a known path, so it fails earlier than a string match
+    would. And `snapshots` is never carried across the boundary at all: a host that does
+    not want to publish its layout drops that field, and this layer is a host.
+    """
+    from just_dna_enricher.lookup import VariantHint
+
+    from just_module_creator import routing as r
+    from just_module_creator.models import VariantLookup
+
+    hint = VariantHint(rsid="rs4988235")
+    hint.checked.add("ensembl")
+    hint.checked.add("ensembl-live")
+    if hasattr(hint, "snapshots"):
+        hint.snapshots["ensembl"] = "/data/just-dna-cache/ensembl/ensembl.db"
+        hint.checked.add("/data/just-dna-cache/ensembl/ensembl.db")
+
+    fields = r.variant_fields(hint, proxied=False)
+    assert fields["checked"] == ["ensembl", "ensembl-live"]
+    for value in fields["checked"]:
+        assert "/" not in value and "\\" not in value, "no filesystem path in a hint payload"
+    assert "snapshots" not in fields
+    assert "snapshots" not in VariantLookup.model_fields
 
 
 @needs_proxy

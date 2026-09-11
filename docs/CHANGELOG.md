@@ -3,6 +3,38 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.31.2] — 2026-09-11
+
+### What was consulted is a label on both sides, and the field that changed meaning kept its name
+
+The enricher adopted our `S93` by **splitting** `VariantHint.checked` rather than scrubbing it (their
+RM205): `checked` is labels only — `ensembl`, `clinvar`, `ensembl-live` — and `snapshots` is the
+label → path map, *"the one place a path lives in the payload, so a host that does not want to publish
+its layout drops this field"*. This layer **is** such a host, so `snapshots` is never carried across
+the boundary and `VariantLookup` has no field for it.
+
+**The hazard was that the meaning moved under an unchanged name.** Before the split, `checked` mixed
+`str(reference)` — an absolute snapshot path — with live-source labels, and our local branch emitted
+that mixture verbatim. `routing._labels_only` now reverses the producer's own map where there is one
+and keeps the entries that are already labels; **a bare path on a pre-split enricher is withheld
+rather than guessed at**, which loses nothing, because *a snapshot answered* is already said twice
+over by `route.answered_by` and by the enricher's own findings. Two tests, one of them asserting the
+shape (no separator can appear) rather than a known string, so it fails earlier than a match would.
+
+### A table the run could not produce is a question, not a clean result
+
+The registry's derive archive now reports `files_absent` in its `check.json`, which closes the gap we
+asked them about: a pass gated on a credential the deployment lacks **writes nothing and records no
+reason**, so the archive could enumerate the absence but not explain it. `DerivedTreeReport` gains
+`not_produced`, and it is three-valued for the reason that matters — `null` means the archive carried
+no report, so the question could not be put, and collapsing that into `[]` would report an old
+deployment's silence as a clean run.
+
+It stays out of `decisions`, which is at row grain, and the `next_step` sentence names **both**
+readings, because upstream deliberately names neither: a gated pass, or a snapshot this deployment
+lacks, with `registry_caches` answering only the second. A third party's bytes, so a report that is
+not JSON, not an object, or carries the key as something other than a list answers *it did not say*.
+
 ## [0.31.1] — 2026-09-11
 
 ### A derived table lands on the spelling the author already has
