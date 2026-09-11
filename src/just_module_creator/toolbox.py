@@ -134,7 +134,7 @@ GROUPS: tuple[Group, ...] = (
         "Is this gene symbol / ontology CURIE current, does it agree with the row, and "
         "what allele does a source's bare variant NAME denote.",
         ("check_identifiers", "lookup_identifier", "lookup_allele_identity"),
-        3300,
+        4632,
     ),
     Group(
         "pgx",

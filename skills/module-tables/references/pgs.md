@@ -142,22 +142,33 @@ Ordered by how likely a first-timer is to hit them.
 
 1. **A fabricated `pgs_id` validates, lints clean, and compiles strict.** Measured: `PgsRow(pgs_id=…)`
    accepts `PGS999999999` **and `PGS0`**; `lint_rows("pgs.csv", …)` on a row carrying `PGS999999999`
-   returns `errors 0, warnings 0, findings []`; `compile_module(strict=True)` succeeds. Nothing in the
-   ecosystem resolves a PGS accession — not the enricher (zero references), not this server. **Cost:**
-   the error surfaces on the consumer's machine, per sample, as a failed scoring-file resolution inside
-   `just-prs`, after the module is in an immutable registry.
+   returns `errors 0, warnings 0, findings []` on the shape alone, and `compile_module(strict=True)`
+   succeeds. **Cost, when nothing resolves the accession:** the error surfaces on the consumer's
+   machine, per sample, as a failed scoring-file resolution inside `just-prs`, after the module is in
+   an immutable registry.
 
-   > 🚧 **ROADWORKS — nothing anywhere resolves a `pgs_id`.** 
-   > **Current state.** Re-confirmed across all three packages: the only check on the column is the
-   > `^PGS\d+$` shape. No enricher pass fetches the PGS Catalog, `check_identifiers` does not look at
-   > this table, and `fully_resolved: true` on a `pgs`-only module is structural — `PgsRow` is not a
-   > positional kind, so resolution has nothing to resolve and reports success over an empty set.
-   > **Expected state.** An existence check would be an enricher pass against the PGS Catalog. None
-   > is designed, and the column is not even documented as author-sourced in the maintained schema
-   > reference.
-   > **Guard.** Take every `pgs_id` from a Catalog page you actually opened, and put the score's name
-   > in `note` so a reviewer can tell that you did. Do not read `fully_resolved: true` on such a
-   > module as evidence of anything — nothing was checked.
+   > ✅ **FIXED — `check_identifiers` resolves a `pgs_id` now, and this entry inverted on a
+   > measurement.** It read *"nothing anywhere resolves a `pgs_id`"* and that was true when it was
+   > written.
+   > **What it said.** The only check on the column was the `^PGS\d+$` shape; no enricher pass
+   > fetched the Catalog; `check_identifiers` did not look at this table.
+   > **What is installed (measured 2026-09-11, enricher 0.7.0).** The identifier pass grew a fourth
+   > leg (their RM163): `check_identifiers(..., check_pgs=True)` calls `_check_pgs`, and
+   > `IdentifierReport` carries seven PGS fields. Each accession comes back `known`, `malformed` or
+   > **`unrecognised`** — the Catalog holding no score under a shape-valid accession, which is
+   > precisely the finding the regex cannot make. A two-field drift check compares authored cells
+   > against what the Catalog now publishes.
+   > **What this plugin was doing wrong, and it was worse than not running.** `check_pgs` defaults
+   > `True` on *both* the pass and `verification_records`, so the leg ran and a PGS record was written
+   > into `verification.json` while the answer reached **no field of ours**. The module was attested
+   > as having had its accessions checked and could not tell you the result. Fixed in 0.31.3:
+   > `pgs_tally`, `pgs`, `pgs_drift`, `pgs_release` and `pgs_check_skipped`, plus a `check_pgs`
+   > argument, all on the same three-valued terms as the gene and trait halves.
+   > **Still true.** `fully_resolved: true` on a `pgs`-only module is structural — `PgsRow` is not a
+   > positional kind, so resolution reports success over an empty set. Read the tallies, not that flag.
+   > **Guard.** Run `check_identifiers` and read `pgs_tally` beside `pgs_check_skipped`: an empty
+   > `pgs` list is *nothing needs attention* only while that field is null. Still put the score's name
+   > in `note` — a reviewer reading the row should not have to re-derive which score it is.
 2. **`match_rate_floor` names the metric the reference consumer has concluded is the wrong gate.**
    `just-prs` gates coverage on **weight-mass coverage (C_wt)**, not the count match rate, and says why:
    *"WGS reference-restoration fills absent loci as hom-ref, inflating count match_rate to ~100% for

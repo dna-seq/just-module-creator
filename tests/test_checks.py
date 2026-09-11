@@ -55,13 +55,25 @@ async def test_a_module_with_no_variants_gets_an_answer_not_a_traceback(
     assert not (bare / "verification.json").exists()
 
 
-async def test_both_halves_off_is_refused_before_any_socket(make_client, spec: Path) -> None:
-    """An attestation for a check nobody asked for would assert nothing."""
+async def test_every_half_off_is_refused_before_any_socket(make_client, spec: Path) -> None:
+    """An attestation for a check nobody asked for would assert nothing.
+
+    **Three halves now, and the count is load-bearing rather than cosmetic.** This test
+    passed `check_genes=False, check_traits=False` and asserted the refusal while the PGS
+    leg was already running on upstream's `check_pgs=True` default — so it was asserting
+    *nothing to ask* about a call that still had a registry to put a question to. Turning
+    two of three off is a narrowed run, not an empty one.
+    """
     async with make_client(offline_settings()) as client:
         with pytest.raises(ToolError, match="no question to put"):
             await client.call_tool(
                 "check_identifiers",
-                {"spec_dir": str(spec), "check_genes": False, "check_traits": False},
+                {
+                    "spec_dir": str(spec),
+                    "check_genes": False,
+                    "check_traits": False,
+                    "check_pgs": False,
+                },
             )
 
 
@@ -107,7 +119,14 @@ def _upstream_report():
     Not a stand-in for the transformation under test — it is the *input* to it. The
     two clean records are what a real module has hundreds of.
     """
-    from just_dna_enricher.identifiers import GeneStatus, IdentifierReport, TraitStatus
+    from just_dna_enricher.identifiers import (
+        GeneStatus,
+        IdentifierReport,
+        PgsComparison,
+        PgsDrift,
+        PgsStatus,
+        TraitStatus,
+    )
 
     return IdentifierReport(
         genes=[
@@ -120,6 +139,34 @@ def _upstream_report():
             # never clean. This is the three-valued case in count form.
             TraitStatus(curie="MESH:D003920", state="unchecked"),
         ],
+        # The third half, which ran on upstream's `check_pgs=True` default and reached
+        # no field of ours until 0.31.3. `PGS000027` is a real Catalog accession;
+        # `PGS999999` is shape-valid and the Catalog holds nothing under it, which is
+        # the finding a shape check cannot make.
+        pgs=[
+            PgsStatus(
+                pgs_id="PGS000027",
+                state="known",
+                name="GRS53",
+                date_release="2020-04-30",
+                trait_efo_ids=["EFO:0004611"],
+                variants_number=53,
+                license="Not specified",
+            ),
+            PgsStatus(pgs_id="PGS999999", state="unrecognised"),
+        ],
+        pgs_release="2026-08-01",
+        pgs_metadata=PgsComparison(
+            drift=[
+                PgsDrift(
+                    pgs_id="PGS000027",
+                    field_name="variants_number",
+                    authored="52",
+                    published="53",
+                )
+            ],
+            compared=1,
+        ),
     )
 
 
@@ -180,6 +227,55 @@ async def test_a_clean_record_is_counted_and_withheld_rather_than_printed(checke
     # And the summary still names both, so nothing was lost by withholding.
     assert any("MLL" in line for line in data.stale)
     assert any("MESH:D003920" in line for line in data.stale)
+
+
+async def test_the_pgs_half_reaches_the_caller_rather_than_only_the_attestation(
+    checked, spec_dir
+):
+    r"""It was running and reporting to nobody, which is worse than not running.
+
+    Upstream's `check_identifiers` takes `check_pgs=True` and `verification_records`
+    writes a PGS record on the same default — so a module was being attested as having
+    had its accessions checked while the answer reached no field here. An attestation for
+    a check whose result the caller never sees is the vacuous-green shape the rulebook
+    is about, one layer up: the record is true and the module still tells you nothing.
+
+    `unrecognised` is the finding the shape check cannot make — `^PGS\d+$` passes on an
+    accession the Catalog holds no score under.
+    """
+    open_client, _ = checked
+    async with open_client() as client:
+        data = (await client.call_tool("check_identifiers", {"spec_dir": str(spec_dir)})).data
+
+    assert data.pgs_tally.checked == 2
+    assert data.pgs_tally.clean == 1, "`known` is the clean state; `unrecognised` is not"
+    assert data.pgs_tally.flagged == 1
+    # Withheld like the other two halves: only what needs attention on a default run.
+    assert [s.identifier for s in data.pgs] == ["PGS999999"]
+    assert any("PGS999999" in line for line in data.stale)
+    # Drift is named with both values and never applied — the Catalog re-releases.
+    assert len(data.pgs_drift) == 1
+    assert "PGS000027" in data.pgs_drift[0] and "variants_number" in data.pgs_drift[0]
+    assert "'52'" in data.pgs_drift[0] and "'53'" in data.pgs_drift[0]
+    # The release makes a drift line re-checkable later.
+    assert data.pgs_release == "2026-08-01"
+    # Null, not a sentence: the half ran.
+    assert data.pgs_check_skipped is None
+
+
+async def test_a_narrowed_pgs_run_counts_null_rather_than_zero(checked, spec_dir):
+    """`check_pgs=False` must say *not asked*, never *nothing found*."""
+    open_client, calls = checked
+    async with open_client() as client:
+        data = (
+            await client.call_tool(
+                "check_identifiers", {"spec_dir": str(spec_dir), "check_pgs": False}
+            )
+        ).data
+
+    assert calls[-1]["check_pgs"] is False, "the flag never reached upstream"
+    assert data.pgs_tally.checked is None
+    assert data.pgs_tally.clean is None
 
 
 async def test_a_state_that_means_the_check_did_not_run_is_never_counted_clean(checked, spec_dir):

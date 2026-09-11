@@ -76,7 +76,11 @@ NOT_APPLICABLE = (
 #: the counts all read `_flagged` below. Two of them restating the same set is how a
 #: counted claim and the list it counts drift apart, which is the shape this file's own
 #: history is full of.
-_CURRENT_STATES = frozenset({"approved", "current"})
+#: `known` is the PGS Catalog's clean state, and it joins the ontology ones rather than
+#: getting a predicate of its own: no gene or trait verdict can be `known`, so one
+#: `_flagged` still answers for all three halves. Without it every PGS row would read as
+#: needing attention — the tally would be honest about nothing.
+_CURRENT_STATES = frozenset({"approved", "current", "known"})
 
 
 def _flagged(status: IdentifierStatus) -> bool:
@@ -122,6 +126,41 @@ def _statuses(report: object) -> tuple[list[IdentifierStatus], list[IdentifierSt
     return genes, traits
 
 
+def _pgs_statuses(report: object) -> list[IdentifierStatus]:
+    """The PGS half, projected into the same shape as the other two.
+
+    **This half was running and reaching nobody.** Upstream's `check_identifiers` takes
+    `check_pgs=True` by default and `verification_records` writes a PGS record on the same
+    default — so before this existed the module was attested as having had its accessions
+    checked while the answer reached no field of ours. An attestation for a check whose
+    result the caller never sees is worse than not running it.
+    """
+    return [
+        IdentifierStatus(
+            identifier=s.pgs_id,
+            kind="pgs",
+            state=s.state,
+            current=None,
+            label=s.name,
+        )
+        for s in getattr(report, "pgs", []) or []
+    ]
+
+
+def _pgs_drift_lines(report: object) -> list[str]:
+    """One sentence per drifted cell, in upstream's own terms.
+
+    Named rather than corrected: the Catalog re-releases, so a disagreement may be the
+    module being current against a record that moved under it.
+    """
+    comparison = getattr(report, "pgs_metadata", None)
+    return [
+        f"{d.pgs_id} {d.field_name}: authored {d.authored!r}, the Catalog now publishes "
+        f"{d.published!r}"
+        for d in (getattr(comparison, "drift", []) or [])
+    ]
+
+
 def _attest(records: list, target: Path) -> tuple[bool, str | None]:
     """Write the records, and report a failed write rather than losing the check.
 
@@ -158,9 +197,10 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
         spec_dir: str,
         check_genes: bool = True,
         check_traits: bool = True,
+        check_pgs: bool = True,
         detail: bool = False,
     ) -> IdentifierReport:
-        """Check every gene symbol (HGNC) and trait CURIE (OLS4) in a spec is current.
+        """Check every gene symbol (HGNC), trait CURIE (OLS4) and `pgs_id` (PGS Catalog) is current.
 
         Reports rather than corrects: rewriting an authored value would destroy the
         evidence that the identifier moved, and a rename is exactly the kind of
@@ -169,9 +209,16 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
         rows, never a value. A consumer holding the artifact has no other way to
         tell "asked and clean" from "never asked".
 
-        `check_genes` and `check_traits` are recorded in the attestation, so
-        narrowing a run narrows what the record claims. Turning one off does not
+        `check_genes`, `check_traits` and `check_pgs` are recorded in the attestation,
+        so narrowing a run narrows what the record claims. Turning one off does not
         make its half pass — it makes the record say it was not asked.
+
+        **The PGS half answers three ways and `unrecognised` is the interesting one**:
+        the Catalog holds no score under that accession, which is a different finding
+        from a malformed one. `pgs_drift` names authored cells the Catalog now publishes
+        differently — not applied, because the Catalog re-releases and the row may be
+        the current side. `pgs_check_skipped` is separate from the gene and trait halves
+        on purpose: an outage at the Catalog says nothing about HGNC or OLS4.
 
         **The verdict is the answer; the roster is the raw material.** By default
         `genes` and `traits` carry only the records that need attention, and
@@ -198,10 +245,11 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
         # ceiling comes after. Same order `registry_publish` uses for its naming
         # refusal and for the same reason: answering "you are offline" to a call
         # that could never have succeeded sends the caller to fix the wrong thing.
-        if not check_genes and not check_traits:
+        if not check_genes and not check_traits and not check_pgs:
             raise ToolError(
-                "Both halves are off, so there is no question to put. Enable check_genes or "
-                "check_traits — an attestation for a check nobody asked for would assert nothing."
+                "All three halves are off, so there is no question to put. Enable check_genes, "
+                "check_traits or check_pgs — an attestation for a check nobody asked for would "
+                "assert nothing."
             )
 
         # The enricher's own rule, and it is a decision rather than a guard: a module
@@ -228,6 +276,11 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
                 stale=[],
                 gene_locus_conflicts=[],
                 gene_locus_check_skipped=None,
+                pgs_tally=_tally([], asked=False),
+                pgs=[],
+                pgs_drift=[],
+                pgs_release=None,
+                pgs_check_skipped=None,
                 attested=False,
                 attestation_note=NOT_APPLICABLE,
                 detail=detail,
@@ -241,7 +294,10 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
         try:
             report = await run_sync(
                 lambda: _check_identifiers(
-                    spec_dir=target, check_traits=check_traits, check_genes=check_genes
+                    spec_dir=target,
+                    check_traits=check_traits,
+                    check_genes=check_genes,
+                    check_pgs=check_pgs,
                 )
             )
         except ValueError as exc:
@@ -267,13 +323,19 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
 
         genes, traits = _statuses(report)
         attested, note = _attest(
-            verification_records(report, check_traits=check_traits, check_genes=check_genes),
+            verification_records(
+                report,
+                check_traits=check_traits,
+                check_genes=check_genes,
+                check_pgs=check_pgs,
+            ),
             target,
         )
 
+        pgs = _pgs_statuses(report)
         stale = [
             f"{s.kind} {s.identifier}: {s.state}" + (f" -> {s.current}" if s.current else "")
-            for s in genes + traits
+            for s in genes + traits + pgs
             if _flagged(s)
         ]
         return IdentifierReport(
@@ -290,6 +352,16 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
             # here would put a second wording in front of one finding.
             gene_locus_conflicts=[str(c) for c in getattr(report, "gene_loci", []) or []],
             gene_locus_check_skipped=getattr(report, "gene_loci_not_checked", None),
+            pgs_tally=_tally(pgs, asked=check_pgs),
+            pgs=pgs if detail else [s for s in pgs if _flagged(s)],
+            pgs_drift=_pgs_drift_lines(report),
+            pgs_release=getattr(report, "pgs_release", None),
+            # `pgs_not_checked` is a `(reason, detail)` pair upstream; the detail sentence
+            # already names how many accessions had been answered when it stopped, so it
+            # is carried rather than re-worded.
+            pgs_check_skipped=(
+                (getattr(report, "pgs_not_checked", None) or (None, None))[1] or None
+            ),
             attested=attested,
             attestation_note=note,
             detail=detail,

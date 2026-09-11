@@ -76,8 +76,13 @@ There is no author column here. Use these words:
   > **drops** it and names it in `CloseResult.dropped_checks`. That is correct behaviour — carrying it
   > across would re-bind a claim to different bytes — but it is reported as a *field on the result*.
   > The Typer CLI prints one line for it (`cli.py`, *"dropped N check record(s) attested over
-  > different bytes"*); a **library** caller that ignores the field is told nothing, it is not a
-  > compile warning, and nothing about the loss reaches `manifest.verification`. This has already
+  > different bytes"*), and **this plugin's `close_module` carries it through as
+  > `CloseResult.dropped_checks`** — measured 2026-09-11, `tools/authoring.py` passes it into our own
+  > result model, so "only the CLI says so" is no longer the whole story and an agent driving this
+  > surface does see the loss. What is still true is the part that matters most: a **library** caller
+  > that ignores the field is told nothing, it is not a compile warning, and nothing about the loss
+  > reaches `manifest.verification`, so a consumer reading the artifact cannot tell a module whose
+  > records were dropped from one that never had any. This has already
   > happened in the format repo's own history, and 15 of its 16 reference examples now record **zero**
   > checks.
   > **Expected state.** At minimum a warning on the compile surface, so the loss is visible to

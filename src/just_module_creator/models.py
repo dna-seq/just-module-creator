@@ -1111,6 +1111,44 @@ class IdentifierReport(BaseModel):
         default_factory=list,
         description="Trait CURIE verdicts, on the same terms as `genes`.",
     )
+    pgs_tally: IdentifierTally = Field(
+        default_factory=IdentifierTally,
+        description="Counts for the PGS Catalog half, on the same terms as `gene_tally`. "
+        "A `pgs_id` is `known`, `malformed` or `unrecognised` — and **`unrecognised` is the "
+        "Catalog saying it holds no score under that accession**, which is a different claim "
+        "from a typo.",
+    )
+    pgs: list[IdentifierStatus] = Field(
+        default_factory=list,
+        description="PGS accession verdicts, on the same terms as `genes`. `label` carries the "
+        "score's name where the Catalog served one.",
+    )
+    pgs_drift: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Authored cells that disagree with what the Catalog now publishes — one line per "
+            "field, naming both values. **Not applied**, and the reason is the one that governs "
+            "every cross-check here: the Catalog may have been re-released since the row was "
+            "written, so which side is right is not something a lookup can know. Two authored "
+            "columns are deliberately never compared, because the Catalog publishes no "
+            "counterpart to drift them against."
+        ),
+    )
+    pgs_release: str | None = Field(
+        default=None,
+        description="The Catalog release the answers came from, or null when the half did not "
+        "run. It is what makes a drift line re-checkable later.",
+    )
+    pgs_check_skipped: str | None = Field(
+        default=None,
+        description=(
+            "Why the PGS half did not run, or null when it did. **An empty `pgs` list means "
+            "'nothing to check' ONLY when this is null** — otherwise the accessions were never "
+            "put to the Catalog, which is not a pass. It is separate from the gene and trait "
+            "halves on purpose: an outage at the Catalog says nothing about HGNC or OLS4, and "
+            "whatever was answered before it stopped is kept rather than discarded."
+        ),
+    )
 
 
 # --------------------------------------------------------------------------- #

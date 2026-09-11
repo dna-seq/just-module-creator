@@ -3,6 +3,43 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.31.3] — 2026-09-11
+
+### A check that ran, was attested, and reached nobody
+
+`check_identifiers` grew a fourth leg upstream (enricher RM163): `check_pgs` defaults **true** on
+the pass *and* on `verification_records`, so every run of this tool was putting authored `pgs_id`
+accessions to the PGS Catalog and writing a PGS record into `verification.json` — while the answer
+reached **no field of our report**. The module was attested as having had its accessions checked and
+could not tell you the result. That is the vacuous-green shape one layer up: the record is true and
+says nothing, which is worse than the leg not running.
+
+Wired through on the same three-valued terms as the other two halves: `pgs_tally` (`known` is the
+clean state; **`unrecognised` is the Catalog holding no score under a shape-valid accession**, which
+is the finding `^PGS\d+$` cannot make), `pgs` withheld to the flagged records unless `detail`,
+`pgs_drift` naming both values and applying neither — the Catalog re-releases, so the row may be the
+current side — `pgs_release` so a drift line stays re-checkable, and `pgs_check_skipped`, which is
+deliberately separate from the gene and trait halves because an outage at the Catalog says nothing
+about HGNC or OLS4. `check_pgs` is now an argument, and turning it off makes the record say *not
+asked* rather than making the half pass.
+
+**A test had been asserting the old shape.** `test_both_halves_off_is_refused_before_any_socket`
+passed `check_genes=False, check_traits=False` and asserted *"no question to put"* while the PGS leg
+was still running on upstream's default — so it certified an empty run that was merely narrowed. It
+now turns all three off, and is named for three halves.
+
+### Two dossier markers settled on measurement
+
+`pgs.md`'s ROADWORKS said *"nothing anywhere resolves a `pgs_id`"*, which was true when written and
+is now false in both halves — **inverted to ✅ FIXED** with what is still true kept (`fully_resolved`
+on a `pgs`-only module is structural). `verification.md`'s was **narrowed**: our `close_module` does
+carry `dropped_checks` through, so *"only the CLI says so"* is no longer whole — what stands is that
+it is not a compile warning and nothing reaches `manifest.verification`.
+
+Found by auditing the dossiers' 29 markers rather than the 77 the first count reported: two of every
+file's four hits are the legend, which is a haystack-shaped miscount of exactly the kind §6 now warns
+about.
+
 ## [0.31.2] — 2026-09-11
 
 ### What was consulted is a label on both sides, and the field that changed meaning kept its name
