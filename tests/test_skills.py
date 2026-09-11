@@ -557,6 +557,15 @@ def test_the_cli_reference_names_every_command_both_toolchain_clis_ship():
     a remembered list, so a command added upstream fails here on the next sync.
     Naming a command is all this asks; whether it is described *well* is the
     document's own business, and no test can hold that.
+
+    **Scope, stated because the title over-claimed it:** root commands and group
+    *names*. The enricher also has 43 subcommands inside its 17 groups (measured
+    2026-09-11) and those are deliberately not asserted — `CLI.md` scopes that tier to
+    a roster of groups and tells the reader to ask `caches.CACHE_LANES` instead of
+    trusting the list, so a test demanding `mitomap publish` by name would be enforcing
+    a promise the document declines to make. A sweep for them reports 27 "missing",
+    which is a number about this assumption rather than about the document: several of
+    the rest are named in forms a pair-match cannot read (`hint gene/trait`).
     """
     from just_dna_compiler import cli as compiler_cli
     from just_dna_enricher import cli as enricher_cli

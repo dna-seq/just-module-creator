@@ -1327,6 +1327,15 @@ have been questions.
   impossible again, `scripts/page_budget.py` estimates the body length by calibrating against a
   commit whose PDF was a true render; it agreed with the real number to within 0.3 pages.
 
+- **`just-dna-pipelines` is a SUBDIRECTORY of the -lite checkout, not a sibling and not
+  under its `src/`.** It is at `/data/sources/just-dna-lite/just-dna-pipelines/src/`, so a
+  grep rooted at `/data/sources/just-dna-lite/src` finds nothing and *looks* like a clean
+  answer. That cost two phantom findings on 2026-09-11: `JUST_DNA_PIPELINES_ROOT` and
+  `JUST_DNA_PIPELINES_OUTPUT_DIR`, named in `skills/module-install-local/SKILL.md`, read as
+  undefined until the search was re-rooted, and both are real — read in
+  `annotation/resources.py` and `module_config.py`. **Sanity-check a sweep's denominator
+  before reading its numerator**: an instrument that cannot see the subject reports absence
+  with the same shape as a defect, and that shape produces *work* rather than silence.
 - A transitive dependency ships a top-level `tests` package that shadows this
   repo's, so test helpers import as `from conftest import ...`.
 - **Format 0.6.6 / compiler 0.6.6 / enricher 0.6.6 / registry 0.18.2 — adopted 2026-08-21 (our
