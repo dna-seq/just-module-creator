@@ -396,6 +396,13 @@ def _labels_only(values: Any, *, snapshots: Any = None) -> list[str]:
     reverses the producer's **own** map where there is one, and otherwise keeps the entries
     that are already labels.
 
+    **This filter does not come out when the floor moves to 0.7, and that argument will be
+    made.** It reads as belt-and-braces over a floor that appears to cover it, and it is
+    not: the split landed *after* `0.7.0` already existed, so `just-dna-enricher>=0.7.0`
+    is satisfied by installs on either side of it and **there is no version to raise the
+    pin to**. A capability check comes out when its fact goes unconditional, never because
+    a floor now appears to guarantee it — `F93` carries the measurement.
+
     **A bare path on a pre-split enricher is WITHHELD rather than emitted, and nothing is
     lost by that**: there is no map to recover its lane from, inventing one would be a
     vocabulary of ours in a field that is upstream's, and *that a snapshot answered* is

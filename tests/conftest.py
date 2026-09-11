@@ -88,9 +88,18 @@ _CACHE_VARS = tuple(
 #:
 #: `_FORMAT_0_7` is the one stand-in. `OUTSIDE_CONTENT_IDENTITY` is RM180's field marker,
 #: used because the two behaviours it gates — RM141's shared strict predicate and the
-#: overlay's presence in the content hash — ship no symbol of their own. **Delete every
-#: one of these the day the floor moves to 0.7**; they exist for the interval, not
-#: forever.
+#: overlay's presence in the content hash — ship no symbol of their own.
+#:
+#: **They exist for the interval, not forever — but "the floor moved" is NOT the deletion
+#: criterion.** Delete a probe when the fact it asks about has gone **unconditional**,
+#: which is a different claim and not always implied by a floor bump. The counterexample
+#: is measured rather than hypothetical: the enricher split `VariantHint.checked` into
+#: `checked` + `snapshots` **after `0.7.0` already existed as a version**, so
+#: `just-dna-enricher>=0.7.0` is satisfied by installs on both sides of that split and
+#: **there is no version to raise the pin to, because the split has no version of its
+#: own**. A probe whose fact is shaped like that outlives the floor it looks like it
+#: belongs to. Found by the registry on their own copy of this seam, 2026-09-11; the state
+#: is written up in `docs/just-dna-format-pending-fixes.md`'s `F93`.
 _FORMAT_0_7 = hasattr(_format_base, "OUTSIDE_CONTENT_IDENTITY")
 _ENRICH_TAKES_PROGRESS = "progress" in _inspect.signature(_enrich).parameters
 _COMPILER_CODES_WARNINGS = "warnings_summary" in _Compilation.model_fields
