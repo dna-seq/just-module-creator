@@ -380,7 +380,11 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
         differs from `ref` are visible. **It blocks, with no task id to poll**, and it
         reports progress in subjects; a killed run leaves its staged answers behind and
         the next run resumes from them rather than starting over. Two runs over one spec
-        directory cannot overlap — the second is refused, not queued. Curate first — a
+        directory cannot overlap — the second is refused, not queued, and since 0.7 the
+        refusal is upstream's own advisory `flock` on the directory, so it excludes
+        another process too and not only another call of this tool. On a filesystem that
+        will not take the lock it warns and proceeds unexcluded, which is a real state
+        rather than a theoretical one: serialize enrichment yourself there. Curate first — a
         `<<REPLACE>>` anywhere makes this refuse, deliberately, since forward resolution
         is allele-aware. `offline=true` restricts to local caches, where the ref check
         does not run at all, and a check that could not run is not a check that passed.

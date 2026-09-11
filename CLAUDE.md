@@ -1195,11 +1195,18 @@ have been questions.
 - Sibling repos live beside this one under `/data/sources/`:
   `../just-dna-format` (hosts format, compiler and enricher, their
   `CONSUMER_SUGGESTIONS.md` intake and its answered half,
-  `docs/CONSUMER_SUGGESTIONS_HISTORY.md`), `../just-dna-lite`, and the registry at
-  **`../just-dna-marketplace`** — a **stale directory name only**. The project,
-  package and service are `just-dna-registry`; "marketplace" is the old word,
-  retained on the path and nowhere else. There is no `../just-dna-registry`
-  directory, which is a path quirk and not a rename.
+  `docs/CONSUMER_SUGGESTIONS_HISTORY.md`), `../just-dna-lite`, and the registry, which
+  is reachable by **both** names. The project, package and service are
+  `just-dna-registry`; "marketplace" is the old word, retained on a path and nowhere
+  else. **Corrected 2026-09-11 — this said "there is no `../just-dna-registry`
+  directory" and had it backwards.** `/data/sources/just-dna-registry` is the real
+  directory and `/data/sources/just-dna-marketplace` is a **symlink** to it (`ls -la
+  /data/sources/` shows which). Either path works for reading and for filing a note, so
+  the old instruction cost nothing — but it matters the moment a path is *recorded*:
+  `uv` resolves the symlink, so a `[tool.uv.sources]` entry written as
+  `../just-dna-marketplace` installs from `/data/sources/just-dna-registry/...` and that
+  is the path an import reports. Do not read a resolved `just-dna-registry` path as
+  evidence of a second checkout.
 - The registry keeps its own intake at
   `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`, created 2026-08-11.
 - **`just-dna-registry` moves fast: 0.9.1 → 0.12.0 → 0.13.0 → 0.14.0 in two days.**

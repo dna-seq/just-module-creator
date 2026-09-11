@@ -242,18 +242,32 @@ copies the TSV cell verbatim, and gnomAD writes a JSON array literal there; `[]`
 `constraint_build._NULLS` (`constraint_build.py:85`), so it survives as the two-character string
 `"[]"`. Measured over the real published v4.1 snapshot (18,111 genes):
 
-> 🚧 **ROADWORKS — two producers, two encodings, and the column is inside the fact signature.**
-> **Current state.** Re-confirmed: 17,403 of 18,111 snapshot rows carry the literal string `"[]"`,
-> which is truthy, while the live-API route writes a pipe-joined list or `None`. So
-> `if row.constraint_flags:` reads ~96% of snapshot rows as *flagged*, and the same gene fetched two
-> ways gives two different cells.
-> **Expected state.** One encoding, with `[]` normalized to null on the snapshot leg. The obstacle is
-> that `constraint_flags` is inside `GENE_METRICS_FACT_FIELDS`, so normalizing it **moves
-> `gene_metrics.signature`** for every module already carrying snapshot rows — which is why nobody
-> has done it, and why it needs an owner rather than a quick patch.
-> **Guard.** Never write `if row.constraint_flags:`. Compare against the two literals — treat `"[]"`,
-> `""` and `None` alike as *no flags* — and record which route wrote the row (`source`) before
-> drawing any conclusion from the cell.
+> ✅ **FIXED in format 0.7.0 (`RM110`) — and the guard below INVERTS, so read the version you are on.**
+> **Measured here 2026-09-11** on the installed 0.7.0, by constructing a `GeneMetricsRow` for each
+> encoding: `"[]"` → `None`, `""` → `None`, `'["outlier_mis","outlier_syn"]'` →
+> `"outlier_mis|outlier_syn"`, and an already-pipe-joined cell passes through. So **`if
+> row.constraint_flags:` is now the right test**, which is the opposite of what this page said for
+> two releases.
+>
+> **Two things make the fix bigger than it looks.** It is normalized **on the model**, not on the
+> snapshot leg, so it reaches tables written *before* 0.7 as well as new ones — you do not have to
+> re-derive to get the right answer out of a row. And the obstacle named below was real and was paid
+> rather than dodged: `constraint_flags` is inside `GENE_METRICS_FACT_FIELDS`, so this **moves
+> `gene_metrics.signature` and `artifact.digest`** on any module compiled from the gnomAD v4.1
+> constraint snapshot. That is the correction arriving, not drift, and the reference corpus carries
+> exactly one such row.
+>
+> **What still holds, and it is the half a model cannot fix.** If you read the CSV yourself with
+> `csv.DictReader` instead of through `GeneMetricsRow`, the cell on disk is still whatever its
+> producer wrote — the two-character string `"[]"` on any sidecar an older enricher filled. **Load
+> through the model**, and the encodings collapse. The measurement below is what the snapshot route
+> put on disk and is kept as the record of why this mattered.
+>
+> **Under format 0.6.x the old guard is still correct**: never write `if row.constraint_flags:`,
+> treat `"[]"`, `""` and `None` alike as *no flags*. Check with
+> `uv run python -c "from just_dna_format.gene_metrics import GeneMetricsRow as G;
+> print(G(gene='X', source='gnomad', dataset='d', constraint_flags='[]').constraint_flags)"` — `None`
+> means you are on the fixed model.
 
 | value | rows |
 |---|---|
@@ -266,11 +280,13 @@ copies the TSV cell verbatim, and gnomAD writes a JSON array literal there; `[]`
 | `NULL` | **0** |
 
 `reference_examples/hboc_palb2/gene_metrics.csv:2` ships `[]` for PALB2, so this is what a real module
-carries. Cost: **any consumer writing `if row.constraint_flags:` treats 96.1% of snapshot rows as
-flagged**, and a consumer splitting on `|` gets one token containing brackets and quotes. The column
-is inside the fact signature, so the two routes hash differently even when the flag content agrees —
-measured: blanking `[]` moved `gene_metrics.signature`. **Genuine upstream defect: two producers, one
-column, three encodings, and the docstring describes only one of them.**
+carries **on disk**, 0.7 or not. What changed in 0.7 is what comes out of the model reading it.
+
+The cost while it stood is worth keeping, because it is the calibration case for *a truthy empty*:
+**a consumer writing `if row.constraint_flags:` read 96.1% of snapshot rows as flagged where the true
+figure is 3.9%**, and one splitting on `|` got a single token containing brackets and quotes. Two
+producers, one column, three encodings, and the docstring described only one of them — and the column
+sitting inside the fact signature is what made the obvious repair expensive enough to defer twice.
 
 ### 3 — A curator override does not override; it duplicates, silently
 

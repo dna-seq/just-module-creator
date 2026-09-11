@@ -397,6 +397,15 @@ enough that failing the build would have the format arbitrate somebody else's di
 `detail` for the rows and the rs-numbers to author instead. Compiling without `strict` builds it and says
 so. **Silent when no attestation exists** — an unenriched module is the ordinary case, not a hole.
 
+**`<key>: dbSNP has WITHDRAWN <rsid> — the variant itself was retracted`**
+New in 0.7 (`RM207`), and it is the one refusal here that **fires in `best_effort` too** — unlike a
+merged or an absent rsID, which warn. dbSNP withdrew the variant, so the annotation resting on it may
+be describing nothing. Remove the row or re-key it onto a coordinate. **A spec that passed `validate`
+at 0.6.6 can newly fail on this**, and that is the failure moving earlier rather than a new one:
+`compile` already refused it in both modes and the pre-flight simply said nothing. The sharper case is
+an *expanded* variant carrying such a row — that artifact used to compile clean and was never legal.
+GRCh38 only; on another build the check does not run, which is not the same as passing.
+
 **`inconsistent reference allele`**
 Two rows share a key while disagreeing about `ref`. Exactly one can be right — a VRS allele id names the
 place and the alt, not the reference base, so this is the only place the contradiction surfaces
@@ -583,6 +592,22 @@ server has never heard of, and the message says what pydantic says about a missp
 column against `describe_table` first; if it is real, this is the gap. **The version handshake does
 not catch it** — `assert_compatible()` is scoped to major.minor, so a 0.6.6 client and a 0.6.1 server
 certify each other and then disagree row by row.
+
+**The call that separates the two readings** — a real current column against a misspelling — is
+`base.field_first_seen`, which reads each column's release of origin off the field itself
+(format `RM146`). It is **per `(model, field)`**, which matters: `curator` is on `VariantRow` from
+0.2.0 and on `StudyRow` only from 0.6.5, so the same name is old on one table and new on the next.
+
+```
+uv run python -c "
+from just_dna_format.base import field_first_seen
+from just_dna_format.spec import StudyRow
+print(field_first_seen(StudyRow).get('curator'))"
+```
+
+A release number back means the column is real and the server is behind by that much. `None` means
+the model has no such field, and then it **is** a typo — check the spelling against
+`describe_table`.
 
 **It is a decision, not a defect, and the obvious repair is the wrong one.** Dropping the column makes
 the publish go green and deletes whatever it recorded. The worked case is `curator` on `studies.csv`,

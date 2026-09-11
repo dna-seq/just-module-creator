@@ -5,6 +5,61 @@ on our side, so agents in sibling repos are not surprised.
 
 ## Unreleased
 
+### The 0.7 integration audit: a guard that inverted, a lock that moved, and two calls we were not making
+
+**RM29's second half** — reading format's settled `SCHEMAS.md` / `COMPILER.md` / `ENRICHER.md` and
+`INTEGRATION_0_7.md` § 2.4–§ 4 against our own surface. Four things on our side were wrong or missing.
+
+**`gene_metrics.md`'s 🚧 ROADWORKS had inverted and was teaching the wrong test.** It said *never write
+`if row.constraint_flags:`*, with the 96.1%-of-snapshot-rows measurement attached. Format `RM110`
+normalized the column, and **measured here on the installed 0.7.0**: `"[]"` → `None`, `""` → `None`,
+a JSON array literal → pipe-joined. So that test is now the right one. Two things make the fix bigger
+than it looks — it is normalized **on the model**, so a row an older enricher wrote reads correctly
+without re-deriving, and it moves `gene_metrics.signature` and `artifact.digest` on any module
+compiled from the gnomAD v4.1 snapshot, which is the correction arriving rather than drift. **The half
+a model cannot fix still holds**: read the CSV yourself with `csv.DictReader` and `"[]"` is still on
+disk. The old guard is kept, marked as correct under 0.6.x, with the one-line call that tells you
+which model you have.
+
+**`enrich_module`'s docstring claimed a refusal that is now upstream's.** Since 0.7 `enrich()` takes
+an advisory `flock` on the spec directory (`transaction.spec_lock`), so it excludes another *process*
+and not only another call of this tool — and on a filesystem that will not take the lock it warns and
+proceeds unexcluded, which is a real state to say out loud rather than a theoretical one.
+
+**Two upstream calls we were not making, both closing a known gap.** `base.field_first_seen` reads a
+column's release of origin off the field itself, **per `(model, field)`** — `curator` is on
+`VariantRow` from 0.2.0 and on `StudyRow` only from 0.6.5 — which is exactly what separates the two
+readings of `Extra inputs are not permitted`: a real current column the server has not heard of, or a
+typo. `SYMPTOMS.md`'s entry for that message now carries the call, and `None` from it means the
+spelling is the problem. And `release_records.needs_recompile` answers *must I recompile* per axis in
+three values **over the interval** rather than one release's notes, which is `module-revise`'s whole
+question; its section says so, with the measurement that matters — `0.6.1 → 0.7.0` answers
+`complete=True`, `0.5.1 → 0.7.0` answers `complete=False` with `content_signature: None`, and
+`lactose_tolerance` on production is stamped `just-dna-compiler 0.5.1`, so the incomplete case is the
+ordinary one for an inherited module. Not wired into `compare_to_published`; that is a roadmap item,
+not a docstring.
+
+**Two symptom entries for refusals a 0.6.6 spec did not have.** `RM207` — a `resolution.csv` row
+recording `rsid_status=withdrawn` now refuses at `validate` in **both** modes, so a spec that passed
+before can newly fail, and the sharper case is an *expanded* variant carrying one, which used to
+compile clean and was never legal. And `.<name>.staging/`, which is work in progress rather than
+litter.
+
+**Four discrepancies reported to the format tree by message rather than as an `S<n>`**, because they
+said `INTEGRATION_0_7.md` was being corrected that day: `ARTIFACT_PARQUETS` is **23** where § 2.2 says
+22 (the AlphaGenome round landed after the count); `VALID_WARNING_CODES` is **73** where § 2.4 says 72
+and § 3 says 71 — three numbers for one quantity in one document; `OVERRIDABLE_TABLES` names
+`expression_effects.csv` while § 2.3's covered set does not; and § 1 / § 2.5 still called `RM143`
+uncommitted where § 5 has it shipped.
+
+**Two workspace facts corrected, both of which had been wrong in a way that only bites when a path is
+recorded.** `/data/sources/just-dna-registry` is the real directory and `../just-dna-marketplace` is
+a **symlink** to it — CLAUDE.md § 11 said there was no such directory. `uv` resolves the symlink, so a
+source override written with the old name installs from and reports the new one. And the
+`preview-0.7` note's claim that a branch→main merge *should conflict* on the overrides hunk was wrong:
+it never conflicted, the block was deleted on `main`, and the branch had quietly become a strict
+ancestor.
+
 ### The 0.7 authored surface reaches the skills, and the registry joins the preview overrides
 
 **RM29.** Sixteen authored fields arrived in format 0.7 and none of them was taught. The list is

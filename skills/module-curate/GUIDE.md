@@ -66,8 +66,13 @@ Three things to know before writing one, and the rest is in the dossier:
   cannot warn. The one finding that does fire is an `update` reaching no row.
 - **It is safe to publish now and was not before.** The overlay reached the registry's
   `RECOGNIZED_SPEC_FILES` in 0.25.0, so a server-side rebuild carries it. Below that release it was
-  dropped silently and the module recompiled green carrying the value you had rejected. Neither
-  release is cut yet — check `registry_health(target=…)` before relying on it.
+  dropped silently and the module recompiled green carrying the value you had rejected.
+
+  **Neither release is cut, and `registry_health` is not the check.** It reports the format contract,
+  which is a different question — a server can certify your client and still rebuild a spec without a
+  file it has never heard of, which is the handshake-is-not-validation trap in miniature. The only
+  proof is the round trip: **rehearse on the polygon, `registry_download` it back, and look for the
+  file.** If it is gone, the instance predates 0.25.0 and your correction did not travel.
 
 **What this does not license.** It is not a route for conforming a row to an archive that disagrees
 with it — that is the hazard two paragraphs up, arriving from the other direction. An overlay is for

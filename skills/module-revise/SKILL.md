@@ -151,6 +151,45 @@ endings, and a re-enrichment that rewrites a derived sidecar.
 The registry has **three amend endpoints** — changelog, logo, readme — that move no digest and no
 content claim. **Do not spend a version on prose.**
 
+### "Must I recompile at all?" is now a call, not a judgement
+
+`release_records.needs_recompile(compiled_under, current)` (format 0.7) answers it **per axis and in
+three values** — `True`, `False`, or `None` for *unknown* — over the whole **interval** between two
+releases rather than one release's notes. So a module stamped `just-dna-compiler 0.5.1` against a
+0.7.0 install gets an answer that spans every release in between, which is the question nobody could
+put before.
+
+It returns a `RecompileAnswer`, not a dict — read `.axes` for the verdicts and `.complete` for
+whether the interval was covered at all:
+
+```
+uv run python -c "
+from just_dna_format.release_records import needs_recompile
+a = needs_recompile('0.6.1', '0.7.0')
+print('complete:', a.complete, ' covered:', a.covered)
+for axis, verdict in sorted(a.axes.items()):
+    print(f'  {axis:20} {verdict}')"
+```
+
+Three things to hold when you read it:
+
+- **`None` is not `False`, and `complete` is the field that says why.** Measured 2026-09-11:
+  `0.6.1 → 0.7.0` answers `complete=True` with `content_signature: False`; `0.5.1 → 0.7.0` answers
+  `complete=False` with `content_signature: None`, because `RELEASE_RECORDS` covers `0.6.1`, `0.6.6`
+  and `0.7.0` and a 0.5.x stamp falls off the bottom. **A `None` there means nobody measured that
+  interval, never that nothing moved** — and `lactose_tolerance` on production is stamped
+  `just-dna-compiler 0.5.1`, so this is the ordinary case for an inherited module rather than an edge
+  one. Read `.declared` for the per-item sentences and `.manifest_fields` for the names.
+- **`warnings` is deliberately outside `RECOMPILE_DRIVING_AXES`.** A recompile that only changes which
+  warnings are published is not a reason to spend a version.
+- **It answers *whether the bytes would move*, never *whether the module is right*.** `artifact.digest`
+  moves on 14 of 15 measured modules across the 0.6→0.7 boundary while `content_signature` moves on
+  **none** — so if you key on the content identity, the answer for that axis is no action, and the
+  module asserting the same thing is exactly what that means.
+
+Not yet wired into `compare_to_published`; ask it directly. **Re-pin any stored
+`artifact.digest` at a version boundary** — a 0.6.x digest will not reproduce under 0.7.
+
 ## Should a review be a version at all?
 
 This is the one question where the honest answer is a split rather than a rule, and the registry

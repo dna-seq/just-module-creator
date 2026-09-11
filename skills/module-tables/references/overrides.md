@@ -114,9 +114,11 @@ moved toward the author is an observation about the record, not a verdict.
 
 ## Which tables may be overlaid
 
-Nine, and the roster is `overrides.OVERRIDABLE_TABLES` — ask it, because it grew in 0.7 and will
-grow again. Each entry names the target model plus its **subject** column and its **member** column,
-which is where `subject` and `member` get their meaning:
+**The roster is `overrides.OVERRIDABLE_TABLES` — run the call.** It grew in 0.7 and will grow again,
+and it is longer than the *covered set* `INTEGRATION_0_7.md` § 2.3 enumerates, which is the
+discrepancy the last paragraph of this section is about. Each entry names the target model plus its
+**subject** column and its **member** column, which is where `subject` and `member` get their
+meaning:
 
 ```
 uv run python -c "
@@ -176,7 +178,6 @@ are newer than the column list and are worth knowing before you hit them:
 - [`resolution.md`](resolution.md), [`frequencies.md`](frequencies.md),
   [`literature.md`](literature.md), [`gene_metrics.md`](gene_metrics.md),
   [`gene_validity.md`](gene_validity.md), [`clinical_assertions.md`](clinical_assertions.md),
-  [`gwas_effects.md`](gwas_effects.md) — seven of the nine targets
-- [`clin_sig_concordance.md`](clin_sig_concordance.md) — the eighth, and the only one that can
-  vindicate you
+  [`gwas_effects.md`](gwas_effects.md) — the targets with a dossier of their own
+- [`clin_sig_concordance.md`](clin_sig_concordance.md) — the only target that can vindicate you
 - [`logs.md`](logs.md) — the other record, and the one that applies nothing
