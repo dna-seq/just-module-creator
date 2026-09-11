@@ -88,6 +88,17 @@ three-state rule does not cover.** It is present in the format **source tree** a
 The probe is therefore the behaviour: `sidecar_spellings("licensing.csv")` carrying an alias. Found
 2026-09-11 when the registry hit it in a note of their own that named the symbol as available.
 
+**And the state below the rungs: a version floor cannot express a mid-release split.** The registry
+measured it on the neighbouring seam — `VariantHint.checked` was split into `checked` + `snapshots`
+**after `0.7.0` already existed as a version**, so an install satisfying `just-dna-enricher>=0.7.0`
+may hand a caller either shape and no floor tells them apart. That is the strongest available argument
+for CLAUDE.md §11's *verify by symbol, never by version*, because it is not a stale line being
+corrected — it is a floor that was never able to carry the fact. **Nothing here gates on a version on
+that seam**, checked: `routing._labels_only` withholds a path-shaped entry whichever shape arrives, so
+it is right on both sides of the split by construction rather than by pinning. Keep that property when
+the floor moves to 0.7 and the six capability probes come out — a probe deleted on the grounds that
+*the floor now guarantees it* is the mistake this state describes.
+
 **It does not get deleted yet, and the reason is §8's three states.** Our floor is 0.6.6 and `main`
 installs from PyPI, where the defect is present — a fix in a sibling checkout is not a fix our users
 have. So the test that announced the turnover was **reshaped rather than removed**: it probes for
