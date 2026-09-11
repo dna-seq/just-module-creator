@@ -9,6 +9,179 @@ here: it is filed upstream as an `S<n>` and tracked in
 
 ---
 
+## RM30 — SHIPPED 0.31.0, 2026-09-11 — the two-way client
+
+**Shipped as described, with one deliberate residual and one thing that is not ours.** The residual
+is `expression_effects.csv`: in the compiler's rosters and in none of the registry's, so a rebuild
+drops it — filed as registry-tree `S22` and tracked as `F92`, and until it is answered the table has
+no dossier and no refresh entry, because a table a publish drops is not one to route an author at.
+The thing that is not ours is the release: `just-dna-registry` 0.25.0 is gated on format 0.7 reaching
+both instances first, which is our own `S20` argued from their side. The code ships on `main` behind a
+symbol probe and refuses with a sentence naming the release until then.
+
+**What the round taught that was not in the plan.**
+
+*A capability probe has two halves and the second one is a whole module.* The registry client half
+was expected. `just_dna_enricher.caches` is a module 0.6.6 does not ship, so an unguarded import does
+not fail as a missing attribute — it takes the server down on every install that has not upgraded.
+That forced local lane presence to be **three-valued**: `()` means *cannot ask*, never *no lanes*, and
+`auto` on that toolchain routes local with the reason stated rather than routing out on a probe that
+could not run.
+
+*The right unit for a remote form is "does it need an argument the local one lacks".* The plan said
+`via=` on three drafters. `draft()` needs a `source`, and each local tool **is** a source — so
+`remote_draft` is one tool, and the payoff is that four of its seven sources have no local tool here
+at all. The discriminator generalises: `remote_derive` needs `namespace`/`name`, so it is a tool too.
+
+*A description budget is a real constraint and it bites at the end.* A rule 7 for
+`server.INSTRUCTIONS` was written and taken back out: the host keeps 2048 characters, the constant
+sits at 2012, and 254 more pushed the *registry* rules off the tail — which is precisely what gets
+dropped without an error. The measurement is now a comment above the constant so the next attempt
+starts from it rather than from the same idea.
+
+The item's own decisions and the producer's four measurements are preserved below, as filed.
+
+## RM30 — the two-way client: thick where the snapshots are, thin where they are not
+
+**Opened 2026-09-11**, and it is the largest single capability this plugin has been handed since
+publishing. `just-dna-registry` 0.25.0 (unreleased, `format-0.7-adoption`) turns that service into a
+**caching proxy**, and its changelog names this plugin as the consumer it was built for: *"it has the
+enricher package — it calls these drafters as a Python API already — and what it does not reliably
+have is the snapshots."* The enricher's lanes are fourteen multi-gigabyte artifacts and the Ensembl
+one alone is ~14 GB, so the whole authoring half of the ecosystem has been available only to whoever
+had already downloaded them.
+
+**Nine client methods, four surfaces:**
+
+| surface | route | client method | auth |
+|---|---|---|---|
+| lane presence | `GET /api/v1/caches` | `cache_status()` | anonymous |
+| lookups | six `/hint/*` | `hint_variant`, `hint_variants`, `hint_citation`, `hint_gene`, `hint_trait`, `hint_old_assembly` | anonymous when `offline=true` |
+| drafting | `POST /drafts?source=…` | `draft()` | bearer |
+| the derived tree | `POST /modules/{ns}/{name}/derived` | `derived()` | bearer |
+
+**Decided 2026-09-11 with the owner, four answers, so none of these is re-litigated:**
+
+1. **Auto per-lane, with an env override.** Not a global mode: *"thick client (with some or all
+   caches)"* is the real world, and a box holding 3 of 14 lanes must not have to pick one wrong
+   answer for everything. A lane we hold is answered locally; a lane we lack goes to the proxy.
+   `JMC_TRANSPORT=thick|thin|auto` forces it. **The cost is accepted and is the plumbing**: every
+   answer names who answered it, which is § 2's *never silently fall back* at a new grain — a
+   caller cannot see that the source differed.
+2. **Lands on `main`, guarded by a capability probe.** Our registry floor is `>=0.18.1` with no
+   ceiling, so the thin path activates by itself the day 0.25.0 reaches PyPI, and refuses with a
+   named reason until then. **Never a hidden tool**: the surface must not teach a step it cannot
+   run, which is the defect the tier axis cost us four times.
+3. **Remote derive captures first and surfaces the collision.** `refresh_sidecar`'s rule
+   generalises — copy out, read the copy back, hash it, and only then act — and a hand-curated
+   `source="manual"` row the remote tree would drop is a **decision**, never a silent apply.
+4. **No `target` in a proxy signature.** Measured by the producer at our asking: none of
+   `routers/{drafts,hints,caches}.py` or `services/{drafting,hints,derived}.py` reads
+   `is_test_instance` or `settings.mode`. These routes write nothing to a catalog, claim no
+   identifier and spend no version, so a `test` draft is the same bytes as a `prod` one given the
+   same snapshots. The bearer on `/drafts` is an access bound on licence-gated snapshots, not an
+   instance selector.
+
+**Four things the producer measured for us, to build in rather than retrofit.**
+
+- **Batch, never a loop.** `POST /hint/variants` runs the offline pass over every key at zero cost
+  and goes online only for misses; a single online lookup egresses *unconditionally*, because dbSNP
+  merge status has no snapshot in that tree. Caps: offline 256, online 20, and `frequencies` is
+  refused in a batch outright (six seconds per key will not finish inside a request).
+- **`cost.charged` is on every answer including when it is empty**, and the empty map is the product:
+  without it *"you are being throttled"* has two opposite histories with opposite remedies.
+- **The hint models are theirs, not the enricher's**, so a translation layer is owed and is not
+  optional: `rsid_status` is flattened to `rsid_state` + `rsid_current`, `checked` (absolute
+  snapshot paths) becomes `cost.served_from` lane names, `ambiguous` is a `@property` upstream and a
+  real field there, and `findings`/`alterations` keep their names as plain objects.
+- **`applied=false` + `refusal` survives the proxy and must survive us.** Almost every fact on that
+  surface is cross-examined later by a check that only works because the author wrote the value
+  independently, so auto-filling turns the check into a tautology — § 2's redundancy rule, arriving
+  from a new direction.
+
+**Measured state of the world, 2026-09-11: there is no instance anywhere.** Both live boxes answer
+`format: 0.6.1`; nothing is listening locally. These routes have never been exercised over a
+network, only through `TestClient`. So this is built against their fixtures
+(`tests/test_hint_proxy.py`, `test_draft_api.py`, `test_derived_api.py`, `test_caches_api.py`, two
+of which drive a real ClinVar/Ensembl snapshot on this box) and **that is said out loud** rather
+than implied. Deployment is gated on the same sequencing as our `S20`: format 0.7 on both instances
+*before* 0.25.0 reaches PyPI.
+
+---
+
+## RM29 — SHIPPED 0.31.0, 2026-09-11 — the 0.7 authored surface reaches the dossiers
+
+**Shipped in full.** Sixteen authored fields taught, two new dossiers (`overrides.md` and the
+concordance pair as one, because the join is the point), `module-curate` gained *the third option*
+which is the step `F88` said was owed, five counted claims became the calls that answer them, and
+four SYMPTOMS entries. `F88` closed; `expression_effects.csv` became `F92` and registry-tree `S22`.
+
+**The generalisable part: read the key as `first_seen`, not `since`.** `since("0.7.0")` is the helper
+that *writes* the marker, so a walk looking for a `since` key returns zero fields and reads as a
+clean release. Upstream hit the same trap minutes before we did, independently, which is what makes
+it worth writing down rather than remembering.
+
+**And a per-table sweep cannot find a non-CSV authored field.** `ModuleSpecConfig.authority_precedence`
+is authored in `module_spec.yaml` and belongs to no dossier; walking the models found it and walking
+the dossiers would not have. Any future adoption pass walks the *models*, then decides where each
+field lands.
+
+The item as filed follows.
+
+## RM29 — the 0.7 authored surface, and the three derived tables nothing here has heard of
+
+**Opened 2026-09-11.** Format 0.7 is bumped and uncut; our `preview-0.7` branch installs it
+editable from the sibling checkout, and the suite named the gap on the first run: three failures,
+all of them un-defer triggers rather than regressions.
+
+**The measurement, not the changelog.** Walking `json_schema_extra["first_seen"]` over every model
+in `just_dna_format.{spec,pgx,binning,pgs,sources,overrides,...}` returns **53** fields stamped
+`0.7.0`, of which **16 are authored**:
+
+| model | fields |
+|---|---|
+| `StudyRow` | `statistical_test`, `confidence`, `confidence_unit` |
+| `HaplotypeRow` | `requires_callable` |
+| `PharmVariantRow` | `requires_callable`, `pmid` |
+| `OverrideRow` | all nine — `table`, `subject`, `member`, `field`, `operation`, `value`, `reason`, `decided_by`, `decided_at` |
+| `ModuleSpecConfig` | `authority_precedence` |
+
+**Read the key as `first_seen`, not `since`.** `since("0.7.0")` is the helper that *writes* the
+marker; reading for a `since` key returns zero fields and looks like a clean release. Upstream hit
+that two minutes before we did.
+
+`authority_precedence` is the one a per-table sweep cannot find: it is authored in
+`module_spec.yaml`, so it belongs to `module_spec.md` and to no dossier at all. The other 37 fields
+are three new **derived** row models — `ClinSigConcordanceRow`, `ClinSigAuthorityCallRow`,
+`ExpressionEffectRow` — plus `VerificationRecord.producer`.
+
+**What the suite is already failing on, and why each is the trigger and not the bug.**
+
+1. `test_the_overlay_is_still_a_file_a_republish_would_drop` — registry `S19` has landed:
+   `overrides.csv` is in `RECOGNIZED_SPEC_FILES` **and** in `SIGNATURE_INPUTS`, so the overlay is
+   safe to publish and hashes by its value cells. `F88`'s un-defer trigger, fired.
+2. `test_the_produced_roster_agrees_with_the_registry_that_recognises_the_same_files` and
+   `test_the_roster_covers_every_public_sidecar_or_says_why_not` — `FACT_CSVS` gained
+   `clin_sig_concordance.csv` and `clin_sig_authority_calls.csv`, and `refresh.ROSTER` is the one
+   roster here still paired by hand.
+
+**`expression_effects.csv` is deliberately left out, and the reason is filed rather than assumed.**
+It is in `hints.DERIVED_TABLE_MODELS` and its parquet is in `ARTIFACT_PARQUETS` (**23**, not the 22
+`INTEGRATION_0_7.md` § 2.2 states — the AlphaGenome round landed after that count), and it is in
+**none** of the registry's three rosters. A server-side rebuild therefore drops it, which is the
+`licensing.csv`-before-0.16.2 failure exactly. Registry-tree `S22`, filed 2026-09-11. Until it is
+answered the table gets no dossier and no refresh entry, because a table a publish drops is not one
+to route an author at.
+
+**Scope.** Four new dossiers (`overrides.md` authored; `clin_sig_concordance.md` and
+`clin_sig_authority_calls.md` derived), edits to `studies.md`, `pharm_variants.md`, `haplotypes.md`,
+`module_spec.md`, `verification.md` and `LAYOUT.md`, the two rosters in `GUIDE.md`, the roster in
+`refresh.py`, and a step in `module-curate` for the overlay. **`overrides.csv` is the one that is
+not merely a column list** — it is an authoring *mechanism* this plugin has code for
+(`overrides.py`, `record_override`) and teaches nowhere.
+
+---
+
 ## RM26 — an audit surface: the offline arithmetic both runs had to write by hand
 
 **Severity:** high · **Status: CLOSED 2026-08-24 — shipped as `audit_module` in 0.20.0.**
