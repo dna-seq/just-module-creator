@@ -468,7 +468,11 @@ uv run manuscript template                     # EASRP template → .md + .pdf
 uv run manuscript manuscript                   # paper draft → .md + .pdf
 ```
 
-`just <recipe>` wraps all of these. **Always run `uv run pytest` and
+`just <recipe>` wraps all of these **on a box that has `just`, and this one does not** —
+`just --version` is *command not found* here (checked 2026-09-11), so the `uv run` lines
+above are the ones that run and the `justfile` is where to read them, not something to
+invoke. The condition for deleting this clause is a check rather than a date: run
+`just --version` and read the exit. **Always run `uv run pytest` and
 `uv run ruff check .` after changing code.** Python **≥ 3.13** — the just-dna
 packages require it.
 
