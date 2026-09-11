@@ -40,7 +40,15 @@ def _hidden() -> object:
 
 async def test_hidden_gated_tools_appear_when_that_session_authenticates(make_client):
     async with make_client(_hidden()) as client:
-        assert "registry_publish" not in await _names(client)
+        before = await _names(client)
+        # **Anchor the listing before asserting anything is missing from it.** An empty
+        # listing satisfies every `not in` below and reports *the gated tools are hidden*
+        # about a session that was shown nothing at all — the lever is "hide the gated
+        # ones", so the positive half is what makes the negative half mean anything.
+        # `registry_register` is the right anchor rather than any ungated name: it is
+        # pinned visible on purpose, because hiding the only route to a credential is F12.
+        assert "registry_register" in before, "the listing came back empty, not narrowed"
+        assert "registry_publish" not in before
 
         stored = await client.call_tool("authenticate", {"token": "tok_abc123", "target": "test"})
         assert stored.data.authenticated is True
@@ -61,7 +69,9 @@ async def test_an_empty_token_reveals_nothing(make_client):
     async with make_client(_hidden()) as client:
         auth = await client.call_tool("authenticate", {"token": "   "})
         assert auth.data.authenticated is False
-        assert "registry_publish" not in await _names(client)
+        names = await _names(client)
+        assert "registry_register" in names, "the listing came back empty, not narrowed"
+        assert "registry_publish" not in names
 
 
 async def test_the_route_to_a_token_is_never_hidden(make_client):
@@ -91,7 +101,9 @@ async def test_an_unlisted_tool_is_still_callable(make_client):
     never received a schema to validate against.
     """
     async with make_client(offline_settings(tool_search="regex")) as client:
-        assert "list_tables" not in await _names(client)
+        names = await _names(client)
+        assert set(ALWAYS_VISIBLE) <= names, "the listing came back empty, not replaced"
+        assert "list_tables" not in names
         direct = await client.call_tool("list_tables", {})
         assert "tables" in direct.data
 

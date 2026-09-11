@@ -739,6 +739,19 @@ comparison against ISO values.
   the count is still what it was** — set it well under today's number, or it becomes the
   hand-kept count §8 warns about.
 
+  **The two shapes a count cannot see are a pair, and they fail in opposite directions.**
+  A denominator that comes from **splitting text** needs the split floored, not the
+  length: assert the marker is present and that the block is neither the whole file nor
+  empty, because a split on a heading that has moved yields a *block* rather than an
+  error and then every name is "present" in it. Its inverse is a **negative assertion over
+  an unestablished haystack** — `assert X not in body` passes when `body` is empty and
+  reports *"X never reached the wire"* about a response carrying nothing. One grows until
+  everything is present, the other shrinks until nothing is absent, and both end with the
+  check succeeding about something it never examined. **So establish the haystack first**:
+  a positive assertion on the line above (`"override rs1801133 clin_sig=" in logged`
+  before `str(module) not in logged`), or for a tool listing, an always-visible name that
+  proves the listing was *narrowed* rather than empty.
+
   **A search cannot be floored, so anchor it instead.** You cannot count what is outside
   the search path, and an absence is a well-formed answer to a badly-aimed question —
   `just-dna-pipelines` lives in a subdirectory of the -lite checkout, so a grep rooted at
