@@ -1784,3 +1784,44 @@ showed the cost is *worse* than a version: editing only `module.description` lea
 `null`** — a closed module becomes one that "records no closure". So the sentence to quote is *costs a
 version and the closure record, in exchange for changing nothing measurable*. That is `F59`, filed as
 format `S64` and registry `S16`; the decision-list framing above is unchanged, only its price tag.
+
+---
+
+## F98 — `clinical_claims_without_studies` keys on `clin_sig`, so a module can assert a clinical direction with no study behind it and the audit calls it clear
+
+Found 2026-09-12 building `apoe_locus_compound` against 0.7.0 — a module deliberately shaped to have
+a layer that *should* trip this signal.
+
+Six of its fifteen `variants.csv` rows are `category=alphagenome_predicted`: they carry
+`state=protective|risk`, `direction=protective|risk`, a non-zero `weight`, and **no `studies.csv` row
+at all**. Their clinical role is assumed from an AlphaGenome expression prediction and nothing else.
+That is exactly the shape "a clinical claim with no paper behind it" names.
+
+`audit_module` reports:
+
+```
+clinical_claims_without_studies  clear
+  "no row in this module asserts a clinical significance"
+```
+
+Correct as written, and misleading as read. The signal keys on `clin_sig`, which this module does not
+author. `state`, `direction` and `weight` are clinical claims a consumer acts on just as readily — a
+report saying "protective" does not first check whether the claim arrived via `clin_sig`.
+
+**This is §8's prose rule 1 in our own code**: *a check is only as wide as the table it reads, and
+naming a check without naming its scope is how a reader over-trusts it.* The headline says "no row in
+this module asserts a clinical significance" when the defensible claim is "no row authors a `clin_sig`
+value".
+
+**Two repairs, and the cheap one is not obviously wrong.** Either widen the signal to count a row with
+a directional `state`/`direction` and no grounding study, or leave the scope and fix the headline to
+name the column. Widening is the one that would have caught this module; but it would also fire on
+every legitimately ungrounded directional row, of which there are many in real modules, so it needs a
+severity below `decide` or it becomes noise the first time somebody runs it on a GWAS module. Not
+repaired here — it wants the decision, not a patch.
+
+**What saved this module is not the audit.** The prediction-only rows are legible because the author
+put `PREDICTION ONLY` at the head of every `conclusion`, set `flags=predicted_only`, `method=
+alphagenome-expression-prediction` and `stat_significance=unknown`, and said so in the README. All of
+that is convention, none of it is checked, and a less careful author gets a green audit over the same
+shape.
