@@ -111,18 +111,54 @@ needs_overlay = pytest.mark.skipif(
 
 #: The spec files the installed compiler reads and the installed registry does not
 #: recognise — **computed, because both sides move on their own cadence** and a literal
-#: pair would be wrong on either toolchain. Empty on 0.6.6; the two concordance tables
-#: on 0.7. A file here is one a re-publish drops silently (registry-tree `S19`, `F88`).
+#: set would be wrong on every toolchain. Empty on 0.6.6; the two concordance tables on
+#: format 0.7 beside registry 0.18.2; `expression_effects.csv` alone on format 0.7
+#: beside registry 0.25.0. A file here is one a re-publish **drops silently** — the
+#: module recompiles green having quietly lost a table it was compiled with, which is
+#: the `licensing.csv`-before-registry-0.16.2 failure.
 def registry_lag() -> set[str]:
     return {
         name for name in _hints.DERIVED_TABLE_MODELS if not _specfiles.is_spec_file(name)
     }
 
 
-#: What the lag is *allowed* to be. Computing the lag makes the roster tests work on
-#: either toolchain; this keeps them a guard rather than a tautology, by failing when a
-#: THIRD name joins — which would be a new file nobody has reported yet.
-KNOWN_REGISTRY_LAG = frozenset({"clin_sig_concordance.csv", "clin_sig_authority_calls.csv"})
+#: What the lag is *allowed* to be, and the membership is a filed report rather than a
+#: convenience. Computing the lag makes the roster tests work on any toolchain; this
+#: keeps them a guard rather than a tautology, by failing when an **unreported** name
+#: joins.
+#:
+#: **The concordance pair stays in the set even though it graduated**, and that is the
+#: point of the `<=`: they were filed as registry-tree `S19`, which landed in registry
+#: 0.25.0, so on that install they are recognised and leave the lag on their own. On
+#: format 0.7 beside a PyPI registry 0.18.2 — a combination that becomes real the day
+#: 0.7 is cut, since 0.25.0 is gated behind deploying both instances first — they are
+#: still lagging, and that is a true report rather than a stale entry. **Shrinking the
+#: lag is the good direction and must never fail this suite**; a name arriving that
+#: nobody reported must.
+#:
+#: `expression_effects.csv` arrived in the AlphaGenome round (format RM194/RM200) into
+#: `hints.DERIVED_TABLE_MODELS` and `ARTIFACT_PARQUETS` — 23 parquets, not the 22
+#: `INTEGRATION_0_7.md` § 2.2 states — and into **none** of the registry's three
+#: rosters. Filed as registry-tree `S22` on 2026-09-11 with both sub-questions we would
+#: not guess at: whether the omission is deliberate (the lane is Atlas-gated, so a
+#: deployment may be unable to re-derive the table) and, if not, whether it wants
+#: `FACT_CSVS` or only recognition. Until that is answered the table gets no dossier and
+#: no refresh entry: a table a publish drops is not one to route an author at.
+KNOWN_REGISTRY_LAG = frozenset(
+    {"expression_effects.csv", "clin_sig_concordance.csv", "clin_sig_authority_calls.csv"}
+)
+
+#: Whether the installed registry recognises the overlay, which is `S19` and is a
+#: *registry* capability — the compiler-side probe beside it answers a different
+#: question and neither implies the other. Both halves are needed before an author can
+#: be taught to write one: the compiler has to draft it and the registry has to carry it
+#: through a rebuild.
+_REGISTRY_KEEPS_OVERLAY = _specfiles.is_spec_file("overrides.csv")
+
+needs_kept_overlay = pytest.mark.skipif(
+    not _REGISTRY_KEEPS_OVERLAY,
+    reason="installed registry does not recognise overrides.csv (S19)",
+)
 
 #: Every environment variable that could change what a test asserts, cleared for the
 #: whole suite by ``_hermetic_configuration``.

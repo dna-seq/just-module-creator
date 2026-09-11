@@ -410,6 +410,48 @@ UNREFRESHABLE = {
 }
 UNREFRESHABLE[LICENSING_CSV] = UNREFRESHABLE[SOURCES_CSV]
 
+#: The concordance pair is refused for a **different** reason from the licence rows, and
+#: collapsing the two reasons into one would be the mistake. `sources.csv` is refused
+#: because nothing can put it back. These two are refused because there is nothing here
+#: to protect and the refresh shape is wrong for them.
+#:
+#: Every other derived sidecar gap-fills on re-derivation, which is the entire premise
+#: of this tool: a recorded row might carry a curator's judgement, so the delete that
+#: re-deriving needs has to be preceded by a verified capture. `write_concordance_tables`
+#: **replaces both tables whole**, by design and with the reason stated upstream: a
+#: subject the authorities stopped contesting has to *leave* the record, because a
+#: conflict that stops being reported is how an author learns the archive caught up with
+#: them. Merging would be actively wrong.
+#:
+#: And the judgement an author makes about a contested subject goes in `overrides.csv`,
+#: never into these files — so the curation a capture exists to save is, for this pair,
+#: somewhere else entirely. Capturing them would protect nothing and the classification
+#: pass afterwards would be meaningless: with no merge, every row is "the source
+#: withdrew it" or "the source added it" on every run.
+#:
+#: The route that does work is named rather than left for the caller to find, which is
+#: the whole point of refusing with a sentence: `enrich_module` rewrites them as the
+#: clin_sig leg of its own run. A run where nobody could be consulted writes nothing at
+#: all, so a previous record survives a run that could not replace it — which is the one
+#: case where the old bytes matter, and upstream already holds it.
+_CONCORDANCE_REFUSAL = (
+    "this table is rewritten whole rather than merged, so there is no capture to make and "
+    "nothing to classify against. Its producer replaces both concordance tables on every "
+    "run by design: a subject the authorities stopped contesting has to LEAVE the record, "
+    "because a conflict that stops being reported is how you learn the archive caught up "
+    "with you. It also holds no curation to lose — the judgement about a contested subject "
+    "goes in `overrides.csv`, never here. Re-derive it by re-running `enrich_module`, whose "
+    "clin_sig leg writes both tables; a run where no authority could be consulted writes "
+    "nothing, so the previous record survives rather than being emptied."
+)
+#: Spelled here rather than imported from `just_dna_enricher.concordance`, which is a
+#: whole module the installed 0.6.6 does not ship — a top-level import of it would make
+#: this file unloadable on the declared floor. Every other key in both dicts is a
+#: literal for the same reason the ROSTER keys are, and the names are pinned against
+#: `FACT_CSVS` by `test_refresh.py` rather than trusted.
+UNREFRESHABLE["clin_sig_concordance.csv"] = _CONCORDANCE_REFUSAL
+UNREFRESHABLE["clin_sig_authority_calls.csv"] = _CONCORDANCE_REFUSAL
+
 
 # --------------------------------------------------------------------------- #
 # Row identity, derived from the live models

@@ -36,6 +36,7 @@ from just_module_creator.tools.refresh import (
     REFRESHABLE_ROSTER,
     ROSTER,
     UNPRODUCED,
+    UNREFRESHABLE,
     canonical,
     capture_dir,
     check_sidecar,
@@ -254,10 +255,39 @@ def test_provenance_moves_no_fact_signature_which_is_why_source_is_the_only_proo
     assert fetched.source != by_hand.source
 
 
+#: The sidecars whose producer replaces them whole instead of gap-filling, so
+#: `refresh_sidecar`'s capture-then-classify shape does not apply. Intersected rather
+#: than asserted outright, because they are in `FACT_CSVS` only from registry 0.25.0 and
+#: this suite runs on both toolchains.
+_WHOLE_REWRITE_SIDECARS = frozenset(
+    {"clin_sig_concordance.csv", "clin_sig_authority_calls.csv"}
+)
+
+
 def test_the_roster_covers_every_public_sidecar_or_says_why_not() -> None:
-    """An eighth fact table must fail this suite, not be silently unrefreshable."""
-    assert set(ROSTER) | UNPRODUCED == set(REFRESHABLE_ROSTER) | UNPRODUCED
-    assert set(REFRESHABLE_ROSTER) - set(ROSTER) == {SOURCES_CSV}
+    """A new fact table must fail this suite, not be silently unrefreshable.
+
+    **Every uncovered name owes a reason in `UNREFRESHABLE`, and the reasons are not
+    interchangeable.** `sources.csv` is refused because nothing can put it back; the
+    concordance pair is refused because there is nothing to protect and the refresh shape
+    is wrong for them — their producer replaces both tables whole, and the judgement about
+    a contested subject lives in `overrides.csv`. A future table that lands in `FACT_CSVS`
+    fails here until somebody writes down which of those it is, or gives it a pass.
+    """
+    # Nothing is refreshable that the producers' own roster does not name.
+    assert set(ROSTER) - UNPRODUCED <= set(REFRESHABLE_ROSTER), (
+        f"a roster entry no public roster names: {sorted(set(ROSTER) - set(REFRESHABLE_ROSTER))}"
+    )
+    # And every public name we do not cover is one of exactly two recorded kinds.
+    uncovered = set(REFRESHABLE_ROSTER) - set(ROSTER)
+    assert uncovered == {SOURCES_CSV} | (_WHOLE_REWRITE_SIDECARS & set(REFRESHABLE_ROSTER)), (
+        "an unaccounted-for fact table: "
+        f"{sorted(uncovered - {SOURCES_CSV} - _WHOLE_REWRITE_SIDECARS)}"
+    )
+    assert uncovered <= set(UNREFRESHABLE), (
+        "a fact table with neither a refresh pass nor a written reason: "
+        f"{sorted(uncovered - set(UNREFRESHABLE))}"
+    )
     for name, sidecar in ROSTER.items():
         assert sidecar.csv == name
         assert sidecar.passes, f"{name} is in the roster with no pass to re-derive it"

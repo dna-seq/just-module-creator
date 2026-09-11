@@ -12,7 +12,7 @@ import json
 from importlib import metadata
 
 import pytest
-from conftest import KNOWN_REGISTRY_LAG, needs_overlay, registry_lag
+from conftest import KNOWN_REGISTRY_LAG, needs_kept_overlay, needs_overlay, registry_lag
 
 # The versions the stamp must report, computed here rather than pasted. A literal
 # would be the very defect these tests guard: a version written down once agrees
@@ -503,32 +503,49 @@ def test_the_produced_roster_agrees_with_the_registry_that_recognises_the_same_f
     # is a file nobody has told the registry about yet, and it must stop the suite.
     assert registry_lag() <= KNOWN_REGISTRY_LAG, (
         "a spec file the compiler reads and the registry does not recognise, beyond the "
-        f"pair filed as S19: {sorted(registry_lag() - KNOWN_REGISTRY_LAG)}"
+        "ones filed as registry-tree S19 and S22: "
+        f"{sorted(registry_lag() - KNOWN_REGISTRY_LAG)}"
     )
     for csv_name, model in _PRODUCED_MODELS.items():
         assert hints.derived_model_for(csv_name) is model
 
 
 @needs_overlay
-def test_the_overlay_is_still_a_file_a_republish_would_drop():
-    """The un-defer trigger for `F88`, and it needs its own test to exist at all.
+@needs_kept_overlay
+def test_the_overlay_survives_a_republish_and_hashes_by_its_value_cells():
+    """`S19` landed, so this test turned over: it pinned an absence and now pins a promise.
 
-    `overrides.csv` is draftable, so it never reaches the sidecar roster and the
-    lag set above cannot see it — while it is the one of the three whose loss
-    costs an author something a re-run cannot restore. That is the whole reason
-    no skill teaches writing one: a re-publish through a registry that does not
-    recognise the name drops it silently, the module recompiles green, and the
-    parquet quietly carries the derived value the author rejected.
+    It used to assert `not is_spec_file("overrides.csv")` and to fail the day the
+    registry caught up, with the failure meaning *go teach the overlay*. That is what
+    happened — registry 0.25.0 recognises the name — so the trigger fired and `F88`
+    closed. What it guards now is the two properties that make teaching the overlay
+    safe, because a regression in either one puts an author back where `F88` started.
 
-    So this fails the day the registry catches up, and the failure means *go
-    teach the overlay*, not *fix this test*. Filed as registry-tree `S19`.
+    **Recognised** is the half that stops the silent drop: a name absent from
+    `RECOGNIZED_SPEC_FILES` is reconstructed away by a server-side rebuild, the module
+    recompiles green, and the parquet quietly carries the derived value the author
+    rejected.
+
+    **In `SIGNATURE_INPUTS`** is the half that makes it authored input rather than
+    decoration: the overlay's `value` changes what the module asserts, so it has to move
+    `content_signature`. The three prose columns do **not**, which is format `S87`/RM180
+    and is asserted from the producer's own side rather than restated here.
     """
+    from just_dna_format.base import content_identity_exclusions
+    from just_dna_format.overrides import OverrideRow
     from just_dna_registry import specfiles
 
-    assert not specfiles.is_spec_file("overrides.csv"), (
-        "the registry now recognises overrides.csv: S19 has landed, so the overlay is safe "
-        "to publish and `module-curate` owes it a step — see F88"
+    assert specfiles.is_spec_file("overrides.csv"), (
+        "the registry stopped recognising overrides.csv: a re-publish now drops the "
+        "overlay silently again — see F88 and registry-tree S19"
     )
+    assert "overrides.csv" in specfiles.SIGNATURE_INPUTS, (
+        "the overlay left SIGNATURE_INPUTS: its `value` changes what the module asserts, "
+        "so a registry keyed on content_signature would dedup two different modules"
+    )
+    # The prose an author improves on a second pass is outside the content identity,
+    # which is what makes fixing a typo in `reason` a patch rather than a new module.
+    assert content_identity_exclusions(OverrideRow) == {"reason", "decided_by", "decided_at"}
 
 
 async def test_every_machine_produced_sidecar_answers_its_columns(client):
