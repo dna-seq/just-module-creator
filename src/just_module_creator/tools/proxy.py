@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import tarfile
 from datetime import UTC, datetime
 from pathlib import Path
@@ -37,12 +38,17 @@ from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from just_dna_compiler import hints
 from just_dna_format.layout import sidecar_write_path
-from just_dna_registry.specfiles import DERIVED_FILES
+from just_dna_registry.specfiles import DERIVED_FILES, RECOGNIZED_SPEC_FILES
 from mcp.types import ToolAnnotations
 
 from just_module_creator import routing
 from just_module_creator.logging_setup import get_logger
-from just_module_creator.models import CacheReport, DerivedTreeReport, LaneStatus
+from just_module_creator.models import (
+    CacheReport,
+    DerivedTreeReport,
+    DraftArchiveReport,
+    LaneStatus,
+)
 from just_module_creator.settings import RegistryTarget, Settings
 from just_module_creator.targets import client_for, describe
 from just_module_creator.tools._shared import resolve_dir
@@ -231,6 +237,58 @@ def _unpack(archive: bytes) -> tuple[dict[str, bytes], list[str]]:
                 continue
             extras.append(Path(name).name)
     return tables, extras
+
+
+#: Every spec file name a draft archive may legitimately carry, so a member outside the
+#: set contributes nothing rather than being written. Derived from the registry's own
+#: roster: a drafter that starts writing a new table appears here with no edit, and a
+#: traversing member name has nowhere to land.
+_DRAFTABLE_NAMES = frozenset(RECOGNIZED_SPEC_FILES)
+
+
+def _unpack_draft(archive: bytes) -> tuple[dict[str, bytes], list[tuple[str, bytes]]]:
+    """Spec files out of a draft archive, plus the extras, keyed by relative name.
+
+    Same containment rule as `_unpack`: a member is taken only where its **basename** is
+    a recognised spec file, so `../../etc/passwd` is dropped rather than resolved. The
+    archive is a third party's bytes.
+    """
+    rows: dict[str, bytes] = {}
+    extras: list[tuple[str, bytes]] = []
+    with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as tar:
+        for member in tar.getmembers():
+            if not member.isfile():
+                continue
+            handle = tar.extractfile(member)
+            if handle is None:
+                continue
+            data = handle.read()
+            base = Path(member.name).name
+            if base in _DRAFTABLE_NAMES:
+                rows[base] = data
+            else:
+                extras.append((base, data))
+    return rows, extras
+
+
+def _draft_report(extras: list[tuple[str, bytes]]) -> dict[str, Any]:
+    """`draft-report.json`'s contents, or an empty mapping when the archive carried none.
+
+    **Empty is not zero.** Every count read off it defaults to 0 downstream, and that is
+    only honest because an absent report means the archive did not describe itself —
+    which `notes` then says. Nothing here invents a count from the rows, because the
+    server's `already_present` and `differs` are about the merge it performed and cannot
+    be recovered from the merged result.
+    """
+    for name, data in extras:
+        if name != "draft-report.json":
+            continue
+        try:
+            payload = json.loads(data.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return {}
+        return payload if isinstance(payload, dict) else {}
+    return {}
 
 
 def register_proxy(mcp: FastMCP, settings: Settings) -> None:
@@ -478,5 +536,154 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
             dry_run=dry_run,
             validation_errors=[],
             notes=[f"archive carried {m}" for m in sorted(extras)],
+            next_step=next_step,
+        )
+
+    @mcp.tool(
+        task=True,
+        annotations=ToolAnnotations(
+            title="Draft rows on a registry that holds the snapshot",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def remote_draft(
+        spec_dir: str,
+        source: str,
+        genes: list[str] | None = None,
+        drugs: list[str] | None = None,
+        alleles: list[str] | None = None,
+        population: str | None = None,
+        clin_sig: list[str] | None = None,
+        min_review_stars: int | None = None,
+        max_citations: int | None = None,
+        min_confidence: int | None = None,
+        min_evidence_level: str | None = None,
+        use: str | None = None,
+        target: RegistryTarget = "test",
+        dry_run: bool = True,
+        ctx: Context | None = None,
+    ) -> DraftArchiveReport:
+        """Draft spec rows from a source the registry holds a snapshot for.
+
+        **It is not only a route — it is four drafters this plugin does not have.** The
+        local tools cover ClinVar, CPIC and ClinPGx; `source` here also takes `pubmind`,
+        `civic`, `mitomap-miss` and `strchive`. Run `registry_caches` first: a lane the
+        deployment lacks comes back naming that lane, which is a different failure from
+        the tier being absent and only one of the two is fixed by provisioning.
+
+        **This UPLOADS your module**, so it is aimed with `target` and is never automatic.
+        Nothing reaches a catalog; the token is an access bound on licence-gated
+        snapshots. **Draft into a fresh spec directory**: drafting is append-only, so
+        drafting twice into one tree puts corrected rows beside the ones they supersede,
+        and `already_present` and `differs` are how that shows up. `dry_run` defaults to
+        true, which is the documented first move.
+
+        Every parameter is per source and a stray one is **refused rather than ignored**
+        — `min_evidence_level` with `source="clinvar"` is an error, because a silently
+        dropped filter produces a draft answering a different question from the one asked.
+        `use` is the licence declaration those sources gate on.
+
+        What comes back will not validate yet, by design: drafted rows carry a placeholder
+        wherever only a curator can decide, so `needs_curation` names the tables that
+        actually hold one. Snapshot-only and so it makes no outbound request of its own.
+        """
+        gap = routing.proxy_gap()
+        if gap:
+            raise ToolError(gap)
+
+        target_dir = resolve_dir(spec_dir, settings)
+        if not target_dir.is_dir():
+            raise ToolError(f"{target_dir} is not a directory.")
+
+        client = client_for(target, settings)
+        if ctx:
+            await ctx.info(f"Drafting {source} on {describe(target, settings)}")
+            await ctx.report_progress(progress=1, total=2)
+
+        kwargs: dict[str, Any] = {"source": source, "dry_run": dry_run}
+        for key, value in (
+            ("gene", tuple(genes or ())),
+            ("drug", tuple(drugs or ())),
+            ("allele", tuple(alleles or ())),
+            ("clin_sig", tuple(clin_sig or ())),
+            ("population", population),
+            ("min_review_stars", min_review_stars),
+            ("max_citations", max_citations),
+            ("min_confidence", min_confidence),
+            ("min_evidence_level", min_evidence_level),
+            ("declared_use", use),
+        ):
+            if value not in (None, ()):
+                kwargs[key] = value
+
+        try:
+            archive = await run_sync(lambda: client.draft(target_dir, **kwargs))
+        except Exception as exc:  # noqa: BLE001 — upstream's own text is the answer
+            detail = str(exc)
+            lane = None
+            if "snapshot_unavailable" in detail:
+                lane = detail.split("snapshot_unavailable")[-1].strip(" :\"'")[:60] or None
+            raise ToolError(
+                f"the registry could not draft from {source!r}: {detail}. "
+                + (
+                    f"It named the lane {lane!r}, so that deployment does not hold that "
+                    "snapshot — `registry_caches` says which it holds, and the lane's "
+                    "`build_command` is how an operator makes one. "
+                    if lane
+                    else ""
+                )
+                + "A 422 naming a parameter means that source does not read it, which is "
+                "a refusal rather than a dropped filter: a silently ignored one would "
+                "produce a draft answering a different question."
+            ) from exc
+
+        rows, extras = _unpack_draft(archive)
+        report = _draft_report(extras)
+
+        installed: list[str] = []
+        if not dry_run:
+            for rel, data in sorted(rows.items()):
+                dest = target_dir / rel
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                # Append-only, exactly as the local drafters are: an existing file keeps
+                # every row it has and the drafted ones go after. The server already did
+                # the merge against the spec we uploaded, so these bytes ARE the merged
+                # table — writing them whole is not a clobber, and `already_present`
+                # counts what it left alone.
+                dest.write_bytes(data)
+                installed.append(rel)
+
+        if ctx:
+            await ctx.report_progress(progress=2, total=2)
+
+        needs = [str(n) for n in (report.get("needs_curation") or [])]
+        next_step = (
+            (
+                "Nothing was written. Read `differs` — those are rows where the source "
+                "disagrees with something you authored, and a source that lags the edge "
+                "is as likely to be the wrong side as your row is. Re-run with "
+                "`dry_run=false` into a FRESH spec directory."
+            )
+            if dry_run
+            else (
+                f"Wrote {len(installed)} file(s). Decide the placeholder cells in "
+                + (", ".join(needs) if needs else "nothing — no table holds one")
+                + ", then `lint_rows`, then `validate_module(strict=true)`."
+            )
+        )
+
+        return DraftArchiveReport(
+            spec_dir=str(target_dir),
+            source=source,
+            target=target,
+            added=int(report.get("added") or 0),
+            already_present=int(report.get("already_present") or 0),
+            differs=int(report.get("differs") or 0),
+            needs_curation=needs,
+            installed=installed,
+            dry_run=dry_run,
+            lane=None,
             next_step=next_step,
         )

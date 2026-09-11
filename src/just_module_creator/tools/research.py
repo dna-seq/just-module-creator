@@ -30,6 +30,7 @@ qualified by an exception.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from anyio.to_thread import run_sync
 from fastmcp import FastMCP
@@ -42,7 +43,7 @@ from just_dna_registry import RegistryError
 from just_dna_registry.version import VersionInfo, compatibility_error
 from mcp.types import ToolAnnotations
 
-from just_module_creator import alleles, supplementary
+from just_module_creator import alleles, routing, supplementary
 from just_module_creator.discovery import (
     DEFAULT_EUROPEPMC_BASE,
     fulltext,
@@ -62,8 +63,10 @@ from just_module_creator.models import (
     NamespaceAvailability,
     OpenAccessResult,
     OpResult,
+    ProxyCost,
     RegistryModule,
     RegistrySearchResult,
+    RouteInfo,
     SupplementaryDescription,
     SupplementaryFetch,
     SupplementaryFileInfo,
@@ -178,6 +181,20 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     refusing us, and reopens a connection for a single request.
     """
 
+    # **Routed since RM30, and the docstring gets one sentence about it because this is
+    # a `toolbox.CORE` tool — every session pays for its description whether or not the
+    # server is layered.** The reasoning, which nobody should pay context for:
+    #
+    # This answer comes off snapshot caches, and a machine without the Ensembl lane
+    # (~14 GB) cannot place an rsID at all — which was the whole authoring half of the
+    # ecosystem being available only to whoever had already downloaded it. So a missing
+    # lane routes to a registry that holds one. `registry_caches` reports the lanes,
+    # `JMC_SNAPSHOT_ROUTE` sets the policy, and `offline` outranks both because routing
+    # out is egress and a per-call argument may not loosen the ceiling.
+    #
+    # `local_online_after_registry_miss` earns its length: the proxy had no snapshot
+    # either, the egress was ours, and the values may look identical to a snapshot
+    # answer. Collapsing it into `local` would be the silent fall-back §2 forbids.
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Look up a variant",
@@ -206,38 +223,107 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         (several genuinely distinct places) or pseudoautosomal (one place spelled
         twice). Pass `ambiguity=true` to be warned when the answer is not unique,
         `frequencies=true` for gnomAD populations, and note that under `offline=true` an
-        empty result means unchecked, not absent.
+        empty result means unchecked, not absent. **`route` says who answered** — a
+        missing snapshot lane sends the question to a registry that holds one, and
+        `local_online_after_registry_miss` means no snapshot served it at all.
         """
         if not rsid and not (chrom and start):
             raise ToolError("Provide either rsid, or chrom and start.")
 
         eff_offline = offline_for(settings, offline)
-        hint = await run_sync(
-            lambda: enricher_lookup.lookup_variant(
-                rsid=rsid,
-                chrom=chrom,
-                start=start,
-                ref=ref,
-                alts=alts,
-                ambiguity=ambiguity,
-                frequencies=frequencies,
-                offline=eff_offline,
-                clients=services.lookup_clients,
-            )
+        route = routing.route_for(
+            "lookup_variant",
+            snapshot_route=settings.snapshot_route,
+            offline=eff_offline,
+            target=settings.proxy_target,
         )
-        status = getattr(hint, "rsid_status", None)
+
+        hint: Any = None
+        if route.answered_by == "registry":
+            client = client_for(settings.proxy_target, settings)
+            try:
+                # The BATCH form with one key, never `hint_variant`, and the reason is
+                # not politeness: an online single lookup egresses unconditionally,
+                # because dbSNP merge status has no snapshot in that tree and the
+                # currency leg runs whatever the cache said. The batch runs the offline
+                # pass over every key at zero cost and goes online only for the misses,
+                # so on a provisioned deployment this charges nothing — the producer
+                # asserts exactly that with a socket tripwire armed. `frequencies` is
+                # refused in a batch outright (six seconds per key), so it falls back.
+                if frequencies:
+                    hint = await run_sync(
+                        lambda: client.hint_variant(
+                            rsid=rsid,
+                            chrom=chrom,
+                            start=start,
+                            ref=ref,
+                            alts=alts,
+                            frequencies=True,
+                            offline=False,
+                        )
+                    )
+                else:
+                    key = {
+                        k: v
+                        for k, v in (
+                            ("rsid", rsid),
+                            ("chrom", chrom),
+                            ("start", start),
+                            ("ref", ref),
+                            ("alts", alts),
+                        )
+                        if v is not None
+                    }
+                    batch = await run_sync(lambda: client.hint_variants(keys=[key]))
+                    # `results` is the field; `hints` is tried first only so a rename
+                    # on their side degrades to a fall-back rather than an empty list.
+                    reports = list(getattr(batch, "results", None) or getattr(batch, "hints", []))
+                    hint = reports[0] if reports else None
+                if hint is None:
+                    raise LookupError("the batch came back with no report for this key")
+            except Exception as exc:  # noqa: BLE001 — any far-side failure falls back
+                # Named, never silent. A 503 means the deployment lacks that lane too,
+                # so the live service is the only thing left — and the caller has to be
+                # told, because the answer is then from no snapshot at all.
+                log.info("proxy lookup_variant failed, falling back live: %s", exc)
+                route = routing.missed_at_registry(route, detail=f"{type(exc).__name__}: {exc}")
+                hint = None
+
+        proxied = route.answered_by == "registry" and hint is not None
+        if hint is None:
+            hint = await run_sync(
+                lambda: enricher_lookup.lookup_variant(
+                    rsid=rsid,
+                    chrom=chrom,
+                    start=start,
+                    ref=ref,
+                    alts=alts,
+                    ambiguity=ambiguity,
+                    frequencies=frequencies,
+                    offline=eff_offline,
+                    clients=services.lookup_clients,
+                )
+            )
+
+        fields = routing.variant_fields(hint, proxied=proxied)
+        cost = routing.cost_from(hint) if proxied else None
         return VariantLookup(
-            rsid=getattr(hint, "rsid", None) or rsid,
-            rsid_state=getattr(status, "state", None) if status else None,
-            loci=jsonable(getattr(hint, "loci", []) or []),
-            rsid_candidates=list(getattr(hint, "rsid_candidates", []) or []),
-            clin_sig=jsonable(getattr(hint, "clin_sig", []) or []),
-            populations=jsonable(getattr(hint, "populations", []) or []),
-            vrs_id=getattr(hint, "vrs_id", None),
+            rsid=fields["rsid"] or rsid,
+            rsid_state=fields["rsid_state"],
+            rsid_current=fields["rsid_current"],
+            loci=jsonable(fields["loci"]),
+            rsid_candidates=fields["rsid_candidates"],
+            clin_sig=jsonable(fields["clin_sig"]),
+            populations=jsonable(fields["populations"]),
+            pubmind=jsonable(fields["pubmind"]),
+            vrs_id=fields["vrs_id"],
+            ambiguous=fields["ambiguous"],
             findings=to_findings(getattr(hint, "findings", [])),
             withheld=to_alterations(getattr(hint, "alterations", [])),
-            checked=sorted(str(c) for c in (getattr(hint, "checked", set()) or set())),
+            checked=fields["checked"],
             offline=eff_offline,
+            route=RouteInfo(**route.as_dict()),
+            cost=ProxyCost(**cost) if cost else None,
         )
 
     @mcp.tool(

@@ -3,6 +3,91 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.31.0] — 2026-09-11
+
+### Two-way mode: thick where the snapshots are, thin where they are not
+
+**RM30**, and the largest capability this plugin has been handed since publishing.
+`just-dna-registry` 0.25.0 turns that service into a **caching proxy**, and its changelog names this
+plugin as the consumer it was built for: *"it has the enricher package — it calls these drafters as a
+Python API already — and what it does not reliably have is the snapshots."* Fifteen lanes, the
+Ensembl one about 14 GB, and the compiler never fetches — so the authoring half of the ecosystem was
+available only to whoever had already downloaded it.
+
+**Decided with the owner, four answers, none of them re-litigated below.** Auto **per lane** with an
+env override; landing on `main` behind a capability probe; remote derive **captures first and
+surfaces the collision**; and no `target` in a proxy signature, which the producer measured at our
+asking — none of their drafts/hints/caches routers reads `is_test_instance` or `settings.mode`.
+
+**`answered_by` has four states and each is a different fact.** `local`, `registry`,
+`local_online_after_registry_miss` — the proxy had no snapshot either, the egress was ours, and the
+values may look identical to a snapshot answer — and `unrouted`, for a tool whose sources publish no
+snapshot at all, where calling it `local` would claim a snapshot answered it.
+
+**Local lane presence is three-valued, and that is the part that took the work.** The lane registry
+is a whole module 0.6.6 does not ship, so the import is guarded — §2's one exception — and an
+unguarded one does not fail as a missing attribute: it takes the server down on every install that
+has not upgraded. `()` there means **cannot ask**, never *no lanes*. So `local_lane_presence()`
+returns `None`, `LaneStatus.local` and `CacheReport.local_count` are nullable, and `auto` on that
+toolchain routes **local** with the reason stated — routing out on an unanswerable probe is a guess
+dressed as a measurement. `registry_caches` still answers there, from the instance's rows, which is
+precisely the install the proxy exists for.
+
+**Three tools, and the line between them is who sends the module.**
+
+| | |
+|---|---|
+| `registry_caches(target)` | which lanes are here and which are there. **Target-required**, like every catalog read: two deployments provision independently. Anonymous, one request |
+| `remote_derive` | the registry enriches your spec and hands the `derived/` tree back — `resolution.csv` above all |
+| `remote_draft` | drafting on a box that holds the snapshot, and **four of its seven sources have no local tool at all**: `pubmind`, `civic`, `mitomap-miss`, `strchive` |
+
+Reads route themselves. **The two that upload the module never do** — every authored CSV,
+`module_spec.yaml` and the `logs/` subtree go up, which is outward-facing and not a thing a tool may
+decide on the author's behalf to be helpful. The reversal recipe is in `routing.py`'s docstring.
+
+**`remote_derive`'s capture rule generalises `refresh_sidecar`'s, through the same two functions
+rather than a second copy.** Measured before it was designed: `gather_spec_files` uploads the
+existing sidecars and the server runs the enricher's own merge, so a hand-curated `source="manual"`
+row normally survives the round trip. Normally is not always — a pass that could not reach its
+source, the `licensing.csv`/`sources.csv` collision the archive's own note warns about, and the
+concordance pair, which is rewritten whole. So `dry_run` defaults **true** and reports every row the
+incoming tree does not carry, as a decision line and never an applied edit. **A capture that fails to
+verify aborts the whole install**, not one file: a `resolution.csv` from this run beside a
+`frequencies.csv` from the last describes no module that ever existed.
+
+**`lookup_variant` is routed, and it uses the batch with one key rather than the single form.** Not
+politeness — an online single lookup egresses *unconditionally*, because dbSNP merge status has no
+snapshot in that tree; the batch runs the offline pass over every key at zero cost and goes online
+only for misses. `frequencies=true` falls back to the single form, which is refused in a batch
+outright at six seconds per key. The hint models are **theirs, not the enricher's**, so a translation
+is owed and is not optional: `rsid_status` is flattened, `checked`'s absolute snapshot paths become
+`cost.served_from` **lane names**, and `ambiguous` — a `@property` upstream, which does not survive
+serialization — is a real field there. `cost.charged` is surfaced, and an **empty `charged` is the
+product**: it is what teaches a caller their traffic is free.
+
+**Three tools say they have no thin path**, because `/derived` runs what a publish runs and not what
+`/check` runs: `enrich_facts`, `enrich_literature_pass` and `enrich_gwas_effects` are opt-in check
+passes — egress spent on a verdict rather than on the bytes a compile needs.
+
+**There is no eighth rule in `server.INSTRUCTIONS`, and the budget is why.** One was written and
+taken back out: the host keeps 2048 characters, this sits at 2012, and a 254-character rule pushed
+the *registry* rules off the tail — which is exactly what gets dropped without an error. The reason
+is now a comment above the constant, so the next attempt starts from the measurement. The split is
+taught in `module-101` and `module-enrich` instead, and `registry_caches`' docstring opens with *ask
+this first*.
+
+**There is no instance anywhere, and this says so rather than implying it.** Both live boxes answer
+`format: 0.6.1`, nothing listens locally, and our venv has no `fastapi`, so an in-process ASGI run
+was not available either. **These routes have never been exercised over a network by anyone** — only
+through the producer's `TestClient`. Built and tested against the shapes, with the double at the
+`RegistryClient` method, which is the socket and the one boundary this suite may exclude. Deployment
+is gated on the same sequencing as our `S20`: format 0.7 on both instances *before* 0.25.0 reaches
+PyPI.
+
+**Measured on both toolchains from one commit**: 697 passed on format 0.7.0 + registry 0.25.0 from
+the sibling trees, 681 passed / 16 skipped on the PyPI 0.6.6 + 0.18.2 that a user installs today.
+Every skip names the symbol it looked for.
+
 ## Unreleased
 
 ### The 0.7 integration audit: a guard that inverted, a lock that moved, and two calls we were not making

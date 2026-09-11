@@ -94,6 +94,13 @@ log = get_logger()
 _FMT = schema_versions().format_version
 _COMP = schema_versions().compiler_version
 
+# **There is no room for an eighth line and the budget is the reason, measured.** A rule 7
+# about the thick/thin split (`registry_caches`, `remote_derive`) was written and taken back
+# out: the host keeps 2048 characters and this is at 2012, so a 254-character rule pushed the
+# REGISTRY rules off the end — and those are the tail, which is exactly what gets dropped
+# without an error. The split is taught in `module-101` and `module-enrich`, and
+# `registry_caches`' own docstring opens with "ask this first". Anything added here from now
+# on has to displace something, deliberately.
 INSTRUCTIONS = f"""\
 Authoring surface for just-dna annotation modules (plugin v{__version__}). Schema
 answers come from just-dna-format {_FMT} and just-dna-compiler {_COMP}; older

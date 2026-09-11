@@ -183,6 +183,22 @@ rule without its reason gets rationalised away at 2 a.m.
   `ServiceGate` there, so pacing, User-Agent and the shared NCBI budget cannot
   drift between clients. This server was socket-free until literature discovery
   landed; that is a normal thing for an app surface to own, but only in one place.
+  **`RegistryClient` is not an exception to this and never was**: it is upstream's
+  client holding upstream's pacing, and routing a lookup through it (RM30) spends the
+  *deployment's* budget rather than ours. What that costs instead is **attribution** —
+  the caller has to be told who answered, which is what `RouteInfo.answered_by` is for.
+- **Never let a routed answer hide who answered it.** A snapshot-backed answer may come
+  from a local lane, from a registry acting as a caching proxy, or from a live service
+  after the proxy missed — and the third is the one that must never be reported as the
+  first, because the values can be identical while the egress and the provenance are
+  not. `routing.route_for` decides and `routing.missed_at_registry` re-labels; a new
+  routed tool owes both. **`offline` outranks every route**: routing out is egress, so a
+  cache-only run answers locally or reports the question as unasked.
+- **Never make anything that uploads the author's spec automatic.** `POST /drafts` and
+  `POST .../derived` send every authored CSV, `module_spec.yaml` and the `logs/` subtree
+  to a third party. Reads may route themselves; a send is a tool the author calls, aimed
+  with an explicit `target`. Reversal recipe is in `routing.py`'s docstring, if that ever
+  turns out to be one hop too many.
 - **Never reach into an upstream private API.** No `EutilsClient._get`, no
   `EuropePmcClient._get`, no reassigning another package's decorator state.
   Everything we need is public — `EutilsSettings.identity_params()`,
@@ -414,7 +430,9 @@ design depends on.
 ## 3. Repository layout, data and assets
 
 ```
-src/just_module_creator/   source (src layout)
+src/just_module_creator/   source (src layout). `routing.py` is the thick/thin
+                           decision and the hint translation; `tools/proxy.py` the
+                           three tools that talk to a registry's caching proxy
 tests/                     pytest suite — in-memory, offline
 docs/                      all markdown except this file and README.md
 skills/<name>/             one directory per skill — the map, the two doors, the stage spine,

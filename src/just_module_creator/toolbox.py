@@ -205,8 +205,8 @@ GROUPS: tuple[Group, ...] = (
         "snapshots",
         "Thick or thin: which snapshot caches this machine holds, and having a registry "
         "derive the tables it cannot.",
-        ("registry_caches", "remote_derive"),
-        2600,
+        ("registry_caches", "remote_derive", "remote_draft"),
+        4100,
     ),
     Group(
         "closing",

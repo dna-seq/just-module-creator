@@ -97,6 +97,36 @@ other about a reference base, and only the enricher can catch a row contradictin
 `pip install just-dna-enricher` pulls the compiler and the format tier. Python ≥ 3.13. This plugin
 wraps all four as MCP tools; `references/CLI.md` names the few things it deliberately does not wrap.
 
+### Thick client or thin: the enricher needs *snapshots*, and you may not have them
+
+Installing the enricher gets you the code. What it reads is a different matter: fifteen **snapshot
+lanes**, several multi-gigabyte, and **the Ensembl one is about 14 GB**. Without that one, nothing
+can turn an rsID into a coordinate — which for most of a decade meant the authoring half of this
+ecosystem worked only for whoever had already downloaded it.
+
+**So there are two ways to be a usable authoring seat, and the plugin will be either.**
+
+| | Thick | Thin |
+|---|---|---|
+| The snapshots | on this machine | on a registry that holds them |
+| `resolution.csv` | `enrich_module` | `remote_derive` — the registry enriches and hands back the tree |
+| A variant lookup | off the local lane | routed to `/hint/*` |
+| Drafting | `draft_from_clinvar` and two siblings | `remote_draft`, which serves **seven** sources |
+| What it costs you | disk | uploading your spec, to one instance you name |
+
+**It is not a mode you pick; it is decided per lane.** A machine holding Ensembl and nothing else —
+the common case, since that is the lane `enrich` cannot work without — answers coordinate questions
+locally and routes the rest. `registry_caches` reports which lanes are here and which are there, and
+it is the **first thing to run when a tool behaves unexpectedly**. `JMC_SNAPSHOT_ROUTE` sets the
+policy and `JMC_OFFLINE` outranks it, because routing out is egress.
+
+**Two limits to say plainly.** A lane *neither* side holds is not routed anywhere — the answer comes
+from a live service or reports the question as unasked, and `registry_caches` names those in
+`unreachable`. And **anything that uploads your module is never automatic**: reads route themselves,
+`remote_derive` and `remote_draft` are tools you call. The thin path needs the registry running
+`just-dna-registry` 0.25.0 or later, which is **not released yet** — until then those tools refuse
+with a sentence saying so rather than failing vaguely.
+
 ## The lifecycle
 
 Origin, scaffold, draft, curate, enrich, cross-check, compile, close, rehearse, publish, install — and

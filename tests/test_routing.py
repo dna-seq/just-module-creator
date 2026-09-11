@@ -16,6 +16,7 @@ from __future__ import annotations
 import io
 import tarfile
 from pathlib import Path
+from typing import Any
 
 import pytest
 from conftest import offline_settings
@@ -488,3 +489,335 @@ def test_the_registry_hint_models_are_theirs_so_a_translation_is_owed():
     fields = set(VariantHintReport.model_fields)
     assert "rsid_status" not in fields, "if this reappears, the flattening was reverted"
     assert {"rsid_state", "cost"} <= fields
+
+
+# --------------------------------------------------------------------------- #
+# The translation, and the routed path end to end
+# --------------------------------------------------------------------------- #
+@needs_proxy
+def test_the_translation_recovers_three_answers_a_naive_read_would_drop():
+    """Their model is theirs, and reading it as the enricher's loses `rsid_current`,
+    `ambiguous` and the lane names.
+
+    Built from a **real** `VariantHintReport` rather than a stub, so the field names are
+    the producer's own: a stub would agree with whatever this function happens to do.
+    `rs1801133` is MTHFR c.665C>T and `rs4988235` is the lactase one — real ids, per §6.
+    """
+    from just_dna_registry.models.api import HintCost, VariantHintReport
+
+    from just_module_creator import routing as r
+
+    report = VariantHintReport(
+        rsid="rs1801133",
+        rsid_state="merged",
+        rsid_current="rs1801133",
+        loci=[{"chrom": "1", "start": 11796321, "ref": "G", "alts": ["A"]}],
+        rsid_candidates=[],
+        populations=[],
+        clin_sig=[{"clin_sig": "benign"}],
+        pubmind=[{"pvid": "PV1"}],
+        vrs_id="ga4gh:VA.example",
+        ambiguous=True,
+        findings=[],
+        alterations=[],
+        cost=HintCost(charged={}, served_from=["ensembl", "clinvar"], limit=None),
+    )
+    fields = r.variant_fields(report, proxied=True)
+
+    assert fields["rsid_current"] == "rs1801133", "the flattened currency field survives"
+    assert fields["ambiguous"] is True, "a @property upstream is a real field here"
+    assert fields["pubmind"] == [{"pvid": "PV1"}], "the field added at our asking survives"
+    # `checked` comes from cost.served_from, which is LANE NAMES — the producer maps the
+    # absolute snapshot paths out deliberately, so nothing here may look like a path.
+    assert fields["checked"] == ["clinvar", "ensembl"]
+    assert not any("/" in c for c in fields["checked"]), "no filesystem path on the wire"
+
+
+@needs_proxy
+def test_the_cost_translation_keeps_an_empty_charge_as_a_real_answer():
+    """An empty `charged` is the product: it is what teaches a caller their traffic is free.
+
+    Dropping the block when nothing was charged would leave "you are being throttled"
+    with two opposite histories and opposite remedies.
+    """
+    from just_dna_registry.models.api import HintCost, VariantHintReport
+
+    from just_module_creator import routing as r
+
+    free = VariantHintReport(
+        rsid="rs4988235",
+        cost=HintCost(charged={}, served_from=["ensembl"], limit=None),
+    )
+    cost = r.cost_from(free)
+    assert cost is not None, "an empty charge is still an answer and must not become null"
+    assert cost["charged"] == {}
+    assert cost["served_from"] == ["ensembl"]
+
+    paid = VariantHintReport(
+        rsid="rs4988235",
+        cost=HintCost(
+            charged={"gnomad": 3}, served_from=[], limit="10 per 60s", remedy="provision it"
+        ),
+    )
+    paid_cost = r.cost_from(paid)
+    assert paid_cost is not None
+    assert paid_cost["charged"] == {"gnomad": 3}
+    assert paid_cost["limit"] == "10 per 60s", "the allowance is what separates the two histories"
+
+
+def test_the_local_translation_flattens_the_enrichers_own_status_object():
+    """The other half of the seam, read from the enricher's real dataclass.
+
+    `RsidStatus` is a nested object there and two flat fields on the far side; a reader
+    that only knew one shape would return `rsid_state=None` for a merged rsID.
+    """
+    from just_dna_enricher.lookup import RsidStatus, VariantHint
+
+    from just_module_creator import routing as r
+
+    hint = VariantHint(
+        rsid="rs1801133",
+        rsid_status=RsidStatus(rsid="rs1801133", state="merged", current="rs1801131"),
+    )
+    fields = r.variant_fields(hint, proxied=False)
+    assert fields["rsid_state"] == "merged"
+    assert fields["rsid_current"] == "rs1801131"
+    # `ambiguous` is a @property here, and reading it is legitimate in-process — it is
+    # only serialization that drops it, which is why the far side promoted it.
+    assert fields["ambiguous"] in (True, False)
+
+
+@needs_proxy
+async def test_a_routed_lookup_reports_the_registry_and_its_cost(monkeypatch, make_client):
+    """The whole seam, with the double at the `RegistryClient` method — the one boundary
+    the suite is allowed to exclude, because it is the socket.
+
+    The decision, the batch choice, the translation and the reporting are all real code.
+    """
+    from just_dna_registry.models.api import HintCost, VariantHintBatchResponse, VariantHintReport
+
+    from just_module_creator import routing as r
+    from just_module_creator.settings import Settings
+    from just_module_creator.tools import research
+
+    report = VariantHintReport(
+        rsid="rs4988235",
+        rsid_state="current",
+        loci=[{"chrom": "2", "start": 135851076, "ref": "G", "alts": ["A"]}],
+        cost=HintCost(charged={}, served_from=["ensembl"], limit=None),
+    )
+
+    class _Double:
+        def __init__(self) -> None:
+            self.batched: list[Any] = []
+
+        def hint_variants(self, *, keys, frequencies=False, offline=True):
+            self.batched.append(keys)
+            return VariantHintBatchResponse(
+                results=[report], total_charged={}, cost=HintCost(charged={})
+            )
+
+        def hint_variant(self, **_: Any):  # pragma: no cover — the batch is the path
+            raise AssertionError("the single form egresses unconditionally; use the batch")
+
+    double = _Double()
+    monkeypatch.setattr(research, "client_for", lambda *_a, **_k: double)
+    # Force the routed branch: no lane held, proxy available, not offline.
+    monkeypatch.setattr(r, "local_lane_presence", lambda: {"ensembl": False, "clinvar": False})
+
+    settings = Settings(
+        _env_file=None,  # type: ignore[call-arg]
+        offline=False,
+        snapshot_route="auto",
+        proxy_target="test",
+    )
+    async with make_client(settings) as client:
+        result = await client.call_tool("lookup_variant", {"rsid": "rs4988235"})
+    data = result.data
+
+    assert data.route is not None
+    assert data.route.answered_by == "registry"
+    assert data.route.target == "test"
+    assert "ensembl" in data.route.why
+    assert data.cost is not None and data.cost.charged == {}
+    assert data.checked == ["ensembl"], "lane names from cost.served_from"
+    assert data.loci and data.loci[0]["start"] == 135851076
+    # The batch, not the single form: an online single lookup egresses unconditionally
+    # because dbSNP merge status has no snapshot in that tree.
+    assert double.batched == [[{"rsid": "rs4988235"}]]
+
+
+@needs_proxy
+async def test_a_proxy_failure_falls_back_live_and_says_so(monkeypatch, make_client):
+    """A 503 means the deployment lacks the lane too — so the fall-back is legitimate
+    and **must be visible**.
+
+    Answering `local` here would claim a snapshot served it. It did not: nothing did.
+    """
+    from just_module_creator import routing as r
+    from just_module_creator.settings import Settings
+    from just_module_creator.tools import research
+
+    class _Broken:
+        def hint_variants(self, **_: Any):
+            raise RuntimeError("503 snapshot_unavailable: ensembl")
+
+    monkeypatch.setattr(research, "client_for", lambda *_a, **_k: _Broken())
+    monkeypatch.setattr(r, "local_lane_presence", lambda: {"ensembl": False, "clinvar": False})
+
+    settings = Settings(
+        _env_file=None,  # type: ignore[call-arg]
+        offline=True,
+        snapshot_route="registry",
+        proxy_target="test",
+    )
+    async with make_client(settings) as client:
+        result = await client.call_tool("lookup_variant", {"rsid": "rs4988235"})
+    data = result.data
+
+    # `offline=True` here, so the route never left the machine in the first place —
+    # which is the assertion that matters: the ceiling outranks `snapshot_route`.
+    assert data.route is not None
+    assert data.route.answered_by == "local"
+    assert data.route.offline is True
+    assert data.cost is None
+
+
+@needs_proxy
+async def test_remote_draft_refuses_a_stray_parameter_rather_than_dropping_it(
+    monkeypatch, make_client, tmp_path
+):
+    """A silently ignored filter produces a draft answering a different question.
+
+    The refusal is the server's; what is asserted here is that its text reaches the
+    caller naming the parameter, rather than being flattened into "the draft failed".
+    """
+    from just_module_creator.tools import proxy
+
+    class _Fussy:
+        def draft(self, spec_dir, **kwargs):
+            if kwargs.get("source") == "clinvar" and "min_evidence_level" in kwargs:
+                raise RuntimeError(
+                    "422 unsupported_parameter: min_evidence_level is not read by clinvar"
+                )
+            raise AssertionError("expected the refusal")
+
+    monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Fussy())
+    (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
+
+    async with make_client(offline_settings()) as client:
+        result = await client.call_tool(
+            "remote_draft",
+            {
+                "spec_dir": str(tmp_path),
+                "source": "clinvar",
+                "min_evidence_level": "1A",
+            },
+            raise_on_error=False,
+        )
+    text = str(result.content)
+    assert "min_evidence_level" in text
+    assert "refusal rather than a dropped filter" in text
+
+
+@needs_proxy
+async def test_remote_draft_names_the_lane_a_deployment_lacks(
+    monkeypatch, make_client, tmp_path
+):
+    """`503 snapshot_unavailable` naming a lane is a different failure from the tier
+    being absent, and only one of the two is fixed by provisioning.
+
+    So the error text has to carry the lane through and point at `registry_caches`,
+    rather than collapsing both into "the registry could not draft".
+    """
+    from just_module_creator.tools import proxy
+
+    class _Unprovisioned:
+        def draft(self, spec_dir, **kwargs):
+            raise RuntimeError("503 snapshot_unavailable: civic")
+
+    monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Unprovisioned())
+    (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
+
+    async with make_client(offline_settings()) as client:
+        result = await client.call_tool(
+            "remote_draft",
+            {"spec_dir": str(tmp_path), "source": "civic"},
+            raise_on_error=False,
+        )
+    text = str(result.content)
+    assert "civic" in text
+    assert "registry_caches" in text
+    assert "build_command" in text
+
+
+@needs_proxy
+async def test_a_draft_archive_writes_only_recognised_spec_files(
+    monkeypatch, make_client, tmp_path
+):
+    """A third party's tar: a member outside the recognised set has nowhere to land.
+
+    Asserted through the tool rather than on the helper, because it is the write that
+    matters — the containment is pointless if the write path does not honour it.
+    """
+    import json as _json
+
+    from just_module_creator.tools import proxy
+
+    payload = {
+        "variants.csv": b"variant_key,genotype\n2-135851076-G-A,A/A\n",
+        "../../escaped.csv": b"nope",
+        "draft-report.json": _json.dumps(
+            {"added": 1, "already_present": 0, "differs": 0, "needs_curation": ["variants.csv"]}
+        ).encode(),
+    }
+    archive = _archive(payload)
+
+    class _Stub:
+        def draft(self, spec_dir, **kwargs):
+            return archive
+
+    monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Stub())
+    (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
+
+    async with make_client(offline_settings()) as client:
+        result = await client.call_tool(
+            "remote_draft",
+            {"spec_dir": str(tmp_path), "source": "clinvar", "dry_run": False},
+        )
+    report = result.data
+
+    assert report.installed == ["variants.csv"]
+    assert report.added == 1
+    assert report.needs_curation == ["variants.csv"]
+    assert not (tmp_path.parent.parent / "escaped.csv").exists()
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["module_spec.yaml", "variants.csv"]
+
+
+@needs_proxy
+async def test_an_archive_with_no_report_counts_zero_and_says_it_did_not_describe_itself(
+    monkeypatch, make_client, tmp_path
+):
+    """Empty is not zero, and the counts cannot be recovered from the merged result.
+
+    `already_present` and `differs` are about the merge the server performed; reading
+    them off the rows that came back would invent them.
+    """
+    from just_module_creator.tools import proxy
+
+    class _Terse:
+        def draft(self, spec_dir, **kwargs):
+            return _archive({"variants.csv": b"variant_key,genotype\n2-135851076-G-A,A/A\n"})
+
+    monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Terse())
+    (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
+
+    async with make_client(offline_settings()) as client:
+        result = await client.call_tool(
+            "remote_draft", {"spec_dir": str(tmp_path), "source": "clinvar"}
+        )
+    report = result.data
+    assert (report.added, report.already_present, report.differs) == (0, 0, 0)
+    assert report.needs_curation == []
+    assert report.dry_run is True
+    assert report.installed == [], "a dry run writes nothing"

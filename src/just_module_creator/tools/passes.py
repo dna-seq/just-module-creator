@@ -785,6 +785,12 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         module with hundreds of studies is a long run. `offline=true` makes this a **no-
         op**: there is no offline literature snapshot and there will not be one, because
         once `literature.csv` is written it *is* the pin.
+
+        **No thin path: `remote_derive` does not run this.** That route runs what a
+        publish runs, and the literature pass is one of the opt-in check passes — egress
+        spent on a verdict rather than on the bytes a compile needs. So this is a local
+        call whatever `JMC_SNAPSHOT_ROUTE` says, and there is no snapshot lane to be
+        missing, because it reads none.
         """
         target = resolve_dir(spec_dir, settings)
         eff_offline = offline_for(settings, offline)
@@ -897,7 +903,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
 
         `missing` is not proof of absence: a gene gnomAD has no constraint entry
         for and a gene the pass could not reach look the same in the file, which
-        is why the offline flag is reported separately.
+        is why the offline flag is reported separately. **No thin path** — these are
+        opt-in check passes that `remote_derive` deliberately skips, so each needs its
+        snapshot lane *here*; `registry_caches` says which this machine holds.
         """
         target = resolve_dir(spec_dir, settings)
         eff_offline = offline_for(settings, offline)
@@ -1036,6 +1044,11 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         names no licence, so `commercial_use` is written **unknown**, which is not
         permission: the terms of the thousands of publications the Catalog summarizes
         are not settled by its terms page.
+
+        **No thin path: `remote_derive` does not run this.** It is one of the opt-in
+        check passes that route deliberately skips — egress spent on a verdict rather
+        than on the bytes a compile needs. There is also no lane to be missing: the
+        Catalog publishes no snapshot, so this is a live call from wherever it runs.
         """
         target = resolve_dir(spec_dir, settings)
         eff_offline = offline_for(settings, offline)

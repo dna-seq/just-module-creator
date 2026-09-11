@@ -807,6 +807,85 @@ class VerifyResult(BaseModel):
 # --------------------------------------------------------------------------- #
 # Lookups (network, read-only, never write an authored cell)
 # --------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
+# Thick or thin: where a snapshot-backed answer came from  (RM30)
+# --------------------------------------------------------------------------- #
+class RouteInfo(BaseModel):
+    """Who answered, and why — on every tool that can be answered two ways.
+
+    **This exists because `never silently fall back` needs somewhere to land.** The
+    caller cannot see that the source differed, and "the registry had no snapshot
+    either, so this went to the live service" is a different answer from "this came off
+    a local snapshot" even when the two values agree.
+    """
+
+    answered_by: str = Field(
+        description=(
+            "`local` — a snapshot on this machine served it. `registry` — the caching "
+            "proxy did. `local_online_after_registry_miss` — the proxy had no snapshot "
+            "either and this fell through to the live service, which is the slow metered "
+            "path and the one worth knowing about. `unrouted` — no snapshot lane is "
+            "involved, so there was nothing to decide."
+        )
+    )
+    lanes_needed: list[str] = Field(
+        default_factory=list,
+        description="Which snapshot lanes this answer depends on. Empty means its "
+        "sources publish no snapshot, so it is online wherever it runs.",
+    )
+    lanes_local: list[str] = Field(
+        default_factory=list, description="Which of those this machine actually holds."
+    )
+    why: str = Field(description="The decision in a sentence, including what was missing.")
+    offline: bool = Field(
+        description="Whether the offline ceiling applied. Offline outranks routing: "
+        "going to the proxy is egress, so an offline run never does."
+    )
+    target: str | None = Field(
+        default=None,
+        description="Which instance answered, when one did. Null when nothing was routed.",
+    )
+
+
+class ProxyCost(BaseModel):
+    """What a proxied answer spent of the deployment's upstream budget.
+
+    **An empty `charged` is the product, not a missing value.** It is what teaches a
+    caller which of their traffic is free — without it, "you are being throttled" has
+    two opposite histories with opposite remedies, and `limit` is the sibling that
+    separates them.
+    """
+
+    charged: dict[str, int] = Field(
+        default_factory=dict,
+        description="Requests charged per upstream. **Empty means the answer was free** "
+        "— served from the deployment's own snapshots at no egress to anyone.",
+    )
+    limit: str | None = Field(
+        default=None,
+        description="The allowance the charge is metered against, as the deployment "
+        "states it. **Read it beside `charged`, because `charged` alone has two "
+        "opposite histories** — free because it was served from a snapshot, or "
+        "throttled. gnomAD's is ten per sixty seconds and it sells no key at any price, "
+        "so there is nothing to top up: the remedy is a provisioned snapshot.",
+    )
+    waited_seconds: float = Field(
+        default=0.0,
+        description="How long the deployment's pace gate held this call before letting "
+        "it through. Zero on a snapshot-served answer.",
+    )
+    served_from: list[str] = Field(
+        default_factory=list,
+        description="Which of the deployment's lanes served it, by lane name. Never a "
+        "filesystem path — the proxy maps those out deliberately.",
+    )
+    remedy: str | None = Field(
+        default=None,
+        description="What to do if this is being throttled, per upstream. Null when "
+        "nothing was charged.",
+    )
+
+
 class VariantLookup(BaseModel):
     """What is known about one variant — and what of it stays the author's to write."""
 
@@ -831,6 +910,36 @@ class VariantLookup(BaseModel):
     )
     checked: list[str] = Field(default_factory=list, description="Which tiers were consulted.")
     offline: bool = Field(description="Whether this ran cache-only.")
+    rsid_current: str | None = Field(
+        default=None,
+        description="Where a merged rsID now lives. Null when the id is current, "
+        "withdrawn, or was not checked — three different reasons for one null, so read "
+        "`rsid_state` beside it.",
+    )
+    pubmind: list[dict] = Field(
+        default_factory=list,
+        description="PubMind's literature-derived records at each resolved allele — "
+        "every PVID rather than one winner. Empty means no record, or that the lane was "
+        "not consulted; `route` says which.",
+    )
+    ambiguous: bool | None = Field(
+        default=None,
+        description="Whether the answer is not unique — several genuinely distinct "
+        "places, or one place spelled twice. Null when `ambiguity=false`, so the "
+        "question was not put.",
+    )
+    route: RouteInfo | None = Field(
+        default=None,
+        description="**Who answered, and why.** Null only on a toolchain that predates "
+        "routing. Read `answered_by` before trusting an empty list: "
+        "`local_online_after_registry_miss` means no snapshot served this at all.",
+    )
+    cost: ProxyCost | None = Field(
+        default=None,
+        description="What a proxied answer spent, when one was proxied. Null when this "
+        "was answered locally, and an **empty `charged` inside it means free** — those "
+        "are different facts.",
+    )
 
 
 class CitationLookup(BaseModel):
@@ -2516,77 +2625,8 @@ class LogReview(BaseModel):
 
 
 # --------------------------------------------------------------------------- #
-# Thick or thin: where a snapshot-backed answer came from  (RM30)
+# The snapshot lanes, and a derived tree built elsewhere  (RM30)
 # --------------------------------------------------------------------------- #
-class RouteInfo(BaseModel):
-    """Who answered, and why — on every tool that can be answered two ways.
-
-    **This exists because `never silently fall back` needs somewhere to land.** The
-    caller cannot see that the source differed, and "the registry had no snapshot
-    either, so this went to the live service" is a different answer from "this came off
-    a local snapshot" even when the two values agree.
-    """
-
-    answered_by: str = Field(
-        description=(
-            "`local` — a snapshot on this machine served it. `registry` — the caching "
-            "proxy did. `local_online_after_registry_miss` — the proxy had no snapshot "
-            "either and this fell through to the live service, which is the slow metered "
-            "path and the one worth knowing about. `unrouted` — no snapshot lane is "
-            "involved, so there was nothing to decide."
-        )
-    )
-    lanes_needed: list[str] = Field(
-        default_factory=list,
-        description="Which snapshot lanes this answer depends on. Empty means its "
-        "sources publish no snapshot, so it is online wherever it runs.",
-    )
-    lanes_local: list[str] = Field(
-        default_factory=list, description="Which of those this machine actually holds."
-    )
-    why: str = Field(description="The decision in a sentence, including what was missing.")
-    offline: bool = Field(
-        description="Whether the offline ceiling applied. Offline outranks routing: "
-        "going to the proxy is egress, so an offline run never does."
-    )
-    target: str | None = Field(
-        default=None,
-        description="Which instance answered, when one did. Null when nothing was routed.",
-    )
-
-
-class ProxyCost(BaseModel):
-    """What a proxied answer spent of the deployment's upstream budget.
-
-    **An empty `charged` is the product, not a missing value.** It is what teaches a
-    caller which of their traffic is free — without it, "you are being throttled" has
-    two opposite histories with opposite remedies, and `limit` is the sibling that
-    separates them.
-    """
-
-    charged: dict[str, int] = Field(
-        default_factory=dict,
-        description="Requests charged per upstream. **Empty means the answer was free** "
-        "— served from the deployment's own snapshots at no egress to anyone.",
-    )
-    limit: dict[str, int] = Field(
-        default_factory=dict,
-        description="The allowance each charged upstream is metered against. gnomAD's "
-        "is ten per sixty seconds and it sells no key at any price, so there is nothing "
-        "to top up: the remedy is a provisioned snapshot, not a credential.",
-    )
-    served_from: list[str] = Field(
-        default_factory=list,
-        description="Which of the deployment's lanes served it, by lane name. Never a "
-        "filesystem path — the proxy maps those out deliberately.",
-    )
-    remedy: str | None = Field(
-        default=None,
-        description="What to do if this is being throttled, per upstream. Null when "
-        "nothing was charged.",
-    )
-
-
 class LaneStatus(BaseModel):
     """One snapshot lane, here or there."""
 
@@ -2710,4 +2750,44 @@ class DerivedTreeReport(BaseModel):
         "produce, unlike `registry_validate`, whose contract is to report.",
     )
     notes: list[str] = Field(default_factory=list, description="What the run reported.")
+    next_step: str = Field(description="What to do now.")
+
+
+class DraftArchiveReport(BaseModel):
+    """Rows drafted by a registry that holds the snapshot, and what still needs deciding.
+
+    **Four sources here have no local tool at all** — this plugin wraps ClinVar, CPIC and
+    ClinPGx, and the route serves PubMind, CIViC, MITOMAP-miss and STRchive besides. So
+    it is a capability a thin client gains rather than only a route it takes.
+    """
+
+    spec_dir: str = Field(description="Where the rows were written, or would be.")
+    source: str = Field(description="Which drafter ran.")
+    target: str = Field(description="Which instance ran it.")
+    added: int = Field(description="Rows appended.")
+    already_present: int = Field(
+        description="Rows the spec already carried, left exactly as they were."
+    )
+    differs: int = Field(
+        description="Rows where the source disagrees with something you authored, **left "
+        "unchanged** — only you know which side is right, and a source that lags the edge "
+        "is the reason this is not a defect report."
+    )
+    needs_curation: list[str] = Field(
+        default_factory=list,
+        description="Tables that actually hold a placeholder. **Read off the bytes, not "
+        "off what the drafter could write** — a real ClinVar draft fills `studies.csv` "
+        "completely, so naming it here would send you to fill cells already done. On a "
+        "dry run an empty list means *nothing was written*, not *nothing is owed*.",
+    )
+    installed: list[str] = Field(
+        default_factory=list, description="Files written into the spec directory."
+    )
+    dry_run: bool = Field(description="True when nothing was written.")
+    lane: str | None = Field(
+        default=None,
+        description="The snapshot lane the deployment was missing, when that is why this "
+        "failed. Distinct from the tier being absent entirely: both are un-retryable and "
+        "only one is fixed by provisioning.",
+    )
     next_step: str = Field(description="What to do now.")

@@ -273,7 +273,7 @@ _UNPREFIXED_CATALOG_READS = ("compare_to_published",)
 #: is irreversible on the other. It is here rather than in the map above because that map
 #: globs on a name, and this one is called something else on purpose: the name says what
 #: it does, not which subsystem it reaches.
-_UNPREFIXED_INSTANCE_WRITES = {"remote_derive": "test"}
+_UNPREFIXED_INSTANCE_WRITES = {"remote_derive": "test", "remote_draft": "test"}
 
 
 async def test_the_instance_aimed_tools_that_are_not_named_registry_anything_still_aim(

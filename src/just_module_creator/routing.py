@@ -385,3 +385,73 @@ def missed_at_registry(route: Route, *, detail: str) -> Route:
         offline=route.offline,
         target=route.target,
     )
+
+
+def cost_from(hint: Any) -> dict[str, Any] | None:
+    """Their `HintCost` as a plain mapping, or ``None`` when nothing was proxied.
+
+    **`served_from` holds lane NAMES and never a path**, which is the producer mapping
+    our own finding out: their `VariantHint.checked` carries absolute snapshot paths and
+    one finding interpolated one into prose, so a payload that cannot leak a filesystem
+    layout is safe by construction rather than by audit. Do not reconstruct paths from it.
+    """
+    cost = getattr(hint, "cost", None)
+    if cost is None:
+        return None
+    return {
+        "charged": dict(getattr(cost, "charged", {}) or {}),
+        "limit": getattr(cost, "limit", None),
+        "waited_seconds": float(getattr(cost, "waited_seconds", 0.0) or 0.0),
+        "served_from": list(getattr(cost, "served_from", []) or []),
+        "remedy": getattr(cost, "remedy", None),
+    }
+
+
+def variant_fields(hint: Any, *, proxied: bool) -> dict[str, Any]:
+    """One variant answer as our own field names, from either side of the seam.
+
+    **The two shapes are genuinely different and this is why a translation is owed.**
+    The registry's models are theirs, not the enricher's: `rsid_status` is flattened into
+    `rsid_state` + `rsid_current`, `checked`'s absolute snapshot paths become
+    `cost.served_from` lane names, and `ambiguous` — a `@property` upstream, which does
+    not survive serialization — is a real field there. Reading one as the other drops
+    three answers silently.
+
+    So this reads whichever is in front of it and returns our names. `proxied` picks the
+    shape rather than sniffing for a field, because a sniff would guess wrong on the day
+    either side adds the other's spelling.
+    """
+    if proxied:
+        return {
+            "rsid": getattr(hint, "rsid", None),
+            "rsid_state": getattr(hint, "rsid_state", None),
+            "rsid_current": getattr(hint, "rsid_current", None),
+            "loci": list(getattr(hint, "loci", []) or []),
+            "rsid_candidates": list(getattr(hint, "rsid_candidates", []) or []),
+            "clin_sig": list(getattr(hint, "clin_sig", []) or []),
+            "populations": list(getattr(hint, "populations", []) or []),
+            "pubmind": list(getattr(hint, "pubmind", []) or []),
+            "vrs_id": getattr(hint, "vrs_id", None),
+            "ambiguous": getattr(hint, "ambiguous", None),
+            # Lane names, deliberately — see `cost_from`. On the local side the same
+            # field carries the enricher's own `checked`, which is paths; the two are
+            # not the same vocabulary and the `route` beside them says which you have.
+            "checked": sorted(
+                str(c) for c in (getattr(getattr(hint, "cost", None), "served_from", []) or [])
+            ),
+        }
+
+    status = getattr(hint, "rsid_status", None)
+    return {
+        "rsid": getattr(hint, "rsid", None),
+        "rsid_state": getattr(status, "state", None) if status else None,
+        "rsid_current": getattr(status, "current", None) if status else None,
+        "loci": list(getattr(hint, "loci", []) or []),
+        "rsid_candidates": list(getattr(hint, "rsid_candidates", []) or []),
+        "clin_sig": list(getattr(hint, "clin_sig", []) or []),
+        "populations": list(getattr(hint, "populations", []) or []),
+        "pubmind": list(getattr(hint, "pubmind", []) or []),
+        "vrs_id": getattr(hint, "vrs_id", None),
+        "ambiguous": getattr(hint, "ambiguous", None),
+        "checked": sorted(str(c) for c in (getattr(hint, "checked", set()) or set())),
+    }

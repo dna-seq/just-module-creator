@@ -38,6 +38,34 @@ base, `clin_sig`, and rsID currency. Snapshots are provisioned from HuggingFace 
 reference check — the only thing that can catch a shifted coordinate — **does not run at all**. An empty
 result from an offline run means *unchecked*, never *clean*.
 
+### If this machine has no snapshots: `remote_derive`
+
+`enrich_module` reads snapshot lanes, and **the Ensembl one is about 14 GB**. Without it nothing
+here can place an rsID — so on a machine that does not hold it the route is to have a registry
+enrich the spec and hand the tree back:
+
+```
+registry_caches(target="test")                         # which lanes are here, which are there
+remote_derive(spec_dir="spec", namespace="you", name="mod")   # dry run: what installing would displace
+remote_derive(spec_dir="spec", namespace="you", name="mod", dry_run=False)
+```
+
+**Read the dry run before the write, and read `decisions` first.** It uploads your spec — the
+server merges rather than clobbering, so a hand-curated `source="manual"` row normally travels up
+and comes back — and `decisions` is every row your files carry that the returned tree does not. Those
+are **not applied**: a missing row is either the source withdrawing an answer or the remote run being
+unable to ask, and only you can tell those apart. The previous bytes are captured and the capture is
+read back and hashed before anything is replaced.
+
+**It runs what a publish runs, which is less than a check.** No frequency, literature, identifier,
+ACMG or PGx pass — those are egress spent on a verdict, and this call is for the bytes. So
+`enrich_facts`, `enrich_literature_pass` and `enrich_gwas_effects` have **no thin path** and each
+needs its own lane here. A lane the deployment lacks comes back naming that lane, which is different
+from the tier being absent and only one of the two is fixed by provisioning.
+
+The thin path needs `just-dna-registry` 0.25.0, which is not released yet; until then the tool
+refuses with a sentence naming the release.
+
 **Substitution VRS ids mint offline; indels and MNVs need the reference sequence.** Expect ~50% id
 coverage on an indel-heavy module offline against ~99% online. Re-run `vrs mint` **without** `--offline`
 to fill the rest.
