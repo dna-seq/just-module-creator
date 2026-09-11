@@ -104,6 +104,28 @@ build-backend = "uv_build"
 [tool.uv.build-backend]
 module-name = ["just_module_creator", "manuscript"]
 
+# PREVIEW BRANCH ONLY — do not merge to main. The four just-dna packages are taken
+# from the sibling checkouts' unreleased branches rather than from PyPI, so this
+# tree is a preview build against releases that have not been cut: format,
+# compiler and enricher from `../just-dna-format`'s `0.7` branch, and the
+# registry from `../just-dna-marketplace`'s `format-0.7-adoption` branch, whose
+# 0.25.0 carries the caching-proxy surface (`/api/v1/caches`, `POST .../derived`,
+# `POST /drafts`, the six `/hint/*` routes) and declares `just-dna-format>=0.7.0`
+# itself, so the two overrides have to travel together.
+#
+# The floors above still say >=0.6.6 / >=0.18.1 deliberately: a source override is
+# not an adoption, and bumping a floor to an uncut version would publish a lie.
+# Every proxy tool on `main` is guarded by a capability probe against the
+# installed client instead, so the released plugin activates the thin path on the
+# day 0.25.0 reaches PyPI and refuses with a named reason until then.
+#
+# Reversal: delete this block and `uv sync`.
+[tool.uv.sources]
+just-dna-format = { path = "../just-dna-format/schema", editable = true }
+just-dna-compiler = { path = "../just-dna-format/compiler", editable = true }
+just-dna-enricher = { path = "../just-dna-format/enricher", editable = true }
+just-dna-registry = { path = "../just-dna-marketplace", editable = true }
+
 [dependency-groups]
 dev = [
     "pytest>=8",
