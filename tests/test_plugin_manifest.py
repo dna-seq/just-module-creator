@@ -221,6 +221,10 @@ def test_the_description_names_every_literature_source_that_ships(manifest):
     """
     from just_module_creator.discovery import SEARCHABLE
 
+    assert len(SEARCHABLE) >= 4, (
+        f"the searchable-source roster enumerated {len(SEARCHABLE)} — both checks below "
+        "are vacuous over an empty set, and would report the manifest as complete"
+    )
     untaught = set(SEARCHABLE) - set(_SOURCE_PROSE)
     assert not untaught, (
         f"{sorted(untaught)} search the literature but have no reader-facing name here; "

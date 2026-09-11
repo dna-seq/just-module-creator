@@ -720,6 +720,33 @@ comparison against ISO values.
   failed?** Build the expected value the way the *producer* builds it, and if that is not
   possible, say so in the test rather than reaching for the nearest function that returns
   the right shape.
+- **A subset or difference assertion needs a DENOMINATOR, and there are exactly three
+  ways to give it one.** `A <= B` and `assert not (A - B)` both pass when `A` is empty,
+  and an enumeration of a *foreign* symbol renders empty when the **import moves** rather
+  than when a name changes — so an upstream restructure reads as *everything upstream
+  declares is accounted for here*, which is the one sentence a roster guard exists to be
+  able to deny. Three protections, and they are equivalent rather than alternatives:
+  an **explicit count** (`assert len(surface) > 25`); an **adjacent exact assertion** over
+  the same set (an `==` or an `in` for a known member, on the line above); or
+  **direction** — a foreign set on the *right* of `<=` fails when it empties, so nothing
+  more is owed. Sweeping for the *shape* (`assert len(...) >=`) misreports the second and
+  third as unprotected: ask *"if the foreign enumeration came back empty, does this still
+  pass?"* of each assertion instead.
+
+  **Floor the inputs, never the answer.** `registry_lag()` returning an empty set is the
+  *good* state, so a floor on its result would fail on success; the floors belong on the
+  two rosters it walks. And **a floor asks whether the enumeration happened, not whether
+  the count is still what it was** — set it well under today's number, or it becomes the
+  hand-kept count §8 warns about.
+
+  **A search cannot be floored, so anchor it instead.** You cannot count what is outside
+  the search path, and an absence is a well-formed answer to a badly-aimed question —
+  `just-dna-pipelines` lives in a subdirectory of the -lite checkout, so a grep rooted at
+  its `src/` reported two real env vars as undefined (§11). The substitute is a
+  **known-present member**: check the name you are most confident about first, and if
+  *that* comes back missing, the instrument is wrong rather than the subject. This applies
+  to any lookup taking a scope argument, which is most of them, and the scope is the part
+  nobody states.
 - **Never claim a test "would have caught" a bug** without running it against the
   buggy code and watching it fail.
 - Note `from conftest import ...`, not `from tests.conftest import ...`: a

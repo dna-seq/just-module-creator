@@ -246,6 +246,9 @@ def test_every_skill_it_names_actually_ships(skill: Path):
     """A pointer to a skill that does not exist is a dead end an agent cannot recover from."""
     text = _document(skill).read_text(encoding="utf-8")
     named = set(re.findall(r"`(module-[a-z0-9-]+|find-evidence|create-module)`", text))
+    # No floor on `named`: a document that names no other skill is legitimate, so an
+    # empty parse is a real answer here rather than a broken instrument. `NAMES` is the
+    # side that must not empty, and it is floored where it is built.
     missing = named - NAMES
     assert not missing, f"{skill.name} points at {sorted(missing)}"
 
@@ -419,7 +422,15 @@ def test_claude_md_names_every_skill_that_ships():
     that tried to hold that would fail on every rewording.
     """
     text = (SKILLS.parent / "CLAUDE.md").read_text(encoding="utf-8")
-    table = text.split("### The agent assets this repo ships", 1)[1].split("\n## 1.", 1)[0]
+    marker = "### The agent assets this repo ships"
+    # **A split on a heading that has moved yields a block, not an error**, and every name
+    # is then "present" in it — the roster reads as complete because the haystack became
+    # the whole file. `test_surface_and_auth.py` asserts its marker before splitting for
+    # exactly this reason; this test did not, twelve files away.
+    assert marker in text, "CLAUDE.md lost the asset-table heading this reads"
+    table = text.split(marker, 1)[1].split("\n## 1.", 1)[0]
+    assert 0 < len(table) < len(text), "the split produced the whole file or nothing"
+    assert len(NAMES) >= 15, f"the skill roster enumerated {len(NAMES)} — did skills/ move?"
     # Plain substring, not a backtick span: the map is named through its path
     # (`skills/module-101/SKILL.md`) while the stage spine is named bare. Both are
     # the roster naming it, and the test holds the claim rather than the formatting.
