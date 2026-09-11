@@ -63,7 +63,15 @@ consequences:
 | `authority_concordance` | do the authorities agree with **each other**? |
 | `authored_position` | where does **your** call sit relative to the ones that spoke? |
 
-They are separate fields because they are separate questions. A single field would have to name the
+They are separate fields because they are separate questions.
+
+**And `authored_position` is a verdict, not the value it was reached from — that is
+`authored_clin_sig`.** It carries the module's own `effective_clin_sig` for this subject at the
+moment of the comparison, so a row records *what you said* beside *where that put you*. **Empty
+there is the `absent` position rather than a disagreement**: a module that makes no clinical claim
+about a subject has not been outvoted, and reading a blank as dissent inverts the one signal this
+table exists to carry. Do not author it — like every column here it is written by the producer, and
+the place your call is made is `variants.csv`. A single field would have to name the
 authority inside the member to say the same thing, which is the combinatorial explosion a stress
 test at five sources found. Ask `describe_machine_table("clin_sig_concordance.csv")` for both
 vocabularies; each carries an `unchecked` member, and **`unchecked` is not agreement**.
