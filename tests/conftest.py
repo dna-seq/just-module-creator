@@ -131,6 +131,28 @@ needs_overlay = pytest.mark.skipif(
 #: module recompiles green having quietly lost a table it was compiled with, which is
 #: the `licensing.csv`-before-registry-0.16.2 failure.
 def registry_lag() -> set[str]:
+    """Derived tables the compiler writes and the registry does not recognise.
+
+    **The floor is on the INPUTS, never on the answer.** An empty lag is the good state
+    and is what this install reports today, so a floor on the result would fail on
+    success. What must not render empty is either enumeration this walks: a subset
+    assertion over nothing passes, and an enumeration of a *foreign* symbol goes empty
+    when the **import moves** rather than when a name changes — so a restructure upstream
+    would read as *every table the compiler writes is recognised here*, which is the one
+    sentence these rosters exist to be able to deny.
+
+    Measured 2026-09-11: 12 derived models, 28 recognised spec files. The floors sit well
+    under both, because they are asking *did the enumeration happen*, not *is the count
+    still 12*. Prompted by the registry finding three unfloored subset guards of their
+    own, 2026-09-11.
+    """
+    assert len(_hints.DERIVED_TABLE_MODELS) >= 8, (
+        "the compiler's derived-table roster enumerated almost nothing — the symbol moved, "
+        "and every roster guard reading it is now vacuous"
+    )
+    assert len(_specfiles.RECOGNIZED_SPEC_FILES) >= 20, (
+        "the registry's recognised-file roster enumerated almost nothing — the symbol moved"
+    )
     return {
         name for name in _hints.DERIVED_TABLE_MODELS if not _specfiles.is_spec_file(name)
     }
