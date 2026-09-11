@@ -70,10 +70,13 @@ log = get_logger()
 #: declaration, so it is answerable — and this is the query, which needs no checkout and
 #: touches nothing installed:
 #:
-#:   uv run --isolated --no-project --with 'just-dna-enricher==<floor>' python -c \
+#:   uv run --isolated --no-project --with 'just-dna-enricher==0.6.6' python -c \
 #:     "import importlib.util as u; print(u.find_spec('just_dna_enricher.caches'))"
 #:
-#: Measured 2026-09-11 at the floor of the day, `0.6.6`: `None`. The guard stays.
+#: Run 2026-09-11, verbatim: `None`. The guard stays. **The version is the floor spelled
+#: out rather than a `<placeholder>`** — read it off `pyproject.toml` and substitute when it
+#: moves, because a command that needs one edit before it runs is a command whose reader
+#: stops at the edit, which is the failure this whole note exists to avoid.
 try:
     from just_dna_enricher.caches import CACHE_LANES
 except ImportError:  # pragma: no cover — only on a pre-0.7 enricher
@@ -155,11 +158,12 @@ def local_lane_presence() -> dict[str, bool] | None:
 #: **floor names a published release whose client carries all nine**, which is the same
 #: runnable form as the lane guard above rather than a claim about what users have:
 #:
-#:   uv run --isolated --no-project --with 'just-dna-registry==<floor>' python -c \
+#:   uv run --isolated --no-project --with 'just-dna-registry==0.18.1' python -c \
 #:     "from just_dna_registry.client import RegistryClient as C; \
 #:      print([n for n in ('cache_status','derived','draft') if not hasattr(C, n)])"
 #:
-#: Measured 2026-09-11 at the floor of the day, `0.18.1`: all nine missing. `proxy_gap`
+#: Run 2026-09-11, verbatim: all three named missing, and all nine when the tuple is
+#: spelled in full. `0.18.1` is the floor written out, same reason as above. `proxy_gap`
 #: already answers the live question by symbol, which is why the code was right while the
 #: note was not. Grep `_PROXY_METHODS` and `proxy_gap`.
 _PROXY_METHODS: tuple[str, ...] = (
