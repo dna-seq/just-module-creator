@@ -149,7 +149,7 @@ def _upstream_report():
                 state="known",
                 name="GRS53",
                 date_release="2020-04-30",
-                trait_efo_ids=["EFO:0004611"],
+                trait_efo_ids=("EFO:0004611",),
                 variants_number=53,
                 license="Not specified",
             ),
@@ -165,7 +165,9 @@ def _upstream_report():
                     published="53",
                 )
             ],
-            compared=1,
+            # `compared` is the roster of what was put to the Catalog, not a count —
+            # `(pgs_id, field, value)` triples, and pyright caught the assumption.
+            compared=[("PGS000027", "variants_number", "53")],
         ),
     )
 
