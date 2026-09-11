@@ -47,6 +47,12 @@ ToolSearch = Literal["off", "regex", "bm25"]
 #: Whether the surface is one layer or two. See ``toolbox.py``.
 ToolboxMode = Literal["flat", "layered"]
 
+#: Where a snapshot-backed answer comes from. See ``routing.py``.
+#:
+#: **Named for snapshots rather than for transport** because ``transport`` below is
+#: already stdio-versus-http and the two have nothing to do with each other.
+SnapshotRoute = Literal["local", "registry", "auto"]
+
 DEFAULT_REGISTRY_URL = "https://module-registry.just-dna.life"
 DEFAULT_POLYGON_URL = "https://module-polygon.just-dna.life"
 
@@ -145,6 +151,33 @@ class Settings(BaseSettings):
     # Network policy. When true, every tool that could fetch runs cache-only.
     # A hard ceiling: an `offline=False` argument cannot override it.
     offline: bool = False
+
+    # Thick or thin. The enricher's lookups read snapshot caches — fifteen lanes, the
+    # Ensembl one about 14 GB — and `just-dna-registry` 0.25.0 will answer a cache miss
+    # for a client that holds none of them.
+    #
+    # "auto" decides PER LANE and that is the whole point: a box holding three of
+    # fifteen must not pick one wrong answer for everything, and holding Ensembl and
+    # nothing else is the common shape, since it is the one lane `enrich` cannot work
+    # without. "local" never routes out; "registry" routes out even where a lane exists,
+    # which is the override for a lane that resolves and then fails — `lane.resolve()`
+    # is two-valued here while the server's /caches reports `partial`.
+    #
+    # `offline` outranks all three: routing out is egress, and a per-call argument may
+    # not loosen the ceiling.
+    snapshot_route: SnapshotRoute = "auto"
+
+    # Which instance answers a proxied lookup. NOT the same question as a catalog read's
+    # `target`, which every read requires because a rehearsal read back against
+    # production looks like a 404. A proxy route writes nothing to a catalog, claims no
+    # identifier and spends no version — measured by the producer at our asking: none of
+    # their drafts/hints/caches routers reads `is_test_instance` or `settings.mode`, so a
+    # `test` draft is the same bytes as a `prod` one given the same snapshots.
+    #
+    # It defaults to the polygon anyway, because prod and polygon resolve to the SAME IP
+    # and therefore share gnomAD's single unbuyable allowance while each keeps its own
+    # private pace ledger — so spending the polygon's ledger is the courteous default.
+    proxy_target: RegistryTarget = "test"
 
     # Transport / network (used by the CLI; overridable per command).
     transport: str = "stdio"

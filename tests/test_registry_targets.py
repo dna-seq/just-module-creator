@@ -78,6 +78,12 @@ REGISTRY_TOOL_DEFAULTS = {
     # Health follows the write default so the common case — "confirm I am pointed at
     # the polygon before I rehearse" — needs no argument.
     "registry_health": "test",
+    # A read of ONE box's snapshot lanes, so it requires a target like the catalog
+    # reads and for the same reason: two deployments provision independently, and a
+    # lane report from the instance you are not about to use answers the wrong
+    # question. It is NOT the proxy-routing target — that is `JMC_PROXY_TARGET`,
+    # which needs no argument because a routed hint writes nothing to any catalog.
+    "registry_caches": None,
 }
 
 
@@ -259,6 +265,37 @@ async def test_writes_rehearse_and_catalog_reads_refuse_to_guess(make_client):
 #: other four on 2026-08-21 and nothing asserted it, because the guard globs on a
 #: name rather than on what the tool does.
 _UNPREFIXED_CATALOG_READS = ("compare_to_published",)
+
+#: The instance-aimed tools that are neither `registry_*` nor catalog reads, with the
+#: instance they default to. `remote_derive` uploads a spec to one deployment and gets a
+#: derived tree back; it writes to no catalog, so it takes the WRITE default — the
+#: polygon — on the standing reason that a forgotten target costs nothing on one box and
+#: is irreversible on the other. It is here rather than in the map above because that map
+#: globs on a name, and this one is called something else on purpose: the name says what
+#: it does, not which subsystem it reaches.
+_UNPREFIXED_INSTANCE_WRITES = {"remote_derive": "test"}
+
+
+async def test_the_instance_aimed_tools_that_are_not_named_registry_anything_still_aim(
+    make_client,
+):
+    """A third roster, for the same reason the second one exists.
+
+    `test_every_registry_tool_takes_a_target` globs on `registry_*` and
+    `_UNPREFIXED_CATALOG_READS` covers the reads that escape it. A tool that uploads a
+    spec to one of two instances escapes both, and getting its default wrong is the
+    class of mistake the whole target split exists to prevent.
+    """
+    async with make_client() as client:
+        schemas = await _schemas(client)
+
+    for name, expected in _UNPREFIXED_INSTANCE_WRITES.items():
+        schema = schemas[name]
+        assert "target" in schema["properties"], f"{name} cannot be aimed at an instance"
+        assert schema["properties"]["target"].get("default") == expected, (
+            f"{name} must default to {expected!r}: it reaches one of two instances, and "
+            "the polygon is where an unaimed call costs nothing"
+        )
 
 
 async def test_the_catalog_reads_that_are_not_named_registry_anything_also_require_it(make_client):

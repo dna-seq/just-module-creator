@@ -2513,3 +2513,201 @@ class LogReview(BaseModel):
         default_factory=list, description="Ordered by log, then line."
     )
     note: str = Field(description="What this does and does not claim.")
+
+
+# --------------------------------------------------------------------------- #
+# Thick or thin: where a snapshot-backed answer came from  (RM30)
+# --------------------------------------------------------------------------- #
+class RouteInfo(BaseModel):
+    """Who answered, and why — on every tool that can be answered two ways.
+
+    **This exists because `never silently fall back` needs somewhere to land.** The
+    caller cannot see that the source differed, and "the registry had no snapshot
+    either, so this went to the live service" is a different answer from "this came off
+    a local snapshot" even when the two values agree.
+    """
+
+    answered_by: str = Field(
+        description=(
+            "`local` — a snapshot on this machine served it. `registry` — the caching "
+            "proxy did. `local_online_after_registry_miss` — the proxy had no snapshot "
+            "either and this fell through to the live service, which is the slow metered "
+            "path and the one worth knowing about. `unrouted` — no snapshot lane is "
+            "involved, so there was nothing to decide."
+        )
+    )
+    lanes_needed: list[str] = Field(
+        default_factory=list,
+        description="Which snapshot lanes this answer depends on. Empty means its "
+        "sources publish no snapshot, so it is online wherever it runs.",
+    )
+    lanes_local: list[str] = Field(
+        default_factory=list, description="Which of those this machine actually holds."
+    )
+    why: str = Field(description="The decision in a sentence, including what was missing.")
+    offline: bool = Field(
+        description="Whether the offline ceiling applied. Offline outranks routing: "
+        "going to the proxy is egress, so an offline run never does."
+    )
+    target: str | None = Field(
+        default=None,
+        description="Which instance answered, when one did. Null when nothing was routed.",
+    )
+
+
+class ProxyCost(BaseModel):
+    """What a proxied answer spent of the deployment's upstream budget.
+
+    **An empty `charged` is the product, not a missing value.** It is what teaches a
+    caller which of their traffic is free — without it, "you are being throttled" has
+    two opposite histories with opposite remedies, and `limit` is the sibling that
+    separates them.
+    """
+
+    charged: dict[str, int] = Field(
+        default_factory=dict,
+        description="Requests charged per upstream. **Empty means the answer was free** "
+        "— served from the deployment's own snapshots at no egress to anyone.",
+    )
+    limit: dict[str, int] = Field(
+        default_factory=dict,
+        description="The allowance each charged upstream is metered against. gnomAD's "
+        "is ten per sixty seconds and it sells no key at any price, so there is nothing "
+        "to top up: the remedy is a provisioned snapshot, not a credential.",
+    )
+    served_from: list[str] = Field(
+        default_factory=list,
+        description="Which of the deployment's lanes served it, by lane name. Never a "
+        "filesystem path — the proxy maps those out deliberately.",
+    )
+    remedy: str | None = Field(
+        default=None,
+        description="What to do if this is being throttled, per upstream. Null when "
+        "nothing was charged.",
+    )
+
+
+class LaneStatus(BaseModel):
+    """One snapshot lane, here or there."""
+
+    lane: str = Field(description="The lane's name, as `caches.CACHE_LANES` declares it.")
+    serves: str | None = Field(
+        default=None, description="What having it gets you, in the producer's own words."
+    )
+    local: bool | None = Field(
+        default=None,
+        description="Whether this machine holds it, or **null when that cannot be asked** "
+        "— an installed enricher predating the lane registry (0.7) answers no such "
+        "question, and null is not `false`: a pass there still finds whatever it finds. "
+        "Otherwise two-valued here and three-valued on the server: a directory holding a "
+        "half-downloaded snapshot resolves as present and then fails in the pass, which "
+        "is what `JMC_SNAPSHOT_ROUTE=registry` is for.",
+    )
+    remote: str | None = Field(
+        default=None,
+        description="What the instance reports: `present`, `absent`, `partial`, or null "
+        "if it was not asked. `partial` is the one state provisioning refuses to act on "
+        "rather than overwrite, so reporting it as absent would send an operator to run "
+        "a pull that is going to decline.",
+    )
+    remote_reason: str | None = Field(
+        default=None,
+        description="Why the instance lacks it, in the sentence recorded beside the lane "
+        "upstream — including `licence_skip`, which makes a pull futile however often it "
+        "is run.",
+    )
+    env_var: str | None = Field(
+        default=None,
+        description="The variable that overrides this lane's location on this machine, "
+        "or null when the installed enricher has no lane registry to name it — the "
+        "variable is the lane's own attribute upstream (`S89`/RM184), deliberately, so "
+        "it cannot name one the resolver ignores, and there is nothing here to guess it "
+        "from.",
+    )
+    build_command: str | None = Field(
+        default=None,
+        description="How to build it here, as typed. **Not derivable from the lane "
+        "name** — there is no `drug_labels build`.",
+    )
+
+
+class CacheReport(BaseModel):
+    """What this machine can answer by itself, and what a registry would answer for it.
+
+    The question a thin client has to be able to ask before anything else: *which of
+    these tools will work here?* Reads both sides and compares them, because a lane
+    neither holds is the one case where no route exists and the honest answer is to say
+    so rather than to fetch.
+    """
+
+    snapshot_route: str = Field(
+        description="`JMC_SNAPSHOT_ROUTE` as configured: `auto` (per lane), `local` "
+        "(never route out) or `registry` (route out even where a lane exists)."
+    )
+    target: str = Field(description="Which instance was asked.")
+    lanes: list[LaneStatus] = Field(
+        default_factory=list, description="Every lane, in the producer's registry order."
+    )
+    local_count: int | None = Field(
+        default=None,
+        description="How many lanes this machine holds, or **null when the installed "
+        "enricher predates the lane registry** and the question cannot be put. Not zero.",
+    )
+    remote_count: int | None = Field(
+        default=None,
+        description="How many the instance holds, or **null if it was not asked** — "
+        "which is not zero. Null whenever the instance could not be reached or its "
+        "client cannot proxy.",
+    )
+    unreachable: list[str] = Field(
+        default_factory=list,
+        description="Lanes NEITHER side holds. These are the answers no route can "
+        "produce from a snapshot: a tool needing one of them fetches live or reports "
+        "that the question was not put.",
+    )
+    proxy_gap: str | None = Field(
+        default=None,
+        description="Null when the installed client can proxy. Otherwise the reason it "
+        "cannot, naming the release that would change it — nothing to configure.",
+    )
+    note: str = Field(description="What to do with this, in one or two sentences.")
+
+
+class DerivedTreeReport(BaseModel):
+    """A derived tree built by a registry and installed here, and what it would displace.
+
+    **The capture is the part that matters.** Re-deriving a sidecar means replacing one,
+    and a replaced `resolution.csv` can take a hand-curated `source="manual"` row with
+    it. So the local files are copied out and the copy is **read back and hashed**
+    before anything is written, and a row the incoming tree does not carry is a
+    **decision** put in front of you rather than an edit applied behind you.
+    """
+
+    spec_dir: str = Field(description="The spec directory.")
+    target: str = Field(description="Which instance built the tree.")
+    installed: list[str] = Field(
+        default_factory=list, description="Sidecars written into the spec directory."
+    )
+    capture_dir: str | None = Field(
+        default=None,
+        description="Where the previous bytes were copied, verified by re-reading and "
+        "hashing the copy. Null when nothing was displaced. **Never inside the spec "
+        "directory** — a name absent from the registry's recognised set is dropped by "
+        "the next server-side rebuild.",
+    )
+    decisions: list[str] = Field(
+        default_factory=list,
+        description="Rows present locally and absent from the incoming tree, one line "
+        "each. **Not applied.** A `source=\"manual\"` row here is hand curation the "
+        "remote derivation did not reproduce, and only you know whether that is the "
+        "archive catching up or the tree being short.",
+    )
+    dry_run: bool = Field(description="True when nothing was written.")
+    validation_errors: list[str] = Field(
+        default_factory=list,
+        description="What the instance found wrong with the spec. A broken spec is a "
+        "refusal here rather than an empty archive: this route's contract is to "
+        "produce, unlike `registry_validate`, whose contract is to report.",
+    )
+    notes: list[str] = Field(default_factory=list, description="What the run reported.")
+    next_step: str = Field(description="What to do now.")

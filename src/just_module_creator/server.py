@@ -69,6 +69,7 @@ from just_module_creator.tools.checks import register_checks
 from just_module_creator.tools.comparison import register_comparison
 from just_module_creator.tools.passes import register_bulk_passes, register_passes
 from just_module_creator.tools.provenance import register_provenance
+from just_module_creator.tools.proxy import register_proxy
 from just_module_creator.tools.refresh import register_refresh
 from just_module_creator.tools.registry import register_registry
 from just_module_creator.tools.research import register_research
@@ -183,6 +184,12 @@ def build_server(
     register_refresh(mcp, settings, services)
     register_citation_graph(mcp, settings, services)
     register_bulk_passes(mcp, settings, services)
+    # Always on, and registered even where it cannot yet run: the caching-proxy surface
+    # arrived in just-dna-registry 0.25.0, which is not on PyPI, so both tools refuse
+    # with a sentence naming the release. A tool that is absent instead answers a call
+    # by name with "Unknown tool", which teaches the caller nothing — the dead end the
+    # tier axis cost us four times over.
+    register_proxy(mcp, settings)
     register_toolbox(mcp, settings)
     if settings.toolbox == "layered":
         hide_layer_two(mcp)

@@ -202,6 +202,13 @@ GROUPS: tuple[Group, ...] = (
         7486,
     ),
     Group(
+        "snapshots",
+        "Thick or thin: which snapshot caches this machine holds, and having a registry "
+        "derive the tables it cannot.",
+        ("registry_caches", "remote_derive"),
+        2600,
+    ),
+    Group(
         "closing",
         "Finish and describe: close the module, the spec file's own schema, the whole DSL.",
         ("close_module", "describe_spec_file", "authoring_reference"),
