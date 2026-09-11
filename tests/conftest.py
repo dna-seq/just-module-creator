@@ -45,8 +45,10 @@ from just_module_creator.settings import Settings
 #
 # **The condition is NOT "the floor moved to 0.7".** `just_dna_enricher.caches` was added
 # 2026-09-02, two days after the enricher was stamped `0.7.0` — so `>=0.7.0` is satisfied
-# by an install without it and no floor says otherwise. The guard comes out when no install
-# we support can be missing the module; `routing.py` carries the measurement.
+# by an install without it and no floor says otherwise. The guard comes out when the floor
+# in `pyproject.toml` names a published release that CARRIES the module — a condition with
+# a one-line query behind it rather than a claim about what users have. `routing.py` carries
+# both the query and the measurement (`0.6.6`: absent, so the guard stays).
 CACHE_LANES: Sequence[Any] = ()
 CACHE_BASE_VAR: str = ""
 try:

@@ -59,10 +59,21 @@ log = get_logger()
 #: 2026-09-02, **two days after** the enricher was stamped `0.7.0` (2026-08-31) — so
 #: `just-dna-enricher>=0.7.0` is satisfied by an install that does not have this module,
 #: and there is no version to raise the floor to that would say otherwise. Delete the
-#: guard when no install we support can be missing the module, which is a claim about
-#: installs rather than about a release, and remember what it costs to get wrong: an
-#: unguarded import of a whole absent module takes the server down at start-up rather
-#: than failing later as a missing attribute.
+#: guard when the **floor in `pyproject.toml` names a published release that carries the
+#: module** — and remember what it costs to get wrong: an unguarded import of a whole
+#: absent module takes the server down at start-up rather than failing later as a missing
+#: attribute.
+#:
+#: **Phrased that way because the condition has to be one somebody can RUN**, or it is a
+#: schedule wearing different words. *"No install we support can be missing it"* reads
+#: crisp and rests on what users have, which is unanswerable from here; the floor is a
+#: declaration, so it is answerable — and this is the query, which needs no checkout and
+#: touches nothing installed:
+#:
+#:   uv run --isolated --no-project --with 'just-dna-enricher==<floor>' python -c \
+#:     "import importlib.util as u; print(u.find_spec('just_dna_enricher.caches'))"
+#:
+#: Measured 2026-09-11 at the floor of the day, `0.6.6`: `None`. The guard stays.
 try:
     from just_dna_enricher.caches import CACHE_LANES
 except ImportError:  # pragma: no cover — only on a pre-0.7 enricher
@@ -140,10 +151,17 @@ def local_lane_presence() -> dict[str, bool] | None:
 #: this note said that first.** Seven of these nine (`draft` and all six `hint_*`) landed
 #: on their client **after** the registry was stamped `0.25.0`: the stamp is 03:45 and
 #: `60bab83` is 04:09 the same morning. So a `0.25.0` exists that carries two of the nine,
-#: and a floor naming it would assert a surface it does not pin. Delete this probe when
-#: every method is present on every install we support — `proxy_gap` already answers that
-#: question by symbol, which is why the code was right while the note was not. Grep
-#: `_PROXY_METHODS` and `proxy_gap`.
+#: and a floor naming it would assert a surface it does not pin. Delete this probe when the
+#: **floor names a published release whose client carries all nine**, which is the same
+#: runnable form as the lane guard above rather than a claim about what users have:
+#:
+#:   uv run --isolated --no-project --with 'just-dna-registry==<floor>' python -c \
+#:     "from just_dna_registry.client import RegistryClient as C; \
+#:      print([n for n in ('cache_status','derived','draft') if not hasattr(C, n)])"
+#:
+#: Measured 2026-09-11 at the floor of the day, `0.18.1`: all nine missing. `proxy_gap`
+#: already answers the live question by symbol, which is why the code was right while the
+#: note was not. Grep `_PROXY_METHODS` and `proxy_gap`.
 _PROXY_METHODS: tuple[str, ...] = (
     "cache_status",
     "derived",
