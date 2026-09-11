@@ -23,24 +23,56 @@ which has happened twice in released code, to `licensing.csv` and to `README.md`
 
 | Roster | Lives in | Governs |
 |---|---|---|
-| `_INPUT_FILES` (12 names) | `just_dna_compiler.compiler` | what is hashed into `manifest.inputs[]` and what `content_signature` reads: `module_spec.yaml` + the 11 authored table kinds |
+| `_INPUT_FILES` | `just_dna_compiler.compiler` | what is hashed into `manifest.inputs[]` and what `content_signature` reads: `module_spec.yaml` + the authored table kinds |
 | `RECOGNIZED_SPEC_FILES` | `just_dna_registry.specfiles` | what a **storage round-trip** carries. `revalidate` and `upgrade` rebuild a spec directory from this tuple, so a name missing here is a file lost on the next rebuild |
-| `DERIVED_FILES` (9 names) | `just_dna_registry.specfiles` | what `download(layout="split")` moves into `derived/` |
+| `DERIVED_FILES` | `just_dna_registry.specfiles` | what `download(layout="split")` moves into `derived/` |
 | `SIGNATURE_INPUTS` | `just_dna_registry.specfiles` | the registry's mirror of `_INPUT_FILES` — **entirely root-level**, which is what makes `derived/` safe |
 
-`RECOGNIZED_SPEC_FILES` is worth spelling out, because it is wider than most people guess and it is
-the one that decides whether your file survives a re-publish:
+**Run the call rather than reading a number off this page**, because two packages on two release
+cadences fill these and a size written here is stale by construction:
 
 ```
-module_spec.yaml        provenance.json        README.md        verification.json
-+ every accepted spelling of every spec data file
-  = variants.csv, studies.csv
-  + the 9 table kinds (activity_phenotype, copynumbers, repeat_alleles, heteroplasmy,
-    haplotypes, allele_function, diplotypes, pgs, pharm_variants)
-  + the 7 fact tables (frequencies, gene_metrics, literature, sources.csv/licensing.csv,
-    gene_validity, clinical_assertions, gwas_effects)
-  + resolution.csv
+uv run python -c "
+from just_dna_compiler import compiler
+from just_dna_registry import specfiles as S
+print('_INPUT_FILES        ', len(compiler._INPUT_FILES))
+for n in ('RECOGNIZED_SPEC_FILES', 'DERIVED_FILES', 'SIGNATURE_INPUTS', 'FACT_CSVS'):
+    print(f'{n:20}', len(getattr(S, n)))"
 ```
+
+Measured 2026-09-11 on format/compiler 0.7.0 beside registry 0.25.0, both from sibling checkouts:
+`_INPUT_FILES` 13, `RECOGNIZED_SPEC_FILES` 27, `DERIVED_FILES` 11, `SIGNATURE_INPUTS` 13,
+`FACT_CSVS` 9. The shape of `RECOGNIZED_SPEC_FILES` is worth knowing even though its size is not,
+because it is wider than most people guess and it is the one that decides whether your file survives
+a re-publish: `module_spec.yaml`, `provenance.json`, `README.md`, `verification.json`, then every
+accepted spelling of every spec data file — `variants.csv` and `studies.csv`, the authored table
+kinds, `overrides.csv`, the fact tables including both spellings of `sources.csv`/`licensing.csv`,
+and `resolution.csv`.
+
+**Three files joined the rosters in 0.7 and one did not, which is the thing to check.**
+`overrides.csv` reached `RECOGNIZED_SPEC_FILES` **and** `SIGNATURE_INPUTS` — authored input, so its
+`value` cells move `content_signature` ([`overrides.md`](overrides.md)) — and
+`clin_sig_concordance.csv` and `clin_sig_authority_calls.csv` reached the derived rosters
+([`clin_sig_concordance.md`](clin_sig_concordance.md)). All three arrived in registry 0.25.0, which
+was our `S19`.
+
+> 🚧 **ROADWORKS — `expression_effects.csv` is in the compiler's rosters and in none of the
+> registry's.** Its parquet is in `ARTIFACT_PARQUETS` (**23** on this install, not the 22
+> `INTEGRATION_0_7.md` § 2.2 states — the AlphaGenome round landed after that count was taken), the
+> CSV is in `hints.DERIVED_TABLE_MODELS`, and it is absent from `RECOGNIZED_SPEC_FILES`,
+> `DERIVED_FILES` and `FACT_CSVS` alike. **So a server-side rebuild drops it** — the
+> `licensing.csv`-before-registry-0.16.2 failure exactly: not refused, dropped, and the only symptom
+> is a module that quietly stops carrying a table it compiled with.
+> **Guard:** do not put an `expression_effects.csv` in a module you intend to publish, and do not
+> route an author at `just-dna-enricher expression` yet. Filed as registry-tree `S22` on 2026-09-11
+> with both readings open — whether the omission is deliberate (the lane is Atlas-gated, so a
+> deployment may be unable to re-derive the table) or an oversight.
+
+**One transient directory is new and is not a roster member.** `enrich` stages its raw answers in
+`.<name>.staging/` (format `RM128`) and removes it on a successful commit unless `--keep-staging`.
+**A killed run leaves it either way, and the next run resumes from it** — so finding one is not
+damage to clean up, it is work in progress. It is not a recognised spec file and must never be
+treated as one.
 
 **Two names in there deserve attention.**
 
@@ -196,8 +228,10 @@ comments; `ModuleManifest` carries `derived` among its 34 top-level fields.
 ## The sidecar roster is derived now, so ask for it
 
 `list_tables().sidecars` was a hardcoded four until 2026-08-20 (RM10) and is now derived from
-`just_dna_registry.specfiles.FACT_CSVS + RESOLUTION_CSV` minus what is authorable — so it answers seven,
-and a fact table added upstream appears with no edit here. `licensing.csv` is absent from it *by
+`just_dna_registry.specfiles.FACT_CSVS + RESOLUTION_CSV` minus what is authorable — so a fact table
+added upstream appears with no edit here. It answered seven on registry 0.18.2 and answers ten on
+0.25.0, which is the point of deriving it: **ask the tool for the count, and if a number matters to
+you, read it off the call.** `licensing.csv` is absent from it *by
 derivation* rather than by exception: it is both produced and authorable, so it belongs to
 `describe_table`.
 

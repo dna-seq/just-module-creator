@@ -209,13 +209,77 @@ column's release because it had no column-to-release map and would not hand-keep
 exactly that, generated: `base.field_first_seen(model)`, per `(model, field)` — which matters, because
 `curator` is `0.2.0` on `VariantRow` and `0.6.5` on `StudyRow`, the very field that produced `S18`.
 
+## F92 — `expression_effects.csv` is `F88` one table over, and it arrived after the fix (registry `S22`)
+
+**State: OPEN, filed 2026-09-11.** Found while sweeping the 0.7 authored surface into the tables
+skill, which is exactly the pass `F88` had deferred — so the deferral paid for itself by finding the
+next instance of the defect it was about.
+
+**What we measured**, on format/compiler/enricher 0.7.0 beside registry 0.25.0, both editable from
+sibling checkouts:
+
+```
+expression_effects.parquet in ARTIFACT_PARQUETS: True     (23 parquets, not the 22 INTEGRATION_0_7 § 2.2 states)
+expression_effects.csv in DERIVED_TABLE_MODELS: True
+expression_effects.csv in FACT_CSVS:             False
+expression_effects.csv in DERIVED_FILES:         False
+expression_effects.csv in RECOGNIZED_SPEC_FILES: False
+```
+
+**Why it is the same defect and not a new one.** Three machine-written tables arrived in format 0.7 —
+the two concordance tables and this one. All three are hashed into `artifact.digest` via their
+parquet. Two of the three reached all three registry rosters in 0.25.0, which is `F88`'s fix; this one
+reached none of them, because the AlphaGenome round (`RM194`/`RM200`) landed *after* that sweep was
+taken. So a server-side rebuild reconstructs a spec directory without it: not refused, **dropped**,
+and the only symptom is a module that quietly stops carrying a table it compiled with. That is the
+`licensing.csv`-before-registry-0.16.2 failure, third time.
+
+**It is the derived half of `F88` rather than the authored half, which makes it the milder one.** A
+dropped `expression_effects.csv` is recoverable by re-running the pass; a dropped `overrides.csv` was
+an author's recorded judgement vanishing while the build stayed green. Still worth the note: the
+recompiled `artifact.digest` moves for a reason nothing reports.
+
+**Our mitigation is a recorded refusal rather than a workaround**, and it is deliberately narrower
+than a guard. The name sits in `KNOWN_REGISTRY_LAG` in `tests/conftest.py`, so the two-producer
+comparison keeps working over everything else and fails again the day a **fourth** name appears. We
+have **not** given the table a dossier, have **not** added it to `refresh.ROSTER`, and have **not**
+routed an author at `just-dna-enricher expression` — a table a publish may drop is not one to teach.
+`LAYOUT.md` carries it as a 🚧 ROADWORKS entry with the guard stated, which is the honest shape: the
+author is told the limit rather than protected from it by silence.
+
+**Two sub-questions are in the note and we are not guessing at either.** Whether the omission is
+deliberate — the lane is Atlas-gated and licence-bound, so a deployment may be unable to re-derive
+the table, which would be a good reason we would like written down — and, if not, whether it wants
+`FACT_CSVS` (re-derivable) or only recognition. The second decides whether our refresh roster gains
+an entry, since that is what it is pinned against.
+
+**The part worth keeping is the cross-tree guard**, offered as a shape rather than a request:
+`hints.DERIVED_TABLE_MODELS` is public and is the producer's own answer to which CSVs are
+machine-written, so an assertion that its keys are recognised by the registry would have failed the
+hour `RM194` landed instead of on a consumer's install. That is their own `@registry-completeness`
+rule — assert an equality over a walked set — applied across the tree boundary rather than inside one.
+
 ## F88 — a 0.7 spec directory loses three files on a re-publish, and one of them is an author's correction (registry `S19`)
 
-**State: FIXED IN THEIR TREE, NOT RELEASED — re-checked 2026-09-11.** `specfiles.py` now carries
-`overrides.csv`, `clin_sig_concordance.csv` and `clin_sig_authority_calls.csv`; PyPI is still
-`just-dna-registry 0.18.2`, which has none of them, and that is what `uv sync` gives us. State 2 of
-the three, and the one this file exists to keep honest: **the un-defer test is correct to stay green,
-and it flips when a release carrying the fix enters our lockfile — not when their tree looks right.**
+**State: CLOSED HERE, STILL STATE 2 UPSTREAM — the trigger fired 2026-09-11 and the work is done.**
+The distinction matters and is the reason this entry stays rather than moving: `overrides.csv`,
+`clin_sig_concordance.csv` and `clin_sig_authority_calls.csv` are all three in registry **0.25.0**,
+which is what our `preview-0.7` branch installs from `../just-dna-marketplace`. PyPI is still
+`just-dna-registry 0.18.2`, which has none of them, so `main`'s own `uv sync` still lacks the fix.
+**What changed is that the guard is now capability-gated rather than deferred.** The un-defer test
+turned over — it pinned the absence and now pins the two properties that make teaching the overlay
+safe (recognised, so a rebuild carries it; in `SIGNATURE_INPUTS`, so its `value` moves
+`content_signature`) — and it carries `needs_kept_overlay`, which skips on an install whose registry
+predates 0.25.0. So an author on PyPI-installed 0.18.2 is told nothing new and an author on 0.25.0 is
+taught the overlay, without an era branch in the code.
+
+**Teaching it is what RM29 did.** `skills/module-tables/references/overrides.md` is the dossier; the
+concordance pair got `clin_sig_concordance.md`; `module-curate` gained *the third option*, which is
+the step this finding said was owed; the `GUIDE.md` rosters and `LAYOUT.md` carry it; and four
+SYMPTOMS entries cover the file-level rules and the silence a no-op leaves. **What is still not
+taught is `expression_effects.csv`**, which is the same defect one table over and is filed as registry
+`S22` — see `F92`.
+
 The note itself is still open in their inbox; they acted before replying, which is their usual order.
 
 *(Original state, 2026-09-03: not present in registry 0.18.2 as installed, nor in their 0.23.0 tree.)*

@@ -190,6 +190,41 @@ Four answers in prose:
 - **`response` is free-form** and read straight into the report; `trait_efo_id` exists for a
   cross-module join.
 
+### Two columns arrived in 0.7
+
+**`requires_callable`** (RM70) — True when a consumer must prove this position was callable before
+concluding the sample carries **this row's genotype**. *The reference-homozygote row is the case*: a
+variant-only callset emits no record for it, so absence is not the call. False records that no such
+proof is needed, which is the ordinary case for a genotype carrying an alternate allele. Empty says
+nothing either way and **is not False**.
+
+So on a table whose whole design is that the calls can be *opposed* across genotypes, this is the
+column that stops the `0/0` row being read off a silence. The same column is on
+[`haplotypes.md`](haplotypes.md) for the adjacent reason, and is deliberately **not** on
+`diplotypes.csv` — a diplotype names a star-allele pair, not a locus.
+
+**`pmid`** (RM132) — the PubMed id grounding **this row's** claim: the literature behind this
+drug/genotype response. It exists because `studies.csv` cannot express it — **a study row attaches to
+the whole variant**, and a pharm row is a variant *and* a drug *and* a genotype, so one variant's
+three drug rows may rest on three different papers. Free-form exactly like `StudyRow.pmid`, so
+`9545397`, `[PMID: 9545397]` and a `;`-joined list are all accepted.
+
+Two lines worth keeping straight, because three columns here look like they overlap and do not:
+
+| column | job |
+|---|---|
+| `pmid` | **points at** the paper behind this row |
+| `evidence_level` | **grades** the evidence, and points at nothing |
+| `studies.csv` / `literature.csv` | **describe** a citation — per variant, and machine-verified |
+
+*The pharm row cites; `studies.csv` and `literature.csv` describe.* It is the third citation site in
+the format, beside `StudyRow.pmid` and `MeasureBinRow.pmid`.
+
+> **`RELEASE_RECORDS["0.7.0"]` does not name this column** and both are in the compiled parquet
+> (verified by compiling `reference_examples/pgx_slco1b1_simvastatin` and reading the schema). The
+> release gate is per-axis, so nothing failed; the record is a sentence short. `describe_table` is
+> the arbiter.
+
 ## Gotchas
 
 Ordered by how likely a first-timer is to hit them.

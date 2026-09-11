@@ -3,8 +3,8 @@
 | Section | Covers | The skill that owns the fix |
 |---|---|---|
 | [Authoring and loading](#authoring-and-loading) | placeholders, defaulted columns, ragged rows, vocabularies, the sign warning, an unfiltered star-allele draft | [`module-curate`](../../module-curate/GUIDE.md), [`module-draft`](../../module-draft/GUIDE.md) |
-| [Resolution and enrichment](#resolution-and-enrichment) | ref mismatch and the off-by-one, hosting verdicts, expansion, the PAR, a sidecar that did not change | [`module-enrich`](../../module-enrich/GUIDE.md), [`module-refresh`](../../module-refresh/GUIDE.md) |
-| [Validation and compile](#validation-and-compile) | validate-then-compile disagreements, VRS ids, bins, ploidy, the licence gate, the closure warning | [`module-compile`](../../module-compile/GUIDE.md), [`module-close`](../../module-close/GUIDE.md) |
+| [Resolution and enrichment](#resolution-and-enrichment) | ref mismatch and the off-by-one, hosting verdicts, expansion, the PAR, a sidecar that did not change, a leftover staging directory | [`module-enrich`](../../module-enrich/GUIDE.md), [`module-refresh`](../../module-refresh/GUIDE.md) |
+| [Validation and compile](#validation-and-compile) | validate-then-compile disagreements, VRS ids, bins, ploidy, the licence gate, the closure warning, the overlay's file-level rules, the one strict refusal | [`module-compile`](../../module-compile/GUIDE.md), [`module-close`](../../module-close/GUIDE.md) |
 | [Checks](#checks) | ACMG SF, the `clin_sig` cross-check and its two skip reasons, ClinVar citation ids, a re-draft's superseded rows | [`module-check`](../../module-check/GUIDE.md), [`module-refresh`](../../module-refresh/GUIDE.md) |
 | [This server](#this-server-not-the-toolchain) | the workspace boundary, the offline ceiling, a missing token, a contract or target mismatch, a tool that is switched off | none — the repair is configuration, not data |
 
@@ -356,10 +356,46 @@ check the coordinate.
 **`chrom=Y with two alleles on build 'GRCh37', which has no pseudoautosomal table`**
 Ploidy could not be decided on that build. The message names both readings and asserts neither.
 
+**A `.<name>.staging/` directory left in the spec directory**
+Not damage and not litter — `enrich` stages its raw answers there (format `RM128`) and removes it on a
+successful commit unless `--keep-staging`. **A killed run leaves it either way and the next run resumes
+from it**, which is the point: deleting it throws away work the next enrichment would not have to redo.
+It is not a recognised spec file, so never publish one or treat it as spec content.
+
 **`genome_build is 'GRCh37': … keyed by coordinate instead … build-relative`**
 Your identities will not join against GRCh38-keyed data (gnomAD, ClinVar, ClinGen), and the same key
 means a different locus on another build. VRS identity is GRCh38-only (RM15). Publish GRCh38
 coordinates unless the module is deliberately build-local.
+
+**`overrides.csv: <table> subject=… member=… carries more than one operation`**
+Two overlay rows under one `(table, subject, member, field)` key. An `insert` is written as several rows
+sharing that key, one per field, so a key names **one decision** — mixing an `update` with a `suppress`,
+or writing two `update`s of one field, has no defined order and is refused rather than resolved by
+last-writer-wins. Also fires on **two spellings of one key** (`member=AFR` beside `member=afr`): matching
+canonicalizes, grouping did not, so both applied and the later silently won. Spell the member as the
+derived table spells it. [`overrides.md`](../../module-tables/references/overrides.md).
+
+**`… already identifies exactly one row, so there is no group`** / **`only \`update\` may go group-scoped`**
+An empty `member` on an ungrouped table, or a group-scoped `suppress`/`insert`. A group-wide suppress
+drops every row under the subject and is not recoverable by reading the result; a group-scoped insert
+would create a row with no member value to match on. Name the member.
+
+**An overlay row that changed nothing, and no message at all**
+Expected, and it is not a bug to chase. **No overlay operation reports its own no-op** — a `suppress` with
+a typo'd subject does nothing and cannot warn — because after `reverse_module` the derived table is
+post-overlay, so update-already-equal, insert-already-present and suppress-already-absent are all true of
+a healthy module on lap two. The one finding that does fire is an `update` reaching no row.
+
+**`strict compile: verification.json records N row(s) of M whose coordinates the enricher diagnosed as
+another assembly's (genome_build_agreement)`**
+The one recorded finding `strict` refuses on (format `RM143`), and it does **not** move the strict line:
+`strict` still means *reproducible*, never *right*. This is an exception on **internal-consistency**
+grounds — one authored file contradicting another, since the module declares a `genome_build` its own
+rows are not on, so the artifact would be internally consistent and about the wrong locus. Every other
+recorded finding is a disagreement with an outside **archive**, where the archive is the stale side often
+enough that failing the build would have the format arbitrate somebody else's dispute. Read the record's
+`detail` for the rows and the rs-numbers to author instead. Compiling without `strict` builds it and says
+so. **Silent when no attestation exists** — an unenriched module is the ordinary case, not a hole.
 
 **`inconsistent reference allele`**
 Two rows share a key while disagreeing about `ref`. Exactly one can be right — a VRS allele id names the

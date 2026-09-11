@@ -175,6 +175,36 @@ Baseline: `content_signature sha256:44ad4449…` (matches the value published in
 - **`doi`** — must contain a `10.<registrant>/<suffix>` token, kept verbatim; a `doi.org` URL is
   fine. It does **not** relax the `pmid` requirement.
 
+### Three columns arrived in 0.7, and two of them are one column
+
+**`statistical_test`** (RM140) — which analysis produced *this row's* `p_value`/`effect_size`: the
+test or the model, and what it was adjusted for. `Fisher's exact (allelic)`.
+`logistic regression adjusted for age and sex`. Free text, and the distinction from the column
+beside it is the reason it exists: **`study_design` describes the study, this describes the
+analysis**, and one study routinely reports several. So a meta-analysis whose per-cohort and pooled
+estimates you cite as two rows now has somewhere to say which is which. **Absent means the paper's
+analysis was not recorded, never that it had only one.**
+
+It does **not** widen the key. `studies.csv`'s published `key.columns` is still
+`(variant_key, pmid)` — re-keying a shipped authored table is major-only — so two rows for one
+`(variant, pmid)` pair differing only in `statistical_test` are still a duplicate. Ask
+`describe_table("studies.csv")` for the live key rather than trusting this sentence.
+
+**`confidence` + `confidence_unit`** (RM160) — how far the **citing source** stands behind this
+evidence link, in that source's own units and **unconverted**: CIViC's `submitted`/`accepted`, a
+review-star count. Two things to hold:
+
+- **They travel together and the model refuses one without the other.** A magnitude with no
+  instrument beside it is a value nothing can read, and this format has paid for that once already
+  on `weight` — which is the same lesson `module-weights` is about.
+- **It is the *source's* confidence, not yours.** Your own belief in the row is what `conclusion`
+  and the weight express. This is the citing database's grading of its own evidence link, carried
+  through rather than translated, so a consumer can see the instrument and decide what it is worth.
+
+Every one of the three is optional and absent-means-nothing-was-said. A recompile of an existing
+module gains the columns in `studies.parquet`, which moves `artifact.digest` and leaves
+`content_signature` alone.
+
 ## Gotchas
 
 Ordered by how likely a first-timer is to hit them.

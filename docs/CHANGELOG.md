@@ -5,6 +5,72 @@ on our side, so agents in sibling repos are not surprised.
 
 ## Unreleased
 
+### The 0.7 authored surface reaches the skills, and the registry joins the preview overrides
+
+**RM29.** Sixteen authored fields arrived in format 0.7 and none of them was taught. The list is
+**walked from `json_schema_extra["first_seen"]`** over every authored model rather than read off a
+changelog — 53 fields stamped `0.7.0`, of which 16 are authored: `StudyRow.statistical_test`,
+`.confidence`, `.confidence_unit`; `HaplotypeRow.requires_callable`;
+`PharmVariantRow.requires_callable`, `.pmid`; all nine of `OverrideRow`; and
+`ModuleSpecConfig.authority_precedence`. **Read the key as `first_seen`, not `since`** — `since(…)` is
+the helper that writes the marker, and reading for a `since` key returns zero fields and looks like a
+clean release.
+
+`authority_precedence` is the one a per-table sweep cannot find: it is authored in `module_spec.yaml`
+and belongs to no dossier. Independently confirmed against the format tree's own walk, which returned
+the same sixteen.
+
+**Two new dossiers, and `overrides.csv` is the one that is not a column list.** It is an authoring
+*mechanism* — a declarative correction laid over a derived table at compile time, carrying the reason
+— and this plugin had code for the adjacent thing (`record_override`, `logs/authoring.log`) while
+teaching neither. `references/overrides.md` covers the three asymmetric operations, the required
+`reason` and why it sits outside `content_signature`, the no-op silence that is forced rather than
+tidy, the reachable/unreachable split on an `update` that matched nothing, and the one vindication
+signal in the format. `references/clin_sig_concordance.md` covers the concordance pair — **two tables,
+one dossier, because the join is the point** — including the two verdicts that are two questions and
+why `unchecked_count` beside a shrinking row count is an outage rather than progress.
+
+**A table this pass deliberately did not teach.** `expression_effects.csv` is in the compiler's
+`DERIVED_TABLE_MODELS` and `ARTIFACT_PARQUETS` (**23**, not the 22 `INTEGRATION_0_7.md` § 2.2 states)
+and in **none** of the registry's three rosters, so a server-side rebuild drops it. Filed as
+registry-tree `S22` the moment it was found; carried in `LAYOUT.md` as 🚧 ROADWORKS with the guard
+stated, and as `F92`. `F88` closes: the overlay is recognised *and* in `SIGNATURE_INPUTS` from
+registry 0.25.0, so `module-curate` gained *the third option* — the step that finding said was owed.
+
+**`refresh_sidecar` refuses the concordance pair, with a reason that is not the licence rows'
+reason.** `sources.csv` is refused because nothing can put it back. These two are refused because
+there is nothing to protect: their producer replaces both **whole** by design — a subject the
+authorities stopped contesting has to *leave* the record — and the judgement about a contested
+subject goes in `overrides.csv`, never into these files. So a capture would protect nothing and the
+classification afterwards would call every row withdrawn or added on every run. The refusal names the
+route that works: `enrich_module`'s clin_sig leg.
+
+**Counted claims in `LAYOUT.md` and `module-tables/GUIDE.md` became calls.** *Twenty-four tables*,
+*12 names*, *9 names*, *the 7 fact tables*, *it answers seven* — five of those were already stale, and
+two packages on two release cadences fill them. Each is now the command that answers it plus a dated
+measurement.
+
+**Four SYMPTOMS entries and one staging note.** The overlay's two file-level refusals (including the
+two-spellings case, where matching canonicalized and grouping did not), the silence a no-op leaves,
+the one recorded finding `strict` refuses on (`genome_build_agreement`, format `RM143` — an exception
+on internal-consistency grounds that does **not** move the strict line), and `.<name>.staging/`, which
+is work in progress rather than litter: a killed run leaves it either way and the next run resumes
+from it.
+
+**`preview-0.7` gained a fourth source override.** `just-dna-registry` editable from
+`../just-dna-marketplace` (a symlink to the real `../just-dna-registry`) — its unreleased 0.25.0 is
+what carries all three roster additions, and it declares `just-dna-format>=0.7.0` itself, so the two
+overrides have to travel together. The branch had become a strict **ancestor** of `main`: `da26a3d`
+deleted the sources block there and the hunk never conflicted, which is the opposite of what the
+branch note predicted.
+
+**Measured on both toolchains from one commit**: 667 passed on format 0.7.0 + registry 0.25.0 from the
+sibling trees, 657 passed / 6 skipped on the PyPI 0.6.6 + 0.18.2 that `main` installs. The overlay
+test carries a second marker for that reason — `needs_overlay` is a compiler capability and
+`needs_kept_overlay` a registry one, and neither implies the other, because format 0.7 beside a PyPI
+0.18.2 becomes a real combination the day 0.7 is cut.
+
+
 ### 0.7 adopted, and a `<0.8` ceiling so cut day is not an outage
 
 **Merged from `preview-0.7`. The version is not bumped**, and the floors stay `>=0.6.6`, because 0.7

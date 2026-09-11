@@ -215,6 +215,27 @@ filed for 1.0 and is **blocked** there, because `reverse` cannot re-emit the doc
   publishes none. The binding deliberately does **not** answer this: re-running against a fresher
   ClinVar leaves the attestation matching, so a consumer reads currency here or nowhere
   (`verification.py:21-24`).
+- **`checks[].producer`** — new in 0.7 (RM129, upstream `S71`), and it exists because the
+  block-level `producer` answers a different question. **Read the per-record one when asking whether
+  a check predates a fix**: `merge_records` carries an older run's record across unchanged and
+  restamps only the block-level field, so the block says *who last wrote this file* — which is what
+  it always meant, corrected in prose rather than in code — while the record says *who put this
+  check*. A module enriched twice can carry one check from each version.
+
+  **It is also the sharper of the two old-reader breaks in this release, and it needs no new
+  vocabulary member to fire.** `ModuleManifest` and `Compilation` do not forbid extra keys, so every
+  new top-level block is invisible to a 0.6.6 reader — but `VerificationRecord` carries
+  `extra="forbid"`, and `write_manifest` serialises with `exclude_none=False`, so the key is present
+  as `null` even on a record that never set it. A null extra key trips `extra_forbidden` exactly as a
+  populated one does. Measured upstream across sixteen freshly compiled 0.7 manifests: **15 of 16
+  parse under 0.6.6, one refused**, and the trigger is *a module with at least one check record* —
+  not a module with a verification block, since a block holding no checks parses fine. The same
+  applies to `verification.json` on disk, which is the same model.
+
+  So: a consumer that reads `verification` must be on format 0.7 before it meets a 0.7-enriched
+  module; one that ignores the block is unaffected. **Pair it with the `check` vocabulary above** —
+  that one refuses on a new *member*, this one refuses on the field's mere presence, and both are
+  fixed by the same upgrade.
 - **`closure.closed_by`** — free text, untrusted, and unchecked by anything (measured above). "Who
   they say they are, not who they are" (`just-dna-registry/src/just_dna_registry/models/api.py:213`).
 - **`closure.signature`** — optional Ed25519 over the `module_hash` string. **Absence merely warns; a

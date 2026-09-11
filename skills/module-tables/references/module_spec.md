@@ -183,6 +183,25 @@ omits them. `license:` is only checked against `licensing.csv` when that file ex
   (`compiler.py:4924-4950`).
 - **`defaults.priority`** — the one `Defaults` field with no model default (`None`), so writing it is
   the only way `defaults:` moves `content_signature`.
+- **`authority_precedence`** — new in 0.7 (RM134), and the one key here that is easiest to
+  over-read. An ordered list of the annotation authorities this module's curator weighted while
+  deciding its clinical calls, most-trusted first. **Nothing computes with it**: no tier reads it to
+  resolve anything, no check consults it, no verdict and no emitted row depends on it, and changing
+  it moves neither identity half.
+
+  **It resolves nothing because nothing can, and that is the design rather than a gap.** With five
+  authorities in a two-against-three disagreement this order says one thing and a majority says
+  another, and choosing between those rules is a judgement about how rank trades against agreement
+  count — a weighting model this format does not have and has declined to invent three times. So the
+  concordance record states the agreement state and each authority's own call
+  ([`clin_sig_concordance.md`](clin_sig_concordance.md)), a consumer holding its own model computes
+  what it likes, and **a per-variant exception is an [`overrides.csv`](overrides.md) row rather than
+  a second mechanism.**
+
+  So it is a *methodological stance, recorded* — advisory exactly like `weighting:`, `authorship:`
+  and `license:`, copied into the manifest, and **not** reconstructed by the lossy `reverse_module`.
+  Its job is to let a consumer see the stance instead of inferring it by reading every contested
+  row. **Empty means the module has not said, which is not the same as saying they weigh equally.**
 
 ## Gotchas
 

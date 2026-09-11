@@ -49,7 +49,9 @@ a hand-kept list, so where a number matters, re-run the call rather than trustin
 
 ## The dossiers
 
-`references/`, non-invokable, read on demand. Twenty-four tables plus the tree they sit in.
+`references/`, non-invokable, read on demand. Every table, plus the tree they sit in. **The count
+is the `ls`** — `ls skills/module-tables/references/` — because it has grown twice and a number
+here would be the hand-kept list this whole file argues against.
 
 **Authored — you write these.** A module carries only the ones it uses.
 
@@ -67,6 +69,7 @@ a hand-kept list, so where a number matters, re-run the call rather than trustin
 | [`heteroplasmy.md`](references/heteroplasmy.md) | an mtDNA fraction range, in one tissue | binning family; `tissue` is in the key |
 | [`pgs.md`](references/pgs.md) | a published polygenic score you point at | plus the envelope it is valid in |
 | [`licensing.md`](references/licensing.md) | what one source is, and on what terms | **author or enricher** — see *three levels*, below |
+| [`overrides.md`](references/overrides.md) | a **correction** laid over one derived row, and why | new in 0.7. Authored input, and the only way to overrule a machine-written table |
 
 **Machine-produced — you read these, and never hand-finish one.**
 
@@ -79,11 +82,14 @@ a hand-kept list, so where a number matters, re-run the call rather than trustin
 | [`gene_validity.md`](references/gene_validity.md) | does variation in this gene cause this disease | enricher (ClinGen, GenCC) |
 | [`clinical_assertions.md`](references/clinical_assertions.md) | the archive's call, **and the review behind it** | enricher (ClinVar) |
 | [`gwas_effects.md`](references/gwas_effects.md) | what a study measured, **and on what scale** | enricher (GWAS Catalog) |
+| [`clin_sig_concordance.md`](references/clin_sig_concordance.md) | where the authorities disagree with **you**, and with each other | enricher's clin_sig leg. **Two tables, one dossier** — a parent and its detail |
 | [`verification.md`](references/verification.md) | whether anything was ever *checked*, and the closure | enricher + `close` |
 
 **Ask `describe_machine_table` for these — a different tool, and the split is the point.**
-`describe_table` covers the eleven authored kinds plus both spellings of `licensing.csv` and redirects
-for the rest; `describe_machine_table` answers the live columns of all seven machine-produced tables.
+`describe_table` covers the authored kinds plus both spellings of `licensing.csv` and redirects for
+the rest; `describe_machine_table` answers the live columns of the machine-produced ones. **Neither
+roster is a number to memorise** — both are derived from upstream's own constants, and both grew in
+0.7, which is why `list_tables` is the thing to call.
 The separation carries the signal that a shared tool could not: `hand_authored` is `Literal[False]`
 here against `Literal[True]` there, so an agent sees which kind of table it is holding **in the schema,
 before it calls** — and there is no template, no linter and no requirements answer for these, because
@@ -144,6 +150,14 @@ each table's natural key. Use it rather than the tuples any prose gives you.
   disagree — draft all of them and let the consumer select); `HeteroplasmyRow.tissue` **and**
   `variant_key` (the same fraction means different things in blood and muscle, and keying on the gene
   alone makes a second real variant in that gene uncompilable).
+
+- **You disagree with a *derived* cell** — a `faf95` gnomAD wrote, a coordinate the resolver chose, a
+  `clin_sig` an authority published → that is **not** a table choice at all, and it is not an edit to
+  the sidecar either. It is an [`overrides.csv`](references/overrides.md) row, laid over the derived
+  table at compile time and carrying the reason. The sidecar stays as its producer wrote it; the
+  parquet carries your answer. **Read the derived parquet for what the module asserts and the derived
+  CSV for what the source said** — in 0.7 those are two questions with two answers. And keep it apart
+  from `record_override`, which logs a hand edit to an **authored** cell and applies nothing.
 
 **`list_tables` generates every key it reports** — `keyed_on` and `key_rule` both come from the model's
 own declaration since format 0.6.5, so the deprecated `modifier_cn` it used to name for

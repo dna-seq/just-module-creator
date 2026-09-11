@@ -154,6 +154,27 @@ attest these bytes, and close the module again."*
   module's scope from this column and `allele_function.gene`, and answers *"the module names no
   genes … so there is nothing to check against"* when both are blank.
 
+### `requires_callable` arrived in 0.7, and it is per locus for a reason
+
+**RM70.** True says a consumer must prove this position was **callable** before reading the *absence*
+of the defining allele as reference — that is, before assigning the reference haplotype at this
+locus. False records the opposite claim, **which is the one CPIC's star-allele system makes**: an
+uncalled position is taken as reference. Empty says nothing either way, and **is not False** — the
+three-valued rule, on the column where getting it wrong assigns somebody the wrong star allele.
+
+**Why it sits on the locus rather than on the module.** One gene can hold a common allele defined by
+a single SNP beside one defined partly by a structural event, and the two do not have the same
+callability requirement. A module-level flag would have to be the stricter of the two, which would
+make every ordinary SNP row demand a proof nobody needs.
+
+**`callable_from` did not travel with it, anywhere.** *"A proof is required"* and *"here is where the
+proof lives"* are different axes, and only the first one exists. So the column tells a consumer that
+it owes a check; it does not tell them where to look.
+
+It is **not** on `DiplotypeRow`, deliberately: a diplotype names a star-allele pair, not a locus.
+The same column arrived on `pharm_variants.csv` in the same item — see
+[`pharm_variants.md`](pharm_variants.md), where the case it answers is the reference-homozygote row.
+
 ## Gotchas
 
 Ordered by how likely a first-timer is to hit them.

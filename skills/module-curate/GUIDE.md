@@ -40,6 +40,40 @@ conforming it silently *degrades* the module, and the check then agrees with its
 Editing against a source needs a reason that outranks the source, **and that reason gets written
 down** — `record_override` is where it goes, after the mismatch has been reported and never before.
 
+### The third option, new in 0.7: overrule a derived cell on the record
+
+Until 0.7 a derived value you rejected left you two choices — accept it, or re-derive and hope. There
+is now a third, and it is the right one whenever the disagreement is a **judgement** rather than a
+stale snapshot: an [`overrides.csv`](../module-tables/references/overrides.md) row, laid over the
+derived table at compile time and carrying the reason it was made.
+
+**It does not edit the sidecar.** The enricher's output stays exactly as the enricher wrote it, your
+correction sits beside it, and the compiler applies one to the other on the way to the parquet. So
+**the derived parquet is what the module asserts and the derived CSV is what the source said** —
+two questions, two answers, and a reader can see both.
+
+| You have | The move |
+|---|---|
+| a `faf95`, a coordinate, a `clin_sig`, a `gene_metrics` cell you reject | an `overrides.csv` row — `update`, `insert` or `suppress`, with a required `reason` |
+| an **authored** cell you edited by hand (`weight`, `genotype`, a `conclusion`) | `record_override`, which logs and applies nothing |
+| a derived table that is merely out of date | re-run the pass — `refresh_sidecar` or `enrich_module` |
+
+Three things to know before writing one, and the rest is in the dossier:
+
+- **`reason` is required**, and that is what makes the overlay a record rather than a knob. It
+  publishes.
+- **No operation reports its own no-op**, so a `suppress` with a typo'd subject does nothing and
+  cannot warn. The one finding that does fire is an `update` reaching no row.
+- **It is safe to publish now and was not before.** The overlay reached the registry's
+  `RECOGNIZED_SPEC_FILES` in 0.25.0, so a server-side rebuild carries it. Below that release it was
+  dropped silently and the module recompiled green carrying the value you had rejected. Neither
+  release is cut yet — check `registry_health(target=…)` before relying on it.
+
+**What this does not license.** It is not a route for conforming a row to an archive that disagrees
+with it — that is the hazard two paragraphs up, arriving from the other direction. An overlay is for
+a value you have decided is wrong, with the reason written down; it is not for making a check go
+green.
+
 ## The cells a drafter deliberately leaves
 
 | Cell | Why it is a decision |
