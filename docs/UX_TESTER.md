@@ -74,9 +74,20 @@ still be worth registering with. If you want it gone, say so; it is not mine to 
   Python edits need only the subprocess restarted, never a reinstall.
 - Upstream's intake is split: `CONSUMER_SUGGESTIONS.md` is the inbox and holds **only
   unanswered** items, so an empty one means nothing is owed. Never number a new `S<n>`
-  from what it shows — run `python3 .claude/triage-state.sh --next` in
-  `../just-dna-format` (it is Python despite the `.sh` name; invoking it with `bash`
-  fails). S1–S18 are answered; S19 is filed and open.
+  from what it shows, and never from a count written down here either — ids are claimed
+  between sessions and by the other seat. This command answers it, and it is the one that
+  runs rather than the one that reads right: run from anywhere, no `cd`, and the
+  interpreter is explicit because a bare `python`/`python3` is not on this box's PATH.
+
+  ```
+  uv run python /data/sources/just-dna-format/.claude/triage-state.py --next
+  ```
+
+  **Run verbatim 2026-09-11 and it answered.** Three things this line had wrong until
+  then, each of which stops it dead: `python3` with nothing behind it, `triage-state.sh`
+  for a script since renamed to `.py`, and a relative path that needed a `cd` nobody
+  wrote. It also carried *"S1–S18 are answered; S19 is filed and open"*, which was a
+  counted claim about a moving corpus — exactly what the rule two lines up forbids.
 
 ## Filed this session
 
