@@ -49,7 +49,7 @@ There is no author column here. Use these words:
 - **enricher pass — the commands below, covering all but two of the vocabulary.** Ask
   `vocab.VALID_VERIFICATION_CHECKS` for the members rather than counting them here; the set grew by
   nine across format 0.7 and a number written down is a number that rots. Verified by AST walk over
-  the **installed** enricher, not from a docstring — as of 2026-09-11 (format 0.7.0, uncut) 24 of 26
+  the **installed** enricher, not from a docstring — as of 2026-09-11 (format 0.7.0) 24 of 26
   members are named as a literal there, the two exceptions being `dosage_sensitivity` and
   `gene_disease_validity`, which are RESERVED. **That exception list is the durable statement and the
   ratio is not**: it read 23 of 25 eight days earlier and 15 of 17 under 0.6.4, while the two names
@@ -290,7 +290,7 @@ Ordered by how likely a first-timer is to hit them.
    nothing"* and that only five of the vocabulary's members can ever be emitted, with a twelve-name
    "never emitted by anything" table. That was true on 2026-08-14 and was **fixed by RM72, shipped in
    0.6 PT2 on 2026-08-17** (`docs/RM_TOC.md:273`). Re-measured on 2026-09-11 against the installed
-   enricher (format 0.7.0, uncut) by AST walk: **all but `gene_disease_validity` and
+   enricher (format 0.7.0) by AST walk: **all but `gene_disease_validity` and
    `dosage_sensitivity` are named as literals** — 24 of 26, where the same walk answered 23 of 25 on
    2026-09-03 and 15 of 17 under 0.6.4. The README was never corrected. Treat it as a historical probe
    record, not as current behaviour — and note that both numbers in that sentence have now moved

@@ -3,6 +3,74 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.35.0] — 2026-09-12
+
+### The 0.7 adoption: PyPI floors, the probes out, and three checks that had no tool
+
+`just-dna-format`, `-compiler` and `-enricher` **0.7.0** and `just-dna-registry` **0.25.2** are all
+on PyPI, and both live instances answer `/api/v1/version` with `format: 0.7.0` / `compiler: 0.7.0` /
+`registry: 0.25.2`. The `preview-0.7` source overrides are gone; every dependency resolves from PyPI
+again.
+
+- **Floors are `>=0.7.0,<0.8` on the three and `>=0.25.2` on the registry.** The floor bump is
+  adoption, not hygiene: a registry refuses a client on a different `0.x` minor **in either
+  direction**, so the day the instances moved to 0.7 the old `>=0.6.6` floor became the broken end.
+  That is registry `S20`'s argument arriving from the far side, and it is why the `<0.8` ceiling
+  stays — a floor cannot express *one minor, both ends*. `0.25.2` is verified against the **wheel**,
+  because seven of the nine proxy methods landed on their client after the tree was stamped 0.25.0.
+- **`F87` and `F77` are both closed**, and the rollout went better than either predicted: the
+  instances were deployed *before* the wheels were published, so the write surface never went dark.
+  `F77` is closed on the call that produced it — a `studies.csv` carrying `curator` now returns
+  `valid: true` with zero findings from the live polygon — never on the handshake, which passed
+  throughout the outage it failed to notice.
+
+### The offline ceiling was being held by a missing method
+
+`registry_caches`, `remote_derive` and `remote_draft` gated on `proxy_gap()` and **not** on
+`offline`. That held the ceiling only while the installed client could not proxy, so adopting 0.25.2
+turned a read and two writes into live requests under a flag that forbids egress — the suite caught
+it by making a real `cache_status` call and counting fifteen remote lanes. The read now answers
+locally and says the ceiling is why; the two writes refuse, naming what they would have sent. The
+three assertions that should have caught this asserted the nulls without asserting the **reason**,
+which is now pinned.
+
+### Every capability probe comes out, and one becomes a test
+
+Each probe carried its own delete-condition and none of them was "the floor moved" — it was "the
+fact went unconditional", which differs because a symbol can land after its release is stamped. All
+were verified against the **published wheel**, and the commands are in the comments that replaced
+them. Gone: `proxy_gap()`, `LANES_KNOWN`, `route_for`'s `lanes_known` branch, both guarded
+`just_dna_enricher.caches` imports, `CacheReport.proxy_gap`, `CachePlan.lanes_known` and six pytest
+markers that skipped nothing. `proxy_gap`'s refusal had to change regardless: it said *"0.25.0 is not
+on PyPI yet"*, which is now false.
+
+`PROXY_METHODS` stays and is read by `test_the_floor_buys_every_proxy_method_this_layer_calls`, so a
+method retired upstream fails the suite rather than a caller's first proxied lookup — a fact you
+cannot generate is guarded by a test, and the test's subject moves rather than the test being
+deleted. `KNOWN_REGISTRY_LAG` is empty for the same reason and a name returns only with its `S<n>`.
+
+### Three checks upstream ships that had no tool here
+
+`check_acmg`, `check_repeat_bands` and `check_literature_coverage`, in a new `catalogue_checks`
+group. `check-acmg` was reachable only as `registry_check(acmg=True)` — a registry round-trip, a
+`target` and a token, to answer a question about a directory on this disk — and the other two not at
+all.
+
+**`check_repeat_bands` is what makes this a bug rather than a gap**: `draft_from_strchive` *writes*
+`repeat_alleles.csv` from the STRchive catalogue and nothing checked one against it. The surface
+named a step it could not finish, and every test passed throughout.
+
+Wrapping found what filing would not have: **`AcmgReport.clean` is `True` on a run that consulted no
+list**, because it is `not mismatches` and an unchecked verdict is not a mismatch. Filed as
+format-tree `S100` the day it was found. Our tool re-derives `clean` and `checked` against `version`,
+reports null where no list was read, and says why in `skipped`.
+
+`test_every_enricher_check_command_has_a_tool_or_a_written_reason` enumerates the enricher's
+`check-*` commands plus `litvar` from the installed Typer app and fails on one with no tool in a
+toolbox group — so the fourth gap fails the suite instead of waiting for a dogfooding run.
+
+751 tests pass, zero skips, ruff and pyright clean.
+
 ## [0.34.0] — 2026-09-12
 
 ### Parity with upstream's drafting surface, and a guard that keeps it

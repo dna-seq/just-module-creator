@@ -1463,6 +1463,15 @@ have been questions.
   through 0.6.4 is the stretch where the three did *not* move together — format and compiler sat at
   0.6.1 while the enricher took patches alone (0.6.2 for RM101's exception contract, 0.6.3 for the
   ClinVar and ClinPGx drafter fixes, 0.6.4 for S45).
+- **SUPERSEDED 2026-09-12 — both instances now serve `format: 0.7.0` / `compiler: 0.7.0` /
+  `registry: 0.25.2`, and our floor moved to match (`>=0.7.0,<0.8`, registry `>=0.25.2`, plugin
+  0.35.0).** The bullet below is kept because its *lesson* outlived its numbers and is the one that
+  keeps being re-learned: a version handshake cannot fail for the class of change that breaks a
+  publish, so **only a real `registry_check` / `registry_validate` against the instance you mean to
+  publish to proves compatibility.** That is how `F77` was closed — by re-running the call that
+  produced the refusal, not by reading `/api/v1/version`. Both `F77` and `F87` are closed; the 0.7
+  rollout went instances-first, so the write surface never went dark. Read the numbers below as a
+  dated record, never as current state — re-run `curl -s <url>/api/v1/version` and a `registry_check`.
 - **Both live registry instances serve `format: 0.6.1` while we compile with 0.6.6, and "every 0.6.x
   interoperates" is FALSE. Corrected 2026-08-31; this line said it was fine for ten days.** The
   handshake does pass — `assert_compatible()` is scoped to major.minor below 1.0, and

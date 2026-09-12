@@ -277,9 +277,29 @@ to stop reasoning about which variables matter. One derived expression costs les
 
 ## F87 — every write to a live registry dies the day format 0.7 is cut (registry `S20`; `S21` beside it)
 
-**State: filed 2026-09-03, open. This is not mitigable here and the branch does not pretend otherwise.**
-Found on `preview-0.7`, which installs the uncut 0.7 branch (`f4a9b14`) editable beside the registry
-client 0.18.2 from PyPI.
+**State: CLOSED 2026-09-12 — the day came and the ceiling held.** Filed 2026-09-03, found on
+`preview-0.7`, which installed the uncut 0.7 branch (`f4a9b14`) editable beside the registry client
+0.18.2 from PyPI.
+
+> **What actually happened is better than the prediction, and the reason is worth keeping.** The
+> feared sequence was *0.7 reaches PyPI while the instances serve 0.6.1*, which would have taken the
+> write surface off every install that upgraded. It did not happen: **the instances were deployed
+> first**. Measured 2026-09-12, `/api/v1/version` on prod and polygon both answer
+> `{"registry":"0.25.2","format":"0.7.0","compiler":"0.7.0"}`, and registry 0.25.2 — which declares
+> `just-dna-format>=0.7.0` itself — reached PyPI after that. The deployment led the release, which is
+> the ordering that makes a contract-locked pair safe to move, and it is upstream's to take credit
+> for rather than ours.
+>
+> **The `<0.8` ceiling was never the thing that saved it, and it stays anyway.** What the ceiling
+> bought is the *other* direction, which is the one that then actually arrived: with the instances on
+> 0.7.0, a 0.6.6 client is now the refused end, so the floor had to move to `>=0.7.0` in plugin
+> 0.35.0. That is the same 409 seen from the far side, and it is exactly why the bound is ours rather
+> than upstream's — a floor cannot express *one minor, both ends*. Re-verified with a real
+> `registry_validate`, not the handshake: see `F77`, closed the same day on the call that produced it.
+>
+> **What to do at 0.8** is written into `pyproject.toml` beside the pin: read `/api/v1/version` off
+> both instances, move the floor to what they serve, and only then raise the ceiling. Registry `S20`
+> — whether their client should carry a bound too — is still theirs and still open.
 
 **What we measured.** Both live instances answer `/api/v1/version` with `format: 0.6.1`. With format
 0.7.0 installed, `registry_check` and `registry_validate` come back

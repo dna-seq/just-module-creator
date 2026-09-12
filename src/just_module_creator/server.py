@@ -194,11 +194,11 @@ def build_server(
     register_refresh(mcp, settings, services)
     register_citation_graph(mcp, settings, services)
     register_bulk_passes(mcp, settings, services)
-    # Always on, and registered even where it cannot yet run: the caching-proxy surface
-    # arrived in just-dna-registry 0.25.0, which is not on PyPI, so both tools refuse
-    # with a sentence naming the release. A tool that is absent instead answers a call
-    # by name with "Unknown tool", which teaches the caller nothing — the dead end the
-    # tier axis cost us four times over.
+    # Always on. The caching-proxy surface arrived in just-dna-registry 0.25.0 and these
+    # shipped inert against it for a release, refusing with a sentence naming what would
+    # fix it — rather than not shipping, because a tool that is absent answers a call by
+    # name with "Unknown tool" and teaches the caller nothing. 0.25.2 is on PyPI and is
+    # the floor as of 0.35.0, so the refusal is gone and the path is simply live.
     register_proxy(mcp, settings)
     # Always on, and the one tool here that reads a disk. Five lanes are unpublishable —
     # PharmVar, PubMind, MANE, ACMG and the mitomap join — so neither a pull nor a proxy

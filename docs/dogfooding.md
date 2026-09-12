@@ -297,7 +297,21 @@ hidden entirely.
 ## F77 — the version handshake certifies a registry pair that then refuses our own rows, and our workspace note said the opposite
 
 **Found:** 2026-08-31, in a single-run SIRT6 benchmark on plugin 0.25.0 · **Severity:** high ·
-**Status:** filed as registry-tree `S18`, open. Symptom entry shipped; `CLAUDE.md` §11 corrected.
+**Status: CLOSED 2026-09-12** — both instances now serve format 0.7.0 and the column is accepted.
+Filed as registry-tree `S18`; symptom entry shipped; `CLAUDE.md` §11 corrected at the time.
+
+> **Closed on a measurement rather than on the handshake**, because the handshake is what made this
+> finding possible: `assert_compatible()` passed throughout the outage. The proof is the call that
+> failed, re-run — a `studies.csv` carrying `curator` put through `registry_validate` against the
+> live polygon on 2026-09-12 returns `valid: true` with **zero findings**, where it returned
+> `studies.csv line 2 [curator]: Extra inputs are not permitted`. `registry_health(target="test")`
+> reports `server_format 0.7.0 / client_format 0.7.0 / contract_compatible true` beside it.
+>
+> **What generalises is the closing procedure, not the fix.** A contract finding is closed by
+> re-running the call that produced it, never by reading a version line: the whole content of this
+> entry is that the two disagree. Plugin 0.35.0 moved the floor to `>=0.7.0,<0.8` for the same
+> reason in the opposite direction — the instances moved first, so a 0.6.6 client is now the
+> refused end.
 
 A module green through every local gate — strict validate, strict enrich, strict compile, verified
 digests, closed with eleven check records — is refused by both live registries:
