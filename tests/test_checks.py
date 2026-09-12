@@ -345,3 +345,126 @@ async def test_a_check_that_did_not_apply_counts_nothing_at_all(make_client, tmp
     for tally in (data.gene_tally, data.trait_tally):
         assert (tally.checked, tally.clean, tally.flagged) == (None, None, None)
     assert data.attestation_note == NOT_APPLICABLE
+
+
+# --------------------------------------------------------------------------- #
+# The three catalogue checks wrapped in 0.35.0
+# --------------------------------------------------------------------------- #
+async def test_acmg_on_a_module_with_no_variants_is_not_applicable_rather_than_clean(
+    make_client, tmp_path: Path
+) -> None:
+    """Same shape as `check_identifiers`, and it is the shape that ships broken.
+
+    A module with no `variants.csv` states no `acmg_sf`, so there is nothing to have
+    an opinion about — and `clean=true` would be the tool saying every stated value
+    agrees when none was read. Null throughout is the honest answer.
+    """
+    spec_dir = tmp_path / "spec"
+    spec_dir.mkdir()
+    async with make_client(offline_settings()) as client:
+        report = (await client.call_tool("check_acmg", {"spec_dir": str(spec_dir)})).data
+
+    assert report.clean is None, "a check that could not run is not a check that passed"
+    assert report.checked is None, "null is not zero — nothing was established"
+    assert report.version is None
+    assert report.attested is False
+    assert report.attestation_note == NOT_APPLICABLE
+    assert not (spec_dir / "verification.json").exists(), (
+        "a check that does not apply must not mint a verification.json"
+    )
+
+
+async def test_repeat_bands_on_a_module_with_no_repeat_table_says_which_tool_writes_one(
+    make_client, tmp_path: Path
+) -> None:
+    """The refusal routes somewhere rather than stopping at "no".
+
+    `draft_from_strchive` writes `repeat_alleles.csv` from the same catalogue this
+    would check it against, and naming it is the difference between a dead end and a
+    next step — the defect the tier axis cost this repo four times.
+    """
+    spec_dir = tmp_path / "spec"
+    spec_dir.mkdir()
+    async with make_client(offline_settings()) as client:
+        report = (await client.call_tool("check_repeat_bands", {"spec_dir": str(spec_dir)})).data
+
+    assert report.attested is False
+    assert report.compared == []
+    assert report.next_step and "draft_from_strchive" in report.next_step
+    assert not (spec_dir / "verification.json").exists()
+
+
+async def test_the_offline_ceiling_reaches_the_two_catalogue_checks_that_leave(
+    make_client, spec: Path
+) -> None:
+    """`JMC_OFFLINE` is OR-combined for these too, and it is not a per-call preference.
+
+    `check_acmg` degrades rather than refusing — offline with no `sf_list` means no
+    list is obtained, which is a **skip** that gets attested, because an empty report
+    with no record reads exactly like a clean one. That is upstream's own distinction
+    and this asserts we keep it rather than inventing a refusal.
+    """
+    async with make_client(offline_settings()) as client:
+        report = (await client.call_tool("check_acmg", {"spec_dir": str(spec)})).data
+
+    # Either a list was already provisioned on this box, or it was not; both are real
+    # answers and the assertion is about what an unavailable list must NOT report.
+    if report.version is None:
+        # Upstream's `AcmgReport.clean` is `not mismatches`, so with every verdict
+        # `unchecked` it returns **True** — a green that could not have failed (filed as
+        # format-tree `S100`). This is the assertion that pins our re-derivation: if the
+        # guard is ever dropped, a run that read no list reports as one where everything
+        # agreed, which is the single worst thing this tool could say.
+        assert report.clean is None, "no list read means no verdict, never a clean one"
+        assert report.checked is None, "null is not zero rows checked"
+        assert report.skipped, "a check that did not run must say why"
+        assert report.next_step and "not a pass" in report.next_step
+
+
+def test_every_enricher_check_command_has_a_tool_or_a_written_reason() -> None:
+    """Parity is the default and abstention is what needs an argument — 2026-09-12.
+
+    **This guard exists because the last three gaps were found by using the product,
+    not by the suite.** `check-acmg`, `check-repeat-bands` and `litvar` were all
+    upstream CLI commands with no tool here; `check_repeat_bands` was the loud one,
+    because `draft_from_strchive` writes the very table it checks, so the surface
+    taught a step it could not finish.
+
+    Scope is deliberately the CHECK commands only. A snapshot builder is a
+    provisioning concern that `provision_caches` covers, and an operator's sweep is
+    the one abstention the rule allows — so this asks about the commands that put a
+    question to a catalogue about an authored cell, which is squarely an author's job.
+    """
+    from just_dna_enricher import cli as enricher_cli
+
+    commands = {
+        c.name or (c.callback.__name__.replace("_", "-") if c.callback else "")
+        for c in enricher_cli.app.registered_commands
+    }
+    commands = {name for name in commands if name}
+    assert len(commands) > 15, "the enumeration found almost nothing — the app moved"
+    checks = {name for name in commands if name.startswith("check-")} | {"litvar"}
+    assert "check-identifiers" in checks, "the roster lost the command it is modelled on"
+
+    # Our side, enumerated from the live server rather than from a list here: a tool
+    # renamed without this being updated must fail, not quietly pass.
+    from just_module_creator import toolbox
+
+    ours = {name for group in toolbox.GROUPS for name in group.tools} | set(toolbox.CORE)
+    assert len(ours) > 40, "the tool enumeration found almost nothing"
+
+    wrapped = {
+        "check-identifiers": "check_identifiers",
+        "check-acmg": "check_acmg",
+        "check-repeat-bands": "check_repeat_bands",
+        "litvar": "check_literature_coverage",
+    }
+    unwrapped = sorted(name for name in checks if name not in wrapped)
+    assert not unwrapped, (
+        f"upstream ships check command(s) {unwrapped} with no tool here. Parity is the "
+        "default: wrap it, or write the reason in docs/just-dna-format-pending-fixes.md "
+        "and add it to this map with that note. 'Nobody has exercised it' is an argument "
+        "for a test, not for withholding it."
+    )
+    missing = sorted(tool for tool in wrapped.values() if tool not in ours)
+    assert not missing, f"{missing} are mapped here but are in no toolbox group"

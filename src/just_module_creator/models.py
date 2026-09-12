@@ -3197,3 +3197,189 @@ class ExpressionRanking(BaseModel):
     )
     effects: list[RankedExpressionEffect] = Field(default_factory=list)
     next_step: str | None = None
+
+
+# --------------------------------------------------------------------------- #
+# The three checks that put a question to a catalogue and record having put it
+# --------------------------------------------------------------------------- #
+class AcmgVerdictRow(BaseModel):
+    """One gene's verdict against the ACMG secondary-findings list.
+
+    Grouped by gene rather than listed per row, because every verdict is a statement
+    about a *gene*: a per-row list prints one sentence once per variant in it, which is
+    the aggregate-repeated-warnings rule at a different grain.
+    """
+
+    gene: str
+    rows: list[int] = Field(
+        default_factory=list,
+        description="1-based `variants.csv` lines carrying this gene, first one first.",
+    )
+    message: str = Field(description="Upstream's own sentence, verbatim.")
+
+
+class AcmgReportModel(BaseModel):
+    """Whether each authored `acmg_sf` agrees with the ACMG secondary-findings list.
+
+    **Reports, never fills.** `acmg_sf` is an authored cell this asks a registry about,
+    so writing it from the list would make the check compare the list against itself —
+    §2's one cell, one source rule, and the reason upstream marks the column
+    redundancy-bearing.
+    """
+
+    spec_dir: str
+    version: str | None = Field(
+        default=None,
+        description="The SF list version consulted (e.g. `3.2`), or **null when no list "
+        "was obtained** — in which case nothing was checked and `skipped` says why.",
+    )
+    checked: int | None = Field(
+        default=None,
+        description="Rows whose `acmg_sf` was compared. **Null means the check did not "
+        "run**; zero means it ran and the module states none.",
+    )
+    clean: bool | None = Field(
+        default=None,
+        description="True when every stated `acmg_sf` agrees. Null when nothing was "
+        "checked — a check that could not run is not a check that passed.",
+    )
+    mismatches: list[AcmgVerdictRow] = Field(
+        default_factory=list,
+        description="Genes whose authored `acmg_sf` disagrees with the list.",
+    )
+    unverifiable: list[AcmgVerdictRow] = Field(
+        default_factory=list,
+        description="Disagreements the list cannot settle — **read these before the "
+        "mismatches**. The module may be current against a list that has moved; ACMG "
+        "republishes, and conforming a row to a stale list is the archive-lags-the-edge "
+        "failure §2 exists to prevent.",
+    )
+    notes: list[AcmgVerdictRow] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    skipped: str | None = Field(
+        default=None,
+        description="Why the check did not run, when it did not. Null on a run that ran.",
+    )
+    attested: bool = Field(
+        description="Whether `verification.json` records that the question was put."
+    )
+    attestation_note: str | None = None
+    next_step: str | None = None
+
+
+class BandDifference(BaseModel):
+    """One repeat band this module and STRchive draw in different places."""
+
+    kind: str = Field(description="Upstream's finding kind, verbatim.")
+    group_key: str = Field(description="The locus group the band belongs to.")
+    locus_id: str | None = None
+    value: str | None = Field(default=None, description="What the module states.")
+    source_value: str | None = Field(default=None, description="What STRchive states.")
+    detail: str | None = None
+
+
+class RepeatBandReport(BaseModel):
+    """A module's `repeat_alleles.csv` bands against STRchive's, and what differs.
+
+    **A difference is never a defect and never fails anything.** Where a catalogue and
+    an expert author draw a repeat threshold in different places, both are claims by an
+    authority — so this reports and the compile does not care, which is the same stance
+    the `clin_sig` and PGx allele-function checks take.
+    """
+
+    spec_dir: str
+    compared: list[str] = Field(
+        default_factory=list,
+        description="Locus groups actually compared — **the denominator**. An empty list "
+        "beside an empty `findings` means nothing was compared, not that everything agreed.",
+    )
+    withheld: list[str] = Field(
+        default_factory=list,
+        description="`group: why` for a group nothing could be compared against. The "
+        "sentence is carried because the two reasons send a reader to different places — "
+        "the catalogue has never heard of this gene, versus it holds it under another motif.",
+    )
+    contested: list[str] = Field(
+        default_factory=list,
+        description="`gene/motif` keys **several catalogue loci claim** — an ambiguity in "
+        "STRchive, not a disagreement with this module. Reported, never resolved by "
+        "picking one.",
+    )
+    findings: list[BandDifference] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    mode: str | None = None
+    dataset: str | None = Field(
+        default=None, description="Which STRchive release answered."
+    )
+    attested: bool = Field(
+        description="Whether `verification.json` records that the question was put."
+    )
+    attestation_note: str | None = None
+    next_step: str | None = None
+
+
+class LocusCoverageRow(BaseModel):
+    """What a variant-literature index holds for one locus, and at which tier."""
+
+    rsid: str | None = None
+    tier: str | None = Field(
+        default=None,
+        description="Which tier answered. `unchecked` means the index was not asked or "
+        "did not answer — not that it holds nothing.",
+    )
+    asked_tier: str | None = None
+    reason: str | None = None
+    allele_pmids: int | None = None
+    position_pmids: int | None = None
+    position_only_pmids: int | None = Field(
+        default=None,
+        description="Papers on the position node and on no allele node — the residue "
+        "that names an allele the index could not pin to this row.",
+    )
+    node_id: str | None = None
+
+
+class LiteratureCoverageReportModel(BaseModel):
+    """Which papers a variant-literature index holds for this module's alleles.
+
+    **It answers *which papers discuss an already-identified allele*. It does not answer
+    *which allele a name meant*** — those read as the same question and are not. Writes
+    no row and no `sources.csv` entry: nothing here reaches a module's tables, so the
+    module does not *use* this source. What it writes is the attestation that the
+    question was put, over how many loci, and at which tier each was answered.
+    """
+
+    spec_dir: str
+    total_loci: int = Field(description="Loci the module offered to the index.")
+    answered: int = Field(
+        description="Loci the index gave an answer about — the denominator any coverage "
+        "number is out of. `total_loci - answered` were never established either way."
+    )
+    offline: bool = Field(
+        description="True when every locus was recorded as unchecked because no request "
+        "was made. A coverage number from an offline run measures nothing."
+    )
+    tiers: dict[str, int] = Field(
+        default_factory=dict, description="How many loci each tier answered, tier → count."
+    )
+    position_only_residue: int = Field(
+        default=0,
+        description="Papers across every locus sitting on a position node and no allele "
+        "node. A high residue means the index knows the site and not the allele.",
+    )
+    degraded: list[str] = Field(
+        default_factory=list,
+        description="Loci answered at a weaker tier than the one asked for.",
+    )
+    tables_read: list[str] = Field(default_factory=list)
+    tables_not_read: dict[str, str] = Field(
+        default_factory=dict, description="Table → why it was not read."
+    )
+    loci: list[LocusCoverageRow] = Field(
+        default_factory=list, description="Per locus; empty unless `detail=true`."
+    )
+    attested: bool = Field(
+        description="Whether `verification.json` records that the question was put."
+    )
+    attestation_note: str | None = None
+    next_step: str | None = None

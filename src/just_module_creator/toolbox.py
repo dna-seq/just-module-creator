@@ -136,6 +136,21 @@ GROUPS: tuple[Group, ...] = (
         ("check_identifiers", "lookup_identifier", "lookup_allele_identity"),
         4632,
     ),
+    # The three checks that ask a catalogue about an authored cell and write only the
+    # attestation. They are grouped by what they ask rather than by what they cost:
+    # each is bounded by one spec directory, and `check_repeat_bands` makes no request
+    # at all. Added 0.35.0 — all three were upstream CLI commands with no tool here,
+    # and `check_repeat_bands` was the loud one, since `draft_from_strchive` writes the
+    # very table it checks.
+    Group(
+        "catalogue_checks",
+        "Does an authored cell agree with the catalogue it names — `acmg_sf` against "
+        "the ACMG secondary-findings list, repeat bands against STRchive — and which "
+        "papers a variant-literature index holds per locus. All three report and "
+        "none repairs.",
+        ("check_acmg", "check_repeat_bands", "check_literature_coverage"),
+        3400,
+    ),
     Group(
         "pgx",
         "Draft the pharmacogenomics tables from CPIC or a ClinPGx snapshot.",

@@ -41,6 +41,13 @@ from pathlib import Path
 from anyio.to_thread import run_sync
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
+from just_dna_enricher.acmg import (
+    AcmgListUnavailable,
+    AcmgReport,
+    AcmgSfError,
+    verify_acmg_sf,
+)
+from just_dna_enricher.acmg import verification_record as acmg_record
 from just_dna_enricher.identifiers import (
     IdentifierUnavailable,
     unreachable_records,
@@ -49,13 +56,33 @@ from just_dna_enricher.identifiers import (
 from just_dna_enricher.identifiers import (
     check_identifiers as _check_identifiers,
 )
+from just_dna_enricher.litvar import LitvarError
+from just_dna_enricher.litvar import check_literature_coverage as check_literature_coverage_
+from just_dna_enricher.litvar import verification_records as litvar_records
+from just_dna_enricher.strchive import (
+    REPEAT_ALLELES_CSV,
+    StrchiveError,
+    format_group_key,
+)
+from just_dna_enricher.strchive import check_repeat_bands as check_repeat_bands_
 from just_dna_enricher.verification import record_verification
+from just_dna_enricher.verification import skipped as acmg_skipped
 from mcp.types import ToolAnnotations
 
 from just_module_creator.logging_setup import get_logger
-from just_module_creator.models import IdentifierReport, IdentifierStatus, IdentifierTally
+from just_module_creator.models import (
+    AcmgReportModel,
+    AcmgVerdictRow,
+    BandDifference,
+    IdentifierReport,
+    IdentifierStatus,
+    IdentifierTally,
+    LiteratureCoverageReportModel,
+    LocusCoverageRow,
+    RepeatBandReport,
+)
 from just_module_creator.settings import Settings
-from just_module_creator.tools._shared import resolve_dir
+from just_module_creator.tools._shared import offline_for, resolve_dir
 
 log = get_logger()
 
@@ -177,6 +204,46 @@ def _attest(records: list, target: Path) -> tuple[bool, str | None]:
         log.warning("checked, but not attested: %s", exc)
         return False, f"the check ran and is reported above; writing the record failed: {exc}"
     return True, None
+
+
+def _by_gene(verdicts: object) -> list[AcmgVerdictRow]:
+    """Upstream's own gene grouping, projected.
+
+    `AcmgReport.by_gene` yields `(gene, rows, message)`; every verdict is a statement
+    about a gene, so a per-row list would print one sentence once per variant in it.
+    That is §5's aggregate-repeated-warnings rule, and upstream already does the
+    grouping — re-deriving it here would put a second wording in front of one finding.
+    """
+    return [
+        AcmgVerdictRow(gene=gene, rows=list(rows), message=message)
+        for gene, rows, message in AcmgReport.by_gene(verdicts)  # type: ignore[arg-type]
+    ]
+
+
+def _acmg_next_step(
+    report: object, mismatches: list[AcmgVerdictRow], unverifiable: list[AcmgVerdictRow]
+) -> str:
+    """What the author has to decide, with the stale-list case named first."""
+    if unverifiable:
+        return (
+            f"{len(unverifiable)} gene(s) disagree in a way the list cannot settle — read "
+            "these first. ACMG republishes, so the module may be current against a list "
+            "that moved under it; conforming a row to a stale archive is the failure this "
+            "check must not cause. `record_override` is what keeps the reason when a row "
+            "outranks the list."
+        )
+    if mismatches:
+        return (
+            f"{len(mismatches)} gene(s) state an acmg_sf the list disagrees with. Nothing "
+            "was written: check both sides, because the row may be right and the archive "
+            "behind. A change here is a decision, not a repair."
+        )
+    if not getattr(report, "version", None):
+        return (
+            "No list version was recorded, so nothing was actually compared — that is not "
+            "a pass. Read `skipped` and `warnings`."
+        )
+    return "Every stated acmg_sf agrees with the list, and verification.json records it."
 
 
 def register_checks(mcp: FastMCP, settings: Settings) -> None:
@@ -365,4 +432,308 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
             attested=attested,
             attestation_note=note,
             detail=detail,
+        )
+
+    # ----------------------------------------------------------------------- #
+    # ACMG secondary findings
+    # ----------------------------------------------------------------------- #
+    # Wrapped 0.35.0. It is upstream's `check-acmg` and it was reachable here only as
+    # `registry_check(acmg=True)` — a registry round-trip, a `target` and a token, to
+    # answer a question about a directory on this disk. That is the shape §"Parity"
+    # names: the surface knew the check existed and gave an author no way to run it.
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Check acmg_sf against the ACMG secondary-findings list",
+            readOnlyHint=False,  # writes verification.json — an attestation, not a cell
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def check_acmg(
+        spec_dir: str,
+        offline: bool = False,
+        sf_list: str | None = None,
+    ) -> AcmgReportModel:
+        """Check every authored `acmg_sf` against the ACMG secondary-findings list.
+
+        Reports and never fills: `acmg_sf` is an authored cell this asks a registry
+        about, so writing it from the list would make the check compare the list with
+        itself and agree perfectly. What it writes is `verification.json` — the record
+        that the question was put and over how many rows, never a value.
+
+        **Read `unverifiable` before `mismatches`.** ACMG republishes, so a
+        disagreement the list cannot settle may be the module being current against an
+        archive that moved under it. A mismatch is a decision for a pilot, not a repair
+        to apply.
+
+        `sf_list` points at a built ACMG snapshot directory; omit it and a snapshot in
+        `$JUST_DNA_ACMG_CACHE` (or the shared cache base) is used, falling back to
+        scraping NCBI's page, which still serves v3.2. `provision_caches` builds the
+        lane — it is one of the five nobody may publish, since the list is Elsevier
+        supplementary material. `offline` needs `sf_list`, or nothing is checked and
+        `skipped` says so.
+        """
+        target = resolve_dir(spec_dir, settings)
+        if not (target / "variants.csv").exists():
+            return AcmgReportModel(
+                spec_dir=str(target),
+                attested=False,
+                attestation_note=NOT_APPLICABLE,
+                skipped="no variants.csv, so no row states an acmg_sf to check",
+            )
+
+        eff_offline = offline_for(settings, offline)
+        snapshot = resolve_dir(sf_list, settings) if sf_list else None
+        try:
+            report = await run_sync(
+                lambda: verify_acmg_sf(
+                    spec_dir=target,
+                    mode="best_effort",
+                    offline=eff_offline,
+                    snapshot_dir=snapshot,
+                )
+            )
+        except AcmgListUnavailable as exc:
+            # The one failure here that is a SKIP: the check applies and did not run,
+            # so upstream's own skip record is written rather than silence. An empty
+            # report with no record reads exactly like a clean one.
+            attested, note = _attest(
+                [acmg_skipped("acmg_secondary_findings", exc.skip, detail=str(exc), source="acmg")],
+                target,
+            )
+            return AcmgReportModel(
+                spec_dir=str(target),
+                attested=attested,
+                attestation_note=note,
+                skipped=str(exc),
+                next_step=(
+                    "No list was obtained, so nothing was compared — this is not a pass. "
+                    "`provision_caches` builds the `acmg` lane from the workbook that "
+                    "ships with just-dna-format, or pass `sf_list` to a built snapshot."
+                ),
+            )
+        except AcmgSfError as exc:
+            # Nothing attested: a module whose rows will not load has no bytes for an
+            # attestation to bind to. Upstream's sentence is the answer.
+            raise ToolError(f"the ACMG check could not run: {exc}") from exc
+
+        attested, note = _attest([acmg_record(report)], target)
+        mismatches = _by_gene(report.mismatches)
+        unverifiable = _by_gene(report.unverifiable)
+        # **`AcmgReport.clean` is `True` when no list was read**, because it is
+        # `not mismatches` and an unchecked verdict is not a mismatch. That is a green
+        # that could not have failed, so it is re-derived here against `version` rather
+        # than passed through. Filed as format-tree `S100`, 2026-09-12; when upstream
+        # makes it three-valued this becomes `report.clean` again and the guard goes.
+        read_a_list = report.version is not None
+        return AcmgReportModel(
+            spec_dir=str(target),
+            version=report.version,
+            checked=report.checked if read_a_list else None,
+            clean=report.clean if read_a_list else None,
+            skipped=(
+                None
+                if read_a_list
+                else (
+                    "no ACMG secondary-findings list was obtained, so every row is "
+                    "unchecked and nothing was compared — not a pass. `provision_caches` "
+                    "builds the `acmg` lane, or pass `sf_list` to a built snapshot."
+                )
+            ),
+            mismatches=mismatches,
+            unverifiable=unverifiable,
+            notes=_by_gene(report.notes),
+            warnings=list(report.warnings),
+            attested=attested,
+            attestation_note=note,
+            next_step=_acmg_next_step(report, mismatches, unverifiable),
+        )
+
+    # ----------------------------------------------------------------------- #
+    # Repeat bands
+    # ----------------------------------------------------------------------- #
+    # Wrapped 0.35.0, and the pairing is why it is a bug rather than a gap: we ship
+    # `draft_from_strchive` to WRITE `repeat_alleles.csv` and shipped nothing to check
+    # one. A drafter with no checker is the surface teaching a step it cannot finish.
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Check repeat bands against STRchive",
+            readOnlyHint=False,
+            idempotentHint=True,
+            openWorldHint=False,  # reads a provisioned snapshot; no request of its own
+        ),
+    )
+    async def check_repeat_bands(spec_dir: str, catalogue: str | None = None) -> RepeatBandReport:
+        """Compare `repeat_alleles.csv`'s bands against STRchive's, and report what differs.
+
+        **A difference never fails anything and is never applied.** Where a catalogue
+        and an expert author draw a repeat threshold in different places, both are
+        claims by an authority — so this reports and the compile does not care.
+
+        **Read `compared` before `findings`.** It is the denominator: an empty findings
+        list beside an empty `compared` means nothing was checked, which is a different
+        answer from everything agreeing. `withheld` names groups the catalogue holds no
+        band for, and `contested` the groups where the two disagree.
+
+        The catalogue's `pathogenic_max` is reported as its own finding and never
+        written: it is the longest allele the literature records, not a clinical
+        ceiling, and a module importing it would silently answer nothing for a longer
+        one. `catalogue` points at a built STRchive snapshot or a `STRchive-loci.json`;
+        omit it and the provisioned lane is used — `provision_caches` builds it, MIT.
+        """
+        target = resolve_dir(spec_dir, settings)
+        if not (target / REPEAT_ALLELES_CSV).exists():
+            return RepeatBandReport(
+                spec_dir=str(target),
+                attested=False,
+                attestation_note=(
+                    f"no {REPEAT_ALLELES_CSV} — the check does not apply, which is not a "
+                    "skip, so no verification.json was created"
+                ),
+                next_step=(
+                    f"This module authors no {REPEAT_ALLELES_CSV}. `draft_from_strchive` "
+                    "writes one from the same catalogue this would check it against."
+                ),
+            )
+
+        source = resolve_dir(catalogue, settings) if catalogue else None
+        try:
+            # `write=True` is upstream's own attestation, written where the check ran.
+            result = await run_sync(
+                lambda: check_repeat_bands_(target, catalogue=source, mode="best_effort")
+            )
+        except StrchiveError as exc:
+            raise ToolError(
+                f"the repeat-band check could not run: {exc}. A missing catalogue is the "
+                "usual cause — `provision_caches` builds the `strchive` lane, or pass "
+                "`catalogue` to a built snapshot."
+            ) from exc
+
+        # `format_group_key` is upstream's, not `str(tuple)`: its docstring says the
+        # rendered string is an API — `compile_module` copies these warnings into
+        # `manifest.compilation.warnings` and a catalog reindexing has nothing else — so
+        # rendering a key our own way would put a second spelling into somebody's report.
+        # `str(finding)` is the whole sentence for the same reason.
+        findings = [
+            BandDifference(
+                kind=f.kind,
+                group_key=format_group_key(f.group_key),
+                locus_id=f.locus_id,
+                value=None if f.value is None else str(f.value),
+                source_value=None if f.source_value is None else str(f.source_value),
+                detail=str(f),
+            )
+            for f in result.findings
+        ]
+        return RepeatBandReport(
+            spec_dir=str(target),
+            compared=[format_group_key(g) for g in result.compared],
+            withheld=[f"{format_group_key(key)}: {why}" for key, why in result.withheld],
+            contested=["/".join(str(part) for part in key) for key in result.contested],
+            findings=findings,
+            warnings=list(result.warnings),
+            mode=result.mode,
+            dataset=result.dataset,
+            attested=True,
+            next_step=(
+                f"{len(findings)} band difference(s) over {len(result.compared)} group(s) "
+                "compared. Neither side is authoritative and nothing here fails a compile: "
+                "a band you set deliberately stays. Change one only on evidence that "
+                "outranks the catalogue, and `record_override` is what keeps the reason."
+                if findings
+                else f"{len(result.compared)} group(s) compared and no band differs."
+                if result.compared
+                else "Nothing was compared — read `withheld` and `warnings`. An empty "
+                "findings list here is not agreement."
+            ),
+        )
+
+    # ----------------------------------------------------------------------- #
+    # LitVar coverage
+    # ----------------------------------------------------------------------- #
+    # Wrapped 0.35.0; new in enricher 0.7 and unwrapped until now.
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Which papers a variant-literature index holds per locus",
+            readOnlyHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def check_literature_coverage(
+        spec_dir: str,
+        offline: bool = False,
+        detail: bool = False,
+    ) -> LiteratureCoverageReportModel:
+        """Report LitVar's literature coverage per locus, naming the tier that answered.
+
+        **It answers *which papers discuss an allele that is already identified*. It
+        does not answer *which allele a name meant*** — those read as the same question
+        and are not. Measured upstream against two of the hardest records available
+        (CIViC 1955 and 2131, four candidate alleles with registered CAIDs), the index
+        returns no node for any of them: PubTator3 mines titles and abstracts, and
+        those alleles live in a table inside a paywalled paper. Do not reach for this
+        to recover an identity — `lookup_allele_identity` is that tool.
+
+        Writes no row and no `sources.csv` entry, so the module does not *use* this
+        source; what it writes is the attestation that the question was put. **Read
+        `answered` as the denominator**: `total_loci - answered` were never established
+        either way, and an `offline` run answers none of them, so a coverage number
+        from one measures nothing.
+
+        `position_only_residue` is the number worth reading — papers on a position node
+        and on no allele node, meaning the index knows the site and not the allele.
+        `detail=true` returns the per-locus rows; the summary holds otherwise.
+        """
+        target = resolve_dir(spec_dir, settings)
+        eff_offline = offline_for(settings, offline)
+        try:
+            report = await run_sync(
+                lambda: check_literature_coverage_(target, offline=eff_offline)
+            )
+        except (ValueError, LitvarError) as exc:
+            raise ToolError(f"the literature-coverage check could not run: {exc}") from exc
+
+        attested, note = _attest(list(litvar_records(report)), target)
+        tiers: dict[str, int] = {}
+        for locus in report.loci:
+            tiers[locus.tier or "unchecked"] = tiers.get(locus.tier or "unchecked", 0) + 1
+        answered = len(report.answered)
+        return LiteratureCoverageReportModel(
+            spec_dir=str(target),
+            total_loci=len(report.loci),
+            answered=answered,
+            offline=report.offline,
+            tiers=dict(sorted(tiers.items())),
+            position_only_residue=report.position_only_residue,
+            degraded=[str(locus.rsid) for locus in report.degraded if locus.rsid],
+            tables_read=list(report.tables_read),
+            tables_not_read=dict(report.tables_not_read),
+            loci=(
+                [
+                    LocusCoverageRow(
+                        rsid=locus.rsid,
+                        tier=locus.tier,
+                        asked_tier=locus.asked_tier,
+                        reason=locus.reason,
+                        allele_pmids=locus.allele_pmids,
+                        position_pmids=locus.position_pmids,
+                        position_only_pmids=locus.position_only_pmids,
+                        node_id=locus.node_id,
+                    )
+                    for locus in report.loci
+                ]
+                if detail
+                else []
+            ),
+            attested=attested,
+            attestation_note=note,
+            next_step=(
+                "Every locus is `unchecked` because the run was offline — that is not "
+                "coverage of zero, it is no measurement. Re-run with the ceiling clear."
+                if report.offline
+                else f"{answered} of {len(report.loci)} loci were answered. PMIDs found "
+                "here are candidates: take each one through `lookup_citation` before it "
+                "reaches a row, because existence never settles identity."
+            ),
         )

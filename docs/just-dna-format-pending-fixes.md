@@ -2061,3 +2061,40 @@ Worked around here with `uv add --dev grpcio-tools`, after which `atlas generate
 `just_dna_enricher.generated._alphagenome_atlas_protos.atlas_service_pb2_grpc` imports. Not filed
 upstream: it only bites a source checkout, a released wheel carries the bindings already, and the
 remedy is one line. Worth a remedy sentence in the error if the cost is ever re-measured.
+
+## F98 — three enricher check commands had no tool here, and one of them checks a table we write (format `S100` beside it)
+
+**State: fixed here in 0.35.0.** `check_acmg`, `check_repeat_bands` and
+`check_literature_coverage` now exist as tools, in a new `catalogue_checks` toolbox group.
+
+**What was missing.** Measured 2026-09-12 against the installed enricher 0.7.0, wrapping the
+`just-dna-enricher` CLI against our tool surface:
+
+| upstream command | reachable here before 0.35.0 |
+|---|---|
+| `check-acmg` | only as `registry_check(acmg=True)` — a registry round-trip, a `target` and a token, to answer a question about a directory on this disk |
+| `check-repeat-bands` | not at all |
+| `litvar` | not at all (new in enricher 0.7) |
+
+**`check-repeat-bands` is the one that makes this a bug rather than a gap.** We ship
+`draft_from_strchive`, which WRITES `repeat_alleles.csv` from the STRchive catalogue, and shipped
+nothing that checks one against it. That is the same signature as `expression_effects.csv` in `F96`
+and `list_tables` in the 0.21.0 note: **the surface names a thing it cannot do**, an author is told
+to go and run the CLI, and every test passes the whole time.
+
+**What the wrap found, which is the argument for doing it rather than filing it.**
+`AcmgReport.clean` is `not self.mismatches`, and an unchecked verdict is not a mismatch — so a run
+that obtained no SF list returns `clean=True`. Filed the same day as format-tree `S100`, with the
+repro. Our tool re-derives `clean` against `version` and reports `null` where no list was read;
+`test_the_offline_ceiling_reaches_the_two_catalogue_checks_that_leave` pins it, and the guard comes
+out when upstream makes the field three-valued. **A wrapper is a reading of upstream's report, and
+reading it is what finds this class of defect** — the hint translation in `routing.py` found two the
+same way.
+
+**The guard, so the fourth one fails the suite instead of a dogfooding run.**
+`test_every_enricher_check_command_has_a_tool_or_a_written_reason` enumerates the enricher's
+`check-*` commands plus `litvar` from the installed Typer app and requires each to map to a tool
+that is in a toolbox group. Scope is the check commands only: a snapshot builder is
+`provision_caches`' concern and an operator's sweep is the one abstention §"Parity" allows. Both
+sides of the comparison are floored, so an upstream restructure that empties either enumeration
+fails rather than reading as full parity.
