@@ -454,34 +454,55 @@ UNREFRESHABLE["clin_sig_authority_calls.csv"] = _CONCORDANCE_REFUSAL
 
 #: A third kind of refusal, and it is neither of the two above. `sources.csv` has no
 #: producer anywhere; the concordance pair has one whose shape makes a capture pointless.
-#: `expression_effects.csv` has a producer that works — `just_dna_enricher.expression`'s
-#: `enrich_expression` — and **this server wraps no tool that calls it**, because the pass
-#: needs an AlphaGenome Atlas credential and passes a `declared_use` licence check before
-#: it will write a row (`missing_credential_reason`, `check_declared_use`, and
-#: `ATLAS_CLIENT_AVAILABLE` are all in that module's public surface).
+#: `expression_effects.csv` has a producer that works and that this server now wraps —
+#: `enrich_expression_effects`, over `just_dna_enricher.expression.enrich_expression`.
 #:
-#: That gate is what makes a refresh entry actively unsafe rather than merely missing. The
-#: refresh shape is delete-then-re-derive, and on an install with no Atlas access the
-#: re-derivation writes **nothing** — which §2 already names: never classify against a
-#: partial re-derivation, because a table that was never filled reports every real row as
-#: one the source withdrew. The capture would restore the bytes, so no data is lost, and
-#: the author would still be handed a classification that measured the credential rather
-#: than the source.
+#: **The reason recorded here until 2026-09-13 was that no tool of ours called the pass,
+#: and that on a credential-less install the re-derivation would write nothing and the
+#: classification would measure the credential rather than the source. Both halves of that
+#: are now false**, and leaving them would have made this the third *"the surface names a
+#: thing it cannot do"* defect. The wrap exists; and the empty-table half was **measured**
+#: rather than reasoned about, 2026-09-13, by neutralizing the credential with
+#: `ALPHAGENOME_API_KEY=""` (present-but-empty outranks `.env`, which is
+#: `missing_credential_reason`'s own point) and calling `enrich_expression` on a scaffolded
+#: spec: it raised `ExpressionError` and wrote **no file at all**. So `SidecarPass`'s
+#: narrow-first `unavailable` arm would catch it and nothing would ever be classified
+#: against a blank. The same probe with the credential present returned 12,003 rows for a
+#: 4 kb window, which is the other half of why the reason below is the interval.
 #:
-#: **The reversal is a tool, not a roster line.** When this server wraps the expression
-#: pass — the trigger is an `enrich_expression` that can report *"no credential"* as a
-#: refusal rather than as an empty table — delete this entry and add a `ROSTER` member
-#: with `EXPRESSION_FACT_FIELDS` (`just_dna_format.expression`) as its `fact_fields`.
-#: Until then, the route that works is the enricher's own CLI, and the refusal names it.
+#: **What actually stands is narrower and is about the QUERY, not the credential.** Every
+#: other sidecar's pass takes the spec directory and re-asks the same question: the subject
+#: list is in the module. This one takes a *gene and an interval you aim*, and the rows
+#: record `dataset` — the query's date — and no `chrom`/`start`/`end`, no `min_score`, no
+#: `max_rows`. So the question that filled the file is not recoverable from the file. A
+#: refresh could only default to the gene-wide interval, which is a **different** question
+#: from a 4 kb window and ~47 minutes rather than seconds, and §2's *never classify against
+#: a partial re-derivation* then bites from the other side: rows outside the window that was
+#: actually queried would read as ones the source withdrew. Min/max of the rows on disk does
+#: not recover it either — they are filtered by `min_score` and truncated by `max_rows`.
+#:
+#: It would also have to pass a `declared_use`, and that is an assertion about how the
+#: module will be used. `enrich_expression_effects` makes the author state it; a refresh
+#: restating it on their behalf is the one cell in this pass nobody else may fill.
+#:
+#: **The reversal is an interval the row records, not a wrap.** If `ExpressionEffectRow`
+#: ever carries the queried window — or `ExpressionResult` writes it somewhere a refresh can
+#: read — delete this entry and add a `ROSTER` member with `EXPRESSION_FACT_FIELDS`
+#: (`just_dna_format.expression`) as its `fact_fields` and a `SidecarPass` whose
+#: `unavailable` is `(ExpressionUnavailable,)` **before** its `error` of `(ExpressionError,)`,
+#: because the first subclasses the second and a parent-first pair goes dead silently.
 UNREFRESHABLE["expression_effects.csv"] = (
-    "no pass here derives this table. Its producer is the enricher's `expression` pass, "
-    "which needs an AlphaGenome Atlas credential and a declared licence use before it "
-    "writes a row — so on an install without that access, re-deriving writes nothing and "
-    "the classification afterwards would report every real row as one the source "
-    "withdrew. Your bytes would be restored, and the answer would still be about the "
-    "credential rather than the source. Use `enrich_expression_effects` on a machine that "
-    "holds the credential, then re-run validate_module and compile_module. Note that it "
-    "MERGES rather than clobbers, so delete this file first if you want a clean derivation."
+    "this table records what was derived and not which question derived it, so a refresh "
+    "cannot re-ask it. Every other sidecar's pass re-reads the module's own subjects; this "
+    "one answers for a gene and an INTERVAL you aim, and a row carries `dataset` (the "
+    "query's date) with no chrom/start/end, no min_score and no max_rows. Re-deriving "
+    "could only default to the whole gene plus its flanks — a different question from the "
+    "window you asked, ~47 minutes rather than seconds, and rows outside your original "
+    "window would then read as ones the source withdrew. It would also have to declare a "
+    "licence use on your behalf, and that assertion is yours to make. Run "
+    "`enrich_expression_effects` yourself with the interval you want, then validate_module "
+    "and compile_module. It MERGES rather than clobbers, so delete this file first if you "
+    "want a clean derivation."
 )
 
 

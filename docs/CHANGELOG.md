@@ -39,9 +39,8 @@ Nothing read them, so nothing reported the gap.
   *prediction* table and reads differently from every other sidecar: a null `effect_direction` means
   the tissue tracks disagreed rather than no effect, the step from a direction to `risk`/`protective`
   is an authored judgement, filling it makes the module non-commercial with no way to run it
-  otherwise, and `refresh_sidecar` refuses it because on an install with no Atlas credential the
-  re-derivation writes nothing and the classification would measure the credential rather than the
-  source.
+  otherwise, and `refresh_sidecar` refuses it because a row records the query's *date* and not its
+  *interval*, so a re-derivation cannot re-ask the question that filled the file.
 
 ## [0.35.0] — 2026-09-12
 

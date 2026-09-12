@@ -75,12 +75,14 @@ was our `S19`.
 > and **answered and closed the same day**: it is a fact table (the compiler's `_FACT_TABLES`, beside
 > the two concordance tables), it is absent from `_INPUT_FILES` so a drop never moves
 > `content_signature`, and the registry then carried the name into all three rosters within the hour.
-> **So a publish no longer drops it, and the remaining limit is a different one**: its producer is the
-> enricher's `expression` pass, gated on an AlphaGenome Atlas credential and a declared licence use,
-> and nothing here wraps it. `refresh_sidecar` refuses the table with that sentence rather than
-> deleting bytes it could not re-derive.
+> **So a publish no longer drops it, and the remaining limit is a different one** — and it is not the
+> one recorded here until 2026-09-13, which said nothing wrapped the producer. `enrich_expression_effects`
+> does. What `refresh_sidecar` refuses on is the *query*: the pass answers for an interval the author
+> aims, a row carries `dataset` (the query's date) and no window, so a delete-then-re-derive cannot
+> re-ask the question and would classify a gene-wide answer against a windowed one.
 > **Guard, narrowed:** the table is fine to carry and fine to publish; do not expect `refresh_sidecar`
-> to rebuild it, and run `just-dna-enricher expression` on a machine holding the credential instead.
+> to rebuild it — re-run `enrich_expression_effects` yourself with the interval you want, on a machine
+> holding the Atlas credential.
 
 **One transient directory is new and is not a roster member.** `enrich` stages its raw answers in
 `.<name>.staging/` (format `RM128`) and removes it on a successful commit unless `--keep-staging`.

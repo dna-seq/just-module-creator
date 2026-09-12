@@ -267,7 +267,14 @@ _WHOLE_REWRITE_SIDECARS = frozenset(
 #: the pair above is: the name reached the registry's `FACT_CSVS` in the AlphaGenome round
 #: (our `S22`), so an install on PyPI 0.18.2 does not see it and an equality written
 #: without the intersection would pass on one toolchain and fail on the other.
-_CREDENTIAL_GATED_SIDECARS = frozenset({"expression_effects.csv"})
+#:
+#: **Named for the query, not for the credential — renamed 2026-09-13.** It was
+#: `_CREDENTIAL_GATED_SIDECARS` while the recorded reason was that no tool of ours called
+#: the pass and a credential-less re-derivation would write an empty table. Both are false
+#: now: `enrich_expression_effects` wraps it, and `enrich_expression` raises rather than
+#: returning blank. What refuses it is that a row records the query's date and not its
+#: interval, so the question cannot be re-asked from the file.
+_UNREPRODUCIBLE_QUERY_SIDECARS = frozenset({"expression_effects.csv"})
 
 
 def test_the_roster_covers_every_public_sidecar_or_says_why_not() -> None:
@@ -278,10 +285,11 @@ def test_the_roster_covers_every_public_sidecar_or_says_why_not() -> None:
     concordance pair is refused because there is nothing to protect and the refresh shape
     is wrong for them — their producer replaces both tables whole, and the judgement about
     a contested subject lives in `overrides.csv`; `expression_effects.csv` is refused
-    because its producer is gated on an Atlas credential, so on an install without one the
-    re-derivation writes nothing and the classification would measure the credential
-    rather than the source. A future table that lands in `FACT_CSVS` fails here until
-    somebody writes down which of those it is, or gives it a pass.
+    because its pass answers for an interval the author aims and the rows record the
+    query's date rather than its window, so a delete-then-re-derive cannot re-ask the
+    question and would classify a gene-wide answer against a windowed one. A future table
+    that lands in `FACT_CSVS` fails here until somebody writes down which of those it is,
+    or gives it a pass.
     """
     # Nothing is refreshable that the producers' own roster does not name.
     assert set(ROSTER) - UNPRODUCED <= set(REFRESHABLE_ROSTER), (
@@ -292,7 +300,7 @@ def test_the_roster_covers_every_public_sidecar_or_says_why_not() -> None:
     accounted = (
         {SOURCES_CSV}
         | (_WHOLE_REWRITE_SIDECARS & set(REFRESHABLE_ROSTER))
-        | (_CREDENTIAL_GATED_SIDECARS & set(REFRESHABLE_ROSTER))
+        | (_UNREPRODUCIBLE_QUERY_SIDECARS & set(REFRESHABLE_ROSTER))
     )
     assert uncovered == accounted, (
         f"an unaccounted-for fact table: {sorted(uncovered - accounted)}"

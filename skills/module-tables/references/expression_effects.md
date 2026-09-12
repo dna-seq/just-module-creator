@@ -130,12 +130,19 @@ concluding the run did nothing.
 ## Refreshing it
 
 **`refresh_sidecar` refuses this table, and the reason is neither the licence rows' nor the
-concordance pair's.** The producer exists and works, but it needs an Atlas credential and a declared
-licence use before it writes anything — so on an install without that access, the delete-then-
-re-derive shape writes nothing and the classification afterwards would report **every** real row as
-one the source withdrew. The captured bytes would be restored and the answer would still be about
-the credential rather than about the source. §2's *never classify against a partial re-derivation*,
-with a concrete trigger.
+concordance pair's.** The producer exists, works, and is wrapped here as
+`enrich_expression_effects`. What cannot be re-run is the **question**. Every other sidecar's pass
+re-reads the module's own subjects and re-asks the same thing; this one answers for a gene and an
+**interval you aim**, and a row records `dataset` — the query's date — with no `chrom`/`start`/`end`,
+no `min_score` and no `max_rows`. So the window that filled the file is not recoverable from the
+file, and min/max of the rows on disk does not recover it either: they are filtered by `min_score`
+and truncated by `max_rows`.
+
+A refresh could therefore only default to the whole gene plus its flanks — a different question,
+~47 minutes rather than seconds — and rows outside your original window would then read as ones the
+source withdrew. That is §2's *never classify against a partial re-derivation*, biting from the
+other side. It would also have to pass a `declared_use` on your behalf, and that is an assertion
+about how the module will be used rather than a fact about the data.
 
 The sidecar is merge-not-clobber, so re-running the pass **never removes a row** — a prediction the
 model no longer makes stays on disk. A clean derivation means deleting the file yourself first, on a

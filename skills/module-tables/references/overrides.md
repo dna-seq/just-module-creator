@@ -136,9 +136,11 @@ grouped, and `member` is the within-group discriminator in that table's own colu
 a compiler-recognised derived table whose parquet is in `ARTIFACT_PARQUETS`, and for one afternoon it
 was in none of the registry's three rosters, so a rebuild dropped the sidecar and an overlay against
 it corrected a table the publish did not carry — registry-tree `S22`, filed and closed 2026-09-11.
-What remains is narrower: the sidecar's producer is the enricher's `expression` pass, gated on an
-AlphaGenome Atlas credential, and nothing here wraps it — so an overlay row against this table is
-fine, and `refresh_sidecar` will refuse to rebuild the table under it.
+What remains is narrower: `enrich_expression_effects` wraps the producer, so the table is fillable
+here — but `refresh_sidecar` still refuses to rebuild it, because a row records the query's *date*
+and not its *interval*, so a re-derivation cannot re-ask the question that filled the file. An
+overlay row against this table is therefore fine and durable: nothing here will delete the rows
+underneath it.
 
 ## What this is NOT: `record_override` and `logs/authoring.log`
 
