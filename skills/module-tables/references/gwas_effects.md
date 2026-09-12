@@ -22,8 +22,8 @@
 
 > **Correction, 2026-08-20 (later than the banner above).** This file says `describe_table`
 > refuses this table and quotes that refusal's wording. Both were true when written and are not
-> now: **ask `describe_machine_table`**, which answers the live columns of all seven
-> machine-produced tables and carries `hand_authored=False` in its own schema. Nothing about
+> now: **ask `describe_machine_table`**, which answers the live columns of every
+> machine-produced table — eleven kinds at compiler 0.7.0, roster `hints.DERIVED_TABLE_MODELS` — and carries `hand_authored=False` in its own schema. Nothing about
 > *you read this, you never hand-finish it* has changed — that signal is now carried by the tool
 > split rather than by a refusal.
 
@@ -265,7 +265,7 @@ Ordered by how likely a first-timer is to hit them.
     list after enriching is the ordinary case. Note it fires at **compile**, not at `validate_spec` —
     this table's cross-check lives inside `compile_module` (`_cross_check_gwas_effects`' only call
     site is the compile-time `_gwas_effect_checks` closure), so a green `validate_module` says
-    nothing about this table's coherence. **Do not generalize that to all six sidecars**:
+    nothing about this table's coherence. **Do not generalize that to the other sidecars**:
     `_cross_check_literature` is *also* called from `validate_spec`, which is precisely why the
     literature checks carry a dedup filter and these do not.
 
@@ -343,8 +343,10 @@ Ordered by how likely a first-timer is to hit them.
 manifest *block* and renders its facets on a module card; `just-dna-lite` transports the parquet,
 hashes its bytes, and does not expose a URL for it. Not one `effect_size`, `effect_unit`,
 `effect_allele` or `trait_efo_id` is read by any consumer. That is not unique to this table —
-measured, `just-dna-lite` reads **zero** of the seven derived fact parquets (`frequencies`,
-`gene_metrics`, `literature`, `gene_validity`, `clinical_assertions`, `gwas_effects`, `resolution`);
+measured (2026-08-19, against the then-seven), `just-dna-lite` reads **zero** of the derived fact
+parquets — `frequencies`, `gene_metrics`, `literature`, `gene_validity`, `clinical_assertions`,
+`gwas_effects`, `resolution`, and the three 0.7 added (`clin_sig_concordance`,
+`clin_sig_authority_calls`, `expression_effects`) were not in that measurement;
 `sources.parquet` is the only sidecar it names.
 
 ## Blanks for just-dna-lite

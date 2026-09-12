@@ -22,8 +22,8 @@
 
 > **Correction, 2026-08-20 (later than the banner above).** This file says `describe_table`
 > refuses this table and quotes that refusal's wording. Both were true when written and are not
-> now: **ask `describe_machine_table`**, which answers the live columns of all seven
-> machine-produced tables and carries `hand_authored=False` in its own schema. Nothing about
+> now: **ask `describe_machine_table`**, which answers the live columns of every
+> machine-produced table — eleven kinds at compiler 0.7.0, roster `hints.DERIVED_TABLE_MODELS` — and carries `hand_authored=False` in its own schema. Nothing about
 > *you read this, you never hand-finish it* has changed — that signal is now carried by the tool
 > split rather than by a refusal.
 
@@ -111,7 +111,8 @@ and `manifest.verification.module_hash`. Baseline, compiled twice: **byte-identi
 | recompile under a newer toolchain | unmoved | unmoved | may move (polars / compiler version) | unmoved |
 
 1. **Inside `content_signature`? No.** `content_signature` covers the authored rows only —
-   `_INPUT_FILES` is `module_spec.yaml`, `variants.csv`, `studies.csv` and the ten table kinds. This
+   `_INPUT_FILES` is `module_spec.yaml`, `variants.csv`, `studies.csv`, `overrides.csv` and the nine
+   table kinds — thirteen names at compiler 0.7.0; `overrides.csv` joined in 0.7. This
    table's identity is its **fact** hash, `frequency_signature(rows)` over `FREQUENCY_FACT_FIELDS`:
    `variant_key`, `rsid`, `chrom`, `start`, `ref`, `alt`, `population`, `allele_count`,
    `allele_number`, `homozygote_count`, `hemizygote_count`, `faf95`, `dataset`, `genome_build`.
@@ -130,7 +131,7 @@ and `manifest.verification.module_hash`. Baseline, compiled twice: **byte-identi
    reorder and outright deletion of the file. So a re-enrichment leaves a closed module closed. (An
    `authorship:` append, by contrast, un-closes a module while moving no identity at all — different
    file, different rule.)
-4. **Part of the canary? Yes, and it is one of six tables that can produce the reading.**
+4. **Part of the canary? Yes, and it is one of the ten tables that can produce the reading** (`compiler._FACT_TABLES`, measured at 0.7.0)**.**
    MODULE_LIFECYCLE.md § 5.1: content unmoved + fact signature **moved** = nobody authored anything
    and gnomAD said something different this time. Watch `manifest.frequency.signature`. Two caveats:
    detecting it requires **delete-and-re-derive**, because merge-not-clobber never re-asks an allele
@@ -295,8 +296,8 @@ Ordered by how likely a first-timer is to hit them.
 - **No `describe_table("frequencies.csv")`.** This is the gap that matters most for an authoring
   agent. `hints.describe_table` raises `DraftError: 'frequencies.csv' is not an authored table of
   this format`, and so do `table_requirements`, `get_template` and `lint_rows`, all of which gate on
-  `draft.DRAFTABLE`. `licensing.csv` / `sources.csv` **is** in `DRAFTABLE`; the other six fact
-  sidecars are not. So there is no live-schema tool for this table — see *Ask the live schema* for
+  `draft.DRAFTABLE`. `licensing.csv` / `sources.csv` **is** in `DRAFTABLE`; the other ten derived
+  kinds are not (`hints.DERIVED_TABLE_MODELS` minus the licence table, at 0.7.0). So there is no live-schema tool for this table — see *Ask the live schema* for
   what to do instead.
 - **No cross-check against the module's `AF`.** `variants.csv` has no allele-frequency column and the
   compiler compares nothing between the two; the only linkage is the position-level orphan warning

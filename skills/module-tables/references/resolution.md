@@ -22,8 +22,8 @@
 
 > **Correction, 2026-08-20 (later than the banner above).** This file says `describe_table`
 > refuses this table and quotes that refusal's wording. Both were true when written and are not
-> now: **ask `describe_machine_table`**, which answers the live columns of all seven
-> machine-produced tables and carries `hand_authored=False` in its own schema. Nothing about
+> now: **ask `describe_machine_table`**, which answers the live columns of every
+> machine-produced table — eleven kinds at compiler 0.7.0, roster `hints.DERIVED_TABLE_MODELS` — and carries `hand_authored=False` in its own schema. Nothing about
 > *you read this, you never hand-finish it* has changed — that signal is now carried by the tool
 > split rather than by a refusal.
 

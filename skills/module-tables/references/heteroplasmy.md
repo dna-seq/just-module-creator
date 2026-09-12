@@ -45,7 +45,7 @@ variant by coordinate, so it is joinable to a VCF and can mint a VRS allele id.
 | Bin group key | `_KEY_FIELDS = ("gene", "reference_sequence", "tissue", "variant_key")` (`binning.py`), **plus `trait_efo_id`**, which `_bin_groups` appends and `_KEY_FIELDS` does not name (`binning.py`) |
 | Dedup key | **none.** Binning kinds are deliberately absent from `_TABLE_DUPE_KEYS` (`compiler.py`): an exact duplicate resolved bin surfaces as an *overlap* error, and a duplicate `unresolved` sentinel as its own error |
 | Authored or machine-produced | **authored, entirely.** No drafter emits a heteroplasmy row — `clinvar_draft` writes `variants.csv`/`studies.csv`, `pgx_draft` writes the three PGx tables, `clinpgx_draft` writes `pharm_variants.csv`. `clinvar_draft.py` only *redirects* you here |
-| Fact signature | **none.** Fact hashes exist only for the seven derived sidecars (`integrity.py`) |
+| Fact signature | **none.** Fact hashes exist only for the derived sidecars in `compiler._FACT_TABLES` — ten at compiler 0.7.0, run it (`integrity.py` holds the field sets) |
 | In `content_signature`? | **yes**, as parsed rows (`compiler.content_signature`, `compiler.py`, via `_TABLE_KINDS`) |
 | In `artifact.digest`? | **yes**, through `heteroplasmy.parquet` |
 | In the attestation binding? | **yes** — in `compiler._INPUT_FILES` (`compiler.py`), so in `manifest.inputs[]` (raw bytes) *and* in `authored_input_entries` (newline-normalized, RM82) |

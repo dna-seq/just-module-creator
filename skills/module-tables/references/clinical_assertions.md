@@ -22,8 +22,8 @@
 
 > **Correction, 2026-08-20 (later than the banner above).** This file says `describe_table`
 > refuses this table and quotes that refusal's wording. Both were true when written and are not
-> now: **ask `describe_machine_table`**, which answers the live columns of all seven
-> machine-produced tables and carries `hand_authored=False` in its own schema. Nothing about
+> now: **ask `describe_machine_table`**, which answers the live columns of every
+> machine-produced table — eleven kinds at compiler 0.7.0, roster `hints.DERIVED_TABLE_MODELS` — and carries `hand_authored=False` in its own schema. Nothing about
 > *you read this, you never hand-finish it* has changed — that signal is now carried by the tool
 > split rather than by a refusal.
 
@@ -346,7 +346,7 @@ incomplete with respect to ClinVar**, and no signature says so.
 - **The shape is not frozen.** COMPILER.md marks the `clinical_assertions.csv` path **"provisional
   shape"** (`docs/COMPILER.md:1451`), same standing as `gene_metrics.csv` and `literature.csv`.
 - **`fetched_at` will be renamed** to `updated_at`/`recorded_at` at 1.0, bundled with the
-  `sources.parquet` rename. **No signature moves** — it is outside all seven fact sets — only
+  `sources.parquet` rename. **No signature moves** — it is outside every fact-field set in `integrity.py` — only
   `artifact.digest` (`docs/ROADMAP_1_0.md:121`). Nobody authors it, so no author action is owed.
 
 ## Consumption today

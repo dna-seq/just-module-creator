@@ -22,8 +22,8 @@
 
 > **Correction, 2026-08-20 (later than the banner above).** This file says `describe_table`
 > refuses this table and quotes that refusal's wording. Both were true when written and are not
-> now: **ask `describe_machine_table`**, which answers the live columns of all seven
-> machine-produced tables and carries `hand_authored=False` in its own schema. Nothing about
+> now: **ask `describe_machine_table`**, which answers the live columns of every
+> machine-produced table — eleven kinds at compiler 0.7.0, roster `hints.DERIVED_TABLE_MODELS` — and carries `hand_authored=False` in its own schema. Nothing about
 > *you read this, you never hand-finish it* has changed — that signal is now carried by the tool
 > split rather than by a refusal.
 
@@ -152,7 +152,7 @@ and the delete.
    Note the asymmetry an author will trip on anyway — an `authorship:` append to `module_spec.yaml`
    *does* un-close a module while moving no identity at all, because `module_spec.yaml` **is** in
    `_INPUT_FILES`.
-4. **Is this table part of the canary?** Yes — it is one of the six fact signatures MODULE_LIFECYCLE
+4. **Is this table part of the canary?** Yes — it is one of the ten fact signatures (`compiler._FACT_TABLES`, measured at 0.7.0) MODULE_LIFECYCLE
    §5.1 names. Row 3 of that table (`content_signature` same, fact signature **moved**) reads "the
    upstream source said something different this time". This table can produce that reading, and it
    is the only table where it means two things: gnomAD revised a constraint number, **or** the
@@ -431,8 +431,10 @@ nothing was measured.
   reads the **gene**-curation list only, because the table's grain is a gene.
 - **No `dosage_sensitivity` verification record, ever.** RESERVED with no emitter, by decision, until
   some model carries an authored dosage claim to compare against.
-- **No `has_gene_metrics` registry facet** — see below. Four of the six fact tables got one; this is
-  not one of them.
+- **No `has_gene_metrics` registry facet** — see below. Four fact tables have one and the roster is ten, so the gap widened rather than closed:
+  re-measured 2026-09-13 against registry 0.25.2, `_V017_COLUMNS` still carries
+  `has_gene_validity`, `has_clinical_assertions`, `has_gwas_effects` and `has_frequencies` and
+  nothing else. This is not one of them.
 - **No refresh operation.** RM83, open: "merge-not-clobber means the only refresh is `rm`", and the
   blocking sub-question is that nothing records that a row was overridden.
 - **No duplicate-key enforcement.** `(gene, dataset)` is the merge key of two passes and nothing else.
@@ -503,8 +505,8 @@ upgrades — and read by nothing. A pLI of 1e-19 has never reached a human readi
 Two more asks aimed elsewhere, kept separate because they are not lite's:
 
 - **Registry:** add `has_gene_metrics` beside its four siblings in `_V017_COLUMNS` / `version_facets`,
-  so "which modules carry gene constraint or a dosage rating" is answerable. Today four of six fact
-  tables are searchable and this is not.
+  so "which modules carry gene constraint or a dosage rating" is answerable. Today four of the ten fact tables are
+  searchable (re-measured 2026-09-13 against registry 0.25.2) and this is not.
 - **Upstream enricher:** Gotchas 1, 2 and 3 above are defects with reproductions attached.
 
 ## Ask the live schema

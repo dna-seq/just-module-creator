@@ -43,7 +43,7 @@ gotcha, which is where most of this file's value is.
 | Group / dedup key | `_KEY_FIELDS = ("gene",)` **plus `trait_efo_id`**, joined in `binning._bin_groups` (`:687`). Overlap across different `trait_efo_id` is legal (pleiotropy) |
 | Duplicate-row check | **none.** Binning kinds are deliberately absent from `_TABLE_DUPE_KEYS` — an exact duplicate resolved bin is caught as an *overlap*, duplicate sentinels by a separate rule (`compiler.py`) |
 | Authored or machine-produced | **fully authored.** No drafter and no enricher pass writes a row here (see below) |
-| Fact signature | **none.** Fact signatures (`integrity.fact_signature` and friends) exist only for the seven derived sidecars in `_FACT_TABLES`; this is an authored DSL table |
+| Fact signature | **none.** Fact signatures (`integrity.fact_signature` and friends) exist only for the derived sidecars in `compiler._FACT_TABLES` — ten at compiler 0.7.0, run it; this is an authored DSL table |
 | In `content_signature`? | **yes** — `compiler.content_signature` (`:3848`) hashes `variants.csv`, `studies.csv` and every present entry of `_TABLE_KINDS` |
 | In `artifact.digest`? | **yes**, via its parquet's bytes in `ARTIFACT_PARQUETS` order |
 

@@ -40,9 +40,10 @@ for n in ('RECOGNIZED_SPEC_FILES', 'DERIVED_FILES', 'SIGNATURE_INPUTS', 'FACT_CS
     print(f'{n:20}', len(getattr(S, n)))"
 ```
 
-Measured 2026-09-11 on format/compiler 0.7.0 beside registry 0.25.0, both from sibling checkouts:
-`_INPUT_FILES` 13, `RECOGNIZED_SPEC_FILES` 27, `DERIVED_FILES` 11, `SIGNATURE_INPUTS` 13,
-`FACT_CSVS` 9. The shape of `RECOGNIZED_SPEC_FILES` is worth knowing even though its size is not,
+Measured 2026-09-13 against the installed packages (format/compiler 0.7.0, registry 0.25.2):
+`_INPUT_FILES` 13, `RECOGNIZED_SPEC_FILES` 28, `DERIVED_FILES` 12, `SIGNATURE_INPUTS` 13,
+`FACT_CSVS` 10. **Three of those five moved between registry 0.25.0 and 0.25.2** — a patch
+release — which is the whole argument for running the snippet rather than reading these numbers. The shape of `RECOGNIZED_SPEC_FILES` is worth knowing even though its size is not,
 because it is wider than most people guess and it is the one that decides whether your file survives
 a re-publish: `module_spec.yaml`, `provenance.json`, `README.md`, `verification.json`, then every
 accepted spelling of every spec data file — `variants.csv` and `studies.csv`, the authored table
@@ -169,8 +170,8 @@ appears in the wild.
 | `--with-inputs --layout split` | the same bytes, sidecars re-homed under `derived/` | keeping the authored half visually apart |
 | `--tarball` | one server-built `.tar.gz`, flat, everything | archiving |
 
-`DERIVED_FILES` — exactly what lands in the folder — is the seven fact CSVs **under their preferred
-spelling**, plus `resolution.csv`, plus `verification.json`. That last one **joined at registry 0.17**,
+`DERIVED_FILES` — exactly what lands in the folder — is the ten `FACT_CSVS` **under their preferred
+spelling** (so `licensing.csv`, never `sources.csv`), plus `resolution.csv`, plus `verification.json`. That last one **joined at registry 0.17**,
 once `manifest.derived` attested the file and a downloader therefore received it. The folder is created
 only if something actually lands in it, so a module with no sidecars gets no empty directory.
 

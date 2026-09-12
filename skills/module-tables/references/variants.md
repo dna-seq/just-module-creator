@@ -38,7 +38,7 @@ annotation engine matches sample calls against it row by row.
 | Natural / dedup key | `(variant_key, genotype)`. Duplicates are an **error** (`_cross_validate_variants`, `compiler.py`) |
 | Authored or machine-produced | **authored.** A drafter can stub rows; nothing machine-produced finishes one |
 | Who writes it | the author; `clinvar_draft.draft_gene_panel` appends partial rows. No enricher pass ever rewrites a cell in it |
-| Fact signature | **none.** Authored tables have no fact hash — see `integrity.py` for the six that do (`RESOLUTION_FACT_FIELDS`, `FREQUENCY_FACT_FIELDS`, …) |
+| Fact signature | **none.** Authored tables have no fact hash — the derived sidecars do, and the roster is `compiler._FACT_TABLES` (ten at compiler 0.7.0) with the field sets in `integrity.py`. Run it rather than counting from here |
 | In `content_signature`? | **yes**, as parsed rows (`compiler.content_signature`, `compiler.py`) |
 | In `artifact.digest`? | **yes**, via both parquets |
 | In the attestation binding? | **yes** — `variants.csv` is in `compiler._INPUT_FILES` (`compiler.py`), so it is in `manifest.inputs[]` (raw bytes) *and* in `authored_input_entries` (newline-normalized) |

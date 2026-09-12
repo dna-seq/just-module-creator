@@ -22,8 +22,8 @@
 
 > **Correction, 2026-08-20 (later than the banner above).** This file says `describe_table`
 > refuses this table and quotes that refusal's wording. Both were true when written and are not
-> now: **ask `describe_machine_table`**, which answers the live columns of all seven
-> machine-produced tables and carries `hand_authored=False` in its own schema. Nothing about
+> now: **ask `describe_machine_table`**, which answers the live columns of every
+> machine-produced table — eleven kinds at compiler 0.7.0, roster `hints.DERIVED_TABLE_MODELS` — and carries `hand_authored=False` in its own schema. Nothing about
 > *you read this, you never hand-finish it* has changed — that signal is now carried by the tool
 > split rather than by a refusal.
 
@@ -70,8 +70,9 @@ genes the module mentions (`compiler.py _cross_check_gene_validity`, warning-onl
   type (`gene_validity.py`). `dataset` is `clingen_gene_validity_<FILE CREATED date>` or
   `gencc_submissions_<latest submitted_run_date>`; `source` is `clingen` or `gencc`; `status` is
   always `"resolved"` on a written row (`gene_validity.py`); `fetched_at` is `now_utc_iso()`.
-- **drafter — none.** `gene_validity.csv` is **not in `just_dna_compiler.draft.DRAFTABLE`** (verified
-  against compiler 0.6.1: the set is the eleven authored kinds plus `sources.csv`/`licensing.csv`),
+- **drafter — none.** `gene_validity.csv` is **not in `just_dna_compiler.draft.DRAFTABLE`** (at compiler 0.7.0 the set is
+  fourteen names — twelve authored kinds plus both spellings of the licence table; run
+  `sorted(just_dna_compiler.draft.DRAFTABLE)`),
   so there is no `<<REPLACE>>` stub, no `get_template`, no `draft_from_*` route, and
   `describe_table("gene_validity.csv")` **refuses**. See *Ask the live schema*.
 - **author** — no column is *expected* of a human, and every column *may* be written by one.
@@ -161,7 +162,7 @@ that the closure cannot be carried and the recompiled manifest has no `verificat
    claimed". Measured: `module_hash` unmoved across every edit, deletion included. Note the asymmetry
    you will still trip on — an `authorship:` append to `module_spec.yaml` *does* un-close a module
    while moving no identity at all, because `module_spec.yaml` **is** in `_INPUT_FILES`.
-4. **Is this table part of the canary?** Yes — `gene_validity` is one of the six fact signatures
+4. **Is this table part of the canary?** Yes — `gene_validity` is one of the ten fact signatures (`compiler._FACT_TABLES`, measured at 0.7.0)
    MODULE_LIFECYCLE §5.1 names (`docs/MODULE_LIFECYCLE.md:230,274`). Row 3 of that table
    (`content_signature` same, fact signature **moved**) reads "the upstream source said something
    different this time", and this table can produce it. **But read Gotcha 4 before acting on it: on

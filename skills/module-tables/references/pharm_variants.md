@@ -135,7 +135,7 @@ Four answers in prose:
    and not the other. Anything that changes the bytes moves it, including a coordinate the fill wrote
    that no authored edit touched.
 3. **Does an edit un-close the module?** Yes. `compiler.authored_input_entries` binds the bytes of
-   `module_spec.yaml`, `variants.csv`, `studies.csv` and all nine table kinds, `\r\n` read as `\n`
+   `module_spec.yaml`, `variants.csv`, `studies.csv`, `overrides.csv` and all nine table kinds, `\r\n` read as `\n`
    since RM82. Measured: every one of the four mutations above dropped the `verification` block and
    produced *"verification.json is stale: the attestation was computed over different module bytes"*
    plus the no-closure warning — **including the vocabulary rewrite that moved neither identity**.
