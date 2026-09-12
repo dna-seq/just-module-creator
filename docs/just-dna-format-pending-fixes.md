@@ -423,6 +423,19 @@ machine-written, so an assertion that its keys are recognised by the registry wo
 hour `RM194` landed instead of on a consumer's install. That is their own `@registry-completeness`
 rule — assert an equality over a walked set — applied across the tree boundary rather than inside one.
 
+**Update 2026-09-13 — the refusal above survives and its REASON does not, so re-read it as a record
+rather than as current state.** Two of its clauses expired: *"this server wraps no tool that calls
+it"* (`enrich_expression_effects` shipped in 0.33.0, `F96`) and *"on an install without that access
+the re-derivation writes nothing"* — measured false, by neutralizing the key with
+`ALPHAGENOME_API_KEY=""` and calling `enrich_expression` on a scaffolded spec: it raises
+`ExpressionError` and writes no file, so nothing is ever classified against a blank. The reason now
+recorded in `tools/refresh.py` is the **query**: a row carries `dataset`, the query's date, and no
+`chrom`/`start`/`end`, `min_score` or `max_rows`, so a delete-then-re-derive cannot re-ask the
+question that filled the file and could only default to a gene-wide interval — a different question,
+~47 minutes rather than seconds. The reversal condition moved with it: an interval the row records,
+not a wrap. *"Still no dossier and no author routing"* is also spent —
+`skills/module-tables/references/expression_effects.md` exists and `module-tables/GUIDE.md` links it.
+
 ## F88 — a 0.7 spec directory loses three files on a re-publish, and one of them is an author's correction (registry `S19`)
 
 **State: CLOSED HERE, STILL STATE 2 UPSTREAM — the trigger fired 2026-09-11 and the work is done.**
@@ -2019,7 +2032,9 @@ fold the first run's rows in silently.
 
 ## F96 — the plugin does not wrap AlphaGenome at all
 
-**Ours, not upstream's. Open.** 0.7's headline consumer-facing feature is
+**Ours, not upstream's. CLOSED in 0.33.0** — the header said *Open* until 2026-09-13 while the
+entry's own last line already recorded the fix; the description below is the record of what was
+found, not current state. 0.7's headline consumer-facing feature is
 `just-dna-enricher alphagenome expression|check`, and the MCP surface has no tool for either —
 `grep -ril alphagenome src/just_module_creator/` hits only `provisioning.py`, `tools/refresh.py` and
 `models.py`, none of which is a wrapper. `expression_effects.csv` does appear in `list_tables`'

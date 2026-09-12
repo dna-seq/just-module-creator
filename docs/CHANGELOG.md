@@ -25,6 +25,19 @@ Nothing read them, so nothing reported the gap.
   `expression_effects`; `DRAFTABLE` is fourteen names. `LAYOUT.md`'s five sizes were taken on
   registry 0.25.0 and **three of the five moved by 0.25.2** — a patch release — which is the
   argument for running the snippet beside them.
+- **`refresh_sidecar`'s refusal for `expression_effects.csv` is rewritten, because both of its
+  reasons had expired.** It said *"no pass here derives this table"* one sentence before naming
+  `enrich_expression_effects`, and it said a credential-less re-derivation would write nothing and
+  make the classification report every real row as withdrawn. Measured: with the key neutralized the
+  pass **raises** and writes no file, so nothing is ever classified against a blank; with the key
+  present a 4 kb window returned 12,003 rows. What refuses it now is the **query** — a row carries
+  `dataset`, the query's date, and no `chrom`/`start`/`end`, `min_score` or `max_rows`, so a
+  delete-then-re-derive cannot re-ask the question and could only default to a gene-wide interval,
+  a different question at ~47 minutes rather than seconds. The reversal condition moved with the
+  reason, `_CREDENTIAL_GATED_SIDECARS` is renamed `_UNREPRODUCIBLE_QUERY_SIDECARS` so the guard
+  names what it guards, and the three prose restatements of the expired reason (`overrides.md`,
+  `LAYOUT.md`, `F92`) are corrected. `F96`'s header said *Open* above its own *CLOSED in 0.33.0*.
+
 - **Reconciled against upstream's new `docs/TABLES.md`, and two things came back the other way.**
   RM70 shipped in 0.7 — `requires_callable` is on `HaplotypeRow` and `PharmVariantRow` and
   deliberately not on `DiplotypeRow` — while five dossiers still listed it under *what does not
