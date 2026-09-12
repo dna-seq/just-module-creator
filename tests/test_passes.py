@@ -11,6 +11,7 @@ from __future__ import annotations
 import contextlib
 import csv
 import json
+from pathlib import Path
 
 import pytest
 from conftest import needs_progress_callback, offline_settings
@@ -416,9 +417,13 @@ def _is_subclass_by_name(child: str, parent: str) -> bool:
     kids, parents = resolve(child), resolve(parent)
     kids = kids if isinstance(kids, tuple) else (kids,)
     parents = parents if isinstance(parents, tuple) else (parents,)
-    return bool(kids) and bool(parents) and all(
-        any(isinstance(k, type) and isinstance(p, type) and issubclass(k, p) for p in parents)
-        for k in kids
+    return (
+        bool(kids)
+        and bool(parents)
+        and all(
+            any(isinstance(k, type) and isinstance(p, type) and issubclass(k, p) for p in parents)
+            for k in kids
+        )
     )
 
 
@@ -458,15 +463,12 @@ def test_the_guard_can_actually_report_a_shadowed_arm(tmp_path):
 
     one_tuple = tmp_path / "tuple.py"
     one_tuple.write_text(
-        "try:\n    pass\n"
-        "except (FrequencyEnrichmentError, FrequencyUnavailable):\n    pass\n"
+        "try:\n    pass\nexcept (FrequencyEnrichmentError, FrequencyUnavailable):\n    pass\n"
     )
     assert not _shadowed_except_arms(one_tuple)
 
 
-async def test_one_sources_outage_does_not_discard_the_other_passes(
-    monkeypatch, client, spec_dir
-):
+async def test_one_sources_outage_does_not_discard_the_other_passes(monkeypatch, client, spec_dir):
     """The bug the per-pass `try` exists for: three sources' work lost to one being down.
 
     Before this, `enrich_facts` ran the passes inside no `try` at all, so a gnomAD 503
@@ -506,9 +508,7 @@ async def test_one_sources_outage_does_not_discard_the_other_passes(
     assert set(data.passes_run) | set(data.unreachable) | set(data.failed) == requested
 
 
-async def test_an_outage_is_reported_apart_from_a_data_failure(
-    monkeypatch, client, spec_dir
-):
+async def test_an_outage_is_reported_apart_from_a_data_failure(monkeypatch, client, spec_dir):
     """`unreachable` and `failed` answer different questions and must not merge.
 
     `covered: []` reads identically whether the source had nothing or was never asked,
@@ -676,9 +676,7 @@ async def test_a_published_effect_is_reported_and_never_becomes_a_weight(
     # fake served IS a request issued: `_LinkCache` reaches the transport only on a miss, so a
     # cache hit never appears here and `requests_made` is exactly what the fake was asked.
     served_follows = [c for c in gwas_client.calls if not c.startswith("assoc:")]
-    attempted_follows = sum(
-        len(a["_links"]) for a in (_GWAS_NAMED_ALLELE, _GWAS_UNKNOWN_ALLELE)
-    )
+    attempted_follows = sum(len(a["_links"]) for a in (_GWAS_NAMED_ALLELE, _GWAS_UNKNOWN_ALLELE))
     assert data.requests_made == len(gwas_client.calls) == 1 + len(served_follows)
     assert data.requests_saved == attempted_follows - len(served_follows)
     # `1 + 2N`: N associations for the one variant queried, each naming a study and a trait. The
@@ -789,15 +787,11 @@ async def test_study_facts_off_says_the_nulls_it_leaves_are_permanent(
     assert list(csv.DictReader(written.read_text().splitlines()))[0]["pmid"] == ""
 
     # Re-running with study facts on does NOT backfill: the association id is already there.
-    await client.call_tool(
-        "enrich_gwas_effects", {"spec_dir": str(spec_dir), "study_facts": True}
-    )
+    await client.call_tool("enrich_gwas_effects", {"spec_dir": str(spec_dir), "study_facts": True})
     assert list(csv.DictReader(written.read_text().splitlines()))[0]["pmid"] == ""
 
     written.unlink()
-    await client.call_tool(
-        "enrich_gwas_effects", {"spec_dir": str(spec_dir), "study_facts": True}
-    )
+    await client.call_tool("enrich_gwas_effects", {"spec_dir": str(spec_dir), "study_facts": True})
     assert list(csv.DictReader(written.read_text().splitlines()))[0]["pmid"] == "11788828"
 
 
@@ -903,6 +897,7 @@ async def test_a_long_enrich_reports_it_is_alive_without_inventing_a_fraction(
     monkey = passes._HEARTBEAT_SECONDS
     passes._HEARTBEAT_SECONDS = slow
     try:
+
         async def _beat(ctx, seconds_running: float) -> None:
             # Exercise the heartbeat body directly: the real one wraps a network call.
             from datetime import UTC, datetime
@@ -1133,3 +1128,116 @@ async def test_enrich_hands_upstream_a_callback_and_survives_being_called(
 
     assert report.success
     assert callable(seen["callback"])
+
+
+# --------------------------------------------------------------------------- #
+# F96 — the AlphaGenome surface the plugin had no tool for
+# --------------------------------------------------------------------------- #
+_EFFECTS_HEADER = (
+    "variant_key,rsid,chrom,start,ref,alt,gene,gene_id,effect_size,effect_measure,"
+    "effect_unit,effect_direction,tracks_agreeing,tracks_total,distance_to_gene,"
+    "dataset,source,status,fetched_at\n"
+)
+
+
+def _effects(spec: Path, rows: str) -> None:
+    """Real rows, taken from the apoe_locus_compound run against the live Atlas."""
+    (spec / "expression_effects.csv").write_text(_EFFECTS_HEADER + rows)
+
+
+@pytest.fixture
+def effects_spec(tmp_path: Path) -> Path:
+    spec = tmp_path / "spec"
+    spec.mkdir()
+    (spec / "module_spec.yaml").write_text(
+        "schema_version: '1.0'\nmodule:\n  name: apoe_locus_compound\n"
+    )
+    _effects(
+        spec,
+        # strongest, unanimous, inside the gene
+        "k1,,19,44919171,A,T,APOC1,ENSG1,-1.6926,RNA_SEQ,,decrease,371,371,0,ds,alphagenome_atlas,resolved,t\n"
+        # weaker, unanimous, inside the gene
+        "k2,,19,44891698,C,G,TOMM40,ENSG2,0.2488,RNA_SEQ,,increase,371,371,0,ds,alphagenome_atlas,resolved,t\n"
+        # large but distal, and only half the tracks agree
+        "k3,,19,44890500,A,C,TOMM40,ENSG2,0.9000,RNA_SEQ,,increase,180,371,754,ds,alphagenome_atlas,resolved,t\n"
+        # no track agreed: effect_direction is null, which is an answer rather than a gap
+        "k4,,19,44892735,C,T,TOMM40,ENSG2,-0.0024,RNA_SEQ,,,0,371,0,ds,alphagenome_atlas,resolved,t\n",
+    )
+    return spec
+
+
+async def test_the_ranking_puts_the_largest_predicted_effect_first(make_client, effects_spec):
+    async with make_client(offline_settings()) as client:
+        out = await client.call_tool(
+            "top_expression_effects", {"spec_dir": str(effects_spec), "limit": 10}
+        )
+    body = json.loads(out.content[0].text)
+    assert body["total_rows"] == 4
+    assert body["genes"] == ["APOC1", "TOMM40"]
+    assert [e["start"] for e in body["effects"]] == [44919171, 44890500, 44891698, 44892735]
+
+
+async def test_a_row_no_track_agreed_on_is_counted_rather_than_dropped(make_client, effects_spec):
+    """`effect_direction` null means no track agreed — a real answer about the variant.
+
+    Dropping it would report the sidecar as smaller than it is, which is the
+    `None`-is-not-`False` rule at row granularity.
+    """
+    async with make_client(offline_settings()) as client:
+        out = await client.call_tool(
+            "top_expression_effects", {"spec_dir": str(effects_spec), "limit": 10}
+        )
+    body = json.loads(out.content[0].text)
+    assert body["direction_unknown"] == 1
+    assert body["matched"] == 4
+    null_row = next(e for e in body["effects"] if e["start"] == 44892735)
+    assert null_row["effect_direction"] is None
+    assert null_row["tracks_agreeing"] == 0
+
+
+async def test_consensus_and_in_gene_filters_narrow_without_reordering(make_client, effects_spec):
+    async with make_client(offline_settings()) as client:
+        out = await client.call_tool(
+            "top_expression_effects",
+            {"spec_dir": str(effects_spec), "min_consensus": 1.0, "in_gene_only": True},
+        )
+    body = json.loads(out.content[0].text)
+    # k3 fails consensus AND distance; k4 is unanimous-zero, which is consensus 0.0
+    assert [e["start"] for e in body["effects"]] == [44919171, 44891698]
+    assert body["matched"] == 2
+    assert body["total_rows"] == 4, "the denominator is the file, not the filtered set"
+
+
+async def test_no_sidecar_says_nothing_to_rank_rather_than_no_effect(make_client, tmp_path):
+    spec = tmp_path / "empty"
+    spec.mkdir()
+    async with make_client(offline_settings()) as client:
+        out = await client.call_tool("top_expression_effects", {"spec_dir": str(spec)})
+    body = json.loads(out.content[0].text)
+    assert body["total_rows"] == 0
+    assert "not the same as no effect being predicted" in body["next_step"]
+
+
+async def test_offline_refuses_the_atlas_rather_than_answering_from_a_cache(make_client, tmp_path):
+    """There is no snapshot lane for the Atlas, so offline is a refusal, not a no-op.
+
+    A no-op would report the question as asked and answered locally, which it was not.
+    """
+    spec = tmp_path / "spec"
+    spec.mkdir()
+    async with make_client(offline_settings()) as client:
+        out = await client.call_tool(
+            "enrich_expression_effects", {"spec_dir": str(spec), "gene": "TOMM40"}
+        )
+    body = json.loads(out.content[0].text)
+    assert body["success"] is False
+    assert body["written"] is None, "null means nothing counted, never zero written"
+    assert "not asked rather than answered from a cache" in " ".join(body["warnings"])
+
+
+async def test_the_pass_says_it_makes_the_module_non_commercial(make_client):
+    """The licence consequence has to be readable before the call, not after."""
+    async with make_client(offline_settings()) as client:
+        tool = next(t for t in await client.list_tools() if t.name == "enrich_expression_effects")
+    assert "non-commercial" in (tool.description or "").lower()
+    assert tool.inputSchema["properties"]["use"]["default"] == "non-commercial"

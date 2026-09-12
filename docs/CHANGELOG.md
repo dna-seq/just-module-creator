@@ -3,6 +3,68 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.33.0] — 2026-09-12
+
+### The AlphaGenome surface the plugin named and had no tool for
+
+0.7's headline consumer-facing feature is `just-dna-enricher alphagenome expression`, and the MCP
+surface wrapped none of it — while `list_tables` listed `expression_effects.csv` among the sidecars.
+The surface named a table an author had no way to fill, which is the defect the tier removal in
+0.21.0 existed to stop: **the surface taught a step it could not run.** Found by building a real APOE
+module with it (`F96`), which meant driving the enricher CLI by hand — the ad-hoc route the product
+exists to remove.
+
+- **`enrich_expression_effects`** fills `expression_effects.csv` for an interval. Corpus-sized and it
+  says so: a whole gene plus its attribution flanks is ~3.1M SNVs and about 47 minutes, so
+  `chrom`/`start`/`end` take a window instead. `use` defaults to `non-commercial` because AlphaGenome
+  **Atlas** output is non-commercial-only, and the report says outright that running it binds the
+  whole artifact to `commercial_use=false`. `offline` is a **refusal**, not a no-op — there is no
+  snapshot lane, so the question is not asked rather than answered from a cache.
+- **`top_expression_effects`** reads the sidecar back strongest-first. The pass answers for every
+  scored variant in the window, so a 4 kb query returns ~12,000 rows and a gene-wide one millions;
+  without this an author has no way to find the handful worth reading, which is exactly the ad-hoc
+  polars script the dogfooding run had to write. Rows where no track agreed keep a null
+  `effect_direction` and are **counted in `direction_unknown` rather than dropped**.
+
+**Neither tool takes the step from a predicted expression direction to a clinical one**, because
+upstream's own field documentation says that step is not derivable — *raising a gene may be good, bad
+or neither*. Both say so, and `skills/module-enrich/GUIDE.md` carries what to do if you take it
+anyway: name the basis in the conclusion, set `method` and `stat_significance=unknown`, log it with
+`record_override`, and do not invent a `studies.csv` row.
+
+### A directional claim is a clinical claim, whatever column it arrived in
+
+`audit_module`'s `clinical_claims_without_studies` reads `clin_sig` and headlined its result as *"no
+row in this module asserts a clinical significance"*. A module asserting `state=risk`,
+`direction=risk` and a non-zero `weight` with no paper anywhere came back **clear** — §8's first prose
+trap in our own code, found by writing a module shaped to trip it (`F98`).
+
+**`directional_claims_without_studies`** asks it per row and per variant: does a study name *this
+row's* variant. The sibling clears as soon as `studies.csv` has any row at all, which passes a
+thousand-row module carrying one citation. Its headline now names the column it reads.
+
+**The first cut was wrong in both directions and the reference corpus caught it**, which is the only
+reason it is trustworthy. Over 21 real modules it fired four times and two were its own join failing:
+`mt_common_deletion` spells its contig `chrM` where its studies say `MT`, and a hand-rolled
+`lstrip("chrCHR")` folds those apart — the whole signal inverted by a spelling, now
+`normalize_chrom`'s job. `cyp2d6_structural`'s CNV spans an interval its study cites a point beside,
+so symbolic alleles are set aside **and counted**: a row that could not be assessed is not a row that
+was cleared. Three fire now, all verified true by grep — two uncited directional rows in upstream's
+own reference examples, plus the six in the module that prompted this.
+
+### Filed upstream
+
+**`S98`** — `alphagenome expression` writes `expression_effects.csv` and only then records its licence
+row, so an invalid `licensing.csv` leaves 12,003 rows of non-commercial-only Atlas output with no
+licence record while the command exits `EXPRESSION FAILED`. It contradicts 0.7's own §2.7 and
+reproduces every time on the default path, because a scaffolded module carries a `<<REPLACE>>` licence
+stub. Our half is `F95` and the symptom entry in `SYMPTOMS.md`.
+
+`F97` — `atlas generate` failing in an editable install with a bare `CalledProcessError` — was
+**fixed upstream at the root** the same day: `atlas_protos.py` now catches the missing `grpcio-tools`
+and names it. `grpcio-tools` stays a dev dependency here because an editable checkout still has to
+generate the bindings a released wheel ships.
+
 ## [0.32.0] — 2026-09-11
 
 ### Five lanes nobody may publish, priced before anybody is asked

@@ -2012,13 +2012,35 @@ it — the `--use non-commercial` requirement and the per-gene cost report are b
 plugin-driven author, and so is the `alphagenome_avi` / `alphagenome_atlas` licence-class split that
 decides whether the finished module is sellable.
 
-**Blocked on a decision rather than on upstream:** wrapping it means the plugin acquires a
-non-commercial-by-default data path, and where that sits against the sellable-module story is a
-question for the owner, not a mechanical port.
+**CLOSED in 0.33.0** by `enrich_expression_effects` and `top_expression_effects`.
+
+**The objection that held this up was wrong and is worth recording as such.** It was that wrapping the
+pass gives the plugin a non-commercial-by-default data path. It does not: acquiring a tool licenses
+nothing, and *using* it is what writes `alphagenome_atlas` into `licensing.csv` with
+`commercial_use=false`. A module that never calls the tool carries no such row, the declaration is
+per-module and already machine-readable, and the `--use` argument is mandatory upstream so the
+declaration cannot be made by accident. Treating a dependency as if it were a data path is what
+delayed this.
+
+What the wrapping owes instead is **legibility at the point of call**, and that is where it went: the
+tool's own description says running it binds the whole artifact to `commercial_use=false`, the report
+repeats it in `licence_note`, and `skills/module-enrich/GUIDE.md` carries the two-source licence split
+(`alphagenome_atlas` non-commercial, `alphagenome_avi` permissive) that is the actual trap.
+
+`top_expression_effects` exists because the second thing the dogfooding run reached for was an ad-hoc
+polars script to rank 24,006 rows — a pass sized by the interval queried rather than by the module
+leaves an author with no way to find the handful worth reading. The tool reproduces that ranking
+exactly, which is the check that it replaced the script rather than approximating it.
+
+`alphagenome check` (the AVI half) is still unwrapped, deliberately: this run never used it, no AVI
+lane is on this machine, and wrapping a tool nobody has exercised is how a surface acquires a step it
+cannot run.
 
 ## F97 — `atlas generate` cannot run in an editable install
 
-**Ours to work around; upstream's to fix if they care. Open, not filed.**
+**FIXED UPSTREAM at the root, 2026-09-12 — this entry stays as the record of what the symptom looked like.** `atlas_protos.py` now catches the missing `grpcio-tools` and names it in the message, so the bare `CalledProcessError` below is gone. `grpcio-tools` remains a dev dependency here, and that is not a workaround: an editable checkout has to generate the bindings a released wheel already ships. Original report follows.
+
+**Ours to work around; upstream's to fix if they care. Was: open, not filed.**
 `just-dna-enricher atlas generate` shells `python -m grpc_tools.protoc` and `grpcio-tools` is declared
 build-time only (`enricher/pyproject.toml`, the comment above the `atlas` extra says so deliberately).
 In an editable install the build hook never runs, so the bindings are absent and the command dies with

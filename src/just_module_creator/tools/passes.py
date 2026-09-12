@@ -36,6 +36,7 @@ whole task on it, which is what the flag did.
 
 from __future__ import annotations
 
+import csv
 import inspect
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -55,6 +56,11 @@ from just_dna_enricher.clinpgx_draft import ClinPgxEnrichmentError, draft_pharm_
 from just_dna_enricher.clinvar_draft import ClinVarDraftError, draft_gene_panel
 from just_dna_enricher.cpic import CpicError
 from just_dna_enricher.enrich import EnrichmentError, enrich
+from just_dna_enricher.expression import (
+    ExpressionError,
+    ExpressionUnavailable,
+    enrich_expression,
+)
 from just_dna_enricher.frequencies import (
     FrequencyEnrichmentError,
     FrequencyUnavailable,
@@ -76,9 +82,12 @@ from just_module_creator.models import (
     DraftedTable,
     DraftResult,
     EnrichReport,
+    ExpressionRanking,
+    ExpressionReport,
     FactPassReport,
     GwasReport,
     LiteratureReport,
+    RankedExpressionEffect,
 )
 from just_module_creator.net import NetworkServices
 from just_module_creator.settings import Settings
@@ -347,6 +356,7 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
         return _draft_result(
             result, spec_dir=target, source="clinvar", use=declared, dry_run=dry_run
         )
+
     # Declared task-capable, but that only makes tasks OPTIONAL: a client that sends no task
     # metadata — and the usual ones do not — gets an ordinary synchronous call. The docstring
     # said otherwise until 2026-08-22 and a run planning around the promise had nothing to plan
@@ -990,6 +1000,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
             warnings=warnings,
             note=_REGENERATE,
         )
+
     # Measured: reference_examples/hfe_hemochromatosis, a shipped flagship module, carries six
     # p-value underflows, so `strict` refuses it while nothing about it is wrong.
 
@@ -1181,6 +1192,288 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
             note=_GWAS_NOTE,
         )
 
+    # The cost sentence is in the docstring rather than behind a flag because a caller can
+    # weigh 47 minutes against what they are doing and a server-start flag cannot. Measured
+    # upstream at 1,091 SNVs/s; a whole gene plus its +/-512 kb attribution flanks is ~3.1M
+    # SNVs. That is why `chrom`/`start`/`end` exist and why this run did two 4 kb windows.
+    @mcp.tool(
+        task=True,
+        annotations=ToolAnnotations(
+            title="Fill expression_effects.csv from AlphaGenome",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def enrich_expression_effects(
+        spec_dir: str,
+        gene: str,
+        chrom: str | None = None,
+        start: int | None = None,
+        end: int | None = None,
+        min_score: float | None = None,
+        max_rows: int = 50000,
+        use: str = "non-commercial",
+        dry_run: bool = False,
+        offline: bool = False,
+        ctx: Context | None = None,
+    ) -> ExpressionReport:
+        """Record AlphaGenome's predicted per-gene expression effects for an interval.
+
+        One row per `(variant, gene)`: which way the variant moves that gene's predicted
+        expression, how many of the tissue tracks agree on the sign, and how far it sits
+        from the gene. It answers for **every scored variant in the window**, not just
+        the ones your module authors — the distal ones are usually what the query was for.
+
+        **CORPUS-SIZED, and the corpus is the interval rather than your rows.** A whole
+        gene plus its attribution flanks is ~3.1M SNVs, about **47 minutes**; the cost is
+        printed before the query runs. Pass `chrom`/`start`/`end` for a window — a 4 kb
+        one is ~12,000 SNVs and takes seconds. `gene` is required either way, because the
+        server-side gene filter is a requirement and not an optimisation.
+
+        **This makes the module non-commercial and there is no way to run it otherwise.**
+        AlphaGenome **Atlas** output is non-commercial-only, so `use` defaults to
+        `non-commercial` and a run declaring anything else writes nothing. It lands an
+        `alphagenome_atlas` row in licensing.csv with `commercial_use=false`, and the most
+        restrictive term binds the whole artifact. `alphagenome_atlas` and
+        `alphagenome_avi` are two sources with two licence classes; reading "AlphaGenome
+        is permissive" off the AVI row and joining a table this wrote mis-licenses the
+        module.
+
+        **What comes back is not a clinical claim.** `effect_direction` is the sign of a
+        predicted expression change. Raising a gene may be good, bad or neither, so the
+        step from a direction to `risk`/`protective` on a variants.csv row is an authored
+        judgement — surface it, log it with `record_override`, and say in the row's
+        conclusion that no study grounds it. `directional_claims_without_studies` in
+        `audit_module` will find such rows whether or not you say so.
+
+        Needs `ALPHAGENOME_API_KEY` and the `atlas` extra. `offline=true` is a refusal
+        rather than a no-op: this pass reads a live service and there is no snapshot lane.
+        `dry_run=true` reports the cost and writes nothing. The sidecar is
+        merge-not-clobber, so re-running never removes a row — delete the file to
+        re-derive. Rank what it wrote with `top_expression_effects`.
+        """
+        target = resolve_dir(spec_dir, settings)
+        declared = _check_use(use)
+        if offline_for(settings, offline):
+            return ExpressionReport(
+                success=False,
+                spec_dir=str(target),
+                gene=gene,
+                warnings=[
+                    "offline is in force, and this pass reads the AlphaGenome Atlas over the "
+                    "network. There is no snapshot lane for it, so the question was not asked "
+                    "rather than answered from a cache."
+                ],
+                next_step="Re-run without offline, or drop JMC_OFFLINE, if you meant to ask.",
+            )
+
+        if ctx:
+            await ctx.info(f"Querying the AlphaGenome Atlas for {gene} in {target.name}")
+            await ctx.report_progress(progress=1, total=2)
+
+        # Narrow-first: `ExpressionUnavailable` subclasses `ExpressionError`, so a
+        # parent-first pair would make the outage arm dead code that raises nothing.
+        # `tests/test_passes.py` walks the AST for exactly this.
+        try:
+            result = await run_sync(
+                lambda: enrich_expression(
+                    target,
+                    gene,
+                    chrom=chrom,
+                    start=start,
+                    end=end,
+                    min_score=min_score,
+                    max_rows=max_rows,
+                    declared_use=declared,
+                    write=not dry_run,
+                )
+            )
+        except ExpressionUnavailable as exc:
+            return ExpressionReport(
+                success=False,
+                spec_dir=str(target),
+                gene=gene,
+                warnings=[
+                    str(exc),
+                    "The Atlas could not be reached or no client could be built. Nothing was "
+                    "written. Check ALPHAGENOME_API_KEY is set and that the `atlas` extra is "
+                    "installed; this is an outage or a configuration gap, not a verdict on "
+                    "the module.",
+                ],
+            )
+        except ExpressionError as exc:
+            return ExpressionReport(
+                success=False,
+                spec_dir=str(target),
+                gene=gene,
+                warnings=[
+                    str(exc),
+                    "Upstream writes expression_effects.csv BEFORE recording its licence row, so "
+                    "a failure naming licensing.csv may still have left the data table on disk "
+                    "(our F95, filed as format-tree S98). Check the file's row count before "
+                    "re-running: the sidecar merges rather than clobbers, so a second run folds "
+                    "the first one's rows in silently.",
+                ],
+            )
+
+        interval = (
+            f"{result.interval[0]}:{result.interval[1]}-{result.interval[2]}"
+            if result.interval
+            else None
+        )
+        on_disk = target / "expression_effects.csv"
+        rows = None
+        if on_disk.is_file():
+            with on_disk.open(newline="") as handle:
+                rows = sum(1 for _ in csv.DictReader(handle))
+        return ExpressionReport(
+            success=True,
+            spec_dir=str(target),
+            gene=result.gene or gene,
+            interval=interval,
+            dataset=result.dataset,
+            candidates=result.candidates,
+            written=result.written,
+            rows=rows,
+            withheld=dict(result.withheld),
+            accounts_for_every_candidate=result.accounts_for_every_candidate(),
+            dry_run=dry_run,
+            licence_note=(
+                None
+                if dry_run
+                else (
+                    "This module is now NON-COMMERCIAL. alphagenome_atlas is written into "
+                    "licensing.csv with commercial_use=false, and the most restrictive term "
+                    "binds the whole artifact regardless of what module_spec.yaml's `license:` "
+                    "says. validate_module will report the disagreement and decline to "
+                    "adjudicate it, which is correct — say which you meant in README.md."
+                )
+            ),
+            warnings=list(result.warnings),
+            next_step=(
+                "Cost only; nothing was written. Drop dry_run to run it."
+                if dry_run
+                else "Rank these with top_expression_effects before authoring anything from them. "
+                "A predicted direction is not a clinical direction: any variants.csv row you "
+                "write from one is an authored judgement that needs record_override and a "
+                "conclusion saying no study grounds it."
+            ),
+        )
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Rank expression_effects.csv",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=False,
+        ),
+    )
+    async def top_expression_effects(
+        spec_dir: str,
+        gene: str | None = None,
+        min_consensus: float = 0.0,
+        min_magnitude: float = 0.0,
+        in_gene_only: bool = False,
+        limit: int = 20,
+    ) -> ExpressionRanking:
+        """Read `expression_effects.csv` back, strongest predictions first. Offline.
+
+        The pass answers for every scored variant in the window, so a 4 kb query returns
+        ~12,000 rows and a gene-wide one millions. This is how an author finds the handful
+        worth reading without paging through them: sorted by `|effect_size|`, filtered by
+        track consensus, magnitude, gene, and optionally to variants inside the gene span.
+
+        `min_consensus` is `tracks_agreeing / tracks_total` — 1.0 is unanimous across the
+        tissue tracks. **A row where no track agreed comes back with `effect_direction`
+        null**, and those are counted in `direction_unknown` rather than dropped: a
+        prediction with no direction is a real answer about the variant, not a gap.
+
+        **Ranking is not endorsement.** The top row is the largest predicted expression
+        change, which says nothing about whether the change matters clinically or which
+        way it cuts. `rsid` being null is the common case here — the Atlas answers by
+        coordinate — so check `lookup_variant` before calling anything novel.
+        """
+        target = resolve_dir(spec_dir, settings)
+        path = target / "expression_effects.csv"
+        if not path.is_file():
+            return ExpressionRanking(
+                spec_dir=str(target),
+                total_rows=0,
+                matched=0,
+                returned=0,
+                next_step=(
+                    "expression_effects.csv is not here, so there is nothing to rank — which is "
+                    "not the same as no effect being predicted. Run enrich_expression_effects."
+                ),
+            )
+        with path.open(newline="") as handle:
+            raw = list(csv.DictReader(handle))
+
+        def _f(row: dict, key: str) -> float | None:
+            try:
+                return float(row[key])
+            except (KeyError, TypeError, ValueError):
+                return None
+
+        def _i(row: dict, key: str) -> int | None:
+            try:
+                return int(row[key])
+            except (KeyError, TypeError, ValueError):
+                return None
+
+        ranked: list[tuple[float, RankedExpressionEffect]] = []
+        unknown = 0
+        for row in raw:
+            if gene and (row.get("gene") or "").upper() != gene.upper():
+                continue
+            agreeing, total = _i(row, "tracks_agreeing"), _i(row, "tracks_total")
+            consensus = (agreeing / total) if agreeing is not None and total else None
+            effect = _f(row, "effect_size")
+            distance = _i(row, "distance_to_gene")
+            if consensus is not None and consensus < min_consensus:
+                continue
+            if effect is not None and abs(effect) < min_magnitude:
+                continue
+            if in_gene_only and distance != 0:
+                continue
+            if not (row.get("effect_direction") or "").strip():
+                unknown += 1
+            ranked.append(
+                (
+                    abs(effect) if effect is not None else -1.0,
+                    RankedExpressionEffect(
+                        chrom=row.get("chrom") or None,
+                        start=_i(row, "start"),
+                        ref=row.get("ref") or None,
+                        alt=row.get("alt") or None,
+                        rsid=row.get("rsid") or None,
+                        gene=row.get("gene") or "",
+                        effect_size=effect,
+                        effect_direction=row.get("effect_direction") or None,
+                        tracks_agreeing=agreeing,
+                        tracks_total=total,
+                        consensus=round(consensus, 4) if consensus is not None else None,
+                        distance_to_gene=distance,
+                    ),
+                )
+            )
+        ranked.sort(key=lambda pair: pair[0], reverse=True)
+        return ExpressionRanking(
+            spec_dir=str(target),
+            total_rows=len(raw),
+            genes=sorted({(row.get("gene") or "") for row in raw} - {""}),
+            matched=len(ranked),
+            returned=min(limit, len(ranked)),
+            direction_unknown=unknown,
+            effects=[effect for _, effect in ranked[:limit]],
+            next_step=(
+                "A large predicted effect is a reason to READ the variant, not a role to assign "
+                "it. Check whether an rsID already describes it with lookup_variant, and if you "
+                "author a row from one of these, its direction is your judgement rather than "
+                "AlphaGenome's — say so in the conclusion and log it with record_override."
+            ),
+        )
 
 
 def _run_pass(name: str, target: Path, mode: str, offline: bool, use: str) -> Any:

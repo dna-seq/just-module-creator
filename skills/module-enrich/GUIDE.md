@@ -68,8 +68,8 @@ carried no report, so the question could not be put.
 
 **It runs what a publish runs, which is less than a check.** No frequency, literature, identifier,
 ACMG or PGx pass — those are egress spent on a verdict, and this call is for the bytes. So
-`enrich_facts`, `enrich_literature_pass` and `enrich_gwas_effects` have **no thin path** and each
-needs its own lane here. A lane the deployment lacks comes back naming that lane, which is different
+`enrich_facts`, `enrich_literature_pass`, `enrich_gwas_effects` and
+`enrich_expression_effects` have **no thin path** and each needs its own lane here. A lane the deployment lacks comes back naming that lane, which is different
 from the tier being absent and only one of the two is fixed by provisioning.
 
 The thin path needs `just-dna-registry` 0.25.0, which is not released yet; until then the tool
@@ -78,6 +78,50 @@ refuses with a sentence naming the release.
 **Substitution VRS ids mint offline; indels and MNVs need the reference sequence.** Expect ~50% id
 coverage on an indel-heavy module offline against ~99% online. Re-run `vrs mint` **without** `--offline`
 to fill the rest.
+
+## AlphaGenome, and the one thing it does not tell you
+
+`enrich_expression_effects` fills `expression_effects.csv` — one row per `(variant, gene)` saying which
+way a variant moves that gene's predicted expression and how many tissue tracks agree. Then
+`top_expression_effects` reads it back strongest-first, because the pass answers for **every scored
+variant in the window** and a 4 kb query returns ~12,000 rows.
+
+**Two things decide whether you should run it at all.**
+
+**It is sized by the interval, not by your module.** A whole gene plus its attribution flanks is ~3.1M
+SNVs and about 47 minutes. Pass `chrom`/`start`/`end` and query a window around what you care about;
+`gene` stays required either way, because the server-side filter is a requirement rather than an
+optimisation. The cost prints before the query runs.
+
+**It makes the module non-commercial, with no way to opt out.** AlphaGenome **Atlas** output is
+non-commercial-only. The pass writes `alphagenome_atlas` into `licensing.csv` with
+`commercial_use=false`, and the most restrictive term binds the whole artifact — so `validate_module`
+will report your `license:` disagreeing with it and decline to adjudicate, which is correct. Say which
+you meant in `README.md`. **`alphagenome_atlas` and `alphagenome_avi` are two sources with two licence
+classes**; reading "AlphaGenome is permissive" off the AVI row and joining a table this pass wrote
+mis-licenses the module.
+
+### The step this pass cannot take for you
+
+`effect_direction` is an **expression** direction. Upstream's own field documentation says it is not a
+clinical one: *raising a gene may be good, bad or neither.* So going from `decrease` to
+`state=protective` on a `variants.csv` row is **your judgement**, not a derivation — the kind of cell
+§2 says only a pilot settles.
+
+If you take that step, take it visibly:
+
+- say in the row's `conclusion` that the basis is a prediction and no study grounds it,
+- set `method` to name the prediction and `stat_significance` to `unknown`,
+- log it with `record_override`,
+- and leave the row without a `studies.csv` entry rather than inventing one.
+
+`audit_module`'s `directional_claims_without_studies` will list those rows whether or not you did any
+of that. It is not accusing you of anything — an uncited direction is a legitimate thing to publish —
+but it is a decision to state rather than a default to inherit.
+
+**A large predicted effect is a reason to read a variant, not a role to assign it.** And `rsid` coming
+back null is the ordinary case, because the Atlas answers by coordinate: check `lookup_variant` before
+calling anything novel.
 
 ## The one mistake nothing offline can catch
 

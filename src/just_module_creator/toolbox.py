@@ -144,14 +144,16 @@ GROUPS: tuple[Group, ...] = (
     ),
     Group(
         "passes",
-        "Fill or re-derive the machine-written sidecars. A corpus sizes three of these.",
+        "Fill or re-derive the machine-written sidecars. A corpus sizes four of these.",
         (
             "enrich_facts",
             "enrich_literature_pass",
             "enrich_gwas_effects",
+            "enrich_expression_effects",
+            "top_expression_effects",
             "refresh_sidecar",
         ),
-        10275,
+        13138,
     ),
     Group(
         "review",

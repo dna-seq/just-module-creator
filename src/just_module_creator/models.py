@@ -3052,3 +3052,132 @@ class CachePlan(BaseModel):
         "free space could not be read. An offer that cannot state its cost is not an offer.",
     )
     note: str = Field(description="What this measured and what it is estimating.")
+
+
+class ExpressionReport(BaseModel):
+    """Outcome of the AlphaGenome Atlas pass — predicted per-gene expression effects.
+
+    One row per `(variant, gene)` pair in `expression_effects.csv`, machine-produced
+    and never authored. **Nothing here is a clinical claim**: `effect_direction` is
+    the sign of a predicted expression change, and whether raising a gene is good,
+    bad or neither is a judgement this pass does not make and cannot make for you.
+    """
+
+    success: bool = Field(description="Whether the pass completed.")
+    spec_dir: str = Field(description="The spec directory.")
+    gene: str | None = Field(default=None, description="The HGNC symbol the query filtered on.")
+    interval: str | None = Field(
+        default=None, description="The interval queried, as `chrom:start-end`, 1-based."
+    )
+    dataset: str | None = Field(
+        default=None,
+        description="The Atlas release the rows came from, e.g. `alphagenome_atlas_2026-09-11`.",
+    )
+    candidates: int | None = Field(
+        default=None,
+        description=(
+            "Variants the service returned a scored block for. **`null` means nothing counted "
+            "them**, never zero — the pass raised before reporting."
+        ),
+    )
+    written: int | None = Field(
+        default=None, description="Rows this run wrote. `null` on a failure, never zero."
+    )
+    rows: int | None = Field(
+        default=None,
+        description=(
+            "Rows in `expression_effects.csv` after the merge, existing ones included. The "
+            "sidecar is merge-not-clobber, so this exceeds `written` on a second run."
+        ),
+    )
+    withheld: dict[str, int] = Field(
+        default_factory=dict,
+        description=(
+            "Candidates not written, by upstream's own named reason. Every candidate is either "
+            "written or counted here — a candidate that is neither is a bug, not a silence."
+        ),
+    )
+    accounts_for_every_candidate: bool | None = Field(
+        default=None,
+        description=(
+            "Whether `candidates == written + sum(withheld)`. `null` when the pass did not get "
+            "far enough to say, which is not the same as False."
+        ),
+    )
+    dry_run: bool = Field(
+        default=False, description="True when nothing was written and only the cost was reported."
+    )
+    licence_note: str | None = Field(
+        default=None,
+        description=(
+            "What running this did to the module's licence position. AlphaGenome **Atlas** output "
+            "is non-commercial-only and lands `alphagenome_atlas` in licensing.csv with "
+            "`commercial_use=false`, which binds the whole artifact. This is a different source "
+            "from `alphagenome_avi`, whose terms are permissive."
+        ),
+    )
+    warnings: list[str] = Field(default_factory=list, description="Upstream's own warnings.")
+    next_step: str | None = Field(default=None, description="What to do with the rows.")
+
+
+class RankedExpressionEffect(BaseModel):
+    """One `(variant, gene)` prediction, with the two numbers that decide whether to read it."""
+
+    chrom: str | None = None
+    start: int | None = None
+    ref: str | None = None
+    alt: str | None = None
+    rsid: str | None = Field(
+        default=None,
+        description=(
+            "Null is the COMMON case and not a defect: the Atlas answers by coordinate and names "
+            "no rsID. A null here does not mean the variant is undescribed — check with "
+            "`lookup_variant` before calling it novel."
+        ),
+    )
+    gene: str = Field(description="The gene AlphaGenome attributed the effect to, its symbol.")
+    effect_size: float | None = None
+    effect_direction: str | None = Field(
+        default=None,
+        description=(
+            "increase | decrease | null. An EXPRESSION direction, never a clinical one — raising "
+            "a gene may be good, bad or neither. `null` where no track agreed on a sign, which is "
+            "an honest unknown rather than a missing value."
+        ),
+    )
+    tracks_agreeing: int | None = None
+    tracks_total: int | None = None
+    consensus: float | None = Field(
+        default=None, description="`tracks_agreeing / tracks_total`, computed here for sorting."
+    )
+    distance_to_gene: int | None = Field(
+        default=None,
+        description=(
+            "Bases from the gene's MANE span; 0 means inside it. **`null` means the MANE lane was "
+            "absent**, not that the variant sits on the gene."
+        ),
+    )
+
+
+class ExpressionRanking(BaseModel):
+    """The strongest predictions in `expression_effects.csv`, so 24,000 rows are readable.
+
+    A reader, not a pass: it writes nothing and asks no source. It exists because the
+    sidecar is sized by the interval queried rather than by the module, and an author
+    deciding which variants are worth authoring cannot page through it by hand.
+    """
+
+    spec_dir: str
+    total_rows: int = Field(description="Rows in the sidecar before any filter.")
+    genes: list[str] = Field(default_factory=list, description="Every gene present, sorted.")
+    matched: int = Field(description="Rows passing the filters, before `limit` truncated them.")
+    returned: int = Field(description="Rows actually in `effects`.")
+    direction_unknown: int = Field(
+        default=0,
+        description=(
+            "Rows whose `effect_direction` is null — no track agreed on a sign. Counted rather "
+            "than dropped: a prediction with no direction is a real answer about the variant."
+        ),
+    )
+    effects: list[RankedExpressionEffect] = Field(default_factory=list)
+    next_step: str | None = None
