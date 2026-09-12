@@ -763,3 +763,91 @@ async def test_no_description_anywhere_becomes_an_essay(client):
         if _paragraphs(t) > _ESSAY_CEILING
     ]
     assert not offenders, "\n".join(sorted(offenders))
+
+
+# --------------------------------------------------------------------------- #
+# Parity with upstream's drafting surface
+# --------------------------------------------------------------------------- #
+#: Which of upstream's `*_draft.py` providers each of our tools exposes. Hand-kept
+#: because only the tool knows which provider it calls — but it is the *mapping*
+#: that is hand-kept, never the roster: the roster below is read off the installed
+#: package, so a provider added upstream fails this test instead of going unnoticed
+#: for a release. That is the shape RM10 argued for, at a different address.
+DRAFTER_TOOLS = {
+    "civic_draft": "draft_from_civic",
+    "clinpgx_draft": "draft_from_clinpgx",
+    "clinvar_draft": "draft_from_clinvar",
+    "mitomap_draft": "draft_from_mitomap",
+    "pgx_draft": "draft_from_cpic",
+    "pubmind_draft": "draft_from_pubmind",
+    "strchive_draft": "draft_from_strchive",
+}
+
+#: Providers deliberately not exposed, each with the reason. Empty today, and that
+#: is the point: "we have not got round to it" is not a member of this dict, and a
+#: reason has to be written before a gap is allowed to persist.
+UNEXPOSED_DRAFTERS: dict[str, str] = {}
+
+
+def _installed_drafters() -> set[str]:
+    """Every `*_draft.py` in the enricher THIS venv resolves.
+
+    An in-process import is the right instrument here and a path check on it is not.
+    CLAUDE.md's warning — that a symbol check can answer about the sibling checkout
+    rather than about what our users have — is about `cd ../just-dna-format && uv run`,
+    where the *project* changes underneath you. `import` cannot do that: it resolves
+    against this venv by construction.
+
+    A first version asserted `site-packages` in the path and failed on this very branch,
+    where the three just-dna packages are deliberately installed **editable** from
+    `../just-dna-format` — so the sibling tree is exactly what a `preview-0.7` user has.
+    The floor below is the guard that survives both layouts: it fails when the
+    enumeration breaks, which is the failure that would otherwise read as "upstream
+    ships no drafters" and pass everything.
+    """
+    import just_dna_enricher
+
+    root = Path(just_dna_enricher.__file__).parent
+    return {path.stem for path in root.glob("*_draft.py")}
+
+
+def test_every_upstream_drafting_source_has_a_tool():
+    """The plugin is the only user-side exposure, so an unwrapped source reaches nobody.
+
+    Upstream ships a library and a CLI; neither reaches somebody driving an agent. This
+    caught nothing when it was written — all seven are wrapped as of 0.33.0 — and that is
+    what it is for: four of the seven were unwrapped for several releases and nothing said
+    so, because every test passed and the gap is only visible from outside the code.
+    """
+    drafters = _installed_drafters()
+    assert len(drafters) >= 5, f"only found {drafters} — the enumeration is broken, not upstream"
+    unmapped = drafters - set(DRAFTER_TOOLS) - set(UNEXPOSED_DRAFTERS)
+    assert not unmapped, (
+        f"upstream ships {sorted(unmapped)} and this plugin exposes nothing for them. "
+        "Wrap it, or add it to UNEXPOSED_DRAFTERS with the reason — and 'not exercised yet' "
+        "is not a reason (see CLAUDE.md §5, 'Parity with upstream is the default')."
+    )
+
+
+async def test_every_mapped_drafter_tool_is_actually_registered(make_client):
+    """The map is only worth having if the names on its right-hand side exist."""
+    async with make_client(offline_settings()) as client:
+        registered = {tool.name for tool in await client.list_tools()}
+    assert "draft_from_clinvar" in registered, "the listing is empty or narrowed, not the map"
+    missing = {
+        tool for source, tool in DRAFTER_TOOLS.items() if source in _installed_drafters()
+    } - registered
+    assert not missing, f"DRAFTER_TOOLS names {sorted(missing)}, which no tool registers"
+
+
+async def test_a_drafting_tool_requires_a_declared_use(make_client):
+    """Every drafter copies rows out of a licensed source, so none of them defaults `use`.
+
+    A default would be this layer asserting a licence position on the author's behalf,
+    which is the one thing the licence gate exists to stop.
+    """
+    async with make_client(offline_settings()) as client:
+        tools = {tool.name: tool for tool in await client.list_tools()}
+    for name in sorted(set(DRAFTER_TOOLS.values())):
+        schema = tools[name].inputSchema
+        assert "use" in schema.get("required", []), f"{name} does not require `use`"

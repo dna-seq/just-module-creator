@@ -2032,9 +2032,19 @@ polars script to rank 24,006 rows — a pass sized by the interval queried rathe
 leaves an author with no way to find the handful worth reading. The tool reproduces that ranking
 exactly, which is the check that it replaced the script rather than approximating it.
 
-`alphagenome check` (the AVI half) is still unwrapped, deliberately: this run never used it, no AVI
-lane is on this machine, and wrapping a tool nobody has exercised is how a surface acquires a step it
-cannot run.
+**Superseded 2026-09-12 on the owner's instruction, and the superseded half is the interesting one.**
+The paragraph that stood here argued `alphagenome check` should stay unwrapped because *"this run
+never used it"*. That is not a reason: *"Plugin is currently one and only thing that exposes it
+userside so if upstream provides stuff, we expose it."* Not having exercised a tool argues for
+testing it, not for hiding it — parity is the default now and it is written into CLAUDE.md §5, with
+`test_every_upstream_drafting_source_has_a_tool` as the mechanism.
+
+**What that rule then found: four of upstream's seven drafters were unwrapped** — CIViC, MITOMAP,
+PubMind and STRchive — for several releases, with nothing saying so. All four ship in 0.34.0, and
+the guard fails on the next one rather than waiting for somebody to build a module and notice.
+`alphagenome check` remains unwrapped for a *different* and stateable reason: no AVI lane exists on
+any machine here, so nothing could exercise or test it, and it is `UNEXPOSED_DRAFTERS`' sibling case
+rather than an appeal to habit. It goes in the moment a lane is pulled.
 
 ## F97 — `atlas generate` cannot run in an editable install
 

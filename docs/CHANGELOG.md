@@ -3,6 +3,64 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.34.0] — 2026-09-12
+
+### Parity with upstream's drafting surface, and a guard that keeps it
+
+**Upstream ships seven `*_draft.py` providers and this plugin exposed three.** CIViC, MITOMAP,
+PubMind and STRchive had no tool for several releases and nothing said so, because the gap is only
+visible from outside the code. The plugin is the **only** user-side exposure of the toolchain — a
+library and a CLI reach nobody driving an agent — so an unwrapped source is a capability that does
+not exist for a user. Parity is now the stated default (CLAUDE.md §5), and abstention is what needs
+a written reason.
+
+- **`draft_from_civic`** — CC0-1.0, expert-curated. Its `source_findings` carries the **refutations
+  recorded beside the claims they refute**, which is what `direction=contested` is for. Nothing is
+  auto-resolved.
+- **`draft_from_mitomap`** — CC-BY-3.0, the only source here for mtDNA. Surfaces MITOMAP's **stale
+  identities** (the `S41` shape: a re-draft converges to *0 missing, N stale* rather than to
+  nothing), its indefinite alleles and its bracketed withholdings.
+- **`draft_from_pubmind`** — and it **always skips today**, which the description says outright.
+  PubMind's terms are null and upstream refuses an unestablished source under every declared use;
+  measured on all three values and asked upstream as `S99`. Wrapped anyway, because a named refusal
+  beats silence and it starts working the day terms are recorded.
+- **`draft_from_strchive`** — MIT, and the only drafter that writes a **binning** table. A repeat
+  locus is a count with thresholds, not a variant with a genotype; drafting HTT into `variants.csv`
+  is the mistake it prevents. Reports the **contested** loci, where published thresholds disagree.
+
+`DraftResult` gains `candidates`, `withheld` and `source_findings` — a source that offered 400 rows
+and wrote 12 is not the same module as one that offered 12, and only those fields tell them apart.
+`candidates` is `null` rather than `0` where a drafter does not report one.
+
+**The guard is the deliverable, not the four tools.**
+`test_every_upstream_drafting_source_has_a_tool` reads the provider roster off the **installed**
+enricher and fails on one we do not wrap, with an `UNEXPOSED_DRAFTERS` escape that requires a
+written reason — "not exercised yet" explicitly is not one. Verified in both directions: it fails
+on a simulated eighth provider, and it fails on an empty enumeration rather than reading "upstream
+ships no drafters" as a pass. A first cut asserted `site-packages` in the resolved path and broke on
+this very branch, where the packages are deliberately editable installs from `../just-dna-format`.
+
+### A skip that blamed the licence when the cache lane was missing
+
+`skipped` means "nothing was fetched", and upstream sets it for **more than a licence refusal** —
+STRchive sets it when no catalogue is provisioned. We reported every skip as *"your declared use
+does not satisfy this source's terms"*, which sends an author to argue with a licence gate when what
+they need is to build a snapshot. Caught by actually running `draft_from_strchive` against a machine
+with no STRchive lane.
+
+The reason is now **decided** rather than inferred, by asking the same public predicate the drafter
+asked — and that predicate has **three** outcomes, not two: a reason string, `None` to proceed, and a
+*raise* for the direct contradiction of a no-sale source against a commercial declaration. Handling
+only the first two reported the clearest licence problem there is as "not a licence problem"; the
+existing `test_a_licence_refusal_is_reported_not_raised` caught that within a minute of it being
+written.
+
+### Also
+
+`refresh_sidecar`'s refusal for `expression_effects.csv` still told authors to run the enricher CLI
+directly, a release after 0.33.0 gave them a tool. It names `enrich_expression_effects` now, and
+warns that the sidecar merges rather than clobbers.
+
 ## [0.33.0] — 2026-09-12
 
 ### The AlphaGenome surface the plugin named and had no tool for

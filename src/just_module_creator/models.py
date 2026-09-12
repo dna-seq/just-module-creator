@@ -1853,7 +1853,9 @@ class DraftResult(BaseModel):
     """Outcome of drafting from a published source."""
 
     spec_dir: str = Field(description="The spec directory.")
-    source: str = Field(description="clinvar | cpic | clinpgx.")
+    source: str = Field(
+        description="clinvar | cpic | clinpgx | civic | mitomap | pubmind | strchive."
+    )
     declared_use: str = Field(description="The licence position you declared.")
     skipped: bool = Field(
         description=(
@@ -1865,6 +1867,30 @@ class DraftResult(BaseModel):
     tables: list[DraftedTable] = Field(default_factory=list, description="Per-CSV outcome.")
     warnings: list[str] = Field(default_factory=list, description="Including the refusal reason.")
     dry_run: bool = Field(description="Whether this was a preview.")
+    candidates: int | None = Field(
+        default=None,
+        description=(
+            "Rows the source offered before any were withheld. **`null` means this source does not "
+            "report a candidate count**, never zero — three of the seven drafters do not."
+        ),
+    )
+    withheld: dict[str, int] = Field(
+        default_factory=dict,
+        description=(
+            "Candidates the drafter did not write, by its OWN named reason. Read this beside "
+            "`candidates`: a source that offered 400 rows and wrote 12 is not the same module as "
+            "one that offered 12, and only this field tells them apart."
+        ),
+    )
+    source_findings: list[str] = Field(
+        default_factory=list,
+        description=(
+            "What this particular source reports that the others do not — CIViC's refuted-beside-"
+            "accepted claims, MITOMAP's stale identities, STRchive's contested loci. Carried "
+            "across rather than flattened into `warnings`, because these are findings about the "
+            "DATA an author has to read, not messages about the run."
+        ),
+    )
     next_step: str = Field(description="What to do now.")
 
 

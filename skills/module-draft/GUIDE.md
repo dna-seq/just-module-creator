@@ -20,22 +20,50 @@ Letting a provider write what it can, and leaving **loudly incomplete** what onl
 Drafting appends and never mutates a cell, which is what makes this the one stage designed for
 repetition.
 
-## The three drafters
+## The seven drafters
 
 ```
 draft_from_clinvar(spec_dir="spec", genes=["HFE"], use="non_commercial", dry_run=True)
 draft_from_cpic(...)        # a corpus sizes it: a whole-source draft
 draft_from_clinpgx(...)     # a corpus sizes it, and inject-only: build the snapshot first
+draft_from_civic(...)       # CC0 curated clinical evidence — and it records REFUTATIONS
+draft_from_mitomap(...)     # mtDNA, and the only source for it
+draft_from_pubmind(...)     # machine-extracted literature calls — see the warning below
+draft_from_strchive(...)    # repeat bands → repeat_alleles.csv, NOT variants.csv
 ```
 
-All three are always available. The two PGx drafters are the expensive ones — a whole-source draft
-is sized by how much has been published rather than by what you named — which is worth knowing
-before you fire one at a large star-allele gene, not a reason to reach for the CLI instead.
+**One per published source upstream ships, and that is deliberate**: this plugin is the only
+user-side exposure of the toolchain, so a source with no tool reaches nobody. If you find one
+missing, it is a bug rather than a boundary — `tests/test_surface_and_auth.py` fails on an
+unwrapped provider.
 
-**`use` is required on all three and has no default.** `unstated` silently skips licence-bearing
+Three of them carry a caveat you should read before the row counts:
+
+- **`draft_from_strchive` writes a BINNING table.** A repeat locus is a count with thresholds, not a
+  variant with a genotype. Drafting HTT or FMR1 into `variants.csv` is the mistake it exists to
+  prevent. Its `source_findings` names the **contested** loci — published thresholds for the same
+  repeat disagree more often here than almost anywhere in the format, and a contested boundary is a
+  pilot's decision, not a number to copy.
+- **`draft_from_civic` records refutations beside the claims they refute.** A variant whose accepted
+  claim sits next to a refuting one is what `direction=contested` is for. Nothing is auto-resolved.
+- **`draft_from_pubmind` always skips today, and that is upstream's gate rather than your mistake.**
+  PubMind's terms are recorded as null, and an unestablished source is refused under *every*
+  declared use — measured 2026-09-12 on all three values, asked upstream as `S99`. Beyond that: its
+  calls are a model's reading of papers, and the check that verifies a clinical call reads PubMind
+  too, so a row drafted from it is not independently checked by anything. Use it to find candidates.
+
+The two PGx drafters are the expensive ones — a whole-source draft is sized by how much has been
+published rather than by what you named — which is worth knowing before you fire one at a large
+star-allele gene, not a reason to reach for the CLI instead.
+
+**`use` is required on all seven and has no default.** `unstated` silently skips licence-bearing
 sources; anything else asserts a licence position you may not hold. If a draft returns
-`skipped=true`, the terms were not satisfied and **nothing was fetched** — that is the gate working,
-and **re-running with a different `use` to get past it is fabricating a licence position.**
+`skipped=true`, **nothing was fetched — but read `next_step` for WHY before touching `use`.** Two
+different things set that flag and only one is about your licence declaration: the other is an
+unprovisioned cache lane, which is a snapshot to build and has nothing to do with terms. The tool
+decides which by asking the same licence predicate the drafter asked, so it says which one you hit.
+Where it really is the licence gate, **re-running with a different `use` to get past it is
+fabricating a licence position.**
 
 The CLI equivalents, for driving it directly:
 

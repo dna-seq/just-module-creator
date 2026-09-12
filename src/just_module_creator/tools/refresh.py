@@ -479,9 +479,9 @@ UNREFRESHABLE["expression_effects.csv"] = (
     "writes a row — so on an install without that access, re-deriving writes nothing and "
     "the classification afterwards would report every real row as one the source "
     "withdrew. Your bytes would be restored, and the answer would still be about the "
-    "credential rather than the source. Run `just-dna-enricher expression` directly, on a "
-    "machine that holds the credential, and re-run validate_module and compile_module "
-    "afterwards."
+    "credential rather than the source. Use `enrich_expression_effects` on a machine that "
+    "holds the credential, then re-run validate_module and compile_module. Note that it "
+    "MERGES rather than clobbers, so delete this file first if you want a clean derivation."
 )
 
 

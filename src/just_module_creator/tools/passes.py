@@ -38,7 +38,7 @@ from __future__ import annotations
 
 import csv
 import inspect
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -47,6 +47,7 @@ import anyio
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
+from just_dna_enricher.civic_draft import CivicDraftError, draft_panel_from_civic
 from just_dna_enricher.clingen import (
     ClinGenError,
     ClinGenUnavailable,
@@ -72,8 +73,29 @@ from just_dna_enricher.gene_metrics import (
     enrich_gene_metrics,
 )
 from just_dna_enricher.gwas import GwasError, enrich_gwas
+from just_dna_enricher.licensing import (
+    CIVIC_TERMS,
+    CLINPGX_TERMS,
+    CLINVAR_TERMS,
+    CPIC_TERMS,
+    MITOMAP_TERMS,
+    PUBMIND_TERMS,
+    STRCHIVE_TERMS,
+    LicenseRefusal,
+    check_declared_use,
+)
 from just_dna_enricher.literature import LiteratureEnrichmentError, enrich_literature
+from just_dna_enricher.mitomap_draft import (
+    MitomapDraftError,
+    draft_panel_from_mitomap_miss,
+)
 from just_dna_enricher.pgx_draft import draft_gene
+from just_dna_enricher.pubmind_draft import (
+    DEFAULT_CLIN_SIG,
+    PubMindDraftError,
+    draft_gene_panel_from_pubmind,
+)
+from just_dna_enricher.strchive_draft import StrchiveDraftError, draft_repeat_loci
 from just_dna_format.vocab import VALID_DECLARED_USE
 from mcp.types import ToolAnnotations
 
@@ -189,6 +211,20 @@ _PASS_ERROR = {
 }
 
 
+#: Whose terms gate each drafting source, so a skip can be told apart from a licence
+#: refusal rather than guessed at. Hand-kept — only the tool knows which source it calls —
+#: and `test_every_upstream_drafting_source_has_a_tool` is what stops the roster drifting.
+_SOURCE_TERMS = {
+    "civic": CIVIC_TERMS,
+    "clinpgx": CLINPGX_TERMS,
+    "clinvar": CLINVAR_TERMS,
+    "cpic": CPIC_TERMS,
+    "mitomap": MITOMAP_TERMS,
+    "pubmind": PUBMIND_TERMS,
+    "strchive": STRCHIVE_TERMS,
+}
+
+
 async def _guard(call):
     """Run an upstream pass, restating a source failure in our own vocabulary.
 
@@ -220,7 +256,14 @@ def _tables(result: Any, *, written: bool) -> list[DraftedTable]:
     count would hide exactly the rows worth looking at.
     """
     out: list[DraftedTable] = []
-    for report in getattr(result, "reports", []) or []:
+    # `strchive_draft` returns ONE `report`, every other drafter a `reports` list. Normalising
+    # here rather than at four call sites keeps the projection the single place that knows the
+    # shape — and a drafter that grows a second table needs no change on our side.
+    reports = getattr(result, "reports", None)
+    if reports is None:
+        single = getattr(result, "report", None)
+        reports = [single] if single is not None else []
+    for report in reports or []:
         differences = [
             f"{r.key}: "
             + ", ".join(
@@ -245,15 +288,45 @@ def _tables(result: Any, *, written: bool) -> list[DraftedTable]:
 
 
 def _draft_result(
-    result: Any, *, spec_dir: Path, source: str, use: str, dry_run: bool
+    result: Any,
+    *,
+    spec_dir: Path,
+    source: str,
+    use: str,
+    dry_run: bool,
+    findings: Sequence[str] = (),
 ) -> DraftResult:
     skipped = bool(getattr(result, "skipped", False))
     tables = _tables(result, written=not dry_run)
-    if skipped:
+    # `skipped` means "nothing was fetched" and upstream sets it for MORE than a licence
+    # refusal — STRchive sets it when no catalogue is provisioned, which is a cache lane to
+    # build rather than a licence to argue with. Telling that author their declared use was
+    # rejected sends them to the wrong door entirely, so the reason is DECIDED by asking the
+    # same public predicate the drafter asked, never inferred from the flag.
+    terms = _SOURCE_TERMS.get(source)
+    licence_refusal = None
+    if skipped and terms:
+        # THREE outcomes, not two: a reason string, None to go, and a RAISE for the direct
+        # contradiction (a no-sale source against a commercial declaration). The raise is
+        # itself a licence refusal, so catching it here classifies rather than recovers —
+        # and handling only the first two read as "not a licence problem" on exactly the
+        # clearest licence problem there is.
+        try:
+            licence_refusal = check_declared_use(terms, use)
+        except LicenseRefusal as refusal:
+            licence_refusal = str(refusal)
+    if skipped and licence_refusal:
         next_step = (
             "Nothing was fetched: your declared use does not satisfy this source's terms. "
             "That is the gate working. Do NOT re-run with a different `use` to get past it — "
             "either you may use the data that way or you may not."
+        )
+    elif skipped:
+        next_step = (
+            "Nothing was fetched, and NOT because of your declared use — that was checked "
+            "separately and is fine. The reason is in `warnings`, and for these sources it is "
+            "usually a cache lane that has not been provisioned yet. Read it before changing "
+            "anything about the module."
         )
     elif dry_run:
         next_step = "Preview only, nothing written. Re-run with dry_run=false to apply."
@@ -271,6 +344,11 @@ def _draft_result(
         tables=tables,
         warnings=list(getattr(result, "warnings", []) or []),
         dry_run=dry_run,
+        # `None` rather than 0 where the drafter does not report one: a source that counted
+        # nothing and a source that does not count are different answers.
+        candidates=getattr(result, "candidates", None),
+        withheld=dict(getattr(result, "withheld", {}) or {}),
+        source_findings=list(findings or []),
         next_step=next_step,
     )
 
@@ -1190,6 +1268,315 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
             skipped_offline=skipped,
             warnings=warnings,
             note=_GWAS_NOTE,
+        )
+
+    @mcp.tool(
+        task=True,
+        annotations=ToolAnnotations(
+            title="Draft from CIViC",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def draft_from_civic(
+        spec_dir: str,
+        genes: list[str],
+        use: str,
+        dry_run: bool = False,
+        offline: bool = False,
+        ctx: Context | None = None,
+    ) -> DraftResult:
+        """Draft variant rows from CIViC's curated clinical evidence.
+
+        CIViC is **CC0-1.0** — the one drafting source here with no licence friction at
+        all — and it is expert-curated rather than mined, so its calls carry a named
+        evidence level behind them.
+
+        **The output worth reading is `source_findings`.** CIViC records refutations
+        beside the claims they refute, and this reports the pairs it saw. A variant whose
+        accepted claim sits next to a refuting one is not a row to draft and forget: it is
+        the clearest signal in any of these sources that the literature is contested, and
+        `direction=contested` exists in `variants.csv` for exactly that. Nothing is
+        auto-resolved, because which side wins is a judgement.
+
+        Identity comes back as a CAID from the ClinGen Allele Registry where CIViC gives a
+        coordinate rather than an rsID, so rows resolve that could not be joined on rsID
+        alone. `offline=true` uses only the local snapshot.
+        """
+        declared = _check_use(use)
+        target = resolve_dir(spec_dir, settings)
+        eff_offline = offline_for(settings, offline)
+        if ctx:
+            await ctx.info(f"Drafting {', '.join(genes)} from CIViC into {target.name}")
+            await ctx.report_progress(progress=1, total=2)
+        try:
+            result = await run_sync(
+                lambda: draft_panel_from_civic(
+                    target,
+                    tuple(genes),
+                    declared_use=declared,
+                    offline=eff_offline,
+                    dry_run=dry_run,
+                )
+            )
+        except CivicDraftError as exc:
+            raise ToolError(str(exc)) from exc
+        findings = [
+            f"{variant}: an accepted claim sits beside a refuting one ({basis})"
+            for variant, basis, _ in getattr(result, "refuted_beside_claim", []) or []
+        ]
+        if findings and getattr(result, "refutation_basis", None):
+            findings.append(
+                f"refutation basis: {result.refutation_basis}. Consider direction=contested "
+                "rather than picking a side silently."
+            )
+        if ctx:
+            await ctx.report_progress(progress=2, total=2)
+        return _draft_result(
+            result,
+            spec_dir=target,
+            source="civic",
+            use=declared,
+            dry_run=dry_run,
+            findings=findings,
+        )
+
+    @mcp.tool(
+        task=True,
+        annotations=ToolAnnotations(
+            title="Draft from MITOMAP",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def draft_from_mitomap(
+        spec_dir: str,
+        genes: list[str],
+        use: str,
+        dry_run: bool = False,
+        ctx: Context | None = None,
+    ) -> DraftResult:
+        """Draft mitochondrial variant rows from MITOMAP's confirmed disease list.
+
+        MITOMAP is **CC-BY-3.0** and the only source here for mtDNA. Positions come back
+        on `MT` — the format folds `MT`, `chrMT`, `M` and `chrM` to `MT`, so a consumer
+        VCF spelling it `chrM` still joins.
+
+        **Read `source_findings` before the row counts.** It carries MITOMAP's *stale*
+        identities: rows whose identity moved since a previous draft, which a plain re-run
+        leaves behind under the old key rather than updating. That is the `S41` shape and
+        it is why a re-draft over an existing spec can converge to *0 missing, N stale*
+        rather than to nothing. It also names indefinite alleles and bracketed
+        withholdings, both of which mean the source declined to state a definite change.
+
+        **mtDNA is heteroplasmic and a variant row cannot say so.** A pathogenic mtDNA
+        variant's effect usually depends on what fraction of a person's mitochondria carry
+        it, and that is `heteroplasmy.csv`'s subject, not this table's. Drafting the
+        variant is right; concluding from it without a heteroplasmy threshold is not.
+
+        There is no `offline` argument, deliberately: this reads the `mitomap_miss` cache
+        lane, so it is snapshot-backed rather than live.
+        """
+        declared = _check_use(use)
+        target = resolve_dir(spec_dir, settings)
+        if ctx:
+            await ctx.info(f"Drafting {', '.join(genes)} from MITOMAP into {target.name}")
+            await ctx.report_progress(progress=1, total=2)
+        try:
+            result = await run_sync(
+                lambda: draft_panel_from_mitomap_miss(
+                    target, tuple(genes), declared_use=declared, dry_run=dry_run
+                )
+            )
+        except MitomapDraftError as exc:
+            raise ToolError(str(exc)) from exc
+        findings = []
+        stale = getattr(result, "stale", {}) or {}
+        if stale:
+            findings.append(
+                f"{len(stale)} row(s) carry an identity MITOMAP has since moved. A plain re-run "
+                "leaves these under the old key rather than updating them — read them before "
+                "treating this draft as converged."
+            )
+        indefinite = getattr(result, "indefinite_alleles", []) or []
+        if indefinite:
+            findings.append(
+                f"{len(indefinite)} allele(s) are indefinite in the source, e.g. "
+                f"{', '.join(map(str, indefinite[:5]))} — the source declined to state a "
+                "definite change, so no genotype can be written from them."
+            )
+        brackets = getattr(result, "withheld_brackets", {}) or {}
+        if brackets:
+            findings.append(f"bracketed withholdings by reason: {brackets}")
+        if ctx:
+            await ctx.report_progress(progress=2, total=2)
+        return _draft_result(
+            result,
+            spec_dir=target,
+            source="mitomap",
+            use=declared,
+            dry_run=dry_run,
+            findings=findings,
+        )
+
+    @mcp.tool(
+        task=True,
+        annotations=ToolAnnotations(
+            title="Draft from PubMind",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def draft_from_pubmind(
+        spec_dir: str,
+        genes: list[str],
+        use: str,
+        clin_sig: list[str] | None = None,
+        min_confidence: int = 1,
+        dry_run: bool = False,
+        offline: bool = False,
+        ctx: Context | None = None,
+    ) -> DraftResult:
+        """Draft variant rows from PubMind's machine-extracted literature calls.
+
+        **PubMind is an LLM's reading of the literature, not a curated archive.** Its
+        clinical call is a model's extraction from a paper, with its own confidence and
+        derivation; one real position carried ten records spanning conflicting, pathogenic
+        and uncertain_significance at once. `min_confidence` and `clin_sig` narrow that;
+        neither turns it into an expert call.
+
+        **Drafting a clinical call from here makes the check that verifies one vacuous.**
+        The enricher's clin_sig cross-check reads PubMind too, and `lookup_variant` already
+        withholds its value for that reason. A row drafted here has not been independently
+        checked — it was written by one of the things that would check it. Use it to find
+        candidates; author the call yourself.
+
+        **Its licence is unknown, so today this always skips.** Measured 2026-09-12:
+        PubMind's terms record commercial use, share-alike and redistribution all as null,
+        and upstream refuses an unestablished source under **every** declared use, so this
+        returns `skipped=true` and writes nothing whatever you pass. That is their gate
+        being conservative, and unknown is not permission. Wrapped anyway because the
+        refusal is the useful answer, and it starts working the day terms are recorded.
+
+        `genes` is required: this source is too large to draft unfiltered.
+        """
+        declared = _check_use(use)
+        target = resolve_dir(spec_dir, settings)
+        eff_offline = offline_for(settings, offline)
+        if not genes:
+            raise ToolError(
+                "genes is required for PubMind: the corpus is too large to draft unfiltered, "
+                "and an empty list would ask for all of it rather than for nothing."
+            )
+        if ctx:
+            await ctx.info(f"Drafting {', '.join(genes)} from PubMind into {target.name}")
+            await ctx.report_progress(progress=1, total=2)
+        try:
+            result = await run_sync(
+                lambda: draft_gene_panel_from_pubmind(
+                    target,
+                    tuple(genes),
+                    clin_sig=frozenset(clin_sig) if clin_sig else DEFAULT_CLIN_SIG,
+                    min_confidence=min_confidence,
+                    declared_use=declared,
+                    offline=eff_offline,
+                    dry_run=dry_run,
+                )
+            )
+        except PubMindDraftError as exc:
+            raise ToolError(str(exc)) from exc
+        findings = [
+            "Every clin_sig here was extracted by a model. It is redundancy-bearing: the check "
+            "that verifies clin_sig reads PubMind too, so a drafted call is not an independently "
+            "verified one. Author the call yourself and use these rows as candidates.",
+        ]
+        mapped = getattr(result, "mapped_positions", 0)
+        spoken = getattr(result, "spoken_positions", 0)
+        if spoken:
+            findings.append(
+                f"{mapped} of {spoken} position(s) the corpus speaks about could be mapped to a "
+                "coordinate; the rest name a variant this pass could not place."
+            )
+        if ctx:
+            await ctx.report_progress(progress=2, total=2)
+        return _draft_result(
+            result,
+            spec_dir=target,
+            source="pubmind",
+            use=declared,
+            dry_run=dry_run,
+            findings=findings,
+        )
+
+    @mcp.tool(
+        task=True,
+        annotations=ToolAnnotations(
+            title="Draft repeat loci from STRchive",
+            readOnlyHint=False,
+            idempotentHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def draft_from_strchive(
+        spec_dir: str,
+        genes: list[str],
+        use: str,
+        dry_run: bool = False,
+        ctx: Context | None = None,
+    ) -> DraftResult:
+        """Draft `repeat_alleles.csv` — repeat-expansion bands — from STRchive.
+
+        **MIT-licensed, and the only drafter here that writes a BINNING table.** A repeat
+        locus is not a variant with a genotype: the subject is a *count* with thresholds,
+        so the rows are ranges (normal / intermediate / pathogenic) rather than
+        `variants.csv` entries. `list_tables` is the router if that distinction is new;
+        drafting HTT or FMR1 into `variants.csv` is the mistake this tool exists to stop.
+
+        **`source_findings` carries the contested loci**, and they are the point. Published
+        thresholds for the same repeat disagree between sources more often than for almost
+        anything else in the format, and STRchive records where. A contested boundary is a
+        decision for a pilot, not a number to copy — and a bin whose threshold no paper
+        grounds is reported at compile time as `bins_ungrounded`.
+
+        `fractional_ref_copies` and `with_locus_structure` come back on the result:
+        a fractional reference count means the locus does not divide evenly into its
+        repeat unit, which is a real property of the locus and not a rounding error.
+        """
+        declared = _check_use(use)
+        target = resolve_dir(spec_dir, settings)
+        if ctx:
+            await ctx.info(f"Drafting repeat loci for {', '.join(genes)} into {target.name}")
+            await ctx.report_progress(progress=1, total=2)
+        try:
+            result = await run_sync(
+                lambda: draft_repeat_loci(
+                    target, tuple(genes), declared_use=declared, dry_run=dry_run
+                )
+            )
+        except StrchiveDraftError as exc:
+            raise ToolError(str(exc)) from exc
+        findings = [
+            f"{locus}: published thresholds disagree ({why})"
+            for locus, why in getattr(result, "contested", []) or []
+        ]
+        fractional = getattr(result, "fractional_ref_copies", 0)
+        if fractional:
+            findings.append(
+                f"{fractional} locus/loci have a fractional reference copy count — the locus does "
+                "not divide evenly into its repeat unit. A real property, not a rounding error."
+            )
+        if ctx:
+            await ctx.report_progress(progress=2, total=2)
+        return _draft_result(
+            result,
+            spec_dir=target,
+            source="strchive",
+            use=declared,
+            dry_run=dry_run,
+            findings=findings,
         )
 
     # The cost sentence is in the docstring rather than behind a flag because a caller can

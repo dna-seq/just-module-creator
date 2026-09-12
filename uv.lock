@@ -1047,7 +1047,7 @@ dev = [
 
 [[package]]
 name = "just-module-creator"
-version = "0.33.0"
+version = "0.34.0"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },

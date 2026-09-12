@@ -594,6 +594,33 @@ comparison against ISO values.
   The contract is the MCP tool surface, the skill and the CLI; breaking *that* is
   allowed but deliberate and versioned.
 
+### Parity with upstream is the default, and a gap is a bug
+
+**This plugin is the only user-side exposure of the just-dna toolchain.** Upstream ships a library
+and a CLI; neither reaches somebody driving an agent. So when upstream adds a drafting source, a
+pass or a check, **wrapping it is the default and not wrapping it is the thing that needs a written
+reason** in `docs/just-dna-format-pending-fixes.md`.
+
+The failure this prevents has a signature worth recognising: **the surface names a thing it cannot
+do.** `list_tables` listed `expression_effects.csv` among the sidecars for a whole release while no
+tool could fill it, and `refresh_sidecar` told the author to go run the CLI. That is the same defect
+the tier removal in 0.21.0 existed to end, arriving from the other direction — and it is invisible
+from inside the code, because every test passed. It took building a module to see it.
+
+**Measure the gap rather than remembering it**, because both sides move:
+
+```bash
+ls ../just-dna-format/enricher/src/just_dna_enricher/*_draft.py    # the drafting sources
+uv run just-dna-enricher --help                                    # the pass and check surface
+uv run python -c "from just_dna_compiler import hints; print(sorted(hints.DERIVED_TABLE_MODELS))"
+```
+
+Two things are **not** grounds for leaving one out: that it would make a module non-commercial (a
+licence is a property of the module that used it, recorded per-module in `licensing.csv`, not of the
+plugin that offers the tool), and that nobody here has exercised it yet (that is an argument for a
+test). What *is* grounds: it is an operator's sweep, a build hook, or something whose only caller is
+a deployment rather than an author. Say which, in the note.
+
 ### How to add a tool
 
 1. **There is no tier. Register it, and if it is expensive, SAY SO in its
@@ -1245,6 +1272,23 @@ have been questions.
   explicitly dropping `module-tables` from the eight offered. **Do not helpfully re-promote a guide**:
   `test_the_command_menu_is_what_a_person_would_ask_for` pins the set by name so that adding one is a
   decision, and the thing that makes a guide reachable is a router naming it, not a menu entry.
+
+- **"I think it makes sense to upkeep tools/drafting surfaces parity in the plugin. Plugin is
+  currently one and only thing that exposes it userside so if upstream provides stuff, we expose
+  it."** Stated 2026-09-12, after a dogfooding run found 0.7's whole AlphaGenome surface unwrapped
+  while `list_tables` already named its sidecar. **Parity is now the default and abstention is what
+  needs an argument** — the reverse of how the AlphaGenome wrap was reasoned about, where "nobody has
+  exercised it yet" was offered as a reason to withhold `alphagenome check` and is not one. Nothing
+  else reaches a user: upstream ships a library and a CLI, and an author driving the plugin who is
+  told to shell out has been handed the ad-hoc route the product exists to remove.
+
+  **Two objections that are NOT grounds, both mine and both wrong on the day.** *"It would make
+  modules non-commercial"* — acquiring a tool licenses nothing, using it does, and the licence row is
+  per-module and already machine-readable. *"We have not exercised it"* — that argues for testing it,
+  not for hiding it. What abstention does still cover is a surface that is **not a user-side
+  capability at all**: an operator's sweep, a build hook, something whose only caller is a deployment.
+  Say which of those it is, or wrap it.
+
 
 ## 11. Learned workspace facts
 

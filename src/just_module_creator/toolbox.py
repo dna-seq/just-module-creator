@@ -143,6 +143,19 @@ GROUPS: tuple[Group, ...] = (
         2291,
     ),
     Group(
+        "drafting",
+        "The other four published sources rows can be drafted from: CIViC's curated clinical "
+        "evidence, MITOMAP's mtDNA, PubMind's machine-extracted literature calls, and STRchive's "
+        "repeat bands. ClinVar is in core because the taught order names it.",
+        (
+            "draft_from_civic",
+            "draft_from_mitomap",
+            "draft_from_pubmind",
+            "draft_from_strchive",
+        ),
+        5109,
+    ),
+    Group(
         "passes",
         "Fill or re-derive the machine-written sidecars. A corpus sizes four of these.",
         (
