@@ -1,14 +1,24 @@
 # gene_metrics.csv — what does a reference say about this whole gene
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/gene_metrics/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("gene_metrics.csv")` and `table_requirements("gene_metrics.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 > **Correction, 2026-08-20 (later than the banner above).** This file says `describe_table`
 > refuses this table and quotes that refusal's wording. Both were true when written and are not
@@ -25,30 +35,30 @@ gnomAD says how intolerant of variation the gene **looks** in a population sampl
 missense Z); ClinGen says whether an expert panel found evidence that **losing or gaining a copy
 causes disease** (haploinsufficiency, triplosensitivity). They are separate rows sharing the gene,
 each naming its own `dataset` — never one merged row, "which would put a statistical estimate and a
-curated verdict under one provenance" (`enricher/src/just_dna_enricher/clingen.py:1-7`).
+curated verdict under one provenance" (`enricher/src/just_dna_enricher/clingen.py`).
 
 It exists because gene-level and variant-level facts get separate tables rather than gene metrics
 repeated on every variant row: "a module with forty variants across six genes carries six rows here,
 not forty duplicated ones, and the two axes stay independently updatable"
-(`schema/src/just_dna_format/gene_metrics.py:8-11`). Its audience is a clinical reader asking "is
+(`schema/src/just_dna_format/gene_metrics.py`). Its audience is a clinical reader asking "is
 this gene the kind of gene where a truncating variant matters" and a consumer that wants that answer
 without holding a 95.5 MB constraint TSV. **No annotation table joins to it.** The compiler only
-cross-checks it (`compiler.py:5716 _cross_check_gene_metrics`, gene-symbol orphan warning) and checks
-its internal arithmetic (`compiler.py:5449 _check_gene_metrics_arithmetic`).
+cross-checks it (`compiler.py _cross_check_gene_metrics`, gene-symbol orphan warning) and checks
+its internal arithmetic (`compiler.py _check_gene_metrics_arithmetic`).
 
 ## Identity card
 
 | | |
 |---|---|
-| Model + module | `just_dna_format.gene_metrics.GeneMetricsRow` (`schema/src/just_dna_format/gene_metrics.py:57`) |
-| Parquet | `gene_metrics.parquet` — in `ARTIFACT_PARQUETS` (`compiler.py:290`), so inside `artifact.digest` |
-| Natural / dedup key | `(gene, dataset)` — both passes merge on it: `existing[(row.gene, row.dataset)]` (`gene_metrics.py:192`, `clingen.py:218`). **Not enforced by the compiler** — see Gotcha 3 |
+| Model + module | `just_dna_format.gene_metrics.GeneMetricsRow` (`schema/src/just_dna_format/gene_metrics.py`) |
+| Parquet | `gene_metrics.parquet` — in `ARTIFACT_PARQUETS` (`compiler.py`), so inside `artifact.digest` |
+| Natural / dedup key | `(gene, dataset)` — both passes merge on it: `existing[(row.gene, row.dataset)]` (`gene_metrics.py`, `clingen.py`). **Not enforced by the compiler** — see Gotcha 3 |
 | Authored or machine-produced | **machine-produced, human-overridable by design.** Standalone `BaseModel`, not an `AuthoredModel`; `extra="forbid"` so a typo'd column is refused, not dropped |
 | Who writes it | two passes writing one file: `enricher.gene_metrics.enrich_gene_metrics` (`just-dna-enricher gene-metrics <dir>`) and `enricher.clingen.enrich_dosage_sensitivity` (`just-dna-enricher dosage <dir>`) |
 | Fact signature | `integrity.gene_metrics_signature` over `gene_metrics.GENE_METRICS_FACT_FIELDS` — **18 of 21 fields**; `source`/`status`/`fetched_at` excluded → `manifest.gene_metrics.signature` |
-| In `content_signature`? | **No.** `content_signature` reads `variants.csv`, `studies.csv` and `_TABLE_KINDS` only (`compiler.py:3868-3872`) |
-| In `artifact.digest`? | **Yes**, via its parquet. Also byte-hashed into `manifest.derived[]` — transport only (`compiler.py:342-352`) |
-| Manifest block | `manifest.gene_metrics` = `{signature, sources, datasets, row_count, genes}` (`compiler.py:4724 _gene_metrics_block`); absent when the module carries no such sidecar |
+| In `content_signature`? | **No.** `content_signature` reads `variants.csv`, `studies.csv` and `_TABLE_KINDS` only (`compiler.py`) |
+| In `artifact.digest`? | **Yes**, via its parquet. Also byte-hashed into `manifest.derived[]` — transport only (`compiler.py`) |
+| Manifest block | `manifest.gene_metrics` = `{signature, sources, datasets, row_count, genes}` (`compiler.py _gene_metrics_block`); absent when the module carries no such sidecar |
 | Location | root or `derived/gene_metrics.csv`. Both at once = `layout.SidecarCollision`, an error, never a merge. Both passes route through `licensing.sidecar_path` since enricher 0.6.1 (RM99) |
 
 ## Who populates what
@@ -58,7 +68,7 @@ its internal arithmetic (`compiler.py:5449 _check_gene_metrics_arithmetic`).
   `gene`, `gene_id`, `transcript`, `mane_select`, `pli`, `loeuf`, `oe_lof`, `oe_lof_lower`, `lof_z`,
   `mis_z`, `syn_z`, `oe_mis`, `obs_lof`, `exp_lof`, `constraint_flags`, `dataset`, `source="gnomad"`,
   `status`, `fetched_at`. Gene set comes from the **`gene` column of `variants.csv`**, deduplicated in
-  first-occurrence order (`gene_metrics.py:97 module_genes`) — "the module *saying which genes it is
+  first-occurrence order (`gene_metrics.py module_genes`) — "the module *saying which genes it is
   about*; querying anything else would be inventing scope the author did not ask for".
 - **enricher pass — the ClinGen half.** `enrich_dosage_sensitivity`
   (`just-dna-enricher dosage <dir>`, or `enrich_facts(passes=["dosage"])`) fills only `gene`,
@@ -66,7 +76,7 @@ its internal arithmetic (`compiler.py:5449 _check_gene_metrics_arithmetic`).
   `source="clingen"`, `status`, `fetched_at`. Same gene set, same file, its own rows.
 - **author** — no column is *expected* of a human, and every column *may* be written by one.
   `source` names `gnomad|clingen|manual|reversed` as open vocabulary
-  (`gene_metrics.py:155-163`), so `manual` is the declared route for a curator override, and
+  (`gene_metrics.py`), so `manual` is the declared route for a curator override, and
   MODULE_LIFECYCLE §6.3 lists "curator overrides, if any" as what deleting this file costs. **Read
   Gotcha 3 before writing one** — the merge does not behave the way the key suggests.
 - **drafter** — none. `gene_metrics.csv` is **not in `just_dna_compiler.draft.DRAFTABLE`**, so there
@@ -76,14 +86,14 @@ its internal arithmetic (`compiler.py:5449 _check_gene_metrics_arithmetic`).
   or `reject_compiler_filled`. The compiler reads, warns, and builds the parquet; it never writes a
   cell of this CSV.
 - **registry-stamped** — nothing. No column is in `normalize.IDENTITY_AUTHORITY_KEYS`. The registry
-  *does* carry the file (`specfiles.FACT_CSVS`, `specfiles.py:99`) and *does* re-parse it through
-  `GeneMetricsRow` on `revalidate`/`upgrade` (`services/upgrade.py:166`), which can **trim an unknown
+  *does* carry the file (`specfiles.FACT_CSVS`, `specfiles.py`) and *does* re-parse it through
+  `GeneMetricsRow` on `revalidate`/`upgrade` (`services/upgrade.py`), which can **trim an unknown
   column lossily** (`trim_unknown_columns`, "**LOSSY** — the dropped cells are gone").
 - **nobody, ever** — no permanently-unwritten column; all 21 have a producer.
 
 **Which cells no tool may fill even though it easily could:** *none, and that is a fact about this
 table's kind rather than an omission.* No column here appears in `hints.REDUNDANCY_BEARING` or
-`hints.ATTESTATION_BEARING` (`compiler/src/just_dna_compiler/hints.py:72,81`) — those maps name
+`hints.ATTESTATION_BEARING` (`compiler/src/just_dna_compiler/hints.py,81`) — those maps name
 **authored** cells a Class-2 check later cross-examines, and this whole table is the *source side* of
 such a comparison, not the authored side. The consequence is the one worth carrying: **nothing here
 is independently verified by anything.** `_check_gene_metrics_arithmetic` checks the table against
@@ -94,7 +104,7 @@ The refusal that *is* live here is a reserved verification check with no emitter
 `vocab.VALID_VERIFICATION_CHECKS` carries `"dosage_sensitivity"` marked **RESERVED**, because
 "`enrich_dosage_sensitivity` … records ClinGen's haplo/triplo curation into `gene_metrics.csv` and no
 model carries an authored dosage claim to compare it against. The member is for the pass that gains
-one" (`vocab.py:712-715`). So a compiled module will never carry a `dosage_sensitivity` record in
+one" (`vocab.py`). So a compiled module will never carry a `dosage_sensitivity` record in
 `verification.json`, and `reference_examples/hboc_palb2/README.md:59` naming `dosage` as the command
 that "answers `dosage_sensitivity`" is the *finding*, not the contract — the vocab comment is the
 answer to it.
@@ -121,22 +131,22 @@ Measured, not asserted: `reference_examples/hboc_palb2` (one PALB2 row) compiled
 and the delete.
 
 1. **Is this table inside `content_signature`?** No. `content_signature` loads only
-   `variants.csv`, `studies.csv` and `_TABLE_KINDS` (`compiler.py:3868`); `_INPUT_FILES`
-   (`compiler.py:267`) does not list it. Its identity is instead
+   `variants.csv`, `studies.csv` and `_TABLE_KINDS` (`compiler.py`); `_INPUT_FILES`
+   (`compiler.py`) does not list it. Its identity is instead
    `integrity.gene_metrics_signature(rows)` over `GENE_METRICS_FACT_FIELDS` — 18 fields, with
    `source`, `status` and `fetched_at` deliberately **out**, so "a human-filled and a machine-filled
-   table with identical facts hash equal" (`integrity.py:265-272`). `dataset`, `transcript` and
+   table with identical facts hash equal" (`integrity.py`). `dataset`, `transcript` and
    `mane_select` are deliberately **in**: "a v2.1.1 pLI and a v4.1 pLI are different facts" and "a
-   constraint score is a property *of a transcript*" (`gene_metrics.py:30-34`).
+   constraint score is a property *of a transcript*" (`gene_metrics.py`).
 2. **Is it inside `artifact.digest`?** Yes — `gene_metrics.parquet` is in `ARTIFACT_PARQUETS`, and the
    tuple's **order is the digest order**, so it must never be re-positioned. This is why a
    provenance-only change no signature sees still moves the digest: the parquet bytes differ. The CSV
    is *additionally* byte-hashed into `manifest.derived[]`, and that hash is **transport only** — "a
    consumer that reads this one as identity will see a reverse→recompile cycle as tampering"
-   (`compiler.py:345-347`).
+   (`compiler.py`).
 3. **Does an edit here un-close the module?** **No.** The attestation binds
    `compiler.authored_input_entries(spec_dir)` = `newline_normalized_file_entries(_INPUT_FILES)`
-   (`compiler.py:386`), and this file is not in that set — "the derived sidecars carry per-run noise
+   (`compiler.py`), and this file is not in that set — "the derived sidecars carry per-run noise
    (`fetched_at`) that would invalidate an attestation on a re-enrichment that changed nothing anyone
    claimed". Measured: `module_hash` unmoved across every edit above, including deleting the file.
    Note the asymmetry an author will trip on anyway — an `authorship:` append to `module_spec.yaml`
@@ -157,16 +167,16 @@ and the delete.
   when absent (`_gene_metrics_block` returns `None` on empty), the parquet is skipped, and no
   compile check fails.
 - **It requires `variants.csv` to be useful, and silently produces nothing without it.**
-  `module_genes()` returns `[]` when `variants.csv` is absent (`gene_metrics.py:99-101`), so a PGx
+  `module_genes()` returns `[]` when `variants.csv` is absent (`gene_metrics.py`), so a PGx
   module keyed on `haplotypes.csv`/`diplotypes.csv` gets an **empty** gene set — the gene symbols in
   those tables are never read. If you want constraint on a PGx gene, you author the rows by hand.
 - **It drags in `sources.csv` / `licensing.csv`.** Both passes call `record_source_terms` /
-  `merge_sources_file` on write (`gene_metrics.py:343`, `clingen.py:263`), so a `gnomad` and/or
+  `merge_sources_file` on write (`gene_metrics.py`, `clingen.py`), so a `gnomad` and/or
   `clingen` row appears in the licence ledger at layer `gene_metrics`. The compile licence gate reads
   that file and nothing else, so a hand-written `gene_metrics.csv` with `source=gnomad` and no
-  matching ledger row draws a source-coverage warning (`_sources_checks`, `compiler.py:4441`).
+  matching ledger row draws a source-coverage warning (`_sources_checks`, `compiler.py`).
   Licence-wise it costs nothing: `GNOMAD_TERMS` and `CLINGEN_TERMS` are both `CC0-1.0`,
-  `commercial_use=True`, `redistribution=True`, `share_alike=False` (`licensing.py:161-168,241-253`),
+  `commercial_use=True`, `redistribution=True`, `share_alike=False` (`licensing.py,241-253`),
   and `gene_metrics` is not the `annotation` layer, so neither can taint a module.
 - **`variants.csv` gene symbols must be current HGNC names or you get nothing.** Both passes match on
   the literal string. Run `check_identifiers` (`gene_symbol_currency`) *before* these passes, not after.
@@ -188,11 +198,11 @@ and the delete.
   the row pick must be deterministic". `true` = MANE Select on an ENSG id; `false` = the builder fell
   back to `canonical` on an ENSG id (637 of 18,111 genes in the live v4.1 snapshot); **`None` = never
   established** — which is what the live API route writes whenever gnomAD returns no MANE transcript
-  (`bool(mane.get("ensembl_id")) or None`, `gnomad.py:502`). `None` is not `false`.
+  (`bool(mane.get("ensembl_id")) or None`, `gnomad.py`). `None` is not `false`.
 - **`haploinsufficiency` / `triplosensitivity`** — **terms, never ClinGen's numeric codes**, and a
   deliberate departure from keep-the-source-value-verbatim. The codes look ordinal and are not: `30`
   = autosomal-recessive-phenotype, `40` = dosage-sensitivity-unlikely, so sorting on the raw number
-  ranks `40` above `3` — "the exact inversion of the meaning" (`vocab.py:384-398`).
+  ranks `40` above `3` — "the exact inversion of the meaning" (`vocab.py`).
   `vocab.DOSAGE_SENSITIVITY_BY_CODE` is the lossless mapping in both directions. **A blank
   `triplosensitivity` is an absence, not a rating** — ClinGen writes a literal `"Not yet evaluated"`
   for 210 of 1,520 genes and it maps to `None`.
@@ -211,8 +221,8 @@ Ordered by how likely a first-timer is to hit it.
 
 ### 1 — Re-running the gene-metrics pass on an already-enriched module **crashes**
 
-`enrich_gene_metrics` binds `reference` only inside `if wanted:` (`gene_metrics.py:206-207`) and then
-reads it unconditionally at `gene_metrics.py:255`
+`enrich_gene_metrics` binds `reference` only inside `if wanted:` (`gene_metrics.py`) and then
+reads it unconditionally at `gene_metrics.py`
 (`constraint_routes_consulted = reference is not None or not offline`). `wanted` is empty whenever
 **every gene already has a `source`-startswith-`gnomad` row** — i.e. the ordinary idempotent re-run —
 or when the module has no `variants.csv`. Reproduced on `reference_examples/hboc_palb2` with enricher
@@ -237,9 +247,9 @@ module are both ordinary now. On an older enricher, run the pass once and catch 
 ### 2 — `constraint_flags` has three incompatible encodings, and the snapshot's "empty" is a non-empty string
 
 The field description says the list is "kept verbatim and pipe-joined". Only the **live API** route
-does that (`"|".join(sorted(flags)) if flags else None`, `gnomad.py:513`). The **snapshot** route
+does that (`"|".join(sorted(flags)) if flags else None`, `gnomad.py`). The **snapshot** route
 copies the TSV cell verbatim, and gnomAD writes a JSON array literal there; `[]` is not in
-`constraint_build._NULLS` (`constraint_build.py:85`), so it survives as the two-character string
+`constraint_build._NULLS` (`constraint_build.py`), so it survives as the two-character string
 `"[]"`. Measured over the real published v4.1 snapshot (18,111 genes):
 
 > ✅ **FIXED in format 0.7.0 (`RM110`) — and the guard below INVERTS, so read the version you are on.**
@@ -292,7 +302,7 @@ sitting inside the fact signature is what made the obvious repair expensive enou
 
 The merge key is `(gene, dataset)`, but the *fetch-suppression* key is different:
 `done = {row.gene for row in existing.values() if (row.source or "").startswith("gnomad")}`
-(`gene_metrics.py:197`). So a hand-written correction with `source="manual"` does not mark the gene
+(`gene_metrics.py`). So a hand-written correction with `source="manual"` does not mark the gene
 done. Measured on `hboc_palb2` — set `source=manual` and `loeuf=0.95`, re-run the pass, and the file
 comes back with **two rows sharing `(PALB2, gnomad_v4.1_constraint)` and contradicting `loeuf`**:
 
@@ -330,13 +340,13 @@ row *in place*, keep `source="gnomad"`, and note the change outside the table.
 ### 4 — One module can hold two gnomAD releases at once, per gene
 
 The fallback is **per gene**, not per run: `still_missing = [g for g in wanted if g not in
-from_snapshot]` (`gene_metrics.py:233`). So a six-gene module where one gene is outside the
+from_snapshot]` (`gene_metrics.py`). So a six-gene module where one gene is outside the
 18,111-gene snapshot gets five `gnomad_v4.1_constraint` rows and one `gnomad_v2.1.1_constraint` row.
 The numbers are not comparable — verified upstream against both routes, BRCA1 is pLI 1.55e-34 /
 LOEUF 0.885 / mis_z 2.338 from the bulk v4.1 file versus 5.52e-38 / 0.928 / 1.734 from the live API,
 same gene, same MANE transcript (ENRICHER.md:1029-1037; re-measured from the local snapshot:
 `1.5474e-34 / 0.885 / 2.3379`). A warning fires naming the count and the label
-(`gene_metrics.py:295-301`). **Read `dataset` per row before comparing any two genes in one table.**
+(`gene_metrics.py`). **Read `dataset` per row before comparing any two genes in one table.**
 
 **Which route a plain run takes today (2026-08-19, enricher 0.6.4):** the **v4.1 snapshot**.
 `resolve_constraint_reference(None)` finds `~/.cache/just-dna-pipelines/gnomad_constraint`, and on a
@@ -376,7 +386,7 @@ not egress. Consequence: an offline module gets its gnomAD rows and **no dosage 
 exactly what `reference_examples/hboc_palb2/gene_metrics.csv` shows — one gnomAD row, both dosage
 columns blank, no ClinGen row, on a module whose README documents running the full chain.
 
-If you ever parse that TSV yourself instead, `clingen.py:12-28` lists the three shapes that will break
+If you ever parse that TSV yourself instead, `clingen.py` lists the three shapes that will break
 you: six `#` comment lines the last of which *is* the header (`#Gene Symbol…`), a literal
 `"Not yet evaluated"` making `int(cell)` crash on one file in seven, and the non-ordinal codes.
 `decode_rating` **logs and leaves unset** any code the mapping does not know, "because guessing at it
@@ -412,7 +422,7 @@ nothing was measured.
   `oe_mis` has neither bound. Deliberate scope, not an oversight.
 - **No `lof_hc_lc.*` or `mis_pphen.*` columns.** "refinements of the same two axes, and carrying all
   55 columns would trade the small-snapshot property for data nobody asked for"
-  (`constraint_build.py:62-64`).
+  (`constraint_build.py`).
 - **No numeric dosage-code column.** Refused with a reason: the codes lie about their own order, and
   the mapping is lossless in both directions, so nothing is destroyed by carrying the term. Do not
   propose adding one; `vocab.DOSAGE_SENSITIVITY_BY_CODE` is the reverse route.
@@ -432,29 +442,29 @@ nothing was measured.
 
 **Nobody reads a single column of this table. Not one consumer, anywhere.** That is the finding.
 
-- `just-dna-lite/webui/src/webui/state.py:6007` — `_ARTIFACT_FILES = tuple(ARTIFACT_PARQUETS)`, so
+- `just-dna-lite/webui/src/webui/state.py` — `_ARTIFACT_FILES = tuple(ARTIFACT_PARQUETS)`, so
   `gene_metrics.parquet` is one of sixteen names in a digest computation. Opaque; never opened.
-- `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/v1_port/publish.py:39` —
+- `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/v1_port/publish.py` —
   `_ALLOW_PATTERNS = [*ARTIFACT_PARQUETS, …]`, so the parquet is *uploaded*. Opaque.
-- `just-dna-lite/.../annotation/hf_modules.py:206-243` — module discovery builds URLs for the lead
+- `just-dna-lite/.../annotation/hf_modules.py` — module discovery builds URLs for the lead
   table, `annotations.parquet`, `studies.parquet`, `sources.parquet`, logo and metadata. **`gene_metrics.parquet`
-  is not even fetched.** The annotation report path (`annotation/report_logic.py:419,487`) reads
+  is not even fetched.** The annotation report path (`annotation/report_logic.py,487`) reads
   `annotations.parquet` only.
-- `just-dna-registry/src/just_dna_registry/specfiles.py:99` — `gene_metrics.csv` is in `FACT_CSVS`, so
+- `just-dna-registry/src/just_dna_registry/specfiles.py` — `gene_metrics.csv` is in `FACT_CSVS`, so
   `revalidate`/`upgrade` carry it forward instead of dropping it. Structural, not interpretive.
-- `just-dna-registry/src/just_dna_registry/services/upgrade.py:166` — parsed through `GeneMetricsRow`
+- `just-dna-registry/src/just_dna_registry/services/upgrade.py` — parsed through `GeneMetricsRow`
   to find columns a newer model would reject, and to `trim_unknown_columns` (lossy) if asked.
-- `just-dna-registry/src/just_dna_registry/services/enrich.py:1463 _pgx_leg_clingen` — the registry
+- `just-dna-registry/src/just_dna_registry/services/enrich.py _pgx_leg_clingen` — the registry
   **runs the dosage pass** server-side under `?pgx=true`, with `write=False`, and keeps only
   `missing` / `unreachable` / `skipped` / the source row. **It discards every rating it computed.**
-- `just-dna-registry/src/just_dna_registry/services/enrich.py:62-72` — explicit: `constraint` was in
+- `just-dna-registry/src/just_dna_registry/services/enrich.py` — explicit: `constraint` was in
   `RESOLUTION_REFERENCES` until "it was noticed that **no registry pass reads it**"; it now sits alone
   in `METRICS_REFERENCES`, pullable by `warm-caches`, gating nothing.
-- `just-dna-registry/src/just_dna_registry/db/facets.py:209-212` — the 0.6 fact-table facets are
+- `just-dna-registry/src/just_dna_registry/db/facets.py` — the 0.6 fact-table facets are
   `has_gene_validity`, `has_clinical_assertions`, `has_gwas_effects`, `has_frequencies`. **No
   `has_gene_metrics`** (`grep` across `src/` and `docs/` returns nothing), so no `?has_gene_metrics=`
   query exists on `/modules`, in `RegistryClient.search`, or in our `registry_search`.
-- `just-dna-registry/src/just_dna_registry/db/repository.py:663` — `version_genes` is populated from
+- `just-dna-registry/src/just_dna_registry/db/repository.py` — `version_genes` is populated from
   `manifest.stats.genes`, **not** from `manifest.gene_metrics.genes`. Since compiler 0.6.6 that field
   covers every gene-bearing *authored* table, and the derived fact sidecars are structurally excluded
   from it — so a gene present only here still contributes nothing to the facet, which is correct: this
@@ -470,7 +480,7 @@ upgrades — and read by nothing. A pLI of 1e-19 has never reached a human readi
 ## Blanks for just-dna-lite
 
 - **Surface pLI / LOEUF / `constraint_flags` on the annotated variant, gene-level.** Nothing fetches
-  `gene_metrics.parquet` today (`hf_modules.py:206-243` builds four URLs and this is not one), so a
+  `gene_metrics.parquet` today (`hf_modules.py` builds four URLs and this is not one), so a
   report cannot say "this truncating variant sits in a gene with LOEUF 0.64 and pLI ≈ 0" even when the
   module ships exactly that. **Ask:** add `gene_metrics.parquet` to the discovered set, join on `gene`,
   and render the LoF interval as an interval (`oe_lof_lower ≤ oe_lof ≤ loeuf`) rather than one number.
@@ -481,7 +491,7 @@ upgrades — and read by nothing. A pLI of 1e-19 has never reached a human readi
   non-ordinal by measurement (`40` > `3` numerically, the reverse in meaning). **Ask:** display the
   six `vocab.VALID_DOSAGE_SENSITIVITY` terms with a blank rendered as *"not evaluated"*, never as
   "no evidence". What breaks today: the registry *computes* these ratings server-side under
-  `?pgx=true` (`services/enrich.py:1470`, `write=False`) and throws them away, so the one place they
+  `?pgx=true` (`services/enrich.py`, `write=False`) and throws them away, so the one place they
   are already derived is also where they are discarded.
 - **Read `dataset` per row before comparing two genes, and show it.** One table legitimately holds
   `gnomad_v4.1_constraint` and `gnomad_v2.1.1_constraint` rows for different genes, whose pLI differ
@@ -528,7 +538,7 @@ set(GeneMetricsRow.model_fields) - set(GENE_METRICS_FACT_FIELDS)
 
 For the enricher side: `just_dna_enricher.gnomad.CONSTRAINT_DATASET_LABEL` and
 `API_CONSTRAINT_DATASET_LABEL` are the two gnomAD `dataset` labels; the ClinGen label is built at
-runtime from the release line in the curation TSV (`clingen.py:221`), so it is not a constant to look
+runtime from the release line in the curation TSV (`clingen.py`), so it is not a constant to look
 up. Confirm the installed toolchain by symbol, never by a version line:
 `hasattr(just_dna_enricher.gene_metrics, "GeneMetricsUnavailable")` (0.6.2+) and
 `"unconsulted" in GeneMetricsResult.__dataclass_fields__` (0.6.1+/RM98).

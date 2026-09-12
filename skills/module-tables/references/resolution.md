@@ -1,14 +1,24 @@
 # `resolution.csv` — the injected rsID↔coordinate lookup the compiler resolves from, and never fetches
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/resolution/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("resolution.csv")` and `table_requirements("resolution.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 > **Correction, 2026-08-20 (later than the banner above).** This file says `describe_table`
 > refuses this table and quotes that refusal's wording. Both were true when written and are not
@@ -24,7 +34,7 @@
 *compiler* can answer it without owning a source convention: the enricher (the only tier with egress)
 writes the facts down, the compiler reads them and resolves offline. Its audience is the toolchain,
 not a downstream reader: "the compiler *consumes* it, the enricher *produces* it, and a verify-only
-client may *re-check* it" (`schema/src/just_dna_format/resolution.py:9-11`). It is the hinge between
+client may *re-check* it" (`schema/src/just_dna_format/resolution.py`). It is the hinge between
 the authoring tier and the artifact tier, and it is the only table in the format that is hashed,
 attested, shipped — and **materialized into other tables rather than published as one of its own**.
 
@@ -32,15 +42,15 @@ attested, shipped — and **materialized into other tables rather than published
 
 | | |
 |---|---|
-| Model | `just_dna_format.resolution.ResolutionRow` (`schema/src/just_dna_format/resolution.py:49`), a standalone `BaseModel` with `extra="forbid"` — **not** an `AuthoredModel` |
+| Model | `just_dna_format.resolution.ResolutionRow` (`schema/src/just_dna_format/resolution.py`), a standalone `BaseModel` with `extra="forbid"` — **not** an `AuthoredModel` |
 | Parquet | **none, deliberately.** `'resolution.parquet' in compiler.ARTIFACT_PARQUETS` is `False` (verified against installed compiler 0.6.1) |
 | Natural / dedup key | `(variant_key, locus_index)`. Several rows share one `variant_key` with distinct `locus_index` for a one-to-many rsID |
 | Authored or machine-produced | machine-produced, human-overridable |
-| Who writes it | `just_dna_enricher.enrich.enrich()` (`enricher/.../enrich.py:1550`), and `compiler.reverse_module` (`compiler/.../compiler.py:6256`) |
-| Fact signature | `integrity.resolution_signature` over `resolution.RESOLUTION_FACT_FIELDS` (`schema/.../integrity.py:378`), published as `manifest.compilation.resolution_signature` |
-| In `content_signature`? | **no** — absent from `compiler._INPUT_FILES` (`compiler.py:267`) |
+| Who writes it | `just_dna_enricher.enrich.enrich()` (`enricher/.../enrich.py`), and `compiler.reverse_module` (`compiler/.../compiler.py`) |
+| Fact signature | `integrity.resolution_signature` over `resolution.RESOLUTION_FACT_FIELDS` (`schema/.../integrity.py`), published as `manifest.compilation.resolution_signature` |
+| In `content_signature`? | **no** — absent from `compiler._INPUT_FILES` (`compiler.py`) |
 | In `artifact.digest`? | **no** — no parquet, so no bytes in the Merkle root |
-| Elsewhere in the manifest | byte-hashed into `manifest.derived` via `compiler._DERIVED_FILES` (`compiler.py:355`). That hash is **transport only**; the identity is the fact signature beside it |
+| Elsewhere in the manifest | byte-hashed into `manifest.derived` via `compiler._DERIVED_FILES` (`compiler.py`). That hash is **transport only**; the identity is the fact signature beside it |
 | Legal homes | spec root **or** `derived/` (`just_dna_format.layout.DERIVED_SUBDIR`). Exactly one spelling — no `licensing.csv`-style rename. Both copies present → `layout.SidecarCollision`, an error, never a merge |
 
 ## Who populates what
@@ -48,24 +58,24 @@ attested, shipped — and **materialized into other tables rather than published
 - **enricher pass — `just-dna-enricher enrich <dir>`** (jmc: `enrich_module`). Writes every column
   the chain can establish. Chain, first hit wins: existing rows → Ensembl snapshot (`source=cache`) →
   ClinVar snapshot (`clinvar`) → live Ensembl (`ensembl-rest` / `ensembl-graphql`) → live gnomAD
-  (`gnomad`) (`enrich.py:509-515`; the same table in `docs/audit/ENRICHER_FROM_CODE.md:221-227`).
+  (`gnomad`) (`enrich.py`; the same table in `docs/audit/ENRICHER_FROM_CODE.md:221-227`).
   Ordering is chosen so adding a link cannot move an already-compiled module's digest: whichever link
   answers first decides `alts`, and `alts` is a fact.
 - **enricher pass — `vrs mint`, and `enrich --no-vrs` to skip.** `vrs_id` / `vrs_spec` come from
   `vrs.mint_resolution_rows`; substitutions mint offline, indels need sequence access.
 - **enricher pass — the rsID currency check** (online only). Stamps `rsid_status` and `rsid_current`
   onto rows it got an answer for, and **withholds on every row when NCBI is unavailable** rather than
-  stamping `absent` (`enrich.py:1068-1078`).
+  stamping `absent` (`enrich.py`).
 - **enricher, derived not fetched — `authority`.** Read off the row's own `source` through
-  `licensing.RESOLUTION_AUTHORITY_BY_LINK` (`enricher/.../licensing.py:267`), and filled **only where
-  empty**, so a hand-written authority survives (`enrich.py:1135-1137`).
+  `licensing.RESOLUTION_AUTHORITY_BY_LINK` (`enricher/.../licensing.py`), and filled **only where
+  empty**, so a hand-written authority survives (`enrich.py`).
 - **author (hand) — `source=manual`.** The escape hatch, and the only way a non-GRCh38 module gets a
   resolution table at all: `reference_examples/cyp2c9_warfarin_grch37/resolution.csv` carries three,
   hand-recorded from `just-dna-enricher hint recover` output (its README §"Where the coordinates came
   from"). Everything on such a row is the author's.
 - **compiler-stamped — `reverse_module`.** Rebuilds the whole file from `weights.parquet` plus the
   positional parquets, writing 11 columns only and forcing `source="reversed"`, `status="resolved"`,
-  `fetched_at=""` (`compiler.py:6461-6486`). Authored provenance is not preserved; it is *discarded*.
+  `fetched_at=""` (`compiler.py`). Authored provenance is not preserved; it is *discarded*.
 
   > 🚧 **ROADWORKS — a reverse costs you the VRS ids, and the round trip still calls itself lossless.**
   > **Current state.** The eleven columns `reverse_module` writes do **not** include `vrs_id`,
@@ -91,8 +101,8 @@ attested, shipped — and **materialized into other tables rather than published
 **The cells no tool may fill are on the *other* side of this table.** `resolution.csv` is what makes
 `chrom`, `start`, `rsid`, `ref` and `alts` redundancy-bearing *in `variants.csv`*:
 `hints.REDUNDANCY_BEARING` names `compiler.resolution._verify (rsid vs coordinate)` as the check for
-`chrom` and `start` (`compiler/.../hints.py:82-86`). So `lookup_variant` reports a resolved locus with
-`applied: false` and this refusal, verbatim (`enricher/.../lookup.py:471-474`):
+`chrom` and `start` (`compiler/.../hints.py`). So `lookup_variant` reports a resolved locus with
+`applied: false` and this refusal, verbatim (`enricher/.../lookup.py`):
 
 > "resolution fills this into resolution.csv, which is where it belongs: authoring it instead would
 > make the compiler's rsid-vs-coordinate check compare a source with itself, and for an rsid-only row
@@ -100,7 +110,7 @@ attested, shipped — and **materialized into other tables rather than published
 
 Preserve it. Copying a coordinate out of a lookup into `variants.csv` does not merely make the check
 tautological — for an rsid-only row `_verify` never runs at all, so the row moves from *honestly
-unverified* to *apparently verified* (`hints.py:11-15`).
+unverified* to *apparently verified* (`hints.py`).
 
 ## What moving this table moves
 
@@ -124,7 +134,7 @@ format/compiler 0.6.1. Baseline: `digest 6c6e103d14`, `content 44ad444979`, `res
 
 1. **Inside `content_signature`? No.** It is a derived table and is hashed by its own facts —
    `RESOLUTION_FACT_FIELDS = (variant_key, rsid, chrom, start, ref, alts, genome_build, locus_index)`
-   (`resolution.py:37-46`). Left out: `source`, `authority`, `status`, `rsid_alternates`,
+   (`resolution.py`). Left out: `source`, `authority`, `status`, `rsid_alternates`,
    `rsid_current`, `rsid_status`, `fetched_at`, plus the cross-references `vrs_id`/`vrs_spec`/`caid`.
    The stated reason for the provenance block is producer-independence — "a human-filled and an
    Ensembl-filled table carrying identical facts hash equal". `rsid_current`/`rsid_status` carry a
@@ -137,7 +147,7 @@ format/compiler 0.6.1. Baseline: `digest 6c6e103d14`, `content 44ad444979`, `res
    on a *fact* edit, but indirectly — through the coordinates the fill materializes into
    `weights.parquet` and the positional parquets.
 3. **Does an edit here un-close the module? No.** The binding is `compiler.authored_input_entries`,
-   which is `newline_normalized_file_entries(spec_dir, _INPUT_FILES)` (`compiler.py:385`), and
+   which is `newline_normalized_file_entries(spec_dir, _INPUT_FILES)` (`compiler.py`), and
    `resolution.csv` is not in `_INPUT_FILES`. Measured: `manifest.verification` **and**
    `verification.closure` survived all eight perturbations above, including deleting the file
    outright. (For contrast, appending one `authorship:` entry to `module_spec.yaml` moves no identity
@@ -147,7 +157,7 @@ format/compiler 0.6.1. Baseline: `digest 6c6e103d14`, `content 44ad444979`, `res
    the upstream source said something different this time"*. `resolution_signature` is one of the
    three numbers a `hfe_hemochromatosis` reader watches. But **merge-not-clobber means a plain re-run
    can never produce that reading**: the chain skips every `variant_key` an existing row covers
-   (`enrich.py:788-792`), so a source that quietly revised an answer moves nothing. Detecting drift
+   (`enrich.py`), so a source that quietly revised an answer moves nothing. Detecting drift
    *is* the delete-and-re-derive — note the signature, delete, re-enrich, compare — and no command
    performs that sequence (`MODULE_LIFECYCLE.md:301`, filed as RM83).
 
@@ -158,12 +168,12 @@ format/compiler 0.6.1. Baseline: `digest 6c6e103d14`, `content 44ad444979`, `res
 
 - `--strict` refuses when any `VariantRow` still lacks a coordinate, so an rsID-authored module needs
   it to compile strictly. The registry says so plainly: `resolution.csv` must ride along on an upgrade
-  "without which the strict recompile then fails" (`just-dna-registry/.../services/upgrade.py:455`).
+  "without which the strict recompile then fails" (`just-dna-registry/.../services/upgrade.py`).
 - **Two later enricher passes hard-require it and raise without it**: `frequencies`
-  (`enricher/.../frequencies.py:171-178`) and `assertions` (`assertions.py:182`) read resolved
+  (`enricher/.../frequencies.py`) and `assertions` (`assertions.py`) read resolved
   coordinates, not `variants.csv`. So the pass order is `enrich` → everything else.
 - It drags in `licensing.csv`/`sources.csv`: `enrich()` calls `record_source_terms(..., "resolution")`
-  for every distinct `authority` (`enrich.py:1261-1266`), so an Ensembl- or ClinVar-answered module
+  for every distinct `authority` (`enrich.py`), so an Ensembl- or ClinVar-answered module
   acquires a licence row it did not have.
 - It does **not** drag in a parquet, a manifest block of its own, or a `studies.csv` obligation.
 
@@ -174,11 +184,11 @@ Ask the live schema for the column list. These are the ones whose *meaning* is r
 - **`variant_key`** — the join key, and it is the **authored** identity, frozen by
   `base.derive_variant_key`. For a resolved substitution that is a `ga4gh:VA.…` digest, not a
   position; `_locus_label` exists in the compiler precisely because the old message called one a
-  position (`compiler/resolution.py:415-427`). It is **build-dependent**: a GRCh37 module keyed with
+  position (`compiler/resolution.py`). It is **build-dependent**: a GRCh37 module keyed with
   GRCh38 defaults produces a table that silently joins to nothing (`grch37_build/README.md:92`).
 - **`locus_index`** — `0` for a 1:1 resolution, `0..N-1` across the rows of a one-to-many rsID. It is
   **inside** the fact set, so a duplicate under one key is a malformed signed fact rather than a
-  cosmetic slip (`compiler.py:6396-6400`).
+  cosmetic slip (`compiler.py`).
 - **`alts`** — comma-separated, and the single most consequential cell: whichever link answers first
   decides it, and it is a fact, so it decides the compiled bytes.
 - **`source`** — *which link answered*: `cache`, `clinvar`, `ensembl`, `ensembl-rest`,
@@ -193,7 +203,7 @@ Ask the live schema for the column list. These are the ones whose *meaning* is r
   answering nothing at all — that is `status`, not `source`.
 - **`authority`** — *which licensed source that link speaks for*, and the column `sources.csv.source`
   joins on. Empty is a real answer: `authored`, `reversed` and `manual` have no external authority to
-  declare (`licensing.py:264-274`). Before the split existed, the compiler string-compared `source`
+  declare (`licensing.py`). Before the split existed, the compiler string-compared `source`
   against `sources.csv` and every enriched module was told `ensembl-rest` has no terms recorded (RM33).
 - **`status`** — a closed vocabulary; ask `describe_machine_table` for the members
   (`vocab.VALID_RESOLUTION_STATUS`). The distinction worth carrying is the one below.
@@ -202,19 +212,19 @@ Ask the live schema for the column list. These are the ones whose *meaning* is r
   the **same exact allele** (a real dbSNP merge). `rsid` then carries the deterministic lowest pick.
 - **`rsid_current` / `rsid_status`** — recorded, **never substituted**. Writing a merged-into label
   into the artifact would migrate `variant_key` by network lookup and break the round-trip fixed point
-  (`resolution.py:156-164`).
+  (`resolution.py`).
 - **`vrs_id`** — a comma-joined **parallel array of `alts`**, one member per ALT, an empty member
   meaning "no id could be minted for that allele". The codec is public
-  (`just_dna_format.vrs.split_vrs_ids`, `vrs.py:507`) because a second implementation loses the
+  (`just_dna_format.vrs.split_vrs_ids`, `vrs.py`) because a second implementation loses the
   alignment. A length mismatch is refused at load; a *reordered* pair of the right length is caught by
-  the compiler's `_verify_vrs_ids` (`compiler.py:2577`).
+  the compiler's `_verify_vrs_ids` (`compiler.py`).
 
 ## Gotchas
 
 Ordered by how likely a first-timer is to hit them.
 
 1. **A re-run does not refresh anything. Delete to re-derive — and deleting discards hand-authored
-   rows.** Existing rows are authoritative and merged verbatim (`enrich.py:788-792`). The cost is
+   rows.** Existing rows are authoritative and merged verbatim (`enrich.py`). The cost is
    named upstream: "hand-authored `source=manual` rows — real, and not reproducible by re-running
    (`reference_examples/cyp2c9_warfarin_grch37` carries three)" (`MODULE_LIFECYCLE.md:412`). Move the
    file aside rather than deleting it if you may need the manual rows back.
@@ -230,14 +240,14 @@ Ordered by how likely a first-timer is to hit them.
    the id recomputed from 6:26092917 A>C … this is corruption, not a difference of opinion."* Clear
    `vrs_id` and `vrs_spec` when you touch `chrom`/`start`/`ref`/`alts`, and re-mint.
 4. **A missing row means *unchecked*; `not_found` means *asked and absent*.** Three distinct
-   non-answers all write **no row at all**: an unreachable live request (S20, `enrich.py:858-865`), a
+   non-answers all write **no row at all**: an unreachable live request (S20, `enrich.py`), a
    run where no link was consulted at all — `--offline` on a machine with no cache (RM98,
-   `enrich.py:866-884`) — and a non-GRCh38 module. Do not read absence as a negative. `strict` still
+   `enrich.py`) — and a non-GRCh38 module. Do not read absence as a negative. `strict` still
    refuses on the key either way.
 5. **`rsid_status=withdrawn` is fatal in `best_effort` too.** Measured: `strict=False` still refused
    with *"dbSNP has WITHDRAWN … this refuses in best_effort too, unlike a merged or absent rsid."*
    Nothing emits it — the automated check reports `absent` because a retraction is byte-identical to a
-   never-assigned id through every live endpoint (`resolution.py:166-176`). It exists for a curator who
+   never-assigned id through every live endpoint (`resolution.py`). It exists for a curator who
    established the retraction by hand.
 6. **`status=ambiguous` compiles under `best_effort` and refuses under `strict`.** Measured both ways.
    The strict message: *"The label is a deterministic pick among equals, not a fact."*
@@ -257,12 +267,12 @@ Ordered by how likely a first-timer is to hit them.
    points, `resolution_signature` goes `c6fd3238… → a0558501…`, and the three `manual` rows are simply
    gone — reverse has no parquet to rebuild them from (its README, *The round trip, measured*).
 10. **A header-only `resolution.csv` is not an empty one.** Measured: `resolution_signature` is `None`
-    (the stamp is gated on the table having *rows*, `compiler.py:4090`) while the file is still
+    (the stamp is gated on the table having *rows*, `compiler.py`) while the file is still
     byte-hashed into `manifest.derived`. `resolution_signature is not None` means "this module was
     resolved"; do not create the file to look tidy.
 11. **Both homes at once is an error, not a merge.** Root **and** `derived/` → `SidecarCollision`,
     naming both paths, "because two fact-hashed, human-overridable copies are two legitimate claims"
-    (`layout.py:81-88`). Running `enrich` on a downloaded split tree used to create exactly this.
+    (`layout.py`). Running `enrich` on a downloaded split tree used to create exactly this.
 12. **An older table legitimately lacks columns.** Three of the eleven reference examples with a
     `resolution.csv` (`apoe_epsilon`, `hfe_compound_het`, `hfe_hemochromatosis`) have no `authority`
     column at all — written before RM33. It loads as `None` and contributes nothing to the licence
@@ -283,16 +293,16 @@ Ordered by how likely a first-timer is to hit them.
   once as a bug about `rsid_alternates` specifically; **it is not one and is not fixable there** — the
   information is outside the fact set precisely so it stays out of `weights.parquet`, so it does not
   exist in the artifact reverse reads. Emitting the headers would produce permanently empty cells
-  (`compiler.py:6289-6297`). Re-run the enricher.
+  (`compiler.py`). Re-run the enricher.
 - **An `unchecked` member of `VALID_RESOLUTION_STATUS`.** Considered and rejected: "inventing one to
-  describe a row that carries no fact is worse than writing no row" (`enrich.py:885-895`).
+  describe a row that carries no fact is worse than writing no row" (`enrich.py`).
 - **A `--no-ensembl` flag on the compiler.** Refused with a reason (S14): there is no network branch to
   disable, so the flag would be a permanent no-op implying the compiler might otherwise fetch.
 - **A `licence` column on `ResolutionRow`.** Refused: a licence column here "would be wiped on every
   `compile → reverse → compile` cycle and could never be recovered" — hence `sources.csv` as its own
-  fact table (`schema/.../sources.py:23-29`).
+  fact table (`schema/.../sources.py`).
 - **A link→authority map in the compiler.** Refused: it would hand the compiler a source convention,
-  which is exactly what P2's 0.5 tightening removed (`resolution.py:121-132`). The map lives in the
+  which is exactly what P2's 0.5 tightening removed (`resolution.py`). The map lives in the
   enricher.
 - **A deprecated second spelling.** Unlike `sources.csv`/`licensing.csv`, this file has one name.
 - **A drafter or a template.** Not in `draft.DRAFTABLE`; `describe_table`/`get_template` refuse it.
@@ -303,22 +313,22 @@ Ordered by how likely a first-timer is to hit them.
 
 **The annotation consumer never sees this file.** The HuggingFace publish allowlist is
 `[*ARTIFACT_PARQUETS, "manifest.json", "logo.png", "logo.jpg"]`
-(`just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/v1_port/publish.py:39`; the same shape in
-`just-dna-format/enricher/src/just_dna_enricher/upload.py:58-64`, which adds README candidates). No
+(`just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/v1_port/publish.py`; the same shape in
+`just-dna-format/enricher/src/just_dna_enricher/upload.py`, which adds README candidates). No
 CSV is in it. So an installed module has parquets and a manifest, and nothing downstream can read
 `status`, `authority`, `rsid_status` or `rsid_alternates` at annotation time.
 
 | Site | What it does |
 |---|---|
-| `just-dna-pipelines/src/just_dna_pipelines/v1_port/runner.py:228-260` — `prune_unmatchable_rows` | **The only code that reads the file in the consumer tree.** Raw `csv.DictReader`, builds `rsid → {ref} ∪ alts`, drops `variants.csv` rows whose genotype is not a subset, and counts rsIDs the resolver could not place. An authoring/porting step, not annotation. |
-| `.../v1_port/runner.py:110, 152` | Deletes `resolution.csv` before enriching, and again after pruning — correctly applying the delete-to-re-derive rule. |
-| `.../v1_port/pharmgkb.py:200` | Deletes it as a stale artifact before a rebuild. |
-| `.../annotation/restoration.py:270-330` | Reasons *about* the expansion this table records but reads **`weights.parquet`**: `locus_count > 1` (RM87), with a `ref`-spelling grouping kept as the pre-0.6 fallback. This is the substitute for reading `resolution.csv`. |
-| `.../annotation/hf_logic.py:231, 298` | Comments only, and **stale**: both say "the compiler applies `resolution.csv` to `weights.parquet` alone", which RM43 retired in format 0.6. The rsid-join fallback they justify is still correct as a fallback. |
-| `just-dna-registry/src/just_dna_registry/services/enrich.py:471` | The server produces the file before compiling, exactly as an author would. |
-| `.../services/upgrade.py:502` | Carries it forward verbatim on a re-publish, "so carrying them makes the re-publish cheap and deterministic instead of re-resolving everything". |
-| `.../specfiles.py:110, 202, 234` | Recognized (`RECOGNIZED_SPEC_FILES`), stored, and emitted into `derived/` by `download(layout="split")`. Excluded from `SIGNATURE_INPUTS` by construction. |
-| `.../db/facets.py:130-175` | The catalog's `resolution.trusted` verdict reads `manifest.compilation` fields only — never the CSV. |
+| `just-dna-pipelines/src/just_dna_pipelines/v1_port/runner.py` — `prune_unmatchable_rows` | **The only code that reads the file in the consumer tree.** Raw `csv.DictReader`, builds `rsid → {ref} ∪ alts`, drops `variants.csv` rows whose genotype is not a subset, and counts rsIDs the resolver could not place. An authoring/porting step, not annotation. |
+| `.../v1_port/runner.py, 152` | Deletes `resolution.csv` before enriching, and again after pruning — correctly applying the delete-to-re-derive rule. |
+| `.../v1_port/pharmgkb.py` | Deletes it as a stale artifact before a rebuild. |
+| `.../annotation/restoration.py` | Reasons *about* the expansion this table records but reads **`weights.parquet`**: `locus_count > 1` (RM87), with a `ref`-spelling grouping kept as the pre-0.6 fallback. This is the substitute for reading `resolution.csv`. |
+| `.../annotation/hf_logic.py, 298` | Comments only, and **stale**: both say "the compiler applies `resolution.csv` to `weights.parquet` alone", which RM43 retired in format 0.6. The rsid-join fallback they justify is still correct as a fallback. |
+| `just-dna-registry/src/just_dna_registry/services/enrich.py` | The server produces the file before compiling, exactly as an author would. |
+| `.../services/upgrade.py` | Carries it forward verbatim on a re-publish, "so carrying them makes the re-publish cheap and deterministic instead of re-resolving everything". |
+| `.../specfiles.py, 202, 234` | Recognized (`RECOGNIZED_SPEC_FILES`), stored, and emitted into `derived/` by `download(layout="split")`. Excluded from `SIGNATURE_INPUTS` by construction. |
+| `.../db/facets.py` | The catalog's `resolution.trusted` verdict reads `manifest.compilation` fields only — never the CSV. |
 | `just-prs`, `just-prs-mcp` | **Nothing.** Zero hits for `resolution.csv`, `ResolutionRow` or `resolution_signature`. |
 
 Verdict: **the registry round-trips it, one porting script in `just-dna-pipelines` parses it, and the
@@ -334,7 +344,7 @@ annotation path reads none of it** — by design, since it is not published with
   on those two counts (or keep the schema probe and fix the reason), so a 0.6-compiled PGx module
   gets the position join it now qualifies for instead of silently falling back to rsIDs — which is
   worthless on a DeepVariant VCF with an empty ID column, as that same function already notes.
-- **`prune_unmatchable_rows` parses the table by hand.** `runner.py:251` uses `csv.DictReader` and
+- **`prune_unmatchable_rows` parses the table by hand.** `runner.py` uses `csv.DictReader` and
   keys on `rsid`, ignoring `variant_key`, `genome_build`, `locus_index` and `status`. On a mixed-build
   or coordinate-authored spec it unions alleles across builds and cannot see a coordinate-keyed row at
   all. **Ask:** switch to `load_csv_rows(path, ResolutionRow, ...)` and filter on

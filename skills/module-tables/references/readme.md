@@ -1,14 +1,21 @@
 # README.md — the module's prose, and the receipt that is not it
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **This file describes something that is not a table kind**, so it has no generated upstream page.
+> Its facts come from the code named by symbol below; the per-table reference pages are at
+> <https://just-dna.life/just-dna-compiler/tables/> and the live answer is `describe_table` /
+> `describe_machine_table`.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 Not a table. No model, no columns, no parquet. It is the one file in a spec directory that is
 *about* the module rather than part of it, and almost every rule here follows from that one
@@ -35,7 +42,7 @@ It is optional, it is never parsed, and nothing downstream branches on its conte
 | Parquet | none, ever. Copied verbatim into the module dir beside the parquets |
 | Natural key | the filename. One readme per module; two on disk resolve by the candidate ladder, never by luck |
 | Authored or produced | **authored**, always. No pass writes it and no drafter stubs it |
-| Who writes it | a human or an AI co-author. `just-dna-pipelines` writes `MODULE.md` (`agents/module_creator.py:576`) |
+| Who writes it | a human or an AI co-author. `just-dna-pipelines` writes `MODULE.md` (`agents/module_creator.py`) |
 | Fact signature | none — it is not a fact table |
 | In `content_signature`? | **no.** `specfiles.SIGNATURE_INPUTS` is `module_spec.yaml` + the twelve authored CSVs; `README.md` is absent (measured below) |
 | In `artifact.digest`? | **no.** It is not in `artifact.files[]`; the digest is a Merkle root over the parquets only |
@@ -46,7 +53,7 @@ And its neighbour:
 
 | | `published.json` |
 |---|---|
-| Written by | **this plugin**, nothing upstream. `tools/registry.py:69` `RECEIPTS_FILE`, appended by `_record_receipt` (`tools/registry.py:72`) |
+| Written by | **this plugin**, nothing upstream. `tools/registry.py` `RECEIPTS_FILE`, appended by `_record_receipt` (`tools/registry.py`) |
 | Contains | the registry-stamped identity: `target`, `canonical_id`, `namespace`, `name`, `version`, `owner`, `artifact_digest`, `content_signature`, `registry_url`, `published_at` |
 | Known to the format? | no — tolerated as an unknown file (§ `published.json`) |
 | Known to the registry? | **no.** `"published.json" in RECOGNIZED_SPEC_FILES` → `False` (measured) |
@@ -55,13 +62,13 @@ And its neighbour:
 
 - **author** — the whole file. There is no drafter, no enricher pass and no compiler stamp for
   prose. `scaffold_module` does not create one; `list_tables` does not list it.
-- **compiler-stamped** — only the *hash*. `_collect_readme` (`compiler/…/compiler.py:650`)
+- **compiler-stamped** — only the *hash*. `_collect_readme` (`compiler/…/compiler.py`)
   discovers the file, copies it into the output dir and fills `manifest.readme`. It never writes,
   edits or generates prose.
-- **registry-stamped** — only the *projection*. `publish.py:613` reads the stored bytes
+- **registry-stamped** — only the *projection*. `publish.py` reads the stored bytes
   (`readme_name = manifest.readme.name if manifest.readme is not None else README_FILE`) and hands
   them to `ingest_manifest(..., readme=...)`, which lands in the `modules.readme` TEXT column
-  (`db/schema.py:48`).
+  (`db/schema.py`).
 - **nobody, ever** — there is no field in `module_spec.yaml` for prose and no plan to add one. The
   file is the field.
 
@@ -128,7 +135,7 @@ required list.
 
 Not columns — the four things a real readme asserts, and which of them a reader may trust.
 
-- **What the module is not.** The only place for it. `client.py:778`: *"the field where a module says
+- **What the module is not.** The only place for it. `client.py`: *"the field where a module says
   what it is **not** — that its findings are candidates, that one association was not significant."*
   Unverifiable by construction, and the most valuable sentence in the file.
 - **Design decisions / weight rationale.** Every one of the 26 corpus readmes has a
@@ -148,7 +155,7 @@ Ordered by how likely a first-timer is to hit them. Counts are from **27 real su
 **1. The corpus writes `MODULE.md`, and the compiler does not know that name.**
 **26 of 27 bundles carry `MODULE.md`. Zero carry `README.md`. One (`longevity_2025_v2`) carries
 neither.** This is not history: `just-dna-pipelines`' authoring agent still writes it today
-(`agents/module_creator.py:576`, `write_module_md`, docstring *"Write or update the MODULE.md
+(`agents/module_creator.py`, `write_module_md`, docstring *"Write or update the MODULE.md
 documentation file"*). The name is not in `README_CANDIDATES`, so **`_collect_readme` returns
 `None`** — measured on `chd_depression_v1`. A local `compile_module` on any of those 26 bundles
 produces an artifact with `manifest.readme: null` and no prose copied out, and says nothing about it.
@@ -168,19 +175,19 @@ The prose does not reach the artifact and no warning is raised.
 
 **2. The registry repairs it, the compiler does not, and only the registry tells you.**
 `specfiles.RENAMED_ON_UPLOAD` is exactly two entries: `{'MODULE.md': 'README.md',
-'sources.csv': 'licensing.csv'}` (measured). `plan_layout` (`specfiles.py:307`) applies the rename
+'sources.csv': 'licensing.csv'}` (measured). `plan_layout` (`specfiles.py`) applies the rename
 and appends a **note**, graded `info`, not a warning:
 
 > renamed `MODULE.md` to `README.md` (the readme filename the registry reads; `MODULE.md` was this
 > project's advice until 0.14 and nothing read it)
 
 Ran `plan_layout` over all 27 bundles: **26 produce that exact rename**, one produces nothing (it has
-no prose at all). The applier is `normalize_spec_layout` (`services/publish.py:300`), which does
+no prose at all). The applier is `normalize_spec_layout` (`services/publish.py`), which does
 `(spec_dir / source).replace(spec_dir / dest)` before validation, before signing, before the compile.
 
 **Is the rename recorded anywhere durable? No.** It reaches the caller three ways and lands on disk
 in none: `plan.notes` → the publish response's `info`; `action.log(message_type=...)` → the server's
-own action log; and it rides on a *refusal* too (`publish.py:480` — *"a publisher whose `MODULE.md`
+own action log; and it rides on a *refusal* too (`publish.py` — *"a publisher whose `MODULE.md`
 was renamed and whose spec then failed for an unrelated reason should not have to guess which of the
 two happened"*). It is **not** in `manifest.compilation.warnings`, not in `verification.json`, and
 not in the stored spec. Download the module later and it is simply a `README.md` that was always
@@ -212,7 +219,7 @@ second-pass material anywhere in this workspace, and it is unambiguous:
 
 **Nothing in the format records that a readme changed, or that it did not.** `manifest.readme.sha256`
 moves, but nobody diffs it across versions, and the registry's `readme` column is *module-level and
-last-publish-wins* (`db/repository.py:620`), so a v4 publish carrying stale prose overwrites v3's on
+last-publish-wins* (`db/repository.py`), so a v4 publish carrying stale prose overwrites v3's on
 the card with no trace. The hand-written `## Changelog` section is the only mechanism, and the corpus
 shows it fails.
 
@@ -233,15 +240,15 @@ you"*, then pastes the three verbatim warnings the draft emitted and shows the t
 makes the argument. A submitted readme says what the author intends; a reference readme says what
 the tooling did. **Write the second kind.**
 
-**5. `check_readme` passes on an absent file.** `integrity.py:547` — *"an absent one is not a
+**5. `check_readme` passes on an absent file.** `integrity.py` — *"an absent one is not a
 failure"*. So `verify_manifest(check_readme=True)` on a manifest attesting a readme that never
-arrived returns clean. This is a live gap in `just-dna-lite`: `v1_port/publish.py:39` sets
+arrived returns clean. This is a live gap in `just-dna-lite`: `v1_port/publish.py` sets
 `_ALLOW_PATTERNS = [*ARTIFACT_PARQUETS, "manifest.json", "logo.png", "logo.jpg"]` — **no readme**.
-The enricher's publisher fixed exactly this and says why (`enricher/…/upload.py:43`): *"A manifest
+The enricher's publisher fixed exactly this and says why (`enricher/…/upload.py`): *"A manifest
 field whose bytes nobody uploads is a field that does not travel"*, and imports `README_CANDIDATES`
 rather than spelling names. The pipelines copy has not.
 
-**6. `reverse_module` does not re-emit it.** `reverse_module` (`compiler.py:6052`) takes no `readme`
+**6. `reverse_module` does not re-emit it.** `reverse_module` (`compiler.py`) takes no `readme`
 parameter and writes none — it rebuilds `module_spec.yaml`, the authored CSVs and the sidecars from
 the parquets, and prose is in no parquet. **The round trip costs you the prose.** `compile → reverse
 → compile` reproduces the identical `artifact.digest` and the identical `content_signature` (which is
@@ -262,10 +269,10 @@ manifest attesting a name `RECOGNIZED_SPEC_FILES` does not contain.
 
 ## `published.json` — the receipt
 
-Written by **this plugin and nothing else** (`src/just_module_creator/tools/registry.py:69`). One
+Written by **this plugin and nothing else** (`src/just_module_creator/tools/registry.py`). One
 JSON array, appended to after each successful publish, never overwritten: a published version is
 immutable, so a second receipt for a version already recorded keeps the original and reports the
-difference (`registry.py:118-135`). Prior receipts match on **version AND target**, so a polygon
+difference (`registry.py`). Prior receipts match on **version AND target**, so a polygon
 rehearsal of `1.0.0` is not a prior publish of production's `1.0.0`.
 
 It exists because the registry owns four identity keys and `module_spec.yaml`'s `module:` block is
@@ -273,7 +280,7 @@ It exists because the registry owns four identity keys and `module_spec.yaml`'s 
 `S1`). So the stamped identity had nowhere on disk to land, and the tool used to return it in a
 message and drop it.
 
-**Its contract with the compiler is narrow and deliberate.** `compiler.py:3307`:
+**Its contract with the compiler is narrow and deliberate.** `compiler.py`:
 
 > Neither `published.json` nor any other registry receipt is within one edit of a known name, which
 > is the property that keeps the tolerance beside it intact (measured, not assumed).
@@ -286,16 +293,16 @@ fuzzy matcher (`difflib`, cutoff 0.8) does not reach it. **Do not rename it.** A
 
 **What actually happens to it on publish — and the brief's premise is wrong here, so state it
 precisely.** `published.json` is **not** filtered out of a loose-files upload:
-`client.gather_spec_files` (`client.py:92`) skips only `_SKIP_UPLOAD_SUFFIXES = {".parquet"}` and
+`client.gather_spec_files` (`client.py`) skips only `_SKIP_UPLOAD_SUFFIXES = {".parquet"}` and
 `_SKIP_UPLOAD_NAMES = {"manifest.json", "WHERE-THIS-CAME-FROM.md"}` (measured). So on the ordinary
-publish path it is uploaded, materialized into the server's spec dir (`routers/publish.py:348`), and
-copied into storage by the carry-forward loop (`services/publish.py:590`, which skips only
+publish path it is uploaded, materialized into the server's spec dir (`routers/publish.py`), and
+copied into storage by the carry-forward loop (`services/publish.py`, which skips only
 `*.parquet`). It **is** filtered on the *archive* path, where `collect_archive` applies
-`carries_spec_content` (`services/publish.py:238`).
+`carries_spec_content` (`services/publish.py`).
 
 It never comes back either way. `/files/{path}` serves only what the manifest attests
-(`routers/modules.py:251-269`) and the tarball is built from manifest entries
-(`routers/modules.py:297-319`); a receipt is in neither. And because
+(`routers/modules.py`) and the tarball is built from manifest entries
+(`routers/modules.py`); a receipt is in neither. And because
 `"published.json" in RECOGNIZED_SPEC_FILES` is `False`, a `revalidate` or `upgrade` — both of which
 rebuild a spec directory from that tuple — drops it from storage. **Treat it as local-only and commit
 it to your own repo**; that is the only place it survives.
@@ -320,7 +327,7 @@ it to your own repo**; that is the only place it survives.
   `studies.csv` or `licensing.csv`. There is no proposal for one and it is hard to see what it would
   check.
 - **Per-version readmes on the card.** The DB column is module-level by design
-  (`db/repository.py:620`): *"the readme answers 'what is this module and what is it not', which is
+  (`db/repository.py`): *"the readme answers 'what is this module and what is it not', which is
   not a question each version re-answers."* `manifest.readme` is per-version; the card is not.
 - **A `MODULE.md` era-gap.** It is not a deprecation and not a break — it is a name this project
   advised for two releases and then changed, with a rename that repairs its own advice.
@@ -368,41 +375,41 @@ because it recompiles. No nested archives, no editor droppings, no scripts.
 
 ## Consumption today
 
-- **`just_dna_compiler.compiler._collect_readme`** (`compiler.py:650`) — discovers, copies into the
+- **`just_dna_compiler.compiler._collect_readme`** (`compiler.py`) — discovers, copies into the
   module dir, hashes into `manifest.readme`. The only producer.
-- **`just_dna_format.integrity.verify_manifest(check_readme=True)`** (`integrity.py:547`) — re-hashes
+- **`just_dna_format.integrity.verify_manifest(check_readme=True)`** (`integrity.py`) — re-hashes
   it if present; skips silently if absent. Exposed as `just-dna-compiler verify --check-readme`
-  (`compiler/cli.py:218`), **default `False`**.
-- **`just_dna_enricher.upload`** (`upload.py:63`) — `_ALLOW_PATTERNS` includes `*README_CANDIDATES`,
+  (`compiler/cli.py`), **default `False`**.
+- **`just_dna_enricher.upload`** (`upload.py`) — `_ALLOW_PATTERNS` includes `*README_CANDIDATES`,
   so the HuggingFace publisher ships it.
-- **registry `services/publish.py:613`** — projects the stored bytes onto `modules.readme`.
-- **registry `db/repository.py:605, 625`** — `upsert_module(readme=None)` means *leave it alone*;
+- **registry `services/publish.py`** — projects the stored bytes onto `modules.readme`.
+- **registry `db/repository.py, 625`** — `upsert_module(readme=None)` means *leave it alone*;
   `set_module_readme` replaces it module-wide.
-- **registry `services/catalog.py:356`** — `ModuleDetail.readme = row["readme"]`. The card.
-- **registry `api/routers/modules.py:268, 318`** — `manifest.readme.name` joins the `/files/{path}`
+- **registry `services/catalog.py`** — `ModuleDetail.readme = row["readme"]`. The card.
+- **registry `api/routers/modules.py, 318`** — `manifest.readme.name` joins the `/files/{path}`
   allowlist and the tarball entry list.
-- **registry `services/publish.py:718` / `api/routers/publish.py:623` / `client.py:769` /
-  `client_cli.py:296`** — the `amend_readme` chain: replaces prose, sets `manifest.readme`, spends no
+- **registry `services/publish.py` / `api/routers/publish.py` / `client.py` /
+  `client_cli.py`** — the `amend_readme` chain: replaces prose, sets `manifest.readme`, spends no
   version, moves no identity.
-- **registry `client.py:465-508`** — `download` re-hashes it via
+- **registry `client.py`** — `download` re-hashes it via
   `check_readme=manifest.readme is not None`.
-- **this plugin, `tools/registry.py:575`** — `registry_amend_readme`, gated
-  (`auth.py:67`), reads `spec_dir/README.md` by that exact name and refuses a path passed as
+- **this plugin, `tools/registry.py`** — `registry_amend_readme`, gated
+  (`auth.py`), reads `spec_dir/README.md` by that exact name and refuses a path passed as
   `readme_text`.
 
 **Nothing in `just-dna-lite` reads a module's readme.** The only hits are
-`webui/pages/modules.py:664` `_module_manager_readme()`, which is the *page's own* help text, and
-`just-prs/hf.py:1037`, which writes a HuggingFace dataset card. The annotation half never opens it.
+`webui/pages/modules.py` `_module_manager_readme()`, which is the *page's own* help text, and
+`just-prs/hf.py`, which writes a HuggingFace dataset card. The annotation half never opens it.
 
 ## Blanks for just-dna-lite
 
 - **The v1 HF publisher drops the readme it attests.** `just-dna-pipelines`
-  `v1_port/publish.py:39` omits `README_CANDIDATES` from `_ALLOW_PATTERNS` while the manifest carries
+  `v1_port/publish.py` omits `README_CANDIDATES` from `_ALLOW_PATTERNS` while the manifest carries
   `manifest.readme`. A consumer fetching that module gets a manifest attesting a file the repo does
   not have, and `verify_manifest(check_readme=True)` passes anyway because absent is not a failure.
   Fix is one line and already written next door: import `README_CANDIDATES`, as
   `just_dna_enricher.upload` does. **Ask: mirror the enricher's allowlist.**
-- **The authoring agent still writes `MODULE.md`.** `agents/module_creator.py:576`. Every module it
+- **The authoring agent still writes `MODULE.md`.** `agents/module_creator.py`. Every module it
   produces depends on the registry's rename to have a card at all, and gets `manifest.readme: null`
   if compiled locally. Registry `S8` addressed this to the wrong repo (it credited the tool to this
   plugin, which has never had it). **Ask: emit `README.md` at the source, or accept both and prefer
@@ -430,7 +437,7 @@ README_CANDIDATES   # discovery order, authoritative
 As of format **0.6.1** that is
 `('README.md', 'README.rst', 'README.txt', 'readme.md', 'readme.rst', 'readme.txt')` — stem is the
 outer loop, so `README.txt` beats `readme.md`; extensions sort `md` first. Defined **once**
-(`manifest.py:59`) because three parties must agree: the compiler discovers, the enricher's publisher
+(`manifest.py`) because three parties must agree: the compiler discovers, the enricher's publisher
 uploads, the registry serves.
 
 For the registry's half, in a checkout of `just-dna-registry`:

@@ -1,14 +1,24 @@
 # `copynumbers.csv` — whole-gene dosage → phenotype, as a range table the consumer measures against
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/copynumbers/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("copynumbers.csv")` and `table_requirements("copynumbers.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 ## What it is
 
@@ -17,7 +27,7 @@ this gene, what does it mean?** SMN1 at 0 copies is spinal muscular atrophy; CYP
 nothing to metabolise with whatever its star alleles say. The table is pure annotation — a lookup
 declaring `[measure_min, measure_max] → conclusion` — and the module holds **no measurement**. The
 consumer supplies the copy-number call at query time and the table never sees a sample
-(`binning.py:11-15`, "Data-agnostic (design north star)").
+(`binning.py`, "Data-agnostic (design north star)").
 
 It is one of four kinds subclassing `binning.MeasureBinRow`, alongside `activity_phenotype.csv`
 (`activity_score`), `repeat_alleles.csv` (`repeat_count`) and `heteroplasmy.csv`
@@ -30,14 +40,14 @@ It is one of four kinds subclassing `binning.MeasureBinRow`, alongside `activity
 | | |
 |---|---|
 | Model + module | `just_dna_format.binning.CopyNumberRow`, subclass of `binning.MeasureBinRow` → `base.AuthoredModel` (`extra="forbid"` + reserved-namespace guard) |
-| Parquet | `copynumbers.parquet`. Registered in `compiler._TABLE_KINDS` (`compiler.py:225`), in `ARTIFACT_PARQUETS`, and in `LEAD_PARQUETS` — it can **lead** a module with no `variants.csv` at all |
-| Natural / dedup key | Bin group = `_KEY_FIELDS` + `trait_efo_id` = `(gene, modifier_gene, effective_modifier_copy_number, trait_efo_id)`. There is **no** entry in `compiler._TABLE_DUPE_KEYS` — a duplicate resolved bin is caught as an *overlap* instead (`compiler.py:236-240`) |
+| Parquet | `copynumbers.parquet`. Registered in `compiler._TABLE_KINDS` (`compiler.py`), in `ARTIFACT_PARQUETS`, and in `LEAD_PARQUETS` — it can **lead** a module with no `variants.csv` at all |
+| Natural / dedup key | Bin group = `_KEY_FIELDS` + `trait_efo_id` = `(gene, modifier_gene, effective_modifier_copy_number, trait_efo_id)`. There is **no** entry in `compiler._TABLE_DUPE_KEYS` — a duplicate resolved bin is caught as an *overlap* instead (`compiler.py`) |
 | Authored or machine-produced | **Authored, entirely.** All 17 fields are authored (`authored_field_names(CopyNumberRow)` returns all 17; measured) |
 | Who writes it | A human or AI co-author. No drafter, no enricher pass |
-| Fact signature | **None.** Fact signatures exist only for the derived sidecars (`integrity.py:256-397`). This table's identity is `content_signature` over its raw authored rows |
-| In `content_signature`? | **Yes** — `compiler.content_signature` loops `_TABLE_KINDS` (`compiler.py:3868-3872`) |
+| Fact signature | **None.** Fact signatures exist only for the derived sidecars (`integrity.py`). This table's identity is `content_signature` over its raw authored rows |
+| In `content_signature`? | **Yes** — `compiler.content_signature` loops `_TABLE_KINDS` (`compiler.py`) |
 | In `artifact.digest`? | **Yes**, via `copynumbers.parquet` in `ARTIFACT_PARQUETS` |
-| In the attestation binding? | **Yes** — `copynumbers.csv` is in `_INPUT_FILES`, so it is inside `authored_input_entries` (`compiler.py:267-272`, `:386`) |
+| In the attestation binding? | **Yes** — `copynumbers.csv` is in `_INPUT_FILES`, so it is inside `authored_input_entries` (`compiler.py`, `:386`) |
 
 ## Who populates what
 
@@ -52,18 +62,18 @@ Every column here is **author**. There is no drafter and no pass. Measured: `gre
   error — it is a column you never fill.
 - **drafter** — none. `draft.DRAFTABLE` includes `copynumbers.csv`, but only `draft.template`
   applies: `get_template(csv_name="copynumbers.csv", stub=True)` emits `<<REPLACE>>` in `gene` and
-  `conclusion` plus a pre-built `unresolved=true` companion row (`draft.py:295-323`). No source
+  `conclusion` plus a pre-built `unresolved=true` companion row (`draft.py`). No source
   provider publishes this table. ClinVar, CPIC and ClinPGx drafters do not touch it.
 - **enricher pass** — none writes here. One pass **reads** one column: `enrich_literature` collects
   `MeasureBinRow.pmid` through `compiler.load_binning_rows` and checks it against PubMed alongside
-  `studies.csv` (`enricher/literature.py:683-770`, RM47). That is the only downstream check any cell
+  `studies.csv` (`enricher/literature.py`, RM47). That is the only downstream check any cell
   on this table gets.
 - **compiler-stamped** — no *column* of the model. The parquet gains a `module` column at build
-  (`compiler._build_table`, `compiler.py:457-461`); it is not a model field, so authoring a `module`
+  (`compiler._build_table`, `compiler.py`); it is not a model field, so authoring a `module`
   column in the CSV is refused by `extra="forbid"` (measured: `ValidationError` naming `module`).
   Nothing here uses `stamped_identity_field` — contrast `HeteroplasmyRow.variant_key`, which does.
 - **registry-stamped** — none. `normalize.IDENTITY_AUTHORITY_KEYS` acts on `module_spec.yaml`, not
-  on table cells (`compiler.py:720-721`).
+  on table cells (`compiler.py`).
 - **nobody, ever** — none permanently unwritten, but `modifier_cn` is a column you should
   **stop** writing (deprecated 0.6, removed at 1.0).
 
@@ -79,7 +89,7 @@ a real file for both columns.
   would compare NCBI with itself. Any lookup reports it as an advisory with `applied: false`.
 - `clin_sig` — **the refusal is stated but the check behind it does not exist for this table.**
   `enricher.clinical.verify_clin_sig(variants: list[VariantRow], …)` takes `VariantRow` only
-  (`enricher/clinical.py:221-235`), so a `clin_sig` on a bin row is never compared with anything. The
+  (`enricher/clinical.py`), so a `clin_sig` on a bin row is never compared with anything. The
   advisory is keyed on a global map (`hints._flag_advisory_columns` intersects `REDUNDANCY_BEARING`
   with the model's columns) and over-promises here. Author it from independent reading anyway — but
   know that nothing will catch you.
@@ -91,7 +101,7 @@ a real file for both columns.
 | Add a bin row | **moves** | n/a (none) | **moves** | **un-closes** |
 | Edit an authored cell (`conclusion`, `measure_max`, …) | **moves** | n/a | **moves** | **un-closes** |
 | Edit a "provenance-only" cell | n/a — **this table has none.** No `fetched_at`, no `source`, no `status`. Every cell is content | | | |
-| Reorder rows | **unchanged** (rows are sorted by canonical JSON, `integrity.py:222-226`) | n/a | **moves** (digest preserves authored row order) | **un-closes** (byte hash) |
+| Reorder rows | **unchanged** (rows are sorted by canonical JSON, `integrity.py`) | n/a | **moves** (digest preserves authored row order) | **un-closes** (byte hash) |
 | Re-run the producing pass | n/a — no pass produces it | | | |
 | Delete the file and re-derive | n/a — nothing re-derives it. Deleting it deletes the table | | | |
 | Recompile under a newer toolchain | **unchanged** | n/a | **moves** | **held** |
@@ -214,8 +224,8 @@ Ordered by how likely a first-timer is to hit them.
    group has no bin for 0 copies. Measured: `validate_spec` on that exact CSV reports the RM55/RM56
    warnings and the S19 grounding warning and **says nothing** about either problem. The sentinel
    check is asymmetric: `compiler._validate_table_kind` errors on *more than one* sentinel **per key
-   group** (`compiler.py:3197-3207`), while `hints._check_bins` warns on *zero* sentinels **anywhere
-   in the table** (`hints.py:578-585`). Neither notices a group with none. Edge coverage *below* the
+   group** (`compiler.py`), while `hints._check_bins` warns on *zero* sentinels **anywhere
+   in the table** (`hints.py`). Neither notices a group with none. Edge coverage *below* the
    lowest bin is documented as out of scope: *"it would false-positive without a known domain floor."*
 
    > 🚧 **ROADWORKS — a closed top bin is a silent ceiling, and nothing checks the edges.**
@@ -236,7 +246,7 @@ Ordered by how likely a first-timer is to hit them.
    `inferred=True` and emit *"tiling inferred for key … measure_max is 1.5, which no quantised
    reading can hold"*; a group with `modifier_copy_number=2.5` and integral bounds stays `quantised`
    with `fractional=None`. `_fractional_values` deliberately reads only the bounds
-   (`binning.py:728-757`), because letting the dosage vote produced a **legality flip** — one
+   (`binning.py`), because letting the dosage vote produced a **legality flip** — one
    identical pair of bins refused at `2.0` and accepted at `2.5` — and **invented coverage gaps** on
    genuinely integral bounds. "It is a copy number too, so surely it counts" is named as the obvious
    wrong repair. The inference **runs one way only**: fractional-ness contradicts a stated grid;
@@ -284,7 +294,7 @@ Ordered by how likely a first-timer is to hit them.
    vocabulary is deferred to 0.7 gated on a real CNV VCF.
 
 9. **A `measure_kind` separator slip is accepted and canonicalised.** Measured: `measure_kind:
-   copy-number` loads and stores `copy_number` (RM95, `binning.py:377-393`). Do not read that as
+   copy-number` loads and stores `copy_number` (RM95, `binning.py`). Do not read that as
    licence — write the underscore.
 
 10. **A float bound is compared in float32, not with an epsilon.** VCF 4.4 §1.3 makes every `Float`
@@ -338,17 +348,17 @@ Ordered by how likely a first-timer is to hit them.
 
 | Site | What it does |
 |---|---|
-| `/data/sources/just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/module_config.py:497` | `copynumbers` is in `LEAD_TABLES`, so a directory holding `copynumbers.parquet` **is** a module for discovery and for the HuggingFace publisher |
-| `…/module_config.py:508-514` | `LEAD_TABLE_CSVS` derives `copynumbers.csv`, so the registry's enrichment ceiling counts this table's authored rows (it counted **zero** before the list was derived) |
-| `…/module_config.py:519-533` | `find_lead_table` / `has_lead_table` probe `copynumbers.parquet` to answer "is this directory a module" |
-| `/data/sources/just-dna-lite/webui/src/webui/state.py:6014-6017` | imports `LEAD_TABLE_CSVS` for `_authored_row_count`, which routes a module to `/check` vs `/validate` |
-| `…/annotation/hf_logic.py:222-249` | `_lead_join_strategy` classifies a `copynumbers`-led module **`unsupported`** — "no per-variant key at all" |
-| `…/annotation/hf_logic.py:302-304` | raises `UnsupportedLeadTable`; the per-module loop records and skips it |
-| `…/annotation/cli_annotate.py:372-388` | prints `Skipped <module>: <reason>` from the run manifest |
-| `/data/sources/just-dna-registry/src/just_dna_registry/specfiles.py:59` | `copynumbers.csv` in `TABLE_KIND_CSVS`, hence in `SPEC_DATA_FILES` and `SIGNATURE_INPUTS` — it is stored and re-split on download |
-| `…/services/upgrade.py:154` | `CopyNumberRow` in `_ROW_MODELS`, so `offending_columns` / `trim_unknown_columns` run over it when replanning an old version |
-| `…/db/repository.py:664` + `db/schema.py:128` | `version_genes` — the gene search index — is populated from `manifest.stats.genes` |
-| `…/services/catalog.py:240-252` | the module card projects `variant_count`, `study_count`, `gene_count`, `genes`, `categories`, `clinvar_count`, `pathogenic_count`, `benign_count` — **all from `manifest.stats`** |
+| `/data/sources/just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/module_config.py` | `copynumbers` is in `LEAD_TABLES`, so a directory holding `copynumbers.parquet` **is** a module for discovery and for the HuggingFace publisher |
+| `…/module_config.py` | `LEAD_TABLE_CSVS` derives `copynumbers.csv`, so the registry's enrichment ceiling counts this table's authored rows (it counted **zero** before the list was derived) |
+| `…/module_config.py` | `find_lead_table` / `has_lead_table` probe `copynumbers.parquet` to answer "is this directory a module" |
+| `/data/sources/just-dna-lite/webui/src/webui/state.py` | imports `LEAD_TABLE_CSVS` for `_authored_row_count`, which routes a module to `/check` vs `/validate` |
+| `…/annotation/hf_logic.py` | `_lead_join_strategy` classifies a `copynumbers`-led module **`unsupported`** — "no per-variant key at all" |
+| `…/annotation/hf_logic.py` | raises `UnsupportedLeadTable`; the per-module loop records and skips it |
+| `…/annotation/cli_annotate.py` | prints `Skipped <module>: <reason>` from the run manifest |
+| `/data/sources/just-dna-registry/src/just_dna_registry/specfiles.py` | `copynumbers.csv` in `TABLE_KIND_CSVS`, hence in `SPEC_DATA_FILES` and `SIGNATURE_INPUTS` — it is stored and re-split on download |
+| `…/services/upgrade.py` | `CopyNumberRow` in `_ROW_MODELS`, so `offending_columns` / `trim_unknown_columns` run over it when replanning an old version |
+| `…/db/repository.py` + `db/schema.py` | `version_genes` — the gene search index — is populated from `manifest.stats.genes` |
+| `…/services/catalog.py` | the module card projects `variant_count`, `study_count`, `gene_count`, `genes`, `categories`, `clinvar_count`, `pathogenic_count`, `benign_count` — **all from `manifest.stats`** |
 | `just-prs`, `just-prs-mcp` | nothing. `grep -rln "copynumbers\|copy_number"` returns no files |
 
 Two consequences worth stating plainly, both measured on a `module_spec.yaml` +

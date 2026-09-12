@@ -1,14 +1,24 @@
 # pgs.csv — the polygenic scores a module points at, and the envelope they are valid in
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/pgs/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("pgs.csv")` and `table_requirements("pgs.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 *Verified against format/compiler **0.6.1**, enricher **0.6.4**, registry **0.18.2** (installed, checked
 with `importlib.metadata`). Every column list and vocabulary below is quoted to explain a trap, never as
@@ -20,7 +30,7 @@ the source of truth — ask the live schema (last section).*
 conditions may they be applied?"** It is a *manifest of PGS Catalog accessions*, not a scoring file:
 `just-prs` resolves a `PGSxxxxxx` id to a harmonized scoring file itself and scores each id
 independently, so per-variant weights in the module would be dead data
-(`schema/src/just_dna_format/pgs.py:1-20`). The audience is a scoring consumer, not a genotype
+(`schema/src/just_dna_format/pgs.py`). The audience is a scoring consumer, not a genotype
 annotator — nothing in this table has a locus, and no VCF row will ever join to it. What the module
 adds over a bare list of ids is the **validity envelope**: which superpopulation the score was
 validated in, what variant-match floor invalidates a result, and whether the score may be read as an
@@ -28,19 +38,19 @@ absolute risk at all.
 
 The three envelope columns are called *one-way-door fields* upstream and were pinned from day one "so
 a consumer can refuse or caveat an out-of-ancestry application instead of silently miscalibrating"
-(`pgs.py:9-11`). As of today no consumer reads any of them.
+(`pgs.py`). As of today no consumer reads any of them.
 
 ## Identity card
 
 | | |
 |---|---|
-| Model | `just_dna_format.pgs.PgsRow` (`schema/src/just_dna_format/pgs.py:39`), an `AuthoredModel` → `extra="forbid"` |
-| Parquet | `pgs.parquet` — registered in `compiler._TABLE_KINDS` (`compiler/src/just_dna_compiler/compiler.py:231`), `ARTIFACT_PARQUETS` (`:278`) and `LEAD_PARQUETS` (`:307`) |
-| Natural / dedup key | `(pgs_id, trait_efo_id)` — `_TABLE_DUPE_KEYS[PgsRow]` (`compiler.py:261`). The trait is in the key so a pleiotropic score is not a false duplicate |
+| Model | `just_dna_format.pgs.PgsRow` (`schema/src/just_dna_format/pgs.py`), an `AuthoredModel` → `extra="forbid"` |
+| Parquet | `pgs.parquet` — registered in `compiler._TABLE_KINDS` (`compiler/src/just_dna_compiler/compiler.py`), `ARTIFACT_PARQUETS` (`:278`) and `LEAD_PARQUETS` (`:307`) |
+| Natural / dedup key | `(pgs_id, trait_efo_id)` — `_TABLE_DUPE_KEYS[PgsRow]` (`compiler.py`). The trait is in the key so a pleiotropic score is not a false duplicate |
 | Authored or machine-produced | **Authored.** No drafter, no enricher pass — `grep -ri pgs` over `just-dna-format/enricher/` returns **nothing at all** |
 | Who writes it | A human or AI co-author. `scaffold_module`/`stub_template` can emit the header + one `<<REPLACE>>` row and that is the whole machine contribution |
-| Fact signature | **None.** `pgs.csv` is not in `compiler._FACT_TABLES` (`compiler.py:322-330`); there is no `PGS_FACT_FIELDS` and no `pgs_signature` in the manifest |
-| In `content_signature`? | **Yes** — it is in `_INPUT_FILES` (`compiler.py:270-275`) and `compiler.content_signature` iterates `_TABLE_KINDS` (`compiler.py:3868-3886`) |
+| Fact signature | **None.** `pgs.csv` is not in `compiler._FACT_TABLES` (`compiler.py`); there is no `PGS_FACT_FIELDS` and no `pgs_signature` in the manifest |
+| In `content_signature`? | **Yes** — it is in `_INPUT_FILES` (`compiler.py`) and `compiler.content_signature` iterates `_TABLE_KINDS` (`compiler.py`) |
 | In `artifact.digest`? | **Yes**, via `pgs.parquet` in `ARTIFACT_PARQUETS` |
 | Lead table? | Yes — a module may consist of `module_spec.yaml` + `pgs.csv` and nothing else (measured) |
 
@@ -48,14 +58,14 @@ a consumer can refuse or caveat an out-of-ancestry application instead of silent
 
 | Column(s) | Who |
 |---|---|
-| `pgs_id` | **author.** The only required cell; `stub_template("pgs.csv")` stubs exactly this one (measured). No provider drafts it — `draft.DRAFTABLE` accepts `pgs.csv` (`draft.py:82-87`) but only to produce a blank stub |
-| `trait_efo_id` | **author.** Shape-checked as an ontology CURIE by `vocab.validate_trait_ids` (`vocab.py:1065-1076`); existence is never checked |
+| `pgs_id` | **author.** The only required cell; `stub_template("pgs.csv")` stubs exactly this one (measured). No provider drafts it — `draft.DRAFTABLE` accepts `pgs.csv` (`draft.py`) but only to produce a blank stub |
+| `trait_efo_id` | **author.** Shape-checked as an ontology CURIE by `vocab.validate_trait_ids` (`vocab.py`); existence is never checked |
 | `note`, `group` | **author.** Free text. `group` is a module-local grouping label with no vocabulary |
-| `training_ancestry`, `training_cohort` | **author.** The validity envelope. The PGS Catalog publishes its own development ancestry (`just-prs` reads it as `score_development_ancestry.parquet`, `prs_catalog.py:67,691`), so this is a *human narrowing* of it, not a copy |
-| `match_rate_floor` | **author.** The floor only. The observed per-sample match rate is a measurement and is consumer-side by design (`pgs.py:14-17`) |
+| `training_ancestry`, `training_cohort` | **author.** The validity envelope. The PGS Catalog publishes its own development ancestry (`just-prs` reads it as `score_development_ancestry.parquet`, `prs_catalog.py,691`), so this is a *human narrowing* of it, not a copy |
+| `match_rate_floor` | **author.** The floor only. The observed per-sample match rate is a measurement and is consumer-side by design (`pgs.py`) |
 | `research_tier` | **author.** `research_only` / `calibrated` |
 | `module` (parquet only) | **compiler-stamped.** Not a CSV column; measured as the first column of `pgs.parquet`. Authoring it in the CSV is rejected by `extra="forbid"` |
-| `_genome_build` | **loader-injected private attr**, never a column, absent from `model_dump()` so it moves no signature (`base.py:554-574`) |
+| `_genome_build` | **loader-injected private attr**, never a column, absent from `model_dump()` so it moves no signature (`base.py`) |
 | registry-stamped | none. `normalize.IDENTITY_AUTHORITY_KEYS` touches `module_spec.yaml` identity, not this table |
 | nobody, ever | none — every column is authorable |
 
@@ -108,10 +118,10 @@ truncated to 12 hex chars.
 ## Required to exist
 
 - **Nothing.** `pgs.csv` is optional, and it also satisfies the composition rule on its own: a module
-  must carry at least one recognized table, and `pgs.csv` counts (`compiler.py:3604-3607`).
+  must carry at least one recognized table, and `pgs.csv` counts (`compiler.py`).
 - **It drags in nothing.** No `variants.csv`, no `studies.csv`. The `studies.csv` requirement is scoped
   to `variants.csv` only, and the compiler is explicit about why `pgs.csv` is exempt: *"`PgsRow` carries
-  a catalog accession, which is a provenance and not a citation"* (`compiler.py:3609-3617`). There is no
+  a catalog accession, which is a provenance and not a citation"* (`compiler.py`). There is no
   `_check_binning_grounding` analogue for it, so no warning either.
 - **Measured:** a `module_spec.yaml` + `pgs.csv` module passes `validate_spec(strict=True)` and
   `compile_module(strict=True)` with **one** warning, the generic "records no closure" one. No licensing
@@ -120,19 +130,19 @@ truncated to 12 hex chars.
 ## The columns that carry judgement
 
 - **`pgs_id`** — the only required cell, and the only one with any structural check: `^PGS\d+$`
-  (`pgs.py:33`). It is an *accession*, so it is both the identity and the entire provenance of the row.
+  (`pgs.py`). It is an *accession*, so it is both the identity and the entire provenance of the row.
 - **`training_ancestry`** — closed vocabulary of **1000G superpopulation** codes plus `multi`. This is
   the author's claim about where the score was validated; it is the cell a consumer would refuse an
   out-of-envelope application on.
 - **`training_cohort`** — free text, and the only place sub-superpopulation precision can live: a
   Northwest-European-trained score applied to a Finnish or Ashkenazi sample is out of envelope in a way
-  `EUR` cannot express (`pgs.py:12-13`). Routinely misread as decoration; it is the honest half.
+  `EUR` cannot express (`pgs.py`). Routinely misread as decoration; it is the honest half.
 - **`match_rate_floor`** — `[0,1]`, *the author's floor*, never a measurement. Its meaning is "below
   this, the computed score is invalid". See gotcha 2 for why the metric it names is the weaker of the
   two the consumer actually computes.
 - **`research_tier`** — pins **as data** that a PRS is a within-reference Z/percentile and never an
   ancestry-calibrated absolute risk; upstream adds that `|Z| >= 2.5` in a healthy proband is a
-  population-stratification signal, not a disease prediction (`pgs.py:18-20`). Nothing enforces it.
+  population-stratification signal, not a disease prediction (`pgs.py`). Nothing enforces it.
 - **`trait_efo_id`** — the join to variant modules and to `just-prs`'s trait metadata. Shape-checked
   only.
 
@@ -173,8 +183,8 @@ Ordered by how likely a first-timer is to hit them.
    `just-prs` gates coverage on **weight-mass coverage (C_wt)**, not the count match rate, and says why:
    *"WGS reference-restoration fills absent loci as hom-ref, inflating count match_rate to ~100% for
    every model (destroying its discriminative power) while leaving C_wt honest"*
-   (`just-prs/just-prs/src/just_prs/quality.py:121-133`; the same argument at
-   `enrich.py:41-56`, "Gating on the count `match_rate` inverts this (F9/F20)"). **Cost:** on a WGS
+   (`just-prs/just-prs/src/just_prs/quality.py`; the same argument at
+   `enrich.py`, "Gating on the count `match_rate` inverts this (F9/F20)"). **Cost:** on a WGS
    sample — which is what just-dna-lite feeds it — a filled `match_rate_floor` passes vacuously, so the
    column protects a chip sample and not a genome. The format has **no** C_wt floor column. Fill
    `match_rate_floor` anyway (it is the only floor that exists), and record the C_wt expectation in
@@ -189,10 +199,10 @@ Ordered by how likely a first-timer is to hit them.
 4. **Two ancestry vocabularies that share three letters, and merging them is forbidden.**
    `pgs.VALID_TRAINING_ANCESTRY` is 1000G superpopulations (`EUR EAS AFR AMR SAS multi`, uppercase);
    `vocab.RECOMMENDED_ANCESTRY_GROUPS` is gnomAD's population list (`nfe fin asj ami mid remaining …`,
-   lowercase) and is used by `frequencies.csv`. `vocab.py:774-778`: *"This is NOT
+   lowercase) and is used by `frequencies.csv`. `vocab.py`: *"This is NOT
    `pgs.VALID_TRAINING_ANCESTRY` and must never be merged with it … Two different axes that happen to
    share three letters."* The reference generator keys vocabularies by **name, not field name**, so the
-   two cannot silently collapse (`reference.py:166-173`). **Cost:** `EUR` is right here and rejected in
+   two cannot silently collapse (`reference.py`). **Cost:** `EUR` is right here and rejected in
    `frequencies.csv`; `nfe` is right there and rejected here. Multi-valued: `EUR|EAS` splits on
    `vocab.MULTI_SEP`.
 5. **A pure row reorder un-closes the module.** Measured: `content_signature` identical, `artifact.digest`
@@ -204,18 +214,18 @@ Ordered by how likely a first-timer is to hit them.
    bug in the compile, and compiler 0.6.6's `module_stats` does not change it either: **`PgsRow` has
    no `gene` column to contribute**, so a `pgs`-led module is the one shape RM121 does not reach.
    **Cost:** the registry
-   projects `version_genes` / `version_categories` from those lists (`repository.py:663-668`), and
-   `search_modules` accepts `gene=` and `category=` but nothing PGS-shaped (`repository.py:933-955`), so
+   projects `version_genes` / `version_categories` from those lists (`repository.py`), and
+   `search_modules` accepts `gene=` and `category=` but nothing PGS-shaped (`repository.py`), so
    the module is findable by name, `q` and namespace only. Put the trait and the score names in the
    title, description and `README.md` — that is the only text a catalog search will see.
 7. **`fully_resolved: true` over nothing, permanently.** Measured: `fully_resolved: true`,
    `resolution_subjects: 0`, `positional_rows: 0`, `resolution_signature: null`. `PgsRow` declares no
    `chrom`/`start`, so it is not in `_POSITIONAL_TABLE_KINDS` (derived from the models,
-   `compiler.py:1147-1151`) and never will resolve anything. The registry projects `fully_resolved` as a
-   filterable facet (`db/facets.py:196`). **Cost:** a pgs-only module reads as maximally resolved in
+   `compiler.py`) and never will resolve anything. The registry projects `fully_resolved` as a
+   filterable facet (`db/facets.py`). **Cost:** a pgs-only module reads as maximally resolved in
    catalog filters while having resolved nothing — the `int | None` counter rule (`0` is a real answer,
    `None` means nothing counted) is what keeps it honest, and only `resolution_subjects: 0` says so.
-8. **`training_ancestry` reads as required in the docs and is optional in the code.** `pgs.py:11-13`
+8. **`training_ancestry` reads as required in the docs and is optional in the code.** `pgs.py`
    calls it "the superpopulation(s) the score was validated in (**required floor**)", contrasted with
    "an *optional* free-form `training_cohort`" — but the field is `list[str] | None = Field(default=None)`,
    `table_requirements("pgs.csv")` returns `always: ["pgs_id"]` and nothing else, the scaffold leaves the
@@ -249,7 +259,7 @@ Ordered by how likely a first-timer is to hit them.
   fixing the shape now "spends a one-way door on a guess". **What would unpark it: a real consumer.**
   Do not propose inlining weights into `pgs.csv`; that is the shape already rejected.
 - **Bins.** A PRS yields a Z/percentile *within a matched reference distribution*, "a shape the format
-  does not bin" (`pgs.py:5-8`, RM16). `pgs.csv` is a *declared interface* like `GenePanelSpec`, not a
+  does not bin" (`pgs.py`, RM16). `pgs.csv` is a *declared interface* like `GenePanelSpec`, not a
   `measure → phenotype` binning table, so do not reach for `MeasureBinRow`'s `unresolved` sentinel here.
 - **A C_wt / weight-mass-coverage floor.** Only the count-based `match_rate_floor` exists. See gotcha 2.
 - **Any existence check on `pgs_id`.** No enricher pass, no lookup tool, no compiler check, and the
@@ -281,56 +291,56 @@ Ordered by how likely a first-timer is to hit them.
   no manifest reader, no just-dna dependency.
 - **`just-prs-mcp` — nothing.** Same grep; the only `match_rate` hits are its own computed results.
 - **`just-dna-lite` / `just-dna-pipelines` — recognizes the module, then refuses it:**
-  - `just-dna-pipelines/src/just_dna_pipelines/module_config.py:491-501` — `LEAD_TABLES` includes
+  - `just-dna-pipelines/src/just_dna_pipelines/module_config.py` — `LEAD_TABLES` includes
     `"pgs"`, so a directory holding `pgs.parquet` **is** a module for discovery and publishing.
-  - `webui/src/webui/state.py:6017,6043-6050` — `_authored_row_count` counts `pgs.csv`'s rows as the
+  - `webui/src/webui/state.py,6043-6050` — `_authored_row_count` counts `pgs.csv`'s rows as the
     module's authored height, which is what the registry's enrichment limit is applied against.
-  - `webui/src/webui/state.py:6005` — `_ARTIFACT_FILES = tuple(ARTIFACT_PARQUETS)` includes
+  - `webui/src/webui/state.py` — `_ARTIFACT_FILES = tuple(ARTIFACT_PARQUETS)` includes
     `pgs.parquet`, so it is hashed for digest verification. Hashed, never opened.
-  - `annotation/hf_logic.py:222-249` — `_lead_join_strategy` classifies by schema and names this table
+  - `annotation/hf_logic.py` — `_lead_join_strategy` classifies by schema and names this table
     in its docstring: *"`diplotypes`, `pgs`, `allele_function` and the binning families carry no
     per-variant key at all"* → `"unsupported"`, reason *"lead table has no populated coordinates and no
     rsid + genotype to fall back on (missing: genotype, rsid)"*. Confirmed against the measured parquet
     schema, which is `module, pgs_id, trait_efo_id, note, group, training_ancestry, training_cohort,
     match_rate_floor, research_tier` — no `rsid`, no `genotype`, no `chrom`.
-  - `annotation/hf_logic.py:302-304, 602-605` — `UnsupportedLeadTable` is raised and the module is put
+  - `annotation/hf_logic.py, 602-605` — `UnsupportedLeadTable` is raised and the module is put
     in `skipped` with its reason; the run continues.
-  - `annotation/report_logic.py:1284` — the report globs `*_weights.parquet`, which is never written for
+  - `annotation/report_logic.py` — the report globs `*_weights.parquet`, which is never written for
     a skipped module, so a pgs-led module contributes **no report section**.
-  - `webui/src/webui/state.py:4115,4653` — `selected_pgs_ids`, the PRS workbench's score selection, is
+  - `webui/src/webui/state.py,4653` — `selected_pgs_ids`, the PRS workbench's score selection, is
     populated from the PGS Catalog grid and trait search. Never from a module. The two halves of the app
     that would meet here do not.
 - **The registry — stores and column-checks it, projects nothing from it:**
-  - `specfiles.py:57-67` — `pgs.csv` is in `TABLE_KIND_CSVS`, so it round-trips through storage and is
+  - `specfiles.py` — `pgs.csv` is in `TABLE_KIND_CSVS`, so it round-trips through storage and is
     split back beside the spec on download.
-  - `services/upgrade.py:160` — `_ROW_MODELS["pgs.csv"] = PgsRow`, so an unknown column is reported
+  - `services/upgrade.py` — `_ROW_MODELS["pgs.csv"] = PgsRow`, so an unknown column is reported
     (or `--trim`med) rather than crashing a re-compile.
-  - `db/facets.py:183-221` — `version_facets` projects nothing from this table; there is no
+  - `db/facets.py` — `version_facets` projects nothing from this table; there is no
     `has_pgs`, no score count, no trait facet.
-  - `db/repository.py:933-955` — `search_modules` has no PGS-shaped filter.
-- **This server** — `tools/authoring.py:80` routes the intent ("a published polygenic score") and the
+  - `db/repository.py` — `search_modules` has no PGS-shaped filter.
+- **This server** — `tools/authoring.py` routes the intent ("a published polygenic score") and the
   generic tools (`describe_table`, `table_requirements`, `lint_rows`, `scaffold_module`,
   `validate_module`, `compile_module`) all handle it. No PGS-specific tool exists.
 
 ### Can `just-prs` compute a score from a module carrying `pgs.csv` today?
 
 **The score: yes. From the module: no.** `just-prs` computes a PRS from a `pgs_id` plus a normalized
-VCF — `just_prs.prs.compute_prs` (`prs.py:571`), `compute_prs_batch` (`prs.py:1272`), and over MCP
+VCF — `just_prs.prs.compute_prs` (`prs.py`), `compute_prs_batch` (`prs.py`), and over MCP
 `compute_prs` / `compute_prs_batch(pgs_ids=[…])` / `compute_prs_by_trait`
-(`just-prs-mcp/src/just_prs_mcp/tools/compute.py:1231,1305,1355`). So every id in a `pgs.csv` is
+(`just-prs-mcp/src/just_prs_mcp/tools/compute.py,1305,1355`). So every id in a `pgs.csv` is
 computable *the moment a human or an agent copies it across*. What does not exist is any code path
 from a module to that call. Missing, concretely:
 
 1. **A reader.** Nothing turns `pgs.parquet` into a list of ids. One `pl.read_parquet(...).get_column("pgs_id")`
    is the whole gap, and its absence is why the two halves of just-dna-lite never meet.
 2. **The floor wiring, with a units trap in it.** `match_rate_floor ∈ [0,1]` lines up exactly with
-   `TraitScoreRow.match_rate` ("Matched / total scoring variants", `just-prs-mcp/src/just_prs_mcp/models.py:244`)
-   and with the `min_match_rate` filter that compares against it (`tools/compute.py:601-604`) — but
-   **`EnrichedPRSResult.match_rate` is a percentage 0-100** (`just-prs/…/models.py:350`, set from
-   `result.match_rate * 100` at `enrich.py:88`) while `PRSResult.match_rate` is a fraction
-   (`models.py:234`). A bridge wired to the enriched result compares `0.8` against `80.0` and never
+   `TraitScoreRow.match_rate` ("Matched / total scoring variants", `just-prs-mcp/src/just_prs_mcp/models.py`)
+   and with the `min_match_rate` filter that compares against it (`tools/compute.py`) — but
+   **`EnrichedPRSResult.match_rate` is a percentage 0-100** (`just-prs/…/models.py`, set from
+   `result.match_rate * 100` at `enrich.py`) while `PRSResult.match_rate` is a fraction
+   (`models.py`). A bridge wired to the enriched result compares `0.8` against `80.0` and never
    trips.
-3. **The ancestry leg.** `PRSCatalog.assess_ancestry_coherence` (`prs_catalog.py:985-1050`) already asks
+3. **The ancestry leg.** `PRSCatalog.assess_ancestry_coherence` (`prs_catalog.py`) already asks
    exactly the envelope question — score development ancestry × sample super-population × reference
    panel — and is "advisory only". It reads the Catalog's own development ancestry; the module's
    authored `training_ancestry` / `training_cohort` is not one of its legs.

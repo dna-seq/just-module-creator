@@ -1,14 +1,24 @@
 # literature.csv — does each citation this module makes actually check out, and on what terms
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/literature/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("literature.csv")` and `table_requirements("literature.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 > **Correction, 2026-08-20 (later than the banner above).** This file says `describe_table`
 > refuses this table and quotes that refusal's wording. Both were true when written and are not
@@ -24,7 +34,7 @@ identifiers agree with the registries', was the quoted passage found, and what l
 article carry.* It is the third derived-fact sidecar and **the first not keyed on a variant** — "a
 DOI, a PMCID and 'does PubMed have this record' are properties of the *article*" — so "a module with
 three hundred variants citing five papers carries five rows here, not three hundred with the same DOI
-repeated" (`schema/src/just_dna_format/literature.py:1-14`). Its audience is a compile-time reviewer
+repeated" (`schema/src/just_dna_format/literature.py`). Its audience is a compile-time reviewer
 and a downloader asking whether a module's evidence base resolves; it is **not** bibliography (see
 *What does not exist*).
 
@@ -41,52 +51,52 @@ this row?*; `literature.csv` is a verification record **over** those citations; 
 
 | | |
 |---|---|
-| Model + module | `just_dna_format.literature.LiteratureRow` (`schema/src/just_dna_format/literature.py:78`) |
-| Parquet | `literature.parquet` — in `ARTIFACT_PARQUETS` (`compiler/src/just_dna_compiler/compiler.py:290`), so inside `artifact.digest`. Registered in `_FACT_TABLES` at `compiler.py:327` |
-| Natural / dedup key | `pmid`, digits only. The enricher merges on `existing[row.pmid]` (`enricher/src/just_dna_enricher/literature.py:772-777`). One row per article, however many study rows cite it |
+| Model + module | `just_dna_format.literature.LiteratureRow` (`schema/src/just_dna_format/literature.py`) |
+| Parquet | `literature.parquet` — in `ARTIFACT_PARQUETS` (`compiler/src/just_dna_compiler/compiler.py`), so inside `artifact.digest`. Registered in `_FACT_TABLES` at `compiler.py` |
+| Natural / dedup key | `pmid`, digits only. The enricher merges on `existing[row.pmid]` (`enricher/src/just_dna_enricher/literature.py`). One row per article, however many study rows cite it |
 | Authored or machine-produced | **machine-produced, human-overridable.** Standalone `BaseModel` (not an `AuthoredModel`), `extra="forbid"` so a typo'd column is refused rather than dropped |
 | Who writes it | `enricher.literature.enrich_literature` (`just-dna-enricher literature <dir>`; our `enrich_literature_pass`). **Online only** — `--offline` is a documented no-op |
-| Fact signature | `integrity.literature_signature` over `literature.LITERATURE_FACT_FIELDS` = **4 of 17 fields** — `pmid`, `doi`, `pmcid`, `exists` (`format/literature.py:70-76`, `format/integrity.py:305`) → `manifest.literature.signature` |
-| In `content_signature`? | **No.** Not in `_INPUT_FILES` (`compiler.py:267`). Measured: no edit here moved it |
+| Fact signature | `integrity.literature_signature` over `literature.LITERATURE_FACT_FIELDS` = **4 of 17 fields** — `pmid`, `doi`, `pmcid`, `exists` (`format/literature.py`, `format/integrity.py`) → `manifest.literature.signature` |
+| In `content_signature`? | **No.** Not in `_INPUT_FILES` (`compiler.py`). Measured: no edit here moved it |
 | In `artifact.digest`? | **Yes**, via its parquet — and only over the **kept** rows (RM79). Also byte-hashed into `manifest.derived[]`, transport only |
 | Manifest block | `manifest.literature` = `{signature, sources, row_count, resolved_count, missing_count, open_access_count, abstract_only_count, quotes_authored, quotes_found, quotes_unchecked}` (`manifest.py`, built in `compiler.py`); `quotes_unchecked` arrived in format 0.6.5 (upstream RM119) and is what separates *nothing was checkable* from *nothing was found*; absent when the module carries no sidecar |
-| Location | root or `derived/literature.csv`, resolved through `licensing.sidecar_path` (`enricher/literature.py:748`). Both at once is a `SidecarCollision` error, never a merge |
+| Location | root or `derived/literature.csv`, resolved through `licensing.sidecar_path` (`enricher/literature.py`). Both at once is a `SidecarCollision` error, never a merge |
 | Vocabularies | `quote_source` → `vocab.VALID_QUOTE_SOURCE` = `{fulltext, abstract}`; `status` → `vocab.VALID_RESOLUTION_STATUS` = `{resolved, not_found, ambiguous}` |
 
 ## Who populates what
 
-- **enricher pass — everything.** `enrich_literature` (`enricher/literature.py:706`) writes every one of the 17
+- **enricher pass — everything.** `enrich_literature` (`enricher/literature.py`) writes every one of the 17
   columns. `pmid`, `doi`, `pmcid`, `exists`, `source="pubmed"`, `status` come from PubMed `esummary`;
   `is_open_access`, `license` and the fulltext/abstract come from Europe PMC `search`;
   `share_alike`/`commercial_use`/`redistribution` are mapped from `license` by
-  `licensing.article_terms` (`enricher/licensing.py:315`); `doi_exists`/`doi_checked` come from Crossref;
+  `licensing.article_terms` (`enricher/licensing.py`); `doi_exists`/`doi_checked` come from Crossref;
   `quotes_authored`/`quotes_found`/`quote_source` are computed against `studies.csv`. The header is
-  `list(LiteratureRow.model_fields)`, derived from the model, never hand-kept (`enricher/literature.py:91-96`).
+  `list(LiteratureRow.model_fields)`, derived from the model, never hand-kept (`enricher/literature.py`).
 - **author** — no column is *expected* of a human and every column *may* be written by one. `source`
   is open vocabulary, and a curator's correction is expected to spell it something other than
   `pubmed`: `_REGISTRY_SOURCE` is the only value the identifier cross-check compares against, because
   "a merged row spelling anything else … holds the curator's own identifiers, and calling a
-  disagreement with those 'the registry's' would be a false attribution" (`enricher/literature.py:101-105`).
+  disagreement with those 'the registry's' would be a false attribution" (`enricher/literature.py`).
   A `source=manual` row is therefore **skipped** by `_compare_identifiers` and counted as
-  `identifiers_foreign` (`enricher/literature.py:1120-1126`).
+  `identifiers_foreign` (`enricher/literature.py`).
 - **drafter** — **none.** `literature.csv` is not in `just_dna_compiler.draft.DRAFTABLE`, so there is
   no `<<REPLACE>>` stub and no `draft_from_*` route. This is also why `describe_table`,
   `table_requirements` and `get_template` all **refuse** it — see *Ask the live schema*.
 - **compiler-stamped** — nothing. No column is `base.stamped_identity_field`, `COMPILER_MANAGED` or
   `reject_compiler_filled`; the model carries no compiler-stamped field at all, which is why
-  `model_fields` is exactly the writable surface (`enricher/literature.py:94-95`). The compiler reads, warns,
+  `model_fields` is exactly the writable surface (`enricher/literature.py`). The compiler reads, warns,
   drops uncited rows from the artifact, and never writes a cell of this CSV.
 - **registry-stamped** — nothing is in `normalize.IDENTITY_AUTHORITY_KEYS`. The registry does carry
-  the file (`just-dna-registry/src/just_dna_registry/specfiles.py:97-105` `FACT_CSVS`) and re-parses
+  the file (`just-dna-registry/src/just_dna_registry/specfiles.py` `FACT_CSVS`) and re-parses
   it through `LiteratureRow` on `revalidate`/`upgrade`
-  (`services/upgrade.py:43,167`) — header comparison only, which can **lossily trim an unknown
+  (`services/upgrade.py,167`) — header comparison only, which can **lossily trim an unknown
   column**.
 - **nobody, ever** — no permanently-unwritten column; all 17 have a producer.
 
 **Which cells no tool may fill even though it easily could.** None *on this table* — every column here
 is machine-produced by construction. The refusals live on the **authored** side it checks, in
 `studies.csv`, and they are the reason this table can say anything at all
-(`compiler/src/just_dna_compiler/hints.py:81-108`):
+(`compiler/src/just_dna_compiler/hints.py`):
 
 - `doi` — `redundancy_bearing`: "enricher.literature._doi_conflicts (authored doi vs the registry's)".
   Filling it from PubMed makes the check compare PubMed against PubMed.
@@ -95,7 +105,7 @@ is machine-produced by construction. The refusals live on the **authored** side 
   therefore returns the resolved id as an advisory with `applied=False`,
   `refusal="redundancy_bearing"`.
 - `provenance_quote` / `provenance_regex` — in **both** `REDUNDANCY_BEARING` and
-  `ATTESTATION_BEARING` (`hints.py:72`). Upstream glosses the latter as *a curator read this passage
+  `ATTESTATION_BEARING` (`hints.py`). Upstream glosses the latter as *a curator read this passage
   in this paper*, reading "curator" as a human, and on that reading extracting a passage from a
   fetched fulltext "states something false". **That gloss is correct for their layer and is not the
   rule here — reversed 2026-08-20 under `RM15`.** An agent that reads the article is a real reader,
@@ -137,12 +147,12 @@ The orphan row is the interesting one and it is measured, not asserted: adding
 `11788828,…` to `hboc_palb2/literature.csv` moved **nothing** — not the digest, not the signature,
 not `row_count` (still 10) — and produced exactly one warning, *"literature.csv describes 1
 citation(s) no study or bin in this module cites … left out of the artifact, and left in the CSV"*
-(`compiler.py:5553-5558`).
+(`compiler.py`).
 
 1. **Inside `content_signature`?** No. `content_signature` covers `variants.csv`, `studies.csv` and
-   the table kinds (`_INPUT_FILES`, `compiler.py:267`). Its identity is instead
+   the table kinds (`_INPUT_FILES`, `compiler.py`). Its identity is instead
    `literature_signature` over the **four** fact fields. What is left out carries the argument
-   (`format/literature.py:53-76`): `is_open_access` and the four licence columns are "the outside world's
+   (`format/literature.py`): `is_open_access` and the four licence columns are "the outside world's
    state on the day the pass ran" — an embargo lifting or a re-licensing would otherwise move a
    module's signature with no authored edit anywhere; `quotes_authored`/`quotes_found` are out
    because the first duplicates a fact already in `studies.csv` and the second depends on whether a
@@ -151,11 +161,11 @@ citation(s) no study or bin in this module cites … left out of the artifact, a
 2. **Inside `artifact.digest`?** Yes — `literature.parquet` sits in `ARTIFACT_PARQUETS`, whose
    **order is the digest order**, so it must never be repositioned. That is why a provenance-only
    column no signature sees still moves the digest: the parquet bytes differ. **But only the kept
-   rows reach it** — `split_cited_literature` (`compiler.py:5563`) filters before the build, so the
+   rows reach it** — `split_cited_literature` (`compiler.py`) filters before the build, so the
    digest and `manifest.literature.*` describe the module's *current* citations by construction.
    The CSV is additionally byte-hashed into `manifest.derived[]`; that hash is transport only.
 3. **Does an edit here un-close the module?** **No.** The attestation binds
-   `compiler.authored_input_entries` (`compiler.py:361`) = the newline-normalized `_INPUT_FILES`,
+   `compiler.authored_input_entries` (`compiler.py`) = the newline-normalized `_INPUT_FILES`,
    and this file is not in that set. Measured: `module_hash` byte-identical across every row above,
    deletion included. Editing `studies.csv` by one line **does** un-close it — measured, and the
    compile then warns *"verification.json is stale … the manifest records no verification for this
@@ -165,7 +175,7 @@ citation(s) no study or bin in this module cites … left out of the artifact, a
    names, and row 3 (*content same, fact signature moved*) reads "the upstream source said something
    different this time". Here that means PubMed changed a DOI/PMCID or withdrew a record. **Detecting
    it requires delete-and-re-derive**, because `wanted = [pmid for pmid in citations if pmid not in
-   existing]` (`enricher/literature.py:803`) never re-asks about a pinned row. Deleting is also what discards
+   existing]` (`enricher/literature.py`) never re-asks about a pinned row. Deleting is also what discards
    curator overrides, which is why the missing `--refresh` is still open upstream as **RM83**.
 
 ## Required to exist
@@ -174,44 +184,44 @@ citation(s) no study or bin in this module cites … left out of the artifact, a
   empty, the parquet is skipped, and no compile check fails for its absence.
 - **The pass requires at least one citation, from either of two sites.** `enrich_literature` refuses
   with *"no citations in {spec_dir} — … neither studies.csv rows nor a `pmid` on any binning row"*
-  (`enricher/literature.py:766-770`). That is the correct and complete shape of a PGx-only module, and the
+  (`enricher/literature.py`). That is the correct and complete shape of a PGx-only module, and the
   registry's `/check` reports it as a warning, never a gate
-  (`just-dna-registry/src/just_dna_registry/services/enrich.py:1118-1120`).
+  (`just-dna-registry/src/just_dna_registry/services/enrich.py`).
 - **It drags in no licence row.** Deliberately and permanently: `TERMS_BY_SOURCE` has **no `pubmed`
-  entry** (`enricher/licensing.py:365-378`), and the `literature` layer is in `_UNCORROBORABLE_LAYERS`
-  (`compiler.py:4853`), so its `source` is excluded from `used_sources` and a hand-declared
+  entry** (`enricher/licensing.py`), and the `literature` layer is in `_UNCORROBORABLE_LAYERS`
+  (`compiler.py`), so its `source` is excluded from `used_sources` and a hand-declared
   literature row is exempt from the orphan warning unconditionally (S23, then RM46).
 
 ## The columns that carry judgement
 
 - **`exists`** — PubMed's answer, tri-state. `False` is a **fact** (the citation does not resolve);
   `None` means never checked. `strict` refuses on `False`; `best_effort` records it, and the compiler
-  re-surfaces it offline because the verdict is already pinned (`compiler.py:5546-5552`).
+  re-surfaces it offline because the verdict is already pinned (`compiler.py`).
 - **`doi_exists`** — Crossref's answer, and a **different question**. A paywall hides the fulltext,
   not the record; a preprint, book, thesis or dataset has a DOI and no PMID. Two registries, two
   columns, never one overloaded `exists`. It checks the **authored** DOI in preference to the derived
   one, because "checking the registry's own DOI is circular — it exists by construction"
-  (`enricher/literature.py:959-970`).
+  (`enricher/literature.py`).
 - **`doi_checked`** (0.6) — *which* DOI that verdict is about. Without it, correcting a bad DOI left
   `--strict` refusing and the attestation publishing a finding **naming the corrected DOI**: a finding
   no authored edit could clear. A verdict only stands while `doi_checked == the DOI the module cites
-  now` (`enricher/literature.py:1004-1008`).
+  now` (`enricher/literature.py`).
 - **`quotes_found`** — **null means not checked**, `0` means a text was read and the quote was not in
   it. Folding null into zero is "the single most misleading thing" the manifest block could do
-  (`compiler.py:5106-5108`).
+  (`compiler.py`).
 - **`quote_source`** — `fulltext` or `abstract`, null when neither could be retrieved. It exists
   because **a hit is conclusive from either and a miss is only conclusive against fulltext**; an
-  abstract miss is counted as *unchecked*, not as *not found* (`enricher/literature.py:1074-1085`).
+  abstract miss is counted as *unchecked*, not as *not found* (`enricher/literature.py`).
 - **`license`** — stored **verbatim** as Europe PMC spells it (`cc by`, `cc by-nc`, `cc by-nc-nd`,
   `cc0` — lowercase, probed over 100 records on 2026-08-13). Independent of `is_open_access` and not
   derivable from it: PMID 28546431 is `isOpenAccess: N` with `license: cc by`.
 - **`share_alike` / `commercial_use` / `redistribution`** — **three orthogonal axes**, and `None` is
   never `False`. CC BY-NC forbids sale and expressly allows sharing, which is why redistribution is
   its own column; an unrecognised or absent licence maps to all-`None`, "unknown, withheld, never
-  `False`" (`enricher/licensing.py:296-303`).
+  `False`" (`enricher/licensing.py`).
 - **`source`** — names the bibliographic **registry that answered** (`pubmed`), not a licensed source.
   Europe PMC contributes `is_open_access`, the licence and the fulltext but "cannot originate a row
-  (it silently omits ids it does not know)" (`enricher/literature.py:901-904`).
+  (it silently omits ids it does not know)" (`enricher/literature.py`).
 
 ## Gotchas
 
@@ -221,7 +231,7 @@ Ordered by how likely a first-timer is to hit them.
    when the row was written.** `wanted` excludes every pinned PMID. Rows written before 0.6 carry no
    `license`, and re-running **will not** back-fill them, "because merge-not-clobber cannot tell an
    absent value from a curator's deliberate blank. Delete the sidecar to re-derive"
-   (`enricher/literature.py:727-731`). Same for `doi_checked`. **Measured on the whole reference corpus:** all
+   (`enricher/literature.py`). Same for `doi_checked`. **Measured on the whole reference corpus:** all
    three modules carrying a `literature.csv` (`fmr1_cgg_repeat` 2 rows, `hboc_palb2` 10,
    `pathogenic_clinvar` 1) lack the `doi_checked` column entirely, so **13 of 13** rows have a
    `doi_exists` verdict the current pass counts as `doi_verdicts_stale` and leaves outside the
@@ -229,13 +239,13 @@ Ordered by how likely a first-timer is to hit them.
    cites"* — misleading wording for *written before the column existed* — and only `rm literature.csv`
    clears it.
 2. **The three licence rights are frozen into the CSV, NOT re-derived at read time — the docs say
-   otherwise and they are wrong.** `docs/SCHEMAS.md:1176-1178`, `docs/ENRICHER.md:1679-1681`, `enricher/licensing.py:296-298`,
-   `enricher/literature.py:835-836` and
+   otherwise and they are wrong.** `docs/SCHEMAS.md:1176-1178`, `docs/ENRICHER.md:1679-1681`, `enricher/licensing.py`,
+   `enricher/literature.py` and
    `docs/RM_TOC.md` (RM46) all state that `licensing.article_terms` maps `license` to the three rights
    "at **read** time, so a mapping correction reaches rows already written". **Measured against
    installed 0.6.1/0.6.4:** `article_terms` is called in exactly one place — the enricher's fetch loop
-   (`enricher/literature.py:838`) — and its result is *persisted* into the row. The compiler's
-   `_check_quoted_article_licenses` (`compiler.py:5607`) reads `row.commercial_use` and never consults
+   (`enricher/literature.py`) — and its result is *persisted* into the row. The compiler's
+   `_check_quoted_article_licenses` (`compiler.py`) reads `row.commercial_use` and never consults
    `row.license`. Probed: a row with `license="cc by-nc"` and `commercial_use=True` (or blank) beside a
    quoted study row produces **no warning**, while `article_terms("cc by-nc")` returns
    `commercial_use=False`. Practical consequences for you: (a) a fix to `ARTICLE_TERMS_BY_LICENSE`
@@ -260,21 +270,21 @@ Ordered by how likely a first-timer is to hit them.
    once with `--best-effort` and then with `--strict` **was blessed on a citation PubMed has no record
    of**, because the gates read lists appended inside the fetch loop; an existing `literature.csv` hid
    every DOI/PMCID disagreement; and a citation deleted from `studies.csv` went on being counted with
-   no authored edit able to clear it (`enricher/literature.py:172-193`). Fixed — every tally now runs over
+   no authored edit able to clear it (`enricher/literature.py`). Fixed — every tally now runs over
    `subject_rows` — but the consequence remains: **`--strict` on an already-enriched module refuses on
    the pin, not on a fresh lookup.**
 4. **There are TWO citation sites since 0.6 (RM47), and a bin-only one is not a gap.** `studies.csv`,
    and a `pmid` on a binning row grounding the threshold it sits on. `_citations`
-   (`enricher/literature.py:683-704`) maps a bin-only citation to an **empty** study list — a real citation to
+   (`enricher/literature.py`) maps a bin-only citation to an **empty** study list — a real citation to
    check for existence and identifiers, carrying no quote and no authored DOI because a bin row has
    neither column. It reads as *nothing to check*, never as an unretrievable fulltext. Our own
    `enrich_literature_pass` docstring still says "every citation in `studies.csv`"
-   (`src/just_module_creator/tools/passes.py:592`) — it reads both.
+   (`src/just_module_creator/tools/passes.py`) — it reads both.
 5. **An orphan row is warned about and silently dropped from the artifact (RM79).** The row stays in
    the CSV — it is the pin that keeps a re-run cheap — but never reaches `literature.parquet`,
    `manifest.literature.*` or `literature_signature`. Measured above: adding one moved nothing. So
    `row_count` is *the module's current citations*, not the file's line count, and every counter
-   beside it shares that denominator (`manifest.py:596-603`).
+   beside it shares that denominator (`manifest.py`).
 6. **`quotes_authored: 0` everywhere in the reference corpus, and zero attested literature checks.**
    Measured: **no** `reference_examples/*/studies.csv` carries a `provenance_quote` or
    `provenance_regex`, and all three `verification.json` files with a literature sidecar carry
@@ -320,17 +330,17 @@ Ordered by how likely a first-timer is to hit them.
      carrying a stale `literature.csv` (`F47`). The CLI, `just-dna-enricher literature <dir>`, is
      now the fallback for an older build rather than the only route.
 8. **`--offline` is a no-op that keeps the pin, and it may still write the file.** It fetches nothing,
-   re-examines nothing, warns, and rewrites the existing rows sorted by PMID (`enricher/literature.py:784-801`).
+   re-examines nothing, warns, and rewrites the existing rows sorted by PMID (`enricher/literature.py`).
    If a pinned row covers every current citation it records **no verification record at all** —
-   deliberately: "a record of having said nothing is worse than silence" (`enricher/literature.py:1188-1192`).
+   deliberately: "a record of having said nothing is worse than silence" (`enricher/literature.py`).
 9. **Quoting a non-commercial article warns and never gates.** `_check_quoted_article_licenses`
-   (`compiler.py:5607`) is keyed on the **quote**, not the citation: naming a PMID costs nothing under
+   (`compiler.py`) is keyed on the **quote**, not the citation: naming a PMID costs nothing under
    any licence, while a `provenance_quote` copies publisher text into `studies.csv`, which is authored
    content the module ships — and `studies.csv` sits in the *annotation* layer, where the licence gate
    bites. Aggregated by licence string, one line each. Refusing "would make the format arbitrate a
    copyright question".
 10. **`pmid` here is digits only; the free-form form lives in `studies.csv`.** The validator refuses
-   anything else and names `spec.extract_pmids` (`format/literature.py:216-224`). And PMC ids are one letter
+   anything else and names `spec.extract_pmids` (`format/literature.py`). And PMC ids are one letter
    away from a real PMID: `PMC 3110566` used to extract as PMID **3110566**, a real record for an
    unrelated article (RM50). `_pmcid_conflicts` catches the spelling the schema cannot refuse —
    `21551363 (PMC3110567)` carries a valid PMID while the two halves name different papers.
@@ -339,13 +349,13 @@ Ordered by how likely a first-timer is to hit them.
    citation. Read the **title** from `lookup_citation` / `literature_search` before writing a PMID; it
    comes from `literature.bibliographic(summary)`, the same `esummary` response, at no extra request.
 12. **`regex` matching runs under a wall-clock bound in a child process, and a timeout is recorded as
-    NOT CHECKED** — never as not-found (`enricher/literature.py:630`, `DEFAULT_REGEX_TIMEOUT = 5.0` at `:99`).
+    NOT CHECKED** — never as not-found (`enricher/literature.py`, `DEFAULT_REGEX_TIMEOUT = 5.0` at `:99`).
 
 ## What does not exist
 
 - **No `dataset` column**, unlike every other fact table. PubMed and Europe PMC are continuously
   updated and publish no release identifier, so the column "could only ever be null or a fabricated
-  label". `fetched_at` is this table's currency marker (`format/literature.py:22-27`).
+  label". `fetched_at` is this table's currency marker (`format/literature.py`).
 - **No `title` / `journal` / `year` / `first_author` column.** *"That table records what was
   **checked**, not bibliography"* (`docs/ENRICHER.md:1795`). The bibliographic fields ride on
   `lookup.CitationHint` instead, from the same `esummary` payload. A consumer wanting a rendered
@@ -353,11 +363,11 @@ Ordered by how likely a first-timer is to hit them.
 - **No `pubmed` row in the licence table, ever.** Refused with a reason, so do not re-propose it: "a
   literature source's terms are per article, not per source", and one `pubmed` row would be right for
   a module citing only ids and "a false all-clear for one carrying a `provenance_quote` lifted from a
-  CC-BY-NC article — wrong in the dangerous direction" (`enricher/licensing.py:277-289`).
+  CC-BY-NC article — wrong in the dangerous direction" (`enricher/licensing.py`).
 - **No PMC ID converter call in this pass, and that is not an oversight.** `esummary` already returns
   `doi` and `pmc`; worse, the converter answers a *different* question — for PMID 12345678 it replies
   `"Identifier not found in PMC"`, so wiring it in as an existence check "would report every paywalled
-  article as a broken citation" (`enricher/literature.py:35-42`). The PMCID→PMID direction *is* wired, in
+  article as a broken citation" (`enricher/literature.py`). The PMCID→PMID direction *is* wired, in
   `lookup_citation(pmcid=…)`, reporting only.
 - **No Europe PMC existence oracle.** Asked about three ids where one does not exist it returns two
   and omits the third, with no marker. PubMed decides existence; Europe PMC decides retrievability.
@@ -366,7 +376,7 @@ Ordered by how likely a first-timer is to hit them.
 - **No `--refresh`.** The only way to re-ask is `rm literature.csv`, which also discards curator
   overrides — upstream **RM83**, still open.
 - **No `describe_table` / `table_requirements` / `get_template` support.** All three route through
-  `known_kind(csv_name, draft.DRAFTABLE)` (`src/just_module_creator/tools/_shared.py:142-151`) and
+  `known_kind(csv_name, draft.DRAFTABLE)` (`src/just_module_creator/tools/_shared.py`) and
   `literature.csv` is not draftable, so they raise *"Unknown table kind"*.
 
 ## Consumption today
@@ -376,32 +386,32 @@ Ordered by how likely a first-timer is to hit them.
 `just-prs-mcp` and this repo. In all six it is only written, hashed, uploaded or listed by name.
 
 - **Written, result consumed in-process, file never reopened**:
-  `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/v1_port/runner.py:171-180` (deletes
+  `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/v1_port/runner.py` (deletes
   `literature.csv`, re-runs the pass, keeps `len(rows)` and two warning strings);
-  `just-dna-registry/src/just_dna_registry/services/enrich.py:1100-1131` (runs it with `write=False`
+  `just-dna-registry/src/just_dna_registry/services/enrich.py` (runs it with `write=False`
   and maps the *return object* to `LiteratureCheck`, explicitly "never a publish gate");
-  `src/just_module_creator/tools/passes.py:620-668` (same shape).
-- **Opaque bytes**: `just-dna-lite/webui/src/webui/state.py:6007` imports `ARTIFACT_PARQUETS` and
+  `src/just_module_creator/tools/passes.py` (same shape).
+- **Opaque bytes**: `just-dna-lite/webui/src/webui/state.py` imports `ARTIFACT_PARQUETS` and
   hashes the file into the Merkle digest — the one place in lite the name appears;
-  `just-dna-pipelines/src/just_dna_pipelines/v1_port/publish.py:20,100` existence-checks it and
+  `just-dna-pipelines/src/just_dna_pipelines/v1_port/publish.py,100` existence-checks it and
   uploads it to HuggingFace unopened.
-- **Name in a list**: `just-dna-registry/src/just_dna_registry/specfiles.py:100` (`FACT_CSVS`, carried
-  forward as bytes); `services/upgrade.py:43,167` (header vs `LiteratureRow.model_fields`, no cell
-  inspected); `src/just_module_creator/tools/authoring.py:154,660` (a string in `TableList.sidecars`).
+- **Name in a list**: `just-dna-registry/src/just_dna_registry/specfiles.py` (`FACT_CSVS`, carried
+  forward as bytes); `services/upgrade.py,167` (header vs `LiteratureRow.model_fields`, no cell
+  inspected); `src/just_module_creator/tools/authoring.py,660` (a string in `TableList.sidecars`).
 - **How lite actually renders a citation**: one HTML template,
   `just-dna-pipelines/src/just_dna_pipelines/annotation/templates/longevity_report.html.j2:676-690`,
-  fed by `annotation/report_logic.py:850-856`, which projects exactly five columns from
+  fed by `annotation/report_logic.py`, which projects exactly five columns from
   **`studies.parquet`** — `pmid`, `population`, `p_value`, `conclusion`, `study_design` — and builds
   `https://pubmed.ncbi.nlm.nih.gov/{pmid}/` from the bare id. The same PMIDs go into the AI-explain
-  prompt at `report_logic.py:636-644`.
-- **Licence columns are read — from the wrong table.** `report_logic.py:1092-1132` scans
+  prompt at `report_logic.py`.
+- **Licence columns are read — from the wrong table.** `report_logic.py` scans
   `sources.parquet`, filters `layer == "annotation"`, and the template renders the three rights
   tri-state ("Share-alike required" / "Non-commercial use only" / "Redistribution restricted" /
   "*Not stated*") at `longevity_report.html.j2:963-966`. `LiteratureRow.license` and its three rights
   have **zero** read sites.
 - **The registry facets on five fact-table flags and literature is not one**:
-  `db/schema.py:283-293` `_V017_COLUMNS` has `has_gene_validity`, `has_clinical_assertions`,
-  `has_gwas_effects`, `has_frequencies`, `weighting_declared` — **no `has_literature`**. `models/api.py:222-235`
+  `db/schema.py` `_V017_COLUMNS` has `has_gene_validity`, `has_clinical_assertions`,
+  `has_gwas_effects`, `has_frequencies`, `weighting_declared` — **no `has_literature`**. `models/api.py`
   `FactTablesInfo` matches. `manifest.literature` rides along inside `manifest_json` and nothing reads it.
 - **`literature_signature` / `LITERATURE_FACT_FIELDS`: zero hits in all six repos.** So the canary this
   table is part of is, today, unperformed by any consumer.

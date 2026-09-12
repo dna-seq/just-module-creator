@@ -1,14 +1,21 @@
 # `verification.json` — the attestation that says whether anything was ever *checked*, and the closure that says authoring ended
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **This file describes something that is not a table kind**, so it has no generated upstream page.
+> Its facts come from the code named by symbol below; the per-table reference pages are at
+> <https://just-dna.life/just-dna-compiler/tables/> and the live answer is `describe_table` /
+> `describe_machine_table`.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 ## What it is
 
@@ -16,7 +23,7 @@ Every other file in a module states a **claim**. This one states whether the cla
 to a source**, and separately whether a human declared the authored set **finished**. Before 0.6 a
 module whose `clin_sig` calls had been cross-checked against ClinVar and one where that check never
 ran shipped byte-identical manifests — "not through an oversight in some path, but because no field
-existed that could differ" (`schema/src/just_dna_format/manifest.py:890-892`). `verification.json` is
+existed that could differ" (`schema/src/just_dna_format/manifest.py`). `verification.json` is
 that field. Its audience is a **downloader**: a consumer holding a manifest wants to know whether
 `clinical_significance` was compared, over how many rows, against which ClinVar release, or why it
 could not be. Its second audience is the author's own future self — the closure is the only artefact
@@ -29,18 +36,18 @@ It is **not a table**. There is no CSV, no parquet, no `describe_table` entry, a
 
 | | |
 |---|---|
-| Models | `just_dna_format.manifest.VerificationDoc` (`manifest.py:1002`), `VerificationRecord` (`:887`), `Closure` (`:843`), and the manifest projection `Verification` (`:1088`). All `extra="forbid"` |
+| Models | `just_dna_format.manifest.VerificationDoc` (`manifest.py`), `VerificationRecord` (`:887`), `Closure` (`:843`), and the manifest projection `Verification` (`:1088`). All `extra="forbid"` |
 | Behaviour | `just_dna_format.verification` — binding, proof-of-work, merge, closure (`schema/src/just_dna_format/verification.py`) |
-| On-disk name | `layout.VERIFICATION_JSON = "verification.json"` (`layout.py:47`). Spec root **or** `derived/` (`layout.DERIVED_SUBDIR`, `:79`); both present is a `SidecarCollision` |
-| Parquet | **none, and it never gets one.** Not in `compiler.ARTIFACT_PARQUETS` (`compiler.py:278`). It is an attestation *over* the tables, not a table |
-| Natural / dedup key | `record.check` — **at most one record per check name**. The merge enforces it (`verification.py:338-349`) |
+| On-disk name | `layout.VERIFICATION_JSON = "verification.json"` (`layout.py`). Spec root **or** `derived/` (`layout.DERIVED_SUBDIR`, `:79`); both present is a `SidecarCollision` |
+| Parquet | **none, and it never gets one.** Not in `compiler.ARTIFACT_PARQUETS` (`compiler.py`). It is an attestation *over* the tables, not a table |
+| Natural / dedup key | `record.check` — **at most one record per check name**. The merge enforces it (`verification.py`) |
 | Authored or machine-produced | machine-produced, and the one derived artefact that is **not** human-overridable by design (gotcha 3) |
-| Who writes it | the enricher's `record_verification` (`enricher/.../verification.py:82`) and `just-dna-compiler close` → `compiler.close_module` (`compiler.py:4600`). Nothing else |
-| Fact signature | `verification.verification_signature` over `VERIFICATION_FACT_FIELDS = (check, subjects, findings, skipped, source, release)` (`verification.py:67`), published as `manifest.verification.signature` |
-| In `content_signature`? | **no** — not in `compiler._INPUT_FILES` (`compiler.py:267`) |
+| Who writes it | the enricher's `record_verification` (`enricher/.../verification.py`) and `just-dna-compiler close` → `compiler.close_module` (`compiler.py`). Nothing else |
+| Fact signature | `verification.verification_signature` over `VERIFICATION_FACT_FIELDS = (check, subjects, findings, skipped, source, release)` (`verification.py`), published as `manifest.verification.signature` |
+| In `content_signature`? | **no** — not in `compiler._INPUT_FILES` (`compiler.py`) |
 | In `artifact.digest`? | **no** — no parquet, and the file is not copied into the compiled output dir at all (measured: `ls` of a compiled `mt_common_deletion` output holds seven entries, none of them this) |
-| Elsewhere in the manifest | byte-hashed into `manifest.derived` via `compiler._DERIVED_FILES` (`compiler.py:354`), and summarized into `manifest.verification` |
-| Binding | `verification.module_binding(compiler.authored_input_entries(spec_dir))` (`compiler.py:361`) — the **authored** files only, `\r\n` read as `\n` since RM82 |
+| Elsewhere in the manifest | byte-hashed into `manifest.derived` via `compiler._DERIVED_FILES` (`compiler.py`), and summarized into `manifest.verification` |
+| Binding | `verification.module_binding(compiler.authored_input_entries(spec_dir))` (`compiler.py`) — the **authored** files only, `\r\n` read as `\n` since RM82 |
 
 ## Who populates what
 
@@ -69,7 +76,7 @@ There is no author column here. Use these words:
   `closed_by?`, `signature?`. It writes no record and never invents one; on a document whose binding
   no longer holds it emits `attest([], binding, closure=…)` with `producer` and `produced_at` both
   left `null` deliberately, "as a pair: they describe the run that put the checks, and this document
-  has none" (`compiler.py:4688-4692`).
+  has none" (`compiler.py`).
 
   > 🚧 **ROADWORKS — closing a module can throw away its check records, and only the CLI says so.**
   > **Current state.** When a check record was attested over bytes that no longer match, `close_module`
@@ -98,7 +105,7 @@ There is no author column here. Use these words:
   (`:208`).
 - **nobody, ever — `release` on a continuously-updated source.** `PubMed` "has nothing true to put
   here", so the field stays `null` and must not be read as unknown-provenance
-  (`manifest.py:946-952`).
+  (`manifest.py`).
 - **author (hand) — forbidden in practice.** Editing any field inside `records[]` that is in the fact
   set invalidates `signature` and the compiler drops the whole document. Editing a field *outside* the
   fact set is undetected — that is gotcha 3.
@@ -110,8 +117,8 @@ source cell would make vacuous. The rule turned inside out for this file is stro
 fabricate a record at all.** `attest()` takes the records it is handed; `record_verification` returns
 `None` on an empty list rather than writing a document, because "writing an empty attestation would
 create a file asserting that a module was checked and nothing was found"
-(`enricher/.../verification.py:91-93`). And every field of `manifest.Verification` carries
-`UNTRUSTED_NOTE`, because "a forged pass is worse than silence" (`manifest.py:1102-1103`).
+(`enricher/.../verification.py`). And every field of `manifest.Verification` carries
+`UNTRUSTED_NOTE`, because "a forged pass is worse than silence" (`manifest.py`).
 
 ## What moving this table moves
 
@@ -146,11 +153,11 @@ Baseline: `digest 98eb773eef`, `content 4b75315cb4`, `manifest.derived[verificat
 Four answers:
 
 1. **Inside `content_signature`? No, and it must never be.** It is derived and it is hashed by its own
-   fact set, `VERIFICATION_FACT_FIELDS` (`verification.py:67`). Left out: **`detail`**, because "prose
+   fact set, `VERIFICATION_FACT_FIELDS` (`verification.py`). Left out: **`detail`**, because "prose
    — rewording a sentence must not move a signature", and **`checked_at`**, "for the reason
    `fetched_at` is out everywhere: when a pass ran is a fact about the run, not about the module"
-   (`verification.py:63-66`). The registry pins the same property from its side: `VERIFICATION_FILE`
-   is out of `SIGNATURE_INPUTS` (`just-dna-registry/src/just_dna_registry/specfiles.py:133`,
+   (`verification.py`). The registry pins the same property from its side: `VERIFICATION_FILE`
+   is out of `SIGNATURE_INPUTS` (`just-dna-registry/src/just_dna_registry/specfiles.py`,
    `:280`), so "a module's identity must not depend on whether its author happened to ship one".
 2. **Inside `artifact.digest`? No.** It has no parquet and is not copied into the output directory,
    so unlike every fact sidecar a byte-level edit here moves the digest by exactly nothing. Rows 1–3
@@ -172,14 +179,14 @@ Four answers:
    merge-not-clobber problem to defeat: `merge_records` is *newest wins per check*, so a re-run **does**
    re-ask. What it cannot do is distinguish "the source revised its answer" from "we ran with
    different flags this time". Read source currency off each record's own `release` field, never off
-   the binding and never off this signature (`verification.py:20-24`).
+   the binding and never off this signature (`verification.py`).
 
 ## Required to exist
 
 **Never.** There is no module shape that requires a `verification.json`, and its absence is silent at
 the record level: "no `verification.json` → `(None, [])`. Nothing was attested and nothing is said,
 silently: an unverified module is the ordinary case and warning about it would fire on every module in
-this repository" (`compiler.py:5010-5013`).
+this repository" (`compiler.py`).
 
 What it *drags in*: nothing. What drags **it** in: any of the seven attesting commands, which create
 or merge unconditionally and with no flag (RM72 removed the `--attest` idea explicitly — "an optional
@@ -206,20 +213,20 @@ filed for 1.0 and is **blocked** there, because `reverse` cannot re-emit the doc
 - **`subjects` / `findings`** — **two counts, never a boolean, never one union-typed slot.** `subjects`
   is the denominator. `subjects=0` with `skipped=null` means *the check ran and had nothing in scope*.
   That is not the same statement as `skipped` being set, and they can never occupy one value
-  (`manifest.py:894-899`).
-- **`skipped`** — closed vocabulary, `vocab.VALID_VERIFICATION_SKIPS` (`vocab.py:735`), 8 members.
+  (`manifest.py`).
+- **`skipped`** — closed vocabulary, `vocab.VALID_VERIFICATION_SKIPS` (`vocab.py`), 8 members.
   Closed for a second reason beyond spelling: "backfill triage branches on *why*, so prose here would
   relocate the substring matching rather than end it". `not_requested` (a caller's choice) and
   `offline` (a capability the run lacked) "are different facts about the same absence and must not be
-  merged: … only the second is cleared by re-running with egress" (`vocab.py:725-728`).
+  merged: … only the second is cleared by re-running with egress" (`vocab.py`).
 - **`detail`** — the human sentence, **beside** the machine key, never instead of it. Outside the fact
   set, so rewording moves no signature. Capped by aggregation: `verification.DETAIL_LIMIT = 5`
   examples plus a count, so "a module whose whole panel disagreed would otherwise put one sentence per
-  row into `manifest.verification`" (`enricher/.../verification.py:56-60`).
+  row into `manifest.verification`" (`enricher/.../verification.py`).
 - **`release`** — the one field that answers *how current is this check*. `null` where the source
   publishes none. The binding deliberately does **not** answer this: re-running against a fresher
   ClinVar leaves the attestation matching, so a consumer reads currency here or nowhere
-  (`verification.py:21-24`).
+  (`verification.py`).
 - **`checks[].producer`** — new in 0.7 (RM129, upstream `S71`), and it exists because the
   block-level `producer` answers a different question. **Read the per-record one when asking whether
   a check predates a fix**: `merge_records` carries an older run's record across unchanged and
@@ -242,10 +249,10 @@ filed for 1.0 and is **blocked** there, because `reverse` cannot re-emit the doc
   that one refuses on a new *member*, this one refuses on the field's mere presence, and both are
   fixed by the same upgrade.
 - **`closure.closed_by`** — free text, untrusted, and unchecked by anything (measured above). "Who
-  they say they are, not who they are" (`just-dna-registry/src/just_dna_registry/models/api.py:213`).
+  they say they are, not who they are" (`just-dna-registry/src/just_dna_registry/models/api.py`).
 - **`closure.signature`** — optional Ed25519 over the `module_hash` string. **Absence merely warns; a
   present one that fails to verify drops the whole document.** Absence is a limit, a claim is a claim
-  (`verification.py:267-278`).
+  (`verification.py`).
 
 ## Gotchas
 
@@ -261,7 +268,7 @@ Ordered by how likely a first-timer is to hit them.
 2. **`close` silently destroys check records, returns `closed: true`, and warns about nothing.**
    `close_module` keeps an existing document verbatim only while `attestation_failure(previous,
    binding) is None`; otherwise it drops every record and names them in `ClosureResult.dropped_checks`
-   — which is a *field*, not a warning (`compiler.py:4683-4695`). Measured: edit one coordinate in
+   — which is a *field*, not a warning (`compiler.py`). Measured: edit one coordinate in
    `mt_common_deletion/variants.csv`, then `close_module(...)` → `closed: True`,
    `dropped_checks: ['clinical_significance','genome_build_agreement','reference_allele','rsid_currency']`,
    `warnings: []`, and the next compile publishes `verification: {closed: true, checks: []}` **with no
@@ -272,15 +279,15 @@ Ordered by how likely a first-timer is to hit them.
    re-run the checks after closing, not before.**
 3. **Everything outside the fact set is hand-editable and nothing challenges it.** `detail`,
    `checked_at`, `closed_by` and `closed_at` are outside both `VERIFICATION_FACT_FIELDS` and
-   `pow_digest`'s payload (`module_hash|signature|nonce`, `verification.py:122`). Measured: rewriting
+   `pow_digest`'s payload (`module_hash|signature|nonce`, `verification.py`). Measured: rewriting
    `closed_by` to *"somebody else entirely"* and `closed_at` to `2099-12-31` both published unchallenged.
    The registry says so plainly — `closed` is "the one field here with a check behind it"
-   (`models/api.py:206-210`). Do not read `closed_by` as attribution unless `signature` is present
+   (`models/api.py`). Do not read `closed_by` as attribution unless `signature` is present
    **and** you pin the key: the signature block carries its own `public_key`, so verifying it proves
    only that *the holder of that key* signed, never *whose* key it is.
 4. **A `--offline` re-run used to overwrite a real answer with "never asked" — RM72 fixed it, and the
    fix has a condition.** `merge_records` refuses to let a fresh `skipped` displace an existing `ran`
-   (`verification.py:299-349`). Measured directly:
+   (`verification.py`). Measured directly:
    `merge_records([ran(clinical_significance, subjects=13)], [skipped(clinical_significance, "offline")],
    existing_still_binds=True)` → keeps `subjects=13`; with `existing_still_binds=False` → `skipped=offline`.
    The condition is not a knob: once the authored bytes have moved, the old answer "describes rows that
@@ -297,7 +304,7 @@ Ordered by how likely a first-timer is to hit them.
    three times while the two RESERVED names have not moved once, which is why the ratio is the wrong
    thing to quote and the exception is the right thing.
 6. **`vrs_allele_id` is wired to a command that can only ever emit a skip.** `_mint_record`
-   (`enricher/.../cli.py:1694`) returns `skipped("vrs_allele_id", "nothing_to_check")`
+   (`enricher/.../cli.py`) returns `skipped("vrs_allele_id", "nothing_to_check")`
    unconditionally — there is no `ran` path. The reasoning is exactly right and worth reading: the
    member names a *cross-check* of a source's own `ga4gh:VA.…` against the re-minted one, and
    `resolution.csv` "records the ids the tier minted and never where an id came from, so the question
@@ -309,12 +316,12 @@ Ordered by how likely a first-timer is to hit them.
    authored gene–disease or dosage claim to compare against. Emitting a member for them "would let a
    manifest report a check where no question was put". The names exist ahead of the emitters on
    purpose: "adding one later is legal; adding the *name* late would leave the release that needs it
-   with nothing to write (the `withdrawn` precedent)" (`vocab.py:706-715`).
+   with nothing to write (the `withdrawn` precedent)" (`vocab.py`).
 8. **A module authored entirely through this plugin attests 8 of the 15 reachable members.**
    `enrich_module` calls `just_dna_enricher.enrich.enrich` (5 records) and `enrich_literature_pass`
    calls `enrich_literature`, which attests internally via `literature._attest` (3 records). The
    plugin's `check_identifiers` calls the *function*, and the write lives in the **CLI command** —
-   `src/just_module_creator/tools/research.py:20-31` says so, and it is tracked as `RM9` in
+   `src/just_module_creator/tools/research.py` says so, and it is tracked as `RM9` in
    `docs/ROADMAP.md:38`. Missing from a plugin-only module: `gene_symbol_currency`, `trait_currency`,
    `gene_locus_agreement`, `acmg_secondary_findings`, `allele_function`, `pgx_evidence_level`,
    `vrs_allele_id`. Say so rather than implying the checks left a trace.
@@ -322,11 +329,11 @@ Ordered by how likely a first-timer is to hit them.
    at all — measured: `(rev/"verification.json").exists() == False` — and the recompile is **open**.
    The compiler warns first, at length: *"the checks were put by the enricher, against sources this
    tier does not reach … re-run the enricher … and close it yourself — reverse holds no authority to
-   declare someone else's authoring finished"* (`compiler.py:6023-6048`).
+   declare someone else's authoring finished"* (`compiler.py`).
 10. **Both spellings present is a *warning* here, where it is an error on a fact table.**
     `_read_verification_block` returns the collision as a warning "because the outcome is already the
     weaker one: two attestations are two claims, neither may be preferred, so nothing is published"
-    (`compiler.py:5031-5034`). A module with `verification.json` in both the root and `derived/`
+    (`compiler.py`). A module with `verification.json` in both the root and `derived/`
     publishes no block and compiles green.
 11. **The proof-of-work is real but small, and it is honest about that.** Measured on this
     interpreter: 5 runs of `find_nonce` at 20 bits took 0.22–1.46 s, median **0.65 s**, matching the
@@ -347,11 +354,11 @@ Ordered by how likely a first-timer is to hit them.
 ## What does not exist
 
 - **No CSV, no parquet, no `describe_table` entry.** `describe_table` and `table_requirements` gate on
-  `draft.DRAFTABLE` (`src/just_module_creator/tools/authoring.py:180`, `:222`) and
+  `draft.DRAFTABLE` (`src/just_module_creator/tools/authoring.py`, `:222`) and
   `verification.json` is not in it, so both refuse. A JSON document rather than a fifth fact CSV,
   structurally: "the object has two levels — one attestation over many records — and a CSV expresses
   that only with a non-data service row (the shape RM36 rejected) or by repeating the attestation on
-  every row, where two rows can then disagree about a per-run fact" (`manifest.py:1005-1011`). And
+  every row, where two rows can then disagree about a per-run fact" (`manifest.py`). And
   because it must stay out of the family whose human-overridability is a *designed feature*.
 - **No `reopen` command, and none is needed.** "Editing an authored file is what re-opens a module"
   (`docs/MODULE_LIFECYCLE.md:490-491`).
@@ -361,16 +368,16 @@ Ordered by how likely a first-timer is to hit them.
   `validate` stays read-only however cleanly it passes.
 - **No fatal on a stale attestation.** Considered and rejected: "the goal is that a stale record never
   becomes a *published claim*, not that it be impossible to write, and dropping the block achieves
-  that without stopping an author mid-edit" (`compiler.py:5019-5023`).
+  that without stopping an author mid-edit" (`compiler.py`).
 - **No content-aware binding.** RM82 normalizes `\r\n`→`\n` and **stops there**. A BOM, trailing
   whitespace and a missing final newline remain edits, "because those are things a human typed rather
-  than things a tool did on their behalf" (`integrity.py:116-122`). A lone `\r` is left alone. Measured
+  than things a tool did on their behalf" (`integrity.py`). A lone `\r` is left alone. Measured
   above: deleting the final newline of `variants.csv` un-closes the module while moving neither
   identity.
 - **No run-level record.** The counter-argument to RM72's skip protection — that a reader may want to
   know *today's* run could not reach the source — is answered rather than dismissed: "That is a fact
   about the **run**, not about the **check**, and this is a per-check document … deliberately not
-  opened here" (`verification.py:333-336`).
+  opened here" (`verification.py`).
 - **No `--attest` flag** (RM72 wired the four blocked members unconditionally), **no accumulation**
   (`merge_records` replaces per check — "two answers to that are not two facts"), and **no signing
   from this plugin**: `close_module` takes `closed_by` only, and `--private-key` is the CLI's
@@ -383,21 +390,21 @@ up. Verify before you repeat either version.**
 
 - **`just-dna-registry` — reads it, since 0.16, and *surfaces* it since 0.17.** Installed and checked
   out at **0.18.2** (2026-08-19).
-  - `specfiles.py:133` — in `RECOGNIZED_SPEC_FILES`, so `revalidate`/`upgrade` rebuild a spec dir
+  - `specfiles.py` — in `RECOGNIZED_SPEC_FILES`, so `revalidate`/`upgrade` rebuild a spec dir
     *with* it (their S11); `:234` — in `DERIVED_FILES`, so `download(layout="split")` puts it in
-    `derived/` (`client.py:125`); `:280` — out of `SIGNATURE_INPUTS`, so shipping one cannot move a
+    `derived/` (`client.py`); `:280` — out of `SIGNATURE_INPUTS`, so shipping one cannot move a
     module's identity or its `409 duplicate_content` claim.
-  - `services/catalog.py:178`, wired at `:359` — projects `manifest.verification` onto
-    `ModuleDetail.verification` as `VerificationInfo` (`models/api.py:179`, field at `:307`).
+  - `services/catalog.py`, wired at `:359` — projects `manifest.verification` onto
+    `ModuleDetail.verification` as `VerificationInfo` (`models/api.py`, field at `:307`).
     `None` and an empty block are **not** collapsed: "absent means no attestation survived into the
     manifest, which is a different statement from an attestation that recorded no checks."
   - **The publish path attests its own checks and displaces the publisher's.** Pinned by
-    `tests/test_specfiles.py:208`: an upload claiming `clinical_significance subjects=999` publishes
+    `tests/test_specfiles.py`: an upload claiming `clinical_significance subjects=999` publishes
     as the server's own record; `acmg_secondary_findings`, which that deployment does not run,
     survives verbatim at 999; and the forged closure is dropped (`verification.closure is None`)
     because it is hash-bound.
-  - **Deliberately not a card facet and not a filter** (`models/api.py:201-203`, asserted at
-    `tests/test_format_06.py:234`): "a registry that let you sort by someone else's unverifiable pass
+  - **Deliberately not a card facet and not a filter** (`models/api.py`, asserted at
+    `tests/test_format_06.py`): "a registry that let you sort by someone else's unverifiable pass
     would be lending it our credibility."
   - Registry changelog: *"All 16 upstream reference examples publish through this registry under 0.6 …
     Every one of the 16 comes back with an attested readme, a verification block, a surviving closure"*
@@ -405,13 +412,13 @@ up. Verify before you repeat either version.**
 - **`just-dna-lite` / `just-dna-pipelines` — reads nothing.** Grepped the whole tree: the only hits
   are the word "verification" in unrelated prose and two `data/interim/v1_port/*/manifest.json`
   fixtures that *carry* a block nothing opens. The annotation half reads
-  `manifest.artifact.files` (`hf_modules.py:153`), `manifest.identity.version` (`:695`) and
+  `manifest.artifact.files` (`hf_modules.py`), `manifest.identity.version` (`:695`) and
   `manifest.artifact.digest` (`:696`) and stops there. **No closure, no check record and no
   `skipped` reason reaches a genotype-annotation run.**
 - **`just-prs` / `just-prs-mcp` — nothing.** Zero hits for `verification`.
 - **This plugin — writes the closure, and drops the block on the way back.** `close_module`
-  (`src/just_module_creator/tools/authoring.py:495`) is the only writer here. On the read side,
-  `research._module_card` (`tools/research.py:83`) projects a registry card onto `RegistryModule` and
+  (`src/just_module_creator/tools/authoring.py`) is the only writer here. On the read side,
+  `research._module_card` (`tools/research.py`) projects a registry card onto `RegistryModule` and
   carries no verification field — and the block is on the *detail*, not the card, so
   `registry_get_module` never surfaces `closed` even though the registry serves it.
 - **Format-tree doc drift to be aware of.** `docs/MODULE_LIFECYCLE.md:516` and RM86 in

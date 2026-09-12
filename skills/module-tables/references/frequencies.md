@@ -1,14 +1,24 @@
 # frequencies.csv — how common is this allele, and in whose samples
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/frequencies/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("frequencies.csv")` and `table_requirements("frequencies.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 > **Correction, 2026-08-20 (later than the banner above).** This file says `describe_table`
 > refuses this table and quotes that refusal's wording. Both were true when written and are not
@@ -27,20 +37,20 @@ facts. Its audience is twofold: a curator who wants to see whether a variant the
 is actually common (the ACMG BA1 conversation), and a downstream consumer that wants a filtering
 allele frequency without doing arithmetic or holding a 742 GB VCF. The module's own annotation
 tables never join to it; the compiler only *cross-checks* against it
-(`compiler.py:5477 _cross_check_frequencies`, matched at position level, not on `variant_key`).
+(`compiler.py _cross_check_frequencies`, matched at position level, not on `variant_key`).
 
 ## Identity card
 
 | | |
 |---|---|
 | Model + module | `just_dna_format.frequency.FrequencyRow` (`schema/src/just_dna_format/frequency.py`) |
-| Parquet | `frequencies.parquet` — in `ARTIFACT_PARQUETS` (`compiler.py:288`), so in `artifact.digest` |
+| Parquet | `frequencies.parquet` — in `ARTIFACT_PARQUETS` (`compiler.py`), so in `artifact.digest` |
 | Natural / dedup key | `(variant_key, population)` — the enricher's merge key, `frequencies.py:… existing[(row.variant_key, row.population)]` |
 | Authored or machine-produced | **machine-produced**, human-overridable by design. Not an `AuthoredModel`; `extra="forbid"` |
 | Who writes it | `just_dna_enricher.frequencies.enrich_frequencies` — `just-dna-enricher frequencies <dir>` |
 | Fact signature | `integrity.frequency_signature` over `frequency.FREQUENCY_FACT_FIELDS` (14 of 19 fields) → `manifest.frequency.signature` |
-| In `content_signature`? | **No.** `_INPUT_FILES` (`compiler.py:267`) is `module_spec.yaml`, `variants.csv`, `studies.csv` and the table kinds — nothing else |
-| In `artifact.digest`? | **Yes**, via its parquet. Also byte-hashed into `manifest.derived[]` (transport only, `compiler.py:346`) |
+| In `content_signature`? | **No.** `_INPUT_FILES` (`compiler.py`) is `module_spec.yaml`, `variants.csv`, `studies.csv` and the table kinds — nothing else |
+| In `artifact.digest`? | **Yes**, via its parquet. Also byte-hashed into `manifest.derived[]` (transport only, `compiler.py`) |
 | Location | root or `derived/frequencies.csv` (`layout.DERIVED_SUBDIR`); one spelling only. Both places at once = `layout.SidecarCollision`, an error, never a merge |
 
 ## Who populates what
@@ -62,7 +72,7 @@ tables never join to it; the compiler only *cross-checks* against it
   there is no `<<REPLACE>>` stub for it.
 - **compiler-stamped** — nothing in the CSV. The compiler *adds two columns on the way to parquet*
   and neither is a stamped CSV column: `module` (the module name) and `allele_frequency` = AC/AN as a
-  real `Float64` (`compiler.py:5377 _build_frequencies`). `allele_frequency` is a **property on the
+  real `Float64` (`compiler.py _build_frequencies`). `allele_frequency` is a **property on the
   model, not a field**, so writing it into the CSV is refused by `extra="forbid"` — see Gotchas.
 - **registry-stamped** — nothing. `normalize.IDENTITY_AUTHORITY_KEYS` is `{namespace, owner,
   canonical_id}` and lives on the manifest identity, not on any sidecar row.
@@ -115,7 +125,7 @@ and `manifest.verification.module_hash`. Baseline, compiled twice: **byte-identi
    measured above with a single `fetched_at` edit. Row **order** does the same, which is the one that
    surprises people — the fact hash sorts rows, the parquet does not.
 3. **Does an edit here un-close the module? No.** The attestation binds the authored bytes only
-   (`compiler.authored_input_entries`, `compiler.py:361`, newline-normalized since RM82). Measured:
+   (`compiler.authored_input_entries`, `compiler.py`, newline-normalized since RM82). Measured:
    `manifest.verification.module_hash` stayed `527abadc…` across a fact edit, a `fetched_at` edit, a
    reorder and outright deletion of the file. So a re-enrichment leaves a closed module closed. (An
    `authorship:` append, by contrast, un-closes a module while moving no identity at all — different
@@ -130,7 +140,7 @@ and `manifest.verification.module_hash`. Baseline, compiled twice: **byte-identi
 ## Required to exist
 
 Nothing requires `frequencies.csv`. Its `manifest.frequency` block is simply absent on a module that
-carries none (`compiler.py:4704 _frequency_block` returns `None` on an empty row list), and the
+carries none (`compiler.py _frequency_block` returns `None` on an empty row list), and the
 registry projects `has_frequencies = 0` for that, honestly rather than as "unknown".
 
 What it **needs**, and what it **drags in**:
@@ -236,7 +246,7 @@ Ordered by how likely a first-timer is to hit them.
    with `missing` holding every allele no existing row pins. That last field is a trap by itself:
    surfaced verbatim it says gnomAD was asked about 57 alleles and had none of them, having asked
    about nothing — `unchecked` reported as `not_found`. The registry's own wrapper had to add a
-   warning distinguishing the two (`just-dna-registry/src/just_dna_registry/services/enrich.py:1074`,
+   warning distinguishing the two (`just-dna-registry/src/just_dna_registry/services/enrich.py`,
    "a coverage gap, not an absence from gnomAD").
 7. **`strict` here means "every resolved allele has a frequency", which is often the wrong thing to
    want.** gnomAD genuinely lacks rare and private alleles. Measured on `hboc_palb2`: 24 alleles, **12
@@ -246,7 +256,7 @@ Ordered by how likely a first-timer is to hit them.
 8. **BA1 fires in `compile` and not in `validate`.** Measured: raising the `nfe` `faf95` on a
    `likely_pathogenic` PALB2 allele to `0.06` produced the BA1 warning under `compile_module` and
    **not** under `validate_spec`. Warning only, in both modes, threshold overridable
-   (`--ba1-threshold`, registry default `0.05` at `config.py:93`) — the 5% default is ACMG's, not a
+   (`--ba1-threshold`, registry default `0.05` at `config.py`) — the 5% default is ACMG's, not a
    constant of nature, and a common recessive carrier allele legitimately sits above it. `faf95` wins
    over a raw AF regardless of magnitude; otherwise the maximum per-group `allele_frequency`.
 9. **Rate limiting shapes the pass, so budget time.** gnomAD allows 10 requests / IP / 60 s. The
@@ -256,7 +266,7 @@ Ordered by how likely a first-timer is to hit them.
 10. **`FrequencyUnavailable` is a *subclass* of `FrequencyEnrichmentError`, so the narrow arm must come
     first.** Since enricher 0.6.2 / RM101 the outage case has its own type; a parent-first `except`
     ordering makes the outage arm dead code, silently, raising nothing. See
-    `services/enrich.py:1030` for the correct ordering and the history it replaces (a 502 used to
+    `services/enrich.py` for the correct ordering and the history it replaces (a 502 used to
     answer `/check` with a 500). Before RM101 a `GnomadError` travelled straight out through a
     `try/finally` with no `except` at all.
 11. **A first row wins on gnomAD's duplicates, and sex splits are dropped.** The payload, probed on
@@ -293,7 +303,7 @@ Ordered by how likely a first-timer is to hit them.
   and the BA1 lint.
 - **Genuine upstream defect: the `faf95` warning is duplicated in `manifest.compilation.warnings`.**
   `compile_module` runs `validate_spec`, which since RM93 runs `_check_frequency_arithmetic` — and the
-  compile-side `_frequency_checks` (`compiler.py:4412`) runs it again with no dedup. `_literature_checks`
+  compile-side `_frequency_checks` (`compiler.py`) runs it again with no dedup. `_literature_checks`
   three lines below it *does* dedup, with a comment naming exactly this hazard ("a finding living in
   both places would otherwise print twice"). Measured on a doctored `hboc_palb2`: **15 warnings, 14
   distinct**, the `faf95 … exceeds the group's own allele frequency` line appearing twice. The
@@ -311,15 +321,15 @@ Ordered by how likely a first-timer is to hit them.
 
 | Where | What it does |
 |---|---|
-| `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/module_compiler/cli.py:327-330,407` | passes `--ba1-threshold` through to the compiler at **authoring** time. The only frequency-aware line in the consumer, and it never reads a frequency |
-| `just-dna-lite/webui/src/webui/state.py:5985-6007` | imports `ARTIFACT_PARQUETS` so the client-side digest covers `frequencies.parquet` **as bytes**. Identity only; nothing reads a column |
-| `just-dna-lite/…/annotation/hf_modules.py:206-241`, `module_config.py:490-503` | module discovery and download build URLs for the lead table + `annotations` / `studies` / `sources` parquets. `ModuleInfo` (`hf_modules.py:39-64`) has **no `frequencies_url`**, so a module installed from HuggingFace may not carry the file locally at all |
-| `just-dna-registry/src/just_dna_registry/specfiles.py:97-105` | `FACT_CSVS` — what `revalidate` and `upgrade` rebuild a spec directory from. Missing here = silently dropped on re-publish |
-| `…/services/upgrade.py:165` | maps `frequencies.csv` → `FrequencyRow` to find and trim columns a newer model rejects (lossy) |
-| `…/services/enrich.py:1006-1080` | `/check` preflight: runs the pass with `write=False`, reports `covered` / `missing` / `uncovered` / `unreachable` / `skipped_offline` as four distinct answers |
-| `…/api/routers/publish.py:440`, `client.py:626-670`, `client_cli.py:447` | the `--frequencies` opt-in on `/check`. **Publish never runs the frequency pass** (`config.py:183-184`) |
-| `…/db/facets.py:212`, `db/schema.py:288`, `db/repository.py:951,1021`, `api/routers/modules.py:101-133`, `client.py:316,343` | one boolean, `has_frequencies = int(manifest.frequency is not None)`, filterable in catalog search |
-| `…/services/catalog.py:173` | the module card's `FactTablesInfo.frequencies` — the same boolean, read from the manifest rather than the column, so card and filter cannot disagree |
+| `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/module_compiler/cli.py,407` | passes `--ba1-threshold` through to the compiler at **authoring** time. The only frequency-aware line in the consumer, and it never reads a frequency |
+| `just-dna-lite/webui/src/webui/state.py` | imports `ARTIFACT_PARQUETS` so the client-side digest covers `frequencies.parquet` **as bytes**. Identity only; nothing reads a column |
+| `just-dna-lite/…/annotation/hf_modules.py`, `module_config.py` | module discovery and download build URLs for the lead table + `annotations` / `studies` / `sources` parquets. `ModuleInfo` (`hf_modules.py`) has **no `frequencies_url`**, so a module installed from HuggingFace may not carry the file locally at all |
+| `just-dna-registry/src/just_dna_registry/specfiles.py` | `FACT_CSVS` — what `revalidate` and `upgrade` rebuild a spec directory from. Missing here = silently dropped on re-publish |
+| `…/services/upgrade.py` | maps `frequencies.csv` → `FrequencyRow` to find and trim columns a newer model rejects (lossy) |
+| `…/services/enrich.py` | `/check` preflight: runs the pass with `write=False`, reports `covered` / `missing` / `uncovered` / `unreachable` / `skipped_offline` as four distinct answers |
+| `…/api/routers/publish.py`, `client.py`, `client_cli.py` | the `--frequencies` opt-in on `/check`. **Publish never runs the frequency pass** (`config.py`) |
+| `…/db/facets.py`, `db/schema.py`, `db/repository.py,1021`, `api/routers/modules.py`, `client.py,343` | one boolean, `has_frequencies = int(manifest.frequency is not None)`, filterable in catalog search |
+| `…/services/catalog.py` | the module card's `FactTablesInfo.frequencies` — the same boolean, read from the manifest rather than the column, so card and filter cannot disagree |
 | `just-prs`, `just-prs-mcp` | **nothing.** No match for `frequencies`, `allele_frequency` or `gnomad` anywhere in either `src/` |
 
 So: the registry knows *whether* a module has frequencies and can check them at preflight; nobody

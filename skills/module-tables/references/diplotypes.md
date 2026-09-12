@@ -1,14 +1,24 @@
 # diplotypes.csv — a pair of haplotypes → a phenotype, and what a guideline says about it
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/diplotypes/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("diplotypes.csv")` and `table_requirements("diplotypes.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 Reference for an agent about to author, draft or read this table. Every claim below was read out of a
 file or measured; measurements say so and name the probe. Verified against **format / compiler 0.6.1,
@@ -18,11 +28,11 @@ enricher 0.6.4, registry 0.18.2** (`importlib.metadata.version`, 2026-08-19).
 
 The table answers *"this person's two copies of this gene are `*2` and `*17` — so what?"* It is the
 **actionable** layer of pharmacogenomics: the clinic prescribes against a diplotype (`CYP2C19 *2/*17`),
-not against an rsID (`pgx_draft.py:7-9`). One row maps a canonicalized haplotype pair → a metabolizer
+not against an rsID (`pgx_draft.py`). One row maps a canonicalized haplotype pair → a metabolizer
 phenotype and a human-readable conclusion, optionally plus a drug, CPIC's recommendation strength and
 the clinical setting that recommendation is scoped to.
 
-It is the third of the four tables of the PGx model (`pgx.py:1-18`): `haplotypes.csv` says which
+It is the third of the four tables of the PGx model (`pgx.py`): `haplotypes.csv` says which
 variants make an allele, `allele_function.csv` says what one allele does, **this** says what a pair
 means, and `activity_phenotype.csv` bins a score. The format supplies the tables; a **consumer's
 star-allele caller** supplies the phased diplotype and CN/SV calls. Nothing here reads a VCF, and this
@@ -36,15 +46,15 @@ selecting rows by `drug` and `clinical_context`.
 
 | | |
 |---|---|
-| Model | `just_dna_format.pgx.DiplotypeRow` (`pgx.py:218`), subclass of `base.AuthoredModel` |
-| Parquet | `diplotypes.parquet` — in `compiler._TABLE_KINDS` (`compiler.py:230`) and in `compiler.ARTIFACT_PARQUETS` |
-| Dedup key | `(gene, haplotype_a, haplotype_b, trait_efo_id, drug, clinical_context)` — `compiler._TABLE_DUPE_KEYS[DiplotypeRow]`, `compiler.py:258-260`. Six-part, and every part earned by real CPIC data |
+| Model | `just_dna_format.pgx.DiplotypeRow` (`pgx.py`), subclass of `base.AuthoredModel` |
+| Parquet | `diplotypes.parquet` — in `compiler._TABLE_KINDS` (`compiler.py`) and in `compiler.ARTIFACT_PARQUETS` |
+| Dedup key | `(gene, haplotype_a, haplotype_b, trait_efo_id, drug, clinical_context)` — `compiler._TABLE_DUPE_KEYS[DiplotypeRow]`, `compiler.py`. Six-part, and every part earned by real CPIC data |
 | Authored or machine | **Authored.** `pgx_draft` writes real rows from CPIC; a human/AI owns them afterwards. `enrich-pgx` deliberately never generates them (`pgx.py` enricher, lines 13-18: "having a network pass write them would blur exactly the authored/derived line") |
 | Who writes it | the author; `just-dna-enricher draft --gene <G>` (MCP: `draft_from_cpic`). The compiler stamps one parquet-only column (`module`) |
 | Fact signature | **none.** Authored table, not a derived sidecar — see *What moving this table moves* |
 | In `content_signature`? | **Yes**, every authored cell |
 | In `artifact.digest`? | **Yes**, as `diplotypes.parquet` bytes |
-| Positional? | **No.** `DiplotypeRow` declares no `chrom`/`start`, so it is absent from `compiler._POSITIONAL_TABLE_KINDS` (derived at `compiler.py:1146-1150` from which models carry both columns). No resolution, no VRS, no `UNJOINABLE_PHRASE` |
+| Positional? | **No.** `DiplotypeRow` declares no `chrom`/`start`, so it is absent from `compiler._POSITIONAL_TABLE_KINDS` (derived at `compiler.py` from which models carry both columns). No resolution, no VRS, no `UNJOINABLE_PHRASE` |
 
 Run `describe_table("diplotypes.csv")` / `table_requirements("diplotypes.csv")` for the live columns,
 requirements and vocabularies. Never trust a list in prose, including the ones below.
@@ -57,14 +67,14 @@ required = `gene`, `haplotype_a`, `haplotype_b`, `conclusion`; the other nine op
 
 | Cell(s) | Who | Notes |
 |---|---|---|
-| `gene`, `haplotype_a`, `haplotype_b` | **author**, or **drafter** | `pgx_draft` splits CPIC's `*1/*2` string on `/` (`pgx_draft.py:137`) and hands the halves straight to the model, which then canonicalizes them |
-| `conclusion` | **author**, or **drafter** | required. `pgx_draft` writes `f"{gene} {diplotype}: {phenotype}"` for a phenotype row (`pgx_draft.py:426`) and, for a drug row, CPIC's *implication* + *recommendation* concatenated verbatim — transcribed, never summarized (`pgx_draft.py:241-245`) |
+| `gene`, `haplotype_a`, `haplotype_b` | **author**, or **drafter** | `pgx_draft` splits CPIC's `*1/*2` string on `/` (`pgx_draft.py`) and hands the halves straight to the model, which then canonicalizes them |
+| `conclusion` | **author**, or **drafter** | required. `pgx_draft` writes `f"{gene} {diplotype}: {phenotype}"` for a phenotype row (`pgx_draft.py`) and, for a drug row, CPIC's *implication* + *recommendation* concatenated verbatim — transcribed, never summarized (`pgx_draft.py`) |
 | `phenotype` | **author**, or **drafter** | free text, no vocabulary, no cross-check. `pgx_draft` copies CPIC's `generesult` |
-| `drug`, `recommendation_strength`, `clinical_context` | **author**, or **drafter** | `_recommendation_rows` (`pgx_draft.py:186-250`) fills all three from CPIC's `recommendation` table. `recommendation_strength` is closed-vocabulary (`vocab.VALID_RECOMMENDATION_STRENGTH`, `vocab.py:380`) |
+| `drug`, `recommendation_strength`, `clinical_context` | **author**, or **drafter** | `_recommendation_rows` (`pgx_draft.py`) fills all three from CPIC's `recommendation` table. `recommendation_strength` is closed-vocabulary (`vocab.VALID_RECOMMENDATION_STRENGTH`, `vocab.py`) |
 | `trait_efo_id`, `direction`, `response` | **author only.** No drafter writes any of them | measured over `reference_examples/cyp2c19_star_alleles`: `response` null on 1190/1190 rows. `direction`/`trait_efo_id` are authored in `hfe_compound_het` and `apoe_epsilon`, both hand-written |
 | `clin_sig` | **author only** — and see the refusal note below | closed vocabulary via `AuthoredModel`'s shared validator (`base.SHARED_VOCABULARIES`) |
 | `evidence_level` | **author only** — and see the refusal note below | closed vocabulary `vocab.VALID_EVIDENCE_LEVELS` (PharmGKB `1A`…`4`) |
-| `module` (parquet only) | **compiler-stamped** | added by `_build_table` (`compiler.py:447-464`) so `reverse_module` can recover the module name. Not a CSV column; authoring one fails with `Extra inputs are not permitted` |
+| `module` (parquet only) | **compiler-stamped** | added by `_build_table` (`compiler.py`) so `reverse_module` can recover the module name. Not a CSV column; authoring one fails with `Extra inputs are not permitted` |
 | — | **nobody, ever** | there is no permanently-unwritten column on this table |
 
 **No column here is registry-stamped.** `normalize.IDENTITY_AUTHORITY_KEYS` (`namespace`, `owner`,
@@ -76,7 +86,7 @@ authored value, because nothing on it is compiler-owned identity.
 
 ### The cells no tool may fill, and the exact refusal
 
-Two of this table's columns are on `hints.REDUNDANCY_BEARING` (`hints.py:81-104`), so a lookup reports
+Two of this table's columns are on `hints.REDUNDANCY_BEARING` (`hints.py`), so a lookup reports
 them and refuses to write them. Measured by running `hints.inspect_rows("diplotypes.csv", …)` on a
 two-row fixture; both came back as `Finding(row=None, level="info")`:
 
@@ -98,13 +108,13 @@ with gotcha 12 below — `enrich-pgx` never opens `diplotypes.csv` — **nothing
 cell**, so an independent reading is the only thing standing behind them, and a green enrich is not
 agreement with ClinVar or ClinPGx.
 
-`hints.ATTESTATION_BEARING` is `{provenance_quote, provenance_regex}` (`hints.py:72`) — **neither column
+`hints.ATTESTATION_BEARING` is `{provenance_quote, provenance_regex}` (`hints.py`) — **neither column
 exists on this table**, so nothing here is attestation-bearing. This table carries no citation and no
 quoted passage; grounding for a diplotype module lives nowhere (see *What does not exist*).
 
 **But read the two refusals with a caveat, because their stated reason does not hold here.** Verified
 by reading both passes: `enricher/clinical.py` is typed against `just_dna_format.spec.VariantRow` and
-loads no other table; `enricher/clinpgx.py:186-201` loads `pharm_variants.csv` and nothing else, and
+loads no other table; `enricher/clinpgx.py` loads `pharm_variants.csv` and nothing else, and
 keys every comparison on `row.rsid` — which a `DiplotypeRow` does not have. So on *this* CSV both
 info lines name a check that can never run. The **withholding is still correct** — a machine writing
 `evidence_level` from ClinPGx onto a diplotype row is filling a checked-looking cell from a source —
@@ -113,7 +123,7 @@ below as a probable upstream defect.
 
 The one thing that *does* read `DiplotypeRow.clin_sig` is `_cross_validate_phase_ambiguity`, which
 includes it in the disagreement tuple `(conclusion, phenotype, direction, clin_sig)`
-(`compiler.py:3072`). That is a use, not a check against a source.
+(`compiler.py`). That is a use, not a check against a source.
 
 ## What moving this table moves
 
@@ -136,7 +146,7 @@ for `diplotypes.csv`, and whether `manifest.verification` survived.
 
 1. **Is this table inside `content_signature`?** Yes. It is an authored `_TABLE_KINDS` member, so
    `integrity.content_signature` hashes its rows as `model_dump(mode="json", exclude_none=True)`,
-   sorted, order-independent (`integrity.py:189-255`). It has **no fact signature** — that mechanism
+   sorted, order-independent (`integrity.py`). It has **no fact signature** — that mechanism
    (`integrity.fact_signature` and the `FREQUENCY_FACT_FIELDS`-shaped constants) is for the derived
    sidecars only, and this table has no provenance column to exclude from one.
 2. **Is it inside `artifact.digest`?** Yes, via `diplotypes.parquet`, which `ARTIFACT_PARQUETS` lists.
@@ -144,7 +154,7 @@ for `diplotypes.csv`, and whether `manifest.verification` survived.
    separate listing over raw bytes (`file_entries(spec_dir, _INPUT_FILES)`).
 3. **Does an edit here un-close the module?** **Yes, for any byte change except a newline rewrite.**
    `diplotypes.csv` is in `compiler._INPUT_FILES`, so it is inside `authored_input_entries`
-   (`compiler.py:361-386`) and therefore inside `verification.json`'s `module_hash`. Measured: swapping
+   (`compiler.py`) and therefore inside `verification.json`'s `module_hash`. Measured: swapping
    `haplotype_a`/`haplotype_b` on one row of 1190 dropped the attestation with *"verification.json is
    stale: the attestation was computed over different module bytes"* while moving **no** identity at
    all — not the content signature, not the digest, not the parquet. Measured the other way too:
@@ -161,15 +171,15 @@ for `diplotypes.csv`, and whether `manifest.verification` survived.
 ## Required to exist
 
 - A module needs **at least one** recognized table; `diplotypes.csv` alone satisfies that
-  (`compiler.py:3602-3607`, *"module has no recognized table: add variants.csv or a 0.4 table (e.g.
+  (`compiler.py`, *"module has no recognized table: add variants.csv or a 0.4 table (e.g.
   pharm_variants.csv, diplotypes.csv, pgs.csv)"*).
 - It **drags in nothing**. `studies.csv` is required iff `variants.csv` is present, and the 0.4 tables
   are exempt — not because they carry their own evidence but because `StudyRow` can only name a
   *variant*, so for a gene-keyed table the requirement would be unsatisfiable rather than merely unmet
-  (`compiler.py:3609-3617`, S19/RM47).
+  (`compiler.py`, S19/RM47).
 - `haplotypes.csv` is **optional and not implied**. A module may legitimately carry a diplotype table
   alone and lean on the caller's own allele definitions. Two cross-checks only fire when
-  `haplotypes.csv` is present (`compiler.py:2932-2967`, `2995-3028`) — so a diplotype-only module gets
+  `haplotypes.csv` is present (`compiler.py`, `2995-3028`) — so a diplotype-only module gets
   *less* checking, not more.
 - If any row came from CPIC, `licensing.csv` is effectively required: CPIC's terms forbid sale, the
   drafter writes a `SourceRow` declaring that, and the compile licence gate refuses on a missing
@@ -178,22 +188,22 @@ for `diplotypes.csv`, and whether `manifest.verification` survived.
 ## The columns that carry judgement
 
 - **`haplotype_a` / `haplotype_b`** — an identity, not a grammar. The rule is
-  `pgx.HAPLOTYPE_NAME_PATTERN` = `^\S+$` (`pgx.py:55`): non-empty, no whitespace. `STAR_ALLELE_PATTERN`
-  (`pgx.py:39`) still exists and `pgx_draft` checks it at three sites (`_haplotype_rows`,
+  `pgx.HAPLOTYPE_NAME_PATTERN` = `^\S+$` (`pgx.py`): non-empty, no whitespace. `STAR_ALLELE_PATTERN`
+  (`pgx.py`) still exists and `pgx_draft` checks it at three sites (`_haplotype_rows`,
   `_split_diplotype`, and `draft_gene`'s allele loop — the "four sites" figure comes from a stale
-  comment at `schema/…/pgx.py:42-43`), but it is **not** the naming rule
+  comment at `schema/…/pgx.py`), but it is **not** the naming rule
   here — enforcing it made APOE's `e2`/`e3`/`e4` unstateable and produced "used but not defined" for an
   author who spelled one allele two ways across two tables.
 - **`conclusion`** — required, and the only place a reader learns what the pair *means*. Transcribe a
   guideline's own words; do not summarize two halves into one.
 - **`phenotype`** — free text with no vocabulary and no cross-check. You choose whether the module
   spells it `Poor Metabolizer` or `PM`, and nothing anywhere reconciles that with
-  `activity_phenotype.csv`'s `phenotype` (also free text, `binning.py:319`).
+  `activity_phenotype.csv`'s `phenotype` (also free text, `binning.py`).
 - **`clinical_context`** — the setting a recommendation is scoped to, and part of the row key. See the
   gotchas; this is the column most likely to be misread as a population.
 - **`recommendation_strength` vs `evidence_level`** — two bodies, two questions. CPIC grades *how
   firmly it tells a prescriber to act*; PharmGKB grades *how well established the association is*
-  (`vocab.py:366-378`). A provider fills only its own. In `cyp2c19_star_alleles`, `evidence_level` is
+  (`vocab.py`). A provider fills only its own. In `cyp2c19_star_alleles`, `evidence_level` is
   empty on all 1190 rows deliberately, and the README says so.
 - **`direction` / `clin_sig`** — closed vocabularies from `AuthoredModel`'s shared validators. They are
   what makes a diplotype row comparable to a variant row, and `clin_sig` also feeds the
@@ -204,7 +214,7 @@ for `diplotypes.csv`, and whether `manifest.verification` survived.
 Ordered by how likely a first-timer is to hit it.
 
 1. **The pair is canonicalized `a <= b` LEXICOGRAPHICALLY, so `*10 < *2` and `*17 < *2`.**
-   `_canonicalize_pair` (`pgx.py:306-312`) swaps on `>` over strings, not over star numbers. Measured
+   `_canonicalize_pair` (`pgx.py`) swaps on `>` over strings, not over star numbers. Measured
    with `hints.inspect_rows`: an authored `*2,*17` comes back as `*17,*2`, and the committed
    `cyp2c19_star_alleles/diplotypes.csv` begins `*10/*10, *10/*11, *10/*12` — measured 0 of 1190 rows
    violate the order. **Cost:** a consumer that sorts numerically, or does not sort at all, silently
@@ -216,14 +226,14 @@ Ordered by how likely a first-timer is to hit it.
    the consequence on `cyp2c19_star_alleles`: swapping one row's two haplotype cells left
    `content_signature`, `artifact.digest` and `diplotypes.parquet` **byte-identical** and dropped the
    verification attestation. `hints.inspect_rows` reports the swap as a `normalized` alteration with
-   `applied: true` precisely so this is not a surprise (`hints.py:465-476` — *"`DiplotypeRow` swaps
+   `applied: true` precisely so this is not a surprise (`hints.py` — *"`DiplotypeRow` swaps
    `haplotype_a`/`haplotype_b` without saying so"*).
 3. **`clinical_context` is part of the dedup key, is whitespace-stripped on load, and the settings
    genuinely disagree.** CPIC scopes clopidogrel to `CVI ACS PCI`, `CVI non-ACS non-PCI` and `NVI`, and
    the same `*2/*2` Poor Metabolizer is `strong` in the first and `moderate` in the third
-   (`pgx.py:264-275`; the `cyp2c19_star_alleles` README states it too). Three of CPIC's sixteen live
+   (`pgx.py`; the `cyp2c19_star_alleles` README states it too). Three of CPIC's sixteen live
    values carry trailing whitespace (`'CVI ACS PCI '`, `'CBZ use >3mos '`), so `_normalize_clinical_context`
-   strips (`pgx.py:291-297`). **Cost, measured:** authoring one row `'CVI ACS PCI'` and another
+   strips (`pgx.py`). **Cost, measured:** authoring one row `'CVI ACS PCI'` and another
    `'CVI ACS PCI '` compiles to `diplotypes.csv: duplicate row for key ('CYP2C19', '*10', '*10', None,
    'clopidogrel', 'CVI ACS PCI')` — an **error**, not a merge. Two spellings of one setting is one row,
    and the compiler refuses rather than picking.
@@ -233,7 +243,7 @@ Ordered by how likely a first-timer is to hit it.
    band, prior-treatment status or dose band. Probed upstream against CPIC's live `recommendation`
    table (2,115 rows, 2026-08-03): `general` on 1,912, then `CVI ACS PCI`, `NVI`, `pediatrics`,
    `adults`, `PHT naive`, `<= 1g per day`. Reusing the name would spend the one ancestry will want here
-   later (`pgx.py:264-275`). It is open text on purpose — DPWG and CPNDS scope differently.
+   later (`pgx.py`). It is open text on purpose — DPWG and CPNDS scope differently.
 5. **Two row families coexist for one pair, and that is the design.** Measured on
    `diplotypes.parquet`: 1190 rows = 595 with `drug` null (what the pair *is*) + 595 with
    `drug=clopidogrel` (what CPIC *advises*), over 595 distinct pairs. They survive because `drug` is in
@@ -244,7 +254,7 @@ Ordered by how likely a first-timer is to hit it.
    `clinical_context` to key them apart, or merge the prose.
 6. **`--allele` is not optional on a big gene.** `draft --gene CYP2D6` unfiltered is 16,290 diplotype
    rows, 73% of them `Indeterminate` — every row a faithful transcription and a module no human can
-   read (`pgx_draft.py:150-172`, RM34). *n* alleles is *n(n+1)/2* pairs; six alleles collapse CYP2D6 to
+   read (`pgx_draft.py`, RM34). *n* alleles is *n(n+1)/2* pairs; six alleles collapse CYP2D6 to
    21. `*1` is always kept, because it is *defined* by carrying no variants and excluding it would make
    `*1/*2` undraftable. An unknown allele name is an **error** listing what CPIC publishes, never a
    quietly smaller module.
@@ -253,7 +263,7 @@ Ordered by how likely a first-timer is to hit it.
    `reference_examples/hfe_compound_het/` writes cis and trans as two rows: `C282Y/H63D` (in trans, no
    wild-type protein, at-risk) and `C282Y-H63D` + `wt` (both on one chromosome, one intact copy,
    carrier). They present the identical unphased genotype and carry opposite conclusions.
-   `_cross_validate_phase_ambiguity` (`compiler.py:2995-3130`) reports that as a **warning**; measured
+   `_cross_validate_phase_ambiguity` (`compiler.py`) reports that as a **warning**; measured
    with `validate_spec` on that example: *"HFE: 1 group(s) of diplotype rows are indistinguishable
    without phase — same unphased genotype, different conclusions … e.g. C282Y/H63D, C282Y-H63D/wt"*.
    It reports **two classes**, and the distinction matters: *"defines them identically"* means phase
@@ -266,7 +276,7 @@ Ordered by how likely a first-timer is to hit it.
    textbook unphased collision, the module carries no ε1 (measured: haplotypes are exactly
    `e2`, `e3`, `e4`), and nothing fires — correctly, since the module makes no ε1 claim.
 9. **A star allele used here and defined nowhere is dead weight, and the cure is subtraction.**
-   `_cross_validate_haplotype_definitions` (`compiler.py:2932-2967`) warns when
+   `_cross_validate_haplotype_definitions` (`compiler.py`) warns when
    `allele_function.csv`/`diplotypes.csv` name an allele `haplotypes.csv` does not define; `*1` is
    exempt by definition. CPIC pairs every allele it knows, including ones whose defining variants it
    does not publish in a holdable form — `*36`, `*37`, `*42` arrived across 71 diplotype rows with
@@ -276,7 +286,7 @@ Ordered by how likely a first-timer is to hit it.
 10. **Nothing joins this table to a VCF.** No `chrom`, no `start`, no `rsid`, no `variant_key`, no
     `alts`, no VRS id. It is absent from `_POSITIONAL_TABLE_KINDS`, gets no `resolution.csv` row, and
     `enrich`'s subject collection reads `variants.csv`, `pharm_variants.csv`, `haplotypes.csv` and
-    `heteroplasmy.csv` and **not** this one (`enricher/enrich.py:85-92`, `:156-175`). Measured on `cyp2c19_star_alleles`:
+    `heteroplasmy.csv` and **not** this one (`enricher/enrich.py`, `:156-175`). Measured on `cyp2c19_star_alleles`:
     `positional_rows: 106` (all from `haplotypes.csv`), `vrs_alleles: 57`, and
     `resolution_subjects: 0` with `fully_resolved: true` — the empty-`all()` trap. Read
     `fully_resolved` only together with `resolution_subjects`.
@@ -317,12 +327,12 @@ Ordered by how likely a first-timer is to hit it.
 - **A `requires_phase` column: proposed and refused.** It would make an author restate what the data
   already determines, and go stale the moment a haplotype is edited; the compiler already holds both
   tables and the computation is pure and offline, which is the validate-by-redundancy class it belongs
-  to (`compiler.py:3010-3016`, `docs/COMPILER.md:139`, `docs/ROADMAP_0_7.md:108`). Do not re-propose it.
+  to (`compiler.py`, `docs/COMPILER.md:139`, `docs/ROADMAP_0_7.md:108`). Do not re-propose it.
 - **A `population` column: refused by name.** See gotcha 4. `clinical_context` is the answer and it is
   deliberately not ancestry.
 - **A predicate / expression language for cis-vs-trans: refused.** `haplotypes.csv` is a junction table
   so a haplotype is same-strand conjunction, and a diplotype is already a statement about two homologs
-  — cis and trans are two rows (`compiler.py:2997-3003`; `schema/spec.py:490` points a `VariantRow`
+  — cis and trans are two rows (`compiler.py`; `schema/spec.py` points a `VariantRow`
   author here for the same reason). `docs/FAQ.md:241` refuses expressions module-wide.
 - **`requires_callable` / `callable_from`: absent, and known-absent.** They are `VariantRow`-only, so a
   star-allele module cannot record CPIC's own core assumption — that an uncalled position is reference.
@@ -335,16 +345,16 @@ Ordered by how likely a first-timer is to hit it.
 - **No activity score.** CPIC's `totalactivityscore` is read by the drafter and deliberately not
   stored: `n/a` means CPIC did not score the pair (an absence → empty cell), while `≥3.0` is a real
   bound the numeric bin columns cannot hold, and the two are reported as different findings
-  (`pgx_draft.py:412-419`). Binning a score is `activity_phenotype.csv`'s job, and computing one is the
-  consumer's (`binning.py:425-427`).
+  (`pgx_draft.py`). Binning a score is `activity_phenotype.csv`'s job, and computing one is the
+  consumer's (`binning.py`).
 - **No cross-check between this table's `phenotype` and `activity_phenotype.csv`'s.** Verified against
   the compiler's own audit inventory (`docs/audit/COMPILER_FROM_CODE.md:566-567`): the only two PGx
   cross-checks are haplotype-definition coverage and phase ambiguity. The four-table model's third
   and fourth tables are joined by a free-text string nobody validates.
 - **No copy-number notation.** CPIC writes `*4x≥3/*95`; `≥` is neither a nucleotide nor a star-string
   character, so the drafter skips such pairs with an aggregated warning — a real CYP2D6 draft skips 546
-  of them (`pgx_draft.py:401-409`). Copy number lives on `AlleleFunctionRow` as an attribute of the
-  *cis* allele-unit, and `*2x2/*4` ≠ `*2/*4x2` (`pgx.py:14-18`).
+  of them (`pgx_draft.py`). Copy number lives on `AlleleFunctionRow` as an attribute of the
+  *cis* allele-unit, and `*2x2/*4` ≠ `*2/*4x2` (`pgx.py`).
 
 ## Consumption today
 
@@ -353,17 +363,17 @@ Ordered by how likely a first-timer is to hit it.
 
 | Site | What it does |
 |---|---|
-| `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/module_config.py:491-502` | `LEAD_TABLES` includes `diplotypes` third, after `weights` and `pharm_variants`. This is what makes a diplotype-led directory count as a module at all — discovery, listing, editing and the HuggingFace publisher all key on it |
-| …`module_config.py:518-530` (`find_lead_table`) | probes `diplotypes.parquet` on disk to answer "is this a module" |
-| …`annotation/hf_logic.py:222-250` (`_lead_join_strategy`) | classifies it **`unsupported`** — no populated coordinates and no `rsid`+`genotype` to fall back on. Classified by schema, not family name, so it absorbs new families for free |
-| …`hf_logic.py:107`, `:304`, `:602` | raises `UnsupportedLeadTable` and the per-module loop records it in `skipped[]` and continues. It used to raise `ColumnNotFoundError` and abort every other selected module with it |
-| …`v1_port/publish.py:90` | a 0.4-family-led module publishes like any other |
-| `just-dna-registry/src/just_dna_registry/specfiles.py:56-67` | `diplotypes.csv` is a recognized spec file, so it survives store → `revalidate` → `upgrade` round-trips |
-| …`services/upgrade.py:159` | `_ROW_MODELS["diplotypes.csv"] = DiplotypeRow`, used by `offending_columns` / `trim_unknown_columns` so a pre-0.4 spec's stray column is reported or trimmed rather than crashing the recompile planner |
-| …`models/api.py:500-507` | `SpecStats.table_rows` carries per-CSV row counts from `validate_spec`. Measured: `{"haplotypes.csv": 106, "allele_function.csv": 36, "diplotypes.csv": 1190}` |
-| …`db/repository.py:663` | inserts `manifest.stats.genes` into `version_genes`, which `db/repository.py:1003-1009` joins for the `gene=` search facet |
-| **not** `services/enrich.py:349-353` | `ENRICHMENT_SUBJECT_TABLES` is `pharm_variants.csv`, `haplotypes.csv`, `heteroplasmy.csv`. `diplotypes.csv` rows are **not** counted against `enrich_max_variants` |
-| `just-prs` | nothing. `just_prs/scoring.py:60`'s `is_diplotype` is the PGS Catalog's own scoring-file column, unrelated to this table |
+| `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/module_config.py` | `LEAD_TABLES` includes `diplotypes` third, after `weights` and `pharm_variants`. This is what makes a diplotype-led directory count as a module at all — discovery, listing, editing and the HuggingFace publisher all key on it |
+| …`module_config.py` (`find_lead_table`) | probes `diplotypes.parquet` on disk to answer "is this a module" |
+| …`annotation/hf_logic.py` (`_lead_join_strategy`) | classifies it **`unsupported`** — no populated coordinates and no `rsid`+`genotype` to fall back on. Classified by schema, not family name, so it absorbs new families for free |
+| …`hf_logic.py`, `:304`, `:602` | raises `UnsupportedLeadTable` and the per-module loop records it in `skipped[]` and continues. It used to raise `ColumnNotFoundError` and abort every other selected module with it |
+| …`v1_port/publish.py` | a 0.4-family-led module publishes like any other |
+| `just-dna-registry/src/just_dna_registry/specfiles.py` | `diplotypes.csv` is a recognized spec file, so it survives store → `revalidate` → `upgrade` round-trips |
+| …`services/upgrade.py` | `_ROW_MODELS["diplotypes.csv"] = DiplotypeRow`, used by `offending_columns` / `trim_unknown_columns` so a pre-0.4 spec's stray column is reported or trimmed rather than crashing the recompile planner |
+| …`models/api.py` | `SpecStats.table_rows` carries per-CSV row counts from `validate_spec`. Measured: `{"haplotypes.csv": 106, "allele_function.csv": 36, "diplotypes.csv": 1190}` |
+| …`db/repository.py` | inserts `manifest.stats.genes` into `version_genes`, which `db/repository.py` joins for the `gene=` search facet |
+| **not** `services/enrich.py` | `ENRICHMENT_SUBJECT_TABLES` is `pharm_variants.csv`, `haplotypes.csv`, `heteroplasmy.csv`. `diplotypes.csv` rows are **not** counted against `enrich_max_variants` |
+| `just-prs` | nothing. `just_prs/scoring.py`'s `is_diplotype` is the PGS Catalog's own scoring-file column, unrelated to this table |
 | `just-dna-lite/webui`, `src/` | nothing. Grepped: zero hits |
 
 Downstream of that: `just-dna-lite/docs/V1_PARITY.md:110-114` records `lnewco` (the APOE diplotype
@@ -376,7 +386,7 @@ is stale.
 ## Blanks for just-dna-lite
 
 - **Ask: read `diplotypes.parquet` by diplotype, not by position.** Unread today —
-  `_lead_join_strategy` classifies it `unsupported` and `hf_logic.py:602` skips it. A reader needs no
+  `_lead_join_strategy` classifies it `unsupported` and `hf_logic.py` skips it. A reader needs no
   VCF join: it needs the caller's `(gene, hap_a, hap_b)` and a lexicographic sort, then one lookup.
   **What breaks today:** a published CYP2C19 module annotates zero rows and appears in
   `skipped[module_name]` with *"lead table has no populated coordinates and no rsid + genotype"* —

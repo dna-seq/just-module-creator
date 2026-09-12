@@ -1,14 +1,24 @@
 # `allele_function.csv` — what a named star allele *does*, as one expert panel graded it
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/allele_function/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("allele_function.csv")` and `table_requirements("allele_function.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 Stamped against **format/compiler 0.6.1, enricher 0.6.4, registry 0.18.2** (`importlib.metadata`,
 2026-08-19). Every column list and vocabulary below is illustrative; run the tool calls in the last
@@ -23,40 +33,40 @@ pair means, and this table says what one allele contributes. Its reader is a con
 caller, which sums per-allele activity across the two haplotypes to reach a phenotype; the module
 never calls a genotype itself. Because copy number attaches to a *cis* allele-unit, `*2x2/*4` (AS 2)
 and `*2/*4x2` (AS 1) are different answers, and the module docstring warns that a consumer
-multiplying by *total* CN gets it wrong (`schema/src/just_dna_format/pgx.py:15-18`).
+multiplying by *total* CN gets it wrong (`schema/src/just_dna_format/pgx.py`).
 
 ## Identity card
 
 | | |
 |---|---|
-| Model | `just_dna_format.pgx.AlleleFunctionRow` (`schema/src/just_dna_format/pgx.py:168`), subclass of `base.AuthoredModel` |
-| Parquet | `allele_function.parquet`, registered in `compiler._TABLE_KINDS` (`compiler/src/just_dna_compiler/compiler.py:229`) |
-| Dedup key | `(gene, allele)` — `_TABLE_DUPE_KEYS` (`compiler.py:254`). Nothing else keys it: one function per allele, full stop |
+| Model | `just_dna_format.pgx.AlleleFunctionRow` (`schema/src/just_dna_format/pgx.py`), subclass of `base.AuthoredModel` |
+| Parquet | `allele_function.parquet`, registered in `compiler._TABLE_KINDS` (`compiler/src/just_dna_compiler/compiler.py`) |
+| Dedup key | `(gene, allele)` — `_TABLE_DUPE_KEYS` (`compiler.py`). Nothing else keys it: one function per allele, full stop |
 | Authored or machine-produced | **Authored.** It is a table kind, not a fact sidecar — `AuthoredModel` semantics, reserved-namespace guard, raw-byte input hashing |
 | Who writes it | a human/AI author, or `pgx_draft` from CPIC (which never rewrites an existing row) |
 | Fact signature | **none.** Authored tables have no fact set and no manifest block. `describe_table` will not show you one because there isn't one |
-| In `content_signature`? | **yes** — `_TABLE_KINDS` feeds `compiler.content_signature` (`compiler.py:3848`) |
-| In `artifact.digest`? | **yes** — `allele_function.parquet` is in `ARTIFACT_PARQUETS` (`compiler.py:278`) and in `LEAD_PARQUETS` (`compiler.py:308`), so a module carrying only this table is still a module |
-| Attestation | `verification.json` check name `allele_function`, written by `enrich_pgx._attest` (`enricher/src/just_dna_enricher/pgx.py:578`). It is one of the wired members of `vocab.VALID_VERIFICATION_CHECKS` — all of them except the two RESERVED names |
+| In `content_signature`? | **yes** — `_TABLE_KINDS` feeds `compiler.content_signature` (`compiler.py`) |
+| In `artifact.digest`? | **yes** — `allele_function.parquet` is in `ARTIFACT_PARQUETS` (`compiler.py`) and in `LEAD_PARQUETS` (`compiler.py`), so a module carrying only this table is still a module |
+| Attestation | `verification.json` check name `allele_function`, written by `enrich_pgx._attest` (`enricher/src/just_dna_enricher/pgx.py`). It is one of the wired members of `vocab.VALID_VERIFICATION_CHECKS` — all of them except the two RESERVED names |
 
 ## Who populates what
 
 | Column(s) | Who writes it |
 |---|---|
-| `gene`, `allele` | **author**, or **drafter** (`pgx_draft`, `pgx_draft.py:387`). `scaffold --kinds allele_function.csv` stubs *both* as `<<REPLACE>>` and everything else blank — measured: `stub_template("allele_function.csv")` → `<<REPLACE>>,<<REPLACE>>,,,,,,` |
-| `function_status` | **author**, or **drafter** — `pgx_draft` copies CPIC's `clinicalfunctionalstatus` through `cpic.map_function_status` (`cpic.py:237`). This is the one drafted column that a later check re-reads, and it is why `DRAFT_PROJECTIONS["cpic"]` exists (`provenance.py:96`) |
+| `gene`, `allele` | **author**, or **drafter** (`pgx_draft`, `pgx_draft.py`). `scaffold --kinds allele_function.csv` stubs *both* as `<<REPLACE>>` and everything else blank — measured: `stub_template("allele_function.csv")` → `<<REPLACE>>,<<REPLACE>>,,,,,,` |
+| `function_status` | **author**, or **drafter** — `pgx_draft` copies CPIC's `clinicalfunctionalstatus` through `cpic.map_function_status` (`cpic.py`). This is the one drafted column that a later check re-reads, and it is why `DRAFT_PROJECTIONS["cpic"]` exists (`provenance.py`) |
 | `activity_value` | **author**, or **drafter** — `pgx_draft` copies CPIC's `activityvalue`. CPIC states it for only 215 of 1,361 alleles in the shipped snapshot (measured), so a drafted cell is usually blank |
-| `suballele`, `copy_number`, `sv_type`, `hybrid_orientation` | **author only.** The drafter never writes any of them (`pgx_draft.py:387-393` sets four fields and no more). They are "optional parsed conveniences of the *cis* allele-unit — the star-string remains truth" |
-| `module` (parquet only) | **compiler-stamped** at build, not a CSV column at all: `_build_table` prepends it (`compiler.py:457`) so `reverse_module` can recover the module name. Not authorable — `AuthoredModel`'s reserved-namespace guard rejects it in the CSV |
+| `suballele`, `copy_number`, `sv_type`, `hybrid_orientation` | **author only.** The drafter never writes any of them (`pgx_draft.py` sets four fields and no more). They are "optional parsed conveniences of the *cis* allele-unit — the star-string remains truth" |
+| `module` (parquet only) | **compiler-stamped** at build, not a CSV column at all: `_build_table` prepends it (`compiler.py`) so `reverse_module` can recover the module name. Not authorable — `AuthoredModel`'s reserved-namespace guard rejects it in the CSV |
 | registry-stamped | **none.** `normalize.IDENTITY_AUTHORITY_KEYS` touches `module_spec.yaml`, not this table |
 | nobody, ever | **none.** Every column here is reachable by an author |
 
 **The cell no tool may fill: `function_status`.** It is in `hints.REDUNDANCY_BEARING`
-(`compiler/src/just_dna_compiler/hints.py:94`), mapped to
+(`compiler/src/just_dna_compiler/hints.py`), mapped to
 `enricher.pgx.enrich_pgx (authored function vs PharmVar and CPIC)`. `lint_rows` on a table whose
 `function_status` column is empty throughout emits an `info` finding with `row=None` saying the
 column *"is left to the author on purpose … filling it from that same source would make the check
-vacuous"* (`hints.py:508-530`). Nothing here is in `hints.ATTESTATION_BEARING` — that set is
+vacuous"* (`hints.py`). Nothing here is in `hints.ATTESTATION_BEARING` — that set is
 `{provenance_quote, provenance_regex}` only, and belongs to `studies.csv`.
 
 **The refusal is weaker here than it looks, and you must know why.** `pgx_draft` *does* write
@@ -90,14 +100,14 @@ column moves neither identity and still un-closes the module** — the binding h
 1. **Inside `content_signature`?** Yes. It is a `_TABLE_KINDS` member, so `compiler.content_signature`
    loads and hashes it as `model_dump(mode="json", exclude_none=True)`, sorted, order-independent
    (`integrity.content_signature`). There is no fact-field constant for it and nothing is excluded —
-   contrast `sources.csv`, which is hashed by `SOURCE_FACT_FIELDS` (`sources.py:68`) with `fetched_at`
+   contrast `sources.csv`, which is hashed by `SOURCE_FACT_FIELDS` (`sources.py`) with `fetched_at`
    and `draft_digest` deliberately left out.
 2. **Inside `artifact.digest`?** Yes, via `allele_function.parquet`. Note the parquet carries **all
    seven model fields plus `module`** whatever the CSV has, so a three-column CSV and an eight-column
    CSV with the same values produce byte-identical parquets — which is why "add a blank column" moved
    the digest not at all.
 3. **Does an edit un-close the module?** Yes, always. `allele_function.csv` is in `_INPUT_FILES`
-   (`compiler.py:267`), so it is inside `authored_input_entries` (`compiler.py:361`) and any changed
+   (`compiler.py`), so it is inside `authored_input_entries` (`compiler.py`) and any changed
    byte other than a line ending drops both the attestation and the closure. Watched it happen live:
    editing one cell made `enrich_pgx` print *"verification.json carried a closure over different
    authored bytes; it is dropped rather than re-bound."* Note the converse trap from
@@ -121,27 +131,27 @@ That asymmetry is deliberate but sharp-edged. `variants.csv` ⇄ `studies.csv` i
 (`scaffold.COMPANION_KINDS`); the PGx family has no such rule, because a module may legitimately lean
 on an external caller's allele definitions. The consequence is that a module can assert *"CYP2C19 \*2
 has no function"* with nothing defining `*2`, no citation, and no licence row, and pass strict compile.
-The only backstop is a **warning** — `_cross_validate_haplotype_definitions` (`compiler.py:2932`) —
+The only backstop is a **warning** — `_cross_validate_haplotype_definitions` (`compiler.py`) —
 and it fires *only when `haplotypes.csv` is present*. Author a module with `allele_function.csv` alone
 and the check does not run at all.
 
 ## The columns that carry judgement
 
 - **`allele` — the identity, verbatim, and it is not a star grammar.** Since the APOE fix all three
-  PGx tables share `validate_haplotype_name` (`pgx.py:58`): non-empty, no whitespace, nothing else.
-  `e4`, `ε4`, `Tondela` and `c.1003G>T` are all legal names. `STAR_ALLELE_PATTERN` (`pgx.py:39`) still
+  PGx tables share `validate_haplotype_name` (`pgx.py`): non-empty, no whitespace, nothing else.
+  `e4`, `ε4`, `Tondela` and `c.1003G>T` are all legal names. `STAR_ALLELE_PATTERN` (`pgx.py`) still
   exists but is the **drafter's** rule, not the table's — see gotcha 4.
 - **`function_status` — the redundancy-bearing cell, and the only one anything checks.** Vocabulary
-  `pgx.VALID_FUNCTION_STATUS` (`pgx.py:69`), closed, six members. **Blank means unknown, not
+  `pgx.VALID_FUNCTION_STATUS` (`pgx.py`), closed, six members. **Blank means unknown, not
   `unknown_function`**: `unknown_function` is a positive claim CPIC makes ("we looked and cannot say"),
   a blank is the module declining to claim anything, and `_compare` skips a blank row entirely
-  (`pgx.py:215`). Three states, and they are not interchangeable.
+  (`pgx.py`). Three states, and they are not interchangeable.
 - **`activity_value` — a float, and the format has nowhere to put a bound.** `float | None`, validated
   finite (`validate_finite`). CPIC's *allele* activity values really are numeric, but its *diplotype*
   activity scores are strings like `≥3.0` — measured 96 `≥3.0`, 32 `≥4.0`, 26 `≥3.5` and 103,757 `n/a`
   across the snapshot's 112,754 diplotypes. Those live on the diplotype grain, which the format does
   not carry at all (see *What does not exist*). At allele grain the loss is quieter: `cpic._float_or_none`
-  (`cpic.py:261`) returns `None` for anything unparsable, so a non-numeric value would vanish without a
+  (`cpic.py`) returns `None` for anything unparsable, so a non-numeric value would vanish without a
   warning. **Do not read `0` as unknown** — `0.0` is `*4`'s real activity and 82 alleles carry it.
 - **`copy_number` — a *cis* count, not the sample's total.** `*1x2` → 2. It describes the allele-unit
   the row names, and the whole reason the model exists at this grain is that a consumer summing total
@@ -156,9 +166,9 @@ Ordered by how likely a first-timer is to hit them.
 ### 1. The CPIC leg can grade a table CPIC itself wrote, and whether it does depends on two cells you never see
 
 `pgx_draft` writes `function_status` from CPIC; `enrich_pgx` then compares `function_status` against
-CPIC. RM73's fix is `_tautology_note` (`pgx.py:85`): the leg skips **only** when the licence row's
+CPIC. RM73's fix is `_tautology_note` (`pgx.py`): the leg skips **only** when the licence row's
 `dataset` names the release this leg is about to read **and** `SourceRow.draft_digest` still matches
-the table's `(gene, allele, function_status)` projection (`provenance.py:88-138`). Either half missing
+the table's `(gene, allele, function_status)` projection (`provenance.py`). Either half missing
 and the leg runs in full — the conservative direction, and the direction that produces a false clean bill.
 
 **Measured on the shipped reference example**, whose `licensing.csv` carries an empty `dataset` and no
@@ -183,16 +193,16 @@ leg genuinely runs again — verified: the same module with one cell changed rep
 
 The pass warns in both modes on purpose: *"PharmVar and CPIC genuinely disagree about some alleles …
 Failing a compile over that would make the format arbitrate a scientific disagreement between the two
-authorities it depends on"* (`pgx.py:19-24`). It joins the ClinVar `clin_sig` exception. Verified by
+authorities it depends on"* (`pgx.py`). It joins the ClinVar `clin_sig` exception. Verified by
 running `enrich_pgx(mode="strict")` over a deliberately wrong `*2` → returned the conflict, raised
 nothing. The registry does the same: `PgxCheck` conflicts never enter `_would_publish`
-(`just-dna-registry/src/just_dna_registry/services/enrich.py:830`).
+(`just-dna-registry/src/just_dna_registry/services/enrich.py`).
 
 **Two shipped claims contradict this and are wrong** — flag them, do not act on them:
 `PgxEnrichmentError`'s own docstring says *"Raised in strict mode when the PGx cross-check finds a
-discrepancy it will not carry"* (`pgx.py:114`; it is only ever raised for an unparsable CSV), and the
+discrepancy it will not carry"* (`pgx.py`; it is only ever raised for an unparsable CSV), and the
 CLI advertises `--strict/--best-effort` as *"Fail on an allele-function discrepancy"*
-(`enricher/src/just_dna_enricher/cli.py:631`). `mode` is stored on `PgxResult.mode` and read nowhere.
+(`enricher/src/just_dna_enricher/cli.py`). `mode` is stored on `PgxResult.mode` and read nowhere.
 
 > 🚧 **ROADWORKS — `enrich_pgx(mode=…)` is accepted and does nothing.**
 > **Current state.** Re-confirmed: the parameter is stored on the result and read by no branch. The
@@ -209,7 +219,7 @@ CLI advertises `--strict/--best-effort` as *"Fail on an allele-function discrepa
 ### 3. Per-leg accounting: `subjects` counts what an authority named *back*
 
 Three counting rules, each protecting against a record that reads clean when nothing was put
-(`_function_check_record`, `pgx.py:488`, and `docs/ENRICHER.md:90-103`):
+(`_function_check_record`, `pgx.py`, and `docs/ENRICHER.md:90-103`):
 
 - **`subjects` = alleles an authority actually named back**, never authored rows. A claim about an allele
   neither panel lists was compared against nothing; the shortfall goes in `detail`, not the denominator.
@@ -225,7 +235,7 @@ zero would read as agreement.
 ### 4. The drafter drops 56% of CPIC's alleles, and eleven whole genes, on a rule the table does not enforce
 
 `AlleleFunctionRow.allele` accepts any whitespace-free name. `pgx_draft` checks
-`STAR_ALLELE_PATTERN` instead (`pgx_draft.py:384`) and skips anything failing it. Measured over the
+`STAR_ALLELE_PATTERN` instead (`pgx_draft.py`) and skips anything failing it. Measured over the
 shipped CPIC snapshot's 1,361 alleles:
 
 | | count |
@@ -259,7 +269,7 @@ provider stays strict; nobody measured what that costs.
 
 ### 5. 408 CPIC statuses map to a blank cell, without a warning
 
-`cpic._FUNCTION_MAP` (`cpic.py:225`) maps six CPIC phrases plus two `possible …` variants; anything
+`cpic._FUNCTION_MAP` (`cpic.py`) maps six CPIC phrases plus two `possible …` variants; anything
 else returns `None` and the drafter writes an empty `function_status`. Measured: of the 1,275 snapshot
 alleles CPIC *does* grade, **408 (32%) map to nothing** — `ivacaftor responsive` (103),
 `Malignant Hyperthermia associated` (98), `I/Deficient with CNSHA` (86), `II/Deficient` (53),
@@ -283,14 +293,14 @@ CPIC states none for them.
 ### 6. The comparison is an exact `(gene, allele)` string match, and a spelling difference reads as silence
 
 `_read_cpic` keys on CPIC's own spelling (`*2`); `_read_pharmvar` strips the gene prefix first
-(`_normalize_allele`, `pgx.py:197`) because PharmVar publishes `CYP2C19*2`. Your authored cell is used
+(`_normalize_allele`, `pgx.py`) because PharmVar publishes `CYP2C19*2`. Your authored cell is used
 raw. Measured: rewriting one row as `CYP2C19*2` dropped it out of the comparison — `compared` fell
 34→33, `findings` stayed 0, and the only trace was a clause in `detail`: *"1 authored claim(s) name an
 allele no consulted authority states a function for, so they were not checked."* Read that clause.
 
 ### 7. An allele used and never defined is dead weight — warned, never blocked
 
-`_cross_validate_haplotype_definitions` (`compiler.py:2932`) warns when `allele_function.csv` or
+`_cross_validate_haplotype_definitions` (`compiler.py`) warns when `allele_function.csv` or
 `diplotypes.csv` names an allele `haplotypes.csv` does not define, because a caller can never emit it.
 `*1` is exempt (it is defined by carrying no variants). This is exactly the curation
 `cyp2c19_star_alleles` performed: `*36`, `*37`, `*42` were drafted, used across 71 diplotype rows, two
@@ -319,7 +329,7 @@ has two PGx tables, not three.
 - **No coordinates, no rsID, no `variant_key`.** `_POSITIONAL_TABLE_KINDS` derives itself from models
   declaring both `chrom` and `start`, and this one declares neither. The compiler's own comment says
   that is *"a property of what they describe rather than a gap"* for this table specifically
-  (`compiler.py:1135`) — unlike `repeat_alleles.csv`/`copynumbers.csv`, where 0.6 corrected the same
+  (`compiler.py`) — unlike `repeat_alleles.csv`/`copynumbers.csv`, where 0.6 corrected the same
   sentence to call it a real schema gap.
 - **No `--no-ensembl`-style escape and no per-row severity.** RM4's strict per-row tautology audit was
   **deleted** in RM73 and replaced by the per-leg skip; do not look for it.
@@ -333,31 +343,31 @@ Nothing anywhere reads a value out of `allele_function.parquet`. That is the fin
 
 **just-dna-lite / just-dna-pipelines**
 
-- `just-dna-pipelines/src/just_dna_pipelines/module_config.py:501` — `allele_function` is the last
+- `just-dna-pipelines/src/just_dna_pipelines/module_config.py` — `allele_function` is the last
   entry in `LEAD_TABLES`, so a directory holding `allele_function.parquet` counts as a module for
   discovery and for the HuggingFace publisher. Discovery only; no column is read.
-- `just-dna-pipelines/src/just_dna_pipelines/annotation/hf_logic.py:222-250` — `_lead_join_strategy`
+- `just-dna-pipelines/src/just_dna_pipelines/annotation/hf_logic.py` — `_lead_join_strategy`
   classifies it **`unsupported`**: no populated `chrom`/`start`, no `rsid`+`genotype`. The annotator
-  raises `UnsupportedLeadTable` (`hf_logic.py:304`) and the per-module loop skips it
-  (`hf_logic.py:602`). **An `allele_function`-led module cannot be annotated against a VCF at all.**
-- `webui/src/webui/state.py:6017,6043` — `_authored_row_count` counts `allele_function.csv`'s rows to
+  raises `UnsupportedLeadTable` (`hf_logic.py`) and the per-module loop skips it
+  (`hf_logic.py`). **An `allele_function`-led module cannot be annotated against a VCF at all.**
+- `webui/src/webui/state.py,6043` — `_authored_row_count` counts `allele_function.csv`'s rows to
   decide whether a spec goes to the registry's `/check` enrichment half or to `/validate`. A row count,
   not a value.
 - No star-allele caller exists anywhere in the repo. The format's design assumes the consumer brings
-  one (`pgx.py:15-18`), and this consumer does not.
+  one (`pgx.py`), and this consumer does not.
 
 **just-dna-registry (0.18.2)**
 
-- `src/just_dna_registry/specfiles.py:63` — on the accepted-spec-file allowlist, so it uploads.
-- `src/just_dna_registry/services/upgrade.py:158` — mapped to `AlleleFunctionRow` so the `--trim`/block
+- `src/just_dna_registry/specfiles.py` — on the accepted-spec-file allowlist, so it uploads.
+- `src/just_dna_registry/services/upgrade.py` — mapped to `AlleleFunctionRow` so the `--trim`/block
   planner can find columns a 0.4 compile would reject in a stored version.
-- `src/just_dna_registry/api/routers/publish.py:446` + `services/enrich.py:1336-1400` — the opt-in
+- `src/just_dna_registry/api/routers/publish.py` + `services/enrich.py` — the opt-in
   `POST /{ns}/{name}/check?pgx=true` runs `enrich_pgx(write=False)` and surfaces conflicts as
   `PgxCheck.conflicts`. Gated on `declared_use`: `unstated` (the server default) skips every PGx source
   without asking, `commercial` is `422 license_refused`. Never moves `would_publish`.
 - **Read by `manifest.stats.genes` as of compiler 0.6.6**, which is what populates the catalog's
-  `version_genes` index (`db/repository.py:663`) and the card's gene chips
-  (`services/catalog.py:247`). It came from `variant_stats` over `variants.csv` before that, measured
+  `version_genes` index (`db/repository.py`) and the card's gene chips
+  (`services/catalog.py`). It came from `variant_stats` over `variants.csv` before that, measured
   `"gene_count": 0, "genes": []` on `cyp2c19_star_alleles`, whose 36 rows all say `CYP2C19`.
   **Fixed in compiler 0.6.6** (upstream **RM121**): `module_stats` takes the gene facets over every authored table, `variant_stats` keeps its `variants.csv` promise, and a module already published carries the stats its compile wrote — recompile and re-publish to be findable by gene. Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`.
 

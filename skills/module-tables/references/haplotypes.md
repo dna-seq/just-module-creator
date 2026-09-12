@@ -1,14 +1,24 @@
 # `haplotypes.csv` — which variants make up a named allele
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/haplotypes/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("haplotypes.csv")` and `table_requirements("haplotypes.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 Measured against **format 0.6.1 / compiler 0.6.1 / enricher 0.6.4** (`importlib.metadata`, 2026-08-19).
 Every column list, vocabulary and requirement below is illustrative; ask the tools in *Ask the live
@@ -27,17 +37,17 @@ works without a predicate"), and a `diplotypes.csv` row pairing two of them *is*
 
 It never says what an allele *does* (`allele_function.csv`) and never says what a pair *means*
 (`diplotypes.csv`). It also never calls anything: the phased diplotype and the CN/SV calls come from
-a consumer's star-allele caller (`schema/src/just_dna_format/pgx.py:15-18`).
+a consumer's star-allele caller (`schema/src/just_dna_format/pgx.py`).
 
 ## Identity card
 
 | | |
 |---|---|
-| model | `just_dna_format.pgx.HaplotypeRow` (`schema/src/just_dna_format/pgx.py:81`) |
-| parquet | `haplotypes.parquet` — registered at `compiler/src/just_dna_compiler/compiler.py:228`, in `compiler.ARTIFACT_PARQUETS` |
-| dedup key | `(haplotype_name, variant_key, allele)` — `compiler.py:253`. **Not** `(haplotype, variant)`: one haplotype may state two alleles at one locus without colliding |
-| `variant_key` | `derive_variant_key(rsid, chrom, start, ref)`, **without `alts`** (`_KEY_INCLUDES_ALTS = False`, `pgx.py:146`) — a haplotype junction matches a variant at `chrom:start:ref` regardless of allele |
-| authored or derived | **authored.** It is in `compiler._INPUT_FILES` (`compiler.py:267`), not in `_DERIVED_FILES` (`compiler.py:354`) |
+| model | `just_dna_format.pgx.HaplotypeRow` (`schema/src/just_dna_format/pgx.py`) |
+| parquet | `haplotypes.parquet` — registered at `compiler/src/just_dna_compiler/compiler.py`, in `compiler.ARTIFACT_PARQUETS` |
+| dedup key | `(haplotype_name, variant_key, allele)` — `compiler.py`. **Not** `(haplotype, variant)`: one haplotype may state two alleles at one locus without colliding |
+| `variant_key` | `derive_variant_key(rsid, chrom, start, ref)`, **without `alts`** (`_KEY_INCLUDES_ALTS = False`, `pgx.py`) — a haplotype junction matches a variant at `chrom:start:ref` regardless of allele |
+| authored or derived | **authored.** It is in `compiler._INPUT_FILES` (`compiler.py`), not in `_DERIVED_FILES` (`compiler.py`) |
 | who writes it | a human/AI author, or `just-dna-enricher draft --gene <G>` (CPIC) via `pgx_draft._haplotype_rows` |
 | fact signature | **none.** It has no fact signature because it is not a derived sidecar — it is hashed by `content_signature` and by raw bytes |
 | in `content_signature`? | **yes**, except the three stamped columns (see below) |
@@ -49,19 +59,19 @@ a consumer's star-allele caller (`schema/src/just_dna_format/pgx.py:15-18`).
 |---|---|
 | `haplotype_name` | **author** (or **drafter**: `pgx_draft` writes CPIC's allele label). `stub_template` marks it `<<REPLACE>>` |
 | `rsid` | **author** or **drafter** (CPIC `sequence_location.dbsnpid`). Stub: `<<REPLACE>>`. Redundancy-bearing |
-| `chrom` | **author**, or **drafter** since the `gene.chr` join (`enricher/src/just_dna_enricher/cpic.py:497,533`), or **compiler-stamped by fill** when left empty (RM43). Stub: blank |
-| `start` | same three routes. **1-based VCF POS, stored as-is — never subtract one** (`pgx.py:102-107`) |
+| `chrom` | **author**, or **drafter** since the `gene.chr` join (`enricher/src/just_dna_enricher/cpic.py,533`), or **compiler-stamped by fill** when left empty (RM43). Stub: blank |
+| `start` | same three routes. **1-based VCF POS, stored as-is — never subtract one** (`pgx.py`) |
 | `ref` | **author**, or **compiler filled by RM43**. `pgx_draft` never writes it |
-| `alts` | **compiler-filled only**, from the injected `resolution.csv`. Declared via `base.stamped_identity_field` (`pgx.py:109`). An authored value is **refused**, not overwritten — `base.reject_compiler_filled` (`base.py:325`) |
+| `alts` | **compiler-filled only**, from the injected `resolution.csv`. Declared via `base.stamped_identity_field` (`pgx.py`). An authored value is **refused**, not overwritten — `base.reject_compiler_filled` (`base.py`) |
 | `allele` | **author** or **drafter**. The defining allele on this haplotype; bases, or a symbolic allele carrying its length (`<DEL:1500>`). Stub: `<<REPLACE>>` |
 | `gene` | **author** or **drafter**. Optional to the model, but it is what `enrich-pgx` takes its scope from |
-| `variant_key` | **compiler-stamped** at load from the authored cells, never re-derived (`pgx.py:123`). Tolerates nothing — it is not in the authored field set at all |
+| `variant_key` | **compiler-stamped** at load from the authored cells, never re-derived (`pgx.py`). Tolerates nothing — it is not in the authored field set at all |
 | `authored_ident` | **compiler-stamped**: which of `{rsid, chrom, start, ref}` the author actually supplied. This is what lets `reverse_module` re-emit the authored shape |
 | `module` | **compiler-stamped** into the parquet only; no CSV carries it |
 | *registry-stamped* | **none.** `normalize.IDENTITY_AUTHORITY_KEYS` touches `module_spec.yaml` identity, not this table |
 | *nobody, ever* | **none on this model.** Every column has at least one writer |
 
-**Cells no tool may fill.** Of `hints.REDUNDANCY_BEARING` (`compiler/src/just_dna_compiler/hints.py:81`),
+**Cells no tool may fill.** Of `hints.REDUNDANCY_BEARING` (`compiler/src/just_dna_compiler/hints.py`),
 five appear on this model: `rsid`, `chrom`, `start`, `ref`, `alts`. A lookup reports them with
 `applied: false` and `refusal="redundancy_bearing"` — `compiler.resolution._verify` later compares
 the authored rsID against the authored coordinate, and `enricher.sequences.verify_reference_alleles`
@@ -72,7 +82,7 @@ attestation rule does not reach it at all.
 
 `allele` is *not* in `REDUNDANCY_BEARING` and is not cross-checked against any source. `enrich-pgx`
 verifies `allele_function.function_status` and nothing on this table
-(`enricher/src/just_dna_enricher/pgx.py:158-183, 203-228`) — see gotcha 4.
+(`enricher/src/just_dna_enricher/pgx.py, 203-228`) — see gotcha 4.
 
 ## What moving this table moves
 
@@ -100,16 +110,16 @@ The reorder measurement, `apoe_epsilon`: `content_signature` stayed `343333b6…
 attest these bytes, and close the module again."*
 
 1. **Inside `content_signature`?** Yes — it is an authored table, hashed as parsed rows
-   (`integrity.content_signature`, `schema/src/just_dna_format/integrity.py:189`). The three stamped
+   (`integrity.content_signature`, `schema/src/just_dna_format/integrity.py`). The three stamped
    columns (`alts`, `variant_key`, `authored_ident`) are `exclude=True` and therefore **outside** it,
    while still reaching parquet. `VariantRow.variant_key`/`authored_ident` *are* inside it — a
-   grandfathered asymmetry carried until a major, documented at `base.py:297-306`, **not a
+   grandfathered asymmetry carried until a major, documented at `base.py`, **not a
    precedent**.
 2. **Inside `artifact.digest`?** Yes. And because the RM43 fill writes `chrom`/`start`/`ref`/`alts`
    into the parquet, a change to `resolution.csv` that no authored byte reflects still moves the
    digest — the table is the *amplifier* that turns a resolution fact into artifact bytes.
 3. **Does an edit un-close the module?** Yes. `haplotypes.csv` is in `_INPUT_FILES`, so it is inside
-   `compiler.authored_input_entries` (`compiler.py:361`) and inside the attestation binding. Since
+   `compiler.authored_input_entries` (`compiler.py`) and inside the attestation binding. Since
    RM82 the binding reads `\r\n` as `\n`, so a line-ending rewrite alone does not un-close; anything
    else does — including a pure reorder, measured above. `resolution.csv` and `verification.json` are
    in `_DERIVED_FILES` and outside the binding, so a re-enrichment leaves a closed module closed
@@ -130,14 +140,14 @@ attest these bytes, and close the module again."*
   (`_cross_validate_haplotype_definitions`, `_cross_validate_phase_ambiguity`) and what gives
   `enrich-pgx` its gene scope. A module carrying `diplotypes.csv` alone is legal and leans on the
   caller's own definitions — that is why "used but not defined" is a warning and only runs when this
-  file exists (`compiler.py:2942-2947`).
+  file exists (`compiler.py`).
 - Drafting from CPIC drags in the **licence gate**: CPIC is CC BY-SA *plus* a bar on sale, so the
   draft is skipped when `declared_use` is unstated and refused when it is `commercial`, and the
   module must carry a `licensing.csv` row with `declared_use` set or the compile fails.
 
 ## The columns that carry judgement
 
-- **`haplotype_name`** — an *identity, not a grammar* (`pgx.py:40-55`). The only rule is non-empty and
+- **`haplotype_name`** — an *identity, not a grammar* (`pgx.py`). The only rule is non-empty and
   no whitespace (`validate_haplotype_name`, shared by all three PGx tables since RM30). `*4`, `e4`,
   `ε4`, `wt`, `C282Y-H63D` are all legal. Spell it the same way in `allele_function.csv` and
   `diplotypes.csv` or the cross-check reports "used but not defined".
@@ -146,9 +156,9 @@ attest these bytes, and close the module again."*
   non-observation, not a variant) and refuses IUPAC codes.
 - **`ref`** — authored, it is the locus's reference base and it does two jobs: it disambiguates a
   half-coordinate, and `allele == ref` is how the phase-ambiguity check recognises "this haplotype
-  carries reference here" (`compiler.py:3042`). Omit it and that normalisation is dead.
+  carries reference here" (`compiler.py`). Omit it and that normalisation is dead.
 - **`chrom` + `start`** — either alone is worthless. `REQUIRED_ANY_OF` is `{rsid}` **or**
-  `{chrom, start}` (`pgx.py:88`), so a bare `start` is legal only because an rsID is present, and it
+  `{chrom, start}` (`pgx.py`), so a bare `start` is legal only because an rsID is present, and it
   reads like a coordinate while joining to nothing.
 - **`gene`** — optional to the model, load-bearing in practice: `enrich_pgx._module_genes` derives the
   module's scope from this column and `allele_function.gene`, and answers *"the module names no
@@ -184,19 +194,19 @@ Ordered by how likely a first-timer is to hit them.
    *"'alts' is filled by the compiler on this table, from the injected resolution.csv, and is not an
    authored column here — remove it."* (measured on a modified `apoe_epsilon`). Before 0.6 it was
    silently *accepted* and then dropped by reverse, so `compile → reverse → compile` was not a fixed
-   point (`base.py:325-345`).
+   point (`base.py`).
 
 2. **A CPIC draft gives you `start` with no `chrom`, and that is a coordinate that joins to nothing.**
    `reference_examples/cyp2c19_star_alleles/haplotypes.csv` has the header
    `haplotype_name,rsid,start,allele,gene` — 106 rows, no `chrom` column at all. The compiler counts
-   these apart as the *"more deceptive shape"* (`compiler.py:1283-1286`) and says so:
+   these apart as the *"more deceptive shape"* (`compiler.py`) and says so:
    *"106 carry one half of a coordinate (a start with no chrom, or the reverse), which reads as a
    position and is not one."* RM43's fill completes it from `resolution.csv` **only when the locus
    agrees**; a locus whose `start` disagrees leaves the row alone and reports, because completing it
-   would build a coordinate no source ever stated (`resolution.py:325-329`). Measured after
+   would build a coordinate no source ever stated (`resolution.py`). Measured after
    `enrich`: 106 of 106 placed, `chrom`/`start`/`ref`/`alts` all non-null in the parquet.
    **The reference example's README is now stale on the reason** — it says CPIC "never publishes a
-   chromosome", and `cpic.py:32-37` corrects exactly that probe: `gene.chr` carries `chr10` for
+   chromosome", and `cpic.py` corrects exactly that probe: `gene.chr` carries `chr10` for
    CYP2C9. A fresh draft today writes `chrom`.
 
 3. **A pure row reorder moves `artifact.digest` and un-closes the module while `content_signature`
@@ -205,27 +215,27 @@ Ordered by how likely a first-timer is to hit them.
 
 4. **Nothing ever checks a defining-variant set against CPIC or PharmVar.** `enrich-pgx` reads this
    table *only* to learn which genes the module is about (`_GENE_TABLES`,
-   `enricher/pgx.py:158-163`); the comparison it runs is `allele_function.function_status` against
+   `enricher/pgx.py`); the comparison it runs is `allele_function.function_status` against
    the two authorities. `DRAFT_PROJECTIONS["cpic"]` also points at `allele_function.csv`, not here
-   (`enricher/provenance.py:96-100`), so the drafted-unchanged digest does not track this file
+   (`enricher/provenance.py`), so the drafted-unchanged digest does not track this file
    either. If you mistype an `allele`, no pass will disagree with you.
 
 5. **CPIC's IUPAC codes are skipped, permanently.** `*2`, `*4` and `*35` each have one defining
    variant CPIC records as `R`/`Y`/`M` — a *set* of nucleotides. `cpic.unusable_allele_reason`
    classifies it `"ambiguity"` and the drafter reports and drops the row, because expanding `R` to two
    rows *"would invent two defining variants where CPIC recorded one uncertainty"*
-   (`cpic.py:16-19, 105-108`). The alleles survive with fewer defining positions. This is separate
+   (`cpic.py, 105-108`). The alleles survive with fewer defining positions. This is separate
    from `"symbolic"` (`DELTCT`, `AAAGGGGCG(2)`), which is a grammar gap RM5 partly closed — the two
    were once reported as one thing and that was wrong.
 
 6. **A dropped row silently redefines the haplotype, so the symbolic-allele finding is fatal here in
    both modes.** `_SYMBOLIC_DROPPABLE_TABLES` is `{variants.csv, pharm_variants.csv}` only
-   (`compiler.py:2326`); a `haplotypes.csv` row is *part of a composite*, so
+   (`compiler.py`); a `haplotypes.csv` row is *part of a composite*, so
    *"dropping it would not make a smaller module but a quietly different one"*. Clearable by stating
    the length: `<DEL:1500>`.
 
 7. **"Used but not defined" is checked; "defined but never paired" is not.** The exemption list is one
-   name — `_REFERENCE_HAPLOTYPE = "*1"` (`compiler.py:2929`), the star allele defined by carrying
+   name — `_REFERENCE_HAPLOTYPE = "*1"` (`compiler.py`), the star allele defined by carrying
    *none* of a gene's variants. Two consequences. (a) That hardcode is gene-agnostic, and CPIC's own
    reference allele for CYP2C19 is `*38`, not `*1` — measured: `*38` has **35 rows, every one with
    `allele == ref`** after the fill, i.e. the reference haplotype written out longhand. (b) The
@@ -243,8 +253,8 @@ Ordered by how likely a first-timer is to hit them.
 
 9. **The `_IMPLIED_REFERENCE` normalisation is dead on a CPIC draft, and the fill does not revive it.**
    `_cross_validate_phase_ambiguity` folds `row.ref is not None and row.allele == row.ref` onto the
-   same sentinel as "unmentioned" (`compiler.py:3042`). Both cross-checks run at
-   `compiler.py:3467-3480`, **before** `_apply_positional_resolution` at `compiler.py:3592` — so they
+   same sentinel as "unmentioned" (`compiler.py`). Both cross-checks run at
+   `compiler.py`, **before** `_apply_positional_resolution` at `compiler.py` — so they
    see the authored rows. Measured on `cyp2c19_star_alleles`: **0** authored rows normalise (no `ref`
    column exists), **35 of 106** would after the fill. So `*38`'s 35 explicit reference bases compare
    as 35 distinct alleles against a sparse allele that simply omits those positions, and the check
@@ -253,7 +263,7 @@ Ordered by how likely a first-timer is to hit them.
 10. **The phase-ambiguity check is closed-world, and a clean run is not a clean bill.** It compares the
     rows the module states, never the rows it omits — APOE ε2/ε4 vs ε1/ε3 is the textbook unphased
     collision and nothing fires, because that module carries no ε1
-    (`compiler.py:3016-3020`). It also distinguishes *two* failures: haplotypes this module defines
+    (`compiler.py`). It also distinguishes *two* failures: haplotypes this module defines
     **identically** (phase cannot help — a real CYP2D6 draft has 378 such groups) from ones phase
     would resolve (20). Do not report the first as "get phased data".
 
@@ -261,20 +271,20 @@ Ordered by how likely a first-timer is to hit them.
     `AlleleFunctionRow.allele` demanded a leading `*` while the two haplotype columns had no rule at
     all, so `e4` was legal in two tables and illegal in the third — and the 0.5.1 cross-check turned
     the obvious workaround (`*4` here, `e4` there) into "used but not defined" with no legal spelling
-    satisfying both (`pgx.py:41-54`). `STAR_ALLELE_PATTERN` still exists and is what the CPIC drafter
+    satisfying both (`pgx.py`). `STAR_ALLELE_PATTERN` still exists and is what the CPIC drafter
     checks, at four sites; it is **not** the rule for authoring.
 
 12. **The manifest publishes no per-table row count for this file.** Measured `manifest.stats` on
     `cyp2c19_star_alleles`: `variant_count 0, gene_count 0, genes []`. `positional_rows: 106` /
     `positional_rows_placed: 106` is the only count, and it is the sum across
-    `pharm_variants`/`haplotypes`/`heteroplasmy` (`manifest.py:324`). `table_rows` exists in
-    `ValidationResult.stats` (`compiler.py:3779`) and does **not** reach `Stats`.
+    `pharm_variants`/`haplotypes`/`heteroplasmy` (`manifest.py`). `table_rows` exists in
+    `ValidationResult.stats` (`compiler.py`) and does **not** reach `Stats`.
 
 13. **`gene` on this table reaches the catalog as of compiler 0.6.6.** `manifest.stats.genes` used to
     be `variant_stats(variants)`, running only `if variants:`, so a module whose 106 haplotype rows
     all say `gene=CYP2C19` published `genes: []` and `gene_count: 0` — invisible to a gene search,
     since the registry indexes that field into `version_genes`
-    (`just-dna-registry/src/just_dna_registry/db/repository.py:664`).
+    (`just-dna-registry/src/just_dna_registry/db/repository.py`).
     **Fixed in compiler 0.6.6** (upstream **RM121**): `module_stats` takes the gene facets over every authored table, `variant_stats` keeps its `variants.csv` promise, and a module already published carries the stats its compile wrote — recompile and re-publish to be findable by gene. Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`.
 
 ## What does not exist
@@ -292,11 +302,11 @@ Ordered by how likely a first-timer is to hit them.
 - **No fact signature and no `haplotypes` block in the manifest.** Fact signatures are for derived
   sidecars; this is authored.
 - **No expansion of a one-to-many rsID.** `resolve_positional_rows` fills *"from exactly one locus, or
-  from none"* (`resolution.py:315-323`) — expanding would multiply a junction row across loci the
+  from none"* (`resolution.py`) — expanding would multiply a junction row across loci the
   author never named. Several usable loci means the row stays unplaced and is counted.
 - **No `requires_phase` column.** Deliberately a check rather than a column, because it is derivable
   from two tables the compiler already holds and *"would go stale the moment a haplotype is edited"*
-  (`compiler.py:3011-3014`).
+  (`compiler.py`).
 - **No predicate language.** RM28's cis/trans motivation dissolved into this junction table plus
   `diplotypes.csv`; what remains open is *economy* (300 pathogenic variants → ~45,000 pairs) and
   *pairing across subjects*, not expressiveness.
@@ -306,15 +316,15 @@ Ordered by how likely a first-timer is to hit them.
 
 **just-dna-lite / just-dna-pipelines** — the table is *discovered* and never *read for content*.
 
-- `just-dna-pipelines/src/just_dna_pipelines/module_config.py:491-501` — `haplotypes` is 4th in
+- `just-dna-pipelines/src/just_dna_pipelines/module_config.py` — `haplotypes` is 4th in
   `LEAD_TABLES`, so a directory holding `haplotypes.parquet` counts as a module and is publishable.
-- `module_config.py:508-514` (`LEAD_TABLE_CSVS`) and `webui/src/webui/state.py:6017,6043-6050` —
+- `module_config.py` (`LEAD_TABLE_CSVS`) and `webui/src/webui/state.py,6043-6050` —
   `haplotypes.csv`'s line count is what the registry's enrichment ceiling is applied against.
-- `annotation/hf_logic.py:222-249` (`_lead_join_strategy`) — the only place the schema is inspected.
+- `annotation/hf_logic.py` (`_lead_join_strategy`) — the only place the schema is inspected.
   It reads five columns (`rsid, chrom, start, ref, genotype`) and left-joins the rest opaquely.
-- `annotation/hf_logic.py:344-370` — the position join, `on=["chrom","start","genotype"]`.
+- `annotation/hf_logic.py` — the position join, `on=["chrom","start","genotype"]`.
 - **Nothing reads `haplotype_name`, `allele`, or `gene`. Nothing pairs haplotypes into diplotypes.
-  There is no star-allele caller in the consumer at all** — `ModuleTable` (`hf_modules.py:495-503`)
+  There is no star-allele caller in the consumer at all** — `ModuleTable` (`hf_modules.py`)
   has members for `annotations`/`studies`/`weights`/`sources`/`lead` and nothing else.
 
 **Measured, and it is worse than "unread":**
@@ -329,26 +339,26 @@ Ordered by how likely a first-timer is to hit them.
   `ColumnNotFoundError: unable to find column "genotype"; valid columns: ["module","haplotype_name","rsid","chrom","start","ref","alts","allele","gene","variant_key","authored_ident"]`.
   With coordinates **null** it degrades gracefully to `unsupported`. So the module crashes the engine
   precisely when it is *better* resolved — and RM43 made filled coordinates the normal case. No test
-  covers a `haplotypes`-led module (`just-dna-pipelines/tests/test_hf_modules.py:799-830`).
+  covers a `haplotypes`-led module (`just-dna-pipelines/tests/test_hf_modules.py`).
 
 **just-dna-registry** — reads it as a *file*, never as rows.
 
-- `src/just_dna_registry/specfiles.py:62` — in `TABLE_KIND_CSVS`; `has_spec_data` (`:305`) names it as
+- `src/just_dna_registry/specfiles.py` — in `TABLE_KIND_CSVS`; `has_spec_data` (`:305`) names it as
   the case for "a PGx-only module holding `haplotypes.csv` and no `variants.csv` has plenty".
-- `src/just_dna_registry/services/upgrade.py:147-157` — `HaplotypeRow` is in the model map so a
+- `src/just_dna_registry/services/upgrade.py` — `HaplotypeRow` is in the model map so a
   recompile-on-upgrade can parse it.
-- `src/just_dna_registry/services/enrich.py:351` — in `ENRICHMENT_SUBJECT_TABLES`, so its rows count
+- `src/just_dna_registry/services/enrich.py` — in `ENRICHMENT_SUBJECT_TABLES`, so its rows count
   toward the `enrich_max_variants` bound (an upper bound: the enricher dedups by `variant_key`).
-- `src/just_dna_registry/db/facets.py:45-96` — `positionally_joinable` reads
+- `src/just_dna_registry/db/facets.py` — `positionally_joinable` reads
   `positional_rows`/`positional_rows_placed`, which include this table's rows;
   `joins_nothing_positionally` (`:63`) substring-matches `compiler.UNJOINABLE_PHRASE`. Both feed
   `is_trusted`. `cyp2c19_star_alleles` is the named case in the historic `S13`
   (`docs/history/CONSUMER_SUGGESTIONS_HISTORY_PRE_0_6.md:728`): 106 of 106 unjoinable rows,
   `trusted: true`, fixed downstream.
-- `src/just_dna_registry/models/api.py:503` — `SpecStats.table_rows` carries per-CSV counts from the
+- `src/just_dna_registry/models/api.py` — `SpecStats.table_rows` carries per-CSV counts from the
   server's own validate. The **manifest** carries none.
 
-**just-prs / just-prs-mcp** — nothing. `is_haplotype` in `just-prs/src/just_prs/scoring.py:59` is a
+**just-prs / just-prs-mcp** — nothing. `is_haplotype` in `just-prs/src/just_prs/scoring.py` is a
 PGS Catalog scorefile column, unrelated.
 
 ## Blanks for just-dna-lite

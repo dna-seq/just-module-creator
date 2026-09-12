@@ -1,14 +1,24 @@
 # variants.csv — one row per (variant, genotype): what this module says about someone carrying that call
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/variants/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("variants.csv")` and `table_requirements("variants.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 ## What it is
 
@@ -23,15 +33,15 @@ annotation engine matches sample calls against it row by row.
 
 | | |
 |---|---|
-| Model | `just_dna_format.spec.VariantRow` (`schema/src/just_dna_format/spec.py:380`) |
-| Becomes | **two** parquets: `weights.parquet` (`compiler.py:5251`, `_build_weights`) and `annotations.parquet` (`compiler.py:5823`, `_build_annotations`). Both in `compiler.ARTIFACT_PARQUETS`; `weights.parquet` is a `LEAD_PARQUETS` member |
-| Natural / dedup key | `(variant_key, genotype)`. Duplicates are an **error** (`_cross_validate_variants`, `compiler.py:869-873`) |
+| Model | `just_dna_format.spec.VariantRow` (`schema/src/just_dna_format/spec.py`) |
+| Becomes | **two** parquets: `weights.parquet` (`compiler.py`, `_build_weights`) and `annotations.parquet` (`compiler.py`, `_build_annotations`). Both in `compiler.ARTIFACT_PARQUETS`; `weights.parquet` is a `LEAD_PARQUETS` member |
+| Natural / dedup key | `(variant_key, genotype)`. Duplicates are an **error** (`_cross_validate_variants`, `compiler.py`) |
 | Authored or machine-produced | **authored.** A drafter can stub rows; nothing machine-produced finishes one |
 | Who writes it | the author; `clinvar_draft.draft_gene_panel` appends partial rows. No enricher pass ever rewrites a cell in it |
 | Fact signature | **none.** Authored tables have no fact hash — see `integrity.py` for the six that do (`RESOLUTION_FACT_FIELDS`, `FREQUENCY_FACT_FIELDS`, …) |
-| In `content_signature`? | **yes**, as parsed rows (`compiler.content_signature`, `compiler.py:3849-3887`) |
+| In `content_signature`? | **yes**, as parsed rows (`compiler.content_signature`, `compiler.py`) |
 | In `artifact.digest`? | **yes**, via both parquets |
-| In the attestation binding? | **yes** — `variants.csv` is in `compiler._INPUT_FILES` (`compiler.py:267`), so it is in `manifest.inputs[]` (raw bytes) *and* in `authored_input_entries` (newline-normalized) |
+| In the attestation binding? | **yes** — `variants.csv` is in `compiler._INPUT_FILES` (`compiler.py`), so it is in `manifest.inputs[]` (raw bytes) *and* in `authored_input_entries` (newline-normalized) |
 
 **What splits between the two parquets, and why.** `weights.parquet` gets the whole authored surface
 *except* `gene` / `phenotype` / `category`; `annotations.parquet` gets exactly nine columns —
@@ -51,7 +61,7 @@ three grouping columns default to `""`, not null, in `annotations`.
   `effect_size`, `effect_measure`, `effect_allele`, `flags`, `trait_efo_id`, `requires_callable`,
   `callable_from`, `quality_from`, `min_quality`, `actionability`, `weight`. Thirty-three authorable
   columns in total; run `table_requirements("variants.csv")` for the live list.
-- **drafter** — `clinvar_draft` (`enricher/…/clinvar_draft.py:307-341`, `_row_cells`), from the
+- **drafter** — `clinvar_draft` (`enricher/…/clinvar_draft.py`, `_row_cells`), from the
   ClinVar VCF snapshot: it states the identity columns, `gene`, `clin_sig`, `clinvar=True`,
   `phenotype`, a transcribed `conclusion`, and the folded `pathogenic`/`benign` boolean. It leaves
   **`genotype`** as `<<REPLACE>>` (zygosity is a judgement, not a datum), and leaves **`state`** as
@@ -66,7 +76,7 @@ three grouping columns default to `""`, not null, in `annotations`.
 - **compiler-stamped** — `variant_key`, `authored_ident`, `locus_index`, `locus_count`. All four are
   `COMPILER_MANAGED`, absent from the authored surface, and materialized to `weights.parquet` only.
   They are *stamped*, not *refused*: an authored `variant_key="BOGUS"` or `locus_count=5` is
-  **accepted and silently overwritten** by `_freeze_identity` (`spec.py:657-697`) — measured. (The
+  **accepted and silently overwritten** by `_freeze_identity` (`spec.py`) — measured. (The
   positional PGx tables use `reject_compiler_filled` instead and *refuse*; `VariantRow` is the
   grandfathered exception.) `variant_key` is re-derived once more for a non-GRCh38 module
   (`_restamp_for_build`) and re-assigned on expansion.
@@ -74,12 +84,12 @@ three grouping columns default to `""`, not null, in `annotations`.
   block (`normalize.IDENTITY_AUTHORITY_KEYS`) and re-signs; it never edits a variant row. It does
   **recompile from these CSVs at publish** and discard your uploaded parquets.
 - **nobody, ever** — `weights.parquet.likely_pathogenic` and `.likely_benign`. Parquet columns with
-  no authored field behind them; the compiler writes the literal `False` (`compiler.py:5307`,
+  no authored field behind them; the compiler writes the literal `False` (`compiler.py`,
   `:5309`). `extra="forbid"` refuses either name in a CSV — measured. `False` on every row of every
   module ever compiled since 0.1.0 (S43). Read `clin_sig`.
 
 **Cells no tool may fill even though it easily could** — `hints.REDUNDANCY_BEARING`
-(`compiler/…/hints.py:79-110`) names the check that would go vacuous:
+(`compiler/…/hints.py`) names the check that would go vacuous:
 
 | Cell | Refusal reason | The check it would make self-confirming |
 |---|---|---|
@@ -123,7 +133,7 @@ A recompile with nothing touched reproduced all three.
    `module_spec.yaml`'s `defaults:` (`_resolve_spec_defaults`, RM37) and the declared `genome_build`
    when non-default. The four stamped columns are `exclude=True` on the positional tables but
    **`VariantRow`'s `variant_key`/`authored_ident` are grandfathered *into*** the signature
-   (`base.py:297-305`) — a known inconsistency, not a precedent; `locus_index`/`locus_count` use
+   (`base.py`) — a known inconsistency, not a precedent; `locus_index`/`locus_count` use
    `stamped_identity_field` and stay out.
 2. **Inside `artifact.digest`?** Yes, through both parquets. The digest **preserves authored row
    order** where `content_signature` does not, which is why a pure reorder moves one and not the other.
@@ -148,7 +158,7 @@ it drags in when present:
   study — or the compiler reports an orphan.
 - **A header-only `variants.csv` validates and compiles.** Measured: `validate_spec` returns
   `valid=True`, the compile succeeds, and **no `weights.parquet` and no `annotations.parquet` are
-  written at all** (`compiler.py:4326-4332` guards on `if variants`). The manifest then reports
+  written at all** (`compiler.py` guards on `if variants`). The manifest then reports
   `variant_count: 0`, `fully_resolved: true`, `resolution_subjects: 0` — the RM44 vacuous-flag shape.
   Delete the file rather than shipping an empty one.
 - **`resolution.csv` is what makes it joinable.** 341 of the 381 authored rows in the reference corpus
@@ -189,7 +199,7 @@ it drags in when present:
   and "here is where the proof of callability lives". A pointer, never an expression. A bare `DP` is
   unqualified, and `INFO/DP` is the cohort's depth and says nothing about this sample.
 - **`quality_from` + `min_quality`** — **both or neither**, enforced by a model validator
-  (`spec.py:652-670`); half a floor is a validation error, measured. Inclusive floor; an unevaluable
+  (`spec.py`); half a floor is a validation error, measured. Inclusive floor; an unevaluable
   floor is *unknown*, never satisfied.
 - **`clin_sig`** — the four-tier axis, and the only place the likely/definite distinction survives.
 - **`acmg_sf` / `actionability`** — tri-state flag and closed vocabulary feeding a consumer's
@@ -210,7 +220,7 @@ Ordered by how likely a first-timer is to hit them.
    `quality_from`, `min_quality`. So there is **no worked example of any of them**. If you author one
    you are the first, and the sign convention below is why that matters.
 2. **The sign check keys on the axis, so withholding the axis buys silence.** The four warnings at
-   `compiler.py:882-889` fire only on `state == "risk" | "protective"` or
+   `compiler.py` fire only on `state == "risk" | "protective"` or
    `direction == "risk" | "protective"`. A row with `state: significant` and a weight of any sign gets
    **no** sign check. `direction` is never filled from `state` in the artifact — the derivation exists
    as a read-time property (`effective_direction`) and `_build_weights` writes `v.direction` raw — so a
@@ -257,7 +267,7 @@ Ordered by how likely a first-timer is to hit them.
    12 distinct keys (`rs1800562` carries two genotypes), `variant_count: 12`, `weights_rows: 13`. On an
    expanded module the parquet has *more* rows than either. `pathogenic_count` counts authored rows too.
 7. **A genotype the module never states is a subject with no answer, and the check only fires at a site
-   you started.** `_check_genotype_coverage` (`compiler.py:2176`) warns per reason — reference
+   you started.** `_check_genotype_coverage` (`compiler.py`) warns per reason — reference
    homozygote missing, heterozygote missing — but **only at sites authoring two or more genotypes**, and
    **only in `validate_spec`**, in front of resolution. It never demands an alt/alt pair, never guesses
    a reference, and skips any site whose genotypes are not diploid nucleotide pairs (which is how MT and
@@ -318,65 +328,65 @@ Ordered by how likely a first-timer is to hit them.
   injected `resolution.csv` included, and compiles every row with `chrom=None` **successfully**. A
   rename was proposed upstream and **refused** — the compiler has no network branch, so a
   `--no-ensembl` flag would assert something false. `compile_module` pins it `True`; the pin is permanent.
-- **`unique_rsids` reaches no manifest.** `variant_stats` computes it (`compiler.py:3804`) and `Stats`
-  (`manifest.py:164-172`) has no field for it, so it is dropped. It surfaces in
+- **`unique_rsids` reaches no manifest.** `variant_stats` computes it (`compiler.py`) and `Stats`
+  (`manifest.py`) has no field for it, so it is dropped. It surfaces in
   `validate_module`'s stats dict and in the registry's `SpecStats` only.
 
 ## Consumption today
 
 **`just-dna-lite` / `just-dna-pipelines` is the real consumer, and it reads both parquets.**
 
-- `annotation/hf_modules.py:553-574` — `scan_module_table`, the single `pl.scan_parquet` for module
+- `annotation/hf_modules.py` — `scan_module_table`, the single `pl.scan_parquet` for module
   tables; `MODULE_TABLES = ["annotations","studies","weights","sources"]` at `:36`.
-  `annotation/hf_logic.py:222-249` — `_lead_join_strategy`: non-null `chrom` → join by **position**;
+  `annotation/hf_logic.py` — `_lead_join_strategy`: non-null `chrom` → join by **position**;
   else by `rsid` + `genotype`; else refuse.
-- `hf_logic.py:351-401` — position path: semi-join on `(chrom, start)`, then left join on
+- `hf_logic.py` — position path: semi-join on `(chrom, start)`, then left join on
   **`["chrom","start","genotype"]`**. `ref` is *not* a join key — it is kept under a suffix and used as
   a filter (`ref_module.is_null() | ref_module == ref`), discards logged.
-- `hf_logic.py:333-342` — rsid path: left join on `["ID","genotype"]` vs `["rsid","genotype"]`, VCF
-  `ID` exploded on `;` first. `hf_logic.py:139-148` — genotype matching is polars **list equality**; the
-  VCF side is sorted unconditionally (`io.py:154-194`), the module side is not re-sorted.
-- `report_logic.py:460-534` — `annotations.parquet` join, three eras: 0.6 on
+- `hf_logic.py` — rsid path: left join on `["ID","genotype"]` vs `["rsid","genotype"]`, VCF
+  `ID` exploded on `;` first. `hf_logic.py` — genotype matching is polars **list equality**; the
+  VCF side is sorted unconditionally (`io.py`), the module side is not re-sorted.
+- `report_logic.py` — `annotations.parquet` join, three eras: 0.6 on
   `["variant_key","genotype"]` with **no dedup** (deliberate, to keep poly-effect rows); 0.5 on
   `variant_key` after `.unique(keep="first")`; 0.3 on `rsid` after the same. `_genotype_key_expr`
   (`:450-457`) rebuilds the string key from the weights list **and reads `phased`**.
-- Fields taken from `annotations.parquet`: only `gene`, `category`, `phenotype` (`report_logic.py:446`).
-  `report_logic.py:282-321` — `_effective_direction` (`direction`, falling back to `state` + weight sign)
+- Fields taken from `annotations.parquet`: only `gene`, `category`, `phenotype` (`report_logic.py`).
+  `report_logic.py` — `_effective_direction` (`direction`, falling back to `state` + weight sign)
   and `_effective_clin_sig` (`clin_sig`, falling back to the booleans) — the read path S43 says is
   unaffected by the `likely_*` wart.
-- `report_logic.py:331-367`, `:922`, `:1001-1003` — arithmetic on `weight`: sign, `abs`, colour
-  intensity, sort, and a **`sum(weight)` "Net weight" headline**. `report_logic.py:695-756` — the view
+- `report_logic.py`, `:922`, `:1001-1003` — arithmetic on `weight`: sign, `abs`, colour
+  intensity, sort, and a **`sum(weight)` "Net weight" headline**. `report_logic.py` — the view
   model reads `weight`, `genotype`, `rsid`, `state`, `direction`,
   `clin_sig`, `pathogenic`, `benign`, `clinvar`, `gene`, `ref`, `alts`, `conclusion`, `chrom`, `start`,
   `locus_count`, `locus_index`, plus `negatives`, `flags`, `priority`, `method`, `stat_significance`,
   `effect_size`, `effect_measure`, `effect_allele`, `trait_efo_id` as pass-through display strings.
   Template: `templates/longevity_report.html.j2:605-668`, including `locus_count > 1`.
-- `restoration.py:266-334` — hom-ref restoration; requires `chrom,start,ref,genotype`, anti-joins loci
+- `restoration.py` — hom-ref restoration; requires `chrom,start,ref,genotype`, anti-joins loci
   with more than one `ref` spelling, and **filters `locus_count.fill_null(1) <= 1`** at `:327-328` —
   the RM87 predicate in production use.
-- `vcf_export_logic.py:191-219` — joins on `["chrom","start","ref","alt"]` with
+- `vcf_export_logic.py` — joins on `["chrom","start","ref","alt"]` with
   `.unique(subset=join_cols)` (arbitrary winner) and **`genotype` excluded from the key** (it is in
   `_FORMAT_COLUMNS`, `:19`) — a genotype-blind key, different from the annotation engine's.
-- `module_compiler/cli.py:38-42` — reads `weights.parquet` `chrom` only, counts nulls to warn about
+- `module_compiler/cli.py` — reads `weights.parquet` `chrom` only, counts nulls to warn about
   unresolved coordinates.
 
 **The registry never opens a parquet.** Everything variant-shaped on a card comes from
-`manifest.stats`: `CardStats` (`models/api.py:12-22`) → `variant_count`, `study_count`, `gene_count`,
-`genes` (truncated to 3, `catalog.py:29`), `categories`, `clinvar_count`, `pathogenic_count`,
-`benign_count`, filled at `catalog.py:241-249`. Search facets on `gene` and `category` via side tables
-populated from `manifest.stats.genes`/`.categories` (`db/repository.py:663-668`, `:1003-1016`); the
-`is_trusted` / `positionally_joinable` facets (`db/facets.py:44-194`) read the 0.6 resolution counters
+`manifest.stats`: `CardStats` (`models/api.py`) → `variant_count`, `study_count`, `gene_count`,
+`genes` (truncated to 3, `catalog.py`), `categories`, `clinvar_count`, `pathogenic_count`,
+`benign_count`, filled at `catalog.py`. Search facets on `gene` and `category` via side tables
+populated from `manifest.stats.genes`/`.categories` (`db/repository.py`, `:1003-1016`); the
+`is_trusted` / `positionally_joinable` facets (`db/facets.py`) read the 0.6 resolution counters
 and match the compiler's `UNJOINABLE_PHRASE`. At publish it **recompiles from your CSVs**
-(`services/publish.py:536-573`, `resolve_with_ensembl=True`), gates duplicates on
-`content_signature(spec_dir)` (`publish.py:506-516`, `:637-677`), and **discards every uploaded
-parquet** (`publish.py:588-596`). No dataframe library is a dependency. Not filterable: trait, EFO id,
+(`services/publish.py`, `resolve_with_ensembl=True`), gates duplicates on
+`content_signature(spec_dir)` (`publish.py`, `:637-677`), and **discards every uploaded
+parquet** (`publish.py`). No dataframe library is a dependency. Not filterable: trait, EFO id,
 rsID, `acmg_sf`, `actionability`, `variant_count` range, weight scale.
 
 **`just-prs` / `just-prs-mcp` read nothing from this table.** Zero hits for `just_dna_format`,
 `weights.parquet` or `variants.csv` in either repo. Their weights notion is PGS-Catalog-native
-(`just-prs/src/just_prs/scoring.py:44-80`, `effect_allele`/`effect_weight` from the Catalog scoring-file
+(`just-prs/src/just_prs/scoring.py`, `effect_allele`/`effect_weight` from the Catalog scoring-file
 spec) and their `trait_efo_id` is the Catalog's column, not a module's. The registry itself documents
-the disjointness (`models/api.py:146-148`: `gwas_effects` "is **not** a substitute for the authored
+the disjointness (`models/api.py`: `gwas_effects` "is **not** a substitute for the authored
 `weight` … `weight` is positive-is-protective while a GWAS beta is positive on its effect allele").
 
 ## Blanks for just-dna-lite
@@ -387,34 +397,34 @@ the disjointness (`models/api.py:146-148`: `gwas_effects` "is **not** a substitu
   and module-blind (`module_config.build_quality_filter_expr:91-121`, applied once at normalization).
   Today a `requires_callable` row's reference conclusion is asserted with no proof of callability, which
   is exactly the "not screened" reported as "screened negative" the normative contract forbids;
-  `restoration.py:35-40` acknowledges it. A reader could withhold that row's conclusion, or evaluate the
+  `restoration.py` acknowledges it. A reader could withhold that row's conclusion, or evaluate the
   pointer and the floor and mark the row *unknown* rather than dropping it.
-- **Account for no-calls separately from silence.** `io.py:154-194` maps `GT="./."` to an **empty
+- **Account for no-calls separately from silence.** `io.py` maps `GT="./."` to an **empty
   list**, so the row fails the list-equality join and vanishes — indistinguishable in the report from
-  "the module says nothing here". Worse, `restoration.py:239-244` builds `called_sites` from
+  "the module says nothing here". Worse, `restoration.py` builds `called_sites` from
   `select("chrom","start")` without inspecting GT, so a `./.` record counts as *called* and suppresses
   restoration at that exact site. Nothing counts, marks or logs either case. A reader could emit a
   third state and a count.
 - **Make the genotype match phase-aware, or refuse a phased row loudly.** The join is polars list
   equality; the VCF side is `.list.sort()`ed unconditionally and the module side is not, so an authored
   `A|G` matches **nothing**, silently. `phased` is read at exactly one place
-  (`report_logic.py:453`) and the annotation engine deliberately does not read it
-  (`hf_logic.py:127-131`). `v1_port/runner.py:246-286` has the same hole on the authoring side: it splits
+  (`report_logic.py`) and the annotation engine deliberately does not read it
+  (`hf_logic.py`). `v1_port/runner.py` has the same hole on the authoring side: it splits
   on `/` only, so a phased genotype becomes one token and the membership check passes vacuously.
-- **Use `locus_index`, or drop it.** It is read into the view model (`report_logic.py:751`) and never
+- **Use `locus_index`, or drop it.** It is read into the view model (`report_logic.py`) and never
   rendered or branched on. `locus_count` is used correctly in restoration; the annotation and reporting
   paths that *count* and *classify* rows do not gate on it, which is the half of S33 that produced 3,762
   false findings.
 - **Read `acmg_sf` and `actionability`.** Neither is read anywhere. They are the two columns a module
   offers a disclosure policy, and a reader has no way today to separate an incidental secondary finding
   from a requested one.
-- **Fix the 0.5 annotations dedup, or state the loss.** `report_logic.py:528-530` dedups on
+- **Fix the 0.5 annotations dedup, or state the loss.** `report_logic.py` dedups on
   `variant_key` alone with `keep="first"` while the docstring at `:488` names the 0.5 identity as
   `(variant_key, conclusion, negatives)` — so a poly-effect variant in a pre-0.6 artifact silently
   loses its second annotation's `gene`/`phenotype`/`category`.
-- **Say what `weight` is on.** `sum(weight)` becomes a "Net weight" headline (`report_logic.py:1001-1003`)
+- **Say what `weight` is on.** `sum(weight)` becomes a "Net weight" headline (`report_logic.py`)
   across modules whose scale and method are declared nowhere unless `module_spec.yaml` carries
-  `weighting:` (RM92, `WeightingInfo` at `models/api.py:112-128`). No reference example authors a weight
+  `weighting:` (RM92, `WeightingInfo` at `models/api.py`). No reference example authors a weight
   at all, so the headline has never been exercised against real data; combining two modules' weights
   without reading `weighting` is arithmetic on unlike units.
 

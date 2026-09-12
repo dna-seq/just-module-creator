@@ -1,14 +1,24 @@
 # licensing.csv — what each source is, and on what terms this module used it
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/licensing/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("licensing.csv")` and `table_requirements("licensing.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 ## What it is
 
@@ -24,41 +34,41 @@ It is the fourth derived-fact sidecar and the one that inverts the family: every
 is *provenance* (which link answered) and is excluded from the fact hash, so a human-filled and a
 machine-filled table hash equal. Here the source **is the subject** — "ClinPGx, at the annotation
 layer, is CC BY-SA and forbids sale" is the fact — so `source` is inside the fact set and dropping it
-loses the key (`sources.py:52-66`). A reader who has internalised `frequencies.csv` will read that
+loses the key (`sources.py`). A reader who has internalised `frequencies.csv` will read that
 inclusion as a bug. It is not.
 
 ## Identity card
 
 | | |
 |---|---|
-| Model + module | `just_dna_format.sources.SourceRow` (`schema/src/just_dna_format/sources.py:84`) |
-| Filename | **`licensing.csv`** preferred; **`sources.csv`** deprecated-but-read, removal queued for 1.0 (`layout.py:37`, `layout.py:59`). Root or `derived/` — four legal paths, measured: `['sources.csv', 'licensing.csv', 'derived/sources.csv', 'derived/licensing.csv']` |
-| Parquet | **`sources.parquet`** — the rename stops at the CSV. In `ARTIFACT_PARQUETS` (`compiler.py:299`), so in `artifact.digest` |
-| Manifest key | **`manifest.sources`** → `manifest.Sources` (`manifest.py:640`). Also a published key that only a major may rename |
-| Natural / dedup key | `(source, layer)` — `draft._CORE_DUPE_KEYS[SourceRow]` (`draft.py:92`) and `licensing.merge_sources_csv` (`licensing.py:497`). **Not enforced by the compiler** — see Gotchas |
+| Model + module | `just_dna_format.sources.SourceRow` (`schema/src/just_dna_format/sources.py`) |
+| Filename | **`licensing.csv`** preferred; **`sources.csv`** deprecated-but-read, removal queued for 1.0 (`layout.py`, `layout.py`). Root or `derived/` — four legal paths, measured: `['sources.csv', 'licensing.csv', 'derived/sources.csv', 'derived/licensing.csv']` |
+| Parquet | **`sources.parquet`** — the rename stops at the CSV. In `ARTIFACT_PARQUETS` (`compiler.py`), so in `artifact.digest` |
+| Manifest key | **`manifest.sources`** → `manifest.Sources` (`manifest.py`). Also a published key that only a major may rename |
+| Natural / dedup key | `(source, layer)` — `draft._CORE_DUPE_KEYS[SourceRow]` (`draft.py`) and `licensing.merge_sources_csv` (`licensing.py`). **Not enforced by the compiler** — see Gotchas |
 | Authored or machine-produced | **both, genuinely.** A plain `BaseModel` with `extra="forbid"`, not an `AuthoredModel` — but the *only* fact sidecar in `draft.DRAFTABLE` and the only one with a template (S21) |
 | Who writes it | eleven enricher passes via `licensing.merge_sources_file`; and a human, for a source read by hand |
-| Fact signature | `integrity.source_signature` (`integrity.py:367`) over `sources.SOURCE_FACT_FIELDS` — **12 of 14** fields → `manifest.sources.signature` |
-| In `content_signature`? | **No.** `_INPUT_FILES` (`compiler.py:267`) is `module_spec.yaml`, `variants.csv`, `studies.csv` and the table kinds. The filename enters no identity at all — measured below |
+| Fact signature | `integrity.source_signature` (`integrity.py`) over `sources.SOURCE_FACT_FIELDS` — **12 of 14** fields → `manifest.sources.signature` |
+| In `content_signature`? | **No.** `_INPUT_FILES` (`compiler.py`) is `module_spec.yaml`, `variants.csv`, `studies.csv` and the table kinds. The filename enters no identity at all — measured below |
 | In `artifact.digest`? | **Yes**, via `sources.parquet`. Also byte-hashed into `manifest.derived[]` (transport only) |
-| Compile gate | `_check_license_gate` (`compiler.py:4815`), run **before `output_dir.mkdir()`** so a refusal leaves nothing written, and run by `validate_spec` too — measured |
+| Compile gate | `_check_license_gate` (`compiler.py`), run **before `output_dir.mkdir()`** so a refusal leaves nothing written, and run by `validate_spec` too — measured |
 
 ## Who populates what
 
 - **enricher pass — most rows, most of the time.** Eleven sites call `licensing.merge_sources_file` /
-  `record_source_terms` (`licensing.py:386`, `licensing.py:536`), one per pass that consulted a
-  source, each at its own layer. Measured call sites: `enrich.py:1262` (resolution),
-  `frequencies.py:319` (frequency), `gene_metrics.py:344` (gene_metrics), `assertions.py:359`
-  (clinical_assertion), `gene_validity.py:521` (gene_validity), `gwas.py:561` (gwas_effect),
-  `clingen.py:263` (annotation), `clinvar_draft.py` / `pgx_draft.py:526` / `clinpgx_draft.py:415`
-  (annotation), `clinpgx.py:352`. The terms themselves come from `TERMS_BY_SOURCE`
-  (`licensing.py:365`) — nine constants as of enricher 0.6.4: `clinpgx`, `cpic`, `pharmvar`,
+  `record_source_terms` (`licensing.py`, `licensing.py`), one per pass that consulted a
+  source, each at its own layer. Measured call sites: `enrich.py` (resolution),
+  `frequencies.py` (frequency), `gene_metrics.py` (gene_metrics), `assertions.py`
+  (clinical_assertion), `gene_validity.py` (gene_validity), `gwas.py` (gwas_effect),
+  `clingen.py` (annotation), `clinvar_draft.py` / `pgx_draft.py` / `clinpgx_draft.py`
+  (annotation), `clinpgx.py`. The terms themselves come from `TERMS_BY_SOURCE`
+  (`licensing.py`) — nine constants as of enricher 0.6.4: `clinpgx`, `cpic`, `pharmvar`,
   `clingen`, `gencc`, `clinvar`, `ensembl`, `gnomad`, `gwas_catalog`. **A source with no constant is
   skipped rather than guessed at.**
 - **author — the whole row, and this is the expected case for a hand-read source.** This is the one
   derived-family table a human is supposed to write, because a source read by hand leaves no `source`
   cell anywhere for the compiler's coverage check to find. It is in `draft.DRAFTABLE`
-  (`draft.py:82`), under **both** spellings, and `get_template("licensing.csv")` /
+  (`draft.py`), under **both** spellings, and `get_template("licensing.csv")` /
   `blank_template` answers a real header. Before 0.5.4 it answered *"is not an authored table of this
   format"* — S21, and the surface that said it is the one an author reaches for.
 - **drafter — one row each, at the `annotation` layer, plus two self-maintaining columns.**
@@ -72,30 +82,30 @@ inclusion as a bug. It is not.
 - **compiler-stamped — nothing in the CSV.** `SourceRow` is not an `AuthoredModel`, so it has no
   stamped-identity fields and nothing is refused as compiler-filled. The compiler adds `module` on
   the way to parquet and derives the whole `manifest.sources` block (`_sources_block`,
-  `compiler.py:4953`); it never writes back into the CSV.
+  `compiler.py`); it never writes back into the CSV.
 - **registry-stamped — nothing.** `normalize.IDENTITY_AUTHORITY_KEYS` lives on the manifest identity,
   not on any sidecar row. The registry only *reads* this table's manifest block.
 - **machine-owned, self-maintaining — two columns, and they behave differently.**
-  `dataset` is **blanked** by `withdraw_stale_dataset` (`licensing.py:560`) when a re-draft spans two
+  `dataset` is **blanked** by `withdraw_stale_dataset` (`licensing.py`) when a re-draft spans two
   releases: one column cannot name two releases, so the honest value is unknown and unknown is
-  withheld. `draft_digest` is **re-stamped** by `stamp_draft_digest` (`provenance.py:141`), because a
+  withheld. `draft_digest` is **re-stamped** by `stamp_draft_digest` (`provenance.py`), because a
   digest describes the table as it now stands whatever mixture produced it. Both override
   never-clobber deliberately; everything else in the row a curator wrote survives a re-run.
 - **nobody, ever — the `literature` layer.** `VALID_SOURCE_LAYERS` contains `literature`, and there
   is deliberately **no `pubmed` entry in `TERMS_BY_SOURCE` and there will not be one** (RM46,
-  `licensing.py:277-292`): a literature source's terms are per *article*, not per source. Article
-  rights live on `LiteratureRow` via `article_terms` (`licensing.py:315`) instead. A `pubmed` row
+  `licensing.py`): a literature source's terms are per *article*, not per source. Article
+  rights live on `LiteratureRow` via `article_terms` (`licensing.py`) instead. A `pubmed` row
   here would be "right for a module citing only ids and a false all-clear for one carrying a
   `provenance_quote` lifted from a CC-BY-NC article".
 - **`acmg` records no row at all**, and that is the deliberate exception to "a pass that consults a
-  source must write its `SourceRow`" (`acmg.py:26`): nothing from ACMG lands *in* the module, so
+  source must write its `SourceRow`" (`acmg.py`): nothing from ACMG lands *in* the module, so
   there is nothing to account for. Same shape as `check_identifiers` (HGNC, OLS4 also unrecorded).
 
 **Cells no tool may fill even though it could.** Measured against format 0.6.1:
 `set(SourceRow.model_fields) & set(hints.REDUNDANCY_BEARING)` is **empty**, and the intersection with
 `hints.ATTESTATION_BEARING` is **empty** too. This table carries no redundancy- or
 attestation-bearing cell, so the usual refusal does not apply here. The refusal that *does* apply is
-`check_declared_use` (`licensing.py:422`): the enricher will not fetch from a source whose terms it
+`check_declared_use` (`licensing.py`): the enricher will not fetch from a source whose terms it
 could not establish, and will not fetch at all when `--use commercial` contradicts the terms —
 `LicenseRefusal`, fatal in **both** modes, because "best_effort means *resolve what you can*, never
 *take what you may not*". And the compiler's own refusal ends with the sentence that names the
@@ -124,7 +134,7 @@ module_hash `527abadc…`, closed).
 | recompile under a newer toolchain | unmoved | unmoved | may move (compiler/polars version) | unmoved |
 
 1. **Inside `content_signature`? No.** `content_signature` covers the authored rows only. This
-   table's identity is `source_signature(rows)` over `SOURCE_FACT_FIELDS` (`sources.py:68`) — twelve
+   table's identity is `source_signature(rows)` over `SOURCE_FACT_FIELDS` (`sources.py`) — twelve
    fields: `source`, `layer`, `license`, `license_url`, `license_sha256`, `attribution`, `notice`,
    `share_alike`, `commercial_use`, `redistribution`, `declared_use`, `dataset`. Left out, measured:
    **`fetched_at`** (producer noise — when the terms were read is not a fact about the module) and
@@ -138,7 +148,7 @@ module_hash `527abadc…`, closed).
    one of the four files `artifact.digest` is a Merkle root over"*
    (`just-dna-lite/docs/MODULE_RELEASE_0_5.md:92`).
 3. **Does an edit here un-close the module? No.** The attestation binds the *authored* bytes only
-   (`compiler.authored_input_entries`, `compiler.py:361`, newline-normalised since RM82), and this
+   (`compiler.authored_input_entries`, `compiler.py`, newline-normalised since RM82), and this
    sidecar is not in `_INPUT_FILES`. Measured: `module_hash` stayed `527abadc…` and `closed` stayed
    `True` across a fact edit, a `fetched_at` edit, a reorder, a spelling rename and outright
    deletion. A re-enrichment leaves a closed module closed. (An `authorship:` append, by contrast,
@@ -222,7 +232,7 @@ routinely misreads.
 Ordered by how likely a first-timer is to hit them.
 
 1. **The file is `licensing.csv`, the parquet is `sources.parquet`, and the manifest key is
-   `manifest.sources` — and that is finished, not half-done.** `layout.py:20-36` states the trade
+   `manifest.sources` — and that is finished, not half-done.** `layout.py` states the trade
    explicitly: renaming the parquet or the manifest key breaks a reader, so both wait for 1.0. **Do
    not "finish" the rename.** Measured: renaming `licensing.csv` to `sources.csv` produced a
    **byte-identical `artifact.digest`** and an unmoved `source_signature` — the filename enters no
@@ -239,7 +249,7 @@ Ordered by how likely a first-timer is to hit them.
    naming both paths. Not a merge and not newest-wins — these tables are fact-hashed and
    human-overridable, so two copies are two legitimate claims. The realistic route in is a
    `derived/`-split downloaded module plus a pass that wrote the flat preferred spelling; **always go
-   through `layout.sidecar_write_path`** (`layout.py:154`), never `spec_dir / "licensing.csv"`.
+   through `layout.sidecar_write_path`** (`layout.py`), never `spec_dir / "licensing.csv"`.
 4. **A duplicate `(source, layer)` row is an ERROR as of compiler 0.6.6**, in `validate` and
    `compile`, in both modes: `licensing.csv: duplicate row for key ('clinvar', 'annotation')`,
    re-measured against the installed release on `hfe_hemochromatosis`. Until 0.6.1 it compiled green
@@ -262,7 +272,7 @@ Ordered by how likely a first-timer is to hit them.
    `commercial_use: None`, `unknown_terms_sources: ['gwas_catalog']`, `redistribution: True`. One
    unknown makes the whole module undetermined — never permitted. Do not "tidy" a blank
    `commercial_use` to `true` because the licence page reads permissive; `GWAS_CATALOG_TERMS`
-   (`licensing.py:350`) carries a long comment explaining exactly why that one stays null.
+   (`licensing.py`) carries a long comment explaining exactly why that one stays null.
 6. **The gate fires on `layer == "annotation"` only, and `unstated` is not a loophole.** Measured
    three ways on `hboc_palb2`: `commercial_use=false` + `declared_use=unstated` at the `annotation`
    layer → **compile refused**, in the default (non-strict) mode; the same row with
@@ -284,7 +294,7 @@ Ordered by how likely a first-timer is to hit them.
    licence row looked unused. `literature` joined unconditionally in 0.6 (S23, then RM46). The
    consequence for you: **nothing will ever tell you an `annotation`-layer row is wrong.**
 9. **`draft_digest` and `dataset` interact, and the interaction decides whether a real check runs.**
-   `clinical.tautology_reason` (`clinical.py:121`) skips the ClinVar `clin_sig` cross-check only on a
+   `clinical.tautology_reason` (`clinical.py`) skips the ClinVar `clin_sig` cross-check only on a
    **conjunction**: the `clinvar`/`annotation` row's `dataset` equals the label recomputed from the
    snapshot in hand, **and** `drafted_unchanged` says every `clin_sig` still hashes to what the
    drafter wrote. Either half failing runs the check in full, and `None` — no digest recorded, a
@@ -317,7 +327,7 @@ Ordered by how likely a first-timer is to hit them.
 12. **A `<<REPLACE>>` here used to compile green under `--strict` and reach the published manifest.**
    RM76: `SourceRow` is not an `AuthoredModel`, so it inherited no placeholder guard, and
    `manifest.sources` published `"sources": ["<<REPLACE>>"]` **inside the block its own signature
-   covers**. Fixed on the model (`sources.py:96`, `reject_template_placeholders`). Verified fixed in
+   covers**. Fixed on the model (`sources.py`, `reject_template_placeholders`). Verified fixed in
    format 0.6.1 by measurement, not by changelog.
 13. **0.1-era material carries none of this, and that is an era gap rather than a defect.** Measured
    over the 27 submitted bundles in `/data/sources/just-dna-registry/data/input/`: **0 of 27 carry
@@ -330,7 +340,7 @@ Ordered by how likely a first-timer is to hit them.
 14. **`license` is an open string, and `manifest.sources.licenses` drops the nulls.** Several sources
    are an SPDX licence *plus* a bespoke clause, which no single identifier expresses — do not read a
    bare "CC BY-SA 4.0" as permission to sell; the CC grant covers the content while the surrounding
-   terms restrict the use, and PharmVar states the two in adjacent sentences (`licensing.py:100`).
+   terms restrict the use, and PharmVar states the two in adjacent sentences (`licensing.py`).
    The manifest facet is a sorted set of non-null values, so a source with no named licence vanishes
    from it: measured on `hfe_hemochromatosis`, `licenses: ['public-domain']` over two rows, because
    `gwas_catalog` has `license=None`. `unknown_terms_sources` is the field that says so — and it
@@ -344,7 +354,7 @@ Ordered by how likely a first-timer is to hit them.
 ## What does not exist
 
 - **No enforcement of `redistribution`, anywhere in the four packages — and that is settled, not
-  pending.** `taints_redistribution` (`sources.py:255`) is computed and summarised, and the docstring
+  pending.** `taints_redistribution` (`sources.py`) is computed and summarised, and the docstring
   is explicit: *"a distribution right is not a use, so the three-state
   `unstated|non_commercial|commercial` axis has nothing to say about it. Gating on the act is right,
   and the act is a publish."* What is **rejected and stays rejected** is a second author declaration
@@ -359,7 +369,7 @@ Ordered by how likely a first-timer is to hit them.
   flag, and a flag-gated compile would refuse on the third step. (Measured: reversing a module that
   carried `sources.csv` writes `licensing.csv` — the round-trip does not pick up a deprecation.)
 - **No SPDX compatibility matrix**, and **no source→licence map in the compiler**.
-  `_check_declared_license_agrees` (`compiler.py:4925`) does string equality only and warns rather
+  `_check_declared_license_agrees` (`compiler.py`) does string equality only and warns rather
   than failing, because "failing the compile would make the format arbitrate a licensing dispute". A
   hardcoded map would be an un-injected reference (Principle 2) and would go stale — both halves of
   one did inside a single release (`api.pharmgkb.org` retired 2026-07-20; CPIC's licence page moved
@@ -394,35 +404,35 @@ Ordered by how likely a first-timer is to hit them.
 
 **This is the most-read derived sidecar in the ecosystem.** Three consumers read it, at three levels.
 
-- `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/annotation/report_logic.py:1093`
+- `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/annotation/report_logic.py`
   `load_module_credits` — scans `sources.parquet` via `ModuleTable.SOURCES`, **filters to
   `layer == "annotation"`**, and projects `source`, `license`, `license_url`, `attribution`,
   `notice`, `dataset` and the three tri-states. The docstring cites SCHEMAS.md § SourceRow for the
   layer restriction and keeps the tri-states tri-state.
-- `…/report_logic.py:1136` `build_report_credits` — deduplicates across every module in the report,
+- `…/report_logic.py` `build_report_credits` — deduplicates across every module in the report,
   keyed on `(source, license, attribution, notice)` rather than on the module, and records which
-  modules pulled each one. Called at `report_logic.py:1315`.
+  modules pulled each one. Called at `report_logic.py`.
 - `…/annotation/templates/longevity_report.html.j2:942-976` — renders the **"Data sources and
   licences"** footer section: source + dataset, which modules used it, a linked licence, the
   attribution with the notice under it, and a Terms cell reading *Share-alike required* /
   *Non-commercial use only* / *Redistribution restricted*, each fired by `is sameas true|false` so a
   `None` never renders as a permission. All-`None` renders `<em>Not stated</em>`. Tested at
-  `just-dna-pipelines/tests/test_report_logic.py:679, 706, 722`.
-- `…/annotation/hf_modules.py:241` — discovery sets `ModuleInfo.sources_url` when
+  `just-dna-pipelines/tests/test_report_logic.py, 706, 722`.
+- `…/annotation/hf_modules.py` — discovery sets `ModuleInfo.sources_url` when
   `sources.parquet` is in the set `manifest.artifact.files` attests, probing only where there is no
   manifest. Comment: *"Every module the compiler emits carries one, and a report that embeds a
   module's curated prose owes its attribution."*
-- `…/v1_port/publish.py:38` — the publisher's allow-list is now `[*ARTIFACT_PARQUETS,
+- `…/v1_port/publish.py` — the publisher's allow-list is now `[*ARTIFACT_PARQUETS,
   "manifest.json", "logo.png", "logo.jpg"]`, imported rather than restated, with a comment naming
   the S35 measurement: fifteen of sixteen reference modules published a manifest attesting files
   never uploaded, *"with `sources.parquet` in the dropped set every time it existed (so the module
   arrived carrying no licence terms at all)"*.
-- **Registry** — `services/catalog.py:133` `_licensing` projects `manifest.sources` onto
-  `LicensingInfo` (`models/api.py:90`): `commercial_use`, `redistribution`, `share_alike_layers`,
+- **Registry** — `services/catalog.py` `_licensing` projects `manifest.sources` onto
+  `LicensingInfo` (`models/api.py`): `commercial_use`, `redistribution`, `share_alike_layers`,
   `noncommercial_layers`, `nonredistributable_layers`, `unknown_terms_sources`, `licenses`,
-  `attributions`, `declared_uses` — tri-state throughout. `db/facets.py:183` `version_facets`
+  `attributions`, `declared_uses` — tri-state throughout. `db/facets.py` `version_facets`
   projects `commercial_use` / `redistribution` / `share_alike` into per-version SQL columns
-  (`db/schema.py:255`, since registry 0.11).
+  (`db/schema.py`, since registry 0.11).
 - **`just-prs` / `just-prs-mcp` — nothing.** Grepped for `sources.parquet`, `licensing.csv` and
   `SourceRow`: no hits in either repo.
 
@@ -444,7 +454,7 @@ integration. A module whose verdict is `false` must not be served to third parti
 verdict is `null` must not be treated as clear."* Grepped the whole registry at 0.18.2:
 `redistribution` appears in exactly five places — a DDL column, the facet writer, the card projection,
 the API model and a changelog line. **No publish path reads it**, and `Repository.search_modules`
-(`db/repository.py:933`) exposes no licensing filter at all: its keyword arguments are `q`,
+(`db/repository.py`) exposes no licensing filter at all: its keyword arguments are `q`,
 `category`, `gene`, `genome_build`, `owner`, `license`, `namespace`, `featured`, the two namespace
 scopes, `curated_only`, and the five 0.17 fact-table flags. So `commercial_use`, `redistribution` and
 `share_alike` are **write-only columns** — populated by `version_facets`, never selected, never

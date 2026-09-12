@@ -1,14 +1,21 @@
 # logo.{png,jpg,jpeg} — the module's picture, and the house style it is drawn in
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **This file describes something that is not a table kind**, so it has no generated upstream page.
+> Its facts come from the code named by symbol below; the per-table reference pages are at
+> <https://just-dna.life/just-dna-compiler/tables/> and the live answer is `describe_table` /
+> `describe_machine_table`.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 Not a table. No CSV, no parquet, no pydantic row model. It is a single optional image beside the
 spec, and it is in this set because it is the one authored file whose *content* nothing validates —
@@ -36,8 +43,8 @@ amend endpoint that spends no version number. When there is no logo, consumers f
 
 | | |
 |---|---|
-| Model + module | `just_dna_format.manifest.FileEntry`, held as `ModuleManifest.logo: FileEntry \| None` (`manifest.py:1437`) |
-| Accepted names | `logo.` + an extension in `manifest.LOGO_EXTENSIONS` — `frozenset({"png","jpg","jpeg"})` (`manifest.py:46`). Ask the constant, not this line |
+| Model + module | `just_dna_format.manifest.FileEntry`, held as `ModuleManifest.logo: FileEntry \| None` (`manifest.py`) |
+| Accepted names | `logo.` + an extension in `manifest.LOGO_EXTENSIONS` — `frozenset({"png","jpg","jpeg"})` (`manifest.py`). Ask the constant, not this line |
 | Parquet it becomes | **none.** It is copied verbatim into the output directory and hashed; no columnar form exists |
 | Natural key | the filename. One logo per module, per version |
 | Authored or machine-produced | **authored** — or agent-drawn. Nothing in the toolchain generates one |
@@ -46,7 +53,7 @@ amend endpoint that spends no version number. When there is no logo, consumers f
 | In `content_signature`? | **no** (*measured*) |
 | In `artifact.digest`? | **no**, and not in `artifact.files[]` either (*measured*) |
 | In `artifact.files[]`? | no. Only parquets are. `manifest.logo` is its own top-level field |
-| Discovery | `_collect_logo` (`compiler.py:620-647`): explicit `logo_file=` argument, else the first `logo.<ext>` for `ext in sorted(LOGO_EXTENSIONS)` — **`jpeg`, then `jpg`, then `png`** |
+| Discovery | `_collect_logo` (`compiler.py`): explicit `logo_file=` argument, else the first `logo.<ext>` for `ext in sorted(LOGO_EXTENSIONS)` — **`jpeg`, then `jpg`, then `png`** |
 
 ## Who populates what
 
@@ -54,16 +61,16 @@ There is one cell, and one decision behind it.
 
 - **author** — the image file itself, and the fallback trio it competes with (`display.icon`,
   `display.icon_set`, `display.color`) which stay authored in `module_spec.yaml` whether or not a
-  logo exists. `manifest.RECOMMENDED_COLORS` / `RECOMMENDED_ICONS` (`manifest.py:70-95`) are a
+  logo exists. `manifest.RECOMMENDED_COLORS` / `RECOMMENDED_ICONS` (`manifest.py`) are a
   *recommendation only* — `color` is validated by `COLOR_PATTERN` and `icon` is free-form within
   `icon_set`.
 - **compiler-stamped** — `manifest.logo.{name,sha256,size}`. Tolerates nothing authored: the field
   is not part of the spec DSL at all, so there is no authored value to overwrite. `sha256` carries
   the `sha256:` prefix (`file_entry`).
 - **registry-stamped** — on `amend_logo` the server *renames* the uploaded file to `logo.{ext}`
-  regardless of what it was called (`registry/services/publish.py:706`) and rewrites
+  regardless of what it was called (`registry/services/publish.py`) and rewrites
   `manifest.logo` in stored storage. It also re-projects `logo_url` onto the card
-  (`services/catalog.py:36-39`).
+  (`services/catalog.py`).
 - **nobody, ever** — there is no `logo_alt_text`, no `logo_width`, no `logo_license`. See
   *What does not exist*.
 
@@ -114,7 +121,7 @@ modules have `logo_url: null`**, so today the no-logo path is the only path anyo
 recently.
 
 What the logo *is* required to be: an extension in `LOGO_EXTENSIONS`. Anything else raises
-`ValueError` inside `_collect_logo` at **compile** time (`compiler.py:641-642`) — though the
+`ValueError` inside `_collect_logo` at **compile** time (`compiler.py`) — though the
 exception does not reach you: `compile_module` catches it and returns
 `CompilationResult(success=False, errors=[str(exc)])`, so a bad extension **fails the compile**
 rather than raising out of it. `validate_spec` never
@@ -224,7 +231,7 @@ helix as the sole subject · no neon / cyberpunk palette · no clutter behind th
 ### Does the existing logo-drawing agent match this? No — and here is exactly how it diverges
 
 The agent is **`generate_logo`**, a tool on the module-creator PI/solo agent in
-`/data/sources/just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/agents/module_creator.py:592-609`,
+`/data/sources/just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/agents/module_creator.py`,
 backed by `_generate_logo_image` (`:497-518`) which calls
 `NanoBananaTools(api_key=…, aspect_ratio="1:1").create_image(prompt)` — Gemini native image
 generation, the "nanobanana" tool from `agno.tools.nano_banana` (`:44`). Its instructions live in
@@ -250,7 +257,7 @@ Seven divergences, in descending order of how much they matter:
    full frame. *Measured* on `data/output/generated_modules/recent_longevity_2024/v1/logo.png`
    (corner RGB `(72,104,73)`): bbox `(0,0,1024,1024)`, 100% of frame, nothing croppable.
 5. **The stated render size is wrong.** The prompt says "displayed as a tiny 48px thumbnail"
-   (`pi.yaml:231`). The real consumer renders it at **20 px** (`webui/pages/registry.py:452`),
+   (`pi.yaml:231`). The real consumer renders it at **20 px** (`webui/pages/registry.py`),
    **22 px** (`:243`) and **28 px** (`:899`), always `objectFit: contain`.
 6. **`aspect_ratio="1:1"`** is forced square against a 10:9 family. Under `objectFit: contain` this
    only letterboxes, so it is the least harmful item on the list.
@@ -279,15 +286,15 @@ Ordered by how likely a first-timer is to hit them.
 3. **`verify` catches a swapped logo only if you ask, and never catches a missing one.**
    `verify_manifest(..., check_logo=True)` on a substituted image raises
    `IntegrityError: logo hash mismatch …` (*measured*), but the default is `check_logo=False`
-   (`integrity.py:408`) so an ordinary verify passes a tampered logo. Worse, the check is guarded by
+   (`integrity.py`) so an ordinary verify passes a tampered logo. Worse, the check is guarded by
    `if path.is_file()` (`:539`) — *measured*: deleting the logo entirely and re-running with
    `check_logo=True` returns cleanly. A download that lost the file verifies green while the
    manifest attests it.
 4. **`reverse_module` throws it away.** The function takes no logo parameter at all
-   (`compiler.py:6052-6064`) and `docs/audit/COMPILER_FROM_CODE.md:695` states it plainly: "Logs,
+   (`compiler.py`) and `docs/audit/COMPILER_FROM_CODE.md:695` states it plainly: "Logs,
    `provenance.json`, logo and readme are not re-emitted." So `compile → reverse → compile` loses
    the logo without touching the digest — the round-trip *looks* perfect and the picture is gone.
-5. **`logo.jpeg` does not survive the enricher's HuggingFace upload.** `upload.py:61-62` allowlists
+5. **`logo.jpeg` does not survive the enricher's HuggingFace upload.** `upload.py` allowlists
    `logo.png` and `logo.jpg` only, and the comment at `:47` calls it out: "`logo.jpeg` is a
    pre-existing instance of that same skew, left alone here because widening it is not this item's
    decision." Publish a `.jpeg` logo to HF and the manifest attests a file the repo does not carry.
@@ -304,7 +311,7 @@ Ordered by how likely a first-timer is to hit them.
    The registry does not share this hole — `gather_spec_files` uploads everything that is not a
    parquet.
 6. **`amend_logo` renames your file.** Upload `heart-v3.png` and it is stored as `logo.png`
-   (`registry/services/publish.py:706`). Do not expect your name back.
+   (`registry/services/publish.py`). Do not expect your name back.
 7. **The corner medallion is not in any package.** The one bundled logo asset in the tree is
    `just-dna-pipelines/src/just_dna_pipelines/v1_port/data/logos/vo2max.png` — a single fallback for
    one module, byte-identical to the published vo2max logo, not a template kit. There is no
@@ -314,7 +321,7 @@ Ordered by how likely a first-timer is to hit them.
 ## What does not exist
 
 - **No `logo` key in `module_spec.yaml`.** You cannot name the file; it is discovered by convention
-  or passed as a Python argument (`compile_module(..., logo_file=…)`, `compiler.py:3900`). The
+  or passed as a Python argument (`compile_module(..., logo_file=…)`, `compiler.py`). The
   compiler CLI has no `--logo` flag — grepping `compiler/src/just_dna_compiler/cli.py` for "logo"
   returns only `--check-logo` at `:217`.
 - **No SVG.** `LOGO_EXTENSIONS` is raster-only. No transparency-preserving vector path exists, and
@@ -325,7 +332,7 @@ Ordered by how likely a first-timer is to hit them.
 - **No second image.** One logo per version. No screenshots, no banner, no icon set.
 - **No content validation, ever.** Nothing opens the bytes as an image.
 - **No `registry_amend_logo` tool in this plugin.** `just-module-creator` wraps
-  `registry_amend_readme` (`tools/registry.py:575`, gated in `auth.GATED_TOOLS:67`) and stops there;
+  `registry_amend_readme` (`tools/registry.py`, gated in `auth.GATED_TOOLS:67`) and stops there;
   `references/CLI.md:29` routes a logo fix to the raw `registry-client amend-logo`. Grepping
   `src/just_module_creator/` for "logo" returns nothing at all.
 - **`compile_module` here never passes `logo_file`.** This plugin relies entirely on convention
@@ -335,36 +342,36 @@ Ordered by how likely a first-timer is to hit them.
 
 Genuinely read, in three places, all in the consumer half:
 
-- `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/annotation/hf_modules.py:212-217` —
+- `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/annotation/hf_modules.py` —
   probes `{base}/logo.{png,jpg,jpeg}` in that order and sets `ModuleInfo.logo_url` (`:63`, `:242`).
   The comment at `:237-238` says the probe is deliberate: "neither is in `ARTIFACT_PARQUETS`, so a
   manifest says nothing about them and asking it would drop the logo off every module."
-- `just-dna-lite/webui/src/webui/app.py:332-356` — `GET /api/module-logo/{module_name}` serves it
+- `just-dna-lite/webui/src/webui/app.py` — `GET /api/module-logo/{module_name}` serves it
   as a `FileResponse` with `image/png` / `image/jpeg`, guarding `..` and `/` in the name.
-- `just-dna-lite/webui/src/webui/pages/registry.py:241-245`, `:450-455`, `:897-901` — renders it at
+- `just-dna-lite/webui/src/webui/pages/registry.py`, `:450-455`, `:897-901` — renders it at
   22 px, 20 px and 28 px respectively, `objectFit: contain`, `borderRadius` 3–4 px, falling back to
   `fomantic_icon("box", …, "#6435c9")` when absent.
 
 Written, in two:
 
-- `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/v1_port/sources.py:115-139` `fetch_logo`
+- `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/v1_port/sources.py` `fetch_logo`
   — pulls a Gen-I GitHub repo's root `logo.{png,jpg,jpeg}` into the ported spec dir, falling back to
-  the bundled `data/logos/<name>.png`. Called from `v1_port/runner.py:92` and
-  `v1_port/clinvar_runner.py:106`. **This is where the nine hand-drawn logos come from.**
-- `agents/module_creator.py:497-518` — the nanobanana tool, above.
+  the bundled `data/logos/<name>.png`. Called from `v1_port/runner.py` and
+  `v1_port/clinvar_runner.py`. **This is where the nine hand-drawn logos come from.**
+- `agents/module_creator.py` — the nanobanana tool, above.
 
 Registry side:
 
-- `registry/services/catalog.py:36-39, 264` — `_logo_url` projects
+- `registry/services/catalog.py, 264` — `_logo_url` projects
   `/api/v1/modules/{ns}/{name}/versions/{v}/files/{logo.name}` onto every card
-  (`models/api.py:248`). Fetching it does not count as a download
-  (`api/routers/modules.py:276`).
-- `registry/api/routers/modules.py:266-267, 316-317` — the served-file allowlist and the manifest
+  (`models/api.py`). Fetching it does not count as a download
+  (`api/routers/modules.py`).
+- `registry/api/routers/modules.py, 316-317` — the served-file allowlist and the manifest
   entry list both include the logo when present.
-- `registry/services/publish.py:679-715` + `api/routers/publish.py:581-619` — `amend_logo`,
-  owner-gated, no version bump. `client.py:758-766` / `client_cli.py:280-293` are the client and CLI
+- `registry/services/publish.py` + `api/routers/publish.py` — `amend_logo`,
+  owner-gated, no version bump. `client.py` / `client_cli.py` are the client and CLI
   halves.
-- `registry/services/upgrade.py:497-507` — a toolchain upgrade carries the logo forward explicitly
+- `registry/services/upgrade.py` — a toolchain upgrade carries the logo forward explicitly
   as "version-independent branding".
 
 **Nothing in `just-module-creator` reads or writes it.**
@@ -386,7 +393,7 @@ both live instances (`registry 0.18.2 / format 0.6.1 / compiler 0.6.1`): product
   in-ring title, transparency — and actively asks for a gradient the family never uses. Today an
   agent-drawn module is visibly not a member of the set that shipped. The prompt block in this file
   is drop-in.
-- **Ask `_autocrop_whitespace` to stop destroying alpha.** `module_creator.py:474` does
+- **Ask `_autocrop_whitespace` to stop destroying alpha.** `module_creator.py` does
   `.convert("RGB")`, so the generation path cannot emit a transparent logo, while every published
   logo is RGBA. It should convert to `RGBA`, compute the bbox from the alpha channel when one
   exists, and fall back to the white-threshold path only for opaque images. It should also refuse —

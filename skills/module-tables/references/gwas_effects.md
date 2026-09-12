@@ -1,14 +1,24 @@
 # gwas_effects.csv — what a study actually measured, and on what scale, beside the weight nobody may fill from it
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/gwas_effects/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("gwas_effects.csv")` and `table_requirements("gwas_effects.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 > **Correction, 2026-08-20 (later than the banner above).** This file says `describe_table`
 > refuses this table and quotes that refusal's wording. Both were true when written and are not
@@ -25,28 +35,28 @@ said so.* One row is **one published association**, not one variant — rs180056
 them. It exists because a consumer asked for the opposite thing and was refused: fill an empty
 `weight` from a GWAS effect (S36). That refusal shaped the design: the effect lands in its own table
 beside the authored column and a consumer picks **one wholesale**, never blends row by row
-(`schema/src/just_dna_format/gwas.py:8-19`). Its audience is a curator deciding whether their
+(`schema/src/just_dna_format/gwas.py`). Its audience is a curator deciding whether their
 authored `weight` is defensible, and a downstream reader who wants published magnitudes per trait.
-No annotation table joins to it; the compiler only cross-checks it (`compiler.py:5795`).
+No annotation table joins to it; the compiler only cross-checks it (`compiler.py`).
 
 ## Identity card
 
 | | |
 |---|---|
-| Model + module | `just_dna_format.gwas.GwasEffectRow` (`schema/src/just_dna_format/gwas.py:84`) |
-| Parquet | `gwas_effects.parquet` — in `ARTIFACT_PARQUETS` (`compiler.py:298`), so in `artifact.digest`. Position in that tuple is load-bearing (it *is* digest order) |
+| Model + module | `just_dna_format.gwas.GwasEffectRow` (`schema/src/just_dna_format/gwas.py`) |
+| Parquet | `gwas_effects.parquet` — in `ARTIFACT_PARQUETS` (`compiler.py`), so in `artifact.digest`. Position in that tuple is load-bearing (it *is* digest order) |
 | Natural / dedup key | **the enricher's merge key only** — `association_id` alone (`gwas.py:_merge_key`). There is no compiler-side duplicate-row key for this table: it has no `_TABLE_DUPE_KEYS` entry, so a duplicated `association_id` compiles green. Per record, **not** per variant: a coarse per-rsID skip pins a module to whatever the Catalog held the first time |
 | Authored or machine-produced | **machine-produced**, human-writable. Not an `AuthoredModel`; `extra="forbid"` |
 | Who writes it | `just_dna_enricher.gwas.enrich_gwas` — via our `enrich_gwas_effects`, or `just-dna-enricher gwas <spec-dir>` |
-| Fact signature | `integrity.gwas_effect_signature` over `gwas.GWAS_FACT_FIELDS` (18 of 22 fields, `gwas.py:62`) → `manifest.gwas_effects.signature` |
-| In `content_signature`? | **No.** `_INPUT_FILES` (`compiler.py:267`) is `module_spec.yaml`, `variants.csv`, `studies.csv` and the authored table kinds — this is a `_FACT_TABLES` member (`compiler.py:330`) |
-| In `artifact.digest`? | **Yes**, via its parquet. Also byte-hashed into `manifest.derived[]` — transport only (`compiler.py:353`) |
+| Fact signature | `integrity.gwas_effect_signature` over `gwas.GWAS_FACT_FIELDS` (18 of 22 fields, `gwas.py`) → `manifest.gwas_effects.signature` |
+| In `content_signature`? | **No.** `_INPUT_FILES` (`compiler.py`) is `module_spec.yaml`, `variants.csv`, `studies.csv` and the authored table kinds — this is a `_FACT_TABLES` member (`compiler.py`) |
+| In `artifact.digest`? | **Yes**, via its parquet. Also byte-hashed into `manifest.derived[]` — transport only (`compiler.py`) |
 | Location | root or `derived/gwas_effects.csv`. One spelling only; the `licensing.csv`/`sources.csv` two-name rule does **not** apply here |
 
 ## Who populates what
 
 - **enricher pass — every column.** `enrich_gwas` (`just-dna-enricher gwas <dir>`, also reachable as
-  `just-dna-pipelines enrich gwas <dir>`, `just-dna-lite/just-dna-pipelines/.../cli.py:40`) fills all
+  `just-dna-pipelines enrich gwas <dir>`, `just-dna-lite/just-dna-pipelines/.../cli.py`) fills all
   22. Subjects come from `variants.csv` — `(rsid, variant_key)` for **every row that has an rsID**,
   `gwas.py:_module_subjects`. A coordinate-only variant row has no subject and is silently absent
   from the table; on `hfe_hemochromatosis` that is 2 of its 13 variant rows.
@@ -116,7 +126,7 @@ byte-identical digest (`sha256:6c6e103d…`), so every "MOVED" below is the edit
    re-curated effect size is a different fact); and **`rsid`, which inverts
    `CLINICAL_ASSERTION_FACT_FIELDS`** — there the archive returns no rsID so the column comes from
    the module's own `resolution.csv`, here the Catalog is *queried by* it and echoes it back inside
-   `riskAlleleName`, so it is part of what the source said (`integrity.py:348-364`).
+   `riskAlleleName`, so it is part of what the source said (`integrity.py`).
 2. **Inside `artifact.digest`? Yes.** So a provenance-only cell no signature sees still moves the
    digest, because the parquet bytes differ — measured with a single `fetched_at` edit. **Row order
    does too**, and that is the one that surprises people: the fact hash sorts, the parquet does not
@@ -125,7 +135,7 @@ byte-identical digest (`sha256:6c6e103d…`), so every "MOVED" below is the edit
    association_id`), so leave the ordering it wrote alone; re-sorting by hand costs a digest for
    nothing.
 3. **Does an edit here un-close the module? No.** The attestation binds the **authored** bytes only
-   (`compiler.authored_input_entries`, `compiler.py:361`, newline-normalized since RM82) and this
+   (`compiler.authored_input_entries`, `compiler.py`, newline-normalized since RM82) and this
    file is not among them. Measured: the closure survived a fact edit, a `fetched_at` edit, a
    reorder, a row deletion and outright deletion of the file. So a re-enrichment leaves a closed
    module closed. The counterweight: `hfe_hemochromatosis` **was** re-closed when this table landed,
@@ -142,7 +152,7 @@ byte-identical digest (`sha256:6c6e103d…`), so every "MOVED" below is the edit
 ## Required to exist
 
 Nothing requires `gwas_effects.csv`; `manifest.gwas_effects` is simply absent on a module that
-carries none (`compiler.py:4786` returns `None` on an empty list), and the registry projects
+carries none (`compiler.py` returns `None` on an empty list), and the registry projects
 `has_gwas_effects = 0` for that, honestly.
 
 What it needs and what it drags in:
@@ -153,7 +163,7 @@ What it needs and what it drags in:
   bulk download but this pass reads the REST API and has no snapshot to fall back on. An injected
   `client` still wins.
 - **`licensing.csv` gains a row.** `merge_sources_file` writes `gwas_catalog` at layer `gwas_effect`
-  (`vocab.py:561`). If you then delete `gwas_effects.csv` and leave the licence row, the compile
+  (`vocab.py`). If you then delete `gwas_effects.csv` and leave the licence row, the compile
   warns *"declares 1 source(s) no table in this module uses"* — measured.
 - **It does not need `resolution.csv`**, unlike `frequencies.csv`. The Catalog is queried by rsID.
 
@@ -273,12 +283,12 @@ Ordered by how likely a first-timer is to hit them.
   applies: it is a catalogue-of-millions problem, and a module cites tens of associations.
 - **No parsed confidence interval.** `confidence_interval` is a verbatim string including `[NR]`
   (5 rows on `hfe`), because the bracket forms vary and parsing would discard what does not fit.
-- **No `commercial_use = true`.** `GWAS_CATALOG_TERMS` (`enricher/.../licensing.py:350`) is the first
+- **No `commercial_use = true`.** `GWAS_CATALOG_TERMS` (`enricher/.../licensing.py`) is the first
   source here with **no named licence**: EBI permits use but conditions it on the original data
   owners' terms, which for an aggregator of thousands of publications are not established. So
   `commercial_use` stays **`None`** and `redistribution` is `True`. Unknown is neither permission nor
   refusal — `taints_commercial_use` requires an explicit `False`, so a null warns rather than gating.
-  **Do not tidy it to `True`**; `enricher/tests/test_gwas.py:279` pins it.
+  **Do not tidy it to `True`**; `enricher/tests/test_gwas.py` pins it.
 - **No rate limit to respect, and that is stated rather than guessed.** EBI publishes no numeric
   budget. `DEFAULT_REQUEST_INTERVAL = 1.0` is a **courtesy, not a transcribed limit**, unlike
   gnomAD's real 10/60s. Nobody should "correct" it against a number that does not exist.
@@ -295,7 +305,7 @@ Ordered by how likely a first-timer is to hit them.
   requests and 0 cache hits** on one real module. The CLI route still works and is the fallback on an
   older build:
   `uv run just-dna-enricher gwas <spec-dir> [--no-study-facts] [--use …]`. Also
-  note `list_tables().sidecars` (`tools/authoring.py:150`) lists only four sidecars and omits the
+  note `list_tables().sidecars` (`tools/authoring.py`) lists only four sidecars and omits the
   format-0.6 three, `gwas_effects.csv` among them — the `resource://just-dna/tables` resource does
   name all three, so the two disagree.
 - **Two upstream doc claims are stale, both verified against installed 0.6.1/0.6.4.**
@@ -316,17 +326,17 @@ Ordered by how likely a first-timer is to hit them.
 
 | Read site | What it does with it |
 |---|---|
-| `just-dna-lite/…/v1_port/publish.py:37-39` | derives its upload allow-patterns from `ARTIFACT_PARQUETS`, so `gwas_effects.parquet` is **transported**. Bytes only |
-| `just-dna-lite/…/tests/test_format_0_6.py:79-90` | asserts `gwas_effects.parquet` is in the allowlist — a regression test on transport, not a read |
-| `just-dna-lite/webui/src/webui/state.py:6007` | imports `ARTIFACT_PARQUETS` so the client-side digest covers the file **as bytes**. Identity only |
-| `just-dna-lite/…/annotation/hf_modules.py:39-64` | `ModuleInfo` carries `lead_url`, `weights_url`, `annotations_url`, `studies_url`, `sources_url` — **no gwas url**. A module installed from HuggingFace may not have the file locally at all |
-| `just-dna-lite/…/annotation/hf_modules.py:632-652` + `report_logic.py:1238` | reads `manifest.weighting` and renders it verbatim into the report. On `hfe_hemochromatosis` that string is literally *"Read gwas_effects.parquet instead…"* — the consumer renders the pointer and **cannot follow it** |
-| `just-dna-lite/…/cli.py:40` | mounts the enricher's Typer app whole, so `just-dna-pipelines enrich gwas <dir>` exists |
-| `just-dna-registry/…/specfiles.py:104` | `FACT_CSVS` — what `revalidate` and `upgrade` rebuild a spec directory from. Missing here = silently dropped on re-publish |
-| `just-dna-registry/…/services/upgrade.py:170` | maps `gwas_effects.csv` → `GwasEffectRow` to find and trim columns a newer model rejects (lossy) |
-| `just-dna-registry/…/db/facets.py:211`, `db/schema.py:286,347`, `db/repository.py:950,1020`, `api/routers/modules.py:93-97`, `client.py:315,342` | one boolean, `has_gwas_effects = int(manifest.gwas_effects is not None)`, indexed and filterable. Tri-state at the API: omitting the filter says nothing |
-| `just-dna-registry/…/services/catalog.py:222-238,361` + `models/api.py:131-160` | projects `GwasEffectsInfo` onto the module detail — `row_count`, `variant_count`, `with_/without_effect_allele`, `measures`, `units`, `traits`, `sources`, `datasets`. `units` and `without_effect_allele` are rendered **beside** the count on purpose, "because a row count alone reads as confidence" |
-| `just-dna-registry/…/services/enrich.py:701-760` | the `/check` preflight offers `frequencies`, `literature`, `identifiers`, `acmg`, `pgx` — **no `gwas`**. The registry never runs or checks this pass |
+| `just-dna-lite/…/v1_port/publish.py` | derives its upload allow-patterns from `ARTIFACT_PARQUETS`, so `gwas_effects.parquet` is **transported**. Bytes only |
+| `just-dna-lite/…/tests/test_format_0_6.py` | asserts `gwas_effects.parquet` is in the allowlist — a regression test on transport, not a read |
+| `just-dna-lite/webui/src/webui/state.py` | imports `ARTIFACT_PARQUETS` so the client-side digest covers the file **as bytes**. Identity only |
+| `just-dna-lite/…/annotation/hf_modules.py` | `ModuleInfo` carries `lead_url`, `weights_url`, `annotations_url`, `studies_url`, `sources_url` — **no gwas url**. A module installed from HuggingFace may not have the file locally at all |
+| `just-dna-lite/…/annotation/hf_modules.py` + `report_logic.py` | reads `manifest.weighting` and renders it verbatim into the report. On `hfe_hemochromatosis` that string is literally *"Read gwas_effects.parquet instead…"* — the consumer renders the pointer and **cannot follow it** |
+| `just-dna-lite/…/cli.py` | mounts the enricher's Typer app whole, so `just-dna-pipelines enrich gwas <dir>` exists |
+| `just-dna-registry/…/specfiles.py` | `FACT_CSVS` — what `revalidate` and `upgrade` rebuild a spec directory from. Missing here = silently dropped on re-publish |
+| `just-dna-registry/…/services/upgrade.py` | maps `gwas_effects.csv` → `GwasEffectRow` to find and trim columns a newer model rejects (lossy) |
+| `just-dna-registry/…/db/facets.py`, `db/schema.py,347`, `db/repository.py,1020`, `api/routers/modules.py`, `client.py,342` | one boolean, `has_gwas_effects = int(manifest.gwas_effects is not None)`, indexed and filterable. Tri-state at the API: omitting the filter says nothing |
+| `just-dna-registry/…/services/catalog.py,361` + `models/api.py` | projects `GwasEffectsInfo` onto the module detail — `row_count`, `variant_count`, `with_/without_effect_allele`, `measures`, `units`, `traits`, `sources`, `datasets`. `units` and `without_effect_allele` are rendered **beside** the count on purpose, "because a row count alone reads as confidence" |
+| `just-dna-registry/…/services/enrich.py` | the `/check` preflight offers `frequencies`, `literature`, `identifiers`, `acmg`, `pgx` — **no `gwas`**. The registry never runs or checks this pass |
 | `just-prs`, `just-prs-mcp` | **nothing.** No match for `gwas_effects`, `GwasEffectRow` or `effect_unit` anywhere in either repo |
 
 **Verdict: nothing reads a single value out of `gwas_effects.parquet`.** The registry reads the

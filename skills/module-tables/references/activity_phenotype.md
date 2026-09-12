@@ -1,14 +1,24 @@
 # activity_phenotype.csv — the metabolizer phenotype an activity score bins into
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/activity_phenotype/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("activity_phenotype.csv")` and `table_requirements("activity_phenotype.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 ## What it is
 
@@ -28,10 +38,10 @@ gotcha, which is where most of this file's value is.
 
 | | |
 |---|---|
-| Model | `just_dna_format.binning.ActivityPhenotypeRow` (`schema/src/just_dna_format/binning.py:425`), extending `MeasureBinRow` (`:237`) → `base.AuthoredModel` (`extra="forbid"` + reserved-namespace guard) |
-| Parquet | `activity_phenotype.parquet` — registered in `compiler._TABLE_KINDS` (`compiler/src/just_dna_compiler/compiler.py:224`), 4th entry of `ARTIFACT_PARQUETS` (`:278`), and in `LEAD_PARQUETS` (`:308`) so it can lead a module |
+| Model | `just_dna_format.binning.ActivityPhenotypeRow` (`schema/src/just_dna_format/binning.py`), extending `MeasureBinRow` (`:237`) → `base.AuthoredModel` (`extra="forbid"` + reserved-namespace guard) |
+| Parquet | `activity_phenotype.parquet` — registered in `compiler._TABLE_KINDS` (`compiler/src/just_dna_compiler/compiler.py`), 4th entry of `ARTIFACT_PARQUETS` (`:278`), and in `LEAD_PARQUETS` (`:308`) so it can lead a module |
 | Group / dedup key | `_KEY_FIELDS = ("gene",)` **plus `trait_efo_id`**, joined in `binning._bin_groups` (`:687`). Overlap across different `trait_efo_id` is legal (pleiotropy) |
-| Duplicate-row check | **none.** Binning kinds are deliberately absent from `_TABLE_DUPE_KEYS` — an exact duplicate resolved bin is caught as an *overlap*, duplicate sentinels by a separate rule (`compiler.py:236-241`) |
+| Duplicate-row check | **none.** Binning kinds are deliberately absent from `_TABLE_DUPE_KEYS` — an exact duplicate resolved bin is caught as an *overlap*, duplicate sentinels by a separate rule (`compiler.py`) |
 | Authored or machine-produced | **fully authored.** No drafter and no enricher pass writes a row here (see below) |
 | Fact signature | **none.** Fact signatures (`integrity.fact_signature` and friends) exist only for the seven derived sidecars in `_FACT_TABLES`; this is an authored DSL table |
 | In `content_signature`? | **yes** — `compiler.content_signature` (`:3848`) hashes `variants.csv`, `studies.csv` and every present entry of `_TABLE_KINDS` |
@@ -49,35 +59,35 @@ Column by column. As of format 0.6.1 — run `describe_table` for the live list.
 | `gene` | **author.** Required. |
 | `conclusion` | **author.** Required — the human-readable sentence for this bin. |
 | `measure_min` / `measure_max` | **author.** The whole judgement of the table. |
-| `measure_kind` | **author, but it has exactly one legal value.** Defaulted to `activity_score` and pinned by `_EXPECTED_KIND` (`binning.py:429`); the field carries its own one-member vocabulary `measure_kind_activity_score` rather than `VALID_MEASURE_KINDS`, because offering the full set would offer values this model rejects. |
+| `measure_kind` | **author, but it has exactly one legal value.** Defaulted to `activity_score` and pinned by `_EXPECTED_KIND` (`binning.py`); the field carries its own one-member vocabulary `measure_kind_activity_score` rather than `VALID_MEASURE_KINDS`, because offering the full set would offer values this model rejects. |
 | `measure_tiling` | **author — and on this kind the right answer is almost always to leave it empty.** See gotcha 2. |
-| `unresolved` | **author.** `stub_template` stamps the sentinel row for you (`draft.py:278`, `_unresolved_cell` `:312`); nothing else ever writes it. |
+| `unresolved` | **author.** `stub_template` stamps the sentinel row for you (`draft.py`, `_unresolved_cell` `:312`); nothing else ever writes it. |
 | `direction`, `phenotype`, `trait_efo_id` | **author.** `direction` is a closed vocabulary and an axis, not a magnitude — `describe_table` returns the members, and this line used to spell them out until format 0.7 added a fifth (`contested`, RM150) and made the spelling wrong. |
-| `clin_sig` | **author, and no tool may fill it** — `hints.REDUNDANCY_BEARING["clin_sig"]` (`compiler/src/just_dna_compiler/hints.py:81`) registers it against `enricher.clinical.verify_clin_sig`, which compares the authored call against ClinVar's. Filling it from ClinVar makes that comparison compare ClinVar with itself. |
+| `clin_sig` | **author, and no tool may fill it** — `hints.REDUNDANCY_BEARING["clin_sig"]` (`compiler/src/just_dna_compiler/hints.py`) registers it against `enricher.clinical.verify_clin_sig`, which compares the authored call against ClinVar's. Filling it from ClinVar makes that comparison compare ClinVar with itself. |
 | `pmid` | **author, and no tool may fill it** — `REDUNDANCY_BEARING["pmid"]` = *"enricher.literature (authored pmid vs PubMed's record: LiteratureRow.exists)"*. A lookup reports the id with `applied: false` and its refusal; preserve both. |
 | `source_field`, `source_element` | **author.** Declarative VCF pointers, never expressions. |
 | `module` (parquet only) | **compiler-stamped.** Not on the model, so `extra="forbid"` refuses it in a CSV. |
 | registry-stamped | **nothing.** `normalize.IDENTITY_AUTHORITY_KEYS` covers `module:` yaml keys, not table cells. |
 
-**No drafter exists for this table.** `DRAFTABLE` (`draft.py:82`) includes `activity_phenotype.csv`,
+**No drafter exists for this table.** `DRAFTABLE` (`draft.py`) includes `activity_phenotype.csv`,
 but that is *template* draftability (`blank_template` / `stub_template`) and not a source provider.
 Grepped every `append_rows` / `append_partial_rows` call in the enricher: `clinvar_draft` writes
 `variants.csv` + `studies.csv`, `clinpgx_draft` writes `pharm_variants.csv`, and `pgx_draft` (CPIC)
-writes `haplotypes.csv`, `allele_function.csv`, `diplotypes.csv` (`pgx_draft.py:505-509`) — **and
-nothing else.** The recorded reason is in `enricher/src/just_dna_enricher/cpic.py:25-27`: CPIC's
+writes `haplotypes.csv`, `allele_function.csv`, `diplotypes.csv` (`pgx_draft.py`) — **and
+nothing else.** The recorded reason is in `enricher/src/just_dna_enricher/cpic.py`: CPIC's
 `gene_result.activityscore` is an inequality *string* (`"≥3.0"`, `"n/a"`), *"so it does not drop
 into `MeasureBinRow`'s numeric `measure_min`/`measure_max`. The raw string is carried and the
 parsing left to a human, because guessing a bound from `≥3.0` means inventing the upper one."*
-`pgx_draft.py:413-419` reports those as a warning bucket and drops the value.
+`pgx_draft.py` reports those as a warning bucket and drops the value.
 
 **`attestation_bearing` is empty here.** `hints.ATTESTATION_BEARING` is exactly
-`{provenance_quote, provenance_regex}` (`hints.py:72`), and neither column exists on this model —
+`{provenance_quote, provenance_regex}` (`hints.py`), and neither column exists on this model —
 those live on `StudyRow`. Nothing in this table asserts that anybody read anything — and on
 `StudyRow`, where it does, the reader may be an agent provided the module says so (`RM15`).
 
 **One enricher pass *reads* it and writes nothing to it:** the literature pass loads every binning
-table through `compiler.load_binning_rows` (`compiler.py:1779`, called at
-`enricher/src/just_dna_enricher/literature.py:761`) and collects the bin `pmid`s via
+table through `compiler.load_binning_rows` (`compiler.py`, called at
+`enricher/src/just_dna_enricher/literature.py`) and collects the bin `pmid`s via
 `binning_citations` (`:1811`) so they are checked alongside `studies.csv`. Since 0.6 a module with
 **no** `studies.csv` but a `pmid` on a bin row is enrichable; before that the pass refused it.
 
@@ -130,15 +140,15 @@ the "moves the digest and no signature" row that derived sidecars have has no in
 ## Required to exist
 
 - **Nothing requires this table**, and it requires nothing. `studies.csv` is required *iff*
-  `variants.csv` is present (`compiler.py:3609`); the binning kinds are exempt, and the recorded
+  `variants.csv` is present (`compiler.py`); the binning kinds are exempt, and the recorded
   reason is not "they carry their own evidence" — it is that `StudyRow` could only name a variant,
   so for a `(gene)`-keyed table the requirement would be **unsatisfiable rather than merely unmet**
   (S19 → RM47).
-- A module must carry **at least one** recognized table (`compiler.py:3602`); this one satisfies it
+- A module must carry **at least one** recognized table (`compiler.py`); this one satisfies it
   alone. **Measured**: a directory of `module_spec.yaml` + `activity_phenotype.csv` compiles
   successfully and produces a one-parquet artifact with no `weights.parquet`.
 - If the module records **no** `studies.csv` rows at all *and* some bin has no `pmid`,
-  `_check_binning_grounding` (`compiler.py:1383`) warns — measured on a solo module with the pmids
+  `_check_binning_grounding` (`compiler.py`) warns — measured on a solo module with the pmids
   stripped: *"activity_phenotype.csv: 4 of 4 bin(s) state a threshold and the module records no
   grounding evidence at all (no studies.csv rows, no bin pmid)"*, with the remedy naming
   `pmid` + a `studies.csv` row that since 0.6 need not name a variant. Warning in both modes.
@@ -175,7 +185,7 @@ Ordered by how likely a first-timer is to hit them.
 
 ### 1. A shared endpoint is a hard error, and a hole is silent — the two rules are opposite here
 
-`activity_score` is the **third answer** in `DEFAULT_MEASURE_TILING` (`binning.py:196`): not
+`activity_score` is the **third answer** in `DEFAULT_MEASURE_TILING` (`binning.py`): not
 `quantised`, not `continuous`, but `None`. It is in neither `_DENSE_KINDS` (`:184`) nor
 `_CONTINUOUS_GAP_KINDS` (`:175`). What that buys, in `validate_bins` (`:951`):
 
@@ -194,7 +204,7 @@ RM55/RM56 pair). The holes are real: scores are summed from per-allele values on
 
 **What it costs.** The schema does not know the step, so it cannot tell a real hole from a typo. A
 bin written `1.35–2.25` instead of `1.25–2.25` strands every score of 1.25 with no finding at all.
-`quantised` would not help: its step is hardcoded to 1 (`binning.py:1053-1061`), and there is no
+`quantised` would not help: its step is hardcoded to 1 (`binning.py`), and there is no
 `measure_step` column — that is a full-cost authored column nobody has asked for, deliberately
 deferred. **Check your own boundaries against the grid; nothing else will.**
 
@@ -301,7 +311,7 @@ reports this as its `defaulted` map — read all three of `always` / `defaulted`
 `CN` is one of `vocab.VCF_COLLIDING_KEYS` (`:99`) — INFO and FORMAT both define it, and since VCF
 4.4 §7.2 *"INFO/CN is the allele-specific copy number and FORMAT/CN is the sample's total copy
 number … the two answers differ by a factor of the ploidy"*. `_check_vcf_pointers`
-(`compiler.py:1669`) warns on a bare one, aggregated by reason, and is silent on `FORMAT/CN`. A bare
+(`compiler.py`) warns on a bare one, aggregated by reason, and is silent on `FORMAT/CN`. A bare
 key stays legal and keeps meaning **unqualified** — that is why this is a warning and not a refusal;
 guessing the namespace would convert *unstated* into a *stated* answer.
 
@@ -319,16 +329,16 @@ no single column to name. Read the message, not the bracket.
 ## What does not exist
 
 - **No `measure_step` column.** Named as a deliberate deferral in `validate_bins`
-  (`binning.py:1059-1061`): it is a full-cost authored column nobody has asked for, so it waits for
+  (`binning.py`): it is a full-cost authored column nobody has asked for, so it waits for
   the demand that would fix its shape. Consequence: `quantised`'s step is 1 and nothing can say
   0.25.
 - **No third `measure_tiling` member for this kind.** `VALID_MEASURE_TILINGS` has exactly two, and
   `activity_score`'s `None` is *a kind's default only* — a kind that genuinely answered the two
   questions apart would need an additive third member, and adding one is a deliberate act
-  (`binning.py:190-195`). So you cannot spell "not dense, and gap-checked" at all.
+  (`binning.py`). So you cannot spell "not dense, and gap-checked" at all.
 - **A sixth `measure_kind` (`copy_number_continuous`) was proposed and refused** — the tiling is a
   different axis from the quantity, and folding them would be a product rather than a sum (P5).
-  Recorded at `binning.py:169-176`. Do not propose it again.
+  Recorded at `binning.py`. Do not propose it again.
 - **Moving these kinds into `_DENSE_KINDS` was refused**: one line, and it silently re-reads every
   published table with no notice and no way to say otherwise (`binning.py` module docstring).
 - **No spanning-measurement warning here.** RM56 (a measurement is an interval and can cross a
@@ -360,18 +370,18 @@ Every occurrence of the table's name is a filename in a list or a comment:
 
 | path:line | what it does |
 |---|---|
-| `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/module_config.py:500` | `"activity_phenotype"` in `LEAD_TABLES` — a *discovery* list. Probes for the parquet's existence to decide "is this directory a module". Never opens it |
-| `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/annotation/hf_logic.py:222-243` | `_lead_join_strategy` classifies a lead table by schema. Its docstring: *"`unsupported` — neither. `diplotypes`, `pgs`, `allele_function` and the binning families carry no per-variant key at all; the caller skips them with the reason recorded"* |
+| `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/module_config.py` | `"activity_phenotype"` in `LEAD_TABLES` — a *discovery* list. Probes for the parquet's existence to decide "is this directory a module". Never opens it |
+| `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/annotation/hf_logic.py` | `_lead_join_strategy` classifies a lead table by schema. Its docstring: *"`unsupported` — neither. `diplotypes`, `pgs`, `allele_function` and the binning families carry no per-variant key at all; the caller skips them with the reason recorded"* |
 | same file, `:302-304` | `strategy == "unsupported"` → `raise UnsupportedLeadTable`. This is the line that discards the module |
-| `.../annotation/hf_modules.py:36` | `MODULE_TABLES = ["annotations", "studies", "weights", "sources"]` — four names, hardcoded, this table absent |
-| `.../annotation/hf_modules.py:495-503` | `class ModuleTable(str, Enum)` — `ANNOTATIONS`, `STUDIES`, `WEIGHTS`, `SOURCES`, `LEAD`. The only vocabulary `scan_module_table` accepts |
-| `just-dna-lite/webui/src/webui/state.py:6015` | a comment naming `activity_phenotype`; `_authored_row_count` counts **CSV lines** to pick a registry endpoint |
-| `just-dna-registry/src/just_dna_registry/specfiles.py:56-58` | `TABLE_KIND_CSVS` — the allow-list of authored CSVs the registry stores and round-trips. Bytes in, bytes out |
-| `just-dna-registry/src/just_dna_registry/services/upgrade.py:32,153` | `ActivityPhenotypeRow` in `_ROW_MODELS`, used only by `offending_columns()` / `trim_unknown_columns()` to check a legacy CSV *header* against the field names |
+| `.../annotation/hf_modules.py` | `MODULE_TABLES = ["annotations", "studies", "weights", "sources"]` — four names, hardcoded, this table absent |
+| `.../annotation/hf_modules.py` | `class ModuleTable(str, Enum)` — `ANNOTATIONS`, `STUDIES`, `WEIGHTS`, `SOURCES`, `LEAD`. The only vocabulary `scan_module_table` accepts |
+| `just-dna-lite/webui/src/webui/state.py` | a comment naming `activity_phenotype`; `_authored_row_count` counts **CSV lines** to pick a registry endpoint |
+| `just-dna-registry/src/just_dna_registry/specfiles.py` | `TABLE_KIND_CSVS` — the allow-list of authored CSVs the registry stores and round-trips. Bytes in, bytes out |
+| `just-dna-registry/src/just_dna_registry/services/upgrade.py,153` | `ActivityPhenotypeRow` in `_ROW_MODELS`, used only by `offending_columns()` / `trim_unknown_columns()` to check a legacy CSV *header* against the field names |
 
 The registry never opens a parquet at all, and its `CardStats`
-(`just-dna-registry/src/just_dna_registry/models/api.py:12-22`) has no activity, metabolizer, PGx or
-binning field. Its search filters (`api/routers/modules.py:70-113`) include
+(`just-dna-registry/src/just_dna_registry/models/api.py`) has no activity, metabolizer, PGx or
+binning field. Its search filters (`api/routers/modules.py`) include
 `has_gene_validity`/`has_clinical_assertions`/`has_gwas_effects`/`has_frequencies` and **no**
 table-kind facet. `just-prs` has no dependency on `just_dna_format` at all; its `prs_percentile`
 work is the PGS Catalog reference distribution, a different thing sharing a word.
@@ -385,7 +395,7 @@ ecosystem knows exactly how to **write** `activity_phenotype.csv` and has no cod
 
 - **Implement the binning lookup rule — one code path serves all four kinds.** Nothing today reads
   a bin. The rule is *select the row with the greatest `measure_min ≤ x` within the group*, groups
-  keyed `(gene, trait_efo_id)`. `hf_logic.py:222-243` (`_lead_join_strategy`) needs a fourth
+  keyed `(gene, trait_efo_id)`. `hf_logic.py` (`_lead_join_strategy`) needs a fourth
   strategy beside `position`/`rsid`/`unsupported` — call it `measure` — and `:302-304` is the exact
   line that currently throws the module away. **What breaks today:** a module whose only content is
   CPIC's phenotype cut-points is discovered, digested, published, and then skipped with a logged
@@ -396,7 +406,7 @@ ecosystem knows exactly how to **write** `activity_phenotype.csv` and has no cod
   either, so the safety property the sentinel exists for — *no diplotype ⇒ unresolved, never Normal
   Metabolizer* — is asserted by the format and honoured by no consumer.
 - **Give `activity_phenotype` a home in the table vocabulary.** `MODULE_TABLES`
-  (`hf_modules.py:36`), `ModuleTable` (`:495-503`) and `ModuleInfo`'s URL fields (`:225-241`) name
+  (`hf_modules.py`), `ModuleTable` (`:495-503`) and `ModuleInfo`'s URL fields (`:225-241`) name
   four tables plus `lead`. A binning module gets a `lead_url` and no reader. **What breaks today:**
   `get_module_table_url()` (`:513-547`) cannot even name the table, so a consumer that wanted to
   read it has no accessor to call.
@@ -404,12 +414,12 @@ ecosystem knows exactly how to **write** `activity_phenotype.csv` and has no cod
   gene set came **from `variants.csv` alone**, so an `activity_phenotype`-only CYP2D6 module published
   `gene_count: 0, genes: []` and `registry_search(gene="CYP2D6")` could not find it — the registry
   indexes `version_genes` straight off that field
-  (`just-dna-registry/src/just_dna_registry/db/repository.py:664`). **Fixed in compiler 0.6.6** (upstream **RM121**): `module_stats` takes the gene facets over every authored table, `variant_stats` keeps its `variants.csv` promise, and a module already published carries the stats its compile wrote — recompile and re-publish to be findable by gene. Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`. It affected
+  (`just-dna-registry/src/just_dna_registry/db/repository.py`). **Fixed in compiler 0.6.6** (upstream **RM121**): `module_stats` takes the gene facets over every authored table, `variant_stats` keeps its `variants.csv` promise, and a module already published carries the stats its compile wrote — recompile and re-publish to be findable by gene. Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`. It affected
   `copynumbers.csv`, `repeat_alleles.csv`, `allele_function.csv`,
   `haplotypes.csv` and `diplotypes.csv`.
 - **Draft the bins from CPIC instead of leaving them hand-typed.** The CPIC snapshot's
   `diplotypes.parquet` carries `(gene, diplotype, phenotype, activity_score)`
-  (`enricher/src/just_dna_enricher/cpic.py:628-641`), which is exactly what the reference example's
+  (`enricher/src/just_dna_enricher/cpic.py`), which is exactly what the reference example's
   author grouped by hand into four bins. `pgx_draft` already reads that table and currently discards
   the score. A drafter emitting bins with `<<REPLACE>>` on `conclusion` — leaving the inequality
   strings (`"≥3.0"`) as an explicit warning rather than a guessed bound — would remove the one

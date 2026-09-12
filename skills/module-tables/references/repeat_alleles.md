@@ -1,14 +1,24 @@
 # `repeat_alleles.csv` — what a repeat count means, for a locus that has no coordinate
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/repeat_alleles/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("repeat_alleles.csv")` and `table_requirements("repeat_alleles.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 ## What it is
 
@@ -16,7 +26,7 @@ One row per **band of repeat counts** at one tandem-repeat locus, plus one senti
 supplied". It answers: *the consumer's caller reported N copies of motif M at gene G — what does that
 mean?* The module holds **no measurement**; the count arrives at query time from ExpansionHunter,
 adVNTR or another span genotyper, and this table is only the lookup that turns it into a phenotype
-(`binning.py:11-15`, "Data-agnostic (design north star)").
+(`binning.py`, "Data-agnostic (design north star)").
 
 Its audience is a clinical-threshold author: HTT CAG, FMR1 CGG, DMPK CTG, ATXN* CAG. It is one of
 **four** binning kinds subclassing `binning.MeasureBinRow` — the others are `activity_phenotype.csv`
@@ -28,14 +38,14 @@ shared and is flagged where it is not.
 
 | | |
 |---|---|
-| Model | `binning.RepeatAlleleRow` (`just_dna_format.binning`, `schema/src/just_dna_format/binning.py:548`), subclass of `binning.MeasureBinRow:237` |
-| Parquet | `repeat_alleles.parquet` — registered in `compiler._TABLE_KINDS` (`compiler/src/just_dna_compiler/compiler.py:226`) and in `compiler.ARTIFACT_PARQUETS` |
-| Natural / dedup key | `_KEY_FIELDS = ("gene", "repeat_unit")` (`binning.py:555`), **plus `trait_efo_id`**, added by `_bin_groups` (`binning.py:694`). **No coordinate anywhere.** |
-| Dedup rule | **Not** in `compiler._TABLE_DUPE_KEYS` (`compiler.py:236-239`): the duplicate rule for a binning kind is *overlap*, not key equality, so `draft.natural_key` returns `None` for it (`draft.py:204-214`) |
+| Model | `binning.RepeatAlleleRow` (`just_dna_format.binning`, `schema/src/just_dna_format/binning.py`), subclass of `binning.MeasureBinRow:237` |
+| Parquet | `repeat_alleles.parquet` — registered in `compiler._TABLE_KINDS` (`compiler/src/just_dna_compiler/compiler.py`) and in `compiler.ARTIFACT_PARQUETS` |
+| Natural / dedup key | `_KEY_FIELDS = ("gene", "repeat_unit")` (`binning.py`), **plus `trait_efo_id`**, added by `_bin_groups` (`binning.py`). **No coordinate anywhere.** |
+| Dedup rule | **Not** in `compiler._TABLE_DUPE_KEYS` (`compiler.py`): the duplicate rule for a binning kind is *overlap*, not key equality, so `draft.natural_key` returns `None` for it (`draft.py`) |
 | Authored or machine-produced | **Authored, entirely.** No drafter, no enricher pass writes a cell (see below) |
 | Who writes it | a human or AI co-author; `compiler.scaffold_module` creates the header + stub rows |
 | Fact signature | **none.** It is not a derived-fact table, so there is no `repeat_signature` and no manifest block of its own. Its identity is `content_signature` + `artifact.digest`. |
-| In `content_signature`? | **Yes** — `compiler.content_signature` loops `_TABLE_KINDS` (`compiler.py:3866-3886`) |
+| In `content_signature`? | **Yes** — `compiler.content_signature` loops `_TABLE_KINDS` (`compiler.py`) |
 | In `artifact.digest`? | **Yes**, via `repeat_alleles.parquet` in `ARTIFACT_PARQUETS` |
 | In the attestation binding? | **Yes** — `repeat_alleles.csv` is in `compiler._INPUT_FILES:267`, which `authored_input_entries:361` hashes |
 
@@ -43,7 +53,7 @@ shared and is flagged where it is not.
 
 There is no `clinvar_draft`, `pgx_draft` or `clinpgx_draft` provider for this table. Grepping the
 whole enricher for `repeat_alleles` returns two hits: the `template` CLI help string
-(`enricher/src/just_dna_enricher/cli.py:837`) and the literature pass reading bin `pmid`s. **Every
+(`enricher/src/just_dna_enricher/cli.py`) and the literature pass reading bin `pmid`s. **Every
 authored cell here is the author's**, which is unusual and is the single most important fact about
 authoring it: unlike `variants.csv`, nothing arrives pre-filled and nothing can be regenerated.
 
@@ -53,7 +63,7 @@ authoring it: unlike `variants.csv`, nothing arrives pre-filled and nothing can 
 | `conclusion` | **author.** The only other required column. |
 | `measure_min`, `measure_max` | **author.** The clinical judgement the whole table exists to record. |
 | `measure_tiling` | **author**, and normally left empty — absence means the kind's default (`quantised` for `repeat_count`), never a value (`binning.py` `DEFAULT_MEASURE_TILING`). |
-| `measure_kind` | **author**, defaulted to `repeat_count` and pinned by `_EXPECTED_KIND` (`binning.py:551`); a mismatch is rejected. |
+| `measure_kind` | **author**, defaulted to `repeat_count` and pinned by `_EXPECTED_KIND` (`binning.py`); a mismatch is rejected. |
 | `unresolved` | **author.** `scaffold_module` stubs one `true` row for you (measured below). |
 | `direction`, `phenotype`, `trait_efo_id` | **author.** Intent-bearing: only the author knows which trait these bins are about. |
 | `clin_sig` | **author, and no tool may fill it** — `hints.REDUNDANCY_BEARING["clin_sig"] = "enricher.clinical.verify_clin_sig (authored call vs ClinVar's)"`. Filling it from ClinVar makes that comparison compare ClinVar with itself. |
@@ -100,7 +110,7 @@ module compiles **closed**).
 
 1. **Inside `content_signature`?** Yes. It is an authored table, hashed as parsed rows —
    `model_dump(mode="json", exclude_none=True)`, sorted by canonical JSON, so **row order and CSV
-   quoting are invisible** to it (`integrity.py:189-250`). It has no fact signature and no manifest
+   quoting are invisible** to it (`integrity.py`). It has no fact signature and no manifest
    block, because it is not multi-producer; the fact-hash discipline (`integrity.fact_signature:256`,
    `FREQUENCY_FACT_FIELDS` and friends) exists for the enricher's sidecars and this is not one.
 2. **Inside `artifact.digest`?** Yes, through `repeat_alleles.parquet`. The digest **preserves
@@ -125,7 +135,7 @@ module compiles **closed**).
   `studies.csv`, no `resolution.csv`.
 - **It drags in nothing.** `studies.csv` is required *iff* `variants.csv` is present, so a bin-only
   module compiles green under `--strict` citing nothing at all. Since 0.5.4 that produces a warning
-  (`_check_binning_grounding`, `compiler.py:1383`), never an error.
+  (`_check_binning_grounding`, `compiler.py`), never an error.
 - **`studies.csv` is accepted with no `variants.csv` and, since 0.6/RM47, with no subject either.**
   `fmr1_cgg_repeat/studies.csv` has exactly two columns, `pmid,conclusion`, and names no variant. That
   is the honest way to describe an ACMG technical standard which is about thresholds, not loci.
@@ -142,7 +152,7 @@ module compiles **closed**).
   (`htt_repeat_expansion/README.md`). Two motifs on one gene are two independent groups: measured,
   `HTT,CCG,6,26` beside `HTT,CAG,6,26` validates clean with no overlap.
 - **`unresolved`** — the sentinel a consumer selects when *no count arrived*. It carries no bounds
-  (enforced by `_validate_range`, `binning.py:400`). "Falling through to the lowest bin would report a
+  (enforced by `_validate_range`, `binning.py`). "Falling through to the lowest bin would report a
   possible expansion carrier as normal" — this is the dangerous failure this row exists to prevent.
 - **`trait_efo_id`** — silently part of the group key. Overlap *across* traits is legal (pleiotropy);
   overlap within one is an error. Getting it wrong merges or splits groups invisibly.
@@ -171,7 +181,7 @@ Ordered by how likely a first-timer is to hit them.
    or took the shorter allele got a well-formed number and a wrong answer, and every offline gate
    passed — including `--strict`" (`htt_repeat_expansion/README.md`). Use `largest`, not
    `largest_alt`: `REPCN` has no reference element, and the longer allele may be the reference-length
-   one. `vocab.ELEMENT_RULE_MEANINGS` (`vocab.py:240`) is the normative sentence per rule and is
+   one. `vocab.ELEMENT_RULE_MEANINGS` (`vocab.py`) is the normative sentence per rule and is
    printed by `describe_table`.
 3. **"Element" is not a VCF `Number` slot.** ExpansionHunter packs both alleles into **one** cell as
    `17/42`. A rule defined over `Number` would have had nothing to say about the case it was built
@@ -197,9 +207,9 @@ Ordered by how likely a first-timer is to hit them.
    schema docstring's heading reads "**`unresolved` (T1) is mandatory**" while its own next sentence
    says a table *can* state it. Measured: delete the sentinel from `htt_repeat_expansion` and
    `validate_spec` returns `valid=True` and `compile_module(strict=True)` succeeds with no mention of
-   it. The only warning lives in `hints._check_bins` (`hints.py:578-584`), i.e. in `lint_rows` — a tool
+   it. The only warning lives in `hints._check_bins` (`hints.py`), i.e. in `lint_rows` — a tool
    an author may never run. **Run `lint_rows` on this table; `validate_module` will not catch this.**
-   *Two* sentinels for one key group **is** a hard error (`compiler.py:3199-3206`).
+   *Two* sentinels for one key group **is** a hard error (`compiler.py`).
 7. **The sentinel in both worked examples sits in a different group from the bins.** HTT's bins carry
    `trait_efo_id=MONDO_0007739`; its `unresolved` row leaves the column blank, so the overlap message
    names `('HTT','CAG','MONDO_0007739')` while the sentinel-count check names `('HTT','CAG',None)` —
@@ -244,7 +254,7 @@ Ordered by how likely a first-timer is to hit them.
 
 - **No coordinate columns, and that is a known gap rather than a property of the thing.** The
   compiler's own comment used to claim these tables are unjoinable "which is a property of what they
-  describe"; 0.6 corrected it as false (`compiler.py:1130-1147`). VCF 4.4 §5.6/§5.7 make a tandem
+  describe"; 0.6 corrected it as false (`compiler.py`). VCF 4.4 §5.6/§5.7 make a tandem
   repeat a locus with published coordinates, so "a consumer holding an ExpansionHunter or `<CNV:TR>`
   VCF has to annotate a gene symbol for themselves to reach our HTT row." Adding `chrom`/`start`
   is **RM65**, deferred pending a real repeat-caller VCF, and it carries an RM87 obligation (the
@@ -285,7 +295,7 @@ Ordered by how likely a first-timer is to hit them.
 > the requirements call.
 
 - **No `gene`/`trait_efo_id` currency check.** `enricher.identifiers.check_identifiers` reads
-  `variants.csv` only (`identifiers.py:520-525`), so a retired gene symbol or a stale MONDO id on a bin
+  `variants.csv` only (`identifiers.py`), so a retired gene symbol or a stale MONDO id on a bin
   row is never questioned.
 
 ## Consumption today
@@ -294,16 +304,16 @@ Ordered by how likely a first-timer is to hit them.
 
 | Site | What it does |
 |---|---|
-| `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/module_config.py:498` | `repeat_alleles` is in `LEAD_TABLES`, so a directory holding `repeat_alleles.parquet` **is** a module — discovery and the HF publisher key on this list |
-| `.../module_config.py:515-519` (`LEAD_TABLE_CSVS`) | derives `repeat_alleles.csv` as the authored table whose row count the registry's enrichment ceiling counts |
-| `.../module_config.py:520-533` (`find_lead_table` / `has_lead_table`) | probes `repeat_alleles.parquet` to answer "is this a compiled module" |
-| `.../annotation/hf_modules.py:157-233` (`_find_lead_table`) | the fsspec twin; sets `lead_table="repeat_alleles"`, `weights_url=None` |
-| `.../annotation/hf_logic.py:222-250` (`_lead_join_strategy`) | classifies it `unsupported` — no populated coordinates, no `rsid`+`genotype` |
-| `.../annotation/hf_logic.py:302-304` | **raises `UnsupportedLeadTable`** and the module is skipped with the reason logged |
-| `just-dna-lite/webui/src/webui/state.py:6014`, `6043-6050` | `_authored_row_count` reads the CSV's line count for the registry `/check` routing decision |
-| `just-dna-marketplace/src/just_dna_registry/specfiles.py:60` | `repeat_alleles.csv` is a recognised spec file, carried through storage |
-| `.../services/upgrade.py:155` | maps it to `RepeatAlleleRow` so `--trim` can drop unknown columns on an old version |
-| `.../db/repository.py:663`, `db/schema.py:76` | `version_genes` is the gene facet — populated from `manifest.stats.genes` |
+| `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/module_config.py` | `repeat_alleles` is in `LEAD_TABLES`, so a directory holding `repeat_alleles.parquet` **is** a module — discovery and the HF publisher key on this list |
+| `.../module_config.py` (`LEAD_TABLE_CSVS`) | derives `repeat_alleles.csv` as the authored table whose row count the registry's enrichment ceiling counts |
+| `.../module_config.py` (`find_lead_table` / `has_lead_table`) | probes `repeat_alleles.parquet` to answer "is this a compiled module" |
+| `.../annotation/hf_modules.py` (`_find_lead_table`) | the fsspec twin; sets `lead_table="repeat_alleles"`, `weights_url=None` |
+| `.../annotation/hf_logic.py` (`_lead_join_strategy`) | classifies it `unsupported` — no populated coordinates, no `rsid`+`genotype` |
+| `.../annotation/hf_logic.py` | **raises `UnsupportedLeadTable`** and the module is skipped with the reason logged |
+| `just-dna-lite/webui/src/webui/state.py`, `6043-6050` | `_authored_row_count` reads the CSV's line count for the registry `/check` routing decision |
+| `just-dna-marketplace/src/just_dna_registry/specfiles.py` | `repeat_alleles.csv` is a recognised spec file, carried through storage |
+| `.../services/upgrade.py` | maps it to `RepeatAlleleRow` so `--trim` can drop unknown columns on an old version |
+| `.../db/repository.py`, `db/schema.py` | `version_genes` is the gene facet — populated from `manifest.stats.genes` |
 
 So: **discoverable, publishable, storable, upgradable, and un-annotatable.** The bin rows travel
 end-to-end and no code path ever compares a number to `measure_min`. There is no `REPCN` reader, no
@@ -334,11 +344,11 @@ comments. `just-prs` and `just-prs-mcp` do not mention the table at all.
   came from `variants.csv` alone until then, and the shipped HTT manifest reads `gene_count: 0,
   genes: []` — verified in `data/interim/allcheck/htt_repeat_expansion/manifest.json`, so
   `registry_search(gene="HTT")` cannot find *that published version*. **Fixed in compiler 0.6.6** (upstream **RM121**): `module_stats` takes the gene facets over every authored table, `variant_stats` keeps its `variants.csv` promise, and a module already published carries the stats its compile wrote — recompile and re-publish to be findable by gene. Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`.
-- **Check bin `pmid`s at revalidation.** `registry/services/revalidate.py:130-141` (`gather_pmids`)
+- **Check bin `pmid`s at revalidation.** `registry/services/revalidate.py` (`gather_pmids`)
   reads `studies.csv` only. Since 0.6 a threshold's citation may live *only* on the bin row — the
   case `fmr1_cgg_repeat`'s README says it probed — and such a module's PMIDs are never verified by
   `revalidate --check-pmids`. The enricher's literature pass already reads both sites via
-  `compiler.binning_citations` / `load_binning_rows` (`enricher/literature.py:761-764`), so the two
+  `compiler.binning_citations` / `load_binning_rows` (`enricher/literature.py`), so the two
   halves of the ecosystem disagree about where citations live.
 
 ## Ask the live schema

@@ -1,14 +1,24 @@
 # heteroplasmy.csv — how much of the mtDNA carries the variant, and what that fraction means in this tissue
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/heteroplasmy/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("heteroplasmy.csv")` and `table_requirements("heteroplasmy.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 ## What it is
 
@@ -17,7 +27,7 @@ is 0.34 — what do I tell the reader?"* mtDNA sits at hundreds of copies per ce
 variant occupies some **fraction** of them; below a threshold the cell compensates and there is no
 phenotype, above it there is. One row is one **range → conclusion** band. The module holds no
 measurement — the consumer supplies the fraction at query time and the table says what it means
-(`binning.py:11-15`, the data-agnostic north star). Its audience is an author who has read the
+(`binning.py`, the data-agnostic north star). Its audience is an author who has read the
 mitochondrial literature and knows that the threshold is *variant-specific* and *tissue-specific*, and
 a consumer that would implement one "bin a measure" code path across all four binning kinds. That
 consumer does not exist yet — see **Consumption today**.
@@ -30,15 +40,15 @@ variant by coordinate, so it is joinable to a VCF and can mint a VRS allele id.
 
 | | |
 |---|---|
-| Model | `just_dna_format.binning.HeteroplasmyRow` (`schema/src/just_dna_format/binning.py:578`), subclass of `MeasureBinRow` (`binning.py:237`) |
-| Becomes | `heteroplasmy.parquet` — registered in `compiler._TABLE_KINDS` (`compiler.py:227`); in `ARTIFACT_PARQUETS` (`compiler.py:278`) **and** in `LEAD_PARQUETS` (`compiler.py:307`), so its presence alone makes a directory "a module" |
-| Bin group key | `_KEY_FIELDS = ("gene", "reference_sequence", "tissue", "variant_key")` (`binning.py:604-606`), **plus `trait_efo_id`**, which `_bin_groups` appends and `_KEY_FIELDS` does not name (`binning.py:696`) |
-| Dedup key | **none.** Binning kinds are deliberately absent from `_TABLE_DUPE_KEYS` (`compiler.py:236-239`): an exact duplicate resolved bin surfaces as an *overlap* error, and a duplicate `unresolved` sentinel as its own error |
-| Authored or machine-produced | **authored, entirely.** No drafter emits a heteroplasmy row — `clinvar_draft` writes `variants.csv`/`studies.csv`, `pgx_draft` writes the three PGx tables, `clinpgx_draft` writes `pharm_variants.csv`. `clinvar_draft.py:666` only *redirects* you here |
-| Fact signature | **none.** Fact hashes exist only for the seven derived sidecars (`integrity.py:289-397`) |
-| In `content_signature`? | **yes**, as parsed rows (`compiler.content_signature`, `compiler.py:3848-3887`, via `_TABLE_KINDS`) |
+| Model | `just_dna_format.binning.HeteroplasmyRow` (`schema/src/just_dna_format/binning.py`), subclass of `MeasureBinRow` (`binning.py`) |
+| Becomes | `heteroplasmy.parquet` — registered in `compiler._TABLE_KINDS` (`compiler.py`); in `ARTIFACT_PARQUETS` (`compiler.py`) **and** in `LEAD_PARQUETS` (`compiler.py`), so its presence alone makes a directory "a module" |
+| Bin group key | `_KEY_FIELDS = ("gene", "reference_sequence", "tissue", "variant_key")` (`binning.py`), **plus `trait_efo_id`**, which `_bin_groups` appends and `_KEY_FIELDS` does not name (`binning.py`) |
+| Dedup key | **none.** Binning kinds are deliberately absent from `_TABLE_DUPE_KEYS` (`compiler.py`): an exact duplicate resolved bin surfaces as an *overlap* error, and a duplicate `unresolved` sentinel as its own error |
+| Authored or machine-produced | **authored, entirely.** No drafter emits a heteroplasmy row — `clinvar_draft` writes `variants.csv`/`studies.csv`, `pgx_draft` writes the three PGx tables, `clinpgx_draft` writes `pharm_variants.csv`. `clinvar_draft.py` only *redirects* you here |
+| Fact signature | **none.** Fact hashes exist only for the seven derived sidecars (`integrity.py`) |
+| In `content_signature`? | **yes**, as parsed rows (`compiler.content_signature`, `compiler.py`, via `_TABLE_KINDS`) |
 | In `artifact.digest`? | **yes**, through `heteroplasmy.parquet` |
-| In the attestation binding? | **yes** — in `compiler._INPUT_FILES` (`compiler.py:267`), so in `manifest.inputs[]` (raw bytes) *and* in `authored_input_entries` (newline-normalized, RM82) |
+| In the attestation binding? | **yes** — in `compiler._INPUT_FILES` (`compiler.py`), so in `manifest.inputs[]` (raw bytes) *and* in `authored_input_entries` (newline-normalized, RM82) |
 | Parquet width | 25 columns, measured on `reference_examples/mt_heteroplasmy`: the 22 authored ones plus injected `module` plus stamped `variant_key`/`authored_ident` |
 
 **Two worked reference examples, and read both.** `reference_examples/mt_heteroplasmy` is the
@@ -73,22 +83,22 @@ NARP → Leigh syndrome).
   **empty** `measure_min`, `measure_max`, `tissue`, `pmid`, `trait_efo_id` and the whole identity set.
   The two columns that carry the design (`tissue`, the variant identity) are not flagged.
 - **enricher pass — none writes into this file.** `enrich` reads it to collect resolution *subjects*
-  (`enricher/…/enrich.py:187-203`) and writes `resolution.csv`; `literature` reads
+  (`enricher/…/enrich.py`) and writes `resolution.csv`; `literature` reads
   `MeasureBinRow.pmid` through `compiler.load_binning_rows` / `binning_citations`
-  (`literature.py:761`, `compiler.py:1779,1811`) and writes `literature.csv`. Inject-only doctrine: no
+  (`literature.py`, `compiler.py,1811`) and writes `literature.csv`. Inject-only doctrine: no
   pass mutates an authored cell.
 - **compiler-stamped (tolerates an authored value and overwrites it)** — `variant_key` and
-  `authored_ident`, both via `base.stamped_identity_field` (`binning.py:666,676`), so both are
+  `authored_ident`, both via `base.stamped_identity_field` (`binning.py,676`), so both are
   `COMPILER_MANAGED`, `exclude=True` (outside `content_signature`), absent from `describe_table`, and
   re-emitted as nothing by `reverse_module`. A CSV that ships its own `variant_key` column does not get
   to declare its own identity — the value is silently replaced (`base.stamp_identity`).
 - **compiler-*filled*, and this is the subtle one** — `chrom` / `start` / `ref` / `alts` are
   **authored** columns here, and the compiler fills the ones you left empty from the injected
-  `resolution.csv` (`resolution.resolve_positional_rows`, `resolution.py:299-360`; RM43). Fill-only-what-is-empty,
+  `resolution.csv` (`resolution.resolve_positional_rows`, `resolution.py`; RM43). Fill-only-what-is-empty,
   fill-from-exactly-one-locus-or-none, and a row whose own coordinate contradicts the table is
   *reported, never repaired*. `base.reject_compiler_filled` does **not** apply here — its error message
   names `heteroplasmy.csv` as one of the two tables where these cells *are* authored. `reverse_module`
-  re-blanks whatever `authored_ident` does not name (`compiler.py:492-520`), which is what keeps
+  re-blanks whatever `authored_ident` does not name (`compiler.py`), which is what keeps
   `content_signature` stable across a round trip.
 - **registry-stamped — nothing.** `normalize.IDENTITY_AUTHORITY_KEYS` covers the `module:` block of
   `module_spec.yaml`, not table cells.
@@ -143,7 +153,7 @@ closure. The RM43 row was measured on a purpose-built rsid-only module: identica
 1. **Inside `content_signature`?** Yes — authored table, rows hashed as parsed
    (`model_dump(mode="json", exclude_none=True)`, sorted), so the signature is **order-independent**
    and blind to CSV formatting and to an unset optional column. `variant_key`/`authored_ident` are
-   `exclude=True` here and stay out, unlike `VariantRow`'s grandfathered pair (`base.py:297-305`) —
+   `exclude=True` here and stay out, unlike `VariantRow`'s grandfathered pair (`base.py`) —
    which is why a coordinate fill cannot move this table's content identity.
 2. **Inside `artifact.digest`?** Yes, through `heteroplasmy.parquet`, and the digest **preserves
    authored row order** where `content_signature` does not. It also carries the *stamped* and *filled*
@@ -165,16 +175,16 @@ closure. The RM43 row was measured on a purpose-built rsid-only module: identica
 ## Required to exist
 
 - **Nothing drags it in, and it drags in nothing.** A module carrying only `heteroplasmy.csv` is
-  legal and complete: composition requires *at least one* recognized table (`compiler.py:3602`), and
+  legal and complete: composition requires *at least one* recognized table (`compiler.py`), and
   `heteroplasmy.parquet` is a `LEAD_PARQUETS` member, so it satisfies a consumer's "is this a module"
   probe on its own. Measured: a three-row heteroplasmy-only module with no `variants.csv` and no
   `studies.csv` validated with **zero** errors.
-- **`studies.csv` is required iff `variants.csv` is present** (`compiler.py:3624-3637`) — so a
+- **`studies.csv` is required iff `variants.csv` is present** (`compiler.py`) — so a
   heteroplasmy-only module is exempt. The comment there is worth reading: the exemption is *not*
   because binning rows carry their own evidence (they do not), it is because `StudyRow` could only
   name a variant, so for a gene-keyed table the requirement would be unsatisfiable rather than merely
   unmet (S19 / RM47).
-- **What you get instead is a warning.** `_check_binning_grounding` (`compiler.py:1380-1470`) fires
+- **What you get instead is a warning.** `_check_binning_grounding` (`compiler.py`) fires
   only when the module records **no** `studies.csv` rows at all *and* some resolved bin has no `pmid`.
   Measured message: *"heteroplasmy.csv: 2 of 2 bin(s) state a threshold and the module records no
   grounding evidence at all (no studies.csv rows, no bin pmid)"* with **two** remedies, because this
@@ -183,7 +193,7 @@ closure. The RM43 row was measured on a purpose-built rsid-only module: identica
   was removed as vacuous (D1-3, `mt_common_deletion` README finding 3).
 - `module_spec.yaml` is required, as always, and `genome_build` matters: the fill and the VRS minting
   are GRCh38-only (RM15), so a non-GRCh38 heteroplasmy module is skipped with a warning and keeps the
-  coordinates its author typed (`compiler.py:1190-1197`).
+  coordinates its author typed (`compiler.py`).
 
 ## The columns that carry judgement
 
@@ -292,12 +302,12 @@ put that today.
 **7. `reference_sequence` is a group key with no vocabulary, so a spelling variant splits a group
 silently.** Measured: three rows with `NC_012920.1`, `NC_012920` and `rCRS` and *identical* bins
 produced **zero** findings — three groups, one reference. Only the `NC_001807` stem is rejected. The
-format defines `binning.CANONICAL_MT_REFERENCE_SEQUENCES = {"NC_012920.1"}` (`binning.py:575`) and
+format defines `binning.CANONICAL_MT_REFERENCE_SEQUENCES = {"NC_012920.1"}` (`binning.py`) and
 **no code reads it**. `tissue` and `gene` have the same exposure (`blood` vs `Blood` measured as two
 groups). Pick one spelling per module and grep for it before you compile.
 
 **8. An rsid-authored row does not mint a VRS id.** `derive_variant_key` short-circuits on `rsid`
-(case 1, `base.py:227-280`), so `variant_key` stays the rsid. Measured: an rsid-authored row keys
+(case 1, `base.py`), so `variant_key` stays the rsid. Measured: an rsid-authored row keys
 `rs199474657`, while the coordinate-authored m.3243A>G keys
 `ga4gh:VA.J9tZBPJHObSDmLtUrywDERwHt2LXGIr-` and m.3271T>C keys `ga4gh:VA.LQzSis117nNBV1Z4_t19RM7EdZfl9wYH`.
 A symbolic allele (`<DEL:4977>`) is unmintable *permanently* and keys `MT:8470:N:<DEL:4977>` — the
@@ -305,14 +315,14 @@ compiler now says so with its own reason class rather than telling you to re-run
 can mint a VRS id" is true only for a coordinate-authored single-base substitution.
 
 **9. A lengthless symbolic allele is fatal in both modes here, and droppable on `variants.csv`.**
-`_SYMBOLIC_DROPPABLE_TABLES` is `{variants.csv, pharm_variants.csv}` (`compiler.py:2326`). Measured on
+`_SYMBOLIC_DROPPABLE_TABLES` is `{variants.csv, pharm_variants.csv}` (`compiler.py`). Measured on
 `mt_common_deletion` with `<DEL:4977>`→`<DEL>`: an error at `strict=False` *and* `strict=True`, with
 the reason in-line — *"a heteroplasmy.csv row is part of a composite (a haplotype's definition, a bin
 tiling), so dropping it would not make a smaller module but a quietly different one"*. Spell the
 length.
 
 **10. The contig is not validated on this table.** `variants.csv` refuses anything outside 1-22/X/Y/MT
-at the model; `heteroplasmy.csv` runs no `chrom` validator (`binning.py:611-613`, deliberate — "no
+at the model; `heteroplasmy.csv` runs no `chrom` validator (`binning.py`, deliberate — "no
 `chromosome` vocabulary marker, matching the other tables that run no chrom validator"). Measured:
 `chrom="7"` is accepted and mints a VRS id on chromosome 7. What *is* checked is the position against
 the contig length (RM48): a row at `chrM:16600` is refused because GRCh38's MT is 16,569 bp.
@@ -333,7 +343,7 @@ the cell is not being ignored.
 
 **13. RM55/RM56 never fire here, and the second absence is real.** `measurement_shape_warnings` is
 scoped to `_VCF_MEASURE_FIELDS`, which holds only `copy_number` and `repeat_count`
-(`binning.py:213-232`), so an `allele_fraction` table gets neither the fractional-grid warning (it does
+(`binning.py`), so an `allele_fraction` table gets neither the fractional-grid warning (it does
 not need one — `continuous` is its default) nor the *"one measurement can span several bins"* warning.
 The spanning problem is not absent, only unreported: `FORMAT/AF` carries depth uncertainty and the
 format has no state for a measurement that spans bins. House default — the consumer **withholds**.
@@ -385,31 +395,31 @@ appear only inside two `pyproject.toml` floor-pin comments and CHANGELOG prose.
 
 Every read site treats `heteroplasmy` as an opaque table **name**:
 
-- `/data/sources/just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/module_config.py:499,514,518-534`
+- `/data/sources/just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/module_config.py,514,518-534`
   — `"heteroplasmy"` in `LEAD_TABLES`; `find_lead_table` / `has_lead_table` probe
   `heteroplasmy.parquet` **for existence only**.
-- `/data/sources/just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/annotation/hf_logic.py:222-250`
+- `/data/sources/just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/annotation/hf_logic.py`
   — **where it dies.** `_lead_join_strategy` classifies a binning table `unsupported` (no populated
   `chrom`/`start`, no `rsid`+`genotype` pair), the per-module loop records `UnsupportedLeadTable`, and
   the module is skipped. `just-dna-lite/CLAUDE.md:471` documents this as intentional.
-- `hf_logic.py:151-177` (`_normalize_vcf_contigs`, folds `chrM`→`MT`, motivated by mito but generic);
-  `hf_modules.py:157-199,527` (the fsspec twin, building a `heteroplasmy.parquet` URL on HF);
-  `report_logic.py:1296-1312` (report-card routing — only `pharm_variants` and `longevitymap` get
+- `hf_logic.py` (`_normalize_vcf_contigs`, folds `chrM`→`MT`, motivated by mito but generic);
+  `hf_modules.py,527` (the fsspec twin, building a `heteroplasmy.parquet` URL on HF);
+  `report_logic.py` (report-card routing — only `pharm_variants` and `longevitymap` get
   bespoke builders, heteroplasmy falls to the generic one, no measure rendering anywhere). All under
   `/data/sources/just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/annotation/`.
-- `/data/sources/just-dna-lite/webui/src/webui/state.py:6017,6043-6051` — counts **lines** of
+- `/data/sources/just-dna-lite/webui/src/webui/state.py,6043-6051` — counts **lines** of
   `heteroplasmy.csv` to route `/check` between enrich and validate. Line count, not parse.
-- `/data/sources/just-dna-registry/src/just_dna_registry/specfiles.py:61` — `heteroplasmy.csv` in
+- `/data/sources/just-dna-registry/src/just_dna_registry/specfiles.py` — `heteroplasmy.csv` in
   `TABLE_KIND_CSVS`, flowing into `SPEC_DATA_FILES`, `RECOGNIZED_SPEC_FILES` and `SIGNATURE_INPUTS`:
   a legal upload part, hashed into the module signature. Name-level only.
-- `/data/sources/just-dna-registry/src/just_dna_registry/services/upgrade.py:34,156,180-200` — imports
+- `/data/sources/just-dna-registry/src/just_dna_registry/services/upgrade.py,156,180-200` — imports
   `HeteroplasmyRow` solely for `set(model.model_fields)`, to detect and trim unknown CSV columns. It
   never validates a value.
-- `/data/sources/just-dna-registry/src/just_dna_registry/services/enrich.py:352,356-375` —
+- `/data/sources/just-dna-registry/src/just_dna_registry/services/enrich.py,356-375` —
   `heteroplasmy.csv` in `ENRICHMENT_SUBJECT_TABLES`; its **row count** feeds the pre-flight bound that
   gates `422 too_many_variants`.
-- `/data/sources/just-dna-registry/src/just_dna_registry/db/facets.py:53,183-240` +
-  `db/schema.py:283-295` — the only binning-adjacent facets are `positional_rows` /
+- `/data/sources/just-dna-registry/src/just_dna_registry/db/facets.py,183-240` +
+  `db/schema.py` — the only binning-adjacent facets are `positional_rows` /
   `positional_rows_placed`, two integers copied out of `manifest.compilation`. The registry never
   learns which table they came from, so **catalog search cannot filter for "modules with heteroplasmy
   bins"**, and no module card mentions the table.

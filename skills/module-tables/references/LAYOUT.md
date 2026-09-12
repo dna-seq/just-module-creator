@@ -95,7 +95,7 @@ outranks a source, and `review_queue` reads them back — `module-revise` owns t
 `_collect_provenance` validates, copies, hashes and takes `len(doc.items)`.
 
 **`logo.png` is NOT in `RECOGNIZED_SPEC_FILES`** — and it survives anyway, by a different mechanism.
-`upgrade` carries it forward from `manifest.logo` (`upgrade.py:497-507`), described there as
+`upgrade` carries it forward from `manifest.logo` (`upgrade.py`), described there as
 "version-independent branding". So the logo is safe, but it is safe because the *manifest* names it,
 not because the spec-file roster does. A file that is neither recognised nor manifest-named is
 tolerated by the compiler and dropped by a rebuild.

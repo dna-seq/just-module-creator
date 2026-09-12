@@ -1,14 +1,24 @@
 # pharm_variants.csv — one variant, one drug, one genotype: a drug-response annotation
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/pharm_variants/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("pharm_variants.csv")` and `table_requirements("pharm_variants.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 Reference for an agent about to author, draft or read this table. Every claim below was read out of a
 file or measured; measurements say so. Verified against **format / compiler 0.6.1, enricher 0.6.4,
@@ -20,7 +30,7 @@ The table answers *"this person carries this genotype at this variant — what d
 about this drug for them?"* It is the single-variant half of pharmacogenomics: a row maps a variant →
 a **drug** → a **response** at a PharmGKB/ClinPGx **evidence level** (1A…4). It exists as a distinct
 rowtype rather than columns on `VariantRow` because a drug response is a different axis from a risk
-weight (`pgx.py:318-323`), and because one CSV = one concern — a drug-response module carries
+weight (`pgx.py`), and because one CSV = one concern — a drug-response module carries
 `pharm_variants.csv` and **no** `variants.csv`. Diplotype-keyed drug response is not this table: it
 rides on `DiplotypeRow`'s optional `drug`/`response`/`recommendation_strength`/`clinical_context`
 columns. Its readers are a report generator (grouping by drug, ranking by evidence level) and,
@@ -31,8 +41,8 @@ increasingly, a VCF annotator joining on position.
 | | |
 |---|---|
 | Model | `just_dna_format.pgx.PharmVariantRow` (subclass of `base.AuthoredModel`) |
-| Parquet | `pharm_variants.parquet` — in `compiler._TABLE_KINDS` (`compiler.py:232`) and in `compiler.ARTIFACT_PARQUETS` |
-| Dedup key | `(variant_key, drug, genotype, phenotype_category, annotation_id)` — `compiler._TABLE_DUPE_KEYS[PharmVariantRow]`, `compiler.py:262-264`. Also what `draft.natural_key` returns, so an append can never create a row the compiler then rejects |
+| Parquet | `pharm_variants.parquet` — in `compiler._TABLE_KINDS` (`compiler.py`) and in `compiler.ARTIFACT_PARQUETS` |
+| Dedup key | `(variant_key, drug, genotype, phenotype_category, annotation_id)` — `compiler._TABLE_DUPE_KEYS[PharmVariantRow]`, `compiler.py`. Also what `draft.natural_key` returns, so an append can never create a row the compiler then rejects |
 | Authored or machine | **Authored.** A source provider (`clinpgx_draft`) can write real rows, but a human/AI owns them afterwards |
 | Who writes it | the author; `just-dna-enricher draft-clinpgx` (MCP: `draft_from_clinpgx`); the compiler stamps three parquet-only columns |
 | Fact signature | **none.** It is an authored table, not a derived sidecar — see *What moving this table moves* |
@@ -57,7 +67,7 @@ Run `describe_table("pharm_variants.csv")` for the live column list. Do not trus
 | `response`, `trait_efo_id` | **author** | free-form / ontology CURIE; nothing fills either |
 | `chrom`, `start`, `ref` | **author, else compiler-filled** at compile from injected `resolution.csv` (RM43) | `resolution.resolve_positional_rows` fills **only cells the author left empty**, from **exactly one locus or none**, and never expands |
 | `alts` | **compiler-filled, and an authored value is REFUSED** | `stamped_identity_field` + `base.reject_compiler_filled`. Data, not identity — `variant_key` is derived without it |
-| `variant_key`, `authored_ident` | **compiler-stamped at load**; an authored value is *accepted and overwritten* | `stamped_identity_field`. The distinction from `alts` is deliberate: `reject_compiler_filled` is scoped to `IDENTITY_FIELDS`, so a *stamped* value costs nothing to ignore while a *filled* one does (`base.py:325-341`) |
+| `variant_key`, `authored_ident` | **compiler-stamped at load**; an authored value is *accepted and overwritten* | `stamped_identity_field`. The distinction from `alts` is deliberate: `reject_compiler_filled` is scoped to `IDENTITY_FIELDS`, so a *stamped* value costs nothing to ignore while a *filled* one does (`base.py`) |
 | registry-stamped | **none.** `normalize.IDENTITY_AUTHORITY_KEYS` (`namespace`, `owner`, `canonical_id`) are `module_spec.yaml` keys, not columns here |
 | nobody, ever | none. Every column has at least one writer |
 
@@ -77,7 +87,7 @@ intersect this table — those live on `studies.csv`.
 - `evidence_level` — **the one place where the drafter writes a checked cell on purpose**, and the
   package says so: `clinpgx_draft` copies it straight out of the snapshot that `enrich_clinpgx` then
   compares it against ("RM4's tautology, one source over (RM73)",
-  `clinpgx_draft.py:427-433`). The mitigation is not a refusal but a **detector**:
+  `clinpgx_draft.py`). The mitigation is not a refusal but a **detector**:
   `provenance.stamp_draft_digest` hashes
   `(rsid, chrom, start, ref, drug, genotype, phenotype_category, annotation_id) → (evidence_level)`
   over the raw CSV cells (`provenance.DRAFT_PROJECTIONS["clinpgx"]`). If the release label matches
@@ -119,7 +129,7 @@ Four answers in prose:
    `Field(exclude=True)` (`base.stamped_identity_field`), so they reach parquet via direct attribute
    read in `_build_table` and never enter the signature. **`VariantRow.variant_key`/`authored_ident`
    ARE inside it** — a grandfathered asymmetry filed as a 1.0-cleanup candidate, explicitly "not a
-   precedent" (`base.py:302-305`, RM43).
+   precedent" (`base.py`, RM43).
 2. **Inside `artifact.digest`?** Yes, as `pharm_variants.parquet` in `ARTIFACT_PARQUETS`. The digest
    *preserves* authored row order where `content_signature` sorts, which is why reordering moves one
    and not the other. Anything that changes the bytes moves it, including a coordinate the fill wrote
@@ -141,18 +151,18 @@ Four answers in prose:
 ## Required to exist
 
 - A module must carry **at least one** recognized table kind; `pharm_variants.csv` alone satisfies
-  that (`compiler.py:3603-3607`).
+  that (`compiler.py`).
 - **`studies.csv` is not required.** It is required iff `variants.csv` is present. The reason is not
   "PGx tables carry their own evidence" — that comment was corrected: only two of the nine do. The
   real reason is that `StudyRow` can only name a variant, so for a gene-keyed table the requirement
-  would be *unsatisfiable* (`compiler.py:3609-3616`, S19/RM47). `studies.csv` **is** accepted in a
+  would be *unsatisfiable* (`compiler.py`, S19/RM47). `studies.csv` **is** accepted in a
   module with no `variants.csv` and does ground a `pharm_variants.csv` row by rsid or coordinate
   (`SCHEMAS.md:53-60`) — so citing your literature is available and unenforced.
 - What the table drags in is **licensing**. Every PGx upstream is CC BY-SA *plus* a contractual bar on
   sale, and these rows sit at the `annotation` layer — the one layer that taints
   (`sources.taints_commercial_use`: `commercial_use is False` **and** `layer == "annotation"`).
   Most-restrictive-wins module-wide: **one** tainting row with no `declared_use == "non_commercial"`
-  refuses the whole compile (`compiler.py:4832-4849`). Measured on the reference example:
+  refuses the whole compile (`compiler.py`). Measured on the reference example:
   `manifest.sources.commercial_use=False`, `redistribution=True`,
   `declared_uses=['non_commercial']`, and `license_sha256` pinned to the `LICENSE.txt` inside the
   snapshot archive. The `declared_use` cell is keyed on **data carried by the module**, never a CLI
@@ -232,7 +242,7 @@ Ordered by how likely a first-timer is to hit them.
 1. **`chrom`/`start` are no longer null in the artifact — the advice you will read says they are.**
    Pre-0.6, resolution reached `variants.csv` only, so an rsid-authored PGx module compiled clean,
    validated, published, and carried a null coordinate on every row; the consumer who found out had a
-   1,482-row module and read the parquet to discover it (`compiler.py:1253-1259`, S31). RM43 fixed it.
+   1,482-row module and read the parquet to discover it (`compiler.py`, S31). RM43 fixed it.
    Measured now on the reference example: `12 / 21178615 / T / A,C` on all nine rows,
    `positional_rows_placed == positional_rows == 9`. **Resolved 2026-08-20:** the skill that stated the old
    behaviour — "resolution is applied to `weights.parquet` only" — was corrected and then dismantled;
@@ -245,9 +255,9 @@ Ordered by how likely a first-timer is to hit them.
 3. **The bare `(variant, drug)` triple is a bug this ecosystem has already shipped once.** 1,199 of
    17,380 (variant, drug, genotype) triples in one ClinPGx release map to more than one annotation,
    839 differing by category and 283 by neither — hence all five key parts
-   (`compiler.py:240-250`). Index anything by the triple and you either collide or compare the wrong
+   (`compiler.py`). Index anything by the triple and you either collide or compare the wrong
    annotation: keying the cross-check that way reported all three of the reference example's
-   correctly-authored levels as stale (`clinpgx.py:270-278`).
+   correctly-authored levels as stale (`clinpgx.py`).
 4. **A vocabulary spelling rewrite un-closes the module while moving no identity.** Measured:
    `Metabolism/PK` → `metabolism_pk` left `content_signature` and `artifact.digest` byte-identical and
    still dropped the `verification` block, because `module_hash` binds bytes. Corollary: after a
@@ -308,7 +318,7 @@ Ordered by how likely a first-timer is to hit them.
 - **No `chrom` vocabulary validation.** Unlike `VariantRow.chrom` / `StudyRow.chrom`, this model runs
   no chrom validator, and the schema deliberately attaches **no** vocabulary marker rather than claim
   a rejection that does not happen. Acknowledged in the code as a real inconsistency whose fix is a
-  *tightening* (Principle 3), not a marker change (`pgx.py:345-350`).
+  *tightening* (Principle 3), not a marker change (`pgx.py`).
 - **No split `genotype` column, and the parallel-column repair is refused.** S30 asked for it;
   **RM81** records the refusal: splitting a published column is a retype (major-only), and adding a
   `genotype_alleles` list beside the string is refused as two spellings of one value in one table.
@@ -333,61 +343,61 @@ Ordered by how likely a first-timer is to hit them.
 **just-dna-lite / just-dna-pipelines** — the real consumer, and it treats this table as a *lead
 table* peer of `weights.parquet`:
 
-- `module_config.py:491-503` — `LEAD_TABLES` lists `pharm_variants` second after `weights`; a
+- `module_config.py` — `LEAD_TABLES` lists `pharm_variants` second after `weights`; a
   directory holding `pharm_variants.parquet` **is** a module. `LEAD_TABLE_CSVS` derives the authored
   name. `find_lead_table` / `has_lead_table` (`:517-537`) key discovery on schema, not on a name —
   the fix for a `pharm_variants`-led install that was annotatable but impossible to list or publish.
-- `annotation/hf_modules.py:43`, `:495-503` — `ModuleInfo` carries `lead_table`/`lead_url`;
+- `annotation/hf_modules.py`, `:495-503` — `ModuleInfo` carries `lead_table`/`lead_url`;
   `ModuleTable.LEAD` is what callers ask for.
-- `annotation/hf_assets.py:170-176` — the lead table is appended to the asset group, or a
+- `annotation/hf_assets.py` — the lead table is appended to the asset group, or a
   `pharm_variants`-led module contributes no assets at all.
-- `annotation/hf_logic.py:222-249` `_lead_join_strategy` — classifies by *schema plus data*:
+- `annotation/hf_logic.py` `_lead_join_strategy` — classifies by *schema plus data*:
   `position` if `chrom`/`start` exist **and** at least one is non-null, else `rsid` + `genotype`, else
   `unsupported`. This is the code RM43 silently upgrades: a 0.6-compiled pharm module now takes the
   **position** branch for the first time.
-- `annotation/hf_logic.py:286-312` `_normalize_lead_genotype` — splits the authored `"C/C"` string to
+- `annotation/hf_logic.py` `_normalize_lead_genotype` — splits the authored `"C/C"` string to
   `List(Utf8)` before any join, mirroring `_split_genotype` and **not sorting**. Their workaround for
   S30.
-- `annotation/hf_logic.py:342-399` — the two join paths. rsid: `(rsid, genotype)`. position:
+- `annotation/hf_logic.py` — the two join paths. rsid: `(rsid, genotype)`. position:
   `(chrom, start, genotype)` plus a `ref` agreement filter that discards a coincidental ALT match.
-- `annotation/report_logic.py:1024-1088` `build_pharmacogenomics_report_data` — the only bespoke
+- `annotation/report_logic.py` `build_pharmacogenomics_report_data` — the only bespoke
   report shape: groups by **drug**, ranks within a drug by `evidence_level` (`1A` strongest), reports
   `total_drugs` and a `guideline_count` of 1A/1B rows. A weight-ranked flat table is the wrong shape
   because every weight is 0.0.
-- `annotation/report_logic.py:704-745` `_build_variant` — reads `drug`, `evidence_level`,
+- `annotation/report_logic.py` `_build_variant` — reads `drug`, `evidence_level`,
   `phenotype_category`, `response` explicitly, plus the generic `gene`, `genotype`, `ref`, `alts`,
   `conclusion`, `trait_efo_id` (via `_AUTHORED_AXES`), `locus_count`/`locus_index`.
-- `annotation/report_logic.py:609-635` — those same fields go into the AI-assistant prompt
+- `annotation/report_logic.py` — those same fields go into the AI-assistant prompt
   (`Drug`, `Drug response`, `Evidence level`, `Module alternate alleles`).
-- `annotation/report_logic.py:389-400` `_genotype_alleles` — documents the string-vs-list split and
+- `annotation/report_logic.py` `_genotype_alleles` — documents the string-vs-list split and
   delegates to `alleles.split_genotype`.
-- `module_registry.py:262`, `:305-315` — custom-module install and listing key on `has_lead_table`.
+- `module_registry.py`, `:305-315` — custom-module install and listing key on `has_lead_table`.
 - `docs/MODULE_RELEASE_0_5.md:87`, `:402`, `:470`, `:503` — their real `pharmgkb` module: 1,482
   `pharm_variants` rows over 147 loci, three published files, no `weights.parquet`.
 
 **just-dna-registry (0.18.2; `just-dna-marketplace` is the same tree under a stale directory name)**
 
-- `specfiles.py:56-66` — `pharm_variants.csv` in `TABLE_KIND_CSVS`, so it is accepted, stored and
+- `specfiles.py` — `pharm_variants.csv` in `TABLE_KIND_CSVS`, so it is accepted, stored and
   round-tripped on publish.
-- `services/enrich.py:349-353` — `ENRICHMENT_SUBJECT_TABLES` includes it, so `enrichment_subject_count`
+- `services/enrich.py` — `ENRICHMENT_SUBJECT_TABLES` includes it, so `enrichment_subject_count`
   counts its rows as things an `enrich()` will ask about. `variant_count` would say 0.
-- `services/enrich.py:1420-1440` — the publish-time `check` runs `enrich_clinpgx`; an unparseable
+- `services/enrich.py` — the publish-time `check` runs `enrich_clinpgx`; an unparseable
   `pharm_variants.csv` is a **skip with a reason**, never `unreachable`. Evidence-level conflicts are
   rendered into `FunctionConflictEntry(gene=rsid, allele=drug)` — an acknowledged mis-shaping.
-- `services/upgrade.py:161` — `_ROW_MODELS["pharm_variants.csv"] = PharmVariantRow`, so the
+- `services/upgrade.py` — `_ROW_MODELS["pharm_variants.csv"] = PharmVariantRow`, so the
   trim/block planner can see an offending column in a PGx module (through 0.10 it could not).
-- `db/facets.py:44-96` — `positionally_joinable` reads `positional_rows_placed == positional_rows`;
+- `db/facets.py` — `positionally_joinable` reads `positional_rows_placed == positional_rows`;
   `joins_nothing_positionally` substring-matches `compiler.UNJOINABLE_PHRASE` for pre-0.6 artifacts;
-  `is_trusted` returns `False` when either fires. `db/facets.py:114` names this table's reference
+  `is_trusted` returns `False` when either fires. `db/facets.py` names this table's reference
   example as the calibration case.
-- `models/api.py:66`, `:503` — `positional_rows` and `table_rows` are published API fields.
+- `models/api.py`, `:503` — `positional_rows` and `table_rows` are published API fields.
 
 **just-prs / just-prs-mcp** — nothing. Grepped for `pharm_variants` and `PharmVariant`: zero hits.
 
 ## Blanks for just-dna-lite
 
 - **`alts` on `pharm_variants.parquet` is a comma-string and the report renders it wrong today.**
-  `report_logic.py:709` does `"/".join(row.get("alts", []) or [])`. On `weights.parquet` `alts` is
+  `report_logic.py` does `"/".join(row.get("alts", []) or [])`. On `weights.parquet` `alts` is
   `List(Utf8)` and that works; on `pharm_variants.parquet` it is `String` — measured value `'A,C'` —
   and `"/".join("A,C")` returns **`'A/,/C'`** (verified in a REPL), which is what reaches the report
   as *"Module alternate alleles"* and goes into the AI prompt. **Newly reachable**: before format
@@ -408,7 +418,7 @@ table* peer of `weights.parquet`:
   `_lead_join_strategy` picks `position` as soon as `chrom` is non-null, which a 0.6-compiled pharm
   module now is. That path joins on `(chrom, start, genotype)` and compares `ref` — all types agree —
   but the code comments still assert the family "reaches us with chrom/start null on every row"
-  (`hf_logic.py:229-232`, `:296-299`). Ask: recompile the `pharmgkb` module against 0.6, exercise the
+  (`hf_logic.py`, `:296-299`). Ask: recompile the `pharmgkb` module against 0.6, exercise the
   position branch on an rsID-less VCF (DeepVariant output), and update the two comments. Today a
   1,482-row module still annotates zero variants on such a VCF for no remaining reason.
 - **`annotation_id` is published and read by nobody.** It is a live ClinPGx accession on every

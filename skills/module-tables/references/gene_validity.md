@@ -1,14 +1,24 @@
 # gene_validity.csv — does variation in this gene cause this disease, and how sure is anyone
 
-> **Audit banner — 2026-08-19.** This file was re-checked against the installed toolchain
-> (format 0.6.1, compiler 0.6.1, enricher 0.6.4 — the versions it was written against) by a
-> three-way pass: this file, versus the format repo's `docs/`, versus the code, with **the code as
-> arbiter**. Symbol references held up; the `file:line` numbers have drifted with the tree, so
-> anchor on the symbol name and not the line. Two markers were added below — 🚧 **ROADWORKS** for a
-> surface that is broken or unfinished, always with a guard saying what to do instead, and
-> ⚠️ **CHECK** for a claim whose current state is not what the surrounding text would lead you to
-> expect. Anything unmarked either held on re-check or was not reached; coverage was thorough, not
-> exhaustive.
+> **Audit banner — re-stamped 2026-09-13 against format 0.7.0 / compiler 0.7.0 / enricher 0.7.0 /
+> registry 0.25.2** (`importlib.metadata`, read from this repo's venv). **The prose below was written
+> against 0.6.1 and has not been re-argued sentence by sentence.** What was done is narrower and is
+> the half that rots: every `file:line` citation was removed — the line numbers had drifted, the
+> symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
+> installed packages.
+>
+> **Upstream generates the schema half now, so do not read it here.** Every column, type,
+> requiredness, vocabulary and identity-card fact for this table is generated from the row model on
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/gene_validity/>, with the authoring
+> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
+> `describe_table("gene_validity.csv")` and `table_requirements("gene_validity.csv")`. **This file keeps the half a model
+> cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
+> Where the two disagree, the generated page and the tool are right and this file is the bug.
+>
+> Two markers appear below — 🚧 **ROADWORKS** for a surface that is broken or unfinished, always with
+> a guard saying what to do instead, and ⚠️ **CHECK** for a claim whose current state is not what the
+> surrounding text would lead you to expect. **Both were raised in the 0.6.1 pass, so a marker is not
+> evidence the surface is still broken at 0.7** — re-check before quoting one.
 
 > **Correction, 2026-08-20 (later than the banner above).** This file says `describe_table`
 > refuses this table and quotes that refusal's wording. Both were true when written and are not
@@ -24,59 +34,59 @@ variation in one gene causes one disease under one mode of inheritance, at one s
 what the two gene-level tables next door cannot — "constraint says how intolerant of variation a gene
 *looks*; dosage sensitivity says whether losing a copy causes disease. Neither says whether variation
 in this gene causes **this** disease… and it is the claim a clinical module most often rests on
-without recording" (`enricher/src/just_dna_enricher/gene_validity.py:3-6`).
+without recording" (`enricher/src/just_dna_enricher/gene_validity.py`).
 
 Two submitters ship, and they are different kinds of thing. **ClinGen** publishes expert-panel
 curations, one per (gene, disease, MOI), each from a named Gene Curation Expert Panel working to a
 numbered SOP. **GenCC** publishes an *aggregate* of nineteen submitters — ClinGen among them, plus
 Orphanet, PanelApp and several laboratories — where "the same gene–disease pair routinely carries
 several submitters at different strengths, and that disagreement is the data"
-(`gene_validity.py:10-15`). Its audience is a clinical reader asking "is this gene–disease link
+(`gene_validity.py`). Its audience is a clinical reader asking "is this gene–disease link
 actually established, or did somebody dispute it", and a catalog wanting to index modules by
 condition. **No annotation table joins to it.** The compiler only cross-checks that its genes are
-genes the module mentions (`compiler.py:5733 _cross_check_gene_validity`, warning-only).
+genes the module mentions (`compiler.py _cross_check_gene_validity`, warning-only).
 
 ## Identity card
 
 | | |
 |---|---|
-| Model + module | `just_dna_format.gene_validity.GeneValidityRow` (`schema/src/just_dna_format/gene_validity.py:81`) |
-| Parquet | `gene_validity.parquet` — in `ARTIFACT_PARQUETS` (`compiler.py:293`), so inside `artifact.digest`. The parquet carries a 16th column, `module`, that the model has not got (`compiler.py:457-462`) |
-| Natural / dedup key | `(gene, disease, mode of inheritance, submitter)` (`gene_validity.py:82`). The **merge** key is narrower and different: `assertion_id` when the source published one, else `(gene, disease_id, moi, submitter, dataset)` (`_merge_key`, `enricher/…/gene_validity.py:546-556`). **Not enforced by the compiler** — see Gotcha 2 |
+| Model + module | `just_dna_format.gene_validity.GeneValidityRow` (`schema/src/just_dna_format/gene_validity.py`) |
+| Parquet | `gene_validity.parquet` — in `ARTIFACT_PARQUETS` (`compiler.py`), so inside `artifact.digest`. The parquet carries a 16th column, `module`, that the model has not got (`compiler.py`) |
+| Natural / dedup key | `(gene, disease, mode of inheritance, submitter)` (`gene_validity.py`). The **merge** key is narrower and different: `assertion_id` when the source published one, else `(gene, disease_id, moi, submitter, dataset)` (`_merge_key`, `enricher/…/gene_validity.py`). **Not enforced by the compiler** — see Gotcha 2 |
 | Authored or machine-produced | **machine-produced, human-overridable.** Standalone `BaseModel`, not an `AuthoredModel`; `extra="forbid"` so a typo'd column is refused, not dropped |
-| Who writes it | one pass, `enricher.gene_validity.enrich_gene_validity` — `just-dna-enricher gene-validity <dir> [--source clingen|gencc]` (`enricher/src/just_dna_enricher/cli.py:386-438`) |
-| Fact signature | `integrity.gene_validity_signature` over `gene_validity.GENE_VALIDITY_FACT_FIELDS` — **10 of 15 fields**; `source`/`status`/`fetched_at` excluded as provenance, `report_url`/`disease_label` excluded as *descriptive* → `manifest.gene_validity.signature` (`integrity.py:316-328`) |
-| In `content_signature`? | **No.** `content_signature` reads `variants.csv`, `studies.csv` and `_TABLE_KINDS` only (`compiler.py:3869-3873`); `_INPUT_FILES` (`compiler.py:267`) does not list it |
-| In `artifact.digest`? | **Yes**, via its parquet. Also byte-hashed into `manifest.derived[]` — transport only (`compiler.py:337-347`) |
-| Manifest block | `manifest.gene_validity` = `{signature, sources, datasets, row_count, genes, diseases, classifications, submitters}` (`manifest.py:384-433`, built at `compiler.py:4737`); absent when the module carries no such sidecar |
+| Who writes it | one pass, `enricher.gene_validity.enrich_gene_validity` — `just-dna-enricher gene-validity <dir> [--source clingen|gencc]` (`enricher/src/just_dna_enricher/cli.py`) |
+| Fact signature | `integrity.gene_validity_signature` over `gene_validity.GENE_VALIDITY_FACT_FIELDS` — **10 of 15 fields**; `source`/`status`/`fetched_at` excluded as provenance, `report_url`/`disease_label` excluded as *descriptive* → `manifest.gene_validity.signature` (`integrity.py`) |
+| In `content_signature`? | **No.** `content_signature` reads `variants.csv`, `studies.csv` and `_TABLE_KINDS` only (`compiler.py`); `_INPUT_FILES` (`compiler.py`) does not list it |
+| In `artifact.digest`? | **Yes**, via its parquet. Also byte-hashed into `manifest.derived[]` — transport only (`compiler.py`) |
+| Manifest block | `manifest.gene_validity` = `{signature, sources, datasets, row_count, genes, diseases, classifications, submitters}` (`manifest.py`, built at `compiler.py`); absent when the module carries no such sidecar |
 | Location | root or `derived/gene_validity.csv`. Both at once = `layout.SidecarCollision`, an error, never a merge. This pass has always routed through `licensing.sidecar_path` — it is the one three others were fixed *to match* in enricher 0.6.1 (RM99) |
-| Source layer | `gene_validity` is a member of `vocab.VALID_SOURCE_LAYERS` (`vocab.py:553-559`) and is **not** `annotation`, so nothing recorded here can taint a module's commercial-use or redistribution verdict (`sources.py:241-260`) |
+| Source layer | `gene_validity` is a member of `vocab.VALID_SOURCE_LAYERS` (`vocab.py`) and is **not** `annotation`, so nothing recorded here can taint a module's commercial-use or redistribution verdict (`sources.py`) |
 
 ## Who populates what
 
 - **enricher pass — everything.** `enrich_gene_validity` (`just-dna-enricher gene-validity <dir>
   [--source clingen|gencc]`) fills all fifteen columns. The gene set is the **`gene` column of
   `variants.csv`**, borrowed from `gene_metrics.module_genes` and re-raised as this pass's own error
-  type (`gene_validity.py:530-543`). `dataset` is `clingen_gene_validity_<FILE CREATED date>` or
+  type (`gene_validity.py`). `dataset` is `clingen_gene_validity_<FILE CREATED date>` or
   `gencc_submissions_<latest submitted_run_date>`; `source` is `clingen` or `gencc`; `status` is
-  always `"resolved"` on a written row (`gene_validity.py:481`); `fetched_at` is `now_utc_iso()`.
+  always `"resolved"` on a written row (`gene_validity.py`); `fetched_at` is `now_utc_iso()`.
 - **drafter — none.** `gene_validity.csv` is **not in `just_dna_compiler.draft.DRAFTABLE`** (verified
   against compiler 0.6.1: the set is the eleven authored kinds plus `sources.csv`/`licensing.csv`),
   so there is no `<<REPLACE>>` stub, no `get_template`, no `draft_from_*` route, and
   `describe_table("gene_validity.csv")` **refuses**. See *Ask the live schema*.
 - **author** — no column is *expected* of a human, and every column *may* be written by one.
-  `source` is an open vocabulary naming `clingen|gencc|manual|reversed` (`gene_validity.py:190-197`),
+  `source` is an open vocabulary naming `clingen|gencc|manual|reversed` (`gene_validity.py`),
   so `manual` is the declared route for a curator override, and MODULE_LIFECYCLE §6.3 counts curator
   overrides as what deleting this file costs. Unlike `gene_metrics.csv`, the override here **works**
   — see Gotcha 5 — but it costs you a licence-ledger warning.
 - **compiler-stamped** — nothing in the CSV. No column is `base.stamped_identity_field`,
   `COMPILER_MANAGED` or `reject_compiler_filled`. The compiler reads, warns, and builds the parquet;
   it never writes a cell of this file. It *does* stamp the parquet-only `module` column
-  (`compiler.py:457-462`), which is why the parquet has 16 columns and the CSV 15.
+  (`compiler.py`), which is why the parquet has 16 columns and the CSV 15.
 - **registry-stamped** — nothing. No column is in `normalize.IDENTITY_AUTHORITY_KEYS`. The registry
-  *does* carry the file (`specfiles.FACT_CSVS`, `just-dna-registry/src/just_dna_registry/specfiles.py:102`)
+  *does* carry the file (`specfiles.FACT_CSVS`, `just-dna-registry/src/just_dna_registry/specfiles.py`)
   and *does* re-parse it through `GeneValidityRow` on `revalidate`/`upgrade`
-  (`services/upgrade.py:168`), which can **trim an unknown column lossily**
+  (`services/upgrade.py`), which can **trim an unknown column lossily**
   (`trim_unknown_columns`: "**LOSSY** — the dropped cells are gone").
 - **nobody, ever** — no permanently-unwritten column; all fifteen have a producer.
 
@@ -91,7 +101,7 @@ The refusal that *is* live here is a **reserved verification-check name this pas
 `vocab.VALID_VERIFICATION_CHECKS` carries `"gene_disease_validity"` marked RESERVED, and its comment
 says what it is not for: "0.6's `enrich_gene_validity` **records** ClinGen/GenCC verdicts into a
 derived table and compares nothing authored, so it does not emit this. The member is for a future
-pass that checks an authored gene/phenotype pair" (`vocab.py:708-711`). Upstream re-affirmed it under
+pass that checks an authored gene/phenotype pair" (`vocab.py`). Upstream re-affirmed it under
 RM72: "wiring it to `gene-validity` would report a check where no question was put, which is the
 confusion RM45 exists to end" (`docs/ROADMAP_0_7.md:713-718`). So a compiled module will never carry
 a `gene_disease_validity` record, and `reference_examples/hboc_palb2/README.md:59` listing it among
@@ -114,7 +124,7 @@ and compiled ten times with `compile_module(spec, out)` under format/compiler **
 | edit provenance only (`fetched_at`) | **same** | **same** `e7e5d436546b` | **moved** `7e316b8b069c` | unchanged, still closed |
 | reorder rows | **same** | **same** `e7e5d436546b` | **moved** `9e2c6a9fdc8f` | unchanged |
 | delete the file | **same** | block **absent entirely** | moved `bf8d03aefb26` | unchanged, still closed |
-| re-run the pass, same export | same | same | same (nothing rewritten — merge-not-clobber, `enricher/tests/test_gene_validity.py:247`) | unchanged |
+| re-run the pass, same export | same | same | same (nothing rewritten — merge-not-clobber, `enricher/tests/test_gene_validity.py`) | unchanged |
 | delete + re-derive, source unchanged | same | same | **moved** (fresh `fetched_at`) | unchanged |
 | recompile under a newer toolchain | same | same | may move | unchanged |
 
@@ -124,10 +134,10 @@ not the fact hash** — exactly what `GENE_VALIDITY_FACT_FIELDS`' comment promis
 
 **The round trip is a fixed point, measured.** `compile → reverse_module → compile` on `hboc_palb2`
 reproduced `gene_validity.csv` **byte for byte** (`reverse_module` rebuilds it from the parquet via
-`_FACT_TABLES` and `layout.sidecar_write_path`, `compiler.py:6106-6110`) and left
+`_FACT_TABLES` and `layout.sidecar_write_path`, `compiler.py`) and left
 `content_signature`, `gene_validity.signature` and `artifact.digest` all identical. That holds
 because the enricher's cell writer is deliberately "matching the compiler's reverse writer exactly"
-(`enricher/…/gene_validity.py:586-592`). What does **not** survive is the attestation: reverse warns
+(`enricher/…/gene_validity.py`). What does **not** survive is the attestation: reverse warns
 that the closure cannot be carried and the recompiled manifest has no `verification` block.
 
 1. **Is this table inside `content_signature`?** No. `content_signature` loads only `variants.csv`,
@@ -135,7 +145,7 @@ that the closure cannot be carried and the recompiled manifest has no `verificat
    `GENE_VALIDITY_FACT_FIELDS` — ten fields, with `source`/`status`/`fetched_at` out as provenance
    "so a hand-curated and a ClinGen-filled table carrying the same verdicts hash equal", and
    `report_url`/`disease_label` out on a second and different rule: "a column that *locates or
-   describes* the assertion is not the assertion" (`gene_validity.py:48-66`). `dataset` and
+   describes* the assertion is not the assertion" (`gene_validity.py`). `dataset` and
    `submitter` are deliberately **in** — "a 2024 curation and its 2026 revision are different facts",
    and "'Ambry says Limited' and 'ClinGen says Definitive' are two claims, not one recorded twice".
 2. **Is it inside `artifact.digest`?** Yes — `gene_validity.parquet` is in `ARTIFACT_PARQUETS`, and
@@ -146,7 +156,7 @@ that the closure cannot be carried and the recompiled manifest has no `verificat
    reverse→recompile cycle as tampering".
 3. **Does an edit here un-close the module?** **No.** The attestation binds
    `compiler.authored_input_entries(spec_dir)` = `newline_normalized_file_entries(_INPUT_FILES)`
-   (`compiler.py:386`), and this file is not in that set — "the derived sidecars carry per-run noise
+   (`compiler.py`), and this file is not in that set — "the derived sidecars carry per-run noise
    (`fetched_at`) that would invalidate an attestation on a re-enrichment that changed nothing anyone
    claimed". Measured: `module_hash` unmoved across every edit, deletion included. Note the asymmetry
    you will still trip on — an `authorship:` append to `module_spec.yaml` *does* un-close a module
@@ -163,16 +173,16 @@ that the closure cannot be carried and the recompiled manifest has no `verificat
 ## Required to exist
 
 - **Nothing requires this table.** Optional, always. `_gene_validity_block` returns `None` on
-  empty (`compiler.py:4745`), the parquet is skipped, and no compile check fails. Deleting it from
+  empty (`compiler.py`), the parquet is skipped, and no compile check fails. Deleting it from
   `hboc_palb2` produced zero errors and zero warnings.
 - **It requires `variants.csv`, and silently produces nothing without it.** The gene set is
   `gene_metrics.module_genes(spec_dir)`, which reads `variants.csv` and returns `[]` when absent. A
   PGx module keyed on `haplotypes.csv`/`diplotypes.csv` gets an **empty** gene set — the gene symbols
   in those tables are never read. Author by hand if you want validity on a PGx gene.
 - **It drags in `licensing.csv` / `sources.csv`.** The pass calls `record_source_terms({…},
-  "gene_validity", spec_dir)` on every write (`gene_validity.py:521-526`), so a `clingen`/`gencc` row
+  "gene_validity", spec_dir)` on every write (`gene_validity.py`), so a `clingen`/`gencc` row
   appears in the ledger at layer `gene_validity`. Licence-wise it costs nothing: both are `CC0-1.0`,
-  `commercial_use=True`, `redistribution=True`, `share_alike=False` (`enricher/…/licensing.py:183-195`),
+  `commercial_use=True`, `redistribution=True`, `share_alike=False` (`enricher/…/licensing.py`),
   and `gene_validity` is not the `annotation` layer, so neither can taint. **GenCC's attribution
   deliberately names the contributing sources as well as the aggregator** — "crediting only the
   aggregator credits nobody who did the work" (`docs/ENRICHER.md:1583-1586`).
@@ -181,16 +191,16 @@ that the closure cannot be carried and the recompiled manifest has no `verificat
   1 source(s) the module's fact tables cite: ['manual'] — their terms are unrecorded."` — warning,
   not error.
 - **`variants.csv` gene symbols must be current HGNC names or you get nothing.** Both submitters are
-  matched on the literal string (`by_gene.get(gene, [])`, `gene_validity.py:461`). Run
+  matched on the literal string (`by_gene.get(gene, [])`, `gene_validity.py`). Run
   `check_identifiers` (`gene_symbol_currency`) *before* this pass, not after.
 
 ## The columns that carry judgement
 
 - **`classification`** — the whole point of the table, and **a fact, never this workspace's
-  opinion**. Nine members (`vocab.VALID_GENE_VALIDITY`, `vocab.py:442`), normalized from the
+  opinion**. Nine members (`vocab.VALID_GENE_VALIDITY`, `vocab.py`), normalized from the
   submitter's own wording at the enricher boundary. **Only four of them are on a ladder**:
   `vocab.ORDERED_GENE_VALIDITY` is `("limited", "moderate", "strong", "definitive")` and deliberately
-  holds nothing else (`vocab.py:463`). `disputed` / `refuted` / `no_known_disease_relationship` are
+  holds nothing else (`vocab.py`). `disputed` / `refuted` / `no_known_disease_relationship` are
   **the opposite claim, not low rungs** — "putting `refuted` at position zero would read as 'the
   weakest evidence for', which inverts it". `supportive` is an assertion made *off* the ladder
   (GenCC-only, 5,274 of 30,410 submissions on 2026-08-13, mostly Orphanet's).
@@ -198,34 +208,34 @@ that the closure cannot be carried and the recompiled manifest has no `verificat
   a classification ClinGen's own SOP defines and P3 makes its later absence a one-way door.
 - **An empty `classification` is an ungraded assertion, not a negative verdict.** "A submitter can
   assert an association without grading it; the cell is then empty… It is not the same as
-  `no_known_disease_relationship`, which is a graded verdict *against*" (`gene_validity.py:31-33`).
+  `no_known_disease_relationship`, which is a graded verdict *against*" (`gene_validity.py`).
   Three-valued, and the two "no" states are different: blank = nobody graded it; `refuted` /
   `no_known_disease_relationship` = somebody graded it and said no. Measured: blanking the cell
   passes validate and compile silently.
 - **`moi`** — **part of the key, not decoration.** 59 (gene, disease) pairs in the 2026-08-13 ClinGen
   release carry two rows differing only here; `(gene, disease, moi)` has zero collisions
-  (`gene_validity.py:19-21`). `undetermined` is a **stated** finding — ClinGen's `UD`, GenCC's
+  (`gene_validity.py`). `undetermined` is a **stated** finding — ClinGen's `UD`, GenCC's
   `Unknown`, an expert panel having looked and not settled it — while an empty cell means the source
-  has no such concept (`vocab.py:478-480`).
+  has no such concept (`vocab.py`).
 - **`classification_raw`** — the submitter's verbatim wording, "kept so the mapping stays auditable
   and a term this release does not model is still visible". Same role `clin_sig_raw` plays. **Blank
   `classification` + non-blank `classification_raw` means the release could not interpret the
   wording** — read the pair together, never `classification` alone.
 - **`submitter`** — on ClinGen this is the **GCEP**, not the word "ClinGen": "a module reading this
   column wants to know which expert panel ruled, and every row here would otherwise say the same
-  word" (`gene_validity.py:293-295`). On GenCC it is the contributing laboratory, and half the row's
+  word" (`gene_validity.py`). On GenCC it is the contributing laboratory, and half the row's
   identity.
 - **`dataset`** — which release the assertion is from, **inside the fact set** for that reason.
   `clingen_gene_validity_2026-08-13` comes from ClinGen's own `FILE CREATED:` line, the only version
   that file carries; GenCC publishes no release identifier at all, so the label is the latest
-  `submitted_run_date` in the export, or `unknown` (`gene_validity.py:319-324`). Never "tidy" it.
+  `submitted_run_date` in the export, or `unknown` (`gene_validity.py`). Never "tidy" it.
 - **`disease_id` vs `disease_label`** — the CURIE is the identity, stored **verbatim** ("rewriting one
   across ontologies is a claim this tier cannot make"); the label is descriptive, never a join key,
   and outside the fact hash because "one real export carries **MONDO:0017146** under two labels at
-  once", one of them prefixed `obsolete` (`gene_validity.py:58-66`). **Never key or dedup on it.**
+  once", one of them prefixed `obsolete` (`gene_validity.py`). **Never key or dedup on it.**
 - **`assertion_id`** — the source's own stable id, and the *only* thing the merge keys on when
   present. ClinGen publishes it only inside the report URL and it is read from there, never
-  synthesised (`_clingen_assertion_id`, `gene_validity.py:303-313`); GenCC's is a uuid.
+  synthesised (`_clingen_assertion_id`, `gene_validity.py`); GenCC's is a uuid.
 - **`classification_date` vs `fetched_at`** — when the panel ruled, versus when a pass last wrote the
   row. Both go through `normalize_utc_timestamp` because ClinGen writes `2024-03-14T16:00:00.000Z`
   and GenCC writes `2018-03-30 13:31:56`, and "two spellings of one instant in one column would hash
@@ -240,7 +250,7 @@ Ordered by how likely a first-timer is to hit it.
 ### 1 — There is no route to this table from the authoring plugin. It is CLI-only
 
 `just_module_creator.tools.passes._FACT_PASSES` is `("frequencies", "gene_metrics", "dosage")`
-(`src/just_module_creator/tools/passes.py:93`), so `enrich_facts` cannot run this pass, and
+(`src/just_module_creator/tools/passes.py`), so `enrich_facts` cannot run this pass, and
 `describe_table` / `table_requirements` / `get_template` / `lint_rows` all refuse the table because
 they gate on `draft.DRAFTABLE`. `skills/module-101/references/CLI.md:34` already states the
 consequence — `gene-validity` is listed under "**fact tables from ClinGen / ClinVar / GWAS
@@ -262,13 +272,13 @@ was meant to *correct* a row silently becomes a second contradicting row if you 
 ### 3 — A gene with no row is **unchecked**, not "no association", and `strict` will refuse over it
 
 "A gene the submitter has not curated gets no row", reported in `result.missing`
-(`gene_validity.py:406-410`): "a curating body's silence means nobody has assessed the gene yet,
+(`gene_validity.py`): "a curating body's silence means nobody has assessed the gene yet,
 which is not a fact about the gene, and writing a `not_found` row would state one." This is the
 opposite of the ClinVar assertions pass, which *does* write an absence, "because ClinVar covers the
 genome" (`docs/ENRICHER.md:1574-1577`). Two consequences a first-timer gets backwards: **never read
 an absent gene as an absent association**, and **do not reach for `--strict`** — both submitters
 curate a subset by design, so the strict refusal names a condition that is usually correct
-(`gene_validity.py:509-514`). Also note `covered`/`missing` are counted **per gene**, while the
+(`gene_validity.py`). Also note `covered`/`missing` are counted **per gene**, while the
 table's grain is per assertion; a gene with one `refuted` row counts as covered.
 
 ### 4 — The canary fires on every release refresh, because `dataset` is inside the fact set
@@ -285,7 +295,7 @@ and correct as a *has-this-been-refreshed* signal; it is just not the signal §5
 
 Measured: write a row, hand-edit `source` to `manual`, re-run the pass with the same export. The file
 comes back with **one** row still saying `manual` — the merge keys on `assertion_id`
-(`_merge_key`, `gene_validity.py:546-556`), so the ClinGen row is recognised as already present and
+(`_merge_key`, `gene_validity.py`), so the ClinGen row is recognised as already present and
 is not re-added. This is the opposite of `gene_metrics.csv`, whose fetch-suppression key is
 `source`-dependent and duplicates the row. What it costs is the ledger: `record_source_terms` is
 called with `{"manual"}`, `licensing.csv` gains nothing, and the compile emits
@@ -305,7 +315,7 @@ file came back with **both**, and `manifest.gene_validity.classifications` would
 candidate**, and it is the same shape as the ClinVar drafter's `S45`, which upstream fixed in
 enricher 0.6.4 by naming the superseded rows and deleting nothing (`clinvar_draft._superseded_rsid_rows`);
 this pass has no equivalent. The enricher's own merge test only re-runs the *identical* export
-(`enricher/tests/test_gene_validity.py:247-257`), so it cannot see this.
+(`enricher/tests/test_gene_validity.py`), so it cannot see this.
 
 > 🚧 **ROADWORKS — re-curation duplicates, and the manifest can publish two contradictory grades.**
 > **Current state.** Independently reproduced against enricher 0.6.4: a second export of the same
@@ -324,7 +334,7 @@ this pass has no equivalent. The enricher's own merge test only re-runs the *ide
 
 The vocabularies are mapped at the enricher boundary and never stored verbatim, so the file holds
 `autosomal_recessive`, not ClinGen's `AR`, and `disputed`, not GenCC's `Disputed Evidence`
-(`CLASSIFICATION_BY_WORDING` / `INHERITANCE_BY_WORDING`, `gene_validity.py:79-128`). Measured: `AR`
+(`CLASSIFICATION_BY_WORDING` / `INHERITANCE_BY_WORDING`, `gene_validity.py`). Measured: `AR`
 in `moi` is a **hard error** at both validate and compile, naming the nine legal members; so is
 `very-definitive` in `classification`; so is any extra column (`Extra inputs are not permitted`).
 A blank `dataset` is also an error, reported as `"Input should be a valid string"` rather than by
@@ -334,7 +344,7 @@ blank CSV cell arrives as `None` against a required `str`.
 ### 8 — `--offline` is a **no-op with a warning**, never a failure
 
 Neither submitter publishes a snapshot ("ClinGen's file is ~1 MB, GenCC's ~28 MB — small enough to
-fetch whole and too incidental to publish a snapshot for", `gene_validity.py:24-26`), so an offline
+fetch whole and too incidental to publish a snapshot for", `gene_validity.py`), so an offline
 run returns `GeneValidityResult(rows=[], skipped_offline=True)` and the CLI prints
 `skipped: --offline`. An injected `export_text=` still wins, "because handing over bytes you already
 hold is not egress". Cost: a pipeline that treats exit 0 as "the table was produced" ships a module
@@ -343,17 +353,17 @@ with no `gene_validity.csv` and no error anywhere. Branch on `skipped_offline`.
 ### 9 — An unmodelled wording costs a **cell**, reported once per run on stderr
 
 A classification or MOI wording the maps do not know, or a curation date that will not parse, leaves
-that cell empty and keeps the assertion (`gene_validity.py:176-186`). The report is one aggregated
+that cell empty and keeps the assertion (`gene_validity.py`). The report is one aggregated
 `logger.warning` naming the distinct values with a count — "not one per row: at 30,410 GenCC
 submissions one unknown wording would otherwise print thousands of lines saying one thing"
-(`gene_validity.py:491-500`). Cost: on a GenCC run the most important diagnostic is one stderr line
+(`gene_validity.py`). Cost: on a GenCC run the most important diagnostic is one stderr line
 you will scroll past, and nothing in the CSV, manifest or parquet records that it happened;
 `classification_raw` is the only surviving trace, and only for classifications.
 
 ### 10 — The orphan check is one-way and warning-only
 
 `_cross_check_gene_validity` warns when a row names a gene `variants.csv` never mentions
-(`compiler.py:5733-5753`). Measured on `hboc_palb2` with a BRCA1 row added:
+(`compiler.py`). Measured on `hboc_palb2` with a BRCA1 row added:
 `"gene_validity.csv names 1 gene(s) this module never mentions: ['BRCA1']"` — warning, compile
 succeeds. **There is no check in the other direction**, and the check is skipped entirely when
 `variants.csv` has no rows or no gene cells.
@@ -369,27 +379,27 @@ and an rsID-only variant of it). Bucket counts against the ERA NOTE: **era gap 2
 have had it; `just-dna-lite/data/interim/v1_port/*/manifest.json` honestly records
 `"gene_validity": null`, and the registry projects that as `has_gene_validity = 0` rather than
 "unknown" — deliberately, because "the table did not exist to be omitted"
-(`just-dna-registry/src/just_dna_registry/db/facets.py:206-209`).
+(`just-dna-registry/src/just_dna_registry/db/facets.py`).
 
 ## What does not exist
 
 - **No `gene_disease_validity` verification record, ever, from this pass.** The vocabulary member
-  exists and is RESERVED; wiring it here was proposed and **refused** with a reason (`vocab.py:708-711`,
+  exists and is RESERVED; wiring it here was proposed and **refused** with a reason (`vocab.py`,
   `docs/ROADMAP_0_7.md:713-718`). Do not read its absence in `verification.json` as a gap.
 - **No HPO route.** `VALID_VALIDITY_SOURCES` is `{clingen, gencc}` and an unknown `--source` refuses
-  by name (`gene_validity.py:417-422`). Two reasons, both established by probe: HPO's declared licence
+  by name (`gene_validity.py`). Two reasons, both established by probe: HPO's declared licence
   URL `https://hpo.jax.org/app/license` **answers HTTP 404** with a JavaScript shell and OBO Foundry
   records the licence as a bare label with no SPDX id, so "an unestablished permission is not a
   permission"; and separately `genes_to_phenotype.txt` is a different grain, while
   `genes_to_disease.txt`'s `association_type` (MENDELIAN/POLYGENIC/UNKNOWN, 8,288 of 15,944 rows
   UNKNOWN) is "a **mechanism class, not an evidence grade**" that would overload the axis
-  (`gene_validity.py:28-36`, `docs/ENRICHER.md:1588-1599`). **The row shape fits; the link does not.**
+  (`gene_validity.py`, `docs/ENRICHER.md:1588-1599`). **The row shape fits; the link does not.**
 - **No integer `classification` and no numeric strength column.** `ORDERED_GENE_VALIDITY` is a
   published tuple instead, on "the ClinGen-dosage reason inverted: those codes look ordered and are
   not, so they had to be decoded; these are ordered, so the order is published rather than left for
-  each consumer to hardcode" (`vocab.py:456-462`). Read the tuple; never hardcode a rank. The
+  each consumer to hardcode" (`vocab.py`). Read the tuple; never hardcode a rank. The
   manifest's `classifications` is likewise a sorted **set**, "so this block does not encode a second
-  copy of [the ladder] that could drift" (`compiler.py:4740-4743`).
+  copy of [the ladder] that could drift" (`compiler.py`).
 - **No superseded / current flag, and no per-assertion currency.** See Gotcha 6.
 - **No duplicate-key check, no per-column check, no arithmetic check.** The compiler's only test of
   this table is the gene-symbol orphan warning.
@@ -406,17 +416,17 @@ have had it; `just-dna-lite/data/interim/v1_port/*/manifest.json` honestly recor
 
 | Where | What it does |
 |---|---|
-| `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/v1_port/publish.py:36-39` | derives the upload allowlist from `ARTIFACT_PARQUETS`, so `gene_validity.parquet` is *sent*. A comment, not a read: "0.6 added three (`gene_validity`, `clinical_assertions`, `gwas_effects`) and this list named none of them" |
-| `just-dna-lite/just-dna-pipelines/tests/test_format_0_6.py:85-90` | asserts the allowlist covers `gene_validity.parquet` by name. A publish-completeness test; reads no column |
-| `just-dna-lite/webui/src/webui/state.py:5997-6007` | imports `ARTIFACT_PARQUETS` so the client-side digest covers `gene_validity.parquet` **as bytes**. Identity only |
-| `just-dna-lite/…/annotation/hf_modules.py:36,39-64,206-241` | discovery/download builds URLs for the lead table + `annotations`/`studies`/`sources` only. `MODULE_TABLES` is a four-item list and `ModuleInfo` has **no `gene_validity_url`** — a module installed from HuggingFace may not carry the file locally at all |
+| `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/v1_port/publish.py` | derives the upload allowlist from `ARTIFACT_PARQUETS`, so `gene_validity.parquet` is *sent*. A comment, not a read: "0.6 added three (`gene_validity`, `clinical_assertions`, `gwas_effects`) and this list named none of them" |
+| `just-dna-lite/just-dna-pipelines/tests/test_format_0_6.py` | asserts the allowlist covers `gene_validity.parquet` by name. A publish-completeness test; reads no column |
+| `just-dna-lite/webui/src/webui/state.py` | imports `ARTIFACT_PARQUETS` so the client-side digest covers `gene_validity.parquet` **as bytes**. Identity only |
+| `just-dna-lite/…/annotation/hf_modules.py,39-64,206-241` | discovery/download builds URLs for the lead table + `annotations`/`studies`/`sources` only. `MODULE_TABLES` is a four-item list and `ModuleInfo` has **no `gene_validity_url`** — a module installed from HuggingFace may not carry the file locally at all |
 | `just-dna-lite/data/interim/v1_port/*/manifest.json:530` | `"gene_validity": null` on the ported v1 modules. An era gap, not a read |
-| `just-dna-registry/src/just_dna_registry/specfiles.py:97-105` | `FACT_CSVS` — what `revalidate`/`upgrade` rebuild a spec directory from. Missing here would mean silently dropped on re-publish, "precisely how `licensing.csv` was lost" |
-| `…/services/upgrade.py:168` | maps `gene_validity.csv` → `GeneValidityRow` to find and **lossily trim** columns a newer model rejects |
-| `…/db/facets.py:209`, `db/schema.py:284`, `db/repository.py:948,1017-1030`, `api/routers/modules.py:87-89`, `client.py:313,340` | one boolean, `has_gene_validity = int(manifest.gene_validity is not None)`, filterable in catalog search and scoped to the module's **current** version. Tri-state as a parameter: omitted ≠ `false` |
-| `…/services/catalog.py:170`, `models/api.py:231` | the module card's `FactTablesInfo.gene_validity` — the same boolean, read from the manifest rather than the projected column "so card and filter cannot disagree" |
-| `…/services/catalog.py:341-362` | `ModuleDetail` inlines the whole `latest_manifest`, so a client *can* reach `gene_validity.diseases`/`.classifications`/`.submitters` — but there is **no projection for it**, unlike `verification`, `weighting` and `gwas_effects`, which each get one |
-| `…/services/enrich.py`, `api/routers/publish.py:440-446` | the `/check` preflight has legs for frequencies, literature, identifiers, ACMG and PGx. **No gene-validity leg**, and publish never runs the pass |
+| `just-dna-registry/src/just_dna_registry/specfiles.py` | `FACT_CSVS` — what `revalidate`/`upgrade` rebuild a spec directory from. Missing here would mean silently dropped on re-publish, "precisely how `licensing.csv` was lost" |
+| `…/services/upgrade.py` | maps `gene_validity.csv` → `GeneValidityRow` to find and **lossily trim** columns a newer model rejects |
+| `…/db/facets.py`, `db/schema.py`, `db/repository.py,1017-1030`, `api/routers/modules.py`, `client.py,340` | one boolean, `has_gene_validity = int(manifest.gene_validity is not None)`, filterable in catalog search and scoped to the module's **current** version. Tri-state as a parameter: omitted ≠ `false` |
+| `…/services/catalog.py`, `models/api.py` | the module card's `FactTablesInfo.gene_validity` — the same boolean, read from the manifest rather than the projected column "so card and filter cannot disagree" |
+| `…/services/catalog.py` | `ModuleDetail` inlines the whole `latest_manifest`, so a client *can* reach `gene_validity.diseases`/`.classifications`/`.submitters` — but there is **no projection for it**, unlike `verification`, `weighting` and `gwas_effects`, which each get one |
+| `…/services/enrich.py`, `api/routers/publish.py` | the `/check` preflight has legs for frequencies, literature, identifiers, ACMG and PGx. **No gene-validity leg**, and publish never runs the pass |
 | `just-prs`, `just-prs-mcp` | **nothing.** No match for `gene_validity`, `GeneValidity` or `gene-validity` anywhere in either repo |
 
 So: the registry knows *whether* a module has validity assertions and ships the parquet intact;
@@ -435,22 +445,22 @@ annotation half of `just-dna-lite` cannot even locate the file.
   (gene, disease) plus its submitter and date; sort with `vocab.ORDERED_GENE_VALIDITY` and render the
   three negative members as a *caveat*, never as a low rank.
 - **`ModuleInfo` has no `gene_validity_url`, so a consumer cannot read the table even if it wanted
-  to.** `MODULE_TABLES = ["annotations", "studies", "weights", "sources"]` (`hf_modules.py:36`) and
+  to.** `MODULE_TABLES = ["annotations", "studies", "weights", "sources"]` (`hf_modules.py`) and
   `ModuleInfo` carries five URLs, none a fact sidecar; `get_module_table_url` falls through to a bare
   `f"{info.path}/{table_name}.parquet"` guess. **Ask:** add `gene_validity_url` (with the other five
   fact sidecars) to `ModuleInfo`, gated on `manifest.artifact.files` rather than probed.
 - **The registry indexes genes and categories but not diseases, while `manifest.gene_validity.diseases`
   exists precisely to be indexed.** Its own field description says so: "Sorted disease CURIEs asserted
   against, so a catalog can index a module by condition without opening the parquet"
-  (`manifest.py:412-418`). There is a `version_genes` table and a `version_categories` table
-  (`db/repository.py:1003-1016`) and no `version_diseases`. What breaks today: "find me modules about
+  (`manifest.py`). There is a `version_genes` table and a `version_categories` table
+  (`db/repository.py`) and no `version_diseases`. What breaks today: "find me modules about
   MONDO:0012565" is unanswerable, and `has_gene_validity=true` is the only validity-aware query in the
   API. **Ask:** project `manifest.gene_validity.diseases` into a `version_diseases` index and add a
   `disease=` filter beside `gene=`.
 - **`ModuleDetail` projects `verification`, `weighting` and `gwas_effects` and not `gene_validity`,
   so the card surface reduces the richest fact block to one boolean.** `classifications`,
   `submitters` and `diseases` all reach `latest_manifest` and none reaches a typed projection
-  (`services/catalog.py:354-362`). **Ask:** add a `GeneValidityInfo` projection carrying
+  (`services/catalog.py`). **Ask:** add a `GeneValidityInfo` projection carrying
   `classifications`, `submitters`, `diseases` and `datasets`, with the same "read it as a set, not a
   verdict" note the manifest field already carries.
 - **Nobody reads `dataset` or `classification_date`, so no consumer can say how old a verdict is —
