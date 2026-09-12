@@ -329,6 +329,23 @@ def offline_settings(**overrides) -> Settings:
     return Settings(offline=True, _env_file=None, **overrides)  # type: ignore[call-arg]
 
 
+def routed_settings(**overrides) -> Settings:
+    """Hermetic settings with the offline ceiling **up**, for a stubbed egress route.
+
+    `offline_settings` is the default and stays that way. This exists for the handful of
+    tests that monkeypatch `client_for` and then exercise what the route *does* — the
+    tools that leave this machine refuse under `JMC_OFFLINE` before they reach the stub,
+    so asserting on their behaviour needs the ceiling down and the socket closed by the
+    stub instead.
+
+    It is not a hole in the suite's socket ceiling: nothing here resolves a real client.
+    A test that forgets the stub fails on a connection rather than passing quietly, and
+    `_hermetic_configuration` still clears the ecosystem's variables either way.
+    """
+    overrides.setdefault("api_key", None)
+    return Settings(offline=False, _env_file=None, **overrides)  # type: ignore[call-arg]
+
+
 @pytest.fixture
 async def client():
     """The whole tool surface. There is one — the mode axis went in 0.21.0."""

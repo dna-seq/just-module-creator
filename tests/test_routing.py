@@ -19,7 +19,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from conftest import offline_settings
+from conftest import offline_settings, routed_settings
+from fastmcp.exceptions import ToolError
 
 from just_module_creator import routing
 from just_module_creator.settings import Settings
@@ -272,6 +273,44 @@ async def test_registry_caches_reports_every_lane_and_requires_a_target(make_cli
     assert report.remote_count is None
     assert all(row.remote is None for row in report.lanes)
     assert report.snapshot_route in ("auto", "local", "registry")
+    # And the REASON is the ceiling rather than the client. This assertion is what the
+    # three above were missing: until registry 0.25.2 reached PyPI, `proxy_gap()`
+    # refused before the instance was ever asked, so the nulls above held by accident
+    # and the tool made a live `cache_status` call the moment the capability arrived.
+    assert "offline" in report.note.lower(), (
+        "the null far side must be explained by the offline ceiling, not left to a "
+        "missing client method — see the note in registry_caches"
+    )
+
+
+async def test_the_offline_ceiling_outranks_the_proxy_on_every_route_that_leaves(
+    make_client, tmp_path
+):
+    """`JMC_OFFLINE` is a ceiling over the proxy too, and it was not until 0.35.0.
+
+    All three proxy tools gated on `proxy_gap()` alone. That held the ceiling only
+    while the installed client *could not* proxy — so adopting registry 0.25.2 turned
+    a read and two writes into live requests under a flag that forbids egress. The
+    reads answer locally and say why; the two writes refuse, because there is no local
+    answer to give.
+    """
+    spec_dir = tmp_path / "spec"
+    spec_dir.mkdir()
+    async with make_client(offline_settings()) as client:
+        caches = (await client.call_tool("registry_caches", {"target": "test"})).data
+        assert caches.remote_count is None, "asking an instance is egress"
+
+        for tool, args in (
+            ("remote_derive", {"spec_dir": str(spec_dir), "namespace": "n", "name": "m"}),
+            ("remote_draft", {"spec_dir": str(spec_dir), "source": "clinvar"}),
+        ):
+            with pytest.raises(ToolError) as caught:
+                await client.call_tool(tool, {**args, "target": "test"})
+            message = str(caught.value)
+            assert "JMC_OFFLINE" in message, tool
+            assert "egress" in message, tool
+            # A refusal that routes somewhere is the house style: never a bare no.
+            assert "registry_caches" in message, tool
 
 
 async def test_registry_caches_says_what_neither_side_holds(make_client):
@@ -478,7 +517,7 @@ async def test_a_table_the_run_could_not_produce_reaches_the_caller_as_a_questio
 
     monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Stub())
 
-    async with make_client(offline_settings(workspace=str(tmp_path))) as client:
+    async with make_client(routed_settings(workspace=str(tmp_path))) as client:
         result = await client.call_tool(
             "remote_derive",
             {"spec_dir": str(tmp_path), "namespace": "test-sheep", "name": "test_lactose"},
@@ -625,7 +664,7 @@ async def test_remote_derive_writes_over_the_deprecated_spelling_not_beside_it(
 
     monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Stub())
 
-    async with make_client(offline_settings(workspace=str(tmp_path))) as client:
+    async with make_client(routed_settings(workspace=str(tmp_path))) as client:
         result = await client.call_tool(
             "remote_derive",
             {
@@ -1127,7 +1166,7 @@ async def test_remote_draft_refuses_a_stray_parameter_rather_than_dropping_it(
     monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Fussy())
     (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
 
-    async with make_client(offline_settings()) as client:
+    async with make_client(routed_settings()) as client:
         result = await client.call_tool(
             "remote_draft",
             {
@@ -1161,7 +1200,7 @@ async def test_remote_draft_names_the_lane_a_deployment_lacks(
     monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Unprovisioned())
     (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
 
-    async with make_client(offline_settings()) as client:
+    async with make_client(routed_settings()) as client:
         result = await client.call_tool(
             "remote_draft",
             {"spec_dir": str(tmp_path), "source": "civic"},
@@ -1202,7 +1241,7 @@ async def test_a_draft_archive_writes_only_recognised_spec_files(
     monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Stub())
     (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
 
-    async with make_client(offline_settings()) as client:
+    async with make_client(routed_settings()) as client:
         result = await client.call_tool(
             "remote_draft",
             {"spec_dir": str(tmp_path), "source": "clinvar", "dry_run": False},
@@ -1234,7 +1273,7 @@ async def test_an_archive_with_no_report_counts_zero_and_says_it_did_not_describ
     monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Terse())
     (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
 
-    async with make_client(offline_settings()) as client:
+    async with make_client(routed_settings()) as client:
         result = await client.call_tool(
             "remote_draft", {"spec_dir": str(tmp_path), "source": "clinvar"}
         )

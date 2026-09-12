@@ -918,29 +918,22 @@ wheels = [
 [[package]]
 name = "just-dna-compiler"
 version = "0.7.0"
-source = { editable = "../just-dna-format/compiler" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "just-dna-format" },
     { name = "polars" },
     { name = "pyyaml" },
     { name = "typer" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "just-dna-format", editable = "../just-dna-format/schema" },
-    { name = "polars", specifier = ">=1.42.0" },
-    { name = "pyyaml", specifier = ">=6.0.2" },
-    { name = "typer", specifier = ">=0.12.0" },
+sdist = { url = "https://files.pythonhosted.org/packages/b2/35/fa361122e39f25fe9ceed9f6520fef94bbabaaf8ae8e9daeafd478c67aaf/just_dna_compiler-0.7.0.tar.gz", hash = "sha256:630e05fa7ea3dd14540eab2cda3291968364c050ebec4e9a3203190862809108", size = 222552, upload-time = "2026-09-12T15:49:54.962Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/76/c0/d0d7706113f4a3ce7f2ba0d00a071275cd5fe4608218c82d467ef6b172d7/just_dna_compiler-0.7.0-py3-none-any.whl", hash = "sha256:8c299950d611643501283374bbdba01f80f9ce67b98eb057b6818016fd583069", size = 229675, upload-time = "2026-09-12T15:49:59.845Z" },
 ]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=9.0.3" }]
 
 [[package]]
 name = "just-dna-enricher"
 version = "0.7.0"
-source = { editable = "../just-dna-format/enricher" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "duckdb" },
     { name = "ga4gh-vrs" },
@@ -953,6 +946,10 @@ dependencies = [
     { name = "tenacity" },
     { name = "typer" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/39/c9/c5ea6326c613b2001542ce788f3d009d988a296efc38510309c06cdfc469/just_dna_enricher-0.7.0.tar.gz", hash = "sha256:c105a6c64a41458cfc6a3c67adb8a9b4f7793a4152a364dc2037f930f7873b2b", size = 789505, upload-time = "2026-09-12T15:49:58.751Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ac/00/9357dc12ce4cdcc87f18eabc270bd8c54ae6bf68fe2349aa3c4055355b99/just_dna_enricher-0.7.0-py3-none-any.whl", hash = "sha256:ea841b134e324ad3ce0cab289dfd5ad009918d88617cf6a4c605ba90025e8383", size = 874995, upload-time = "2026-09-12T15:49:56.708Z" },
+]
 
 [package.optional-dependencies]
 atlas = [
@@ -960,89 +957,32 @@ atlas = [
     { name = "protobuf" },
 ]
 
-[package.metadata]
-requires-dist = [
-    { name = "duckdb", specifier = ">=1.1.0" },
-    { name = "ga4gh-vrs", specifier = ">=2.3.3" },
-    { name = "grpcio", marker = "extra == 'atlas'", specifier = ">=1.68.0" },
-    { name = "grpcio-tools", marker = "extra == 'dev'", specifier = ">=1.68.0" },
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "huggingface-hub", specifier = ">=0.34.0" },
-    { name = "just-dna-compiler", editable = "../just-dna-format/compiler" },
-    { name = "just-dna-format", editable = "../just-dna-format/schema" },
-    { name = "openpyxl", marker = "extra == 'dev'", specifier = ">=3.1.5" },
-    { name = "platformdirs", specifier = ">=4.0.0" },
-    { name = "polars", marker = "extra == 'dev'", specifier = ">=1.42.0" },
-    { name = "protobuf", marker = "extra == 'atlas'", specifier = ">=5.29.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.3" },
-    { name = "python-dotenv", specifier = ">=1.0.1" },
-    { name = "tenacity", specifier = ">=9.0.0" },
-    { name = "typer", specifier = ">=0.12.0" },
-]
-provides-extras = ["atlas", "dev"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "just-dna-enricher", extras = ["atlas"] },
-    { name = "just-dna-enricher", extras = ["dev"] },
-]
-
 [[package]]
 name = "just-dna-format"
 version = "0.7.0"
-source = { editable = "../just-dna-format/schema" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
     { name = "pydantic" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "cryptography", specifier = ">=44.0.0" },
-    { name = "pydantic", specifier = ">=2.12.5" },
+sdist = { url = "https://files.pythonhosted.org/packages/25/43/49c9ac8c1054a4d75fefbbc1d4da49bde348f98ff1d423c73f1315d5fe9b/just_dna_format-0.7.0.tar.gz", hash = "sha256:9a07bcfdc7d2d23405c88cf6a2a42a778275302036152d004cab8324e98043ed", size = 290522, upload-time = "2026-09-12T15:49:52.544Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e1/9b/1eceabe23d7798f56bf43ea9c330fd275291459fa085d71211aac1c6fcb3/just_dna_format-0.7.0-py3-none-any.whl", hash = "sha256:c7e417c321d4bae3e84e1deafc2d3363751b1c32f4fa1d6ecfd4bc6b16ba6df1", size = 319462, upload-time = "2026-09-12T15:49:53.816Z" },
 ]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=9.0.3" }]
 
 [[package]]
 name = "just-dna-registry"
-version = "0.25.0"
-source = { editable = "../just-dna-marketplace" }
+version = "0.25.2"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "just-dna-format" },
     { name = "python-dotenv" },
     { name = "typer" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "eliot", marker = "extra == 'server'", specifier = ">=1.17.5" },
-    { name = "fastapi", marker = "extra == 'server'", specifier = ">=0.139.0" },
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "huggingface-hub", marker = "extra == 'server'", specifier = ">=0.34.0" },
-    { name = "just-dna-compiler", marker = "extra == 'compiler'", specifier = ">=0.7.0" },
-    { name = "just-dna-compiler", marker = "extra == 'server'", specifier = ">=0.7.0" },
-    { name = "just-dna-enricher", marker = "extra == 'server'", specifier = ">=0.7.0" },
-    { name = "just-dna-format", specifier = ">=0.7.0" },
-    { name = "pydantic", marker = "extra == 'server'", specifier = ">=2.13.4" },
-    { name = "pydantic-settings", marker = "extra == 'server'", specifier = ">=2.7.0" },
-    { name = "pyjwt", marker = "extra == 'server'", specifier = ">=2.10.0" },
-    { name = "python-dotenv", specifier = ">=1.0.1" },
-    { name = "python-multipart", marker = "extra == 'server'", specifier = ">=0.0.9" },
-    { name = "pyyaml", marker = "extra == 'server'", specifier = ">=6.0.2" },
-    { name = "typer", specifier = ">=0.26.8" },
-    { name = "uvicorn", marker = "extra == 'server'", specifier = ">=0.34.0" },
-]
-provides-extras = ["compiler", "server"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "just-dna-registry", extras = ["server"] },
-    { name = "pytest", specifier = ">=9.0.3" },
-    { name = "pytest-asyncio", specifier = ">=1.4.0" },
-    { name = "ruff", specifier = ">=0.8.0" },
+sdist = { url = "https://files.pythonhosted.org/packages/a1/12/07c55cac20c2be4ab8184c0174c87c4c99f91c0cb64c8f71758a7f9f9d35/just_dna_registry-0.25.2.tar.gz", hash = "sha256:20163398dd9e9102f6181212a89ed15e828791631aa50a3a6544cf1acc9da71c", size = 343643, upload-time = "2026-09-12T19:24:05.084Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/96/34/e85ca5fd157028a251aec20c78d7b4fd1e1ca7c37c28832da822ac914323/just_dna_registry-0.25.2-py3-none-any.whl", hash = "sha256:6ecbbae8444656d0ba80c4b688dd613f0b4cdca3914ab44eceebedde9f35f45b", size = 370203, upload-time = "2026-09-12T19:24:03.499Z" },
 ]
 
 [[package]]
@@ -1082,10 +1022,10 @@ requires-dist = [
     { name = "anyio", specifier = ">=4" },
     { name = "fastmcp", extras = ["tasks"], specifier = ">=3.4.7" },
     { name = "httpx", specifier = ">=0.28" },
-    { name = "just-dna-compiler", editable = "../just-dna-format/compiler" },
-    { name = "just-dna-enricher", extras = ["atlas"], editable = "../just-dna-format/enricher" },
-    { name = "just-dna-format", editable = "../just-dna-format/schema" },
-    { name = "just-dna-registry", editable = "../just-dna-marketplace" },
+    { name = "just-dna-compiler", specifier = ">=0.7.0,<0.8" },
+    { name = "just-dna-enricher", extras = ["atlas"], specifier = ">=0.7.0,<0.8" },
+    { name = "just-dna-format", specifier = ">=0.7.0,<0.8" },
+    { name = "just-dna-registry", specifier = ">=0.25.2" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pydantic-settings", specifier = ">=2" },

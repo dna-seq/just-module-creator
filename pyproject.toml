@@ -17,53 +17,54 @@ dependencies = [
     "pydantic-settings>=2",
     "typer>=0.16",
     "anyio>=4",
-    # 0.6 is the first release where the three do NOT move in lockstep: format and
-    # compiler stop at 0.6.1 while the enricher takes patches on its own. Two things
-    # make the enricher floor the load-bearing one, and both fail silently below it:
-    # under 0.6.2 a pass raises its *client's* exception type rather than the type the
-    # pass documents, so `except FrequencyEnrichmentError` is dead; and under 0.6.3
-    # `multi_allelic_rsids` keys the site on `ref`, so an ordinary ClinVar dup/del
-    # mirror pair collapses onto one authored row and `draft_from_clinvar` drops the
-    # second record as `already_present` (upstream S41 — 725 records over five genes,
-    # 187 of them dropping the better-reviewed half). A drafter that quietly writes
-    # fewer rows than the source has is the worst kind of floor to leave soft.
-    # 0.6.4 carries the other half of that and is the real floor: re-drafting a
-    # pre-0.6.3 panel recovers the dropped records but cannot retract the collapsed
-    # rows, and below 0.6.4 nothing can find them. `_superseded_rsid_rows` is the only
-    # thing that sees the condition — it holds the rsIDs the run is deliberately
-    # writing by coordinate, which no file-level predicate can reconstruct, because a
-    # coordinate row carries no rsid (upstream S45, our F36).
+    # **The floor is 0.7.0 because the registry instances are, and that is the S20
+    # prediction arriving from the other side.** A registry serves ONE
+    # `just-dna-format` contract and refuses a client on a different `0.x` minor in
+    # EITHER direction. Measured 2026-09-03 with 0.7 installed against instances
+    # serving 0.6.1: `registry_check`, `registry_validate`, publish, download and
+    # import all returned `HTTP 409: just-dna-format contract mismatch`, while health,
+    # search, whoami and get_module answered normally — a partial outage rather than a
+    # version skew. Measured 2026-09-12, both instances now answer
+    # `/api/v1/version` with `format: 0.7.0` / `compiler: 0.7.0` / `registry: 0.25.2`,
+    # so the 409 now fires for a 0.6.6 client. The old floor became the broken end the
+    # day the deployment moved, which is why a floor bump is adoption here and not
+    # hygiene.
     #
-    # **The `<0.8` ceiling is the S20 decision, and it is about the registry rather
-    # than about us.** A registry serves ONE `just-dna-format` contract and refuses a
-    # client on a different `0.x` minor in either direction — measured 2026-09-03:
-    # with 0.7 installed against instances serving 0.6.1, `registry_check`,
-    # `registry_validate`, publish, download and import all return
-    # `HTTP 409: just-dna-format contract mismatch`, while health, search, whoami and
-    # get_module answer normally. Nothing here declared an upper bound, so the day 0.7
-    # reaches PyPI a clean `uv sync` would have resolved to it and taken the write
-    # surface off every install, with the reads still working so it reads as a partial
-    # outage rather than a version skew.
+    # **The `<0.8` ceiling is unchanged and is still the S20 decision.** It is about
+    # the registry rather than about us: a floor cannot express "one minor, both ends",
+    # so the upper bound is ours to hold whoever ships it. It costs the obvious thing
+    # and the cost is deliberate — 0.8 does not arrive here on its own, so adopting it
+    # is an explicit bump, run the same way this one was: read `/api/v1/version` off
+    # both instances first and move the floor to what they serve.
     #
-    # A ceiling turns that into the resolver holding the pair together, which is the
-    # failure a user can act on. **It costs the obvious thing and the cost is
-    # deliberate**: 0.8 does not arrive here on its own, so adopting it is an explicit
-    # bump — which is right, because the same 409 fires in the other direction the
-    # moment the instances move ahead of us. Asked upstream as registry-tree `S20`; the
-    # ceiling is ours either way, since a floor cannot express "one minor, both ends".
-    "just-dna-compiler>=0.6.6,<0.8",
-    "just-dna-format>=0.6.6,<0.8",
-    "just-dna-enricher[atlas]>=0.6.6,<0.8",
-    # 0.17.0 is the release that adopts format 0.6, and the floor has to move with ours:
-    # its client reads `just_dna_format.layout` and the new manifest blocks unguarded, so a
-    # 0.14 client beside a 0.6 format install is an AttributeError waiting inside a download.
-    # It also adds `unreachable` to every check pass, which is what separates "gnomAD was
-    # down" from "this module has no coverage" in a `registry_check` report.
-    # 0.18.0 and 0.18.1 both declare `Client surface: unchanged` and both check out, so
-    # nothing we call moved. The floor still goes to 0.18.1 because that release requires
-    # enricher 0.6.3 itself — pinning it here means a resolver cannot hand us the new
-    # enricher beside a registry built against the old one.
-    "just-dna-registry>=0.18.1",
+    #   curl -s https://module-registry.just-dna.life/api/v1/version
+    #   curl -s https://module-polygon.just-dna.life/api/v1/version
+    #
+    # The 0.6.x floor reasoning this replaces is not lost, only subsumed: 0.6.2's
+    # exception contract and 0.6.3/0.6.4's `multi_allelic_rsids` collapse (upstream
+    # S41/S45, our F36) are all below 0.7.0. `docs/CHANGELOG.md` at 0.16.0 carries it.
+    "just-dna-compiler>=0.7.0,<0.8",
+    "just-dna-format>=0.7.0,<0.8",
+    "just-dna-enricher[atlas]>=0.7.0,<0.8",
+    # 0.25.2 is the first PUBLISHED client carrying the whole caching-proxy surface —
+    # `cache_status`, `derived`, `draft`, the six `hint_*` methods and
+    # `models.api.VariantHintReport`. Verified against the wheel rather than a sibling
+    # checkout, which matters because seven of the nine landed on their client AFTER
+    # the tree was stamped 0.25.0, so a floor naming 0.25.0 would assert a surface it
+    # does not pin:
+    #
+    #   uv run --isolated --no-project --with 'just-dna-registry==0.25.2' python -c \
+    #     "from just_dna_registry.client import RegistryClient as C; \
+    #      import just_dna_registry.models.api as api; \
+    #      print([n for n in ('cache_status','derived','draft','hint_variant', \
+    #        'hint_variants','hint_citation','hint_gene','hint_trait', \
+    #        'hint_old_assembly') if not hasattr(C, n)], \
+    #        hasattr(api,'VariantHintReport'))"
+    #
+    # Run 2026-09-12: nothing missing, model present. That release declares
+    # `just-dna-format>=0.7.0` itself, so the two floors travel together by the
+    # resolver rather than by our remembering.
+    "just-dna-registry>=0.25.2",
     "python-dotenv>=1.2.2",
     # Declared, not leaned on transitively: net.py calls httpx directly for the
     # literature sources, and a transitive pin is not a contract.
@@ -103,28 +104,6 @@ build-backend = "uv_build"
 # after the project; the list is what ships both.
 [tool.uv.build-backend]
 module-name = ["just_module_creator", "manuscript"]
-
-# PREVIEW BRANCH ONLY — do not merge to main. The four just-dna packages are taken
-# from the sibling checkouts' unreleased branches rather than from PyPI, so this
-# tree is a preview build against releases that have not been cut: format,
-# compiler and enricher from `../just-dna-format`'s `0.7` branch, and the
-# registry from `../just-dna-marketplace`'s `format-0.7-adoption` branch, whose
-# 0.25.0 carries the caching-proxy surface (`/api/v1/caches`, `POST .../derived`,
-# `POST /drafts`, the six `/hint/*` routes) and declares `just-dna-format>=0.7.0`
-# itself, so the two overrides have to travel together.
-#
-# The floors above still say >=0.6.6 / >=0.18.1 deliberately: a source override is
-# not an adoption, and bumping a floor to an uncut version would publish a lie.
-# Every proxy tool on `main` is guarded by a capability probe against the
-# installed client instead, so the released plugin activates the thin path on the
-# day 0.25.0 reaches PyPI and refuses with a named reason until then.
-#
-# Reversal: delete this block and `uv sync`.
-[tool.uv.sources]
-just-dna-format = { path = "../just-dna-format/schema", editable = true }
-just-dna-compiler = { path = "../just-dna-format/compiler", editable = true }
-just-dna-enricher = { path = "../just-dna-format/enricher", editable = true }
-just-dna-registry = { path = "../just-dna-marketplace", editable = true }
 
 [dependency-groups]
 dev = [

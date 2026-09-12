@@ -60,7 +60,7 @@ from just_module_creator.models import (
 )
 from just_module_creator.settings import RegistryTarget, Settings
 from just_module_creator.targets import client_for, describe
-from just_module_creator.tools._shared import resolve_dir
+from just_module_creator.tools._shared import offline_for, resolve_dir
 from just_module_creator.tools.refresh import capture_dir, capture_now, finalize_capture
 
 log = get_logger()
@@ -395,9 +395,10 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         Costs one anonymous request and no credential.
         """
         gap = routing.proxy_gap()
+        offline = offline_for(settings, False)
         remote: Any | None = None
         reach_note = ""
-        if gap is None:
+        if gap is None and not offline:
             client = client_for(target, settings)
             try:
                 remote = await run_sync(client.cache_status)
@@ -426,7 +427,15 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
                 "which is not the same as none"
             )
         )
-        if gap:
+        if offline:
+            note = (
+                f"{here}. The offline ceiling is set, and asking an instance what it "
+                "holds is egress — so every `remote` reads null: the question was not "
+                "put, which is not the same as the registry holding nothing. Clear "
+                "`JMC_OFFLINE` to ask. `just-dna-enricher cache prepare` provisions "
+                "what this machine can have either way."
+            )
+        elif gap:
             note = f"{here}. The proxy is unavailable, so nothing can answer for the rest: {gap}"
         elif remote is None:
             note = f"{here}; {describe(target, settings)} was not reached.{reach_note}"
@@ -495,6 +504,18 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         verdict and this call is for the bytes. A spec too broken to enrich is a refusal
         here rather than an empty archive.
         """
+        if offline_for(settings, False):
+            raise ToolError(
+                "JMC_OFFLINE is set and this route is egress: "
+                "deriving a spec on a registry uploads every authored CSV, "
+                "`module_spec.yaml` and the `logs/` subtree to it, and downloads "
+                "the result. The offline ceiling is not "
+                "loosened by a per-call argument, so this run answers locally or not "
+                "at all — `enrich_module` and the `draft_from_*` tools work from this "
+                "machine's own snapshot lanes, and `registry_caches` says which it "
+                "holds."
+            )
+
         gap = routing.proxy_gap()
         if gap:
             raise ToolError(gap)
@@ -679,6 +700,17 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         wherever only a curator can decide, so `needs_curation` names the tables that
         actually hold one. Snapshot-only and so it makes no outbound request of its own.
         """
+        if offline_for(settings, False):
+            raise ToolError(
+                "JMC_OFFLINE is set and this route is egress: "
+                "drafting on a registry sends the request out and downloads rows "
+                "back. The offline ceiling is not "
+                "loosened by a per-call argument, so this run answers locally or not "
+                "at all — `enrich_module` and the `draft_from_*` tools work from this "
+                "machine's own snapshot lanes, and `registry_caches` says which it "
+                "holds."
+            )
+
         gap = routing.proxy_gap()
         if gap:
             raise ToolError(gap)
