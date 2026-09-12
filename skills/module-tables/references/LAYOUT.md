@@ -7,6 +7,12 @@
 > in `just_dna_format.layout`, `just_dna_registry.specfiles` and `just_dna_registry.client` — with
 > one docstring in that last file deliberately **not** used as a source, for the reason in
 > *Roadworks*, below.
+>
+> **Re-measured 2026-09-13 against the installed packages — format/compiler 0.7.0, registry 0.25.2 —
+> and the five roster sizes below are that measurement, not the 0.6.1 one this header opens with.**
+> Three of the five moved between registry 0.25.0 and 0.25.2, a patch release, so run the snippet
+> rather than reading the numbers. The prose around them is still 0.6.1-era and was not re-argued
+> sentence by sentence.
 
 ## The one idea to hold
 

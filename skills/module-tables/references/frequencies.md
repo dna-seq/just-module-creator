@@ -9,9 +9,11 @@
 >
 > **Upstream generates the schema half now, so do not read it here.** Every column, type,
 > requiredness, vocabulary and identity-card fact for this table is generated from the row model on
-> each docs build, at <https://just-dna.life/just-dna-compiler/tables/frequencies/>, with the authoring
-> prose upstream keeps in `docs/TABLES.md` spliced above it. In-session the same answer is live from
-> `describe_table("frequencies.csv")` and `table_requirements("frequencies.csv")`. **This file keeps the half a model
+> each docs build, at <https://just-dna.life/just-dna-compiler/tables/frequencies/>. Upstream's hand-written
+> `docs/TABLES.md` carries a section only for the authored kinds, so this page is generated facts
+> alone — the framing is here. In-session the same answer is live from
+> `describe_machine_table("frequencies.csv")` — **not** `describe_table`, which refuses every
+> machine-produced table. **This file keeps the half a model
 > cannot state**: who decides which cell, what an edit moves, and the symptom when the table lies.
 > Where the two disagree, the generated page and the tool are right and this file is the bug.
 >
