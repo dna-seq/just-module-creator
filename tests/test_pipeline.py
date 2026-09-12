@@ -8,7 +8,6 @@ cheap check that our compile wrapper is not quietly dropping authored content.
 from __future__ import annotations
 
 import pytest
-from conftest import needs_coded_warnings, needs_format_0_7
 from fastmcp.exceptions import ToolError
 
 
@@ -30,7 +29,6 @@ async def test_validate_passes_on_a_complete_spec(client, spec_dir):
     assert result.data.stats["module_name"] == "lactose_test"
 
 
-@needs_format_0_7
 async def test_strict_validate_agrees_with_strict_compile(client, spec_dir, tmp_path):
     """A pre-flight that blesses what the build refuses is worse than no pre-flight.
 
@@ -203,7 +201,6 @@ async def test_reverse_round_trip_preserves_the_content_signature(
 # --------------------------------------------------------------------------- #
 # The coded-warning channel (upstream RM131)
 # --------------------------------------------------------------------------- #
-@needs_coded_warnings
 async def test_a_compile_says_which_warnings_the_author_can_actually_clear(
     client, spec_dir, tmp_path
 ):
@@ -237,7 +234,6 @@ async def test_a_compile_says_which_warnings_the_author_can_actually_clear(
     assert set(data.carried) | set(data.actionable) == set(data.warnings)
 
 
-@needs_coded_warnings
 async def test_a_warning_of_ours_is_never_reported_as_upstreams_to_carry(
     client, spec_dir, tmp_path
 ):

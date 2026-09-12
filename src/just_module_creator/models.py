@@ -2752,27 +2752,21 @@ class CacheReport(BaseModel):
     lanes: list[LaneStatus] = Field(
         default_factory=list, description="Every lane, in the producer's registry order."
     )
-    local_count: int | None = Field(
-        default=None,
-        description="How many lanes this machine holds, or **null when the installed "
-        "enricher predates the lane registry** and the question cannot be put. Not zero.",
+    local_count: int = Field(
+        description="How many lanes this machine holds. Zero is a real answer: an "
+        "unprovisioned box holds none, and `registry_caches` is how you find that out."
     )
     remote_count: int | None = Field(
         default=None,
         description="How many the instance holds, or **null if it was not asked** — "
-        "which is not zero. Null whenever the instance could not be reached or its "
-        "client cannot proxy.",
+        "which is not zero. Null whenever the instance could not be reached, or when "
+        "`JMC_OFFLINE` is set, since asking an instance is egress.",
     )
     unreachable: list[str] = Field(
         default_factory=list,
         description="Lanes NEITHER side holds. These are the answers no route can "
         "produce from a snapshot: a tool needing one of them fetches live or reports "
         "that the question was not put.",
-    )
-    proxy_gap: str | None = Field(
-        default=None,
-        description="Null when the installed client can proxy. Otherwise the reason it "
-        "cannot, naming the release that would change it — nothing to configure.",
     )
     note: str = Field(description="What to do with this, in one or two sentences.")
 
@@ -2964,10 +2958,6 @@ class CachePlan(BaseModel):
     with room. **An offer is withheld rather than shrunk** when the cost cannot be stated.
     """
 
-    lanes_known: bool = Field(
-        description="False when the installed enricher predates the lane registry, in "
-        "which case nothing was measured — a different answer from there being no lanes.",
-    )
     cache_dir: str | None = Field(
         default=None,
         description="Where the lanes go, taken from each lane's own resolver rather than "

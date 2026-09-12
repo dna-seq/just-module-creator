@@ -34,56 +34,25 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from just_dna_registry import models as _registry_models
-from just_dna_registry.client import RegistryClient
+#: The enricher's own lane registry. Unconditional since 0.35.0: the floor is
+#: `just-dna-enricher>=0.7.0,<0.8` and the guard came out when the fact went
+#: unconditional rather than when the floor moved, which is a different claim and the
+#: one that matters. `caches` landed two days *after* the 0.7.0 stamp, so `>=0.7.0` did
+#: not buy it until there was a published wheel to check — verified against that wheel
+#: rather than a checkout, which is the only thing that says what users have:
+#:
+#:   uv run --isolated --no-project --with 'just-dna-enricher[atlas]==0.7.0' python -c \
+#:     "from just_dna_enricher.caches import CACHE_LANES; print(len(CACHE_LANES))"
+#:
+#: Run 2026-09-12, verbatim: `15`. `LANES_KNOWN` and every `None`-means-unasked branch
+#: below it went with the guard — `local_lane_presence` had exactly one way to be
+#: unanswerable and it no longer exists.
+from just_dna_enricher.caches import CACHE_LANES
 
 from just_module_creator.logging_setup import get_logger
 
 log = get_logger()
 
-#: The lane registry, and it is a **whole module** the installed 0.6.6 enricher does not
-#: have (upstream `RM176`). So this is the one exception `CLAUDE.md` § 2 grants — a
-#: guarded module-level import for a dependency that really is optional, and optional
-#: only for the length of this interval. An unguarded one does not fail as a missing
-#: attribute: it takes this module down, and with it the whole server, on every install
-#: that has not upgraded.
-#:
-#: **`()` here is not "no lanes". It is "cannot ask"**, and the difference reaches the
-#: wire — `local_lane_presence` returns `None` rather than an empty map, and
-#: `LaneStatus.local` is `bool | None` for the same reason. An enricher without the lane
-#: registry is the old world, where a pass looks where it looks and nothing can report on
-#: it; saying *this machine holds no snapshots* would be a measurement nobody took.
-#:
-#: **The condition to delete this guard is NOT "the floor moved to 0.7", and the note here
-#: said exactly that until it was measured.** `just_dna_enricher.caches` was added
-#: 2026-09-02, **two days after** the enricher was stamped `0.7.0` (2026-08-31) — so
-#: `just-dna-enricher>=0.7.0` is satisfied by an install that does not have this module,
-#: and there is no version to raise the floor to that would say otherwise. Delete the
-#: guard when the **floor in `pyproject.toml` names a published release that carries the
-#: module** — and remember what it costs to get wrong: an unguarded import of a whole
-#: absent module takes the server down at start-up rather than failing later as a missing
-#: attribute.
-#:
-#: **Phrased that way because the condition has to be one somebody can RUN**, or it is a
-#: schedule wearing different words. *"No install we support can be missing it"* reads
-#: crisp and rests on what users have, which is unanswerable from here; the floor is a
-#: declaration, so it is answerable — and this is the query, which needs no checkout and
-#: touches nothing installed:
-#:
-#:   uv run --isolated --no-project --with 'just-dna-enricher==0.6.6' python -c \
-#:     "import importlib.util as u; print(u.find_spec('just_dna_enricher.caches'))"
-#:
-#: Run 2026-09-11, verbatim: `None`. The guard stays. **The version is the floor spelled
-#: out rather than a `<placeholder>`** — read it off `pyproject.toml` and substitute when it
-#: moves, because a command that needs one edit before it runs is a command whose reader
-#: stops at the edit, which is the failure this whole note exists to avoid.
-try:
-    from just_dna_enricher.caches import CACHE_LANES
-except ImportError:  # pragma: no cover — only on a pre-0.7 enricher
-    CACHE_LANES = ()
-
-#: Whether local lane presence is answerable at all on this install.
-LANES_KNOWN = bool(CACHE_LANES)
 
 #: Where a snapshot-backed answer may come from. `auto` is per lane; the other two are
 #: overrides for a caller who knows better than the probe — a lane directory that exists
@@ -120,53 +89,53 @@ LANES_FOR: dict[str, tuple[str, ...]] = {
 }
 
 
-def local_lane_presence() -> dict[str, bool] | None:
-    """Which snapshot lanes this machine holds, or ``None`` when that cannot be asked.
+def local_lane_presence() -> dict[str, bool]:
+    """Which snapshot lanes this machine holds.
 
     `caches.CACHE_LANES` replaced a hand-kept list that had drifted three lanes behind
     reality (upstream RM176), so it is read rather than restated — and `lane.resolve()`
     is the same resolver the pass itself calls, so this cannot disagree with what a pass
     would find.
 
-    **`None` means the installed enricher predates the lane registry**, which is a
-    different fact from an empty map and must not be folded into it: a pass on that
-    toolchain still finds whatever it finds, and reporting *no snapshots* would be a
-    measurement nobody took. Same rule as `None`-is-not-`False`, one grain coarser.
+    **This used to be three-valued and no longer can be.** `None` meant *the installed
+    enricher predates the lane registry*, which the 0.7.0 floor makes impossible; every
+    caller's unasked branch went with it. The remaining states are both real answers, so
+    an empty map here means *this machine holds nothing*, which it is entitled to say.
 
-    **Two-valued here and three-valued on the server, and the difference is real.** The
+    **Two-valued here and three-valued on the server, and that difference stands.** The
     registry's `/caches` reports `partial` for a directory holding something that is not
     a readable snapshot, because provisioning *refuses* to act on that rather than
     overwriting. `resolve()` gives us present-or-not, so a half-downloaded lane reads as
     present and then fails in the pass. `JMC_SNAPSHOT_ROUTE=registry` is the override for
     exactly that case, which is why it exists.
     """
-    if not LANES_KNOWN:
-        return None
     return {lane.name: lane.resolve() is not None for lane in CACHE_LANES}
 
 
-#: The proxy surface, probed by symbol on the INSTALLED client rather than gated on a
-#: version. Our floor is `just-dna-registry>=0.18.1` with no ceiling, so the thin path
-#: activates by itself the day 0.25.0 reaches PyPI and refuses with a named reason until
-#: then — no era branch, and `main` ships this code inert rather than not shipping it.
+#: The proxy surface this layer calls on the registry client. **The runtime probe is
+#: gone and the roster is not**, which is the distinction `CLAUDE.md` § 2 draws: a fact
+#: you cannot generate is guarded by a test, and when the fact goes unconditional the
+#: test's subject moves rather than the test being deleted.
 #:
-#: **And the condition to delete it is not "the floor moved to 0.25" — measured, because
-#: this note said that first.** Seven of these nine (`draft` and all six `hint_*`) landed
-#: on their client **after** the registry was stamped `0.25.0`: the stamp is 03:45 and
-#: `60bab83` is 04:09 the same morning. So a `0.25.0` exists that carries two of the nine,
-#: and a floor naming it would assert a surface it does not pin. Delete this probe when the
-#: **floor names a published release whose client carries all nine**, which is the same
-#: runnable form as the lane guard above rather than a claim about what users have:
+#: `proxy_gap()` refused by name while the installed client could not proxy. It cannot
+#: refuse any more — the floor is `just-dna-registry>=0.25.2`, and that wheel carries all
+#: nine plus the model. Verified against the wheel rather than a checkout, because seven
+#: of the nine (`draft` and all six `hint_*`) landed on their client **after** the tree
+#: was stamped `0.25.0`: the stamp is 03:45 and `60bab83` is 04:09 the same morning, so a
+#: `0.25.0` exists carrying two of the nine and a floor naming it would have asserted a
+#: surface it did not pin. `0.25.2` is the first that does.
 #:
-#:   uv run --isolated --no-project --with 'just-dna-registry==0.18.1' python -c \
+#:   uv run --isolated --no-project --with 'just-dna-registry==0.25.2' python -c \
 #:     "from just_dna_registry.client import RegistryClient as C; \
-#:      print([n for n in ('cache_status','derived','draft') if not hasattr(C, n)])"
+#:      import just_dna_registry.models.api as api; \
+#:      print([n for n in ('cache_status','derived','draft') if not hasattr(C, n)], \
+#:            hasattr(api, 'VariantHintReport'))"
 #:
-#: Run 2026-09-11, verbatim: all three named missing, and all nine when the tuple is
-#: spelled in full. `0.18.1` is the floor written out, same reason as above. `proxy_gap`
-#: already answers the live question by symbol, which is why the code was right while the
-#: note was not. Grep `_PROXY_METHODS` and `proxy_gap`.
-_PROXY_METHODS: tuple[str, ...] = (
+#: Run 2026-09-12, verbatim: `[] True`. What keeps that true is
+#: `test_the_floor_buys_every_proxy_method_this_layer_calls`, which reads this roster
+#: against the installed client — so a method retired upstream fails the suite here
+#: rather than at a caller's first proxied lookup.
+PROXY_METHODS: tuple[str, ...] = (
     "cache_status",
     "derived",
     "draft",
@@ -178,38 +147,9 @@ _PROXY_METHODS: tuple[str, ...] = (
     "hint_old_assembly",
 )
 
-#: One response model, probed the same way. A method could in principle exist while the
-#: model did not; more usefully, this is what the translation layer needs to be able to
-#: read, and `just_dna_registry.models.api` on 0.18.2 has none of these names.
-_PROXY_MODEL = "VariantHintReport"
-
-
-def proxy_gap() -> str | None:
-    """``None`` when the installed client can proxy, else the sentence to refuse with.
-
-    A refusal that names the release and the reason, because the alternative — a tool
-    that is absent, or one that says "Unknown tool" — reproduces the dead end the tier
-    axis cost us four times. The surface must never teach a step it cannot run, and
-    "cannot run *yet*, here is what would make it run" is the honest form of that.
-    """
-    missing = [name for name in _PROXY_METHODS if not hasattr(RegistryClient, name)]
-    api = getattr(_registry_models, "api", None)
-    if api is not None and not hasattr(api, _PROXY_MODEL):
-        missing.append(f"models.api.{_PROXY_MODEL}")
-    if not missing:
-        return None
-    return (
-        "the installed just-dna-registry client cannot proxy: it is missing "
-        f"{', '.join(missing)}. The caching-proxy surface — GET /api/v1/caches, "
-        "POST /drafts, POST .../derived and the six /hint/* routes — arrived in "
-        "just-dna-registry 0.25.0, which is not on PyPI yet: its release is gated on "
-        "both instances being deployed on just-dna-format 0.7 first, because publishing "
-        "it earlier would take the write surface off every install that upgraded. "
-        "Nothing here is broken and nothing needs configuring. Until that release, this "
-        "machine answers from its own snapshot lanes or not at all — `registry_caches` "
-        "lists which lanes it holds, and `just-dna-enricher cache prepare` provisions "
-        "the rest."
-    )
+#: One response model, guarded the same way and for a second reason: this is what the
+#: translation layer reads, so its disappearance is a breakage the roster above cannot see.
+PROXY_MODEL = "VariantHintReport"
 
 
 class Route:
@@ -257,7 +197,6 @@ def route_for(
     offline: bool,
     target: str | None,
     presence: dict[str, bool] | None = None,
-    lanes_known: bool | None = None,
 ) -> Route:
     """Decide where `tool`'s answer should come from, and say why in a sentence.
 
@@ -274,11 +213,7 @@ def route_for(
     """
     lanes = LANES_FOR.get(tool, ())
     if presence is None:
-        probed = local_lane_presence()
-        known = probed is not None
-        presence = probed or {}
-    else:
-        known = LANES_KNOWN if lanes_known is None else lanes_known
+        presence = local_lane_presence()
     local = tuple(name for name in lanes if presence.get(name))
     missing = tuple(name for name in lanes if not presence.get(name))
 
@@ -290,27 +225,6 @@ def route_for(
             why=(
                 f"{tool} reads no snapshot lane — its sources publish none — so it is "
                 "online wherever it runs and there was nothing to route."
-            ),
-            offline=offline,
-            target=None,
-        )
-
-    if not known:
-        # The old world, and the honest thing to do in it is to behave exactly as this
-        # tool behaved before the switch existed. Routing out on the strength of a probe
-        # that could not run would send every lookup to a registry on the basis of no
-        # measurement at all — a check that could not run is not a check that failed.
-        return Route(
-            answered_by="local",
-            lanes_needed=lanes,
-            lanes_local=(),
-            why=(
-                "the installed just-dna-enricher predates the cache registry "
-                "(0.7, RM176), so which snapshots this machine holds cannot be asked — "
-                "and a route chosen on an unanswerable probe would be a guess. This ran "
-                "exactly as it did before the switch existed: the pass looks where it "
-                "looks. `lanes_local` is empty because nothing was measured, not because "
-                "nothing is here."
             ),
             offline=offline,
             target=None,
@@ -346,17 +260,7 @@ def route_for(
             target=None,
         )
 
-    gap = proxy_gap()
     if snapshot_route == "registry":
-        if gap:
-            return Route(
-                answered_by="local",
-                lanes_needed=lanes,
-                lanes_local=local,
-                why=f"JMC_SNAPSHOT_ROUTE=registry was asked for and cannot be honoured — {gap}",
-                offline=False,
-                target=None,
-            )
         return Route(
             answered_by="registry",
             lanes_needed=lanes,
@@ -373,18 +277,6 @@ def route_for(
             lanes_needed=lanes,
             lanes_local=local,
             why=f"every lane this needs is on this machine: {', '.join(lanes)}.",
-            offline=False,
-            target=None,
-        )
-    if gap:
-        return Route(
-            answered_by="local",
-            lanes_needed=lanes,
-            lanes_local=local,
-            why=(
-                f"missing {', '.join(missing)} locally and the proxy is unavailable, so "
-                f"this ran against the live services instead — {gap}"
-            ),
             offline=False,
             target=None,
         )

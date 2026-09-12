@@ -25,11 +25,12 @@ log = get_logger()
 
 
 def register_caches(mcp: FastMCP, settings: Settings) -> None:
-    """Register `provision_caches`, on every toolchain.
+    """Register `provision_caches`.
 
-    Registered unconditionally and reporting `lanes_known=false` on an enricher that has
-    no lane registry, for the same reason the proxy tools refuse by name rather than
-    vanishing: a tool that is absent teaches nothing about why.
+    Registered unconditionally, which used to be the interesting claim: on an enricher
+    with no lane registry it reported `lanes_known=false` rather than vanishing, because
+    a tool that is absent teaches nothing about why. The `>=0.7.0` floor retired that
+    state — every install has the registry — so the field went and the tool stayed.
     """
 
     @mcp.tool(

@@ -18,26 +18,41 @@ import tarfile
 from pathlib import Path
 from typing import Any
 
+import just_dna_registry.models.api as registry_api
 import pytest
 from conftest import offline_settings, routed_settings
 from fastmcp.exceptions import ToolError
+from just_dna_registry.client import RegistryClient
 
 from just_module_creator import routing
 from just_module_creator.settings import Settings
 
-needs_proxy = pytest.mark.skipif(
-    routing.proxy_gap() is not None,
-    reason="installed just-dna-registry client has no caching-proxy surface (0.25.0)",
-)
 
-#: The lane registry is a whole MODULE the 0.6.6 enricher does not ship (upstream RM176),
-#: so these read it through `routing`'s single guarded import rather than importing it a
-#: second time — a direct import here is a collection error, not a skip, and it took the
-#: whole conftest down once already.
-needs_lanes = pytest.mark.skipif(
-    not routing.LANES_KNOWN,
-    reason="installed just-dna-enricher has no cache registry (just_dna_enricher.caches, 0.7)",
-)
+def test_the_floor_buys_every_proxy_method_this_layer_calls():
+    """The roster that `proxy_gap()` used to read at runtime, read by a test instead.
+
+    `proxy_gap` refused by name while the installed client could not proxy. At a
+    `just-dna-registry>=0.25.2` floor it can never refuse, so it went — but the roster
+    stays and the guard moves here, which is `CLAUDE.md` § 2's rule that a test's
+    subject moves when its fact goes unconditional rather than the test being deleted.
+    A method retired upstream now fails the suite rather than a caller's first lookup.
+
+    Floored on the roster, not on the answer: an empty `missing` is the good state, so
+    the assertion that must not render vacuous is the enumeration itself.
+    """
+    assert len(routing.PROXY_METHODS) >= 9, (
+        "the proxy roster enumerated almost nothing — this guard would pass vacuously"
+    )
+    assert "cache_status" in routing.PROXY_METHODS
+    missing = [n for n in routing.PROXY_METHODS if not hasattr(RegistryClient, n)]
+    assert missing == [], (
+        f"the installed just-dna-registry client is missing {missing}: the floor in "
+        "pyproject.toml no longer buys the caching-proxy surface this layer calls"
+    )
+    assert hasattr(registry_api, routing.PROXY_MODEL), (
+        f"{routing.PROXY_MODEL} is what the hint translation reads; without it the "
+        "roster above can be complete and every routed answer still unreadable"
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -54,16 +69,14 @@ def test_a_lane_nobody_holds_is_the_only_reason_auto_routes_out():
     one = {"ensembl": True, "clinvar": False}
     neither = {"ensembl": False, "clinvar": False}
 
-    # `lanes_known=True` is passed explicitly so this asserts the DECISION rather than
-    # this machine's install: the same logic has to be exercised on a toolchain whose
-    # enricher has no lane registry at all.
+    # `presence` is passed explicitly so this asserts the DECISION rather than this
+    # machine's install: the same logic has to hold on an unprovisioned box.
     assert routing.route_for(
         "lookup_variant",
         snapshot_route="auto",
         offline=False,
         target="test",
         presence=both,
-        lanes_known=True,
     ).answered_by == "local"
     for presence in (one, neither):
         route = routing.route_for(
@@ -72,18 +85,12 @@ def test_a_lane_nobody_holds_is_the_only_reason_auto_routes_out():
             offline=False,
             target="test",
             presence=presence,
-            lanes_known=True,
         )
-        # **Two outcomes and both are correct**, which is the point: a missing lane is
-        # what makes `auto` reach for the proxy, and where the proxy is unavailable the
-        # answer falls back to the live services and SAYS SO. A test asserting only the
-        # first would pass on this branch and fail for a user on PyPI, which is the
-        # reverse of what a guard is for.
-        if routing.proxy_gap() is None:
-            assert route.answered_by == "registry"
-        else:
-            assert route.answered_by == "local"
-            assert "proxy is unavailable" in route.why
+        # A missing lane is what makes `auto` reach for the proxy — the only reason,
+        # which is why this is not a preference. The second arm here used to assert the
+        # fall-back for an install whose client could not proxy; the `>=0.25.2` floor
+        # retired that install and the arm went with it.
+        assert route.answered_by == "registry"
         # The sentence names what was missing either way, because "routed out" without
         # the reason is the silent fall-back this whole sub-model exists to prevent.
         for lane, held in presence.items():
@@ -104,7 +111,6 @@ def test_offline_outranks_every_route_because_routing_out_is_egress():
             offline=True,
             target="test",
             presence={"ensembl": False, "clinvar": False},
-            lanes_known=True,
         )
         assert route.answered_by == "local"
         assert route.target is None, "an offline run names no instance, because none was asked"
@@ -125,7 +131,6 @@ def test_a_tool_with_no_lane_is_unrouted_rather_than_local():
     assert "no snapshot lane" in route.why
 
 
-@needs_lanes
 def test_the_lane_map_names_only_lanes_the_producer_declares():
     """An explicit map is still a hand-kept one, so it is pinned against `CACHE_LANES`.
 
@@ -148,36 +153,12 @@ def test_local_presence_is_read_from_the_producers_own_resolver():
     release file is unreadable.
     """
     presence = routing.local_lane_presence()
-    if not routing.LANES_KNOWN:
-        # The whole module is absent on a pre-0.7 enricher, and `None` says so rather
-        # than claiming a measurement — an empty map would read as "holds none".
-        assert presence is None
-        return
-    assert presence is not None
+    assert len(routing.CACHE_LANES) >= 10, (
+        "the producer's lane registry enumerated almost nothing — the set equality "
+        "below would then hold over two empty sets and measure nothing"
+    )
     assert set(presence) == {lane.name for lane in routing.CACHE_LANES}
     assert all(isinstance(v, bool) for v in presence.values())
-
-
-def test_an_unanswerable_probe_routes_local_and_says_the_probe_could_not_run():
-    """A check that could not run is not a check that failed — and not a reason to route.
-
-    On a pre-0.7 enricher there is no lane registry, so "is this snapshot here" has no
-    answer. Routing out on the strength of that would send every lookup to a registry on
-    the basis of no measurement at all; behaving exactly as the tool did before the
-    switch existed is the honest default.
-    """
-    route = routing.route_for(
-        "lookup_variant",
-        snapshot_route="auto",
-        offline=False,
-        target="test",
-        presence={},
-        lanes_known=False,
-    )
-    assert route.answered_by == "local"
-    assert route.lanes_local == ()
-    assert "cannot be asked" in route.why
-    assert "not because" in route.why, "empty must be distinguished from absent in the text"
 
 
 def test_the_miss_relabel_keeps_the_original_reason_and_adds_the_fall_back():
@@ -192,55 +173,12 @@ def test_the_miss_relabel_keeps_the_original_reason_and_adds_the_fall_back():
         offline=False,
         target="test",
         presence={"ensembl": False, "clinvar": True},
-        lanes_known=True,
     )
     relabelled = routing.missed_at_registry(route, detail="503 snapshot_unavailable: ensembl")
     assert relabelled.answered_by == "local_online_after_registry_miss"
     assert route.why in relabelled.why, "the original decision survives the relabel"
     assert "503" in relabelled.why
     assert relabelled.lanes_needed == route.lanes_needed
-
-
-# --------------------------------------------------------------------------- #
-# The capability probe
-# --------------------------------------------------------------------------- #
-def test_the_probe_asks_the_installed_client_by_symbol_not_by_version():
-    """A version string is not a capability — the `curator` case is why.
-
-    Both trees read `just-dna-format 0.6.1` while `StudyRow.curator` was present in one
-    and absent in the other, and the same shape applies to a client: our floor is
-    `>=0.18.1` with no ceiling, so what is installed is a fact to measure.
-    """
-    from just_dna_registry.client import RegistryClient
-
-    gap = routing.proxy_gap()
-    has_all = all(hasattr(RegistryClient, name) for name in routing._PROXY_METHODS)
-    assert (gap is None) == has_all
-
-
-def test_a_refusal_names_the_release_and_says_nothing_needs_configuring(monkeypatch):
-    """The surface must never teach a step it cannot run — and a bare "no" is that.
-
-    **Forced rather than skipped, so this runs on both toolchains.** On the preview
-    branch the installed client *can* proxy, so the refusal path would otherwise never
-    be read — and the refusal is the half that ships to `main` and is the half a user on
-    PyPI actually meets. Naming a method that does not exist is the same condition the
-    real probe finds.
-
-    Asserted on the *text* because the text is the deliverable: an author who reads
-    "unavailable" goes and debugs their configuration, and there is nothing to debug.
-    """
-    monkeypatch.setattr(
-        routing, "_PROXY_METHODS", (*routing._PROXY_METHODS, "no_such_method_on_any_client")
-    )
-    gap = routing.proxy_gap()
-    assert gap is not None
-    assert "0.25.0" in gap, "an author needs the release number to know what would fix it"
-    assert "nothing needs configuring" in gap.lower()
-    assert "no_such_method_on_any_client" in gap, "the refusal names what was missing"
-    # And it routes the author somewhere that works today rather than stopping at "no".
-    assert "registry_caches" in gap and "cache prepare" in gap
-
 
 
 # --------------------------------------------------------------------------- #
@@ -256,15 +194,6 @@ async def test_registry_caches_reports_every_lane_and_requires_a_target(make_cli
     async with make_client(offline_settings()) as client:
         result = await client.call_tool("registry_caches", {"target": "test"})
     report = result.data
-
-    if not routing.LANES_KNOWN:
-        # The install the proxy exists for: no lane registry, so the rows would come
-        # from the instance — and offline reaches none, so there is nothing to enumerate
-        # and `local_count` is null rather than zero.
-        assert report.lanes == []
-        assert report.local_count is None
-        assert report.proxy_gap is not None
-        return
 
     assert {row.lane for row in report.lanes} == {lane.name for lane in routing.CACHE_LANES}
     assert report.local_count == sum(1 for row in report.lanes if row.local)
@@ -491,7 +420,6 @@ def test_what_the_run_did_not_produce_is_read_and_kept_three_valued():
         assert _absent_from(payload) is None, payload
 
 
-@needs_proxy
 async def test_a_table_the_run_could_not_produce_reaches_the_caller_as_a_question(
     monkeypatch, make_client, tmp_path
 ):
@@ -638,7 +566,6 @@ def test_a_spec_carrying_both_spellings_is_refused_rather_than_chosen_between():
             _displacement_lines(spec_dir, {"licensing.csv": rows})
 
 
-@needs_proxy
 async def test_remote_derive_writes_over_the_deprecated_spelling_not_beside_it(
     monkeypatch, make_client, tmp_path
 ):
@@ -737,7 +664,6 @@ def test_the_snapshot_route_is_not_the_stdio_transport():
     assert settings.snapshot_route != settings.transport
 
 
-@needs_proxy
 def test_the_registry_hint_models_are_theirs_so_a_translation_is_owed():
     """Measured, because it is the reason a translation layer exists at all.
 
@@ -827,44 +753,46 @@ def test_every_upstream_field_this_layer_reads_by_name_still_exists():
         ),
     ]
 
-    if routing.proxy_gap() is None:
-        from just_dna_registry.models.api import (
-            CacheLaneStatus,
-            CacheStatusReport,
-            HintCost,
-            VariantHintBatchResponse,
-            VariantHintReport,
-        )
+    from just_dna_registry.models.api import (
+        CacheLaneStatus,
+        CacheStatusReport,
+        HintCost,
+        VariantHintBatchResponse,
+        VariantHintReport,
+    )
 
-        reads += [
-            # routing.variant_fields, proxied branch
-            (
-                VariantHintReport,
-                {
-                    "rsid",
-                    "rsid_state",
-                    "rsid_current",
-                    "loci",
-                    "rsid_candidates",
-                    "clin_sig",
-                    "populations",
-                    "pubmind",
-                    "vrs_id",
-                    "ambiguous",
-                    "cost",
-                    "findings",
-                    "alterations",
-                },
-            ),
-            (HintCost, {"charged", "limit", "waited_seconds", "served_from", "remedy"}),
-            # research.py reads the batch's list by name; proxy.py walks the cache report.
-            (VariantHintBatchResponse, {"results"}),
-            (CacheStatusReport, {"lanes"}),
-            (
-                CacheLaneStatus,
-                {"name", "serves", "state", "licence_skip", "route_reason", "build_command"},
-            ),
-        ]
+    # Unconditional since the `>=0.25.2` floor: these models are what the translation
+    # layer reads, and the floor now buys them. It used to be guarded on `proxy_gap()`,
+    # which meant the proxied half of this roster went unchecked on a PyPI install.
+    reads += [
+        # routing.variant_fields, proxied branch
+        (
+            VariantHintReport,
+            {
+                "rsid",
+                "rsid_state",
+                "rsid_current",
+                "loci",
+                "rsid_candidates",
+                "clin_sig",
+                "populations",
+                "pubmind",
+                "vrs_id",
+                "ambiguous",
+                "cost",
+                "findings",
+                "alterations",
+            },
+        ),
+        (HintCost, {"charged", "limit", "waited_seconds", "served_from", "remedy"}),
+        # research.py reads the batch's list by name; proxy.py walks the cache report.
+        (VariantHintBatchResponse, {"results"}),
+        (CacheStatusReport, {"lanes"}),
+        (
+            CacheLaneStatus,
+            {"name", "serves", "state", "licence_skip", "route_reason", "build_command"},
+        ),
+    ]
 
     for shape, names in reads:
         live = _live_fields(shape)
@@ -881,7 +809,6 @@ def test_every_upstream_field_this_layer_reads_by_name_still_exists():
     assert isinstance(VariantHint.ambiguous, property)
 
 
-@needs_lanes
 def test_every_lane_attribute_this_layer_reads_is_still_a_lane_attribute():
     """The other producer on the local side, and it is a module 0.6.6 does not ship.
 
@@ -900,7 +827,6 @@ def test_every_lane_attribute_this_layer_reads_is_still_a_lane_attribute():
 # --------------------------------------------------------------------------- #
 # The translation, and the routed path end to end
 # --------------------------------------------------------------------------- #
-@needs_proxy
 def test_the_translation_recovers_three_answers_a_naive_read_would_drop():
     """Their model is theirs, and reading it as the enricher's loses `rsid_current`,
     `ambiguous` and the lane names.
@@ -939,7 +865,6 @@ def test_the_translation_recovers_three_answers_a_naive_read_would_drop():
     assert not any("/" in c for c in fields["checked"]), "no filesystem path on the wire"
 
 
-@needs_proxy
 def test_the_cost_translation_keeps_an_empty_charge_as_a_real_answer():
     """An empty `charged` is the product: it is what teaches a caller their traffic is free.
 
@@ -1048,7 +973,6 @@ def test_the_local_side_serializes_no_snapshot_path_and_no_snapshot_map():
     assert "snapshots" not in VariantLookup.model_fields
 
 
-@needs_proxy
 async def test_a_routed_lookup_reports_the_registry_and_its_cost(monkeypatch, make_client):
     """The whole seam, with the double at the `RegistryClient` method — the one boundary
     the suite is allowed to exclude, because it is the socket.
@@ -1108,7 +1032,6 @@ async def test_a_routed_lookup_reports_the_registry_and_its_cost(monkeypatch, ma
     assert double.batched == [[{"rsid": "rs4988235"}]]
 
 
-@needs_proxy
 async def test_a_proxy_failure_falls_back_live_and_says_so(monkeypatch, make_client):
     """A 503 means the deployment lacks the lane too — so the fall-back is legitimate
     and **must be visible**.
@@ -1144,7 +1067,6 @@ async def test_a_proxy_failure_falls_back_live_and_says_so(monkeypatch, make_cli
     assert data.cost is None
 
 
-@needs_proxy
 async def test_remote_draft_refuses_a_stray_parameter_rather_than_dropping_it(
     monkeypatch, make_client, tmp_path
 ):
@@ -1181,7 +1103,6 @@ async def test_remote_draft_refuses_a_stray_parameter_rather_than_dropping_it(
     assert "refusal rather than a dropped filter" in text
 
 
-@needs_proxy
 async def test_remote_draft_names_the_lane_a_deployment_lacks(
     monkeypatch, make_client, tmp_path
 ):
@@ -1212,7 +1133,6 @@ async def test_remote_draft_names_the_lane_a_deployment_lacks(
     assert "build_command" in text
 
 
-@needs_proxy
 async def test_a_draft_archive_writes_only_recognised_spec_files(
     monkeypatch, make_client, tmp_path
 ):
@@ -1255,7 +1175,6 @@ async def test_a_draft_archive_writes_only_recognised_spec_files(
     assert sorted(p.name for p in tmp_path.iterdir()) == ["module_spec.yaml", "variants.csv"]
 
 
-@needs_proxy
 async def test_an_archive_with_no_report_counts_zero_and_says_it_did_not_describe_itself(
     monkeypatch, make_client, tmp_path
 ):

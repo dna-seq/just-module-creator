@@ -21,11 +21,6 @@ from conftest import offline_settings
 from just_module_creator import provisioning, routing
 from just_module_creator.models import CachePlanLane
 
-pytestmark = pytest.mark.skipif(
-    not routing.LANES_KNOWN,
-    reason="needs just_dna_enricher.caches (the lane registry, enricher 0.7)",
-)
-
 
 @dataclass(frozen=True)
 class _Status:
@@ -385,17 +380,6 @@ def test_terms_that_forbid_sale_are_skipped_rather_than_assumed(monkeypatch, tmp
     assert skipped <= set(declared.full_lanes)
 
 
-def test_an_unmeasurable_install_says_so_rather_than_reporting_no_lanes(monkeypatch):
-    """`lanes_known=false` is not an empty plan: one is a missing instrument, the other a fact."""
-    monkeypatch.setattr(provisioning, "LANES_KNOWN", False)
-    plan = provisioning.plan(settings=offline_settings())
-
-    assert plan.lanes_known is False
-    assert plan.lanes == []
-    assert plan.offer is None
-    assert "predates" in plan.note
-
-
 def test_the_model_keeps_null_apart_from_false():
     """A defaulted row must not answer questions nobody asked."""
     row = CachePlanLane(lane="x", route="none")
@@ -419,7 +403,9 @@ async def test_the_tool_reads_the_plan_and_refuses_to_build_under_the_offline_ce
     monkeypatch.setattr(provisioning, "free_mb_at", lambda _p: 5000.0)
 
     read = await client.call_tool("provision_caches", {})
-    assert read.data.lanes_known is routing.LANES_KNOWN
+    # A real plan, not an empty one: the lane registry is unconditional at the floor, so
+    # a read that enumerated nothing would be the tool failing rather than a fact.
+    assert read.data.lanes, "the plan enumerated no lanes at all"
 
     with pytest.raises(Exception, match="JMC_OFFLINE"):
         await client.call_tool("provision_caches", {"dry_run": False})

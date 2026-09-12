@@ -14,49 +14,23 @@ stays deterministic even though half the tool surface is network-capable.
 
 from __future__ import annotations
 
-import inspect as _inspect
 import sys
-from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
 
 import pytest
 from fastmcp.client import Client
-from just_dna_compiler import draft as _draft
 from just_dna_compiler import hints as _hints
-from just_dna_enricher.enrich import enrich as _enrich
-from just_dna_format import base as _format_base
-from just_dna_format.manifest import Compilation as _Compilation
+
+# Unconditional since 0.35.0: the floor is `just-dna-enricher>=0.7.0,<0.8` and the 0.7.0
+# **wheel** carries `caches` (15 lanes) and `locations.CACHE_BASE_VAR`. This was the
+# guarded module-level import § 2 allows for an optional dependency, and it was genuinely
+# optional only for the length of that interval — the repo has no optional imports again.
+from just_dna_enricher.caches import CACHE_LANES
+from just_dna_enricher.locations import CACHE_BASE_VAR
 from just_dna_registry import specfiles as _specfiles
 
 from just_module_creator.server import build_server
 from just_module_creator.settings import Settings
-
-# The cache registry is 0.7's (RM176) and the whole MODULE is absent on 0.6.6, so this is
-# the guarded module-level import `CLAUDE.md` § 2 allows for an optional dependency — and
-# it is genuinely optional only for the length of this interval. On the older toolchain
-# there is nothing to clear, because the lanes those variables steer do not exist yet.
-#
-# It sits below the other imports so the fallbacks are bound and annotated first: the
-# names then exist unconditionally for a reader and for pyright, which cannot resolve a
-# module the installed package does not have and would otherwise report the import rather
-# than the interval. Every suppression here is scoped to its own line and goes with the
-# guard.
-#
-# **The condition is NOT "the floor moved to 0.7".** `just_dna_enricher.caches` was added
-# 2026-09-02, two days after the enricher was stamped `0.7.0` — so `>=0.7.0` is satisfied
-# by an install without it and no floor says otherwise. The guard comes out when the floor
-# in `pyproject.toml` names a published release that CARRIES the module — a condition with
-# a one-line query behind it rather than a claim about what users have. `routing.py` carries
-# both the query and the measurement (`0.6.6`: absent, so the guard stays).
-CACHE_LANES: Sequence[Any] = ()
-CACHE_BASE_VAR: str = ""
-try:
-    from just_dna_enricher.caches import CACHE_LANES  # type: ignore[no-redef]  # noqa: E402
-    from just_dna_enricher.locations import CACHE_BASE_VAR  # type: ignore[no-redef]  # noqa: E402
-except ImportError:  # pragma: no cover — only on a pre-0.7 enricher
-    pass
-
 
 #: Variables read by code we do **not** control, so no field on our model names them
 #: and nothing can derive them. Hand-maintained by necessity; a test asserts the three
@@ -82,45 +56,6 @@ _UPSTREAM_VARS = (
 #: variables matter. A derived list costs one expression and removes the question.
 _CACHE_VARS = tuple(
     sorted({lane.env_var for lane in CACHE_LANES} | {CACHE_BASE_VAR} - {""})
-)
-
-#: **Capability probes, never a version string.** Six assertions below are about
-#: behaviour format 0.7 introduced, and this branch runs against an uncut 0.7 while a
-#: released install is still on 0.6.6 — so they must skip honestly rather than fail on
-#: the toolchain a user actually has. Each probes the narrowest symbol that answers its
-#: own question, because `CLAUDE.md` § 8's rule holds here too: a version string says
-#: nothing about what is installed, and `hasattr` against the *installed* package does.
-#:
-#: `_FORMAT_0_7` is the one stand-in. `OUTSIDE_CONTENT_IDENTITY` is RM180's field marker,
-#: used because the two behaviours it gates — RM141's shared strict predicate and the
-#: overlay's presence in the content hash — ship no symbol of their own.
-#:
-#: **They exist for the interval, not forever — but "the floor moved" is NOT the deletion
-#: criterion.** Delete a probe when the fact it asks about has gone **unconditional**,
-#: which is a different claim and not always implied by a floor bump. The counterexample
-#: is measured rather than hypothetical: the enricher split `VariantHint.checked` into
-#: `checked` + `snapshots` **after `0.7.0` already existed as a version**, so
-#: `just-dna-enricher>=0.7.0` is satisfied by installs on both sides of that split and
-#: **there is no version to raise the pin to, because the split has no version of its
-#: own**. A probe whose fact is shaped like that outlives the floor it looks like it
-#: belongs to. Found by the registry on their own copy of this seam, 2026-09-11; the state
-#: is written up in `docs/just-dna-format-pending-fixes.md`'s `F93`.
-_FORMAT_0_7 = hasattr(_format_base, "OUTSIDE_CONTENT_IDENTITY")
-_ENRICH_TAKES_PROGRESS = "progress" in _inspect.signature(_enrich).parameters
-_COMPILER_CODES_WARNINGS = "warnings_summary" in _Compilation.model_fields
-_COMPILER_DRAFTS_OVERLAY = "overrides.csv" in _draft.DRAFTABLE
-
-needs_format_0_7 = pytest.mark.skipif(
-    not _FORMAT_0_7, reason="installed format predates 0.7 (no OUTSIDE_CONTENT_IDENTITY)"
-)
-needs_progress_callback = pytest.mark.skipif(
-    not _ENRICH_TAKES_PROGRESS, reason="installed enricher has no progress callback (RM128)"
-)
-needs_coded_warnings = pytest.mark.skipif(
-    not _COMPILER_CODES_WARNINGS, reason="installed compiler writes no warnings_summary (RM131)"
-)
-needs_overlay = pytest.mark.skipif(
-    not _COMPILER_DRAFTS_OVERLAY, reason="installed compiler does not draft overrides.csv (RM124)"
 )
 
 #: The spec files the installed compiler reads and the installed registry does not
@@ -159,49 +94,20 @@ def registry_lag() -> set[str]:
 
 
 #: What the lag is *allowed* to be, and the membership is a filed report rather than a
-#: convenience. Computing the lag makes the roster tests work on any toolchain; this
-#: keeps them a guard rather than a tautology, by failing when an **unreported** name
-#: joins.
+#: convenience. Computing the lag makes the roster tests work on any toolchain; this keeps
+#: them a guard rather than a tautology, by failing when an **unreported** name joins.
 #:
-#: **The concordance pair stays in the set even though it graduated**, and that is the
-#: point of the `<=`: they were filed as registry-tree `S19`, which landed in registry
-#: 0.25.0, so on that install they are recognised and leave the lag on their own. On
-#: format 0.7 beside a PyPI registry 0.18.2 — a combination that becomes real the day
-#: 0.7 is cut, since 0.25.0 is gated behind deploying both instances first — they are
-#: still lagging, and that is a true report rather than a stale entry. **Shrinking the
-#: lag is the good direction and must never fail this suite**; a name arriving that
-#: nobody reported must.
+#: **Empty since 0.35.0, and that is the good direction.** It held three names — the
+#: concordance pair (registry-tree `S19`) and `expression_effects.csv` (`S22`) — each kept
+#: because an install on the then-current PyPI registry still lagged them. A
+#: `just-dna-registry>=0.25.2` floor retires that install: 0.25.2 recognises all three, and
+#: `registry_lag()` is empty against it. Shrinking the lag must never fail this suite, which
+#: is why the assertion is a `<=` and this can be empty without becoming a tautology — the
+#: floors inside `registry_lag()` are what stop that.
 #:
-#: `expression_effects.csv` arrived in the AlphaGenome round (format RM194/RM200) into
-#: `hints.DERIVED_TABLE_MODELS` and `ARTIFACT_PARQUETS` — 23 parquets, not the 22
-#: `INTEGRATION_0_7.md` § 2.2 states — and into **none** of the registry's three
-#: rosters. Filed as registry-tree `S22` on 2026-09-11 and **answered the same day**: it is a
-#: fact table (compiler `_FACT_TABLES`), so it wants `FACT_CSVS`, and it is absent from
-#: `_INPUT_FILES`, so a drop never moves `content_signature`. It is deliberately **not**
-#: added to the registry's rosters yet — their `test_fact_tables_match_the_compiler` asserts
-#: an equality with the compiler their wheels pin, so the name would advertise a file that
-#: cannot exist there and would prevent nothing. That trigger then fired the same afternoon:
-#: their tree carries the name in all three rosters (uncommitted there as of 15:25), so
-#: `registry_lag()` is **empty** on this branch's editable install. The name stays in this
-#: set because the assertion is a `<=` and an install on PyPI 0.18.2 still lags — shrinking
-#: the lag must never fail the suite, and a name arriving that nobody reported must. What the
-#: table still does not get is a dossier or a `refresh.ROSTER` entry, and the reason moved:
-#: its producer is gated on an Atlas credential, which is `UNREFRESHABLE`'s third kind.
-KNOWN_REGISTRY_LAG = frozenset(
-    {"expression_effects.csv", "clin_sig_concordance.csv", "clin_sig_authority_calls.csv"}
-)
-
-#: Whether the installed registry recognises the overlay, which is `S19` and is a
-#: *registry* capability — the compiler-side probe beside it answers a different
-#: question and neither implies the other. Both halves are needed before an author can
-#: be taught to write one: the compiler has to draft it and the registry has to carry it
-#: through a rebuild.
-_REGISTRY_KEEPS_OVERLAY = _specfiles.is_spec_file("overrides.csv")
-
-needs_kept_overlay = pytest.mark.skipif(
-    not _REGISTRY_KEEPS_OVERLAY,
-    reason="installed registry does not recognise overrides.csv (S19)",
-)
+#: A name goes back in **with its `S<n>`** and not otherwise: the entry is the filed report,
+#: so an addition here without one is the guard being silenced rather than answered.
+KNOWN_REGISTRY_LAG: frozenset[str] = frozenset()
 
 #: Every environment variable that could change what a test asserts, cleared for the
 #: whole suite by ``_hermetic_configuration``.

@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 
 import pytest
-from conftest import needs_progress_callback, offline_settings
+from conftest import offline_settings
 from fastmcp.exceptions import ToolError
 
 from just_module_creator.models import DraftResult
@@ -1065,7 +1065,6 @@ async def test_a_not_found_row_is_not_counted_as_resolved(
 # --------------------------------------------------------------------------- #
 # The progress callback (upstream RM128, our `S66` ask 4)
 # --------------------------------------------------------------------------- #
-@needs_progress_callback
 def test_upstream_still_takes_a_progress_callback():
     """Asserted against the installed signature, not a remembered one.
 
@@ -1082,7 +1081,6 @@ def test_upstream_still_takes_a_progress_callback():
     assert "progress" in inspect.signature(enrich).parameters
 
 
-@needs_progress_callback
 async def test_enrich_hands_upstream_a_callback_and_survives_being_called(
     make_client, tmp_path, monkeypatch
 ):

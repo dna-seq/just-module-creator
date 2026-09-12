@@ -106,28 +106,6 @@ def _lane_rows(target: RegistryTarget, remote: Any | None) -> list[LaneStatus]:
             )
         )
 
-    # **An enricher predating the lane registry still gets a useful report**, and that is
-    # exactly the install the proxy exists for: it has no lanes to enumerate, so the rows
-    # come from what the instance said instead, with `local=None` — cannot ask, never
-    # "holds none". Falling back to an empty list here would hide the remote half from
-    # the only caller who has nothing else.
-    if not routing.LANES_KNOWN:
-        rows = [
-            LaneStatus(
-                lane=getattr(far, "name", ""),
-                serves=getattr(far, "serves", None),
-                local=None,
-                remote=getattr(far, "state", None),
-                remote_reason=_reason(far),
-                # Null rather than reconstructed: the variable is the lane's own
-                # attribute upstream precisely so it cannot name one the resolver
-                # ignores, and `JUST_DNA_<NAME>_CACHE` is a guess that is already wrong
-                # for `constraint` (`JUST_DNA_GNOMAD_CONSTRAINT_CACHE`).
-                env_var=None,
-                build_command=getattr(far, "build_command", None),
-            )
-            for far in (getattr(remote, "lanes", []) or [])
-        ]
     return rows
 
 
@@ -394,11 +372,10 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
 
         Costs one anonymous request and no credential.
         """
-        gap = routing.proxy_gap()
         offline = offline_for(settings, False)
         remote: Any | None = None
         reach_note = ""
-        if gap is None and not offline:
+        if not offline:
             client = client_for(target, settings)
             try:
                 remote = await run_sync(client.cache_status)
@@ -410,7 +387,7 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
                 log.warning("cache_status against %s failed: %s", target, exc)
 
         rows = _lane_rows(target, remote)
-        local_count = sum(1 for r in rows if r.local) if routing.LANES_KNOWN else None
+        local_count = sum(1 for r in rows if r.local)
         remote_count = (
             sum(1 for r in rows if r.remote == "present") if remote is not None else None
         )
@@ -418,15 +395,7 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
             r.lane for r in rows if not r.local and (r.remote not in ("present", None))
         ]
 
-        here = (
-            f"This machine holds {local_count} of {len(rows)} lanes"
-            if local_count is not None
-            else (
-                "The installed just-dna-enricher predates the cache registry (0.7), so "
-                "what this machine holds cannot be asked — `local` is null throughout, "
-                "which is not the same as none"
-            )
-        )
+        here = f"This machine holds {local_count} of {len(rows)} lanes"
         if offline:
             note = (
                 f"{here}. The offline ceiling is set, and asking an instance what it "
@@ -435,8 +404,6 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
                 "`JMC_OFFLINE` to ask. `just-dna-enricher cache prepare` provisions "
                 "what this machine can have either way."
             )
-        elif gap:
-            note = f"{here}. The proxy is unavailable, so nothing can answer for the rest: {gap}"
         elif remote is None:
             note = f"{here}; {describe(target, settings)} was not reached.{reach_note}"
         else:
@@ -455,7 +422,6 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
             local_count=local_count,
             remote_count=remote_count,
             unreachable=unreachable,
-            proxy_gap=gap,
             note=note,
         )
 
@@ -515,10 +481,6 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
                 "machine's own snapshot lanes, and `registry_caches` says which it "
                 "holds."
             )
-
-        gap = routing.proxy_gap()
-        if gap:
-            raise ToolError(gap)
 
         source = resolve_dir(spec_dir, settings)
         if not source.is_dir():
@@ -710,10 +672,6 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
                 "machine's own snapshot lanes, and `registry_caches` says which it "
                 "holds."
             )
-
-        gap = routing.proxy_gap()
-        if gap:
-            raise ToolError(gap)
 
         target_dir = resolve_dir(spec_dir, settings)
         if not target_dir.is_dir():

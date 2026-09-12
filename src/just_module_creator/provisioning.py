@@ -25,42 +25,34 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+#: The provisioning half of the lane registry. Both imports here were guarded and both
+#: went unconditional in 0.35.0, for the reason the guards themselves named: the fact,
+#: not the floor. `just_dna_enricher.caches` was absent from every 0.6.x, and
+#: `provisioning_closure` — upstream's `S97` answer — landed hours after the module it
+#: lives in, so an install could have the registry and not this. The 0.7.0 **wheel** has
+#: all seven, which is what a `>=0.7.0,<0.8` floor now buys:
+#:
+#:   uv run --isolated --no-project --with 'just-dna-enricher[atlas]==0.7.0' python -c \
+#:     "from just_dna_enricher.caches import (LicenseRefusal, RebuildRequest, \
+#:      check_declared_use, lane_status, parent_snapshots, prepare_lane, \
+#:      provisioning_closure); print('ok')"
+#:
+#: Run 2026-09-12, verbatim: `ok`. Checked against the wheel and not the sibling tree,
+#: because a checkout says nothing about what an install has.
+from just_dna_enricher.caches import (
+    LicenseRefusal,
+    RebuildRequest,
+    check_declared_use,
+    lane_status,
+    parent_snapshots,
+    prepare_lane,
+    provisioning_closure,
+)
+
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import CachePlan, CachePlanLane
-from just_module_creator.routing import CACHE_LANES, LANES_KNOWN
+from just_module_creator.routing import CACHE_LANES
 from just_module_creator.settings import Settings
-
-#: The provisioning half of the lane registry, guarded exactly as `routing` guards
-#: `CACHE_LANES` and for the same measured reason: `just_dna_enricher.caches` is a whole
-#: MODULE that `just-dna-enricher>=0.6.6` does not have, so an unguarded import takes the
-#: server down at start-up rather than failing later as a missing attribute. The names are
-#: `None` on that toolchain and `LANES_KNOWN` is what every caller here branches on, so
-#: the two cannot disagree.
-try:
-    from just_dna_enricher.caches import (
-        LicenseRefusal,
-        RebuildRequest,
-        check_declared_use,
-        lane_status,
-        parent_snapshots,
-        prepare_lane,
-    )
-except ImportError:  # pragma: no cover — only on a pre-0.7 enricher
-    LicenseRefusal = None  # type: ignore[assignment,misc]
-    RebuildRequest = None  # type: ignore[assignment,misc]
-    check_declared_use = None  # type: ignore[assignment]
-    lane_status = None  # type: ignore[assignment]
-    parent_snapshots = None  # type: ignore[assignment]
-    prepare_lane = None  # type: ignore[assignment]
-
-#: A second guarded import, for a different fact: `provisioning_closure` is upstream's
-#: `S97` answer and landed hours after the module it lives in, so an install can have the
-#: lane registry and not this. Folding it into the block above would null every name when
-#: only this one is missing. Delete the fallback when the floor names a release with it.
-try:
-    from just_dna_enricher.caches import provisioning_closure
-except ImportError:  # pragma: no cover — a 0.7 enricher predating S97
-    provisioning_closure = None  # type: ignore[assignment]
 
 log = get_logger()
 
@@ -246,11 +238,11 @@ def _closure(lane: Any) -> tuple[str, ...]:
 
     `lane.parents` is one level. A grandparent is not hypothetical — `mitomap_miss` pins
     ClinVar today and a future derived lane pinning *it* would be priced at a megabyte —
-    so upstream's own `provisioning_closure` is used where the install has it (their `S97`
-    answer, same afternoon) and `parents` is the fallback that names what it can.
+    so upstream's own `provisioning_closure` answers it (their `S97`, same afternoon).
+    The `parents` fallback beside this went with the import guard in 0.35.0: the 0.7.0
+    wheel carries the function, so there is no install left that has the lane registry
+    and not the closure.
     """
-    if provisioning_closure is None:
-        return tuple(lane.parents or ())
     return tuple(item.name for item in provisioning_closure(lane) if item.name != lane.name)
 
 
@@ -289,24 +281,6 @@ def plan(*, declared_use: str = "unstated", settings: Settings | None = None) ->
     Read-only: nothing is downloaded, nothing is written, and no lane directory is
     created. Safe to call on every session start, which is what the onboarding flow does.
     """
-    # Narrowed on the symbols rather than on `LANES_KNOWN` alone, which is the same fact
-    # said twice: the guarded import left them `None` on a pre-0.7 enricher, and a check
-    # against the thing actually used cannot drift away from the thing actually imported.
-    if (
-        not LANES_KNOWN
-        or lane_status is None
-        or check_declared_use is None
-        or LicenseRefusal is None
-    ):
-        return CachePlan(
-            lanes_known=False,
-            note=(
-                "The installed just-dna-enricher predates the lane registry, so which "
-                "caches exist cannot be enumerated here — which is not the same answer "
-                "as there being none. Nothing was measured and nothing is offered."
-            ),
-        )
-
     root = cache_root()
     configured = bool(os.environ.get(CACHE_DIR_VAR, "").strip())
     free = free_mb_at(root)
@@ -481,7 +455,6 @@ def _decide(
         )
 
     return CachePlan(
-        lanes_known=True,
         cache_dir=str(root) if root else None,
         cache_dir_configured=configured,
         cache_dir_var=CACHE_DIR_VAR,
@@ -582,10 +555,8 @@ def provision(
     back verbatim instead of being re-derived here.
     """
     before = plan(declared_use=declared_use, settings=settings)
-    if not before.lanes_known or before.offer_withheld:
+    if before.offer_withheld:
         return before
-    if RebuildRequest is None or parent_snapshots is None or prepare_lane is None:
-        return before  # pragma: no cover — unreachable while `lanes_known` is true
 
     wanted = set(lanes or before.prewarm_lanes)
     by_name = {lane.name: lane for lane in CACHE_LANES}

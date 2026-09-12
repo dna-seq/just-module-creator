@@ -12,7 +12,7 @@ import json
 from importlib import metadata
 
 import pytest
-from conftest import KNOWN_REGISTRY_LAG, needs_kept_overlay, needs_overlay, registry_lag
+from conftest import KNOWN_REGISTRY_LAG, registry_lag
 
 # The versions the stamp must report, computed here rather than pasted. A literal
 # would be the very defect these tests guard: a version written down once agrees
@@ -510,8 +510,6 @@ def test_the_produced_roster_agrees_with_the_registry_that_recognises_the_same_f
         assert hints.derived_model_for(csv_name) is model
 
 
-@needs_overlay
-@needs_kept_overlay
 def test_the_overlay_survives_a_republish_and_hashes_by_its_value_cells():
     """`S19` landed, so this test turned over: it pinned an absence and now pins a promise.
 
