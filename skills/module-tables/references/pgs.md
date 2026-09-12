@@ -123,9 +123,30 @@ truncated to 12 hex chars.
   to `variants.csv` only, and the compiler is explicit about why `pgs.csv` is exempt: *"`PgsRow` carries
   a catalog accession, which is a provenance and not a citation"* (`compiler.py`). There is no
   `_check_binning_grounding` analogue for it, so no warning either.
-- **Measured:** a `module_spec.yaml` + `pgs.csv` module passes `validate_spec(strict=True)` and
-  `compile_module(strict=True)` with **one** warning, the generic "records no closure" one. No licensing
-  ledger, no citation, no source row is asked for.
+- **Measured, re-run 2026-09-13 on format/compiler 0.7.0:** a `module_spec.yaml` + `pgs.csv` module
+  still passes `validate_spec(strict=True)` with **one** warning, the generic "records no closure"
+  one. No licensing ledger, no citation, no source row is asked for.
+- **But a PGS Catalog licence row DOES gate the compile, and upstream's own table prose is easy to
+  misread on this.** `docs/TABLES.md` says *"a module citing an academic-research-only score cannot
+  compile without a declared use"*, which reads as though this table reaches the gate. It does not:
+  **the gate reads `licensing.csv` and nothing else**, so a `pgs.csv` module reaches it only once a
+  licence row records the restriction. Both halves measured the same day, same module, one score
+  (`PGS000001`, `research_tier=research_only`):
+
+  | `licensing.csv` | `validate_spec(strict=True)` |
+  |---|---|
+  | absent | **valid** — closure warning only |
+  | `commercial_use=false`, `declared_use` empty | **error**: *"contribute annotation-layer content under terms that forbid sale, and this module records no non-commercial declaration"* |
+  | `commercial_use=false`, `declared_use=non-commercial` | **valid** |
+
+  So `research_tier` on this row does **nothing** to the compile — the claim that binds is the one in
+  `licensing.csv`, and writing `research_tier=research_only` while leaving the licence ledger empty
+  publishes a module that compiles clean and says nothing about its terms.
+- **There is no `pgs` layer to file that row under.** The `layer` vocabulary is
+  `annotation, clinical_assertion, expression_effect, frequency, gene_metrics, gene_validity,
+  gwas_effect, literature, resolution` (measured 2026-09-13) — a PGS Catalog row goes in as
+  `annotation`, which is what the error message above is talking about when it says
+  *annotation-layer content*.
 
 ## The columns that carry judgement
 

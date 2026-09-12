@@ -25,6 +25,16 @@ Nothing read them, so nothing reported the gap.
   `expression_effects`; `DRAFTABLE` is fourteen names. `LAYOUT.md`'s five sizes were taken on
   registry 0.25.0 and **three of the five moved by 0.25.2** — a patch release — which is the
   argument for running the snippet beside them.
+- **Reconciled against upstream's new `docs/TABLES.md`, and two things came back the other way.**
+  RM70 shipped in 0.7 — `requires_callable` is on `HaplotypeRow` and `PharmVariantRow` and
+  deliberately not on `DiplotypeRow` — while five dossiers still listed it under *what does not
+  exist*, one of them contradicting its own 0.7 section two hundred lines up. And upstream's
+  `pgs.csv` paragraph says that table reaches the compile licence gate; measured three ways on one
+  scaffolded module, it does not — the gate is entirely `licensing.csv`'s, a research-only score
+  with an empty ledger compiles clean, and there is no `pgs` member of the `layer` vocabulary to
+  file the row under. Filed as format `S101`, tracked as `F99`, and written into `pgs.md` with the
+  measurement rather than conformed to.
+
 - **`expression_effects.md` is new**, the last table kind with no dossier. It is the format's first
   *prediction* table and reads differently from every other sidecar: a null `effect_direction` means
   the tissue tracks disagreed rather than no effect, the step from a direction to `risk`/`protective`

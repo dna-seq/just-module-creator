@@ -2118,3 +2118,42 @@ that is in a toolbox group. Scope is the check commands only: a snapshot builder
 `provision_caches`' concern and an operator's sweep is the one abstention §"Parity" allows. Both
 sides of the comparison are floored, so an upstream restructure that empties either enumeration
 fails rather than reading as full parity.
+
+---
+
+## F99 — `TABLES.md` tells a score-panel author the `pgs.csv` row reaches the licence gate (format `S101`)
+
+**State: open upstream, filed 2026-09-13. Nothing to mitigate in code — the note is a doc one and
+the repair here is prose that ships.**
+
+**What upstream says.** `docs/TABLES.md`'s `pgs.csv` section: *"A module citing an
+academic-research-only score cannot compile without a declared use … That is the one place this
+table reaches the compile gate."*
+
+**What we measured**, format/compiler 0.7.0 as installed, one scaffolded module, `pgs.csv` carrying
+`PGS000001` with `research_tier=research_only`, `validate_spec(strict=True)`:
+
+| `licensing.csv` | verdict |
+|---|---|
+| absent | **valid**, `module_not_closed` warning only |
+| `commercial_use=false`, `declared_use` empty | **error** — *"contribute annotation-layer content under terms that forbid sale, and this module records no non-commercial declaration"* |
+| `commercial_use=false`, `declared_use=non-commercial` | **valid** |
+
+So `research_tier` does nothing to the compile and the gate is entirely `licensing.csv`'s — which
+upstream's own `licensing.csv` section states correctly. The two paragraphs disagree and the
+`pgs.csv` one is the one a score-panel author reads.
+
+**Why it is worth a note rather than a shrug.** It rebuilds the failure upstream's licensing section
+already names — a module that carried no `licensing.csv` and compiled as though unrestricted. An
+author who believes the accession carries the restriction reads an empty ledger as *nothing
+restrictive here* rather than as *nobody declared anything*.
+
+**Second thing, same probe:** there is no `pgs` member of the `layer` vocabulary
+(`annotation, clinical_assertion, expression_effect, frequency, gene_metrics, gene_validity,
+gwas_effect, literature, resolution`), so a PGS Catalog licence row is filed under `annotation` —
+which is why the error above talks about *annotation-layer content* for a row about a score.
+
+**Our side:** both facts, with the measurement, are in
+`skills/module-tables/references/pgs.md`. Nothing in the tool surface changes; a `pgs.csv` module
+with no licence ledger is a real and legal module, and telling an author otherwise would be the
+mirror of the defect.
