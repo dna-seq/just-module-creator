@@ -42,6 +42,7 @@ from typing import Any
 import yaml
 from just_dna_compiler import draft
 from just_dna_enricher.verification import read_verification
+from just_dna_format.vrs import normalize_chrom
 
 from just_module_creator.models import AuditSignal, ColumnFill
 
@@ -55,7 +56,20 @@ VARIANTS = "variants.csv"
 #: that resolves each against the live models rather than a comment promising it was
 #: checked once.
 COLUMNS_READ = frozenset(
-    {"weight", "conclusion", "clin_sig", "effect_size", "effect_measure", "p_value", "p_value_num"}
+    {
+        "weight",
+        "conclusion",
+        "clin_sig",
+        "effect_size",
+        "effect_measure",
+        "p_value",
+        "p_value_num",
+        "direction",
+        "state",
+        "rsid",
+        "chrom",
+        "start",
+    }
 )
 
 #: How many names a headline lists before it stops listing them.
@@ -396,9 +410,7 @@ def effect_size_is_its_own_z(spec_dir: Path) -> AuditSignal:
             f"{rsid}: {size:.4g} labelled {measure}, Z of its p-value is {z:.4g}"
             for rsid, measure, size, z in matched[:_EXAMPLES]
         ]
-        + (
-            [f"and {len(matched) - _EXAMPLES} more row(s)"] if len(matched) > _EXAMPLES else []
-        )
+        + ([f"and {len(matched) - _EXAMPLES} more row(s)"] if len(matched) > _EXAMPLES else [])
         + [
             "if these are Z-statistics, `effect_measure` should say so — and check whether the "
             "same column also holds genuine effect sizes under that one label, which is what "
@@ -430,11 +442,12 @@ def clinical_claims_without_studies(spec_dir: Path) -> AuditSignal:
             f"none of the tables that can carry a clinical call are here ({', '.join(bearing)})",
         )
     if not claimed:
-        return _clear(name, "no row in this module asserts a clinical significance")
+        return _clear(name, f"no row authors a clin_sig value ({_listed(bearing)} read)")
     if (spec_dir / STUDIES).is_file() and read_rows(spec_dir / STUDIES):
         return _clear(
             name,
-            f"{sum(claimed.values())} clinical call(s) sit beside a {STUDIES} with rows",
+            f"{sum(claimed.values())} clinical call(s) sit beside a {STUDIES} with rows — "
+            "module-level, so this does not say each call's own variant is cited",
         )
     return _decide(
         name,
@@ -445,6 +458,144 @@ def clinical_claims_without_studies(spec_dir: Path) -> AuditSignal:
             "the module may be right and simply uncited, which is a decision to state rather "
             "than a defect to repair — but a reader has no way to check any of it."
         ],
+    )
+
+
+#: The `direction`/`state` values that assert a clinical lean. `unknown` and
+#: `contested` are excluded deliberately: both are honest non-claims — one an
+#: absence, one a recorded disagreement — and neither needs a paper behind it.
+#: `neutral` is excluded for the same reason a zero weight is a claim but not a
+#: lean: it asserts no direction to be wrong about.
+_DIRECTIONAL = frozenset({"risk", "protective"})
+
+
+def _variant_identities(rows: Sequence[Mapping[str, str | None]]) -> set[tuple[str, ...]]:
+    """Every way a row names a variant, as identities another table can be joined on.
+
+    Deliberately generous: a row contributes its rsID *and* its coordinate where it
+    has both, so a study citing one spelling grounds a variant row written in the
+    other. Over-matching here makes the signal quieter, which is the right way to be
+    wrong — a false *clear* costs an author one uncited row they already know about,
+    where a false *decide* on a grounded row teaches them to ignore the signal.
+
+    A study row naming no variant at all (legal since 0.6 — it grounds a threshold or
+    the module) contributes nothing here, and correctly so: it is not evidence about
+    any particular variant.
+
+    **Contigs are folded with the format's own `normalize_chrom`, never by hand.**
+    A first cut spelled the fold as `lstrip("chrCHR")`, which turns `chrM` into `M`
+    while `MT` stays `MT` — so `mt_common_deletion`, whose three studies cite the
+    three positions its three variants are at, reported all three as uncited. That
+    is the whole signal inverted by a contig spelling, and it is why the roster below
+    was measured against the reference corpus before this shipped rather than after.
+    """
+    out: set[tuple[str, ...]] = set()
+    for row in rows:
+        rsid = (row.get("rsid") or "").strip().lower()
+        if rsid:
+            out.add(("rsid", rsid))
+        chrom = normalize_chrom((row.get("chrom") or "").strip() or None)
+        start = (row.get("start") or "").strip()
+        if chrom and start:
+            out.add(("pos", chrom, start))
+    return out
+
+
+def directional_claims_without_studies(spec_dir: Path) -> AuditSignal:
+    """`variants.csv` rows that lean risk/protective with no study naming that variant.
+
+    **This is `F98`, and it is the sibling signal's own scope trap.**
+    `clinical_claims_without_studies` reads `clin_sig` and reports on "a clinical
+    significance", so a module asserting `state=risk`, `direction=risk` and a non-zero
+    `weight` with no paper anywhere came back **clear** — the six AlphaGenome-predicted
+    rows of `apoe_locus_compound`, whose clinical role is assumed from a predicted
+    expression effect. A consumer reports `state` and `direction`; it does not first
+    check which column the claim arrived in.
+
+    Two scoping choices, both stated rather than left to be discovered:
+
+    * **`variants.csv` only, and the headline says so.** `diplotypes.csv` also carries
+      `direction`, and it keys on a haplotype pair with no variant identity to join a
+      study row against — so it is out of scope because it is unjoinable, not because
+      it is uninteresting.
+    * **Per variant, not per module.** The sibling clears as soon as `studies.csv` has
+      any row at all, which passes a thousand-row module carrying one citation. This
+      asks whether *this row's own variant* is named by some study, which is the
+      question an author actually has to answer.
+    """
+    name = "directional_claims_without_studies"
+    path = spec_dir / VARIANTS
+    if not path.is_file():
+        return _blocked(name, f"{VARIANTS} is not here, so no row could be read")
+    rows = read_rows(path)
+    if not rows:
+        return _blocked(name, f"{VARIANTS} carries no rows")
+
+    leaning = [
+        row
+        for row in rows
+        if (row.get("direction") or "").strip().lower() in _DIRECTIONAL
+        or (row.get("state") or "").strip().lower() in _DIRECTIONAL
+    ]
+    if not leaning:
+        return _clear(name, f"no {VARIANTS} row leans risk or protective")
+
+    # A symbolic allele spans an interval, and a study cites a point inside or beside
+    # it — `cyp2d6_structural`'s CNV sits at 42126499 while its studies name 42126400,
+    # 99 bp away and describing the same tandem repeat. Point-joining those reports a
+    # cited row as uncited, so they are set aside and COUNTED rather than dropped: a
+    # row this signal could not assess is not a row it cleared.
+    symbolic = [r for r in leaning if "<" in f"{r.get('alts') or ''}{r.get('genotype') or ''}"]
+    joinable = [r for r in leaning if r not in symbolic]
+    if not joinable:
+        return _blocked(
+            name,
+            f"all {len(leaning)} leaning row(s) carry a symbolic allele, which spans an "
+            "interval no point join against a study coordinate can settle",
+        )
+
+    studies = read_rows(spec_dir / STUDIES) if (spec_dir / STUDIES).is_file() else []
+    grounded = _variant_identities(studies)
+    ungrounded = [row for row in joinable if not (_variant_identities([row]) & grounded)]
+    if not ungrounded:
+        return _clear(
+            name,
+            f"every one of {len(joinable)} joinable leaning row(s) has a {STUDIES} row naming "
+            f"its variant"
+            + (f"; {len(symbolic)} symbolic-allele row(s) not assessed" if symbolic else ""),
+        )
+
+    def _name(row: Mapping[str, str | None]) -> str:
+        rsid = (row.get("rsid") or "").strip()
+        pos = f"{(row.get('chrom') or '?').strip()}:{(row.get('start') or '?').strip()}"
+        lean = (row.get("direction") or row.get("state") or "").strip()
+        return f"{rsid or pos} {(row.get('genotype') or '').strip()} → {lean}"
+
+    return _decide(
+        name,
+        f"{len(ungrounded)} of {len(joinable)} joinable {VARIANTS} row(s) lean risk or "
+        f"protective with no {STUDIES} row naming that variant",
+        [_name(row) for row in ungrounded[:_EXAMPLES]]
+        + (
+            [f"and {len(ungrounded) - _EXAMPLES} more row(s)"]
+            if len(ungrounded) > _EXAMPLES
+            else []
+        )
+        + [
+            "an uncited direction is a legitimate thing to publish — a prediction, a "
+            "mechanism argument, an author's own judgement — but it is a decision to "
+            "state rather than a default to inherit, and nothing downstream can tell it "
+            "apart from a cited one. Say so in the row's conclusion, or cite it.",
+        ]
+        + (
+            [
+                f"{len(symbolic)} further leaning row(s) carry a symbolic allele and were NOT "
+                "assessed: they span an interval, and a study citing a point beside one is not a "
+                "miss this signal can tell from a gap."
+            ]
+            if symbolic
+            else []
+        ),
     )
 
 
@@ -484,6 +635,7 @@ SIGNALS = (
     findings_without_detail,
     effect_size_is_its_own_z,
     clinical_claims_without_studies,
+    directional_claims_without_studies,
 )
 
 

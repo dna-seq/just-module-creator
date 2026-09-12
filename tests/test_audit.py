@@ -313,6 +313,102 @@ def test_the_rule_is_not_scoped_to_variants_csv(module: Path):
 
 
 # --------------------------------------------------------------------------- #
+# F98 — a directional claim is a clinical claim, whatever column it arrived in
+# --------------------------------------------------------------------------- #
+def test_a_directional_row_with_no_study_is_a_decision(module: Path):
+    """The shape that fooled the `clin_sig` signal: a lean with no paper anywhere.
+
+    Real rows from `apoe_locus_compound`, whose clinical role is assumed from an
+    AlphaGenome expression prediction. No `clin_sig`, so the sibling signal clears.
+    """
+    (module / "variants.csv").write_text(
+        "rsid,chrom,start,ref,alts,genotype,weight,state,conclusion,direction\n"
+        ",19,44919171,A,T,A/T,0.15,protective,Predicted to lower APOC1,protective\n"
+    )
+    signal = audit.directional_claims_without_studies(module)
+    assert signal.state == "decide"
+    assert "1 of 1" in signal.headline
+    # and the sibling really does stay quiet on the same bytes, which is the finding
+    assert audit.clinical_claims_without_studies(module).state == "clear"
+
+
+def test_a_directional_row_its_own_study_names_is_clear(module: Path):
+    (module / "variants.csv").write_text(
+        "rsid,genotype,weight,state,conclusion,direction\n"
+        "rs2075650,A/G,-0.4,risk,Modifies the e4 background,risk\n"
+    )
+    (module / "studies.csv").write_text(
+        "rsid,pmid,conclusion\nrs2075650,36330582,Lowers the odds of surviving to 85+\n"
+    )
+    assert audit.directional_claims_without_studies(module).state == "clear"
+
+
+def test_grounding_is_per_variant_rather_than_per_module(module: Path):
+    """The sibling clears as soon as `studies.csv` has any row at all.
+
+    A thousand-row module carrying one citation passes that. This asks whether THIS
+    row's variant is the one cited, which is the question an author has to answer.
+    """
+    (module / "variants.csv").write_text(
+        "rsid,genotype,weight,state,conclusion,direction\n"
+        "rs2075650,A/G,-0.4,risk,Cited,risk\n"
+        "rs12721046,A/G,-0.4,risk,Not cited,risk\n"
+    )
+    (module / "studies.csv").write_text("rsid,pmid,conclusion\nrs2075650,36330582,Cited\n")
+    signal = audit.directional_claims_without_studies(module)
+    assert signal.state == "decide"
+    assert "1 of 2" in signal.headline
+    assert any("rs12721046" in line for line in signal.detail)
+
+
+def test_a_contig_spelled_two_ways_is_one_variant(module: Path):
+    """`mt_common_deletion` reported all three of its cited rows as uncited.
+
+    Its variants say `chrM` and its studies say `MT`, and a hand-rolled
+    `lstrip("chrCHR")` folds those to `M` and `MT`. Measured against the reference
+    corpus before shipping, which is the only reason it was caught.
+    """
+    (module / "variants.csv").write_text(
+        "chrom,start,ref,alts,genotype,weight,state,conclusion,direction\n"
+        "chrM,8993,T,G,G,-0.8,risk,Real row from mt_common_deletion,risk\n"
+    )
+    (module / "studies.csv").write_text("chrom,start,pmid,conclusion\nMT,8993,10930357,Cited\n")
+    assert audit.directional_claims_without_studies(module).state == "clear"
+
+
+def test_a_symbolic_allele_is_set_aside_and_counted_not_cleared(module: Path):
+    """A CNV spans an interval; a study cites a point beside it.
+
+    `cyp2d6_structural`'s CNV sits 99 bp from the coordinate its study names, so a
+    point join calls a cited row uncited. Setting those aside is right; dropping them
+    silently would be a row the signal could not assess presented as one it cleared.
+    """
+    (module / "variants.csv").write_text(
+        "chrom,start,alts,genotype,weight,state,conclusion,direction\n"
+        "22,42126499,<CNV:TR:30>,<CNV:TR:30>,-0.5,risk,Real row from cyp2d6_structural,risk\n"
+    )
+    signal = audit.directional_claims_without_studies(module)
+    assert signal.state == "not_computed"
+    assert "symbolic allele" in (signal.why_not or "")
+
+
+def test_unknown_and_contested_are_not_leans_that_need_a_paper(module: Path):
+    """Both are honest non-claims — an absence and a recorded disagreement."""
+    (module / "variants.csv").write_text(
+        "rsid,genotype,weight,state,conclusion,direction\n"
+        "rs429358,T/C,,neutral,No direction asserted,unknown\n"
+        "rs7412,C/T,,neutral,Sources disagree,contested\n"
+    )
+    assert audit.directional_claims_without_studies(module).state == "clear"
+
+
+def test_no_variants_table_is_not_computed_rather_than_clear(module: Path):
+    signal = audit.directional_claims_without_studies(module)
+    assert signal.state == "not_computed"
+    assert "variants.csv" in (signal.why_not or "")
+
+
+# --------------------------------------------------------------------------- #
 # Fill counts, and the shape of the whole report
 # --------------------------------------------------------------------------- #
 def test_fill_counts_every_column_of_every_authored_table_present(module: Path):

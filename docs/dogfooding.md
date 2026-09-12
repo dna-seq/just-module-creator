@@ -1820,6 +1820,28 @@ every legitimately ungrounded directional row, of which there are many in real m
 severity below `decide` or it becomes noise the first time somebody runs it on a GWAS module. Not
 repaired here — it wants the decision, not a patch.
 
+**Fixed 2026-09-12, and the fix had to be measured twice.** `directional_claims_without_studies`
+now asks, per row, whether *this row's own variant* is named by a study — not whether `studies.csv`
+has any row at all, which is what the sibling asks and what passes a thousand-row module carrying one
+citation. `clinical_claims_without_studies` keeps its scope and loses its overclaiming headline: it
+now says *"no row authors a clin_sig value"* and names the tables it read.
+
+**The first cut of the new signal was wrong in both directions and the reference corpus caught it.**
+Run over 21 real modules it fired on four; two were its own join failing, not a gap in the module:
+
+- `mt_common_deletion` reported all three rows uncited. Its `variants.csv` says `chrM` and its
+  `studies.csv` says `MT`, and the hand-rolled fold `lstrip("chrCHR")` turns those into `M` and `MT`.
+  The signal was inverted by a contig spelling. It uses `just_dna_format.vrs.normalize_chrom` now —
+  the schema-fact rule at a different address.
+- `cyp2d6_structural` reported its CNV uncited. A symbolic allele spans an interval and its study
+  cites a point 99 bp away. Those rows are now set aside **and counted**, never silently dropped: a
+  row the signal could not assess is not a row it cleared.
+
+After both, 3 of 21 fire and all three are true positives, verified by grepping each rsID:
+`hboc_palb2` (rs786203382, rs1597101776) and `shox_par1` (rs1170991098) each carry a directional row
+whose rsID appears zero times in their own `studies.csv` — two uncited rows in upstream's own
+reference examples — plus this module's six. `pathogenic_clinvar`'s 328 leaning rows stay quiet.
+
 **What saved this module is not the audit.** The prediction-only rows are legible because the author
 put `PREDICTION ONLY` at the head of every `conclusion`, set `flags=predicted_only`, `method=
 alphagenome-expression-prediction` and `stat_significance=unknown`, and said so in the README. All of
