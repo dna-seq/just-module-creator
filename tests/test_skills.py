@@ -600,3 +600,60 @@ def test_the_cli_reference_names_every_command_both_toolchain_clis_ship():
     assert not missing, (
         "commands the toolchain ships and `CLI.md` does not name: " + ", ".join(missing)
     )
+
+
+def test_the_wrapped_table_never_says_a_wrapped_tool_is_cli_only() -> None:
+    """`CLI.md` promises to say what this server **deliberately does not wrap**, and that
+    promise is the one that rots — twice now, in opposite ways.
+
+    0.34.0 wrapped four drafting sources and the row still named three. 0.35.0 wrapped
+    `check-acmg` and its row still said `—` in the tool column, i.e. *CLI only*. A
+    document whose job is to name the gap is worse than silent when it names a gap that
+    has closed: it sends an author to the CLI for something the plugin does, which is the
+    ad-hoc route the product exists to remove.
+
+    So: every row of that table whose tool column is `—` must not name a CLI command we
+    in fact wrap. Enumerated from the live toolbox rather than a list here.
+    """
+    from just_module_creator import toolbox
+
+    ours = {name for group in toolbox.GROUPS for name in group.tools} | set(toolbox.CORE)
+    assert len(ours) > 40, "the tool enumeration found almost nothing"
+
+    text = (SKILLS / "module-101" / "references" / "CLI.md").read_text()
+    marker = "## What is wrapped, and what is not"
+    assert marker in text, "the section this reads has been renamed"
+    block = text.split(marker, 1)[1].split("\n## ", 1)[0]
+    rows = [line for line in block.splitlines() if line.startswith("|") and "|" in line[1:]]
+    assert 10 < len(rows) < 60, f"the table split found {len(rows)} rows — the heading moved"
+
+    # CLI command -> the tool that wraps it. Only pairs where the CLI spelling is what the
+    # table actually prints; a row claiming "—" while naming one of these is the defect.
+    wrapped = {
+        "check-acmg": "check_acmg",
+        "check-repeat-bands": "check_repeat_bands",
+        "litvar": "check_literature_coverage",
+        "draft-repeats": "draft_from_strchive",
+        "civic": "draft_from_civic",
+        "mitomap": "draft_from_mitomap",
+        "pubmind": "draft_from_pubmind",
+    }
+    assert all(tool in ours for tool in wrapped.values()), (
+        "this map names a tool that no longer exists — update it with the rename"
+    )
+
+    offenders = []
+    for row in rows:
+        cells = [c.strip() for c in row.strip("|").split("|")]
+        if len(cells) < 3:
+            continue
+        tool_cell, cli_cell = cells[1], cells[2]
+        if tool_cell not in {"—", "-", ""}:
+            continue
+        for command, tool in wrapped.items():
+            if f"`{command}" in cli_cell:
+                offenders.append(f"{cli_cell!r} is listed as CLI-only, but `{tool}` wraps it")
+    assert not offenders, (
+        "CLI.md's wrapped/not-wrapped table claims a gap that has closed:\n  "
+        + "\n  ".join(offenders)
+    )

@@ -61,14 +61,21 @@ undeclared, not broken.
 ## The checks, and what each one actually reads
 
 ```
-check_identifiers(spec_dir="spec")      # trait CURIEs (OLS4), gene symbols (HGNC), gene <-> chromosome
+check_identifiers(spec_dir="spec")        # trait CURIEs (OLS4), gene symbols (HGNC), gene <-> chromosome
+check_acmg(spec_dir="spec")               # acmg_sf vs the ACMG SF list
+check_repeat_bands(spec_dir="spec")       # repeat_alleles.csv bands vs STRchive
+check_literature_coverage(spec_dir="spec")  # which papers a variant-literature index holds, per locus
 ```
 
 ```bash
-just-dna-enricher check-acmg spec/ --sf-list acmg/   # acmg_sf vs the ACMG SF list
 just-dna-enricher pgx spec/                          # function_status vs PharmVar and CPIC
 just-dna-enricher clinpgx check spec/ --snapshot cp/ # pharm_variants.csv vs the ClinPGx snapshot
 ```
+
+**All four tools write `verification.json` and none writes an authored cell.** `check_acmg` takes
+`sf_list` where you built a snapshot; omit it and a provisioned lane is used. `check_repeat_bands`
+is the one to run whenever `draft_from_strchive` wrote the table — it checks the bands that drafter
+produced against the same catalogue, and it makes no network request of its own.
 
 The reference-base, `clin_sig` and rsID-currency checks are folded into `enrich_module` rather than
 living here — [`module-enrich`](../module-enrich/GUIDE.md) owns them, because only that tier holds a reference sequence.
@@ -111,17 +118,24 @@ either direction.
 `PgxEnrichmentError`'s docstring and the CLI's `--strict/--best-effort` help both advertise a failure.
 **Guard:** never gate a pipeline on it; read `PgxResult`'s conflicts yourself.
 
-## `check-acmg` needs its list, or it answers nothing
+## `check_acmg` needs its list, or it answers nothing
+
+**And it will not tell you that by looking clean — read `version` first.** With no list obtained,
+every row is `unchecked`, so the tool reports `version: null`, `checked: null`, `clean: null` and a
+`skipped` sentence. Upstream's own report returns `clean=True` in that state, because its `clean` is
+*no mismatches* and an unchecked verdict is not a mismatch; the tool re-derives it rather than
+passing it through (filed as format-tree `S100`). **A green here that names no version compared
+nothing.**
 
 NCBI's page serves SF **v3.2** while ACMG has published **v3.3** — it lacks `ABCD1`, `CYP27A1` and
-`PLN`. Without `--sf-list` every disagreement comes back `unverifiable` rather than as a finding, and
-`--strict` will not fail on one. Build the snapshot once:
+`PLN`. Without a built list every disagreement comes back `unverifiable` rather than as a finding.
+`provision_caches` builds the lane, or build the snapshot once:
 
 ```bash
 just-dna-enricher acmg build <workbook.xlsx> --out acmg/
 ```
 
-and the check also stops needing the network. **`acmg_sf` is gene-level list membership**: if the row is
+and pass it as `sf_list`; the check then also stops needing the network. **`acmg_sf` is gene-level list membership**: if the row is
 about a variant in a listed gene that is not itself a reportable finding, leave the cell **blank** —
 blank means *not stated*, and ACMG scopes some entries more narrowly than the gene.
 

@@ -36,10 +36,13 @@ Install: `pip install just-dna-enricher` pulls the compiler and the format tier.
 | already published under any name | `registry_is_published` | `registry-client signature` + `find-by-hash` |
 | instance up, and which mode is it | `registry_health` | `registry-client version` (or `curl /health`) |
 | fix a published readme / logo / changelog | `registry_amend_readme` | `amend-changelog`, `amend-logo` (readme is tool-only) |
-| drafting from a source | `draft_from_clinvar`, `draft_from_cpic`, `draft_from_clinpgx` | `draft-panel`, `draft`, `draft-clinpgx` |
+| drafting from a source | `draft_from_clinvar`, `draft_from_cpic`, `draft_from_clinpgx`, `draft_from_civic`, `draft_from_mitomap`, `draft_from_pubmind`, `draft_from_strchive` | `draft-panel`, `draft`, `draft-clinpgx`, `civic`, `mitomap`, `pubmind`, `draft-repeats` |
 | fact passes | `enrich_facts`, `enrich_literature_pass` | `frequencies`, `gene-metrics`, `dosage`, `literature` |
 | **signing** | — | `keygen`, `sign` (and `close --private-key`) |
-| **PGx cross-checks** | — | `pgx`, `clinpgx check`, `check-acmg` |
+| PGx cross-checks | — | `pgx`, `clinpgx check` |
+| `acmg_sf` vs the ACMG SF list | `check_acmg` | `check-acmg` |
+| repeat bands vs STRchive | `check_repeat_bands` | `check-repeat-bands` |
+| which papers an index holds per locus | `check_literature_coverage` | `litvar coverage` |
 | **fact tables from ClinGen / ClinVar** | — | `gene-validity`, `assertions` |
 | **published GWAS effect sizes** | `enrich_gwas_effects` | `gwas` |
 | **which rsID sits at a GRCh37 coordinate** | — | `hint recover` |
