@@ -334,11 +334,14 @@ Ordered by how likely a first-timer is to hit it.
   so a haplotype is same-strand conjunction, and a diplotype is already a statement about two homologs
   — cis and trans are two rows (`compiler.py`; `schema/spec.py` points a `VariantRow`
   author here for the same reason). `docs/FAQ.md:241` refuses expressions module-wide.
-- **`requires_callable` / `callable_from`: absent, and known-absent.** They are `VariantRow`-only, so a
-  star-allele module cannot record CPIC's own core assumption — that an uncalled position is reference.
-  Open as **RM70** (`docs/ROADMAP_0_7.md:464-489`), found dogfooding 2026-08-13, deferred because an
-  authored column is the most expensive addition the format makes and the owner-table question
-  (`haplotypes.csv` and `pharm_variants.csv` name a position; `diplotypes.csv` does not) is unsettled.
+- **`requires_callable`: absent, and the absence is the DECISION — RM70 settled it in 0.7, the other
+  way from what this entry used to say.** Measured 2026-09-13: `HaplotypeRow` and `PharmVariantRow`
+  carry the column and `DiplotypeRow` does not, because a diplotype names a **pair** and not a locus.
+  The column could only mean *"the variants defining these two haplotypes were callable"* — a fact
+  about `haplotypes.csv` rows, restated one table over and free to drift the moment a definition is
+  edited. `extra="forbid"` is what enforces it, so adding it by hand is a compile error rather than a
+  silent second source of truth. One concept, one home.
+- **No `callable_from`.** That one stayed `VariantRow`-only.
 - **No citation, no PMID, no provenance quote.** `StudyRow` can only name a variant, so grounding a
   diplotype row is unsatisfiable rather than merely unmet (S19/RM47). There is nowhere to record
   *which paper* a conclusion came from except the `conclusion` prose itself.

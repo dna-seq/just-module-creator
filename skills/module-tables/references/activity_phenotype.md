@@ -347,10 +347,11 @@ no single column to name. Read the message, not the bracket.
   has the same problem and this tier says nothing about it. Not established whether that is a
   decision or an omission; the RM56 policy vocabulary (withhold / worst bin / point estimate) is
   deferred to 0.7 and its grain is deliberately undecided.
-- **No `requires_callable` on any binning row.** It and `callable_from` are `VariantRow`-only; RM70
-  records the same gap for the three PGx tables and is deferred pending a decision about which table
-  owns the claim. `unresolved` is the nearest thing this table has, and it answers a narrower
-  question.
+- **No `requires_callable` on any binning row**, and RM70 is no longer the reason. It shipped in 0.7
+  onto `HaplotypeRow` and `PharmVariantRow` — the tables whose rows name a locus — and deliberately
+  not onto `DiplotypeRow`, `AlleleFunctionRow` or any binning model (measured 2026-09-13). A band is
+  not a position, so there is nothing here for the column to be about. `unresolved` is the nearest
+  thing this table has, and it answers a narrower question.
 - **No positional key.** `(gene)` is the whole identity, and RM65/RM66 record that the
   non-joinability is a **schema gap** rather than a property of what these tables describe — gated
   on a real caller VCF. `reference_examples/cyp2d6_structural` is filed as that gating evidence, not

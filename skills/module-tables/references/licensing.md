@@ -45,7 +45,7 @@ inclusion as a bug. It is not.
 | Filename | **`licensing.csv`** preferred; **`sources.csv`** deprecated-but-read, removal queued for 1.0 (`layout.py`, `layout.py`). Root or `derived/` — four legal paths, measured: `['sources.csv', 'licensing.csv', 'derived/sources.csv', 'derived/licensing.csv']` |
 | Parquet | **`sources.parquet`** — the rename stops at the CSV. In `ARTIFACT_PARQUETS` (`compiler.py`), so in `artifact.digest` |
 | Manifest key | **`manifest.sources`** → `manifest.Sources` (`manifest.py`). Also a published key that only a major may rename |
-| Natural / dedup key | `(source, layer)` — `draft._CORE_DUPE_KEYS[SourceRow]` (`draft.py`) and `licensing.merge_sources_csv` (`licensing.py`). **Not enforced by the compiler** — see Gotchas |
+| Natural / dedup key | `(source, layer)` — `draft._CORE_DUPE_KEYS[SourceRow]` (`draft.py`) and `licensing.merge_sources_csv` (`licensing.py`). **A duplicate is an ERROR since compiler 0.6.6**, in validate and compile, in both modes — this row used to say *not enforced*, which was true only up to 0.6.5; see Gotcha 4 |
 | Authored or machine-produced | **both, genuinely.** A plain `BaseModel` with `extra="forbid"`, not an `AuthoredModel` — but the *only* fact sidecar in `draft.DRAFTABLE` and the only one with a template (S21) |
 | Who writes it | eleven enricher passes via `licensing.merge_sources_file`; and a human, for a source read by hand |
 | Fact signature | `integrity.source_signature` (`integrity.py`) over `sources.SOURCE_FACT_FIELDS` — **12 of 14** fields → `manifest.sources.signature` |

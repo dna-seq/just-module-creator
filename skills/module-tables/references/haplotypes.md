@@ -289,11 +289,15 @@ Ordered by how likely a first-timer is to hit them.
 
 ## What does not exist
 
-- **No `requires_callable` / `callable_from`.** These are `VariantRow`-only, so a star-allele module
-  cannot record CPIC's core assumption — *a position not called is reference*, which is literally
-  `requires_callable=false`. Filed as **RM70** (`docs/ROADMAP_0_7.md:464-489`), deferred rather than
-  refused: an authored column is full cost under the 0.6 charter amendment, and which of the three
-  PGx tables owns the claim is undecided.
+- **`requires_callable` is HERE now — RM70 shipped in 0.7, and this entry used to say it did not
+  exist.** Measured 2026-09-13 on the installed models: `HaplotypeRow` and `PharmVariantRow` carry
+  `requires_callable`; `DiplotypeRow` and `AlleleFunctionRow` do not, and that absence is a decision
+  rather than a gap (a diplotype names a *pair*, not a locus, so the column could only restate a
+  fact about this table's rows). See *`requires_callable` arrived in 0.7*, above, for what the three
+  values mean.
+- **No `callable_from`, anywhere but `variants.csv`.** *"A proof is required"* travelled and *"here
+  is where the proof lives"* did not, so a star-allele row can demand callability and cannot say
+  which file answers for it.
 - **No expansion of IUPAC codes**, ever. Refused with a reason (gotcha 5).
 - **No `resolve_with_ensembl=False` escape.** Despite the name it is the master switch for *all*
   resolution, injected `resolution.csv` included, and it compiles every row with `chrom=None` and

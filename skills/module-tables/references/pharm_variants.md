@@ -313,8 +313,11 @@ Ordered by how likely a first-timer is to hit them.
   `content_signature` by content and inside `artifact.digest` by bytes.
 - **No `recommendation_strength`, no `clinical_context`.** Both are on `DiplotypeRow` only. A CPIC
   recommendation scoped to `CVI ACS PCI` vs `NVI` has no home on this row.
-- **No `requires_callable`.** It is `VariantRow`-only, so no PGx table can record the assumption CPIC
-  states in prose. Open as **RM70**, and the open question is which of the three PGx tables owns it.
+- **`requires_callable` is HERE now — RM70 shipped in 0.7, and this entry used to deny it.**
+  Measured 2026-09-13: this model and `HaplotypeRow` carry it, `DiplotypeRow` and `AlleleFunctionRow`
+  do not. See the column's own section above.
+- **No `callable_from`.** It stayed `VariantRow`-only, so this row can demand a proof of callability
+  and cannot name the file that answers for it.
 - **No `chrom` vocabulary validation.** Unlike `VariantRow.chrom` / `StudyRow.chrom`, this model runs
   no chrom validator, and the schema deliberately attaches **no** vocabulary marker rather than claim
   a rejection that does not happen. Acknowledged in the code as a real inconsistency whose fix is a

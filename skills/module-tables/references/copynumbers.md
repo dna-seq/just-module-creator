@@ -335,9 +335,12 @@ Ordered by how likely a first-timer is to hit them.
   on and must annotate a gene symbol for itself.
 - **No provenance columns.** No `fetched_at`, no `source`, no `status`, no `dataset`. Nothing here
   records where a bound came from except `pmid`.
-- **No `requires_callable`.** That is `VariantRow`-only (RM70, open), so this table cannot state
-  which loci a caller must be able to call — and a copy number from a seg-dup region like SMN1 is
-  exactly the case that needs it.
+- **No `requires_callable`, and RM70 is no longer the reason.** It shipped in 0.7 onto `HaplotypeRow`
+  and `PharmVariantRow` — the rows that name a locus — and not onto any binning model (measured
+  2026-09-13). So this table still cannot state which loci a caller must be able to call, and a copy
+  number from a seg-dup region like SMN1 is exactly the case that needs it; what changed is that the
+  column now exists elsewhere rather than nowhere, so the ask is *extend it to the binning grain*
+  rather than *add it to the format*.
 - **No policy for an interval spanning bins.** RM56, deferred; see Gotcha 8.
 - **No `verification.json` check records.** No enricher pass reads this table, so the attestation on
   a copy-number-only module holds a closure and an empty `checks` list.
