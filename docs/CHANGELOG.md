@@ -3,6 +3,36 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [Unreleased]
+
+### The table dossiers stop restating the schema, and upstream generates it instead
+
+Upstream's `3e7d6f4` added one generated reference page per table kind and named the reason in its
+own docstring: our hand-written dossiers were a release behind — audited at format/compiler 0.6.1
+while the tree was 0.7.0, with their own banner admitting the `file:line` citations had drifted.
+Nothing read them, so nothing reported the gap.
+
+- **1237 `.py:NNN` citations removed** across 25 files; symbol names kept, because the symbols held
+  and the numbers did not. The banner on all 24 stamped dossiers now points at
+  `https://just-dna.life/just-dna-compiler/tables/<name>/` for columns, types, requiredness,
+  vocabularies and the identity card, with `describe_table` / `describe_machine_table` as the
+  in-session answer, and says which half stays here: who decides which cell, what an edit moves, the
+  symptom when the table lies. Where the two disagree, the generated page wins and the dossier is
+  the bug.
+- **Every counted roster was one era behind and is re-measured.** Fact-signature tables six (and,
+  elsewhere, seven) → ten; the machine-produced tables `describe_machine_table` answers seven →
+  eleven; `_INPUT_FILES` gained `overrides.csv`; `DERIVED_FILES` gained the two clin_sig tables and
+  `expression_effects`; `DRAFTABLE` is fourteen names. `LAYOUT.md`'s five sizes were taken on
+  registry 0.25.0 and **three of the five moved by 0.25.2** — a patch release — which is the
+  argument for running the snippet beside them.
+- **`expression_effects.md` is new**, the last table kind with no dossier. It is the format's first
+  *prediction* table and reads differently from every other sidecar: a null `effect_direction` means
+  the tissue tracks disagreed rather than no effect, the step from a direction to `risk`/`protective`
+  is an authored judgement, filling it makes the module non-commercial with no way to run it
+  otherwise, and `refresh_sidecar` refuses it because on an install with no Atlas credential the
+  re-derivation writes nothing and the classification would measure the credential rather than the
+  source.
+
 ## [0.35.0] — 2026-09-12
 
 ### The 0.7 adoption: PyPI floors, the probes out, and three checks that had no tool

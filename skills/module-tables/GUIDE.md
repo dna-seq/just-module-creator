@@ -83,6 +83,7 @@ here would be the hand-kept list this whole file argues against.
 | [`clinical_assertions.md`](references/clinical_assertions.md) | the archive's call, **and the review behind it** | enricher (ClinVar) |
 | [`gwas_effects.md`](references/gwas_effects.md) | what a study measured, **and on what scale** | enricher (GWAS Catalog) |
 | [`clin_sig_concordance.md`](references/clin_sig_concordance.md) | where the authorities disagree with **you**, and with each other | enricher's clin_sig leg. **Two tables, one dossier** — a parent and its detail |
+| [`expression_effects.md`](references/expression_effects.md) | which way a variant is **predicted** to move one gene's expression | enricher (AlphaGenome Atlas). New in 0.7. The one **prediction** table, and it makes the module non-commercial |
 | [`verification.md`](references/verification.md) | whether anything was ever *checked*, and the closure | enricher + `close` |
 
 **Ask `describe_machine_table` for these — a different tool, and the split is the point.**
