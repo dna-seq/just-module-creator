@@ -36,6 +36,7 @@ oversight until it is read as a decision:
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from anyio.to_thread import run_sync
@@ -48,6 +49,7 @@ from just_dna_enricher.acmg import (
     verify_acmg_sf,
 )
 from just_dna_enricher.acmg import verification_record as acmg_record
+from just_dna_enricher.clinpgx import ClinPgxEnrichmentError, enrich_clinpgx
 from just_dna_enricher.identifiers import (
     IdentifierUnavailable,
     unreachable_records,
@@ -56,9 +58,11 @@ from just_dna_enricher.identifiers import (
 from just_dna_enricher.identifiers import (
     check_identifiers as _check_identifiers,
 )
+from just_dna_enricher.licensing import LicenseRefusal
 from just_dna_enricher.litvar import LitvarError
 from just_dna_enricher.litvar import check_literature_coverage as check_literature_coverage_
 from just_dna_enricher.litvar import verification_records as litvar_records
+from just_dna_enricher.pgx import PgxEnrichmentError, enrich_pgx
 from just_dna_enricher.strchive import (
     REPEAT_ALLELES_CSV,
     StrchiveError,
@@ -74,15 +78,19 @@ from just_module_creator.models import (
     AcmgReportModel,
     AcmgVerdictRow,
     BandDifference,
+    ClinPgxCheckReport,
+    EvidenceConflictRow,
+    FunctionConflictRow,
     IdentifierReport,
     IdentifierStatus,
     IdentifierTally,
     LiteratureCoverageReportModel,
     LocusCoverageRow,
+    PgxCheckReport,
     RepeatBandReport,
 )
 from just_module_creator.settings import Settings
-from just_module_creator.tools._shared import offline_for, resolve_dir
+from just_module_creator.tools._shared import normalize_declared_use, offline_for, resolve_dir
 
 log = get_logger()
 
@@ -204,6 +212,25 @@ def _attest(records: list, target: Path) -> tuple[bool, str | None]:
         log.warning("checked, but not attested: %s", exc)
         return False, f"the check ran and is reported above; writing the record failed: {exc}"
     return True, None
+
+
+def _recorded(target: Path, check: str) -> bool:
+    """Whether `verification.json` now carries a record for `check`.
+
+    The two PGx passes attest themselves — `pgx._attest` and `clinpgx._attest` write
+    the file on `write=True` — so the wrapper must not write a second record. What it
+    can honestly report is what is on disk afterwards, read back rather than inferred
+    from the call having returned: a pass that declined to mint a record on a module
+    with nothing in scope returns normally and leaves the file untouched.
+    """
+    path = target / "verification.json"
+    if not path.exists():
+        return False
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return any(r.get("check") == check for r in document.get("records", []) if isinstance(r, dict))
 
 
 def _by_gene(verdicts: object) -> list[AcmgVerdictRow]:
@@ -735,5 +762,185 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
                 else f"{answered} of {len(report.loci)} loci were answered. PMIDs found "
                 "here are candidates: take each one through `lookup_citation` before it "
                 "reaches a row, because existence never settles identity."
+            ),
+        )
+
+    # ----------------------------------------------------------------------- #
+    # PGx: allele function against PharmVar and CPIC
+    # ----------------------------------------------------------------------- #
+    # Wrapped 0.36.0 (F101). `module-check` taught `just-dna-enricher pgx` as a bare CLI
+    # line beside four tools, and eleven of a thirteen-module PGx run had no in-surface
+    # way to run the one check that reads `function_status` back against an authority.
+    # `mode` is deliberately not exposed: upstream stores it and never reads it, so a
+    # `strict` here would advertise a gate that does not exist (the guide's ROADWORKS).
+    # Upstream attests itself, so `_attest` is not called — see `_recorded`.
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Check allele functions against PharmVar and CPIC",
+            readOnlyHint=False,  # licensing.csv rows and verification.json, never a cell
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def check_pgx(
+        spec_dir: str,
+        use: str,
+        offline: bool = False,
+        pharmvar: bool = True,
+        cpic: bool = True,
+    ) -> PgxCheckReport:
+        """Compare every authored `function_status` with PharmVar's and CPIC's, and report.
+
+        **Reads `allele_function.csv` and `haplotypes.csv`, and never opens
+        `diplotypes.csv`** — a green run says nothing about a diplotype's phenotype.
+        A difference is reported and never applied: the two authorities disagree with
+        each other, and a module drafted from CPIC is compared against its own source
+        on that leg, which upstream names (`tautology`) rather than counting as
+        agreement. Read `compared` as the denominator and `routes` for who answered.
+
+        **`use` is required**: both sources carry a no-sale clause, so `unstated` skips
+        them and `commercial` is refused. Each leg reads a built snapshot first and
+        goes live only when there is none and the ceiling is clear; PharmVar live needs
+        `PHARMVAR_API_KEY`. `offline` with no snapshot is a skip with a reason in
+        `skipped_offline`, never a pass. Writes a `licensing.csv` row per source
+        consulted and the `allele_function` record in `verification.json`.
+        """
+        declared = normalize_declared_use(use)
+        target = resolve_dir(spec_dir, settings)
+        eff_offline = offline_for(settings, offline)
+        try:
+            result = await run_sync(
+                lambda: enrich_pgx(
+                    target,
+                    mode="best_effort",
+                    offline=eff_offline,
+                    declared_use=declared,
+                    use_pharmvar=pharmvar,
+                    use_cpic=cpic,
+                    write=True,
+                )
+            )
+        except (PgxEnrichmentError, LicenseRefusal) as exc:
+            raise ToolError(f"the PGx allele-function check could not run: {exc}") from exc
+
+        conflicts = [
+            FunctionConflictRow(
+                gene=c.gene,
+                allele=c.allele,
+                authored=c.authored,
+                reported=c.reported,
+                source=c.source,
+            )
+            for c in result.conflicts
+        ]
+        answered = sorted(result.routes)
+        return PgxCheckReport(
+            spec_dir=str(target),
+            compared=result.compared,
+            conflicts=conflicts,
+            routes=dict(result.routes),
+            skipped=list(result.skipped),
+            skipped_offline=list(result.skipped_offline),
+            warnings=list(result.warnings),
+            licence_rows=len(result.rows),
+            declared_use=result.declared_use,
+            attested=_recorded(target, "allele_function"),
+            next_step=(
+                f"{len(conflicts)} allele function(s) differ from {', '.join(answered)}. "
+                "Neither side is authoritative: check both, and change a cell only on "
+                "evidence that outranks the source — `record_override` keeps the reason."
+                if conflicts
+                else f"{result.compared} authored function(s) compared against "
+                f"{', '.join(answered)} and none differs."
+                if result.compared
+                else "Nothing was compared — read `skipped`, `skipped_offline` and "
+                "`warnings`. An empty conflicts list here is not agreement."
+            ),
+        )
+
+    # ----------------------------------------------------------------------- #
+    # PGx: evidence levels against the ClinPGx snapshot
+    # ----------------------------------------------------------------------- #
+    # Wrapped 0.36.0 (F101), the pairing of `draft_from_clinpgx`: a drafter shipped
+    # with no checker. Unlike the drafter, `snapshot` is optional here because upstream
+    # resolves the cache and, when the ceiling is clear, provisions one — the download
+    # is gated on `offline` exactly as `enrich_module`'s is.
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Check pharm_variants.csv against the ClinPGx snapshot",
+            readOnlyHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def check_clinpgx(
+        spec_dir: str,
+        use: str,
+        snapshot: str | None = None,
+        offline: bool = False,
+    ) -> ClinPgxCheckReport:
+        """Compare every authored `evidence_level` in `pharm_variants.csv` with ClinPGx's.
+
+        Reports and never fills. **Read `not_checked` before `conflicts`**: it is null
+        only when the comparison ran, and an empty conflicts list with it set means
+        nothing was compared — no table, no snapshot, a `use` that forbids it, or a
+        module drafted from this very release whose values are still the drafter's.
+        `unmatched` rows are unverified, not wrong.
+
+        **`use` is required**; ClinPGx carries a no-sale clause. `snapshot` points at a
+        built directory; omit it and the resolved cache is used, or one is provisioned
+        from HuggingFace unless `offline` forbids it — there is no live ClinPGx API and
+        there will not be one. Writes the `pgx_evidence_level` record in
+        `verification.json`; a module with no `pharm_variants.csv` gets no record.
+        """
+        declared = normalize_declared_use(use)
+        target = resolve_dir(spec_dir, settings)
+        eff_offline = offline_for(settings, offline)
+        reference = resolve_dir(snapshot, settings) if snapshot else None
+        try:
+            result = await run_sync(
+                lambda: enrich_clinpgx(
+                    target,
+                    mode="best_effort",
+                    declared_use=declared,
+                    snapshot=reference,
+                    offline=eff_offline,
+                    download=not eff_offline,
+                    write=True,
+                )
+            )
+        except (ClinPgxEnrichmentError, LicenseRefusal) as exc:
+            raise ToolError(f"the ClinPGx evidence-level check could not run: {exc}") from exc
+
+        conflicts = [
+            EvidenceConflictRow(
+                rsid=c.rsid,
+                drug=c.drug,
+                genotype=c.genotype,
+                authored=c.authored,
+                reported=c.reported,
+            )
+            for c in result.conflicts
+        ]
+        return ClinPgxCheckReport(
+            spec_dir=str(target),
+            compared=result.compared,
+            not_checked=result.not_checked,
+            conflicts=conflicts,
+            unmatched=list(result.unmatched),
+            dataset=result.dataset,
+            declared_use=result.declared_use,
+            warnings=list(result.warnings),
+            attested=_recorded(target, "pgx_evidence_level"),
+            next_step=(
+                f"{len(conflicts)} evidence level(s) differ from {result.dataset}. ClinPGx "
+                "re-grades, so the archive may be the stale side: check both, and change a "
+                "cell only on evidence that outranks it — `record_override` keeps the reason."
+                if conflicts
+                else f"{result.compared} evidence level(s) compared against {result.dataset} "
+                "and none differs."
+                if result.not_checked is None
+                else f"Not compared: `{result.not_checked}` — read `warnings`. An empty "
+                "conflicts list here is not agreement."
             ),
         )

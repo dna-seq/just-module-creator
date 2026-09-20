@@ -1892,3 +1892,29 @@ into `module-draft`'s symptoms and `SYMPTOMS.md`. Not run: the tester's `probe/`
 live CPIC path — the reproduction and the tests use the snapshot, `dry_run` and `offline`. The
 re-probe is the tester's.
 
+## F101 — the two PGx cross-checks had no tool, so a PGx module could not read its own function calls back
+
+Found 2026-09-20 by the dogfooding seat on the second module of the ClawBio PGx run, plugin 0.35.0.
+`skills/module-check/GUIDE.md` listed `just-dna-enricher pgx` and `just-dna-enricher clinpgx check`
+as bare CLI lines beside four tools, and `CLI.md`'s wrapped-or-not table carried them with an empty
+tool column. Eleven of the run's thirteen modules are `haplotypes` + `allele_function` +
+`diplotypes`, so none had an in-surface way to compare `function_status` against PharmVar or CPIC,
+and a `pharm_variants.csv` module had no check against ClinPGx. The tester ran the CLI instead —
+*"sources recorded: 2 … routes: cpic=snapshot, pharmvar=snapshot"* — which is the ad-hoc route the
+product exists to remove, and the "surface teaches a step it cannot run" shape §5 names. The parity
+rule that wrapped `check_acmg`, `check_repeat_bands` and `check_literature_coverage` at 0.35.0 had
+left these two, with no written reason.
+
+**Fixed 2026-09-20, 0.36.0.** `check_pgx` and `check_clinpgx` in the `pgx` toolbox group beside the
+drafters they pair, carrying upstream's `PgxResult` / `ClinPgxResult` field-for-field: `compared` as
+the denominator, `routes` for who answered, the licence skip and the offline skip as two lists, and
+`not_checked` verbatim as the third value. Neither exposes `mode`, on the tester's point and the
+guide's own ROADWORKS: upstream stores it and never reads it. Both let upstream attest and read
+`verification.json` back for `attested`. Measured on a scratch copy of the tester's CYP2C19 module
+against the built snapshots: 5 compared, PharmVar answered, CPIC reported `tautology`. Tested with a
+disagreeing snapshot client injected under the real comparison, and hermetic offline runs.
+
+**Left open, named rather than forgotten**: `clinpgx check-labels` (a module's drug claims against
+five regulators' labels) is the third PGx check and is still CLI-only; `CLI.md` says so on its own
+row. Not run: the tester's module directories and the live PharmVar path. The re-probe is theirs.
+

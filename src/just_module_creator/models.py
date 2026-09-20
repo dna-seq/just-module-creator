@@ -3383,3 +3383,107 @@ class LiteratureCoverageReportModel(BaseModel):
     )
     attestation_note: str | None = None
     next_step: str | None = None
+
+
+class FunctionConflictRow(BaseModel):
+    """An authored `function_status` that a nomenclature authority does not support."""
+
+    gene: str
+    allele: str
+    authored: str | None = None
+    reported: str | None = None
+    source: str = Field(description="Which authority disagreed: `pharmvar` or `cpic`.")
+
+
+class PgxCheckReport(BaseModel):
+    """Authored allele functions against PharmVar and CPIC, and which leg answered.
+
+    **Reports, never fills.** A difference is a decision for a pilot: CPIC and PharmVar
+    are two authorities that themselves disagree, and a module drafted from one of them
+    is compared against the other. What is written is `licensing.csv` (a row per source
+    consulted, merge-never-clobber) and `verification.json`, both by upstream's own pass.
+    """
+
+    spec_dir: str
+    compared: int = Field(
+        description="Authored alleles an authority actually named back — **the "
+        "denominator**. Zero beside empty `conflicts` means nothing was compared, not "
+        "that everything agreed; `routes`, `skipped` and `skipped_offline` say why."
+    )
+    conflicts: list[FunctionConflictRow] = Field(default_factory=list)
+    routes: dict[str, str] = Field(
+        default_factory=dict,
+        description="`source -> snapshot | live` for each leg that answered. A leg absent "
+        "here did not answer, and one of the two skip lists carries its reason.",
+    )
+    skipped: list[str] = Field(
+        default_factory=list,
+        description="Legs the declared `use` did not permit — a licence refusal, cleared "
+        "by a declaration and never by egress.",
+    )
+    skipped_offline: list[str] = Field(
+        default_factory=list,
+        description="Legs with neither a built snapshot nor a live route under the offline "
+        "ceiling. Did not run, which is not ran-and-found-nothing.",
+    )
+    warnings: list[str] = Field(
+        default_factory=list,
+        description="Upstream's, verbatim — including the tautology note when a leg reads "
+        "the release the module was drafted from and compares each value with itself.",
+    )
+    licence_rows: int = Field(
+        description="Rows now in `licensing.csv` for the sources consulted. A source you "
+        "used is a source the module records."
+    )
+    declared_use: str
+    attested: bool = Field(
+        description="Whether `verification.json` now carries an `allele_function` record. "
+        "Upstream writes it; this reads it back rather than trusting the call."
+    )
+    next_step: str | None = None
+
+
+class EvidenceConflictRow(BaseModel):
+    """An authored `evidence_level` that ClinPGx's own record does not support."""
+
+    rsid: str | None = None
+    drug: str
+    genotype: str | None = None
+    authored: str
+    reported: str
+
+
+class ClinPgxCheckReport(BaseModel):
+    """Authored `pharm_variants.csv` evidence levels against the ClinPGx snapshot.
+
+    **Reports, never fills**, and it is the check that pairs `draft_from_clinpgx`: a
+    module drafted from the snapshot this reads is compared against its own source, and
+    upstream says so (`not_checked: tautology`) rather than reporting a zero it could
+    not have avoided.
+    """
+
+    spec_dir: str
+    compared: int = Field(
+        description="Authored evidence levels actually looked up — the denominator. "
+        "Empty `conflicts` says three things on its own, and `not_checked` separates them."
+    )
+    not_checked: str | None = Field(
+        default=None,
+        description="Null exactly when the comparison ran. Otherwise why it did not: "
+        "`nothing_to_check` (no `pharm_variants.csv`, and no record is minted), "
+        "`not_permitted` (the declared `use`), `offline` / `no_reference` (no snapshot), "
+        "or `tautology` (drafted from this very release, every value still the drafter's).",
+    )
+    conflicts: list[EvidenceConflictRow] = Field(default_factory=list)
+    unmatched: list[str] = Field(
+        default_factory=list,
+        description="Authored rows the snapshot holds no record for — unverified, not wrong.",
+    )
+    dataset: str | None = Field(default=None, description="The snapshot release that answered.")
+    declared_use: str
+    warnings: list[str] = Field(default_factory=list)
+    attested: bool = Field(
+        description="Whether `verification.json` now carries a `pgx_evidence_level` record. "
+        "A module with no `pharm_variants.csv` gets none, deliberately."
+    )
+    next_step: str | None = None

@@ -468,3 +468,143 @@ def test_every_enricher_check_command_has_a_tool_or_a_written_reason() -> None:
     )
     missing = sorted(tool for tool in wrapped.values() if tool not in ours)
     assert not missing, f"{missing} are mapped here but are in no toolbox group"
+
+
+# --------------------------------------------------------------------------- #
+# F101: the two PGx cross-checks, wrapped
+# --------------------------------------------------------------------------- #
+PGX_REFERENCE = Path("/data/sources/just-dna-format/reference_examples/cyp2c19_star_alleles")
+
+
+@pytest.fixture
+def pgx_spec(tmp_path: Path) -> Path:
+    if not PGX_REFERENCE.is_dir():
+        pytest.skip("the sibling format checkout is not present")
+    target = tmp_path / "pgx"
+    shutil.copytree(PGX_REFERENCE, target)
+    return target
+
+
+async def test_pgx_check_offline_with_no_snapshot_is_a_skip_with_a_reason(
+    make_client, pgx_spec: Path, monkeypatch
+) -> None:
+    """`compared: 0` beside empty `conflicts` is not agreement, and the report says so.
+
+    The cache base is pointed at an empty directory so no lane resolves: both legs
+    land in `skipped_offline`, `routes` is empty, and `next_step` refuses to read the
+    empty conflict list as a pass. Hermetic — the ceiling is on and nothing is fetched.
+    """
+    monkeypatch.setenv("JUST_DNA_PIPELINES_CACHE_DIR", str(pgx_spec.parent / "no-cache"))
+    async with make_client(offline_settings()) as client:
+        report = (
+            await client.call_tool(
+                "check_pgx", {"spec_dir": str(pgx_spec), "use": "non_commercial"}
+            )
+        ).data
+
+    assert report.compared == 0
+    assert report.conflicts == []
+    assert report.routes == {}
+    assert {"pharmvar", "cpic"} <= {s.split(":")[0] for s in report.skipped_offline}
+    assert "not agreement" in report.next_step
+
+
+async def test_pgx_check_on_a_module_with_no_pgx_table_mints_no_record(
+    make_client, tmp_path: Path
+) -> None:
+    """The check does not apply and upstream writes nothing — read back, never assumed."""
+    spec_dir = tmp_path / "spec"
+    spec_dir.mkdir()
+    (spec_dir / "module_spec.yaml").write_text("schema_version: '1.0'\n")
+    async with make_client(offline_settings()) as client:
+        report = (
+            await client.call_tool(
+                "check_pgx", {"spec_dir": str(spec_dir), "use": "non_commercial"}
+            )
+        ).data
+    assert report.compared == 0
+    assert report.attested is False
+    assert not (spec_dir / "verification.json").exists()
+
+
+async def test_pgx_check_carries_a_conflict_field_for_field(
+    make_client, pgx_spec: Path, monkeypatch
+) -> None:
+    """A snapshot client that disagrees on one allele: the difference arrives, and is not applied.
+
+    Only the client is faked — the comparison, the licence row and the attestation are
+    upstream's real code. A snapshot subclass is used because `offline` admits a
+    snapshot client and refuses a live one by type.
+    """
+    from just_dna_enricher import pgx as upstream_pgx
+    from just_dna_enricher.cpic import CpicAllele, CpicSnapshotClient
+
+    from just_module_creator.tools import checks
+
+    class Disagreeing(CpicSnapshotClient):
+        def __init__(self) -> None:  # no parquet behind it
+            self.release = {"dataset": "cpic_snapshot_test"}
+
+        def alleles_for_gene(self, gene: str) -> list[CpicAllele]:
+            return [CpicAllele(gene="CYP2C19", allele="*2", function_status="increased_function")]
+
+        def close(self) -> None:
+            return None
+
+    real = upstream_pgx.enrich_pgx
+
+    def with_fake(spec_dir, **kwargs):
+        kwargs["use_pharmvar"] = False
+        return real(spec_dir, cpic_client=Disagreeing(), **kwargs)
+
+    monkeypatch.setattr(checks, "enrich_pgx", with_fake)
+    before = (pgx_spec / "allele_function.csv").read_bytes()
+    async with make_client(offline_settings()) as client:
+        report = (
+            await client.call_tool(
+                "check_pgx", {"spec_dir": str(pgx_spec), "use": "non_commercial"}
+            )
+        ).data
+
+    assert report.routes == {"cpic": "snapshot"}
+    assert report.compared >= 1
+    assert [(c.gene, c.allele, c.authored, c.reported, c.source) for c in report.conflicts] == [
+        ("CYP2C19", "*2", "no_function", "increased_function", "cpic")
+    ]
+    assert (pgx_spec / "allele_function.csv").read_bytes() == before, "reported, never applied"
+    assert report.attested is True
+    assert report.licence_rows >= 1
+    assert "record_override" in report.next_step
+
+
+async def test_clinpgx_check_on_a_module_with_no_pharm_table_says_nothing_to_check(
+    make_client, pgx_spec: Path
+) -> None:
+    """`not_checked` is the third value and `nothing_to_check` mints no record — upstream's rule."""
+    assert not (pgx_spec / "pharm_variants.csv").exists()
+    record = pgx_spec / "verification.json"
+    before = record.read_bytes() if record.exists() else None
+    async with make_client(offline_settings()) as client:
+        report = (
+            await client.call_tool(
+                "check_clinpgx", {"spec_dir": str(pgx_spec), "use": "non_commercial"}
+            )
+        ).data
+    assert report.not_checked == "nothing_to_check"
+    assert report.compared == 0
+    assert report.conflicts == []
+    assert report.attested is False
+    assert "not agreement" in report.next_step
+    assert (record.read_bytes() if record.exists() else None) == before
+
+
+async def test_a_commercial_use_is_refused_by_both_pgx_checks(make_client, pgx_spec: Path) -> None:
+    """Every PGx source carries a no-sale clause; `commercial` is a contradiction, not a skip."""
+    (pgx_spec / "pharm_variants.csv").write_text(
+        "rsid,gene,drug,genotype,evidence_level,phenotype_category,conclusion\n"
+    )
+    async with make_client(offline_settings()) as client:
+        for tool in ("check_pgx", "check_clinpgx"):
+            with pytest.raises(ToolError) as excinfo:
+                await client.call_tool(tool, {"spec_dir": str(pgx_spec), "use": "commercial"})
+            assert "could not run" in str(excinfo.value)

@@ -146,16 +146,22 @@ GROUPS: tuple[Group, ...] = (
         "catalogue_checks",
         "Does an authored cell agree with the catalogue it names — `acmg_sf` against "
         "the ACMG secondary-findings list, repeat bands against STRchive — and which "
-        "papers a variant-literature index holds per locus. All three report and "
+        "papers a variant-literature index holds per locus. Each reports and "
         "none repairs.",
         ("check_acmg", "check_repeat_bands", "check_literature_coverage"),
         3400,
     ),
+    # The two checks joined the two drafters at 0.36.0 (F101): `module-check` taught
+    # both as bare CLI lines, so a PGx module had no in-surface way to read its
+    # `function_status` or `evidence_level` back against an authority — the
+    # drafter-with-no-checker shape `check_repeat_bands` closed for STRchive.
     Group(
         "pgx",
-        "Draft the pharmacogenomics tables from CPIC or a ClinPGx snapshot.",
-        ("draft_from_cpic", "draft_from_clinpgx"),
-        2291,
+        "Draft the pharmacogenomics tables from CPIC or a ClinPGx snapshot, and read the "
+        "authored allele functions and evidence levels back against PharmVar, CPIC and "
+        "ClinPGx. The checks report and never repair.",
+        ("draft_from_cpic", "draft_from_clinpgx", "check_pgx", "check_clinpgx"),
+        4693,
     ),
     Group(
         "drafting",

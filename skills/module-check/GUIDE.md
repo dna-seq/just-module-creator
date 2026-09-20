@@ -65,17 +65,23 @@ check_identifiers(spec_dir="spec")        # trait CURIEs (OLS4), gene symbols (H
 check_acmg(spec_dir="spec")               # acmg_sf vs the ACMG SF list
 check_repeat_bands(spec_dir="spec")       # repeat_alleles.csv bands vs STRchive
 check_literature_coverage(spec_dir="spec")  # which papers a variant-literature index holds, per locus
+check_pgx(spec_dir="spec", use="non_commercial")      # function_status vs PharmVar and CPIC
+check_clinpgx(spec_dir="spec", use="non_commercial")  # pharm_variants.csv evidence_level vs ClinPGx
 ```
 
-```bash
-just-dna-enricher pgx spec/                          # function_status vs PharmVar and CPIC
-just-dna-enricher clinpgx check spec/ --snapshot cp/ # pharm_variants.csv vs the ClinPGx snapshot
-```
-
-**All four tools write `verification.json` and none writes an authored cell.** `check_acmg` takes
+**Every one of these writes `verification.json` and none writes an authored cell.** `check_acmg` takes
 `sf_list` where you built a snapshot; omit it and a provisioned lane is used. `check_repeat_bands`
 is the one to run whenever `draft_from_strchive` wrote the table — it checks the bands that drafter
-produced against the same catalogue, and it makes no network request of its own.
+produced against the same catalogue, and it makes no network request of its own. The two PGx checks
+pair the two PGx drafters the same way, and **`use` is required on both**: every PGx source carries a
+no-sale clause, so `unstated` skips the leg and `commercial` is refused. `check_pgx` also writes a
+`licensing.csv` row per source it consulted — a source you checked against is a source the module
+records. On a module drafted from CPIC or ClinPGx the leg that reads the drafting release reports
+`tautology` rather than agreement; only an edited value is compared.
+
+**Read the denominator, not the conflict list.** `check_pgx` answers `compared` and `routes` (which
+leg answered, snapshot or live); `check_clinpgx` answers `compared` and `not_checked`, which is null
+exactly when the comparison ran. Zero compared beside zero conflicts is nothing measured.
 
 The reference-base, `clin_sig` and rsID-currency checks are folded into `enrich_module` rather than
 living here — [`module-enrich`](../module-enrich/GUIDE.md) owns them, because only that tier holds a reference sequence.
@@ -116,7 +122,8 @@ either direction.
 
 🚧 **ROADWORKS — `enrich_pgx(mode="strict")` does not raise.** `mode` is stored and never read, while
 `PgxEnrichmentError`'s docstring and the CLI's `--strict/--best-effort` help both advertise a failure.
-**Guard:** never gate a pipeline on it; read `PgxResult`'s conflicts yourself.
+**Guard:** never gate a pipeline on it; read the conflicts yourself. This is why `check_pgx` exposes
+no `mode` at all — a `strict` that cannot fail would be a gate the surface advertises and does not have.
 
 ## `check_acmg` needs its list, or it answers nothing
 

@@ -39,7 +39,8 @@ Install: `pip install just-dna-enricher` pulls the compiler and the format tier.
 | drafting from a source | `draft_from_clinvar`, `draft_from_cpic`, `draft_from_clinpgx`, `draft_from_civic`, `draft_from_mitomap`, `draft_from_pubmind`, `draft_from_strchive` | `draft-panel`, `draft`, `draft-clinpgx`, `civic`, `mitomap`, `pubmind`, `draft-repeats` |
 | fact passes | `enrich_facts`, `enrich_literature_pass` | `frequencies`, `gene-metrics`, `dosage`, `literature` |
 | **signing** | — | `keygen`, `sign` (and `close --private-key`) |
-| PGx cross-checks | — | `pgx`, `clinpgx check` |
+| PGx cross-checks | `check_pgx`, `check_clinpgx` | `pgx`, `clinpgx check` |
+| a drug claim vs five regulators' labels | — | `clinpgx check-labels` |
 | `acmg_sf` vs the ACMG SF list | `check_acmg` | `check-acmg` |
 | repeat bands vs STRchive | `check_repeat_bands` | `check-repeat-bands` |
 | which papers an index holds per locus | `check_literature_coverage` | `litvar coverage` |
@@ -99,8 +100,8 @@ kind, so the compile succeeds and writes a module whose every row has no `chrom`
 | `gwas <dir>` | → `gwas_effects.csv` from the GWAS Catalog. It deliberately does **not** fill `weight`. Budget is `1 + 2N` requests per variant — measured at 382 for one real module — so `--no-study-facts` before you script it |
 | `hint recover` | which rs-number GRCh37 dbSNP records at an hg19/GRCh37 coordinate. Reports, never fills |
 | `check-acmg <dir>` | `acmg_sf` vs the ACMG SF list. `--sf-list` (strongly preferred), `--offline`, `--url`. Records the question like `check-identifiers` |
-| `pgx <dir>` | `function_status` vs PharmVar + CPIC. `--no-pharmvar`, `--no-cpic`, `--use` |
-| `clinpgx check <dir> --snapshot S` | `pharm_variants.csv` vs the ClinPGx snapshot, offline-capable |
+| `pgx <dir>` | `function_status` vs PharmVar + CPIC. `--no-pharmvar`, `--no-cpic`, `--use`. Wrapped as `check_pgx`, without `--strict`, which upstream stores and never reads |
+| `clinpgx check <dir> --snapshot S` | `pharm_variants.csv` vs the ClinPGx snapshot, offline-capable. Wrapped as `check_clinpgx`; `snapshot` optional there too |
 | `check-repeat-bands <dir>` | an authored repeat band table vs STRchive. Reads a provisioned snapshot with no flag |
 | `clinpgx check-labels <dir>` | a drug claim vs five regulators' labels |
 | `alphagenome check <spec>` | a module's variants vs AlphaGenome's precomputed impact scores. Reports, never repairs; offline unless `--threshold` names a cut the local snapshot cannot decide, and it refuses to refine more than `--refinement-cap` rows over the network |

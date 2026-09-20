@@ -3,7 +3,34 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## [Unreleased]
+## [0.36.0] — 2026-09-20
+
+### The two PGx cross-checks get tools (F101)
+
+`module-check` taught `just-dna-enricher pgx` and `just-dna-enricher clinpgx check` as bare CLI
+lines beside four tools, and `CLI.md` listed them in the wrapped-or-not table with an empty tool
+column. Eleven of the thirteen modules in a PGx run carry the three star-allele tables, and none had
+an in-surface way to read `function_status` back against PharmVar or CPIC. Found by the dogfooding
+seat on the second module of that run; the same parity rule that wrapped three checks at 0.35.0
+had left these two.
+
+- **`check_pgx(spec_dir, use, offline, pharmvar, cpic)`** — authored allele functions against
+  PharmVar and CPIC. Reports `compared`, `conflicts` field-for-field, `routes` (which leg answered,
+  snapshot or live), and the two skip lists apart: `skipped` is a licence refusal, `skipped_offline`
+  is no snapshot under the ceiling. Reads `allele_function.csv` and `haplotypes.csv`, never
+  `diplotypes.csv`, and the docstring says so. Writes the `licensing.csv` rows and the
+  `allele_function` record upstream's pass writes; `attested` is read back from the file rather
+  than inferred from the call. **No `mode`**: upstream stores it and never reads it, and a `strict`
+  that cannot fail is a gate the surface would advertise and not have.
+- **`check_clinpgx(spec_dir, use, snapshot, offline)`** — `pharm_variants.csv` evidence levels
+  against the ClinPGx snapshot. `not_checked` carried verbatim as the third value; `snapshot` is
+  optional because upstream resolves the cache and provisions one, and the download is gated on
+  `offline` the way `enrich_module`'s is. A module with no `pharm_variants.csv` mints no record.
+- Both join the `pgx` toolbox group beside the drafters they pair; the group is re-measured.
+  `module-check`, `create-module`'s stage-5 row and `CLI.md` name them, and the skills test that
+  reads `CLI.md`'s table now fails if either is listed as CLI-only again.
+- **Not wrapped yet, and named so it is not forgotten**: `clinpgx check-labels`, a module's drug
+  claims against five regulators' labels. It is the third PGx check and is its own unit of work.
 
 ### A fresh scaffold no longer dead-ends the drafter it was made for (F100)
 

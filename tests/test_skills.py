@@ -633,6 +633,8 @@ def test_the_wrapped_table_never_says_a_wrapped_tool_is_cli_only() -> None:
         "check-acmg": "check_acmg",
         "check-repeat-bands": "check_repeat_bands",
         "litvar": "check_literature_coverage",
+        "pgx": "check_pgx",
+        "clinpgx check": "check_clinpgx",
         "draft-repeats": "draft_from_strchive",
         "civic": "draft_from_civic",
         "mitomap": "draft_from_mitomap",
@@ -651,7 +653,8 @@ def test_the_wrapped_table_never_says_a_wrapped_tool_is_cli_only() -> None:
         if tool_cell not in {"—", "-", ""}:
             continue
         for command, tool in wrapped.items():
-            if f"`{command}" in cli_cell:
+            # Whole command only: `clinpgx check` must not claim `clinpgx check-labels`.
+            if f"`{command}`" in cli_cell or f"`{command} " in cli_cell:
                 offenders.append(f"{cli_cell!r} is listed as CLI-only, but `{tool}` wraps it")
     assert not offenders, (
         "CLI.md's wrapped/not-wrapped table claims a gap that has closed:\n  "
