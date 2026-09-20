@@ -1624,6 +1624,12 @@ have been questions.
   in 0.21.0, so `enrich_literature_pass` is simply there now), and a rehearsal that
   waited for that would have measured nothing. **Nothing in the four production
   `antonkulaga/*` modules was touched** — a published version is immutable.
+- **The polygon carries thirteen `test-sheep/test_clawbio_pgx_<gene>@0.1.0` rehearsals from the
+  2026-09-20 dogfooding run** — one per ClawBio pharmgx-reporter gene, warfarin excluded, published
+  by the tester seat. Both halves are `test-`prefixed so `purge-test-data` collects them. Specs,
+  receipts and each module's `logs/authoring.log` are under `data/interim/clawbio_pgx/modules/`,
+  builds under `data/interim/clawbio_pgx/build/` (git-ignored). Every one compiles with the *"VRS
+  allele identity covers 0/N"* warning, which is `F103` / upstream `S104`, not a defect in them.
 - **`logs/authoring.log` now has a writer, and it publishes.** `record_override` appends to it and every
   compile sweeps `logs/**.log` up with no opt-out. So never write an absolute path, a token or a
   transcript fragment into that file: it travels to the catalog verbatim.

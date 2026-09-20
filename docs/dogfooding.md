@@ -1889,8 +1889,9 @@ Upstream's own reference README recipe fails identically; the tester filed that 
 by `_guard`, each with the repair this surface can make appended after upstream's verbatim text and
 keyed on `<<REPLACE>>`; the order written into `module-start` (stage 1 owns it), the two messages
 into `module-draft`'s symptoms and `SYMPTOMS.md`. Not run: the tester's `probe/` directories and the
-live CPIC path — the reproduction and the tests use the snapshot, `dry_run` and `offline`. The
-re-probe is the tester's.
+live CPIC path — the reproduction and the tests use the snapshot, `dry_run` and `offline`. **Not
+re-probed**: the run ended with the tester's stdio server still on 0.35.0, and a `/mcp` reconnect is
+not something that session could do for itself, so the re-probe needs the user or a fresh session.
 
 ## F101 — the two PGx cross-checks had no tool, so a PGx module could not read its own function calls back
 
@@ -1916,7 +1917,9 @@ disagreeing snapshot client injected under the real comparison, and hermetic off
 
 **Left open, named rather than forgotten**: `clinpgx check-labels` (a module's drug claims against
 five regulators' labels) is the third PGx check and is still CLI-only; `CLI.md` says so on its own
-row. Not run: the tester's module directories and the live PharmVar path. The re-probe is theirs.
+row. Not run: the tester's module directories and the live PharmVar path. **Not re-probed**: same as
+`F100` — the tester's server stayed on 0.35.0 for the whole run, so a `/mcp` reconnect by the user or
+a fresh session is what the re-probe needs.
 
 ## F102 — eleven dry runs in one batch: one verdict, four `503 enrichment_busy`, six `429 rate_limited`, and nothing said which budget or what to do
 
@@ -1959,7 +1962,9 @@ that came back `resolved` under `source=authored` with an rsID and no VRS id, na
 compile warning it will produce and `S104`. The sentence in `module-start` and `module-curate` is
 narrowed to what the sidecar actually carries per shape; `module-draft`'s CPIC section says the VRS
 warning is expected on every drafted module and why; `SYMPTOMS.md`'s VRS-coverage entry gains the
-fourth cause. Nothing here alters the sidecar — the second value is upstream's to record.
+fourth cause. Nothing here alters the sidecar — the second value is upstream's to record. The tool
+path is tested with a faked enrichment result; the predicate was measured over a real sidecar, the
+scratch copy of the tester's CYP2C19 `resolution.csv`, where it counts 5 of 5 rows.
 
 ## F104 — a table-level authoring move had no honest home in the log
 

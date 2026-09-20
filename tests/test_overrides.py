@@ -535,7 +535,7 @@ async def test_a_table_trim_is_one_record_with_its_own_verb(client, module: Path
             "field": "rows",
             "authored_value": "kept 30 rows at rs3918290, rs55886062; dropped 203 drafted rows",
             "source_name": "clinpgx",
-            "reason": "scope trim to the panel's rsIDs, derived from the reporter's gene list",
+            "reason": "scope trim to the panel's rsIDs,\nderived from the reporter's gene list",
             "recorded_by": "ai-module-creator",
         },
     )
@@ -543,6 +543,8 @@ async def test_a_table_trim_is_one_record_with_its_own_verb(client, module: Path
     logged = (module / "logs" / "authoring.log").read_text()
     assert "table pharm_variants.csv rows='kept 30 rows" in logged
     assert "judged; no value" not in logged
+    # One move per line, whatever the reason's own line breaks.
+    assert len(logged.splitlines()) == 1
 
     queue = (await client.call_tool("review_queue", {"spec_dir": str(module)})).data
     assert queue.total == 1
@@ -570,4 +572,32 @@ async def test_a_table_in_the_row_slot_with_a_cell_field_is_refused(client, modu
             },
         )
     assert "rows" in str(excinfo.value) and "file" in str(excinfo.value)
+
+
+@pytest.mark.anyio
+async def test_a_table_scope_record_does_not_cost_a_strict_validate(client, tmp_path: Path):
+    """The tester's thirteen publishes proved this on the polygon; nothing here pinned it."""
+    import shutil
+
+    reference = Path("/data/sources/just-dna-format/reference_examples/hfe_hemochromatosis")
+    if not reference.is_dir():
+        pytest.skip("the sibling format checkout is not present")
+    spec = tmp_path / "spec"
+    shutil.copytree(reference, spec)
+    await client.call_tool(
+        "record_override",
+        {
+            "spec_dir": str(spec),
+            "variant_key": "variants.csv",
+            "field": "rows",
+            "authored_value": "kept 3 of 3 drafted rows",
+            "source_name": "clinvar",
+            "reason": "no trim; the record's shape is what is under test",
+            "recorded_by": "ai-module-creator",
+        },
+    )
+    report = (
+        await client.call_tool("validate_module", {"spec_dir": str(spec), "strict": True})
+    ).data
+    assert report.valid is True
 

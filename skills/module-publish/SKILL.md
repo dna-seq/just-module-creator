@@ -55,7 +55,7 @@ whether identical authored data is already published under someone else's name.
 **It is also the one call that is rationed, so never fire it in a batch.** Every registry write sits
 on a per-account bucket that refills by the hour, and the dry run's is the smallest by design: it
 spends the deployment's shared standing with gnomAD and NCBI, and the instance runs one dry run at a
-time. Eleven `registry_check` calls at once measured one verdict, four `503 enrichment_busy` and six
+time. Eleven `registry_check` calls at once (2026-09-20) measured one verdict, four `503 enrichment_busy` and six
 `429 rate_limited` — both about the instance, neither about the module. For a batch, `registry_validate`
 each module (its own, larger bucket) and spend a dry run only where the network tier matters; re-run a
 throttled call later, one at a time. The refusal names the bucket it hit.

@@ -150,7 +150,7 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
                 f"{record.recorded_at} "
                 + (
                     f"table {record.variant_key} {record.field}={authored_value!r} "
-                    f"(source {source_name}; {reason})"
+                    f"(source {source_name}; {' '.join(reason.split())})"
                     if overrides.is_table_scope(record)
                     else f"override {record.variant_key} {record.field}="
                     f"{authored_value!r} outranks {source_name} ({source_value!r})"

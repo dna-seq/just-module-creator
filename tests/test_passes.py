@@ -1318,15 +1318,20 @@ async def test_a_restated_authored_coordinate_is_named_rather_than_counted_as_re
     (spec / "module_spec.yaml").write_text("module:\n  name: spec\n", encoding="utf-8")
 
     def row(**kw):
-        base = dict(status="resolved", source="cache", rsid="rs4244285", vrs_id="ga4gh:VA.x")
+        base = dict(
+            status="resolved", source="cache", rsid="rs4244285", vrs_id="ga4gh:VA.x", ref="G"
+        )
         base.update(kw)
         return SimpleNamespace(**base)
 
     def _fake_enrich(*_a, **_k):
         return SimpleNamespace(
             rows=[
+                row(source="authored", vrs_id=None, ref=None),
+                row(source="authored", vrs_id=None, ref=None, rsid="rs12248560"),
+                # An authored row that DID carry ref/alts and merely did not mint is
+                # not the shape, and the sentence would be false about it.
                 row(source="authored", vrs_id=None),
-                row(source="authored", vrs_id=None, rsid="rs12248560"),
                 row(),
             ],
             unresolved=[],
@@ -1342,7 +1347,7 @@ async def test_a_restated_authored_coordinate_is_named_rather_than_counted_as_re
     async with make_client(offline_settings()) as client:
         report = (await client.call_tool("enrich_module", {"spec_dir": str(spec)})).data
 
-    assert report.resolved == 3
+    assert report.resolved == 4
     named = [w for w in report.warnings if "source=authored" in w]
     assert len(named) == 1
     assert named[0].startswith("2 row(s)")

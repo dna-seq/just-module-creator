@@ -666,6 +666,7 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
             and getattr(row, "source", None) == "authored"
             and getattr(row, "rsid", None)
             and not getattr(row, "vrs_id", None)
+            and not getattr(row, "ref", None)
         )
         if restated:
             warnings.append(
