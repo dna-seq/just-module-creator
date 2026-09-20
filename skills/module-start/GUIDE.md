@@ -39,10 +39,14 @@ Each one closes off a class of wrong turn.
    lands in `licensing.csv`, which is the only file the compile gate reads.
 
 **Prefer the rsID to a coordinate wherever the source gives you both.** An rsid-only row cannot carry
-a coordinate mistake, and the resolution table [`module-enrich`](../module-enrich/GUIDE.md) produces is then the independent second
-value the cross-check needs. Author coordinates only when you have a reason: no rsID exists (roughly
-10% of ClinVar pathogenic variants), one rsID names several alleles and the row must say which, or the
-module is not GRCh38.
+a coordinate mistake, and the resolution table [`module-enrich`](../module-enrich/GUIDE.md) produces
+then carries Ensembl's answer — `ref`, `alts`, a VRS id — as the independent second value. A row
+authored with **both** is different: the agreement check still compares it with Ensembl and records
+the verdict in `verification.json`, but the sidecar restates your coordinate under `source=authored`
+with none of the three, and the compile warns that VRS identity covers none of them (upstream `S104`;
+`enrich_module` names the rows). Author coordinates only when you have a reason: no rsID exists
+(roughly 10% of ClinVar pathogenic variants), one rsID names several alleles and the row must say
+which, or the module is not GRCh38.
 
 ## Where a module comes from — four honest starts
 

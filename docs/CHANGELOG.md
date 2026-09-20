@@ -3,6 +3,26 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [Unreleased]
+
+### Three findings from the ClawBio PGx run (F102, F103, F104)
+
+- **A throttled registry write says which budget it hit.** `targets.throttle_note` suffixes the
+  three write arms: a `429` names the bucket (`enrich` for the dry run, `validate`, `publish`) and
+  calls it the instance's budget rather than the module's, pointing the dry run's at
+  `registry_validate` as a batch's pre-flight; a `503 enrichment_busy` says the instance runs one
+  dry run at a time. `registry_check`'s docstring and `module-publish` state the rule and not the
+  operator's numbers. No retry inside the tool. Registry-tree `S23` asks for the bucket in `detail`.
+- **`enrich_module` names the rows whose coordinate was restated rather than resolved.** A row
+  authored with both an rsID and a position comes back `resolved` under `source=authored` with no
+  `ref`, `alts` or VRS id, which is every CPIC-drafted haplotype row; the report now says so beside
+  the count, with the compile warning it will produce and upstream `S104`. `module-start`,
+  `module-curate`, `module-draft` and `SYMPTOMS.md` say what the sidecar carries per shape.
+- **A table-level authoring move has a documented record.** `record_override` takes a table's file
+  name in `variant_key` with `field` in `{rows, file}`, refuses any other field beside a table name,
+  logs it as `table <csv> rows=…`, and `review_queue` lists it as `scope: table` (new `table_scope`
+  count) instead of a missing subject. A tool that applies a keep-list is surfaced, not built.
+
 ## [0.36.0] — 2026-09-20
 
 ### The two PGx cross-checks get tools (F101)

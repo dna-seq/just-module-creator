@@ -1053,3 +1053,35 @@ async def test_a_matching_contract_says_so_rather_than_staying_silent(make_clien
     assert health.contract_compatible is True
     assert health.contract_note is None
     assert "CONTRACT DOES NOT MATCH" not in health.message
+
+
+# --------------------------------------------------------------------------- #
+# F102: a throttled registry write says which budget, and that it is not the module
+# --------------------------------------------------------------------------- #
+def test_a_rate_limited_dry_run_names_its_bucket_and_the_cheap_preflight() -> None:
+    """The server says `rate_limited` for every bucket; the suffix says which one and what to do."""
+    from just_dna_registry import RegistryError
+
+    from just_module_creator.targets import throttle_note
+
+    note = throttle_note(RegistryError(429, "rate_limited"), "check")
+    assert "`enrich`" in note
+    assert "registry_validate" in note
+    assert "one at a time" in note
+    # A publish sits on its own bucket, and the validate remedy does not apply to it.
+    publish = throttle_note(RegistryError(429, "rate_limited"), "publish")
+    assert "`publish`" in publish and "registry_validate" not in publish
+
+
+def test_a_busy_dry_run_gate_says_sequential_not_broken() -> None:
+    from just_dna_registry import RegistryError
+
+    from just_module_creator.targets import throttle_note
+
+    note = throttle_note(RegistryError(503, "enrichment_busy"), "check")
+    assert "one dry run at a time" in note
+    assert "Retry-After" in note
+    # Any other refusal is left to upstream's sentence.
+    assert throttle_note(RegistryError(422, "test_data_on_prod"), "publish") == ""
+    assert throttle_note(RegistryError(503, "upstream_down"), "check") == ""
+

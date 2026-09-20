@@ -651,6 +651,31 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
                 "No ref mismatches reported — but this ran offline, where the check "
                 "needs sequence access and therefore did not run at all."
             )
+        # A row authored with BOTH an rsID and a coordinate takes upstream's last resolver
+        # branch — "already complete, or has a position — nothing to resolve" — and the
+        # sidecar restates the authored coordinate under `source=authored` with no `ref`,
+        # no `alts` and no VRS id. `resolved: 5, sources: ["authored"]` then reads as a
+        # clean run while nothing Ensembl answered reached the file, and every
+        # CPIC-drafted module compiles at 0% VRS coverage (F103, upstream S104). The
+        # coordinate-agreement check does still run; what is missing is the second value
+        # in the sidecar, and that is what this names.
+        restated = sum(
+            1
+            for row in getattr(result, "rows", []) or []
+            if getattr(row, "status", None) == "resolved"
+            and getattr(row, "source", None) == "authored"
+            and getattr(row, "rsid", None)
+            and not getattr(row, "vrs_id", None)
+        )
+        if restated:
+            warnings.append(
+                f"{restated} row(s) carried both an rsID and a coordinate, so resolution.csv "
+                "restates the authored position under source=authored with no ref, no alts "
+                "and no VRS id — nothing Ensembl answered reached the sidecar. Expected on "
+                "every CPIC-drafted haplotype table (upstream S104): the compile will warn "
+                "that VRS identity covers 0 of these, and verification.json's "
+                "rsid_coordinate_agreement is the check that did run."
+            )
         return EnrichReport(
             success=True,
             spec_dir=str(target),

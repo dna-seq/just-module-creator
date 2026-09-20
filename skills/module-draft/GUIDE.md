@@ -159,6 +159,14 @@ every `draft --gene` and check each against CPIC's table.
 the allele-function loop and 164 from `_haplotype_rows`. Expect volume; read the counts rather than the
 lines.
 
+**Every CPIC-drafted `haplotypes.csv` row carries `rsid`, `chrom` and `start`, and that shape costs the
+VRS id.** A row authored with both takes the enricher's "nothing to resolve" branch: `resolution.csv`
+restates the drafted coordinate under `source=authored` with no `ref`, `alts` or `ga4gh:VA`, so the
+compile warns *"VRS allele identity covers 0/N allele(s)"* on **every** CPIC-drafted module. The
+coordinate-agreement check does run (`verification.json`, `rsid_coordinate_agreement` — it found five
+CPIC positions off Ensembl's on CYP2D6), and `enrich_module` names the restated rows. Expected, not a
+defect in your module, and not something to fix by deleting the drafter's coordinates; upstream `S104`.
+
 ## Star alleles
 
 - **A large star-allele gene needs `draft --allele`.** *n* alleles is *n(n+1)/2* diplotypes; unfiltered

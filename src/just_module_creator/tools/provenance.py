@@ -19,6 +19,7 @@ from pathlib import Path
 
 from anyio.to_thread import run_sync
 from fastmcp import FastMCP
+from fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
 from just_module_creator import overrides
@@ -97,7 +98,12 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
         routes scrutiny by, and this log publishes verbatim. One call is one
         `(variant_key, field)` pair with no bulk form, so a column-wide correction is
         that many calls — where the set is too large, write one record and say in
-        `reason` how the set was derived. `reason` is prose with no vocabulary on
+        `reason` how the set was derived. **A move on a whole table** — a trim to a
+        key set, a file removed — is one record too: `variant_key` is the table's
+        file name (`pharm_variants.csv`), `field` is `rows` or `file`,
+        `authored_value` states what was kept and dropped with counts, and `reason`
+        how the kept set was derived; `review_queue` lists it as table-scope rather
+        than as a row it cannot find. `reason` is prose with no vocabulary on
         purpose, since which of a retraction, a meta-analysis or a larger cohort
         outranks an archive call is a judgement a pick-list would replace with the
         nearest label. It **silences nothing**: the check still reports the mismatch and
@@ -107,6 +113,17 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
         credential, no absolute path, no transcript fragment.
         """
         target = resolve_dir(spec_dir, settings)
+        # A `.csv` in the row slot is the table-scope convention (F104), and the only
+        # fields it admits are the two the queue can classify; anything else would be
+        # a cell record naming a file as its row, which `review_queue` reads as a
+        # missing subject and nobody reads as a trim.
+        if variant_key.endswith(".csv") and field not in overrides.TABLE_SCOPE_FIELDS:
+            raise ToolError(
+                f"{variant_key} names a table, so `field` must be one of "
+                f"{sorted(overrides.TABLE_SCOPE_FIELDS)}: `rows` for a set of rows kept "
+                "or dropped, `file` for the whole table removed. Put the counts in "
+                "`authored_value` and how the set was derived in `reason`."
+            )
         record = overrides.OverrideRecord(
             variant_key=variant_key,
             field=field,
@@ -132,7 +149,10 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
                 # this file publishes verbatim (`F71`).
                 f"{record.recorded_at} "
                 + (
-                    f"override {record.variant_key} {record.field}="
+                    f"table {record.variant_key} {record.field}={authored_value!r} "
+                    f"(source {source_name}; {reason})"
+                    if overrides.is_table_scope(record)
+                    else f"override {record.variant_key} {record.field}="
                     f"{authored_value!r} outranks {source_name} ({source_value!r})"
                     if source_value
                     else f"authored {record.variant_key} {record.field}="
@@ -160,6 +180,13 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
             # defect as getting the log wrong, one field over.
             note=(
                 (
+                    "Recorded as a table-scope move: the counts and the derivation are "
+                    "the record, and `review_queue` lists it apart from cell records. "
+                    "It deleted nothing — the rows are already gone or kept by your "
+                    "hand, and this is the attribution."
+                )
+                if overrides.is_table_scope(record)
+                else (
                     "Recorded, not resolved. The cross-check still reports this mismatch "
                     "and the row stays in `review_queue` — a recorded outrank is "
                     "downgraded, never passed."
@@ -220,7 +247,8 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
             spec_dir=str(target),
             total=len(queued),
             unbound=sum(1 for q in queued if q.still_bound is False),
-            subject_absent=sum(1 for q in queued if q.still_bound is None),
+            subject_absent=sum(1 for q in queued if q.still_bound is None and q.scope == "cell"),
+            table_scope=sum(1 for q in queued if q.scope == "table"),
             retirable=sum(1 for q in queued if q.mismatch_state == "resolved"),
             entries=queued,
             other_provenance=list(foreign),

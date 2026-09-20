@@ -209,3 +209,46 @@ def instance_note(exc: RegistryError) -> str:
             "database, so a call aimed at one and answered by the other is never harmless."
         )
     return ""
+
+
+#: Which rate-limit bucket each registry write endpoint sits on, by the tool that calls
+#: it. Upstream's `ratelimit.CATEGORIES`; the sizes are the operator's
+#: `rate_<bucket>_per_hour` settings and are deliberately not written here. The dry
+#: run's bucket is the smallest by design — it spends the deployment's shared standing
+#: with gnomAD and NCBI — which is why eleven `registry_check` calls in one batch came
+#: back as one verdict, four `503 enrichment_busy` and six `429 rate_limited` (F102).
+THROTTLE_BUCKETS = {"check": "enrich", "validate": "validate", "publish": "publish"}
+
+
+def throttle_note(exc: RegistryError, endpoint: str) -> str:
+    """The sentence that says a refusal is a budget, not the module — and which budget.
+
+    The server answers every exhausted bucket with the same two words, `rate_limited`,
+    and a full dry-run gate with `enrichment_busy`; neither names what to do. Both are
+    about the *instance's* capacity: nothing in the spec changes the answer, and a
+    re-run is the whole repair. Same shape as `instance_note` — a suffix on the one
+    `except RegistryError` arm, empty for every other refusal — and the two compose.
+    Asked of the registry as its `S23` (name the bucket, derive `Retry-After` from it).
+    """
+    status = getattr(exc, "status_code", None)
+    detail = str(getattr(exc, "detail", "") or "")
+    bucket = THROTTLE_BUCKETS.get(endpoint, endpoint)
+    if status == 429:
+        cheap = (
+            " `registry_validate` sits on its own, larger bucket and is the pre-flight for a "
+            "batch; spend a dry run on the modules that need the network tier."
+            if bucket == "enrich"
+            else ""
+        )
+        return (
+            f" That is the `{bucket}` rate-limit bucket, per account, refilled by the hour: "
+            f"the instance's budget, not your module. Re-run later, one at a time.{cheap}"
+        )
+    if status == 503 and "enrichment_busy" in detail:
+        return (
+            " The instance runs one dry run at a time and its gate is full — a dry run "
+            "from another call, possibly your own batch, is still running. Wait a minute "
+            "(the server says `Retry-After: 60`) and re-run these sequentially, never in "
+            "parallel; each one still draws on the `enrich` bucket."
+        )
+    return ""

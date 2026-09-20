@@ -218,9 +218,11 @@ wrong variant, or a paralogous rsID with several loci.
 convention your *source* uses, not sourcing the cell. Do this **once per source**, before the bulk pass.
 
 **Then prefer the rsID and let enrichment find the coordinate.** An rsid-only row cannot carry a
-coordinate mistake, and the resolution table it produces is the independent second value the cross-check
-needs. Author coordinates only when you must: no rsID exists, one rsID names several alleles and the row
-must say which, or the module is not GRCh38.
+coordinate mistake, and the resolution table it produces then holds Ensembl's `ref`, `alts` and VRS id
+as the independent second value. With both authored, the agreement check still runs but the sidecar
+only restates your coordinate — [`module-start`](../module-start/GUIDE.md) has the shape. Author
+coordinates only when you must: no rsID exists, one rsID names several alleles and the row must say
+which, or the module is not GRCh38.
 
 **Never author both sides of a redundancy check.** Hand-writing `resolution.csv` *and* the coordinates
 in `variants.csv` makes the coordinate cross-check compare your convention against itself. If you
@@ -347,6 +349,14 @@ A defensible way to decide:
 5. **Curate by subtraction when a source is generous.** The largest reference module is 1,190 diplotypes
    reached by *removing* what a caller cannot emit — and six alleles turn CYP2D6's 16,290 diplotypes
    into 21.
+
+**Log the trim as one record, not one per row.** `record_override` has one shape, and a trim to a key
+set has no row to name — so the convention is the table in the row slot: `variant_key="pharm_variants.csv"`,
+`field="rows"` (or `"file"` when the whole table went), `authored_value` stating what was kept and dropped
+with counts, `source_name` the drafter's source, and `reason` saying how the kept set was derived. One
+call per table per trim. `review_queue` lists it as table-scope rather than as a row it cannot find. It
+logs the move and deletes nothing: the deletion is still yours, by hand, which is a deliberate limit —
+whether a tool should apply a keep-list is an open decision, not a gap (`F104`).
 
 For calibration: the sixteen reference modules run from **three files and no coordinates** up to 330
 drafted-then-curated rows. There is no minimum. `assets/fto_bmi` is one locus and is a perfectly good

@@ -2413,6 +2413,12 @@ class ReviewQueue(BaseModel):
         "`variants.csv` does not carry that column. **Not the same as unbound** — nobody edited "
         "anything, the question simply could not be put, and `still_bound` is null on these.",
     )
+    table_scope: int = Field(
+        default=0,
+        description="Records logged against a whole table — a trim to a key set, a file "
+        "removed — rather than a cell. They carry no binding and are listed, not counted "
+        "as absent subjects.",
+    )
     retirable: int = Field(
         description="Records whose mismatch has resolved: the archive caught up and the "
         "override was vindicated. The only such evidence this format holds."

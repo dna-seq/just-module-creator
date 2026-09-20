@@ -517,3 +517,57 @@ def test_the_only_value_the_queue_shows_for_a_multi_row_variant_can_bind(module:
         f"still_bound={entry.still_bound!r} for the exact string the queue prints — "
         "recording back what the surface shows must not read as an edit nobody made"
     )
+
+
+# --------------------------------------------------------------------------- #
+# F104 — a table-level move has one honest record, and the queue knows its shape
+# --------------------------------------------------------------------------- #
+@pytest.mark.anyio
+async def test_a_table_trim_is_one_record_with_its_own_verb(client, module: Path):
+    """Eleven modules trimmed to a key set were logged as `authored pharm_variants.csv rows=…
+    (judged; no value from clinpgx to disagree with)` — a cell verb over a table. The
+    record is legitimate; the log line and the queue's reading of it were not."""
+    out = await client.call_tool(
+        "record_override",
+        {
+            "spec_dir": str(module),
+            "variant_key": "pharm_variants.csv",
+            "field": "rows",
+            "authored_value": "kept 30 rows at rs3918290, rs55886062; dropped 203 drafted rows",
+            "source_name": "clinpgx",
+            "reason": "scope trim to the panel's rsIDs, derived from the reporter's gene list",
+            "recorded_by": "ai-module-creator",
+        },
+    )
+    assert "table-scope" in out.data.note
+    logged = (module / "logs" / "authoring.log").read_text()
+    assert "table pharm_variants.csv rows='kept 30 rows" in logged
+    assert "judged; no value" not in logged
+
+    queue = (await client.call_tool("review_queue", {"spec_dir": str(module)})).data
+    assert queue.total == 1
+    assert queue.table_scope == 1
+    assert queue.subject_absent == 0, "a table record is not a row that went missing"
+    assert queue.entries[0].scope == "table"
+    assert queue.entries[0].still_bound is None
+
+
+@pytest.mark.anyio
+async def test_a_table_in_the_row_slot_with_a_cell_field_is_refused(client, module: Path):
+    from fastmcp.exceptions import ToolError
+
+    with pytest.raises(ToolError) as excinfo:
+        await client.call_tool(
+            "record_override",
+            {
+                "spec_dir": str(module),
+                "variant_key": "pharm_variants.csv",
+                "field": "evidence_level",
+                "authored_value": "1A",
+                "source_name": "clinpgx",
+                "reason": "r",
+                "recorded_by": "x",
+            },
+        )
+    assert "rows" in str(excinfo.value) and "file" in str(excinfo.value)
+

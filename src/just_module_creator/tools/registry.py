@@ -44,6 +44,7 @@ from just_module_creator.targets import (
     instance_note,
     polygon_naming_note,
     prod_refusal,
+    throttle_note,
 )
 from just_module_creator.tools._shared import (
     jsonable,
@@ -424,7 +425,7 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         except RegistryError as exc:
             raise ToolError(
                 f"{describe(target, settings)} could not validate the spec: "
-                f"{exc}{instance_note(exc)}"
+                f"{exc}{instance_note(exc)}{throttle_note(exc, 'validate')}"
             ) from exc
 
         return _preflight(
@@ -482,6 +483,13 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         this call still reaches the registry and can still be rate-limited, because
         asking it anything is a network call whatever it then does.
 
+        **Budgeted per account, on the smallest bucket the registry has** — the dry
+        run spends the deployment's shared standing with gnomAD and NCBI, and the
+        instance runs one at a time. A batch of these comes back as `429
+        rate_limited` and `503 enrichment_busy`, both about the instance rather than
+        the module, so re-run sequentially; `registry_validate` is on its own,
+        larger bucket and is the pre-flight for a batch.
+
         The optional passes are off by default and each costs egress.
         `identifiers=true` never moves the verdict — a publish does not run that
         pass — but it is where a fabricated row shows up. `pgx=true` needs
@@ -533,7 +541,7 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         except RegistryError as exc:
             raise ToolError(
                 f"{describe(target, settings)} could not complete the dry run: "
-                f"{exc}{instance_note(exc)}"
+                f"{exc}{instance_note(exc)}{throttle_note(exc, 'check')}"
             ) from exc
 
         return _preflight(
@@ -916,7 +924,7 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
                 success=False,
                 message=(
                     f"{describe(target, settings)} refused the publish: "
-                    f"{exc}{instance_note(exc)}"
+                    f"{exc}{instance_note(exc)}{throttle_note(exc, 'publish')}"
                 ),
                 data={"target": target},
             )

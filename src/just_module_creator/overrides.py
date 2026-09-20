@@ -370,10 +370,34 @@ def _days_since(stamp: str) -> int | None:
     return max(0, (datetime.now(UTC) - then).days)
 
 
+#: The `field` values a table-scope record may carry: a set of rows trimmed, or the
+#: whole file removed. The `variant_key` slot then holds the table's file name.
+TABLE_SCOPE_FIELDS = frozenset({"rows", "file"})
+
+
+def is_table_scope(record: OverrideRecord) -> bool:
+    """Whether a record is about a table rather than a cell.
+
+    `record_override` has one shape, `(variant_key, field)`, and a trim to a key set
+    has no row to name — so the convention (F104) is the table's file name in
+    `variant_key` and `rows` or `file` in `field`, with the counts in `authored_value`
+    and the derivation in `reason`. Recognised here so `review_queue` does not report
+    such a record as a cell whose row has gone missing.
+    """
+    return record.variant_key.endswith(".csv") and record.field in TABLE_SCOPE_FIELDS
+
+
 class QueuedOverride(BaseModel):
     """One record, with everything that can be decided about it offline."""
 
     record: OverrideRecord
+    scope: str = Field(
+        default="cell",
+        description="`cell` — one `(variant_key, field)` on a row. `table` — a trim or a "
+        "removal logged against a whole file, whose `variant_key` is the file name; there "
+        "is no cell to bind to, so `still_bound` is null by construction and it is not "
+        "counted as a missing subject.",
+    )
     still_bound: bool | None = Field(
         description=(
             "Whether the authored cell still hashes to what the record justifies. "
@@ -423,6 +447,18 @@ def review_queue(spec_dir: Path) -> list[QueuedOverride]:
     by_field: dict[str, dict[str, set[str]]] = {}
     queued: list[QueuedOverride] = []
     for record in records:
+        if is_table_scope(record):
+            queued.append(
+                QueuedOverride(
+                    record=record,
+                    scope="table",
+                    still_bound=None,
+                    current_value=None,
+                    mismatch_state="unknown",
+                    age_days=_days_since(record.recorded_at),
+                )
+            )
+            continue
         values = by_field.setdefault(record.field, authored_values(spec_dir, record.field))
         current = values.get(record.variant_key) or set()
         one = sorted(current)[0] if len(current) == 1 else None

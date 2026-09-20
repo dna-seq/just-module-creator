@@ -1918,3 +1918,72 @@ disagreeing snapshot client injected under the real comparison, and hermetic off
 five regulators' labels) is the third PGx check and is still CLI-only; `CLI.md` says so on its own
 row. Not run: the tester's module directories and the live PharmVar path. The re-probe is theirs.
 
+## F102 — eleven dry runs in one batch: one verdict, four `503 enrichment_busy`, six `429 rate_limited`, and nothing said which budget or what to do
+
+Found 2026-09-20 by the dogfooding seat, thirteen modules into the ClawBio PGx run, plugin 0.35.0.
+`registry_check` fired once per module against the polygon; the tool surfaced each refusal raw —
+*"the polygon could not complete the dry run: HTTP 429: rate_limited"* — with no bucket named, no
+`Retry-After`, and no `next_step`. Read from the registry's own tree: `/check` sits on the `enrich`
+bucket (operator default five an hour, refilling one per twelve minutes) plus a concurrency gate that
+answers `503 enrichment_busy`; `/validate` is on its own `validate` bucket (sixty an hour), `/publish`
+on `publish` (ten). So the taught rehearsal — a dry run before every publish — caps an author at five
+modules an hour, and the tester switched to `registry_validate` + `registry_publish` for the remaining
+eleven; only two went through the full dry run. The registry-tree half (name the bucket in `detail`,
+derive `Retry-After` from the bucket's refill) is the tester's `S23`.
+
+**Fixed 2026-09-20 (unreleased on 0.36.0).** `targets.throttle_note` is the suffix beside
+`instance_note` on the three write arms: a 429 names the bucket (`enrich`, `validate`, `publish`) and
+says it is the instance's budget rather than the module, and on the dry run's bucket points at
+`registry_validate` as the pre-flight for a batch; a `503 enrichment_busy` says the instance runs one
+dry run at a time and to re-run sequentially. No retry inside the tool: a five-an-hour bucket cannot
+be waited out in a call, and a retry on the busy gate would be a policy invented here.
+`registry_check`'s docstring and `module-publish` state the rule — rationed by design, never batched,
+validate for a batch — and deliberately not the numbers, which are the operator's settings. Not run
+against the live polygon from this seat; the refusal shapes come from the registry's source.
+
+## F103 — `resolved: 5, sources: ["authored"], vrs_minted: 0` read as a clean run on every CPIC-drafted module
+
+Found 2026-09-20 by the dogfooding seat on `cyp2c19`, and the tester corrected their own reading the
+same day. Every CPIC-drafted `haplotypes.csv` row carries `rsid` + `chrom` + `start`, and the
+enricher's last resolver branch — *"already complete, or has a position — nothing to resolve"* —
+restates the authored coordinate into `resolution.csv` under `source=authored` with empty `ref`/`alts`
+and no VRS id. `compile_module` then warns *"VRS allele identity covers 0/5 allele(s)"* on all
+thirteen modules. **What is true and what is not**: the coordinate-agreement check *does* run —
+`verification.json` carries `rsid_coordinate_agreement` with five subjects on CYP2C19, and on CYP2D6
+it found five CPIC positions off Ensembl's — so the skills' sentence *"the resolution table is the
+independent second value the cross-check needs"* was right about the check and wrong about the
+sidecar, which holds no second value for this shape. Upstream half is the tester's `S104`.
+
+**Fixed 2026-09-20 (unreleased on 0.36.0).** `enrich_module` now appends a warning counting the rows
+that came back `resolved` under `source=authored` with an rsID and no VRS id, naming the shape, the
+compile warning it will produce and `S104`. The sentence in `module-start` and `module-curate` is
+narrowed to what the sidecar actually carries per shape; `module-draft`'s CPIC section says the VRS
+warning is expected on every drafted module and why; `SYMPTOMS.md`'s VRS-coverage entry gains the
+fourth cause. Nothing here alters the sidecar — the second value is upstream's to record.
+
+## F104 — a table-level authoring move had no honest home in the log
+
+Found 2026-09-20 by the dogfooding seat. `record_override` is the only writer to
+`logs/authoring.log` and its shape is one `(variant_key, field, authored_value)` per call. The tester
+trimmed `pharm_variants.csv` in eleven modules to the panel's rsIDs (DPYD: 30 of 233 drafted rows
+kept, 203 dropped across ~50 rsIDs) and deleted the file plus its ClinPGx licence row in two. Logging
+per rsID would have been a hundred calls, so each module got one record with
+`variant_key="pharm_variants.csv"` and `field="rows"` — which the tool accepted without comment,
+logged with the cell verb *"authored … (judged; no value from clinpgx to disagree with)"*, and which
+`review_queue` would have reported as a row it could not find. §2 says a hand move should go through
+a tool that logs, and no tool trims a table.
+
+**Half fixed 2026-09-20 (unreleased on 0.36.0), half surfaced.** The convention the tester improvised
+is now the documented one: a `.csv` in the row slot with `field` in `{rows, file}`, counts in
+`authored_value`, the derivation in `reason`; any other `field` beside a table name is refused with
+the convention in the message. The log line carries its own verb (`table pharm_variants.csv rows=…`),
+the returned note says what was recorded, and `review_queue` lists such records as `scope: table`
+with a `table_scope` count, no longer folded into `subject_absent`. **Not built: a `prune_rows` that
+applies a keep-list and logs the sweep.** Three written rules stand in its way and none is mine to
+settle in an unattended run: `module-curate` says twice, in bold, that the trim is a decision no tool
+makes; §10's silent-apply rulebook is TO-POPULATE-LATER and forbids settling a boundary case ad hoc;
+and a row deletion is authored content destroyed, the strongest form of the write the counterstance
+gates on a verified capture. The questionnaire is in the session report; `refresh.capture_now` is the
+capture-and-verify step if the answer is build it. The tester's eleven logs are left as written — the
+records are valid under the convention, only the verb on the line predates it.
+

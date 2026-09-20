@@ -1295,3 +1295,55 @@ def test_a_genuinely_broken_row_is_not_called_a_scaffold_stub() -> None:
         "haplotypes.csv line 4 [start]: Input should be a valid integer"
     )
     assert _translate(message) == message
+
+
+# --------------------------------------------------------------------------- #
+# F103 — a coordinate restated under source=authored reads as a clean resolution
+# --------------------------------------------------------------------------- #
+async def test_a_restated_authored_coordinate_is_named_rather_than_counted_as_resolved(
+    make_client, tmp_path, monkeypatch
+):
+    """`resolved: 5, sources: ["authored"], vrs_minted: 0` was every CPIC-drafted module's report.
+
+    The row is `status=resolved` and it is counted — that is upstream's word and stays —
+    but nothing Ensembl answered reached the sidecar, and a reader deserves the sentence
+    beside the count. A row the cache answered, carrying a VRS id, draws no warning.
+    """
+    from types import SimpleNamespace
+
+    from just_module_creator.tools import passes
+
+    spec = tmp_path / "spec"
+    spec.mkdir()
+    (spec / "module_spec.yaml").write_text("module:\n  name: spec\n", encoding="utf-8")
+
+    def row(**kw):
+        base = dict(status="resolved", source="cache", rsid="rs4244285", vrs_id="ga4gh:VA.x")
+        base.update(kw)
+        return SimpleNamespace(**base)
+
+    def _fake_enrich(*_a, **_k):
+        return SimpleNamespace(
+            rows=[
+                row(source="authored", vrs_id=None),
+                row(source="authored", vrs_id=None, rsid="rs12248560"),
+                row(),
+            ],
+            unresolved=[],
+            sources=["authored", "cache"],
+            ref_mismatches=[],
+            clin_sig_conflicts=[],
+            clin_sig_not_checked=None,
+            stale_rsids=[],
+            vrs=SimpleNamespace(minted=1),
+        )
+
+    monkeypatch.setattr(passes, "enrich", _fake_enrich)
+    async with make_client(offline_settings()) as client:
+        report = (await client.call_tool("enrich_module", {"spec_dir": str(spec)})).data
+
+    assert report.resolved == 3
+    named = [w for w in report.warnings if "source=authored" in w]
+    assert len(named) == 1
+    assert named[0].startswith("2 row(s)")
+    assert "S104" in named[0]
