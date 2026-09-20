@@ -47,6 +47,7 @@ import anyio
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
+from just_dna_compiler.draft import DraftError
 from just_dna_enricher.civic_draft import CivicDraftError, draft_panel_from_civic
 from just_dna_enricher.clingen import (
     ClinGenError,
@@ -171,15 +172,38 @@ _FLAG_TO_ARG = {
 }
 
 
+# Two upstream remedies that name something this surface does not have, each keyed on the
+# placeholder so a genuinely broken authored row is not misdiagnosed as a scaffold stub
+# (F100, measured 2026-09-20 on a fresh three-kind PGx scaffold; upstream half is S103).
+# `spec_genome_build` says "pass genome_build= explicitly", and no drafter here — nor
+# upstream's `draft_gene` — takes one: the build is read from the spec, so the only
+# repair is the spec. `draft.merge_rows` refuses a table that does not validate, and a
+# scaffold stub is `<<REPLACE>>` in every required cell.
+_SPEC_PLACEHOLDER_REMEDY = (
+    "No tool here takes a genome_build argument: the build is read from module_spec.yaml, "
+    "so the repair is the spec itself. Replace every <<REPLACE>> it names (title, "
+    "description, report_title) and re-run."
+)
+_STUB_ROW_REMEDY = (
+    "That row is the scaffold's stub. A drafter creates and fills the table, so delete the "
+    "stub row (keep the header line), or scaffold that kind with rows=0, and re-run."
+)
+
+
 def _translate(message: str) -> str:
     """Upstream's message, plus how its CLI flags map onto this tool's arguments."""
     mentioned = [f"{flag} -> {arg}" for flag, arg in _FLAG_TO_ARG.items() if flag in message]
-    if not mentioned:
-        return message
-    return (
-        f"{message}\n\nThat message is the enricher's, written for its CLI. On this tool the "
-        f"equivalent arguments are: {'; '.join(mentioned)}."
-    )
+    out = message
+    if mentioned:
+        out = (
+            f"{message}\n\nThat message is the enricher's, written for its CLI. On this tool the "
+            f"equivalent arguments are: {'; '.join(mentioned)}."
+        )
+    if "<<REPLACE>>" in message and "cannot read the module's genome_build" in message:
+        out = f"{out}\n\n{_SPEC_PLACEHOLDER_REMEDY}"
+    if "<<REPLACE>>" in message and "does not validate, so a draft cannot be keyed" in message:
+        out = f"{out}\n\n{_STUB_ROW_REMEDY}"
+    return out
 
 
 # Parents only, in ONE tuple. Since enricher 0.6.2 each pass raises its own type with
@@ -189,6 +213,11 @@ def _translate(message: str) -> str:
 # would send every outage into the parent arm and leave the outage arm dead, silently.
 # `tests/test_passes.py::test_no_except_arm_is_shadowed_by_an_earlier_one` walks this
 # module's AST for exactly that, because it is the failure that raises nothing.
+#
+# The last two are not source failures: `EnrichmentError` is what a drafter raises when it
+# cannot read the spec's genome_build before touching a source, and `DraftError` is the
+# compiler's refusal to key a draft against a table that does not validate. Both escaped
+# raw until F100, so the remedy an agent read was written for the CLI.
 _SOURCE_ERRORS = (
     ClinVarDraftError,
     CpicError,
@@ -196,6 +225,8 @@ _SOURCE_ERRORS = (
     FrequencyEnrichmentError,
     GeneMetricsEnrichmentError,
     ClinGenError,
+    EnrichmentError,
+    DraftError,
 )
 
 # Narrow-first, and only ever used where the two verdicts are reported differently.

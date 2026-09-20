@@ -262,6 +262,11 @@ refused.
 - *"Star allele(s) used but not defined in haplotypes.csv"* — define it or drop the rows; `*1` is exempt.
 - *"N row(s) already in variants.csv identify by rsID alone"* — the supersession report. Act on it; do
   not filter it.
+- *"cannot read the module's genome_build: … unreplaced template placeholder"* — the spec's three
+  title fields are still stubs. Fill them; no tool here takes `genome_build`.
+- *"existing haplotypes.csv does not validate, so a draft cannot be keyed against it"* naming
+  `<<REPLACE>>` — the scaffold's stub row. Delete it (keep the header) or scaffold with `rows=0`;
+  [`module-start`](../module-start/GUIDE.md) has the order.
 
 ## Where to go next
 

@@ -734,8 +734,14 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         """
         _refuse_spec_file(csv_name)
         name = known_kind(csv_name, draft.DRAFTABLE, _PRODUCED_CSVS)
-        if rows < 1:
-            raise ToolError("rows must be >= 1.")
+        # Zero is header-only, and it is what a drafter wants to find: `draft.merge_rows`
+        # keys new rows against the existing table and refuses one that does not validate,
+        # and a scaffold stub is `<<REPLACE>>` in every required cell. Measured 2026-09-20
+        # (F100): a three-kind PGx scaffold followed by `draft_from_cpic` failed on its own
+        # stub, and a header-only file drafted cleanly. Upstream's `stub_template` already
+        # took `rows=0`; only this guard stood between the two.
+        if rows < 0:
+            raise ToolError("rows must be >= 0 (0 writes the header only).")
         content = draft.stub_template(name, rows=rows) if stub else draft.blank_template(name)
         return TemplateResult(
             csv=name,
@@ -786,14 +792,22 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         placeholder blocks validation. Keep `description` to **one short sentence,
         roughly 5-15 words**: it becomes the catalog card's subtitle and is rendered
         whole. Say what this module distinguishes — methodology belongs in `weighting:`,
-        `authorship:` and `README.md`.
+        `authorship:` and `README.md`. `rows=0` writes a header-only table: use it, or
+        leave the kind out, for a table a `draft_from_*` tool will fill, because a
+        drafter refuses a table whose stub row still carries `<<REPLACE>>`.
         """
         target = resolve_dir(spec_dir, settings, must_exist=False)
         for kind in kinds or []:
             _refuse_spec_file(kind)
         requested = [known_kind(k, draft.DRAFTABLE, _PRODUCED_CSVS) for k in (kinds or [])]
-        if rows < 1:
-            raise ToolError("rows must be >= 1.")
+        # Zero is header-only, and it is what a drafter wants to find: `draft.merge_rows`
+        # keys new rows against the existing table and refuses one that does not validate,
+        # and a scaffold stub is `<<REPLACE>>` in every required cell. Measured 2026-09-20
+        # (F100): a three-kind PGx scaffold followed by `draft_from_cpic` failed on its own
+        # stub, and a header-only file drafted cleanly. Upstream's `stub_template` already
+        # took `rows=0`; only this guard stood between the two.
+        if rows < 0:
+            raise ToolError("rows must be >= 0 (0 writes the header only).")
 
         # Write to the file you read. Upstream's scaffold creates whatever spelling it
         # is handed, so asking for `sources.csv` on a fresh module would create the
@@ -847,7 +861,10 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
                 "roughly 5-15 words - it is the catalog card's subtitle, rendered "
                 "whole, and methodology belongs in weighting:, authorship: and "
                 "README.md instead), then author the CSV rows and lint them "
-                "with lint_rows before validating."
+                "with lint_rows before validating. A table a draft_from_* tool will "
+                "fill must not keep its stub row: the drafter refuses a row carrying "
+                "<<REPLACE>>, so delete the row (keep the header) or scaffold that "
+                "kind with rows=0."
             ),
         )
     # `alterations` here carries normalizations that were APPLIED and is usually empty on a

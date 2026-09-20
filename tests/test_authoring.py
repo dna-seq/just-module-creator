@@ -723,3 +723,33 @@ async def test_the_spec_file_description_is_generated_from_the_live_model(
         f"missing {set(ModuleSpecConfig.model_fields) - described}, "
         f"invented {described - set(ModuleSpecConfig.model_fields)}"
     )
+
+
+async def test_scaffold_rows_zero_writes_the_header_only(client, tmp_path):
+    """A drafter refuses a table whose stub row carries `<<REPLACE>>` (F100).
+
+    `draft.merge_rows` keys new rows against the existing table and refuses one that does not
+    validate, and a scaffold stub is a placeholder in every required cell — so scaffolding the
+    three PGx kinds and then calling `draft_from_cpic` failed on the scaffold's own row. A
+    header-only file drafts cleanly, upstream's `stub_template` already took `rows=0`, and
+    this guard was the only thing refusing it.
+    """
+    spec = tmp_path / "pgx"
+    result = await client.call_tool(
+        "scaffold_module",
+        {"spec_dir": str(spec), "name": "m", "kinds": ["haplotypes.csv"], "rows": 0},
+    )
+    assert result.data.written
+    lines = (spec / "haplotypes.csv").read_text().splitlines()
+    assert len(lines) == 1
+    assert "haplotype_name" in lines[0]
+    assert "<<REPLACE>>" not in lines[0]
+    # The tool says why zero exists, at the point an author reads it.
+    assert "rows=0" in result.data.next_step
+
+    from fastmcp.exceptions import ToolError
+
+    with pytest.raises(ToolError):
+        await client.call_tool(
+            "scaffold_module", {"spec_dir": str(spec), "name": "m", "kinds": [], "rows": -1}
+        )

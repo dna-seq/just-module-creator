@@ -5,6 +5,24 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+### A fresh scaffold no longer dead-ends the drafter it was made for (F100)
+
+Found by the dogfooding seat on the first module of a PGx run: `scaffold_module` with the three
+CPIC kinds, then `draft_from_cpic`, failed twice on the scaffold's own output — once on the spec's
+`<<REPLACE>>` title fields, whose remedy (*"pass genome_build= explicitly"*) is a CLI flag no tool
+here takes, and once on the stub row in `haplotypes.csv`, which the drafter refuses to key against.
+
+- **`scaffold_module` takes `rows=0`** and writes the header line only. Upstream's `stub_template`
+  already did; only our `rows >= 1` guard stood between a scaffold and a drafter. `next_step` and
+  the docstring say when zero is the right number.
+- **Both refusals now reach the caller translated.** `EnrichmentError` and the compiler's
+  `DraftError` join the one tuple `_guard` catches, and `_translate` appends the repair this surface
+  can make — the spec's three fields, or the stub row — keyed on `<<REPLACE>>` so an authored row
+  that fails on type is not called a scaffold stub. Upstream's text is kept verbatim.
+- **The order is written where stage 1 owns it**: `module-start` says fill the three title fields
+  and never give a drafter's table a stub row; `module-draft` and `SYMPTOMS.md` map both messages.
+  Upstream half filed by the tester as format-tree `S103`.
+
 ### The table dossiers stop restating the schema, and upstream generates it instead
 
 Upstream's `3e7d6f4` added one generated reference page per table kind and named the reason in its

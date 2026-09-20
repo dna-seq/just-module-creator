@@ -1861,3 +1861,34 @@ put `PREDICTION ONLY` at the head of every `conclusion`, set `flags=predicted_on
 alphagenome-expression-prediction` and `stat_significance=unknown`, and said so in the README. All of
 that is convention, none of it is checked, and a less careful author gets a green audit over the same
 shape.
+
+## F100 — the taught scaffold → draft path dead-ends on a fresh scaffold, twice
+
+Found 2026-09-20 by the dogfooding seat, first module of the ClawBio PGx run, plugin 0.35.0 on
+compiler/enricher 0.7.0. `scaffold_module(kinds=["haplotypes.csv","allele_function.csv",
+"diplotypes.csv"])` then `draft_from_cpic(gene="TPMT", use="non_commercial", dry_run=True)`:
+
+1. *"cannot read the module's genome_build: module_spec.yaml []: … unreplaced template placeholder
+   '<<REPLACE>>' … module.description, module.report_title, module.title … fix module_spec.yaml, or
+   pass genome_build= explicitly."* `draft_from_cpic` has no `genome_build` argument, and neither
+   does upstream's `draft_gene`: the remedy is the enricher CLI's, relayed raw because
+   `EnrichmentError` was not in the tuple `_guard` translates.
+2. After filling the three fields: *"existing haplotypes.csv does not validate, so a draft cannot be
+   keyed against it: haplotypes.csv line 2 []: … '<<REPLACE>>' in HaplotypeRow row: allele,
+   haplotype_name, rsid."* The compiler's `draft.merge_rows` refuses a file that does not validate,
+   and the scaffold's stub is a placeholder in every required cell — so the tables scaffolded *for*
+   the drafter are what block it. A header-only file drafts cleanly, and upstream's `stub_template`
+   takes `rows=0`; our `scaffold_module` refused anything under 1.
+
+Reproduced offline in a scratch directory against the built CPIC snapshot, both errors in order.
+The promise it broke is `create-module`'s stage table, 1 scaffold → 2 draft, with nothing in between.
+Upstream's own reference README recipe fails identically; the tester filed that as format-tree
+`S103` (read `genome_build` leniently, or say to fill the titles and scaffold without `--kind`).
+
+**Fixed 2026-09-20.** `rows=0` on `scaffold_module`; `EnrichmentError` and `DraftError` translated
+by `_guard`, each with the repair this surface can make appended after upstream's verbatim text and
+keyed on `<<REPLACE>>`; the order written into `module-start` (stage 1 owns it), the two messages
+into `module-draft`'s symptoms and `SYMPTOMS.md`. Not run: the tester's `probe/` directories and the
+live CPIC path — the reproduction and the tests use the snapshot, `dry_run` and `offline`. The
+re-probe is the tester's.
+

@@ -87,6 +87,18 @@ Expected without a filter, and the fix is `--allele`: name the star alleles your
 emit and every table is drafted to that set (`*1` is kept automatically). Six alleles turn CYP2D6's
 16,290 diplotypes into 21. One `--gene` at a time, because `*2` means a different allele in each gene.
 
+**`cannot read the module's genome_build: module_spec.yaml []: … unreplaced template placeholder '<<REPLACE>>' in module_spec.yaml: module.description, module.report_title, module.title … or pass genome_build= explicitly`**
+Raised by a drafter (`draft_from_cpic`, `draft_from_clinvar`, `draft_from_clinpgx`) before it touches
+a source: the build is read through the full spec loader, so a placeholder in a field the draft never
+uses still stops it. The remedy it names is a CLI flag no tool here takes, and the tool appends that.
+Replace the three title fields in `module_spec.yaml` and re-run. Upstream `S103`, ours `F100`.
+
+**`existing haplotypes.csv does not validate, so a draft cannot be keyed against it: haplotypes.csv line 2 []: … unreplaced template placeholder '<<REPLACE>>' in HaplotypeRow row`**
+The scaffold's stub row. A drafter keys new rows against the existing file and refuses one that does
+not validate; a stub is `<<REPLACE>>` in every required cell. Delete the row and keep the header, or
+scaffold that kind with `rows=0` (header only), or leave the kind out — the drafter creates the file.
+The same message **without** `<<REPLACE>>` is an authored row that fails on type, and is yours.
+
 ## Resolution and enrichment
 
 **`<rsid>: not in the injected Ensembl snapshot`** / **`<rsid>: not in the injected ClinVar snapshot`**

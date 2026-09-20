@@ -280,6 +280,16 @@ scaffold_module(spec_dir="spec", name="my_module", kinds=["variants.csv", "studi
 
 `name` is lowercase alphanumeric with underscores; `my-module` is rejected.
 
+**If a `draft_from_*` tool is going to write a table, do not give it a stub row.** A drafter keys its
+rows against whatever the file already holds and refuses a file that does not validate — and a
+scaffold stub is `<<REPLACE>>` in every required cell, so scaffolding `haplotypes.csv`,
+`allele_function.csv` and `diplotypes.csv` and then calling `draft_from_cpic` fails on the
+scaffold's own row. Either leave those kinds out (the drafter creates the file) or pass `rows=0`,
+which writes the header line only. The same drafter reads `genome_build` through the full spec
+loader, so **fill `title`, `description` and `report_title` before the first draft**: the
+placeholder in any of the three stops it, and the remedy it prints (*"pass genome_build="*) is a
+CLI flag no tool here takes. Scaffold the spec, replace the three, then draft.
+
 Learning a table you have not authored before — **ask, never recall**:
 
 ```

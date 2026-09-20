@@ -1239,3 +1239,59 @@ async def test_the_pass_says_it_makes_the_module_non_commercial(make_client):
         tool = next(t for t in await client.list_tools() if t.name == "enrich_expression_effects")
     assert "non-commercial" in (tool.description or "").lower()
     assert tool.inputSchema["properties"]["use"]["default"] == "non-commercial"
+
+
+# --------------------------------------------------------------------------- #
+# F100: a drafter's refusal of a fresh scaffold names a repair this surface can make
+# --------------------------------------------------------------------------- #
+async def test_a_drafter_on_a_placeholder_spec_points_at_the_spec_not_at_an_argument(
+    make_client, tmp_path
+) -> None:
+    """`spec_genome_build` says "pass genome_build= explicitly", and nothing here takes one.
+
+    The spec is read before any source is touched, so this runs offline and reaches no
+    client. What an agent must not be told is to look for an argument that does not
+    exist; what it must be told is which file, and which fields.
+    """
+    from just_dna_compiler import scaffold
+
+    scaffold.scaffold_module(tmp_path, kinds=[], name="probe", rows=1)
+    assert "<<REPLACE>>" in (tmp_path / "module_spec.yaml").read_text()
+    async with make_client(offline_settings()) as client:
+        with pytest.raises(ToolError) as excinfo:
+            await client.call_tool(
+                "draft_from_cpic",
+                {
+                    "spec_dir": str(tmp_path),
+                    "gene": "TPMT",
+                    "use": "non_commercial",
+                    "dry_run": True,
+                    "offline": True,
+                },
+            )
+    message = str(excinfo.value)
+    # Upstream's text survives verbatim; ours is appended, not substituted.
+    assert "cannot read the module's genome_build" in message
+    assert "module_spec.yaml" in message
+    assert "No tool here takes a genome_build argument" in message
+
+
+def test_the_stub_row_refusal_is_translated_into_the_scaffold_repair() -> None:
+    message = (
+        "existing haplotypes.csv does not validate, so a draft cannot be keyed against it: "
+        "haplotypes.csv line 2 []: Value error, unreplaced template placeholder '<<REPLACE>>' "
+        "in HaplotypeRow row: allele, haplotype_name, rsid."
+    )
+    translated = _translate(message)
+    assert message in translated
+    assert "rows=0" in translated
+    assert "keep the header" in translated
+
+
+def test_a_genuinely_broken_row_is_not_called_a_scaffold_stub() -> None:
+    """The remedy keys on the placeholder: an authored row that fails on type is the author's."""
+    message = (
+        "existing haplotypes.csv does not validate, so a draft cannot be keyed against it: "
+        "haplotypes.csv line 4 [start]: Input should be a valid integer"
+    )
+    assert _translate(message) == message
