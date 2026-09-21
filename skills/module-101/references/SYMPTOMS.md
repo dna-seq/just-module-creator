@@ -332,10 +332,11 @@ offline*, the mint pass has not run — `just-dna-enricher vrs mint <spec_dir>` 
 indel/MNV, re-run that command **without** `--offline`, which is what lets it read the reference
 sequence. If it names a build with no refget table, nothing can be done today and the module is fine.
 It never refuses, in either mode, because the last two causes are fixable by no edit you could make.
-**`0/N` on a CPIC-drafted haplotype table is a fourth cause**: every drafted row carries an rsID *and*
-a coordinate, the enricher restates the coordinate under `source=authored` with no `ref`/`alts`/VRS id,
-and `vrs mint` has nothing to mint from. `enrich_module` names those rows; the agreement check still
-ran. Upstream `S104`; leave the drafted coordinates in place.
+**`0/N` on a CPIC-drafted haplotype table is a fourth cause, and it dates the sidecar**: every drafted
+row carries an rsID *and* a coordinate, and an enricher before 0.7.1 restated the coordinate under
+`source=authored` with no `ref`/`alts`/VRS id, so `vrs mint` had nothing to mint from (upstream `S104`,
+fixed in 0.7.1). The table keeps those rows under merge-not-clobber: `enrich_module` names them, and
+`refresh_sidecar(sidecar="resolution.csv")` re-derives it. Leave the drafted coordinates in place.
 
 **`p_value '1.2e-14' reads as 1.2e-14, but p_value_num says 1.2e-41`** — a warning under
 `--best-effort`, an error under `--strict`

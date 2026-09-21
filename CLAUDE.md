@@ -556,6 +556,12 @@ comparison against ISO values.
   present, `contact_email()` returns `str`, and any `if not email:` branch is dead
   code — Unpaywall used to be the one source that reported itself unavailable on
   a fresh checkout, and that branch is gone rather than left to rot.
+- **A long tool talks to its caller through `_shared.narrate`, never `ctx.info`.** fastmcp 4
+  runs a `task=True` tool as a background task whenever the client declared the tasks
+  extension, and a worker context has no live session, so `ctx.info` raises there; on the
+  2026-07-28 wire the logging capability is deprecated outright (SEP-2577). `narrate` puts
+  the sentence on `report_progress`, which reaches both modes, and on stderr. The `client`
+  test fixture is modern-era on purpose so that path is the one it exercises.
 - **Typer for the CLI. Pydantic 2 at every boundary** — every tool returns a
   model from `models.py`, never a bare dict, because an agent reads the field
   descriptions.
@@ -699,7 +705,14 @@ a deployment rather than an author. Say which, in the note.
    entries expire after 24h and that a multi-process HTTP deployment needs a
    shared `FastMCP(session_state_store=...)` or one worker cannot see what
    another stored. The target stays *in* the key: flatten it and the second
-   `authenticate` silently retargets the first.
+   `authenticate` silently retargets the first. **On the 2026-07-28 protocol era the
+   store holds across calls only where the transport carries a session id** (streamable
+   HTTP's `mcp-session-id`): every request is its own connection there, and stdio or the
+   in-memory client has no id, so a stored token is gone by the call that needs it. Check
+   `auth.session_state_persists` before storing and refuse naming the env var — never
+   report a success the next call cannot find. Found 2026-09-21 adopting fastmcp 4, where
+   `authenticate` had passed its own test for exactly that reason; the handshake era is
+   unaffected and the suite's `make_client` pins it with `mode="legacy"`.
 6. Add a test using the in-memory client.
 7. **Visibility is not authorization, and the two enable APIs are not
    interchangeable.** `mcp.enable()` / `mcp.disable()` are **server-global**:
@@ -1463,6 +1476,16 @@ have been questions.
   through 0.6.4 is the stretch where the three did *not* move together — format and compiler sat at
   0.6.1 while the enricher took patches alone (0.6.2 for RM101's exception contract, 0.6.3 for the
   ClinVar and ClinPGx drafter fixes, 0.6.4 for S45).
+- **Format 0.7.0 / compiler 0.7.1 / enricher 0.7.1 / registry 0.26.1 installed — adopted 2026-09-21
+  (our 0.37.0), a partial cut where format stays.** Verify by symbol with `--project`:
+  `just_dna_enricher.verdict.Verdict` and `AcmgReport.clean` returning one (0.7.1),
+  `just_dna_enricher.cpic` carrying `partner_genes` and `licensing.effective_declared_use` (S102–S106
+  — the registry's 0.26.1 notes say these are *past* 0.7.1, but the `v0.7.1` tag is the tree's head
+  and the PyPI wheel is byte-identical to it, so they ship), `RegistryError.bucket` (0.26.0).
+  **Both live instances still answered `registry: 0.25.2 / format: 0.7.0 / compiler: 0.7.0` on
+  2026-09-21**, so a `registry_check` is still the only proof of a publish. Also adopted the same day:
+  **fastmcp 4.0.5** — the tasks extension is registered by hand, and the modern protocol era has no
+  session identity on stdio (see §5, the session-store bullet).
 - **SUPERSEDED 2026-09-12 — both instances now serve `format: 0.7.0` / `compiler: 0.7.0` /
   `registry: 0.25.2`, and our floor moved to match (`>=0.7.0,<0.8`, registry `>=0.25.2`, plugin
   0.35.0).** The bullet below is kept because its *lesson* outlived its numbers and is the one that

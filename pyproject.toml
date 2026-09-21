@@ -1,6 +1,6 @@
 [project]
 name = "just-module-creator"
-version = "0.36.0"
+version = "0.37.0"
 description = "MCP server and skills for authoring and publishing just-dna annotation modules; a Claude Code and Codex plugin"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -12,7 +12,8 @@ dependencies = [
     # `tasks` extra enables real MCP background tasks (@mcp.tool(task=True)).
     # Default backend is in-memory (memory://) — zero config, no Redis needed.
     # Set FASTMCP_DOCKET_URL=redis://... only for distributed/persistent tasks.
-    "fastmcp[tasks]>=3.4.7",
+    "fastmcp[tasks]>=4.0.5",
+    "fastmcp-tasks>=4.0.5",
     "pydantic>=2",
     "pydantic-settings>=2",
     "typer>=0.16",
@@ -43,9 +44,9 @@ dependencies = [
     # The 0.6.x floor reasoning this replaces is not lost, only subsumed: 0.6.2's
     # exception contract and 0.6.3/0.6.4's `multi_allelic_rsids` collapse (upstream
     # S41/S45, our F36) are all below 0.7.0. `docs/CHANGELOG.md` at 0.16.0 carries it.
-    "just-dna-compiler>=0.7.0,<0.8",
+    "just-dna-compiler>=0.7.1,<0.8",
     "just-dna-format>=0.7.0,<0.8",
-    "just-dna-enricher[atlas]>=0.7.0,<0.8",
+    "just-dna-enricher[atlas]>=0.7.1,<0.8",
     # 0.25.2 is the first PUBLISHED client carrying the whole caching-proxy surface —
     # `cache_status`, `derived`, `draft`, the six `hint_*` methods and
     # `models.api.VariantHintReport`. Verified against the wheel rather than a sibling
@@ -64,7 +65,7 @@ dependencies = [
     # Run 2026-09-12: nothing missing, model present. That release declares
     # `just-dna-format>=0.7.0` itself, so the two floors travel together by the
     # resolver rather than by our remembering.
-    "just-dna-registry>=0.25.2",
+    "just-dna-registry>=0.26.1",
     "python-dotenv>=1.2.2",
     # Declared, not leaned on transitively: net.py calls httpx directly for the
     # literature sources, and a transitive pin is not a contract.

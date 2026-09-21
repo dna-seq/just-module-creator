@@ -277,9 +277,9 @@ def register_toolbox(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="What else is in the toolbox, and reveal it",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
         )
     )
     async def toolbox(ctx: Context, groups: list[str] | None = None) -> ToolboxResult:

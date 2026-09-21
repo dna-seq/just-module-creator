@@ -182,7 +182,7 @@ async def test_docstrings_only_name_tools_that_exist(client):
     # tools but are not" would.
     data_words: set[str] = set()
     for tool in listed:
-        data_words |= set((tool.inputSchema or {}).get("properties", {}))
+        data_words |= set((tool.input_schema or {}).get("properties", {}))
     for obj in vars(models).values():
         if inspect.isclass(obj) and issubclass(obj, BaseModel):
             data_words |= set(obj.model_fields)
@@ -212,9 +212,9 @@ async def test_the_self_check_spine_is_callable(client):
     `enrich_pgx` are the compiler's and the enricher's, correctly named and not ours. Only
     the spine claims to be *our* callable surface, so only the spine is pinned.
     """
-    guide = (
-        Path(__file__).resolve().parents[1] / "skills" / "module-101" / "GUIDE.md"
-    ).read_text(encoding="utf-8")
+    guide = (Path(__file__).resolve().parents[1] / "skills" / "module-101" / "GUIDE.md").read_text(
+        encoding="utf-8"
+    )
     marker = "**The spine you must be able to call**"
     assert marker in guide, "module-101 lost its self-check roster"
     block = guide.split(marker, 1)[1].split("That is the taught order")[0]
@@ -246,8 +246,13 @@ async def test_the_corpus_sized_tools_say_what_they_cost(client):
         text = (tool.description or "").lower()
         if not any(
             phrase in text
-            for phrase in ("corpus", "published rather than", "how much has been published",
-                           "requests", "budget")
+            for phrase in (
+                "corpus",
+                "published rather than",
+                "how much has been published",
+                "requests",
+                "budget",
+            )
         ):
             silent.append(tool.name)
     assert not silent, f"corpus-sized tools with no cost warning: {silent}"
@@ -271,12 +276,14 @@ async def test_gated_tool_without_a_token_returns_not_raises(client):
     assert "registry token" in result.data.message
 
 
-async def test_authenticate_stores_a_token_for_this_session(client):
-    result = await client.call_tool("authenticate", {"token": "tok_abc123"})
-    assert result.data.authenticated
-    assert set(result.data.unlocked_tools) == set(GATED_TOOLS)
-    # It stores; it does not claim the registry accepted anything.
-    assert "registry_whoami" in result.data.message
+async def test_authenticate_stores_a_token_for_this_session(make_client):
+    # A handshake-era session: the one kind where a stored token survives the call.
+    async with make_client() as client:
+        result = await client.call_tool("authenticate", {"token": "tok_abc123"})
+        assert result.data.authenticated
+        assert set(result.data.unlocked_tools) == set(GATED_TOOLS)
+        # It stores; it does not claim the registry accepted anything.
+        assert "registry_whoami" in result.data.message
 
 
 async def test_authenticate_rejects_an_empty_token(client):
@@ -662,9 +669,7 @@ async def test_paper_citations_accepts_an_unambiguous_direction(client):
 
     # All three backwards spellings are legal, and a wrong one names the choices.
     with pytest.raises(ToolError) as caught:
-        await client.call_tool(
-            "paper_citations", {"pmid": "11788828", "direction": "sideways"}
-        )
+        await client.call_tool("paper_citations", {"pmid": "11788828", "direction": "sideways"})
     for spelling in ("citing", "references", "cites", "cited_by"):
         assert spelling in str(caught.value)
 
@@ -849,5 +854,5 @@ async def test_a_drafting_tool_requires_a_declared_use(make_client):
     async with make_client(offline_settings()) as client:
         tools = {tool.name: tool for tool in await client.list_tools()}
     for name in sorted(set(DRAFTER_TOOLS.values())):
-        schema = tools[name].inputSchema
+        schema = tools[name].input_schema
         assert "use" in schema.get("required", []), f"{name} does not require `use`"

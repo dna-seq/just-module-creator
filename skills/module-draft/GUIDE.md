@@ -159,13 +159,17 @@ every `draft --gene` and check each against CPIC's table.
 the allele-function loop and 164 from `_haplotype_rows`. Expect volume; read the counts rather than the
 lines.
 
-**Every CPIC-drafted `haplotypes.csv` row carries `rsid`, `chrom` and `start`, and that shape costs the
-VRS id.** A row authored with both takes the enricher's "nothing to resolve" branch: `resolution.csv`
-restates the drafted coordinate under `source=authored` with no `ref`, `alts` or `ga4gh:VA`, so the
-compile warns *"VRS allele identity covers 0/N allele(s)"* on **every** CPIC-drafted module. The
-coordinate-agreement check does run (`verification.json`, `rsid_coordinate_agreement` — it found five
-CPIC positions off Ensembl's on CYP2D6), and `enrich_module` names the restated rows. Expected, not a
-defect in your module, and not something to fix by deleting the drafter's coordinates; upstream `S104`.
+**Every CPIC-drafted `haplotypes.csv` row carries `rsid`, `chrom` and `start`, and before enricher
+0.7.1 that shape cost the VRS id.** A row authored with both took the "nothing to resolve" branch:
+`resolution.csv` restated the drafted coordinate under `source=authored` with no `ref`, `alts` or
+`ga4gh:VA`, and the compile warned *"VRS allele identity covers 0/N allele(s)"* on every CPIC-drafted
+module (upstream `S104`). Since 0.7.1 such a row takes the forward branch when the reference knows its
+rsID: the loci are recorded, an id mints, and a pair that disagrees with Ensembl warns in
+`best_effort` and refuses in `strict`. A sidecar written **before** that keeps its `authored` rows,
+because a sidecar is merge-not-clobber — `enrich_module` names them and the repair is
+`refresh_sidecar(sidecar="resolution.csv")`, never deleting the drafter's coordinates. The
+coordinate-agreement check runs either way (`verification.json`, `rsid_coordinate_agreement` — it
+found five CPIC positions off Ensembl's on CYP2D6).
 
 ## Star alleles
 

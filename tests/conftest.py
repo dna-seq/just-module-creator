@@ -54,9 +54,8 @@ _UPSTREAM_VARS = (
 #: ``F24`` was a bare ``Settings()`` reading a developer's real token, found only after
 #: it had been possible for weeks, and the repair was to stop reasoning about which
 #: variables matter. A derived list costs one expression and removes the question.
-_CACHE_VARS = tuple(
-    sorted({lane.env_var for lane in CACHE_LANES} | {CACHE_BASE_VAR} - {""})
-)
+_CACHE_VARS = tuple(sorted({lane.env_var for lane in CACHE_LANES} | {CACHE_BASE_VAR} - {""}))
+
 
 #: The spec files the installed compiler reads and the installed registry does not
 #: recognise — **computed, because both sides move on their own cadence** and a literal
@@ -88,9 +87,7 @@ def registry_lag() -> set[str]:
     assert len(_specfiles.RECOGNIZED_SPEC_FILES) >= 20, (
         "the registry's recognised-file roster enumerated almost nothing — the symbol moved"
     )
-    return {
-        name for name in _hints.DERIVED_TABLE_MODELS if not _specfiles.is_spec_file(name)
-    }
+    return {name for name in _hints.DERIVED_TABLE_MODELS if not _specfiles.is_spec_file(name)}
 
 
 #: What the lag is *allowed* to be, and the membership is a filed report rather than a
@@ -195,6 +192,7 @@ def _hermetic_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
     for var in _ECOSYSTEM_VARS:
         monkeypatch.delenv(var, raising=False)
 
+
 MODULE_SPEC = """\
 schema_version: '1.0'
 module:
@@ -254,7 +252,14 @@ def routed_settings(**overrides) -> Settings:
 
 @pytest.fixture
 async def client():
-    """The whole tool surface. There is one — the mode axis went in 0.21.0."""
+    """The whole tool surface. There is one — the mode axis went in 0.21.0.
+
+    Deliberately the fastmcp 4 default: a modern-era (2026-07-28) client, which runs every
+    `task=True` tool as a background task, so this fixture is what exercises the worker
+    path — `_shared.narrate` above all. It also has no session identity, so nothing that
+    depends on `ctx.set_state` surviving a call (a stored token, a revealed group) can be
+    tested through it; that is `make_client`, and the difference is the point.
+    """
     server = build_server(settings=offline_settings())
     async with Client(transport=server) as connected:
         yield connected
@@ -262,11 +267,19 @@ async def client():
 
 @pytest.fixture
 def make_client():
-    """Factory returning a fresh in-memory client (its own session)."""
+    """Factory returning a fresh in-memory client (its own session).
+
+    `mode="legacy"` is the initialize handshake, byte-identical to what fastmcp 3 did and
+    what a handshake-era host does: one connection for the whole session, so session
+    state persists across calls and a `task=True` tool runs inline. On the 2026-07-28
+    wire each request is its own connection and a stdio/in-memory session has no id —
+    `authenticate` refuses there rather than storing a token that cannot be read back
+    (`auth.session_state_persists`). Use the `client` fixture for the modern path.
+    """
 
     def _make(settings: Settings | None = None):
         server = build_server(settings=settings or offline_settings())
-        return Client(transport=server)
+        return Client(transport=server, mode="legacy")
 
     return _make
 

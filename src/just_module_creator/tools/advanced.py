@@ -49,9 +49,7 @@ from just_module_creator.tools._shared import offline_for, resolve_dir
 log = get_logger()
 
 
-def register_citation_graph(
-    mcp: FastMCP, settings: Settings, services: NetworkServices
-) -> None:
+def register_citation_graph(mcp: FastMCP, settings: Settings, services: NetworkServices) -> None:
     """Register ``paper_citations``: one tool, and the corpus sizes its work."""
 
     # ----------------------------------------------------------------- #
@@ -67,9 +65,9 @@ def register_citation_graph(
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Who cited this paper",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def paper_citations(
@@ -137,9 +135,8 @@ def register_citation_graph(
             lambda: citation_graph(services, paper_id=identifier, direction=direction, limit=limit)
         )
 
-def register_artifact_reads(
-    mcp: FastMCP, settings: Settings, services: NetworkServices
-) -> None:
+
+def register_artifact_reads(mcp: FastMCP, settings: Settings, services: NetworkServices) -> None:
     """Always registered: get a published module onto disk, and read an artifact back.
 
     Both are bounded by what the caller named — one version of one module, one
@@ -154,9 +151,9 @@ def register_artifact_reads(
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Reverse an artifact to a spec",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
         ),
     )
     async def reverse_module(parquet_dir: str, output_dir: str) -> OpResult:
@@ -184,9 +181,9 @@ def register_artifact_reads(
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Download a registry module",
-            readOnlyHint=False,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_download(
@@ -238,9 +235,7 @@ def register_artifact_reads(
         try:
             manifest = await run_sync(_download)
         except RegistryError as exc:
-            return OpResult(
-                success=False, message=f"Registry error: {exc}{instance_note(exc)}"
-            )
+            return OpResult(success=False, message=f"Registry error: {exc}{instance_note(exc)}")
         identity = getattr(manifest, "identity", None)
         return OpResult(
             success=True,

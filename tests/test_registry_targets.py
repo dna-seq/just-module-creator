@@ -100,7 +100,7 @@ def _no_credentials(monkeypatch) -> None:
 
 
 async def _schemas(client) -> dict[str, dict]:
-    return {t.name: t.inputSchema for t in await client.list_tools()}
+    return {t.name: t.input_schema for t in await client.list_tools()}
 
 
 # --------------------------------------------------------------------------- #
@@ -591,9 +591,7 @@ def test_no_token_is_not_a_negative_verdict() -> None:
     """The failure shape this whole model exists to avoid."""
     from just_module_creator.tools.registry import _unauthenticated_preflight
 
-    out = _unauthenticated_preflight(
-        spec_dir="/tmp/spec", namespace="ns", name="m", target="test"
-    )
+    out = _unauthenticated_preflight(spec_dir="/tmp/spec", namespace="ns", name="m", target="test")
 
     assert out.verdict is None
     assert out.verdict_unavailable == "no_registry_token"
@@ -617,9 +615,7 @@ def test_no_token_leaves_the_plain_booleans_null_rather_than_false() -> None:
     """
     from just_module_creator.tools.registry import _unauthenticated_preflight
 
-    out = _unauthenticated_preflight(
-        spec_dir="/tmp/spec", namespace="ns", name="m", target="test"
-    )
+    out = _unauthenticated_preflight(spec_dir="/tmp/spec", namespace="ns", name="m", target="test")
 
     assert out.valid is None, "nothing was validated, so `valid` is unknown rather than false"
     assert out.name_matches_path is None, "the name was never compared against the path"
@@ -643,9 +639,7 @@ def test_no_token_leaves_the_composed_gate_null_too() -> None:
     """
     from just_module_creator.tools.registry import _unauthenticated_preflight
 
-    out = _unauthenticated_preflight(
-        spec_dir="/tmp/spec", namespace="ns", name="m", target="test"
-    )
+    out = _unauthenticated_preflight(spec_dir="/tmp/spec", namespace="ns", name="m", target="test")
 
     assert out.module_level_clear is None
     assert out.strict is True
@@ -826,7 +820,7 @@ def test_available_plus_requires_override_is_not_reported_as_a_green_light():
         warnings=["starts with 'test-', which this production instance does not accept by default"],
         message=(
             "'test-modules' is unclaimed on production, but a `test-`prefixed name is refused "
-            'there by default and this server does not offer the override. Claim it on the '
+            "there by default and this server does not offer the override. Claim it on the "
             'polygon (target="test") instead.'
         ),
     )
@@ -842,9 +836,7 @@ def test_an_instance_that_does_not_report_the_override_is_null_not_false():
     """Pre-0.14 said nothing; "did not say" is not "does not require it"."""
     from just_module_creator.models import NamespaceAvailability
 
-    answer = NamespaceAvailability(
-        namespace="my-ns", valid=True, available=True, message="free"
-    )
+    answer = NamespaceAvailability(namespace="my-ns", valid=True, available=True, message="free")
 
     assert answer.requires_allow_test_data is None
     assert answer.warnings == []
@@ -971,7 +963,7 @@ async def test_yank_defaults_to_the_polygon_like_every_other_write(make_client):
     same class of mistake the tool exists to recover from.
     """
     async with make_client(offline_settings()) as client:
-        schemas = {t.name: t.inputSchema for t in await client.list_tools()}
+        schemas = {t.name: t.input_schema for t in await client.list_tools()}
         for name in ("registry_yank", "registry_unyank"):
             assert schemas[name]["properties"]["target"]["default"] == "test"
 
@@ -1080,8 +1072,17 @@ def test_a_busy_dry_run_gate_says_sequential_not_broken() -> None:
 
     note = throttle_note(RegistryError(503, "enrichment_busy"), "check")
     assert "one dry run at a time" in note
-    assert "Retry-After" in note
+    assert "spends no `enrich` token" in note
+    # Registry 0.26.0 answers a throttle with the bucket and a refill-derived wait on the
+    # headers, and `RegistryError` keeps both; the server's word beats our endpoint map.
+    served = throttle_note(
+        RegistryError(
+            429, "rate_limited", headers={"X-RateLimit-Bucket": "validate", "Retry-After": "540"}
+        ),
+        "check",
+    )
+    assert "`validate`" in served and "`enrich`" not in served
+    assert "in about 540s" in served
     # Any other refusal is left to upstream's sentence.
     assert throttle_note(RegistryError(422, "test_data_on_prod"), "publish") == ""
     assert throttle_note(RegistryError(503, "upstream_down"), "check") == ""
-

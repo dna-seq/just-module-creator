@@ -60,7 +60,7 @@ from just_module_creator.models import (
 )
 from just_module_creator.settings import RegistryTarget, Settings
 from just_module_creator.targets import client_for, describe
-from just_module_creator.tools._shared import offline_for, resolve_dir
+from just_module_creator.tools._shared import narrate, offline_for, resolve_dir
 from just_module_creator.tools.refresh import capture_dir, capture_now, finalize_capture
 
 log = get_logger()
@@ -152,9 +152,7 @@ def _read_local_keys(
 #: first. Measured 2026-09-11 on format 0.7.0. Derived from their map rather than written
 #: out, so a second aliased table needs nothing here.
 _TABLE_KEY_FOR: dict[str, str] = {
-    spelling: key
-    for key, spellings in SIDECAR_SPELLINGS.items()
-    for spelling in spellings
+    spelling: key for key, spellings in SIDECAR_SPELLINGS.items() for spelling in spellings
 }
 
 
@@ -169,9 +167,7 @@ def _dest_for(directory: Path, csv_name: str) -> Path:
     return sidecar_write_path(directory, _TABLE_KEY_FOR.get(csv_name, csv_name))
 
 
-def _displacement_lines(
-    spec_dir: Path, incoming: dict[str, bytes]
-) -> tuple[list[str], list[Path]]:
+def _displacement_lines(spec_dir: Path, incoming: dict[str, bytes]) -> tuple[list[str], list[Path]]:
     """Rows a local sidecar has and the incoming tree does not, as decision lines.
 
     **Not a defect report, and the wording has to keep that.** A row missing from the
@@ -207,7 +203,7 @@ def _displacement_lines(
             if (row.get("source") or "").strip() == "manual"
         }
         for key in gone[:40]:
-            hand = " — source=\"manual\", so nothing will re-derive it" if key in manual else ""
+            hand = ' — source="manual", so nothing will re-derive it' if key in manual else ""
             lines.append(f"{local_path.name}: {' / '.join(key)} is not in the new tree{hand}")
         if len(gone) > 40:
             lines.append(f"{local_path.name}: and {len(gone) - 40} more rows not listed")
@@ -346,9 +342,9 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Which snapshot caches exist, here and there",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         )
     )
     async def registry_caches(target: RegistryTarget) -> CacheReport:
@@ -388,12 +384,8 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
 
         rows = _lane_rows(target, remote)
         local_count = sum(1 for r in rows if r.local)
-        remote_count = (
-            sum(1 for r in rows if r.remote == "present") if remote is not None else None
-        )
-        unreachable = [
-            r.lane for r in rows if not r.local and (r.remote not in ("present", None))
-        ]
+        remote_count = sum(1 for r in rows if r.remote == "present") if remote is not None else None
+        unreachable = [r.lane for r in rows if not r.local and (r.remote not in ("present", None))]
 
         here = f"This machine holds {local_count} of {len(rows)} lanes"
         if offline:
@@ -429,9 +421,9 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         task=True,
         annotations=ToolAnnotations(
             title="Have a registry derive the tables this machine cannot",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def remote_derive(
@@ -488,13 +480,11 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
 
         client = client_for(target, settings)
         if ctx:
-            await ctx.info(f"Deriving {source.name} on {describe(target, settings)}")
+            await narrate(ctx, f"Deriving {source.name} on {describe(target, settings)}")
             await ctx.report_progress(progress=1, total=3)
 
         try:
-            archive = await run_sync(
-                lambda: client.derived(namespace, name, source)
-            )
+            archive = await run_sync(lambda: client.derived(namespace, name, source))
         except Exception as exc:  # noqa: BLE001 — upstream's error text is the answer
             raise ToolError(
                 f"the registry could not derive this spec: {exc}. A 503 naming a lane "
@@ -552,9 +542,7 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
                         "is safe to re-run."
                     )
                 capture = directory.parent
-                await run_sync(
-                    lambda d=directory: finalize_capture(d, stamp)
-                )
+                await run_sync(lambda d=directory: finalize_capture(d, stamp))
 
             for csv_name, data in sorted(tables.items()):
                 dest = _dest_for(source, csv_name)
@@ -586,7 +574,7 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         next_step = (
             (
                 "Nothing was written. Read `decisions`: each line is a row your files "
-                "carry and the new tree does not, and a `source=\"manual\"` one is hand "
+                'carry and the new tree does not, and a `source="manual"` one is hand '
                 "curation nothing will re-derive. Re-run with `dry_run=false` when you "
                 "have decided, then `validate_module` and `compile_module`." + missing
             )
@@ -616,9 +604,9 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         task=True,
         annotations=ToolAnnotations(
             title="Draft rows on a registry that holds the snapshot",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def remote_draft(
@@ -679,7 +667,7 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
 
         client = client_for(target, settings)
         if ctx:
-            await ctx.info(f"Drafting {source} on {describe(target, settings)}")
+            await narrate(ctx, f"Drafting {source} on {describe(target, settings)}")
             await ctx.report_progress(progress=1, total=2)
 
         kwargs: dict[str, Any] = {"source": source, "dry_run": dry_run}

@@ -11,6 +11,7 @@ from __future__ import annotations
 import contextlib
 import csv
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -93,7 +94,7 @@ async def test_use_is_a_required_argument_not_a_defaulted_one(make_client) -> No
     """
     async with make_client(offline_settings()) as client:
         tool = next(t for t in await client.list_tools() if t.name == "draft_from_clinvar")
-        assert "use" in (tool.inputSchema.get("required") or [])
+        assert "use" in (tool.input_schema.get("required") or [])
 
 
 async def test_a_licence_refusal_is_reported_not_raised() -> None:
@@ -1238,7 +1239,7 @@ async def test_the_pass_says_it_makes_the_module_non_commercial(make_client):
     async with make_client(offline_settings()) as client:
         tool = next(t for t in await client.list_tools() if t.name == "enrich_expression_effects")
     assert "non-commercial" in (tool.description or "").lower()
-    assert tool.inputSchema["properties"]["use"]["default"] == "non-commercial"
+    assert tool.input_schema["properties"]["use"]["default"] == "non-commercial"
 
 
 # --------------------------------------------------------------------------- #
@@ -1256,7 +1257,11 @@ async def test_a_drafter_on_a_placeholder_spec_points_at_the_spec_not_at_an_argu
     from just_dna_compiler import scaffold
 
     scaffold.scaffold_module(tmp_path, kinds=[], name="probe", rows=1)
-    assert "<<REPLACE>>" in (tmp_path / "module_spec.yaml").read_text()
+    spec = tmp_path / "module_spec.yaml"
+    assert "<<REPLACE>>" in spec.read_text()
+    # Enricher 0.7.1 (upstream S103) reads past the scaffold's stubs in the fields a draft
+    # never uses; only a placeholder in `genome_build` itself still refuses. Put it there.
+    spec.write_text(re.sub(r"genome_build:.*", "genome_build: <<REPLACE>>", spec.read_text()))
     async with make_client(offline_settings()) as client:
         with pytest.raises(ToolError) as excinfo:
             await client.call_tool(

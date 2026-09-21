@@ -198,9 +198,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Look up a variant",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         )
     )
     async def lookup_variant(
@@ -332,9 +332,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Look up a citation",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         )
     )
     async def lookup_citation(
@@ -385,9 +385,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Search the literature",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         )
     )
     async def literature_search(
@@ -444,9 +444,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Search the module registry",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         )
     )
     async def registry_search(
@@ -530,9 +530,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Registry: is this namespace free",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         )
     )
     async def registry_namespace_available(
@@ -625,14 +625,12 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Get a registry module",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
-    async def registry_get_module(
-        target: RegistryTarget, namespace: str, name: str
-    ) -> OpResult:
+    async def registry_get_module(target: RegistryTarget, namespace: str, name: str) -> OpResult:
         """Fetch one module's full registry record: card, readme, versions, manifest.
 
         The best available worked example — the published spec of a real module
@@ -661,9 +659,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Registry: is this data already published",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         )
     )
     async def registry_is_published(
@@ -733,9 +731,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Registry: instance health and mode",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         )
     )
     async def registry_health(target: RegistryTarget = DEFAULT_WRITE_TARGET) -> InstanceHealth:
@@ -830,8 +828,7 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             contract_compatible=compatible,
             contract_note=contract_note,
             message=(
-                f"{payload.get('status', 'unknown')}, registry "
-                f"{payload.get('version')}. {note}"
+                f"{payload.get('status', 'unknown')}, registry {payload.get('version')}. {note}"
             ),
         )
 
@@ -841,9 +838,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Look up a gene or trait",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def lookup_identifier(kind: str, identifier: str) -> IdentifierStatus:
@@ -893,9 +890,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Find a legal open-access copy",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def lookup_open_access(
@@ -925,9 +922,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Fetch a paper's text",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def fetch_fulltext(
@@ -986,7 +983,7 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     # was missing was a tool, so the calls went out ungated (`F68`).
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="List supplementary files", readOnlyHint=True, openWorldHint=True
+            title="List supplementary files", read_only_hint=True, open_world_hint=True
         )
     )
     async def list_supplementary(
@@ -1021,7 +1018,7 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Fetch one supplementary file", readOnlyHint=True, openWorldHint=True
+            title="Fetch one supplementary file", read_only_hint=True, open_world_hint=True
         )
     )
     async def fetch_supplementary(url: str) -> SupplementaryFetch:
@@ -1041,7 +1038,7 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Describe a supplementary workbook", readOnlyHint=True, openWorldHint=False
+            title="Describe a supplementary workbook", read_only_hint=True, open_world_hint=False
         )
     )
     async def describe_supplementary(path: str) -> SupplementaryDescription:
@@ -1072,7 +1069,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     # decoding a zip container is not, and this decodes.
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Read rows from a supplementary workbook", readOnlyHint=True, openWorldHint=False
+            title="Read rows from a supplementary workbook",
+            read_only_hint=True,
+            open_world_hint=False,
         )
     )
     async def read_supplementary(
@@ -1113,8 +1112,8 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Resolve HGVS expressions to canonical allele ids",
-            readOnlyHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            open_world_hint=True,
         )
     )
     async def lookup_allele_identity(expressions: list[str]) -> AlleleIdentityReport:
@@ -1262,8 +1261,11 @@ def _supplementary_list(
         notes=result.notes,
         files=[
             SupplementaryFileInfo(
-                name=f.name, url=f.url, extension=f.extension,
-                caption=f.caption, size_bytes=f.size_bytes,
+                name=f.name,
+                url=f.url,
+                extension=f.extension,
+                caption=f.caption,
+                size_bytes=f.size_bytes,
             )
             for f in result.files
         ],
@@ -1282,7 +1284,8 @@ def _supplementary_fetch(services: NetworkServices, url: str) -> SupplementaryFe
         return SupplementaryFetch(url=url, retrieved=False, note=f"{exc}")
     if response.status_code >= 400:
         return SupplementaryFetch(
-            url=url, retrieved=False,
+            url=url,
+            retrieved=False,
             note=(
                 f"HTTP {response.status_code}. On this host a 403 means no such object — "
                 "the file is not published under that name, which is not the same as the "
@@ -1309,7 +1312,8 @@ def _describe_workbook(path: str, settings: Settings) -> SupplementaryDescriptio
     sheets, titles = supplementary.workbook_sheets(resolved)
     if not sheets and not titles:
         return SupplementaryDescription(
-            path=str(resolved), is_workbook=False,
+            path=str(resolved),
+            is_workbook=False,
             note=(
                 "Not an xlsx workbook, or a workbook with no sheet table. A PDF, CSV or text "
                 "supplement is read directly — this tool describes spreadsheet structure only."

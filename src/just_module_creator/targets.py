@@ -232,7 +232,12 @@ def throttle_note(exc: RegistryError, endpoint: str) -> str:
     """
     status = getattr(exc, "status_code", None)
     detail = str(getattr(exc, "detail", "") or "")
-    bucket = THROTTLE_BUCKETS.get(endpoint, endpoint)
+    # Registry 0.26.0 answered `S23`: a `429` carries `X-RateLimit-Bucket` and a
+    # `Retry-After` derived from that bucket's refill, and `RegistryError` keeps both.
+    # The server's word wins over our endpoint map, which stays for an older instance.
+    bucket = getattr(exc, "bucket", None) or THROTTLE_BUCKETS.get(endpoint, endpoint)
+    wait = getattr(exc, "retry_after", None)
+    when = f" in about {wait}s" if wait is not None else " later"
     if status == 429:
         cheap = (
             " `registry_validate` sits on its own, larger bucket and is the pre-flight for a "
@@ -242,13 +247,13 @@ def throttle_note(exc: RegistryError, endpoint: str) -> str:
         )
         return (
             f" That is the `{bucket}` rate-limit bucket, per account, refilled by the hour: "
-            f"the instance's budget, not your module. Re-run later, one at a time.{cheap}"
+            f"the instance's budget, not your module. Re-run{when}, one at a time.{cheap}"
         )
     if status == 503 and "enrichment_busy" in detail:
         return (
             " The instance runs one dry run at a time and its gate is full — a dry run "
-            "from another call, possibly your own batch, is still running. Wait a minute "
-            "(the server says `Retry-After: 60`) and re-run these sequentially, never in "
-            "parallel; each one still draws on the `enrich` bucket."
+            "from another call, possibly your own batch, is still running. A busy refusal "
+            f"spends no `enrich` token since registry 0.26.0; wait{when} and re-run these "
+            "sequentially, never in parallel."
         )
     return ""

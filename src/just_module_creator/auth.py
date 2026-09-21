@@ -53,6 +53,7 @@ from fastmcp.exceptions import ToolError
 from just_dna_format.identity import NAMESPACE_PATTERN, is_valid_namespace
 from just_dna_registry import RegistryError, generate_install_id
 from mcp.types import ToolAnnotations
+from mcp_types.version import MODERN_PROTOCOL_VERSIONS
 
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import AuthResult, OpResult, RegistrationResult
@@ -64,6 +65,7 @@ from just_module_creator.targets import (
     describe,
     is_test_namespace,
 )
+from just_module_creator.tools._shared import narrate
 
 log = get_logger()
 
@@ -90,6 +92,33 @@ GATED_TOOLS = [
     "registry_delete_version",
     "registry_delete_module",
 ]
+
+
+def session_state_persists(ctx: Context) -> bool:
+    """Whether a value put in `ctx.set_state` will still be there on the next call.
+
+    On the initialize handshake one connection lives for the whole client session and the
+    store is keyed to it. On the 2026-07-28 wire every request is its own connection, so
+    the only stable key is a transport-level session id — streamable HTTP's
+    `mcp-session-id` — and stdio or an in-memory client has none: a token stored there is
+    gone before the call that needs it. A store that cannot hold the token says so
+    rather than reporting a success that did not happen (fastmcp 4, 2026-09-21).
+    """
+    rc = ctx.request_context
+    if rc is None or rc.protocol_version not in MODERN_PROTOCOL_VERSIONS:
+        return True
+    connection = getattr(ctx.session, "_connection", None)
+    return getattr(connection, "session_id", None) is not None
+
+
+def _no_session_note(settings: Settings, target: RegistryTarget) -> str:
+    var = "JMC_API_KEY" if target == "prod" else "JMC_TEST_API_KEY"
+    return (
+        "This connection speaks the 2026-07-28 protocol over a transport with no session "
+        "id, so a token stored here is gone by the next call. Put it in the environment "
+        f"instead — `{var}` in `.env` reaches every call for {describe(target, settings)} — "
+        "or connect over a session-bearing HTTP transport."
+    )
 
 
 def state_key(target: RegistryTarget) -> str:
@@ -131,9 +160,7 @@ def _header_key(settings: Settings, target: RegistryTarget) -> str | None:
     return request.headers.get(settings.api_key_header_for(target))
 
 
-async def resolve_api_key(
-    ctx: Context, settings: Settings, target: RegistryTarget
-) -> str | None:
+async def resolve_api_key(ctx: Context, settings: Settings, target: RegistryTarget) -> str | None:
     """Resolve the registry token for THIS request and THIS instance.
 
     Returns ``None`` if the caller must authenticate. Gated tools take that
@@ -228,12 +255,12 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Registry: register an account and mint a token",
-            readOnlyHint=False,
+            read_only_hint=False,
             # Each call issues a NEW api key, even when the account already
             # exists, so repeating it is not a no-op.
-            idempotentHint=False,
-            destructiveHint=False,
-            openWorldHint=True,
+            idempotent_hint=False,
+            destructive_hint=False,
+            open_world_hint=True,
         )
     )
     async def registry_register(
@@ -284,7 +311,7 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
 
         resolved, origin = resolve_install_id(install_id, settings)
         if resolved is None:
-            await ctx.info("Grinding a fresh install-id (proof-of-work, about a second)…")
+            await narrate(ctx, "Grinding a fresh install-id (proof-of-work, about a second)…")
             resolved = await run_sync(
                 lambda: generate_install_id(difficulty) if difficulty else generate_install_id()
             )
@@ -318,7 +345,8 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
         granted = str(payload.get("account") or account)
         namespaces = [str(n) for n in (payload.get("namespaces") or [])]
 
-        if token:
+        stored = bool(token) and session_state_persists(ctx)
+        if stored:
             await ctx.set_state(state_key(target), token)
             if settings.hide_gated_until_auth:
                 # Session-scoped: reveals the gated tools to THIS client only.
@@ -333,6 +361,8 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
         )
 
         notes = [f"Registered {granted!r} on {describe(target, settings)}."]
+        if token and not stored:
+            notes.append(_no_session_note(settings, target))
         if target == "test":
             notes.append(
                 "This is the polygon, so this account and its token exist only there. Publishing "
@@ -387,9 +417,9 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Authenticate to the registry (this session)",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
         )
     )
     async def authenticate(
@@ -411,6 +441,13 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
         # tokens the moment upstream changes its issuer.
         if not token.strip():
             return AuthResult(authenticated=False, message="Empty token — nothing was stored.")
+        if not session_state_persists(ctx):
+            return AuthResult(
+                authenticated=False,
+                target=target,
+                registry_url=settings.registry_url_for(target),
+                message="Nothing was stored. " + _no_session_note(settings, target),
+            )
         await ctx.set_state(state_key(target), token.strip())
         if settings.hide_gated_until_auth:
             # Session-scoped, unlike `mcp.enable`: this client only.
@@ -428,4 +465,3 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
                 "identical until it is used."
             ),
         )
-

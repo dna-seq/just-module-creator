@@ -53,6 +53,7 @@ import sys
 import typer
 from dotenv import load_dotenv
 from fastmcp import FastMCP
+from fastmcp_tasks import TasksExtension
 
 from just_module_creator import __version__
 from just_module_creator.auth import hide_gated_tools, register_auth
@@ -173,6 +174,13 @@ def build_server(
         name=f"just-module-creator v{__version__}",
         instructions=instructions_for(settings),
     )
+    # fastmcp 4 moved SEP-2663 background tasks out of the core into an extension
+    # that a server has to register, and refuses to start a server carrying a
+    # `task=True` tool without it. Fifteen tools here are task-enabled — every
+    # drafter, every pass and the two proxy calls — so the extension is not optional.
+    # No arguments: the backend comes from `FASTMCP_DOCKET_*` and defaults to
+    # `memory://`, which is the single-process stdio deployment a plugin is.
+    mcp.add_extension(TasksExtension())
 
     # One shared client set for the whole server. Lazy: constructing it opens no
     # connection, so importing this module still touches no network.

@@ -51,7 +51,6 @@ def append_move(spec_dir: Path, line: str) -> Path:
         handle.write(line.rstrip() + "\n")
     return path
 
-
     # This said 'in response to a reported mismatch, never ahead of one', full stop, until
     # 2026-08-22 — which contradicted the server's own rule 2, and an unattended run hit it
     # exactly: every edit it made was prompted by its own arithmetic, the checks having come
@@ -62,13 +61,15 @@ def append_move(spec_dir: Path, line: str) -> Path:
     # rows corrected to the same value carry the same `value_sha256`; the record is identified
     # by (variant_key, field) and the digest says whether that cell still holds what was
     # justified.
+
+
 def register_provenance(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Record why an authored value outranks a source",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
         )
     )
     async def record_override(
@@ -204,8 +205,8 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="The overridden rows a reviewer should open first",
-            readOnlyHint=True,
-            idempotentHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
         )
     )
     async def review_queue(spec_dir: str) -> ReviewQueue:

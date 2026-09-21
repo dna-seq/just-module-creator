@@ -155,3 +155,13 @@ async def test_search_indexes_only_what_this_session_has_revealed(make_client):
 
         found = await client.call_tool("search_tools", {"pattern": "paper_citations"})
         assert "paper_citations" in _text(found)
+
+
+async def test_a_session_that_cannot_keep_a_token_says_so_instead_of_storing_it(client):
+    """The modern-era in-memory client has no session id, so `set_state` cannot survive
+    the call. `authenticate` must refuse and name the env var, never report a success
+    that the next gated call cannot find (fastmcp 4, 2026-09-21)."""
+    result = await client.call_tool("authenticate", {"token": "tok_abc123", "target": "test"})
+    assert result.data.authenticated is False
+    assert "JMC_TEST_API_KEY" in result.data.message
+    assert result.data.unlocked_tools == []

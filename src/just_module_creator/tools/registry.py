@@ -48,6 +48,7 @@ from just_module_creator.targets import (
 )
 from just_module_creator.tools._shared import (
     jsonable,
+    narrate,
     normalize_declared_use,
     resolve_dir,
     to_published_versions,
@@ -151,7 +152,7 @@ def _record_receipt(
 def _unauthenticated_preflight(
     *, spec_dir: str, namespace: str, name: str, target: RegistryTarget
 ) -> PublishPreflight:
-    """"No token" as a pre-flight, not as a verdict.
+    """ "No token" as a pre-flight, not as a verdict.
 
     The other gated tools return ``OpResult(success=False)``, which is honest there
     because they either did the thing or did not. A pre-flight returns a *verdict*,
@@ -378,9 +379,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: would this spec publish (module-level)",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_validate(
@@ -441,9 +442,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: full publish dry run",
-            readOnlyHint=True,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def registry_check(
@@ -557,9 +558,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: who am I",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_whoami(
@@ -602,10 +603,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: fix a published module's readme",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
+            open_world_hint=True,
         ),
     )
     async def registry_amend_readme(
@@ -688,8 +689,7 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
             return OpResult(
                 success=False,
                 message=(
-                    f"{describe(target, settings)} refused the readme: "
-                    f"{exc}{instance_note(exc)}"
+                    f"{describe(target, settings)} refused the readme: {exc}{instance_note(exc)}"
                 ),
                 data={"target": target},
             )
@@ -708,10 +708,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: claim a namespace",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
+            open_world_hint=True,
         ),
     )
     async def registry_claim_namespace(
@@ -762,8 +762,7 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
             return OpResult(
                 success=False,
                 message=(
-                    f"{describe(target, settings)} refused the claim: "
-                    f"{exc}{instance_note(exc)}"
+                    f"{describe(target, settings)} refused the claim: {exc}{instance_note(exc)}"
                 ),
                 data={"target": target, "namespace": namespace},
             )
@@ -779,10 +778,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: publish a module version",
-            readOnlyHint=False,
-            idempotentHint=False,
-            destructiveHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            destructive_hint=False,
+            open_world_hint=True,
         ),
     )
     async def registry_publish(
@@ -909,8 +908,8 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
             )
 
         if ctx:
-            await ctx.info(
-                f"Publishing {namespace}/{name}@{version} to {describe(target, settings)}"
+            await narrate(
+                ctx, f"Publishing {namespace}/{name}@{version} to {describe(target, settings)}"
             )
 
         try:
@@ -980,9 +979,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Yank a published version",
-            readOnlyHint=False,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_yank(
@@ -1047,9 +1046,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Un-yank a version",
-            readOnlyHint=False,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_unyank(
@@ -1125,10 +1124,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Polygon: delete a rehearsed version",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=True,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_delete_version(
@@ -1165,8 +1164,7 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
             return OpResult(
                 success=False,
                 message=(
-                    f"{describe(target, settings)} refused the delete: "
-                    f"{exc}{instance_note(exc)}"
+                    f"{describe(target, settings)} refused the delete: {exc}{instance_note(exc)}"
                 ),
                 data={"target": target},
             )
@@ -1185,10 +1183,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Polygon: delete a rehearsed module",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=True,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_delete_module(
@@ -1219,8 +1217,7 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
             return OpResult(
                 success=False,
                 message=(
-                    f"{describe(target, settings)} refused the delete: "
-                    f"{exc}{instance_note(exc)}"
+                    f"{describe(target, settings)} refused the delete: {exc}{instance_note(exc)}"
                 ),
                 data={"target": target},
             )

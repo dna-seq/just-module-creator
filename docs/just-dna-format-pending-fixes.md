@@ -2102,6 +2102,14 @@ remedy is one line. Worth a remedy sentence in the error if the cost is ever re-
 **State: fixed here in 0.35.0.** `check_acmg`, `check_repeat_bands` and
 `check_literature_coverage` now exist as tools, in a new `catalogue_checks` toolbox group.
 
+**`S100` released in enricher 0.7.1 (their RM234), adopted 2026-09-21 in 0.37.0.** `AcmgReport.clean`
+is a `Verdict`: falsy when it carries a code, and `offline` is a code, so a run that read no list is a
+*no* upstream — a gate has to pick an exit status. `check_acmg` is not a gate, so it keeps the house
+tri-state: `not_consulted == "offline"` is `null`, never `false`, and the guard that re-derived
+`clean` from `version` is gone. The cast to `bool` at the model boundary is load-bearing: pydantic does
+not call `__bool__` on a foreign object and refuses a `Verdict` where it wants a `bool`, which is the
+`500` the registry's 0.26.1 notes record on their own adapter.
+
 **What was missing.** Measured 2026-09-12 against the installed enricher 0.7.0, wrapping the
 `just-dna-enricher` CLI against our tool surface:
 

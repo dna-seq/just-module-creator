@@ -14,11 +14,13 @@ CLAUDE.md §2. What it may not do is launder its own writes as upstream's.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Container
 from importlib import metadata
 from pathlib import Path
 from typing import Any
 
+from fastmcp import Context
 from fastmcp.exceptions import ToolError
 from just_dna_format.vocab import VALID_DECLARED_USE
 
@@ -40,6 +42,23 @@ _SCHEMA_VERSIONS = SchemaVersions(
     format_version=metadata.version("just-dna-format"),
     compiler_version=metadata.version("just-dna-compiler"),
 )
+
+
+log = logging.getLogger(__name__)
+
+
+async def narrate(ctx: Context, message: str) -> None:
+    """Tell the caller what a long tool is doing, in whichever mode it is running.
+
+    fastmcp 4 runs a `task=True` tool as a background task whenever the client
+    declared the tasks extension (its own in-memory client does), and a worker
+    context carries no live session — status is polled — so `ctx.info` raises
+    there; on the 2026-07-28 wire the logging capability is deprecated outright
+    (SEP-2577). `report_progress` reaches both modes, so the sentence rides on it
+    as the status message, and stderr keeps it for the operator.
+    """
+    log.info(message)
+    await ctx.report_progress(progress=0, message=message)
 
 
 def resolve_dir(raw: str, settings: Settings, *, must_exist: bool = True) -> Path:

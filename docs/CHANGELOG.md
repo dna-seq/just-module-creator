@@ -3,7 +3,37 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## [Unreleased]
+## [0.37.0] — 2026-09-21
+
+### fastmcp 4, and enricher/compiler 0.7.1 with registry 0.26.1
+
+- **fastmcp 4.0.5.** Background tasks moved out of the core into `fastmcp-tasks`, which a server has
+  to register: `build_server` adds `TasksExtension()` (memory backend, the single-process stdio
+  deployment a plugin is) or refuses to start with fifteen `task=True` tools. A worker context carries
+  no live session, so `ctx.info` raises inside a task and the logging capability is deprecated on the
+  2026-07-28 wire; every long tool now narrates through `_shared.narrate`, which puts the sentence on
+  `report_progress` and stderr. The SDK's camelCase spellings (`readOnlyHint`, `inputSchema`) became
+  deprecation warnings and are renamed throughout.
+- **A token store that cannot hold the token says so.** On the 2026-07-28 protocol era every request
+  is its own connection, so session state persists only where the transport carries a session id
+  (streamable HTTP); stdio and the in-memory client have none, and `authenticate` used to report
+  `authenticated: true` about a token gone by the next call. `auth.session_state_persists` is checked
+  first: `authenticate` refuses and names `JMC_API_KEY` / `JMC_TEST_API_KEY`, `registry_register` still
+  mints but says the token was not stored. The handshake era — what fastmcp 3 spoke and what the suite's
+  `make_client` now pins with `mode="legacy"` — is unchanged; the `client` fixture stays modern so the
+  worker path is exercised. Whether a given host speaks one era or the other is the host's fact.
+- **Enricher and compiler 0.7.1; format stays 0.7.0.** `AcmgReport.clean` is a `Verdict` (their
+  RM234, our `S100`): `check_acmg` maps its `offline` code to `null` and keeps the house tri-state, and
+  the guard that re-derived `clean` is gone. The wheel on PyPI also carries `S102`–`S106` (the tag is
+  at the tree's head, the wheel byte-identical to it), so: the placeholder remedy names the one field
+  a draft still refuses on (`S103`); `enrich_module`'s restated-row warning now says the sidecar
+  predates 0.7.1 and names `refresh_sidecar` (`S104`), and `module-draft`, `module-start` and
+  `SYMPTOMS.md` say the same. Floors `>=0.7.1,<0.8` on both.
+- **Registry 0.26.1.** `RegistryError` carries `bucket` and `retry_after` from the `S23` headers;
+  `throttle_note` reads them ahead of its endpoint map and says a busy refusal no longer spends an
+  `enrich` token. Floor `>=0.26.1`. Both live instances still answered `registry 0.25.2 / format 0.7.0`
+  on 2026-09-21.
+
 
 ### Three findings from the ClawBio PGx run (F102, F103, F104)
 

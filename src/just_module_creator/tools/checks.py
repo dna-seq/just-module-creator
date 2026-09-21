@@ -282,9 +282,9 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
             # It writes `verification.json` — an attestation, never an authored
             # cell. Claiming read-only here would be the same lie the split exists
             # to avoid.
-            readOnlyHint=False,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def check_identifiers(
@@ -471,9 +471,9 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Check acmg_sf against the ACMG secondary-findings list",
-            readOnlyHint=False,  # writes verification.json — an attestation, not a cell
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=False,  # writes verification.json — an attestation, not a cell
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def check_acmg(
@@ -547,17 +547,17 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
         attested, note = _attest([acmg_record(report)], target)
         mismatches = _by_gene(report.mismatches)
         unverifiable = _by_gene(report.unverifiable)
-        # **`AcmgReport.clean` is `True` when no list was read**, because it is
-        # `not mismatches` and an unchecked verdict is not a mismatch. That is a green
-        # that could not have failed, so it is re-derived here against `version` rather
-        # than passed through. Filed as format-tree `S100`, 2026-09-12; when upstream
-        # makes it three-valued this becomes `report.clean` again and the guard goes.
-        read_a_list = report.version is not None
+        # `AcmgReport.clean` is a `Verdict` since enricher 0.7.1 (our `S100`): falsy when
+        # it carries a code, and `offline` is a code, so a run that read no list is a
+        # `no` upstream — a gate has to pick an exit status. This is not a gate, so the
+        # house tri-state holds here: no list read is `null`, never `false`, and
+        # `not_consulted` is upstream's own word for which arm that was.
+        read_a_list = report.not_consulted != "offline"
         return AcmgReportModel(
             spec_dir=str(target),
             version=report.version,
             checked=report.checked if read_a_list else None,
-            clean=report.clean if read_a_list else None,
+            clean=bool(report.clean) if read_a_list else None,
             skipped=(
                 None
                 if read_a_list
@@ -585,9 +585,9 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Check repeat bands against STRchive",
-            readOnlyHint=False,
-            idempotentHint=True,
-            openWorldHint=False,  # reads a provisioned snapshot; no request of its own
+            read_only_hint=False,
+            idempotent_hint=True,
+            open_world_hint=False,  # reads a provisioned snapshot; no request of its own
         ),
     )
     async def check_repeat_bands(spec_dir: str, catalogue: str | None = None) -> RepeatBandReport:
@@ -682,9 +682,9 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Which papers a variant-literature index holds per locus",
-            readOnlyHint=False,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def check_literature_coverage(
@@ -715,9 +715,7 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
         target = resolve_dir(spec_dir, settings)
         eff_offline = offline_for(settings, offline)
         try:
-            report = await run_sync(
-                lambda: check_literature_coverage_(target, offline=eff_offline)
-            )
+            report = await run_sync(lambda: check_literature_coverage_(target, offline=eff_offline))
         except (ValueError, LitvarError) as exc:
             raise ToolError(f"the literature-coverage check could not run: {exc}") from exc
 
@@ -777,9 +775,9 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Check allele functions against PharmVar and CPIC",
-            readOnlyHint=False,  # licensing.csv rows and verification.json, never a cell
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=False,  # licensing.csv rows and verification.json, never a cell
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def check_pgx(
@@ -868,9 +866,9 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Check pharm_variants.csv against the ClinPGx snapshot",
-            readOnlyHint=False,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def check_clinpgx(

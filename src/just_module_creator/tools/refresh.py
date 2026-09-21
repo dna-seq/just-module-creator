@@ -149,6 +149,7 @@ from just_module_creator.models import (
 from just_module_creator.net import NetworkServices
 from just_module_creator.settings import Settings
 from just_module_creator.tools._shared import (
+    narrate,
     normalize_declared_use,
     offline_for,
     resolve_dir,
@@ -635,6 +636,7 @@ def differing_fact_fields(
     left: Sequence[SidecarRow], right: Sequence[SidecarRow], fields: Sequence[str]
 ) -> list[str]:
     """Which fact columns the two sides of a conflict disagree on, sorted."""
+
     def values(rows: Sequence[SidecarRow], name: str) -> frozenset[str]:
         return frozenset(row.cells.get(name, "") for row in rows)
 
@@ -686,9 +688,9 @@ def capture_now(directory: Path, source: Path, state: dict[str, Any]) -> tuple[P
     original = source.read_bytes()
     pending = directory / PENDING_CSV
     pending.write_bytes(original)
-    verified = hashlib.sha256(pending.read_bytes()).hexdigest() == hashlib.sha256(
-        original
-    ).hexdigest()
+    verified = (
+        hashlib.sha256(pending.read_bytes()).hexdigest() == hashlib.sha256(original).hexdigest()
+    )
     (directory / PENDING_STATE).write_text(
         json.dumps(state, indent=2, sort_keys=True), encoding="utf-8"
     )
@@ -715,9 +717,7 @@ def finalize_capture(directory: Path, stamp: str) -> Path:
 # --------------------------------------------------------------------------- #
 # Writing the refreshed file
 # --------------------------------------------------------------------------- #
-def write_merged(
-    path: Path, fresh: Table, extra: Sequence[dict[str, str]]
-) -> None:
+def write_merged(path: Path, fresh: Table, extra: Sequence[dict[str, str]]) -> None:
     """Put ``extra`` rows back into the freshly derived file, cells verbatim.
 
     A CSV writer, never string concatenation: several cells legitimately contain
@@ -728,9 +728,7 @@ def write_merged(
     When it has to grow the whole file is rewritten from the text already in it,
     so an existing cell keeps its exact spelling and only its line number moves.
     """
-    union = list(fresh.header) + [
-        name for row in extra for name in row if name not in fresh.header
-    ]
+    union = list(fresh.header) + [name for row in extra for name in row if name not in fresh.header]
     seen: list[str] = []
     for name in union:
         if name not in seen:
@@ -741,9 +739,7 @@ def write_merged(
             # reapplied row onto it — a row this function promised not to touch.
             if not path.read_bytes().endswith(b"\n"):
                 handle.write(csv.excel.lineterminator)
-            writer = csv.DictWriter(
-                handle, fieldnames=seen, restval="", extrasaction="ignore"
-            )
+            writer = csv.DictWriter(handle, fieldnames=seen, restval="", extrasaction="ignore")
             writer.writerows(extra)
         return
     with path.open("w", encoding="utf-8", newline="") as handle:
@@ -831,9 +827,9 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
         task=True,
         annotations=ToolAnnotations(
             title="Refresh a derived sidecar",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def refresh_sidecar(
@@ -889,9 +885,10 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
         target = resolve_dir(spec_dir, settings)
         chosen = check_sidecar(sidecar)
         if chosen.corpus_sized and ctx is not None:
-            await ctx.info(
+            await narrate(
+                ctx,
                 f"{chosen.csv}'s pass is sized by how much has been published, not by the rows "
-                "you wrote — expect a long run and a large request budget."
+                "you wrote — expect a long run and a large request budget.",
             )
         declared = check_use(chosen, use)
         eff_offline = offline_for(settings, offline)
@@ -961,9 +958,7 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
             recorded = stored.get("read_from")
             read_from = Path(recorded) if recorded else existing
             same_bytes = bool(
-                existing
-                and existing.is_file()
-                and existing.read_bytes() == pending.read_bytes()
+                existing and existing.is_file() and existing.read_bytes() == pending.read_bytes()
             )
             captured, errors = read_table(pending, chosen)
             if captured is None:
@@ -1025,7 +1020,7 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
             existing.unlink()
 
         if ctx:
-            await ctx.info(f"Re-deriving {chosen.csv} in {target.name} (mode={mode})")
+            await narrate(ctx, f"Re-deriving {chosen.csv} in {target.name} (mode={mode})")
             await ctx.report_progress(progress=1, total=len(chosen.passes) + 2)
 
         # ------------------------------------------------------------------ #
@@ -1037,9 +1032,7 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
         if not resumed or existing is None or not existing.is_file():
             for index, step in enumerate(chosen.passes, start=1):
                 if ctx:
-                    await ctx.report_progress(
-                        progress=1 + index, total=len(chosen.passes) + 2
-                    )
+                    await ctx.report_progress(progress=1 + index, total=len(chosen.passes) + 2)
                 # Narrow-first, always: since enricher 0.6.2 each `*Unavailable` is a
                 # subclass of the type beside it, so a parent-first pair would catch
                 # every outage in the parent arm and leave this one dead.
@@ -1131,9 +1124,7 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
         )
         available: frozenset[str] | None = fetched_sources or None
         fresh_rows = to_sidecar_rows(fresh, chosen, key, available)
-        captured_rows = (
-            to_sidecar_rows(captured, chosen, key, available) if captured else []
-        )
+        captured_rows = to_sidecar_rows(captured, chosen, key, available) if captured else []
 
         fresh_by_subject: dict[str, list[SidecarRow]] = {}
         for row in fresh_rows:
@@ -1157,15 +1148,11 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
                     subject=subject,
                     captured=mine,
                     rederived=theirs,
-                    differing_fact_fields=differing_fact_fields(
-                        mine, theirs, chosen.fact_fields
-                    ),
+                    differing_fact_fields=differing_fact_fields(mine, theirs, chosen.fact_fields),
                     unresolvable=_UNRESOLVABLE,
                 )
             )
-        only_fresh = [
-            row for row in fresh_rows if row.subject not in captured_by_subject
-        ]
+        only_fresh = [row for row in fresh_rows if row.subject not in captured_by_subject]
 
         reapplied = [row for row in only_capture if row.source_proves_authored]
         withheld = [row for row in only_capture if not row.source_proves_authored]
@@ -1258,9 +1245,7 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
             )
 
         if ctx:
-            await ctx.report_progress(
-                progress=len(chosen.passes) + 2, total=len(chosen.passes) + 2
-            )
+            await ctx.report_progress(progress=len(chosen.passes) + 2, total=len(chosen.passes) + 2)
         return report(
             success=True,
             read_from=str(read_from) if read_from else None,

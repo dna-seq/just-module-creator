@@ -115,6 +115,7 @@ from just_module_creator.models import (
 from just_module_creator.net import NetworkServices
 from just_module_creator.settings import Settings
 from just_module_creator.tools._shared import (
+    narrate,
     normalize_declared_use,
     offline_for,
     resolve_dir,
@@ -181,8 +182,8 @@ _FLAG_TO_ARG = {
 # scaffold stub is `<<REPLACE>>` in every required cell.
 _SPEC_PLACEHOLDER_REMEDY = (
     "No tool here takes a genome_build argument: the build is read from module_spec.yaml, "
-    "so the repair is the spec itself. Replace every <<REPLACE>> it names (title, "
-    "description, report_title) and re-run."
+    "so the repair is the spec itself. Replace the <<REPLACE>> in the field it names and "
+    "re-run; a scaffold's other stubs no longer block a draft (enricher 0.7.1)."
 )
 _STUB_ROW_REMEDY = (
     "That row is the scaffold's stub. A drafter creates and fills the table, so delete the "
@@ -399,9 +400,9 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
         task=True,
         annotations=ToolAnnotations(
             title="Draft from ClinVar",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def draft_from_clinvar(
@@ -440,7 +441,7 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
             raise ToolError("Provide at least one gene symbol.")
 
         if ctx:
-            await ctx.info(f"Drafting {', '.join(genes)} from ClinVar into {target.name}")
+            await narrate(ctx, f"Drafting {', '.join(genes)} from ClinVar into {target.name}")
             await ctx.report_progress(progress=1, total=2)
 
         # `clin_sig` is omitted rather than defaulted when unset: upstream owns
@@ -478,9 +479,9 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
         task=True,
         annotations=ToolAnnotations(
             title="Enrich a spec (resolve coordinates)",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def enrich_module(
@@ -513,9 +514,10 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
         mode = "strict" if strict else "best_effort"
 
         if ctx:
-            await ctx.info(
+            await narrate(
+                ctx,
                 f"Enriching {target.name} (mode={mode}, "
-                f"{'cache-only' if eff_offline else 'network'})"
+                f"{'cache-only' if eff_offline else 'network'})",
             )
             await ctx.report_progress(progress=1, total=3)
 
@@ -651,14 +653,13 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
                 "No ref mismatches reported — but this ran offline, where the check "
                 "needs sequence access and therefore did not run at all."
             )
-        # A row authored with BOTH an rsID and a coordinate takes upstream's last resolver
-        # branch — "already complete, or has a position — nothing to resolve" — and the
-        # sidecar restates the authored coordinate under `source=authored` with no `ref`,
-        # no `alts` and no VRS id. `resolved: 5, sources: ["authored"]` then reads as a
-        # clean run while nothing Ensembl answered reached the file, and every
-        # CPIC-drafted module compiles at 0% VRS coverage (F103, upstream S104). The
-        # coordinate-agreement check does still run; what is missing is the second value
-        # in the sidecar, and that is what this names.
+        # Before enricher 0.7.1 a row authored with BOTH an rsID and a coordinate took
+        # upstream's last resolver branch — "nothing to resolve" — and the sidecar restated
+        # the authored coordinate under `source=authored` with no `ref`, no `alts` and no
+        # VRS id, so every CPIC-drafted module compiled at 0% VRS coverage (F103, upstream
+        # S104, fixed in 0.7.1: such a row now takes the forward branch when the reference
+        # knows its rsID). The shape still arrives from a sidecar written before the fix,
+        # because a sidecar is merge-not-clobber, and the remedy is a re-derivation.
         restated = sum(
             1
             for row in getattr(result, "rows", []) or []
@@ -670,12 +671,13 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
         )
         if restated:
             warnings.append(
-                f"{restated} row(s) carried both an rsID and a coordinate, so resolution.csv "
+                f"{restated} row(s) carry both an rsID and a coordinate and resolution.csv "
                 "restates the authored position under source=authored with no ref, no alts "
-                "and no VRS id — nothing Ensembl answered reached the sidecar. Expected on "
-                "every CPIC-drafted haplotype table (upstream S104): the compile will warn "
-                "that VRS identity covers 0 of these, and verification.json's "
-                "rsid_coordinate_agreement is the check that did run."
+                "and no VRS id — nothing Ensembl answered reached the sidecar, and the "
+                "compile will warn that VRS identity covers 0 of these. That is a sidecar "
+                "written before enricher 0.7.1 (upstream S104) and kept by merge-not-clobber: "
+                "`refresh_sidecar(sidecar='resolution.csv')` re-derives it so the "
+                "reference's answer is recorded."
             )
         return EnrichReport(
             success=True,
@@ -754,9 +756,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Draft from CPIC",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def draft_from_cpic(
@@ -797,7 +799,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         eff_offline = offline_for(settings, offline)
 
         if ctx:
-            await ctx.info(f"Drafting {gene} from CPIC into {target.name}")
+            await narrate(ctx, f"Drafting {gene} from CPIC into {target.name}")
             await ctx.report_progress(progress=1, total=2)
 
         result = await _guard(
@@ -820,9 +822,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Draft from ClinPGx",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def draft_from_clinpgx(
@@ -896,9 +898,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Fill literature.csv",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def enrich_literature_pass(
@@ -942,7 +944,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         mode = "strict" if strict else "best_effort"
 
         if ctx:
-            await ctx.info(f"Resolving citations for {target.name}")
+            await narrate(ctx, f"Resolving citations for {target.name}")
             await ctx.report_progress(progress=1, total=2)
 
         try:
@@ -1013,9 +1015,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Run the sidecar fact passes",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def enrich_facts(
@@ -1074,7 +1076,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
 
         for index, name in enumerate(wanted, start=1):
             if ctx:
-                await ctx.info(f"Running {name} on {target.name}")
+                await narrate(ctx, f"Running {name} on {target.name}")
                 await ctx.report_progress(progress=index, total=len(wanted) + 1)
             # One pass per `try`, so one source's outage costs one source's findings.
             # Sharing a `try` across the loop discarded every pass that had already
@@ -1143,9 +1145,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Fill gwas_effects.csv",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def enrich_gwas_effects(
@@ -1202,9 +1204,10 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         declared = _check_use(use)
 
         if ctx:
-            await ctx.info(
+            await narrate(
+                ctx,
                 f"Reading the GWAS Catalog for {target.name} (mode={mode}, "
-                f"study_facts={'on' if study_facts else 'off'})"
+                f"study_facts={'on' if study_facts else 'off'})",
             )
             await ctx.report_progress(progress=1, total=2)
 
@@ -1331,9 +1334,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Draft from CIViC",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def draft_from_civic(
@@ -1365,7 +1368,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         target = resolve_dir(spec_dir, settings)
         eff_offline = offline_for(settings, offline)
         if ctx:
-            await ctx.info(f"Drafting {', '.join(genes)} from CIViC into {target.name}")
+            await narrate(ctx, f"Drafting {', '.join(genes)} from CIViC into {target.name}")
             await ctx.report_progress(progress=1, total=2)
         try:
             result = await run_sync(
@@ -1403,9 +1406,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Draft from MITOMAP",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def draft_from_mitomap(
@@ -1439,7 +1442,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         declared = _check_use(use)
         target = resolve_dir(spec_dir, settings)
         if ctx:
-            await ctx.info(f"Drafting {', '.join(genes)} from MITOMAP into {target.name}")
+            await narrate(ctx, f"Drafting {', '.join(genes)} from MITOMAP into {target.name}")
             await ctx.report_progress(progress=1, total=2)
         try:
             result = await run_sync(
@@ -1482,9 +1485,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Draft from PubMind",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def draft_from_pubmind(
@@ -1529,7 +1532,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
                 "and an empty list would ask for all of it rather than for nothing."
             )
         if ctx:
-            await ctx.info(f"Drafting {', '.join(genes)} from PubMind into {target.name}")
+            await narrate(ctx, f"Drafting {', '.join(genes)} from PubMind into {target.name}")
             await ctx.report_progress(progress=1, total=2)
         try:
             result = await run_sync(
@@ -1572,9 +1575,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Draft repeat loci from STRchive",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def draft_from_strchive(
@@ -1605,7 +1608,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         declared = _check_use(use)
         target = resolve_dir(spec_dir, settings)
         if ctx:
-            await ctx.info(f"Drafting repeat loci for {', '.join(genes)} into {target.name}")
+            await narrate(ctx, f"Drafting repeat loci for {', '.join(genes)} into {target.name}")
             await ctx.report_progress(progress=1, total=2)
         try:
             result = await run_sync(
@@ -1644,9 +1647,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Fill expression_effects.csv from AlphaGenome",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def enrich_expression_effects(
@@ -1713,7 +1716,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
             )
 
         if ctx:
-            await ctx.info(f"Querying the AlphaGenome Atlas for {gene} in {target.name}")
+            await narrate(ctx, f"Querying the AlphaGenome Atlas for {gene} in {target.name}")
             await ctx.report_progress(progress=1, total=2)
 
         # Narrow-first: `ExpressionUnavailable` subclasses `ExpressionError`, so a
@@ -1808,9 +1811,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Rank expression_effects.csv",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=False,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=False,
         ),
     )
     async def top_expression_effects(

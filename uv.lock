@@ -1029,7 +1029,7 @@ wheels = [
 
 [[package]]
 name = "just-dna-registry"
-version = "0.25.2"
+version = "0.26.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -1037,18 +1037,19 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a1/12/07c55cac20c2be4ab8184c0174c87c4c99f91c0cb64c8f71758a7f9f9d35/just_dna_registry-0.25.2.tar.gz", hash = "sha256:20163398dd9e9102f6181212a89ed15e828791631aa50a3a6544cf1acc9da71c", size = 343643, upload-time = "2026-09-12T19:24:05.084Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cc/48/129d71ac6e1c6c74c7ec4523d7aec4db1460c27d3a846fd2a48ac7c0b992/just_dna_registry-0.26.1.tar.gz", hash = "sha256:470666af11d44a2e0f4167b606d8184eb9527642d6905d2347acda7125eddf20", size = 348324, upload-time = "2026-09-21T15:51:52.432Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/96/34/e85ca5fd157028a251aec20c78d7b4fd1e1ca7c37c28832da822ac914323/just_dna_registry-0.25.2-py3-none-any.whl", hash = "sha256:6ecbbae8444656d0ba80c4b688dd613f0b4cdca3914ab44eceebedde9f35f45b", size = 370203, upload-time = "2026-09-12T19:24:03.499Z" },
+    { url = "https://files.pythonhosted.org/packages/6e/02/a5743cd417afa62d6e715f92bee143e8cf84728415faa8fc71056034902a/just_dna_registry-0.26.1-py3-none-any.whl", hash = "sha256:4e944941064d8cf9d5cbce91b049f0d32637e2c8b87246c4ab7fd6faf24a13db", size = 374404, upload-time = "2026-09-21T15:51:53.865Z" },
 ]
 
 [[package]]
 name = "just-module-creator"
-version = "0.36.0"
+version = "0.37.0"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
     { name = "fastmcp", extra = ["tasks"] },
+    { name = "fastmcp-tasks" },
     { name = "httpx" },
     { name = "just-dna-compiler" },
     { name = "just-dna-enricher", extra = ["atlas"] },
@@ -1077,12 +1078,13 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "anyio", specifier = ">=4" },
-    { name = "fastmcp", extras = ["tasks"], specifier = ">=3.4.7" },
+    { name = "fastmcp", extras = ["tasks"], specifier = ">=4.0.5" },
+    { name = "fastmcp-tasks", specifier = ">=4.0.5" },
     { name = "httpx", specifier = ">=0.28" },
-    { name = "just-dna-compiler", specifier = ">=0.7.0,<0.8" },
-    { name = "just-dna-enricher", extras = ["atlas"], specifier = ">=0.7.0,<0.8" },
+    { name = "just-dna-compiler", specifier = ">=0.7.1,<0.8" },
+    { name = "just-dna-enricher", extras = ["atlas"], specifier = ">=0.7.1,<0.8" },
     { name = "just-dna-format", specifier = ">=0.7.0,<0.8" },
-    { name = "just-dna-registry", specifier = ">=0.25.2" },
+    { name = "just-dna-registry", specifier = ">=0.26.1" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pydantic-settings", specifier = ">=2" },

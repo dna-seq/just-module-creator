@@ -1885,6 +1885,11 @@ The promise it broke is `create-module`'s stage table, 1 scaffold → 2 draft, w
 Upstream's own reference README recipe fails identically; the tester filed that as format-tree
 `S103` (read `genome_build` leniently, or say to fill the titles and scaffold without `--kind`).
 
+**Upstream half released 2026-09-21 — enricher/compiler 0.7.1 carry `S103` (their RM250):** a
+draft reads past the scaffold's stubs in the fields it never uses, so only a placeholder in
+`genome_build` itself refuses now, and the compiler names a stub row by its line. Adopted in 0.37.0:
+the remedy text and its test moved to that one case.
+
 **Fixed 2026-09-20.** `rows=0` on `scaffold_module`; `EnrichmentError` and `DraftError` translated
 by `_guard`, each with the repair this surface can make appended after upstream's verbatim text and
 keyed on `<<REPLACE>>`; the order written into `module-start` (stage 1 owns it), the two messages
@@ -1956,6 +1961,14 @@ thirteen modules. **What is true and what is not**: the coordinate-agreement che
 it found five CPIC positions off Ensembl's — so the skills' sentence *"the resolution table is the
 independent second value the cross-check needs"* was right about the check and wrong about the
 sidecar, which holds no second value for this shape. Upstream half is the tester's `S104`.
+
+**Upstream half released 2026-09-21 — enricher 0.7.1 carries `S104` (their RM251):** a row authoring
+both an rsID and a coordinate takes the forward branch when the reference knows its rsID, so a fresh
+`enrich` records the loci and mints an id, and a pair that disagrees with Ensembl warns in
+`best_effort` and refuses in `strict`. A sidecar written before the fix keeps its `authored` rows under
+merge-not-clobber, so the warning below now names `refresh_sidecar` as the repair instead of calling
+the shape expected; the thirteen polygon rehearsals from 2026-09-20 are exactly that case. Adopted in
+0.37.0.
 
 **Fixed 2026-09-20 (unreleased on 0.36.0).** `enrich_module` now appends a warning counting the rows
 that came back `resolved` under `source=authored` with an rsID and no VRS id, naming the shape, the

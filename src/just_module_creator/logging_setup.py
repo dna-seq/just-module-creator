@@ -5,7 +5,7 @@ All logs MUST go to ``stderr`` or they will corrupt the protocol. We therefore
 attach a single ``StreamHandler(sys.stderr)``.
 
 Client-facing logs/progress (things the MCP *client* should see) go through the
-FastMCP ``Context`` instead: ``await ctx.info(...)`` / ``ctx.report_progress(...)``.
+``_shared.narrate(ctx, ...)`` instead, which reaches a background task too; ``ctx.info`` does not.
 """
 
 from __future__ import annotations

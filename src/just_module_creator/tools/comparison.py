@@ -78,7 +78,7 @@ def _verdict(left: object, right: object) -> str:
 def register_comparison(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Compare two spec directories", readOnlyHint=True, idempotentHint=True
+            title="Compare two spec directories", read_only_hint=True, idempotent_hint=True
         )
     )
     async def compare_modules(
@@ -126,18 +126,15 @@ def register_comparison(mcp: FastMCP, settings: Settings) -> None:
             return _compare(left, right, max_groups, examples_per_group)
 
         result = await run_sync(work)
-        log.info(
-            "compared %s <-> %s: content %s", left.name, right.name, result.content
-        )
+        log.info("compared %s <-> %s: content %s", left.name, right.name, result.content)
         return result
-
 
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Compare a spec against its published version",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def compare_to_published(
@@ -209,9 +206,7 @@ def register_comparison(mcp: FastMCP, settings: Settings) -> None:
         )
 
 
-def _compare(
-    left: Path, right: Path, max_groups: int, examples_per_group: int
-) -> ModuleComparison:
+def _compare(left: Path, right: Path, max_groups: int, examples_per_group: int) -> ModuleComparison:
     left_build, left_module = compare.read_build(left)
     right_build, right_module = compare.read_build(right)
     unknown: list[Unknown] = []
@@ -317,7 +312,6 @@ def _compare(
             "across two compiler versions it differs for a reason nobody asked about."
         ),
     )
-
 
 
 #: The manifest's fact-signature blocks, and the local sidecar each is computed from.

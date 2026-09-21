@@ -57,6 +57,7 @@ from just_module_creator.settings import Settings
 from just_module_creator.tools._shared import (
     jsonable,
     known_kind,
+    narrate,
     resolve_dir,
     schema_versions,
     to_alterations,
@@ -324,7 +325,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # ----------------------------------------------------------------- #
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Review the logs before publishing", readOnlyHint=True, idempotentHint=True
+            title="Review the logs before publishing", read_only_hint=True, idempotent_hint=True
         )
     )
     def review_logs(spec_dir: str) -> LogReview:
@@ -384,7 +385,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # ----------------------------------------------------------------- #
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Study facts already in this module", readOnlyHint=True, idempotentHint=True
+            title="Study facts already in this module", read_only_hint=True, idempotent_hint=True
         )
     )
     def study_facts(spec_dir: str) -> StudyFacts:
@@ -472,7 +473,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # ----------------------------------------------------------------- #
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="List table kinds", readOnlyHint=True, idempotentHint=True
+            title="List table kinds", read_only_hint=True, idempotent_hint=True
         )
     )
     def list_tables() -> TableList:
@@ -509,6 +510,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             note=_COMPOSITION_NOTE,
             produced_by=schema_versions(),
         )
+
     # Upstream glosses the somebody behind an attestation cell as a human, which is right for a
     # layer where nothing can record a reader. Here an agent reading a fetched article is a
     # reading that happened, so the rule is attribution rather than abstention — CLAUDE.md §2,
@@ -516,7 +518,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Describe a table kind", readOnlyHint=True, idempotentHint=True
+            title="Describe a table kind", read_only_hint=True, idempotent_hint=True
         )
     )
     def describe_table(csv_name: str) -> TableDescription:
@@ -585,7 +587,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Describe module_spec.yaml", readOnlyHint=True, idempotentHint=True
+            title="Describe module_spec.yaml", read_only_hint=True, idempotent_hint=True
         )
     )
     def describe_spec_file() -> SpecFileDescription:
@@ -646,7 +648,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # edits the code.
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Describe a machine-produced table", readOnlyHint=True, idempotentHint=True
+            title="Describe a machine-produced table", read_only_hint=True, idempotent_hint=True
         )
     )
     def describe_machine_table(csv_name: str) -> MachineTableDescription:
@@ -695,7 +697,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Table requirements", readOnlyHint=True, idempotentHint=True
+            title="Table requirements", read_only_hint=True, idempotent_hint=True
         )
     )
     def table_requirements(csv_name: str) -> TableRequirements:
@@ -721,7 +723,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Get a CSV template", readOnlyHint=True, idempotentHint=True
+            title="Get a CSV template", read_only_hint=True, idempotent_hint=True
         )
     )
     def get_template(csv_name: str, stub: bool = False, rows: int = 1) -> TemplateResult:
@@ -770,9 +772,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Scaffold a spec directory",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
         )
     )
     def scaffold_module(
@@ -867,6 +869,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
                 "kind with rows=0."
             ),
         )
+
     # `alterations` here carries normalizations that were APPLIED and is usually empty on a
     # valid table; upstream's `inspect_rows` reports the left-to-you columns as findings
     # instead. The refusals with `applied=false` come from `lookup_variant` and
@@ -875,7 +878,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # is not an error.
 
     @mcp.tool(
-        annotations=ToolAnnotations(title="Lint CSV rows", readOnlyHint=True, idempotentHint=True)
+        annotations=ToolAnnotations(
+            title="Lint CSV rows", read_only_hint=True, idempotent_hint=True
+        )
     )
     def lint_rows(csv_name: str, csv_text: str) -> LintResult:
         """Lint CSV text against a table kind. Writes nothing, anywhere.
@@ -913,7 +918,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # Validate / compile
     # ----------------------------------------------------------------- #
     @mcp.tool(
-        annotations=ToolAnnotations(title="Validate a spec", readOnlyHint=True, idempotentHint=True)
+        annotations=ToolAnnotations(
+            title="Validate a spec", read_only_hint=True, idempotent_hint=True
+        )
     )
     async def validate_module(spec_dir: str, strict: bool = True) -> ValidationReport:
         """Pre-flight a spec directory. Writes nothing.
@@ -941,7 +948,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Audit a module offline", readOnlyHint=True, idempotentHint=True
+            title="Audit a module offline", read_only_hint=True, idempotent_hint=True
         )
     )
     async def audit_module(spec_dir: str, fill: bool = True) -> AuditReport:
@@ -994,15 +1001,16 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             )
 
         return await run_sync(read)
+
     # Re-drafting moves the digest too: the licence table re-stamps `fetched_at`, which is
     # inside it. A `risk` state with a positive weight is the other warning that compiles clean.
 
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Compile a module",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
         )
     )
     # Why the warning channel is three fields rather than one list (upstream RM131):
@@ -1056,7 +1064,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
                 "output beside the spec rather than under it before publishing."
             )
         if ctx:
-            await ctx.info(f"Compiling {source.name} -> {out}")
+            await narrate(ctx, f"Compiling {source.name} -> {out}")
 
         # resolve_with_ensembl stays True with no cache: despite the name it is
         # the master switch for ALL resolution, injected resolution.csv included.
@@ -1126,7 +1134,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Close a module", readOnlyHint=False, idempotentHint=True
+            title="Close a module", read_only_hint=False, idempotent_hint=True
         )
     )
     async def close_module(
@@ -1158,9 +1166,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         Use `just-dna-compiler close <spec-dir> --private-key …` for that.
         """
         target = resolve_dir(spec_dir, settings)
-        result = await run_sync(
-            lambda: compiler.close_module(target, closed_by=closed_by or None)
-        )
+        result = await run_sync(lambda: compiler.close_module(target, closed_by=closed_by or None))
         return ClosureResult(
             closed=result.closed,
             spec_dir=str(target),
@@ -1177,7 +1183,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # ----------------------------------------------------------------- #
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Authoring reference", readOnlyHint=True, idempotentHint=True
+            title="Authoring reference", read_only_hint=True, idempotent_hint=True
         ),
     )
     def authoring_reference(schemas: bool = False) -> str:
@@ -1201,7 +1207,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # ----------------------------------------------------------------- #
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Content signature", readOnlyHint=True, idempotentHint=True
+            title="Content signature", read_only_hint=True, idempotent_hint=True
         ),
     )
     async def module_signature(spec_dir: str) -> SignatureResult:
@@ -1228,7 +1234,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Verify an artifact", readOnlyHint=True, idempotentHint=True
+            title="Verify an artifact", read_only_hint=True, idempotent_hint=True
         ),
     )
     async def verify_artifact(
@@ -1299,7 +1305,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             # canonical one to its entry, so `sources.csv` describes itself rather than
             # rendering two em-dashes in a table an author is reading to choose a kind.
             key, rule = _key_for(name)
-            lines.append(f"| `{name}` | {_subject_for(name)} | `{key}` | {rule or "—"} |")
+            lines.append(f"| `{name}` | {_subject_for(name)} | `{key}` | {rule or '—'} |")
         lines += [
             "",
             "Machine-produced sidecars (read them, never hand-finish them): "

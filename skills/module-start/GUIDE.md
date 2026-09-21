@@ -41,10 +41,12 @@ Each one closes off a class of wrong turn.
 **Prefer the rsID to a coordinate wherever the source gives you both.** An rsid-only row cannot carry
 a coordinate mistake, and the resolution table [`module-enrich`](../module-enrich/GUIDE.md) produces
 then carries Ensembl's answer — `ref`, `alts`, a VRS id — as the independent second value. A row
-authored with **both** is different: the agreement check still compares it with Ensembl and records
-the verdict in `verification.json`, but the sidecar restates your coordinate under `source=authored`
-with none of the three, and the compile warns that VRS identity covers none of them (upstream `S104`;
-`enrich_module` names the rows). Author coordinates only when you have a reason: no rsID exists
+authored with **both** is checked the same way — the agreement check compares it with Ensembl and
+records the verdict in `verification.json` — and since enricher 0.7.1 the sidecar also carries the
+reference's answer when it knows the rsID (upstream `S104`). A sidecar written before that restates
+your coordinate under `source=authored` with none of the three and the compile warns that VRS identity
+covers none of them; `enrich_module` names the rows and `refresh_sidecar` re-derives the table.
+Author coordinates only when you have a reason: no rsID exists
 (roughly 10% of ClinVar pathogenic variants), one rsID names several alleles and the row must say
 which, or the module is not GRCh38.
 
