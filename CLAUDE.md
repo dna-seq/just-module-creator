@@ -1647,6 +1647,20 @@ have been questions.
   in 0.21.0, so `enrich_literature_pass` is simply there now), and a rehearsal that
   waited for that would have measured nothing. **Nothing in the four production
   `antonkulaga/*` modules was touched** — a published version is immutable.
+- **The polygon carries `test-sheep/test_longevitymap@1.0.0`, published 2026-09-21 by the unattended
+  seat**: the v1 LongevityMap port brought to 0.7 with an AlphaGenome `expression_effects.csv` (393
+  windows of 21 bp around the module's own positions, 23,700 rows), so it is non-commercial. Spec,
+  analysis JSON and the six set-aside rows are under `data/interim/longevitymap*` (git-ignored); the
+  v1 originals are untouched in `../just-dna-lite/data/interim/v1_port/longevitymap`. Eight rsIDs had
+  transcript-strand genotypes respelled to the plus strand, logged in its `logs/authoring.log`. Both
+  halves are `test-`prefixed so `purge-test-data` collects it. `F105`–`F107` came out of the run.
+- **The online `registry_check` has a 500-subject ceiling and answers `HTTP 422` above it**; a module
+  with more rsIDs than that dry-runs with `offline=true`, which has no ceiling. `longevitymap` (527) hit
+  it first. And **the polygon's compile is 0.7.0 while ours is 0.7.1**, so `artifact_digest` differs
+  from a local compile while `content_signature` matches — read the second.
+- **After `uv sync`, `/reload-plugins`** — the session's MCP server imports lazily and answers every
+  tool with a `ModuleNotFoundError` about fastmcp once its venv has moved under it (`F107`). The
+  in-process driver in that finding is how to keep working without the host.
 - **The polygon carries thirteen `test-sheep/test_clawbio_pgx_<gene>@0.1.0` rehearsals from the
   2026-09-20 dogfooding run** — one per ClawBio pharmgx-reporter gene, warfarin excluded, published
   by the tester seat. Both halves are `test-`prefixed so `purge-test-data` collects them. Specs,

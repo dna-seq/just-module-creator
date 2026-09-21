@@ -2005,3 +2005,48 @@ gates on a verified capture. The questionnaire is in the session report; `refres
 capture-and-verify step if the answer is build it. The tester's eleven logs are left as written — the
 records are valid under the convention, only the verb on the line predates it.
 
+
+## F105 — the AlphaGenome pass cannot be aimed at "my rows", so scoring a module means writing a window planner
+
+Found 2026-09-21 by the unattended seat porting `longevitymap` (1033 rows, 527 rsIDs, 272 genes) to
+0.7 and adding expression predictions, on plugin 0.37.0 against enricher 0.7.1.
+`enrich_expression_effects` takes one `gene` and one interval, and the interval is the corpus: the
+whole module's genes span about 2 Mb of positions, roughly 6 M SNVs, an hour and a half of queries
+and a table nobody could read. The honest query for an author's module is *the module's own
+positions*, and nothing offers it — so the run planned 393 windows of 21 bases (positions merged
+within 100 bp, keyed on the row's own `gene`), drove them through an in-memory client at ~2 s each,
+and got 23,700 rows of which 714 module rows are actually scored. Two things the tool would have
+known and the planner had to rediscover: a row whose `gene` label is not at that locus (the six
+`TP53` rows on other chromosomes, the `LOC…`/antisense symbols the Atlas has no gene axis for) comes
+back as a window with 63 rows and `withheld: {no_gene_axis: 63}` or a MANE warning, and a row with
+no `gene` at all (256 here) cannot be asked about anywhere.
+
+**Surface it, do not build it yet**: a `rows=true` mode that walks `variants.csv` × `resolution.csv`,
+groups by `(gene, chrom)`, merges neighbours and reports per-row *scored / no gene / gene not at
+locus* is one afternoon, and it is the mode every author of an existing module wants. Whether it
+should also take a gene from the reference when the row has none is the question — that is an
+authored value written from a source, and the rule is to surface it.
+
+## F106 — `top_expression_effects` cannot answer "which of MY variants does the model call disruptive"
+
+Same run. The question the owner asked — *how many of the longevity-favourable SNPs does AlphaGenome
+predict to disrupt their gene* — is a join of `expression_effects.csv` onto `variants.csv` through
+`resolution.csv`, keyed on `(chrom, start, alt, gene)` with the effect allele read off the row's
+genotype minus the locus ref. `top_expression_effects` ranks the whole table and filters by gene,
+consensus and magnitude; `in_gene_only` filters by the gene span, not by the module's rows. The
+join was fifty lines of script and produced the README's table (441 favourable pairs scored, 237
+predicted decreases, 97 at ≥ 80 % consensus). The tool that reads the table back should take
+`module_rows_only=true` and report the same per-row status as F105. Two facts to preserve when it
+does: `effect_direction` is the track-majority sign and disagrees with the sign of `effect_size` on
+some rows, so the direction column is the one to count; and a null direction is a real answer.
+
+## F107 — a session's MCP server dies mid-run when `uv sync` swaps its venv, and nothing says so until the next call
+
+Same day, on the session that adopted fastmcp 4. The plugin's server process imports lazily, so
+after `uv sync` replaced fastmcp 3 with 4 under it, every tool answered *No module named
+'fastmcp.server.tasks.routing'* — a message about a package, from a tool the caller asked about a
+module. `/reload-plugins` fixes it and the rule is simply *reload after a sync*; the finding is that
+the error names nothing the caller can act on. The workaround that let the run continue is worth
+keeping: a forty-line script that builds the server in-process and drives tools through
+`fastmcp.client.Client(server, mode="legacy")` is the whole product surface without the host, and
+it is what the unattended run used for every call above.
