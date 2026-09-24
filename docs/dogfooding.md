@@ -2098,3 +2098,15 @@ open upstream
 only way to fix a palindromic pair's strand, with nothing to work from. HLA-DRB1 rs9271058 (T/A) was
 dropped from the module for that reason. Our tool passes the upstream result through, so there is
 nothing to add on our side beyond a finding, and once upstream answers, that belongs to them.
+
+## F111 — a published card says 24 quotes were read and missed when none could be checked (upstream `S109`)
+
+**Found:** 2026-09-24, reading back `test-sheep/test_late_onset_alzheimers_kunkle2019@0.1.0` ·
+**Severity:** medium · **Status:** filed as format-tree `S109`, open upstream
+
+`enrich_literature_pass` reported `quotes_unchecked: 24`. The manifest it fed reports
+`quotes_found: 0, quotes_unchecked: 0`, because an abstract-only row stores `quotes_found=0` rather
+than null, and the compiler counts only nulls as unchecked. Our tool reports the pass's own number,
+which is right. The published record doesn't match it, and only `abstract_only_count: 1` beside it
+says why. Nothing to change on our side. `module-publish`'s read-back step is where an author would
+notice, so if upstream keeps the shape, add one sentence there.
