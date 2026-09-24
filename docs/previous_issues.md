@@ -8,6 +8,31 @@ are not copied.
 
 ---
 
+## F108 — `fetch_fulltext` returns the abstract for a PMC author manuscript that PMC's BioC endpoint serves whole
+
+**Found:** 2026-09-24, building a module from PMID `30820047` (Kunkle 2019, *Nat Genet*,
+`PMC6463297`) · **Severity:** medium · **Status:** open
+
+The paper's per-locus results — lead rsID, major/minor allele, OR per minor allele — are in the
+article's **Tables 1 and 2**, not in its supplementary workbook (ST5 has ORs without alleles, ST9
+alleles without ORs). So the body text is the only route to a row, and `fetch_fulltext` did not reach
+it:
+
+| call | result |
+|---|---|
+| `fetch_fulltext(pmcid="PMC6463297")` | `retrieved: false`, `locations: []` — `F50` reproduced |
+| `fetch_fulltext(pmid="30820047")` | `text_source: "abstract"` |
+| `fetch_fulltext(doi=…)` | `retrieved: false`, seven repository locations, no text |
+| Europe PMC `…/PMC6463297/fullTextXML` | HTTP 500 |
+| PMC BioC `research/bionlp/RESTful/pmcoa.cgi/BioC_json/PMC6463297/unicode` | **200, 276 KB, both tables intact as table passages** |
+
+The module was finished from the BioC copy, fetched with a raw `curl` — the ad-hoc route the product
+exists to remove. **Candidate fix:** add PMC BioC as a rung after Europe PMC in the fulltext ladder,
+behind `ServiceGate` under the NCBI budget, and return table passages as text rather than dropping
+them: for a GWAS paper the tables are where the rows are.
+
+**Fixed here 2026-09-24; the quote-check half is owed upstream as format-tree `S110`.** `discovery._bioc_fulltext` is the rung after Europe PMC: PMC BioC behind the shared NCBI gate, `text_source: "pmc_bioc"`, tables kept as tab-separated rows, the reference list dropped, and three outcomes kept apart — text, *PMC holds no copy* (an HTTP 200 whose body starts `[Error]`), and *could not be asked* (a warning that says UNCHECKED). Verified live: `PMC6463297` returns 68 KB including Tables 1 and 2. Tests in `tests/test_fulltext_bioc.py` over a trimmed real answer, `assets/literature/pmc_bioc_PMC6463297.json`. The enricher's own `quotes_found` check still reads Europe PMC only and only when `isOpenAccess`, so a module's quotes against this paper stay abstract-checked until `S110` lands — see `just-dna-format-pending-fixes.md`.
+
 ## F109 — `literature_search` tells the author to add the `pubmed` licensing row three skills forbid
 
 **Found:** 2026-09-24, same run as `F108` · **Severity:** low · **Status:** open

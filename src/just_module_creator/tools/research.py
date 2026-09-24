@@ -960,7 +960,8 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         check — still useful, since it catches a quote filed against the wrong
         PMID. State that; do not let it stop you quoting.
 
-        `text_source` says what you actually got: `fulltext`, `abstract` (named as
+        `text_source` says what you actually got: `fulltext`, `pmc_bioc` (PMC's
+        copy when Europe PMC has none, tables included), `abstract` (named as
         a substitute, never passed off as the article), or `null` — which means
         **nothing was retrieved**, not that the paper has no text. An abstract
         *miss* is not a verdict: the claim may still be in the paper.

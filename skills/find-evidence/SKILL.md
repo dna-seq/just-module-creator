@@ -67,6 +67,9 @@ paper_citations(...)                                          # a corpus sizes i
 enrich_literature_pass(spec_dir="spec")                       # a corpus sizes it. after you author the rows
 ```
 
+`fetch_fulltext`'s `text_source` names what came back: `fulltext` (Europe PMC), `pmc_bioc` (PMC's
+copy, asked when Europe PMC has none), `abstract`, or null for nothing — which is unchecked, not empty.
+
 **All five are always there.** The last two used to need `JMC_MODE=extended` and be absent without
 it, so on a default install the verify step of this loop could not be run at all; the tier went in
 0.21.0. What is still true is the **cost**: `paper_citations` follows a citation graph as large as

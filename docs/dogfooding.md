@@ -1582,29 +1582,6 @@ keeping: a forty-line script that builds the server in-process and drives tools 
 `fastmcp.client.Client(server, mode="legacy")` is the whole product surface without the host, and
 it is what the unattended run used for every call above.
 
-## F108 — `fetch_fulltext` returns the abstract for a PMC author manuscript that PMC's BioC endpoint serves whole
-
-**Found:** 2026-09-24, building a module from PMID `30820047` (Kunkle 2019, *Nat Genet*,
-`PMC6463297`) · **Severity:** medium · **Status:** open
-
-The paper's per-locus results — lead rsID, major/minor allele, OR per minor allele — are in the
-article's **Tables 1 and 2**, not in its supplementary workbook (ST5 has ORs without alleles, ST9
-alleles without ORs). So the body text is the only route to a row, and `fetch_fulltext` did not reach
-it:
-
-| call | result |
-|---|---|
-| `fetch_fulltext(pmcid="PMC6463297")` | `retrieved: false`, `locations: []` — `F50` reproduced |
-| `fetch_fulltext(pmid="30820047")` | `text_source: "abstract"` |
-| `fetch_fulltext(doi=…)` | `retrieved: false`, seven repository locations, no text |
-| Europe PMC `…/PMC6463297/fullTextXML` | HTTP 500 |
-| PMC BioC `research/bionlp/RESTful/pmcoa.cgi/BioC_json/PMC6463297/unicode` | **200, 276 KB, both tables intact as table passages** |
-
-The module was finished from the BioC copy, fetched with a raw `curl` — the ad-hoc route the product
-exists to remove. **Candidate fix:** add PMC BioC as a rung after Europe PMC in the fulltext ladder,
-behind `ServiceGate` under the NCBI budget, and return table passages as text rather than dropping
-them: for a GWAS paper the tables are where the rows are.
-
 ## F110 — `lookup_variant(frequencies=true)` is silent on every multi-allelic locus (upstream `S108`)
 
 **Found:** 2026-09-24, same run · **Severity:** medium · **Status:** format-tree `S108` accepted
@@ -1619,7 +1596,8 @@ nothing to add on our side beyond a finding, and once upstream answers, that bel
 ## F111 — a published card says 24 quotes were read and missed when none could be checked (upstream `S109`)
 
 **Found:** 2026-09-24, reading back `test-sheep/test_late_onset_alzheimers_kunkle2019@0.1.0` ·
-**Severity:** medium · **Status:** filed as format-tree `S109`, open upstream
+**Severity:** medium · **Status:** format-tree `S109` accepted 2026-09-24 as their `RM256`, in
+tree and uncut — close on the release; its root on the fetch side is `S110` (`F108`)
 
 `enrich_literature_pass` reported `quotes_unchecked: 24`. The manifest it fed reports
 `quotes_found: 0, quotes_unchecked: 0`, because an abstract-only row stores `quotes_found=0` rather

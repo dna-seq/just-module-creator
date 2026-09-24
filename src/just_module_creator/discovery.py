@@ -31,6 +31,7 @@ rather than restated, so a change there reaches us on the next release.
 from __future__ import annotations
 
 import html
+import json
 import logging
 import re
 import xml.etree.ElementTree as ET
@@ -72,6 +73,7 @@ PREPRINTS = "preprints"
 UNPAYWALL = "unpaywall"
 OPENALEX = "openalex"
 CROSSREF = "crossref"
+PMC_BIOC = "pmc_bioc"
 
 
 @dataclass(frozen=True)
@@ -151,6 +153,17 @@ SOURCES: dict[str, SourceSpec] = {
         requires_contact=True,
         terms_url="https://unpaywall.org/legal",
     ),
+    # PMC's BioC service serves the OA subset and author manuscripts as passages,
+    # tables included. Not a search source: it is the fulltext rung after Europe PMC
+    # (F108). An NCBI host, so it spends the shared NCBI budget — see
+    # `Discovery.service`; `min_interval` here is only the fallback.
+    # https://www.ncbi.nlm.nih.gov/research/bionlp/APIs/BioC-PMC/ (2026-09-24)
+    PMC_BIOC: SourceSpec(
+        name=PMC_BIOC,
+        base_url="https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi",
+        min_interval=0.34,
+        terms_url="https://www.ncbi.nlm.nih.gov/pmc/tools/openftlist/",
+    ),
 }
 
 #: Sources that answer "which papers match this?". Unpaywall is not one of them —
@@ -161,6 +174,9 @@ SOURCES: dict[str, SourceSpec] = {
 #: `merge` interleaves by each source's own rank, so this is not a priority list.
 #: `UNPAYWALL` is absent deliberately — it answers about one DOI, not a query.
 SEARCHABLE = (PUBMED, EUROPEPMC, SEMANTICSCHOLAR, PREPRINTS, OPENALEX, CROSSREF)
+
+#: Sources on an NCBI host, which spend one budget between them and the enricher.
+_NCBI_HOSTED = frozenset({PUBMED, PMC_BIOC})
 
 
 def known_sources() -> tuple[str, ...]:
@@ -676,15 +692,15 @@ class Discovery:
     def service(self, name: str) -> HttpService:
         """The `HttpService` for a source, built once and reused.
 
-        PubMed shares the server's NCBI gate rather than getting its own: two
-        independently correct 3/s clients against one IP is a 6/s client, and the
-        enricher's `EutilsClient` is the other one.
+        PubMed and PMC BioC share the server's NCBI gate rather than getting their
+        own: two independently correct 3/s clients against one IP is a 6/s client,
+        and the enricher's `EutilsClient` is the other one.
         """
         if name not in self._built:
             spec = SOURCES[name]
             gate = (
                 self.services.ncbi_gate
-                if name == PUBMED
+                if name in _NCBI_HOSTED
                 else ServiceGate(interval=spec.min_interval)
             )
             headers = {"User-Agent": self._user_agent()}
@@ -1352,6 +1368,61 @@ _NO_PASSAGE_NOTE = (
 )
 
 
+#: BioC passage types that carry no text a row could be grounded on. The reference
+#: list is most of a GWAS paper's passages (186 of 294 for PMC6463297) and none of
+#: its evidence.
+_BIOC_SKIPPED_SECTIONS = frozenset({"REF"})
+
+#: What the service answers, with HTTP 200, for a PMCID outside the OA subset and
+#: the author-manuscript set. An ANSWER, not an outage.
+_BIOC_NOT_FOUND = "[Error] : No result can be found"
+
+
+def parse_bioc(payload: str) -> str | None:
+    """A BioC JSON document as readable text, or `None` when PMC holds no copy.
+
+    Tables are kept, one row of cells per line with tabs between them, because
+    for a GWAS paper the tables are where the rows are (F108) — the Kunkle 2019
+    loci are in Tables 1 and 2 and nowhere else with both allele and OR.
+    """
+    if payload.lstrip().startswith(_BIOC_NOT_FOUND):
+        return None
+    collections = json.loads(payload)
+    if isinstance(collections, dict):
+        collections = [collections]
+    blocks: list[str] = []
+    for collection in collections:
+        for document in collection.get("documents", []):
+            for passage in document.get("passages", []):
+                infons = passage.get("infons") or {}
+                if infons.get("section_type") in _BIOC_SKIPPED_SECTIONS:
+                    continue
+                text = (passage.get("text") or "").strip()
+                if not text:
+                    continue
+                if infons.get("type") == "table":
+                    label = f"[Table {infons['id']}]" if infons.get("id") else "[Table]"
+                    blocks.append(f"{label}\n{text}")
+                else:
+                    blocks.append(text)
+    return "\n\n".join(blocks) or None
+
+
+def _bioc_fulltext(services: NetworkServices, pmcid: str) -> tuple[str | None, str | None]:
+    """The PMC BioC rung: `(text, None)`, `(None, None)` for "PMC holds no copy",
+    or `(None, reason)` when the service could not be asked. The last two are
+    different answers and are never folded together."""
+    service = Discovery(services=services).service(PMC_BIOC)
+    try:
+        response = service.get(f"BioC_json/{pmcid}/unicode")
+    except ServiceUnavailable as exc:
+        return None, exc.reason
+    try:
+        return parse_bioc(response.text), None
+    except (ValueError, AttributeError) as exc:
+        return None, f"unreadable BioC answer: {type(exc).__name__}"
+
+
 def fulltext(
     services: NetworkServices,
     *,
@@ -1381,6 +1452,33 @@ def fulltext(
     if pmcid:
         text = client.fulltext(pmcid)
         source = "fulltext" if text else None
+
+    if not text and pmcid:
+        # Europe PMC 500s on some author manuscripts PMC serves whole (F108), so a
+        # miss there is worth one more ask before settling for the abstract.
+        text, bioc_failure = _bioc_fulltext(services, pmcid_token(pmcid) or pmcid)
+        if text:
+            source = PMC_BIOC
+            findings.append(
+                LintFinding(
+                    level="info",
+                    message=(
+                        "Europe PMC returned no fulltext, so this is PMC's BioC copy of the "
+                        "same article: passages in reading order, tables as tab-separated "
+                        "rows, reference list omitted."
+                    ),
+                )
+            )
+        elif bioc_failure:
+            findings.append(
+                LintFinding(
+                    level="warning",
+                    message=(
+                        f"PMC BioC could not be asked ({bioc_failure}), so whether PMC holds "
+                        "this article's fulltext is UNCHECKED — not answered no."
+                    ),
+                )
+            )
 
     if not text and record and record.get("abstract"):
         # Named as a substitute, never passed off as the article. Europe PMC

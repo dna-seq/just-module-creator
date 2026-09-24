@@ -27,6 +27,13 @@ So for this kind of paper, `fetch_fulltext` returns the narrative and none of th
 limit of that tool and not a limit on what is reachable: the supplementary file is normally two HTTP
 requests from the DOI, on an open host, under the article's own licence.
 
+**Grep the body's tables first, though — some papers put the rows there.** Kunkle 2019 (PMID
+`30820047`) carries lead rsID, major/minor allele and OR per locus in its Tables 1 and 2, while its
+workbook splits ORs and alleles across two sheets that share neither. `fetch_fulltext` returns tables
+as tab-separated rows; when Europe PMC has no fulltext it reads PMC's BioC copy instead and says so
+with `text_source: "pmc_bioc"`, which is how an author manuscript Europe PMC answers with a 500 is
+still reachable (`F108`).
+
 **The measured case, and it is the one this skill used to teach the opposite of.** PMID `29500382`
 (*Item-level analyses reveal genetic heterogeneity in neuroticism*, `10.1038/s41467-018-03242-8`)
 backs 65 rows of the published `aggression_anger` module. Its JATS body names none of those rsIDs.

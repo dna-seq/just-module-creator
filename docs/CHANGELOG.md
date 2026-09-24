@@ -5,6 +5,11 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`fetch_fulltext` reads PMC's BioC copy when Europe PMC has none** (`F108`). A new rung after Europe
+  PMC, on the shared NCBI budget, returning tables as tab-separated rows and naming itself
+  `text_source: "pmc_bioc"`; "PMC holds no copy" and "PMC could not be asked" stay two answers. The
+  Kunkle 2019 author manuscript, which Europe PMC answers with a 500, now comes back with the Tables
+  1 and 2 its rows live in. The enricher's quote check does not see this rung yet (format-tree `S110`).
 - **`literature_search` no longer tells an author to add a `pubmed` licensing row** (`F109`). Its
   `licensing` notes now say a literature service takes no `licensing.csv` row at any layer (RM46) and
   point at `literature.csv` and `lookup_open_access` for the article's own terms.

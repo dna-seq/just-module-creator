@@ -72,6 +72,15 @@ the installed packages, not the sibling checkouts** — which is the check this 
 exists to force, and the reason its status lines name both halves.
 
 
+## F108 — the literature pass checks quotes against the abstract when PMC serves the paper whole (format `S110`)
+
+**Status (2026-09-24):** filed as format-tree `S110`, unanswered. Mitigated here for *reading*:
+`fetch_fulltext` now asks PMC BioC after Europe PMC (see `previous_issues.md`). **Not mitigated for
+the check**: `enrich_literature_pass` runs upstream's fetch loop, which asks Europe PMC only and only
+for `isOpenAccess` records, so an author manuscript's quotes are still matched against the abstract
+and published as a miss (`S109` / `F111`). Close when a release we install carries a BioC rung and a
+gate that lets an author manuscript through.
+
 ## F94 — no lane declares its size, so an offer had to `du` a provisioned box to price one (format `S97`)
 
 **State: ANSWERED AND FIXED IN THE UPSTREAM TREE WITHIN THE HOUR — STATE 2, so our table stays.**

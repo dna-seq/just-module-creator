@@ -1187,12 +1187,16 @@ class SourceLicenseNote(BaseModel):
     """
 
     source: str = Field(description="The literature service consulted, e.g. `pubmed`.")
-    layer: str = Field(description="Always `literature`; a layer that takes no licensing.csv row (RM46).")
+    layer: str = Field(
+        description="Always `literature`; a layer that takes no licensing.csv row (RM46)."
+    )
     terms_url: str | None = Field(default=None, description="Where to read the terms.")
     stateable_upstream: bool = Field(
         description="Whether `licensing.TERMS_BY_SOURCE` can state this source's terms today."
     )
-    note: str = Field(description="Where the article's terms live, and what to read before quoting.")
+    note: str = Field(
+        description="Where the article's terms live, and what to read before quoting."
+    )
 
 
 class LiteratureCandidate(BaseModel):
@@ -1257,7 +1261,9 @@ class LiteratureSearchResult(BaseModel):
     findings: list[LintFinding] = Field(default_factory=list, description="Notes and warnings.")
     licensing: list[SourceLicenseNote] = Field(
         default_factory=list,
-        description="Per literature source: why it takes no licensing.csv row, and where its terms live.",
+        description=(
+            "Per literature source: why it takes no licensing.csv row, and where its terms live."
+        ),
     )
 
 
@@ -1489,7 +1495,8 @@ class FullTextResult(BaseModel):
     text_source: str | None = Field(
         default=None,
         description=(
-            "`fulltext` | `abstract` | null. **null means nothing was retrieved**, not that the "
+            "`fulltext` (Europe PMC) | `pmc_bioc` (PMC's BioC copy, tables as tab-separated "
+            "rows) | `abstract` | null. **null means nothing was retrieved**, not that the "
             "paper has no text — and an abstract is named as the substitute rather than passed "
             "off as the article."
         ),
