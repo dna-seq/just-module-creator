@@ -3,6 +3,14 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.39.0] — 2026-09-24
+
+- **`prune_rows` applies an author's keep-list to one authored table** (`F104`). The list is the
+  decision and arrives as an argument; the tool refuses a keep value that matches no row, captures and
+  verifies the old table outside the spec directory before rewriting, and logs one table-scope record.
+  `module-curate` teaches it after the trim criteria. `record_override`'s log line moved into a shared
+  `provenance.move_line` so both tools publish the same shape.
+
 ## [0.38.1] — 2026-09-24
 
 - **A module row with a coordinate and no known reference allele is `no_reference`, not

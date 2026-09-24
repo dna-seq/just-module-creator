@@ -1518,33 +1518,6 @@ format `S64` and registry `S16`; the decision-list framing above is unchanged, o
 
 ---
 
-## F104 — a table-level authoring move had no honest home in the log
-
-Found 2026-09-20 by the dogfooding seat. `record_override` is the only writer to
-`logs/authoring.log` and its shape is one `(variant_key, field, authored_value)` per call. The tester
-trimmed `pharm_variants.csv` in eleven modules to the panel's rsIDs (DPYD: 30 of 233 drafted rows
-kept, 203 dropped across ~50 rsIDs) and deleted the file plus its ClinPGx licence row in two. Logging
-per rsID would have been a hundred calls, so each module got one record with
-`variant_key="pharm_variants.csv"` and `field="rows"` — which the tool accepted without comment,
-logged with the cell verb *"authored … (judged; no value from clinpgx to disagree with)"*, and which
-`review_queue` would have reported as a row it could not find. §2 says a hand move should go through
-a tool that logs, and no tool trims a table.
-
-**Half fixed 2026-09-20 (unreleased on 0.36.0), half surfaced.** The convention the tester improvised
-is now the documented one: a `.csv` in the row slot with `field` in `{rows, file}`, counts in
-`authored_value`, the derivation in `reason`; any other `field` beside a table name is refused with
-the convention in the message. The log line carries its own verb (`table pharm_variants.csv rows=…`),
-the returned note says what was recorded, and `review_queue` lists such records as `scope: table`
-with a `table_scope` count, no longer folded into `subject_absent`. **Not built: a `prune_rows` that
-applies a keep-list and logs the sweep.** Three written rules stand in its way and none is mine to
-settle in an unattended run: `module-curate` says twice, in bold, that the trim is a decision no tool
-makes; §10's silent-apply rulebook is TO-POPULATE-LATER and forbids settling a boundary case ad hoc;
-and a row deletion is authored content destroyed, the strongest form of the write the counterstance
-gates on a verified capture. The questionnaire is in the session report; `refresh.capture_now` is the
-capture-and-verify step if the answer is build it. The tester's eleven logs are left as written — the
-records are valid under the convention, only the verb on the line predates it.
-
-
 ## F107 — a session's MCP server dies mid-run when `uv sync` swaps its venv, and nothing says so until the next call
 
 Same day, on the session that adopted fastmcp 4. The plugin's server process imports lazily, so

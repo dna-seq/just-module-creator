@@ -2389,6 +2389,51 @@ class SidecarRefreshReport(BaseModel):
 # --------------------------------------------------------------------------- #
 # Overrides — the record behind a value that outranks a source (RM16)
 # --------------------------------------------------------------------------- #
+class PruneResult(BaseModel):
+    """A keep-list applied to one authored table: what stayed, what went, where it is kept."""
+
+    table: str = Field(description="The authored table the keep-list was applied to.")
+    key_column: str = Field(description="The column the keep-list was matched against.")
+    dry_run: bool = Field(description="True when nothing was captured, written or logged.")
+    rows_before: int = Field(description="Rows in the table before the trim.")
+    kept: int = Field(description="Rows whose key is in the keep-list.")
+    dropped: int = Field(description="Rows removed, or that a real run would remove.")
+    dropped_keys: list[str] = Field(
+        default_factory=list,
+        description="Distinct keys of the dropped rows, sorted, first 50.",
+    )
+    blank_key_rows: int = Field(
+        default=0,
+        description=(
+            "Dropped rows with an empty key cell. No keep-list can name them, so they go; "
+            "counted apart in case that was not what the list meant."
+        ),
+    )
+    unmatched_keep: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Keep-list values that match no row, sorted. A typo here drops the row it meant "
+            "to keep, so a real run refuses on any of these unless `allow_unmatched`."
+        ),
+    )
+    capture: str | None = Field(
+        default=None,
+        description=(
+            "Where the table's bytes were copied, read back and hash-verified before anything "
+            "was rewritten. Outside the spec directory, never inside it."
+        ),
+    )
+    logged_to: str | None = Field(
+        default=None, description="The authoring log that got one table-scope record."
+    )
+    record: OverrideRecord | None = Field(
+        default=None, description="The table-scope record written, when one was."
+    )
+    refused: str | None = Field(
+        default=None, description="Why nothing was touched, when nothing was."
+    )
+
+
 class OverrideResult(BaseModel):
     """What was recorded, and where it went. Nothing here makes a check pass."""
 

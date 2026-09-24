@@ -15,22 +15,56 @@ source releases later can tell a considered judgement from a careless overwrite.
 
 from __future__ import annotations
 
+import csv
+import io
+from datetime import UTC, datetime
 from pathlib import Path
 
 from anyio.to_thread import run_sync
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
+from just_dna_compiler import hints
 from mcp.types import ToolAnnotations
 
 from just_module_creator import overrides
 from just_module_creator.logging_setup import get_logger
-from just_module_creator.models import OverrideResult, ReviewQueue
+from just_module_creator.models import OverrideResult, PruneResult, ReviewQueue
 from just_module_creator.settings import Settings
 from just_module_creator.tools._shared import resolve_dir
+from just_module_creator.tools.refresh import capture_dir, capture_now, finalize_capture
 
 log = get_logger()
 
 AUTHORING_LOG = "logs/authoring.log"
+
+
+def move_line(record: overrides.OverrideRecord, replaced: bool) -> str:
+    """The one line an override record publishes in `logs/authoring.log`.
+
+    Three verbs, because the record has three jobs and the log once published only
+    one of them. `source_value` is the discriminator between the first two: with one,
+    the author read a source and disagreed; without, they authored a cell no source
+    supplies — a weight, a conclusion — and calling that "outranks" claims a dispute
+    that never happened. Six of the seven records in a 2026-08-31 benchmark were the
+    second kind, and this file publishes verbatim (`F71`). The third is a move on a
+    whole table (`F104`).
+    """
+    value = record.authored_value
+    return (
+        f"{record.recorded_at} "
+        + (
+            f"table {record.variant_key} {record.field}={value!r} "
+            f"(source {record.source_name}; {' '.join(record.reason.split())})"
+            if overrides.is_table_scope(record)
+            else f"override {record.variant_key} {record.field}="
+            f"{value!r} outranks {record.source_name} ({record.source_value!r})"
+            if record.source_value
+            else f"authored {record.variant_key} {record.field}="
+            f"{value!r} (judged; no value from {record.source_name} to disagree with)"
+        )
+        + f" by={record.recorded_by} human_reviewed={str(record.human_reviewed).lower()}"
+        + (" [replaced an earlier record]" if replaced else "")
+    )
 
 
 def append_move(spec_dir: Path, line: str) -> Path:
@@ -139,29 +173,7 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
 
         def write() -> tuple[Path, bool]:
             path, replaced = overrides.upsert(target, record)
-            append_move(
-                target,
-                # Two verbs, because this tool has two jobs and the log published
-                # only one of them. `source_value` is the discriminator: with one,
-                # the author read a source and disagreed; without, they authored a
-                # cell no source supplies — a weight, a conclusion — and calling
-                # that "outranks" claims a dispute that never happened. Six of the
-                # seven records in a 2026-08-31 benchmark were the second kind, and
-                # this file publishes verbatim (`F71`).
-                f"{record.recorded_at} "
-                + (
-                    f"table {record.variant_key} {record.field}={authored_value!r} "
-                    f"(source {source_name}; {' '.join(reason.split())})"
-                    if overrides.is_table_scope(record)
-                    else f"override {record.variant_key} {record.field}="
-                    f"{authored_value!r} outranks {source_name} ({source_value!r})"
-                    if source_value
-                    else f"authored {record.variant_key} {record.field}="
-                    f"{authored_value!r} (judged; no value from {source_name} to disagree with)"
-                )
-                + f" by={recorded_by} human_reviewed={str(human_reviewed).lower()}"
-                + (" [replaced an earlier record]" if replaced else ""),
-            )
+            append_move(target, move_line(record, replaced))
             return path, replaced
 
         path, replaced = await run_sync(write)
@@ -201,6 +213,148 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
                 )
             ),
         )
+
+    # The trim was a hand move with a table-scope log record until 2026-09-24 (F104), and
+    # module-curate says in bold that no tool makes it. That still holds: the keep-list is
+    # the decision and it arrives as an argument; this applies it and decides nothing —
+    # "making decision != executing it", in the owner's words (CLAUDE.md §10). Hence the
+    # refusal on unmatched keep values: guessing that a typo meant the nearby rsID would be
+    # the tool deciding. Rows are destroyed, so the capture-then-verify rule from
+    # refresh_sidecar applies, reusing its capture root outside the spec directory.
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Apply an author's keep-list to one authored table",
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=True,
+        )
+    )
+    async def prune_rows(
+        spec_dir: str,
+        table: str,
+        keep: list[str],
+        reason: str,
+        recorded_by: str,
+        source_name: str,
+        key_column: str = "rsid",
+        allow_unmatched: bool = False,
+        dry_run: bool = False,
+    ) -> PruneResult:
+        """Keep only the rows of one authored table whose `key_column` is in `keep`.
+
+        **The keep-list is the curation decision, and it is yours; this tool makes
+        none.** It applies the list it is handed — trimming a drafted
+        `pharm_variants.csv` to a panel's rsIDs, say — and logs the trim as one
+        table-scope record (`field="rows"`, counts in `authored_value`, your `reason`
+        saying how the list was derived). A keep value that matches no row is usually a
+        typo that would drop the row it meant, so a real run **refuses** on any unless
+        `allow_unmatched=true`; `dry_run` shows the counts, the dropped keys and the
+        unmatched values and writes nothing.
+
+        Before rewriting, the table's bytes are copied **outside** the spec directory,
+        read back and hash-verified; a capture that does not verify means nothing is
+        touched, and `capture` says where the old rows are. Derived sidecars are refused
+        — re-derive those with `refresh_sidecar` — and so is a trim that keeps nothing,
+        which is removing the file: do that by hand and log it with `record_override`
+        (`field="file"`). `reason` and `recorded_by` publish verbatim in the log.
+        """
+        target = resolve_dir(spec_dir, settings)
+        path = target / table
+        if not table.endswith(".csv") or "/" in table or table != path.name:
+            raise ToolError(f"{table!r} is not a table file name in the spec directory.")
+        if table in hints.DERIVED_TABLE_MODELS:
+            raise ToolError(
+                f"{table} is a machine-written sidecar; trimming it by hand is overwritten by the "
+                "next pass. Re-derive it with refresh_sidecar, or correct a row with an overlay."
+            )
+        if not path.is_file():
+            raise ToolError(f"{table} is not in {target.name}.")
+        if not keep:
+            raise ToolError("An empty keep-list removes the table; do that by hand and log it.")
+
+        def run() -> PruneResult:
+            raw = path.read_bytes()
+            text = raw.decode("utf-8")
+            newline = "\r\n" if b"\r\n" in raw.split(b"\n", 1)[0] + b"\n" else "\n"
+            reader = csv.DictReader(io.StringIO(text, newline=""))
+            header = list(reader.fieldnames or [])
+            if key_column not in header:
+                raise ToolError(
+                    f"{table} has no column {key_column!r}; its columns are {', '.join(header)}."
+                )
+            rows = list(reader)
+            wanted = {k.strip() for k in keep if k.strip()}
+            kept_rows = [r for r in rows if (r.get(key_column) or "").strip() in wanted]
+            gone = [r for r in rows if (r.get(key_column) or "").strip() not in wanted]
+            present = {(r.get(key_column) or "").strip() for r in rows}
+            unmatched = sorted(wanted - present)
+            dropped_keys = sorted({(r.get(key_column) or "").strip() for r in gone} - {""})
+            result = PruneResult(
+                table=table,
+                key_column=key_column,
+                dry_run=dry_run,
+                rows_before=len(rows),
+                kept=len(kept_rows),
+                dropped=len(gone),
+                dropped_keys=dropped_keys[:50],
+                blank_key_rows=sum(1 for r in gone if not (r.get(key_column) or "").strip()),
+                unmatched_keep=unmatched,
+            )
+            if dry_run:
+                return result
+            if unmatched and not allow_unmatched:
+                result.refused = (
+                    f"{len(unmatched)} keep value(s) match no row in {table} "
+                    f"({', '.join(unmatched[:10])}). A typo there drops the row it meant to "
+                    "keep. Fix the list, or pass allow_unmatched=true if they are meant to be "
+                    "absent. Nothing was touched."
+                )
+                return result
+            if not kept_rows:
+                result.refused = "The keep-list keeps no row. Nothing was touched."
+                return result
+            if not gone:
+                return result
+            stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+            directory = capture_dir(settings, target, f"prune-{table}")
+            capture, verified = capture_now(
+                directory,
+                path,
+                {"table": table, "rows": len(rows), "captured_at": stamp, "key": key_column},
+            )
+            if not verified:
+                result.capture = str(capture)
+                result.refused = (
+                    f"The capture at {capture} did not read back byte-identical, so {table} "
+                    "was not rewritten."
+                )
+                return result
+            out = io.StringIO(newline="")
+            writer = csv.DictWriter(out, fieldnames=header, lineterminator=newline)
+            writer.writeheader()
+            writer.writerows(kept_rows)
+            path.write_text(out.getvalue(), encoding="utf-8", newline="")
+            result.capture = str(finalize_capture(directory, stamp))
+            record = overrides.OverrideRecord(
+                variant_key=table,
+                field="rows",
+                authored_value=(
+                    f"kept {len(kept_rows)} of {len(rows)} by {key_column}; "
+                    f"dropped {len(gone)}"
+                ),
+                source_name=source_name,
+                reason=reason,
+                recorded_by=recorded_by,
+                value_sha256=overrides.value_digest(
+                    f"kept {len(kept_rows)} of {len(rows)} by {key_column}; dropped {len(gone)}"
+                ),
+            )
+            _, replaced = overrides.upsert(target, record)
+            result.logged_to = str(append_move(target, move_line(record, replaced)))
+            result.record = record
+            return result
+
+        return await run_sync(run)
 
     @mcp.tool(
         annotations=ToolAnnotations(

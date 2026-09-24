@@ -95,7 +95,8 @@ is registered on every start, and the expensive ones say so in their own descrip
 | `paper_citations` | corpus-sized | no | has this finding been replicated — traverses a graph the corpus sizes |
 | `draft_from_cpic`, `draft_from_clinpgx` | corpus-sized | no | the PGx tables |
 | `enrich_facts`, `enrich_literature_pass` | corpus-sized | no | the sidecars the compile gate reads; rewrite many rows at once |
-| `record_override` | bounded | no | why an authored value outranks a source. **In response to a reported mismatch, never ahead of one** — a row markable as outranked before the check runs destroys the signal that catches a hallucination. Writes `provenance.json` and `logs/authoring.log` |
+| `record_override` | bounded | no | an edit log for an authored cell, or — with `source_value` — a claim that it outranks a source, recorded after the mismatch was read. Writes `provenance.json` and `logs/authoring.log` |
+| `prune_rows` | bounded | no | applies an author's keep-list to one authored table; refuses on a keep value that matches no row, captures and verifies the old table outside the spec directory, logs one table-scope record |
 | `review_queue` | bounded | no | those records, ranked worst-first. `still_bound` is three-valued; `resolved` means the archive caught up and the override was vindicated |
 | `compare_modules` | bounded | no | two spec directories, three grains, rows grouped by the set of columns that changed. No write path, no verdict on which side is right, and it never pairs rows whose key changed |
 | `refresh_sidecar` | bounded, except `literature.csv` / `gwas_effects.csv` | no | capture, verify, delete, re-derive, reapply what is provably authored, report the rest. Refuses offline and refuses `licensing.csv` |

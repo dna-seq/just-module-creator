@@ -8,6 +8,34 @@ are not copied.
 
 ---
 
+## F104 — a table-level authoring move had no honest home in the log
+
+Found 2026-09-20 by the dogfooding seat. `record_override` is the only writer to
+`logs/authoring.log` and its shape is one `(variant_key, field, authored_value)` per call. The tester
+trimmed `pharm_variants.csv` in eleven modules to the panel's rsIDs (DPYD: 30 of 233 drafted rows
+kept, 203 dropped across ~50 rsIDs) and deleted the file plus its ClinPGx licence row in two. Logging
+per rsID would have been a hundred calls, so each module got one record with
+`variant_key="pharm_variants.csv"` and `field="rows"` — which the tool accepted without comment,
+logged with the cell verb *"authored … (judged; no value from clinpgx to disagree with)"*, and which
+`review_queue` would have reported as a row it could not find. §2 says a hand move should go through
+a tool that logs, and no tool trims a table.
+
+**Half fixed 2026-09-20 (unreleased on 0.36.0), half surfaced.** The convention the tester improvised
+is now the documented one: a `.csv` in the row slot with `field` in `{rows, file}`, counts in
+`authored_value`, the derivation in `reason`; any other `field` beside a table name is refused with
+the convention in the message. The log line carries its own verb (`table pharm_variants.csv rows=…`),
+the returned note says what was recorded, and `review_queue` lists such records as `scope: table`
+with a `table_scope` count, no longer folded into `subject_absent`. **Not built: a `prune_rows` that
+applies a keep-list and logs the sweep.** Three written rules stand in its way and none is mine to
+settle in an unattended run: `module-curate` says twice, in bold, that the trim is a decision no tool
+makes; §10's silent-apply rulebook is TO-POPULATE-LATER and forbids settling a boundary case ad hoc;
+and a row deletion is authored content destroyed, the strongest form of the write the counterstance
+gates on a verified capture. The questionnaire is in the session report; `refresh.capture_now` is the
+capture-and-verify step if the answer is build it. The tester's eleven logs are left as written — the
+records are valid under the convention, only the verb on the line predates it.
+
+**Fixed 2026-09-24, on the owner's decision** — *"making decision != executing it"* (CLAUDE.md §10). `prune_rows` applies a keep-list the author hands it to one authored table: refuses derived sidecars, an empty list and any keep value matching no row (unless `allow_unmatched`); copies the table outside the spec directory and hash-verifies the copy before rewriting; logs one table-scope record through the same `move_line` `record_override` uses. `module-curate` now says the keep-list is the curation and applying it is not, which leaves *"no tool makes it"* true. Tests in `tests/test_prune.py` over the real DPYD ClinPGx rows, `assets/pgx/dpyd_pharm_variants.csv`.
+
 ## F105 — the AlphaGenome pass cannot be aimed at "my rows", so scoring a module means writing a window planner
 
 Found 2026-09-21 by the unattended seat porting `longevitymap` (1033 rows, 527 rsIDs, 272 genes) to

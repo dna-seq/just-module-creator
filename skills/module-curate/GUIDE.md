@@ -350,13 +350,16 @@ A defensible way to decide:
    reached by *removing* what a caller cannot emit — and six alleles turn CYP2D6's 16,290 diplotypes
    into 21.
 
-**Log the trim as one record, not one per row.** `record_override` has one shape, and a trim to a key
-set has no row to name — so the convention is the table in the row slot: `variant_key="pharm_variants.csv"`,
-`field="rows"` (or `"file"` when the whole table went), `authored_value` stating what was kept and dropped
-with counts, `source_name` the drafter's source, and `reason` saying how the kept set was derived. One
-call per table per trim. `review_queue` lists it as table-scope rather than as a row it cannot find. It
-logs the move and deletes nothing: the deletion is still yours, by hand, which is a deliberate limit —
-whether a tool should apply a keep-list is an open decision, not a gap (`F104`).
+**Deciding the keep-list is the curation; applying it is not.** Once the list exists, `prune_rows`
+applies it to one authored table: it keeps the rows whose `key_column` (default `rsid`) is in the list,
+copies the old table outside the spec directory and verifies the copy before rewriting, and logs the
+trim as one table-scope record — `field="rows"`, the counts in `authored_value`, your `reason` saying
+how the list was derived. It makes no choice of its own: a keep value that matches no row refuses the
+run, because the likeliest cause is a typo that would drop the row it meant. Run it with `dry_run=true`
+first and read `dropped_keys`. `review_queue` lists the record as table-scope.
+
+Removing a whole table is still a hand move: delete the file and log it with `record_override`,
+`variant_key` the file name and `field="file"`, which is the same convention `prune_rows` writes.
 
 For calibration: the sixteen reference modules run from **three files and no coordinates** up to 330
 drafted-then-curated rows. There is no minimum. `assets/fto_bmi` is one locus and is a perfectly good
