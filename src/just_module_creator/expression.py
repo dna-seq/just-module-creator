@@ -33,6 +33,7 @@ ROW_STATUSES = (
     "gene_not_at_locus",
     "not_scored",
     "reference_only",
+    "no_reference",
     "no_gene",
     "unresolved",
     "unreadable",
@@ -53,6 +54,9 @@ class ModuleSite:
     gene: str | None
     chrom: str | None
     start: int | None
+    #: The locus reference allele; empty when neither the row nor resolution.csv has
+    #: one, in which case no allele can be called non-reference.
+    ref: str
     effect_alleles: tuple[str, ...]
 
 
@@ -108,6 +112,7 @@ def module_sites(spec_dir: Path) -> tuple[list[ModuleSite], list[str]]:
                 gene=(row.gene or "").strip() or None,
                 chrom=chrom,
                 start=start,
+                ref=ref,
                 effect_alleles=effect,
             )
         )
@@ -188,6 +193,11 @@ def report_rows(spec_dir: Path, *, example_cap: int = 10) -> RowReport:
             status = "unresolved"
         elif not site.gene:
             status = "no_gene"
+        elif not site.ref:
+            # Placed, but with no reference allele — a resolution row written as
+            # `source=authored` before enricher 0.7.1 has an empty `ref` (F103). Which
+            # allele is the effect allele is then unknown, never "none of them".
+            status = "no_reference"
         elif not site.effect_alleles:
             status = "reference_only"
         else:

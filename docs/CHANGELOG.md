@@ -3,6 +3,16 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.38.1] — 2026-09-24
+
+- **A module row with a coordinate and no known reference allele is `no_reference`, not
+  `reference_only`.** 0.38.0 read an empty `ref` — the shape a pre-0.7.1 `source=authored`
+  `resolution.csv` row has (`F103`) — as "the genotype carries no non-reference allele", a claim about
+  a reference nobody had. The row-mode reader and planner now say the effect allele is unknown.
+- **A rows-mode AlphaGenome run that plans no window no longer reports every candidate accounted
+  for.** Zero windows made `0 == 0 + 0` true; it is now null, with a warning and a `next_step` naming
+  what the rows lack.
+
 ## [0.38.0] — 2026-09-24
 
 - **The AlphaGenome pass and its reader can be aimed at the module's own rows** (`F105`, `F106`).

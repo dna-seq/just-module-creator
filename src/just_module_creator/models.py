@@ -3245,9 +3245,10 @@ class ExpressionRanking(BaseModel):
             "`scored` — a prediction for the row's own gene and effect allele; "
             "`gene_not_at_locus` — the model answered there for other genes only; `not_scored` — "
             "nothing at that position (not queried, or withheld); `reference_only` — the genotype "
-            "has no non-reference allele to score; `no_gene` / `unresolved` — no gene or no "
-            "coordinate to ask with; `unreadable` — rows variants.csv validation refused, "
-            "with the errors in `row_examples`. Null when the filter was not asked for."
+            "has no non-reference allele to score; `no_reference` — placed, but no reference "
+            "allele is known, so the effect allele is unknown; `no_gene` / `unresolved` — no "
+            "gene or no coordinate to ask with; `unreadable` — rows variants.csv validation "
+            "refused, with the errors in `row_examples`. Null when the filter was not asked for."
         ),
     )
     row_examples: dict[str, list[str]] = Field(

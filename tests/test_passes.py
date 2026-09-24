@@ -1376,6 +1376,14 @@ _ROWS_VARIANTS = (
     ",19,44892735,C,T,C/T,,0.5,risk,predicted only\n"  # no_gene
     ",19,44905000,G,A,A/G,APOE,0.5,risk,predicted only\n"  # not_scored
     "rs429358,,,,,C/C,APOE,0.5,risk,predicted only\n"  # unresolved
+    "rs7412,,,,,C/T,APOE,0.5,risk,predicted only\n"  # no_reference: placed, ref blank (F103)
+)
+
+#: rs7412's real GRCh38 position, written the way a pre-0.7.1 `source=authored`
+#: resolution row was: coordinate present, `ref` and `alts` empty.
+_ROWS_RESOLUTION = (
+    "variant_key,rsid,chrom,start,ref,alts,genome_build,locus_index,source,status\n"
+    "rs7412,rs7412,19,44908822,,,GRCh38,0,authored,resolved\n"
 )
 
 
@@ -1388,12 +1396,13 @@ def _online_settings() -> Settings:
 @pytest.fixture
 def rows_spec(effects_spec: Path) -> Path:
     (effects_spec / "variants.csv").write_text(_ROWS_VARIANTS)
+    (effects_spec / "resolution.csv").write_text(_ROWS_RESOLUTION)
     return effects_spec
 
 
 def test_every_authored_row_lands_in_exactly_one_status(rows_spec: Path) -> None:
     report = report_rows(rows_spec)
-    assert report.rows_read == 6
+    assert report.rows_read == 7
     assert {s: report.status[s] for s in ROW_STATUSES} == {
         **dict.fromkeys(ROW_STATUSES, 1),
         "unreadable": 0,
@@ -1421,7 +1430,7 @@ async def test_module_rows_only_keeps_the_rows_own_gene_and_allele(make_client, 
     assert [e["start"] for e in body["effects"]] == [44919171]
     assert body["total_rows"] == 4
     assert body["direction_counts"] == {"decrease": 1}
-    assert sum(body["row_status"].values()) == 6
+    assert sum(body["row_status"].values()) == 7
     assert body["row_status"]["unreadable"] == 0
     assert body["row_status"]["gene_not_at_locus"] == 1
 
@@ -1489,6 +1498,28 @@ def test_a_row_validation_refuses_is_counted_not_dropped(rows_spec: Path) -> Non
     with (rows_spec / "variants.csv").open("a") as handle:
         handle.write(",19,44905000,G,A,G/A,APOE,0.5,risk,unsorted genotype\n")
     report = report_rows(rows_spec)
-    assert report.rows_read == 7
+    assert report.rows_read == 8
     assert report.status["unreadable"] == 1
     assert "alphabetically sorted" in report.examples["unreadable"][0]
+
+
+async def test_a_rows_run_with_nothing_to_ask_claims_nothing(make_client, tmp_path, monkeypatch):
+    """Zero windows must not read as every candidate accounted for (0 == 0 + 0)."""
+    spec = tmp_path / "spec"
+    spec.mkdir()
+    (spec / "module_spec.yaml").write_text("schema_version: '1.0'\nmodule:\n  name: x\n")
+    (spec / "variants.csv").write_text(
+        "rsid,chrom,start,ref,alts,genotype,gene,weight,state,conclusion\n"
+        ",19,44919171,A,T,A/T,,0.5,risk,no gene on this row\n"
+    )
+    monkeypatch.setattr(passes, "enrich_expression", lambda *_a, **_k: 1 / 0)
+    async with make_client(_online_settings()) as client:
+        out = await client.call_tool(
+            "enrich_expression_effects", {"spec_dir": str(spec), "rows": True}
+        )
+    body = json.loads(out.content[0].text)
+    assert body["windows"] == 0 and body["windows_run"] == 0
+    assert body["accounts_for_every_candidate"] is None
+    assert body["row_status"]["no_gene"] == 1
+    assert any("No window was planned" in w for w in body["warnings"])
+    assert "Nothing to ask" in body["next_step"]

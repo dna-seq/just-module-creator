@@ -22,6 +22,7 @@ from just_module_creator.discovery import (
     CROSSREF,
     EUROPEPMC,
     OPENALEX,
+    PMC_BIOC,
     PREPRINTS,
     PUBMED,
     SEARCHABLE,
@@ -717,3 +718,12 @@ def test_a_literature_source_is_never_told_to_take_a_licensing_row() -> None:
         assert "Add the row" not in n.note
         assert "layer='annotation'" not in n.note
         assert "literature.csv" in n.note and "lookup_open_access" in n.note
+
+
+def test_a_blocked_source_is_refused_as_not_searchable_rather_than_dispatched() -> None:
+    """`pmc_bioc` is in SOURCES (it is a real service with terms) but is a fulltext rung,
+    so a search naming it must exclude it the way it excludes Unpaywall."""
+    queried, excluded = resolve_sources([PMC_BIOC, UNPAYWALL, "pubmed"], None)
+    assert queried == ["pubmed"]
+    assert {s.source for s in excluded} == {PMC_BIOC, UNPAYWALL}
+    assert all("does not answer free-text search" in (s.reason or "") for s in excluded)

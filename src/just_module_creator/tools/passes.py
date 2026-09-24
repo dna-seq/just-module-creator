@@ -1686,10 +1686,11 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         printed before the query runs. Pass `chrom`/`start`/`end` for a window — a 4 kb
         one is ~12,000 SNVs and takes seconds. `gene` is required, because the server-side
         gene filter is a requirement and not an optimisation. **`rows=true` aims the pass
-        at the module instead**: windows are planned from variants.csv × resolution.csv — grouped by each row's own `gene` and chromosome,
-        neighbours within 100 bp merged, ~21 bp each — and queried one after another, at
-        about two seconds a window (longevitymap: 377 windows for 1033 rows). `gene`,
-        `chrom`, `start`, `end` are ignored. `row_status` then says per row whether it was
+        at the module instead**: windows are planned from variants.csv × resolution.csv,
+        grouped by each row's own `gene` and chromosome, neighbours within 100 bp merged,
+        ~21 bp each, and queried one after another at about two seconds a window
+        (longevitymap: 377 windows for 1033 rows). `gene`, `chrom`, `start`, `end` are
+        ignored. `row_status` then says per row whether it was
         scored; rows with no `gene` are reported, never given one. `dry_run` returns the
         plan and asks nothing.
 
@@ -2048,6 +2049,11 @@ async def _expression_for_rows(
             if result.dataset:
                 datasets.add(result.dataset)
     report = report_rows(target)
+    if not planned:
+        warnings.append(
+            "No window was planned: no row has a gene, a coordinate and a known non-reference "
+            "allele together. row_status says which is missing; nothing was asked."
+        )
     on_disk = target / "expression_effects.csv"
     rows_on_disk = None
     if on_disk.is_file():
@@ -2062,7 +2068,9 @@ async def _expression_for_rows(
         rows=rows_on_disk,
         withheld=dict(sorted(withheld.items())),
         accounts_for_every_candidate=(
-            None if dry_run or failed else candidates == written + sum(withheld.values())
+            None
+            if dry_run or failed or not planned
+            else candidates == written + sum(withheld.values())
         ),
         dry_run=dry_run,
         windows=planned,
@@ -2079,8 +2087,11 @@ async def _expression_for_rows(
         ),
         warnings=warnings,
         next_step=(
-            f"Plan only: {planned} window(s), about {planned * 2} s at ~2 s each. Drop dry_run "
-            "to run it."
+            "Nothing to ask the Atlas for. Read row_status: a row needs a gene, a coordinate "
+            "(enrich_module fills resolution.csv) and a genotype with a non-reference allele."
+            if not planned
+            else f"Plan only: {planned} window(s), about {planned * 2} s at ~2 s each. Drop "
+            "dry_run to run it."
             if dry_run
             else "Read the scored rows with top_expression_effects(module_rows_only=true). A "
             "predicted direction is not a clinical direction: a variants.csv role written from "
