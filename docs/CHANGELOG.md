@@ -3,7 +3,7 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## [Unreleased]
+## [0.38.0] — 2026-09-24
 
 - **The AlphaGenome pass and its reader can be aimed at the module's own rows** (`F105`, `F106`).
   `enrich_expression_effects(rows=true)` plans small windows from `variants.csv` × `resolution.csv`
