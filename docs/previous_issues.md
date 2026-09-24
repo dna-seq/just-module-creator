@@ -8,6 +8,475 @@ are not copied.
 
 ---
 
+## F98 — `clinical_claims_without_studies` keys on `clin_sig`, so a module can assert a clinical direction with no study behind it and the audit calls it clear
+
+Found 2026-09-12 building `apoe_locus_compound` against 0.7.0 — a module deliberately shaped to have
+a layer that *should* trip this signal.
+
+Six of its fifteen `variants.csv` rows are `category=alphagenome_predicted`: they carry
+`state=protective|risk`, `direction=protective|risk`, a non-zero `weight`, and **no `studies.csv` row
+at all**. Their clinical role is assumed from an AlphaGenome expression prediction and nothing else.
+That is exactly the shape "a clinical claim with no paper behind it" names.
+
+`audit_module` reports:
+
+```
+clinical_claims_without_studies  clear
+  "no row in this module asserts a clinical significance"
+```
+
+Correct as written, and misleading as read. The signal keys on `clin_sig`, which this module does not
+author. `state`, `direction` and `weight` are clinical claims a consumer acts on just as readily — a
+report saying "protective" does not first check whether the claim arrived via `clin_sig`.
+
+**This is §8's prose rule 1 in our own code**: *a check is only as wide as the table it reads, and
+naming a check without naming its scope is how a reader over-trusts it.* The headline says "no row in
+this module asserts a clinical significance" when the defensible claim is "no row authors a `clin_sig`
+value".
+
+**Two repairs, and the cheap one is not obviously wrong.** Either widen the signal to count a row with
+a directional `state`/`direction` and no grounding study, or leave the scope and fix the headline to
+name the column. Widening is the one that would have caught this module; but it would also fire on
+every legitimately ungrounded directional row, of which there are many in real modules, so it needs a
+severity below `decide` or it becomes noise the first time somebody runs it on a GWAS module. Not
+repaired here — it wants the decision, not a patch.
+
+**Fixed 2026-09-12, and the fix had to be measured twice.** `directional_claims_without_studies`
+now asks, per row, whether *this row's own variant* is named by a study — not whether `studies.csv`
+has any row at all, which is what the sibling asks and what passes a thousand-row module carrying one
+citation. `clinical_claims_without_studies` keeps its scope and loses its overclaiming headline: it
+now says *"no row authors a clin_sig value"* and names the tables it read.
+
+**The first cut of the new signal was wrong in both directions and the reference corpus caught it.**
+Run over 21 real modules it fired on four; two were its own join failing, not a gap in the module:
+
+- `mt_common_deletion` reported all three rows uncited. Its `variants.csv` says `chrM` and its
+  `studies.csv` says `MT`, and the hand-rolled fold `lstrip("chrCHR")` turns those into `M` and `MT`.
+  The signal was inverted by a contig spelling. It uses `just_dna_format.vrs.normalize_chrom` now —
+  the schema-fact rule at a different address.
+- `cyp2d6_structural` reported its CNV uncited. A symbolic allele spans an interval and its study
+  cites a point 99 bp away. Those rows are now set aside **and counted**, never silently dropped: a
+  row the signal could not assess is not a row it cleared.
+
+After both, 3 of 21 fire and all three are true positives, verified by grepping each rsID:
+`hboc_palb2` (rs786203382, rs1597101776) and `shox_par1` (rs1170991098) each carry a directional row
+whose rsID appears zero times in their own `studies.csv` — two uncited rows in upstream's own
+reference examples — plus this module's six. `pathogenic_clinvar`'s 328 leaning rows stay quiet.
+
+**What saved this module is not the audit.** The prediction-only rows are legible because the author
+put `PREDICTION ONLY` at the head of every `conclusion`, set `flags=predicted_only`, `method=
+alphagenome-expression-prediction` and `stat_significance=unknown`, and said so in the README. All of
+that is convention, none of it is checked, and a less careful author gets a green audit over the same
+shape.
+
+## F100 — the taught scaffold → draft path dead-ends on a fresh scaffold, twice
+
+Found 2026-09-20 by the dogfooding seat, first module of the ClawBio PGx run, plugin 0.35.0 on
+compiler/enricher 0.7.0. `scaffold_module(kinds=["haplotypes.csv","allele_function.csv",
+"diplotypes.csv"])` then `draft_from_cpic(gene="TPMT", use="non_commercial", dry_run=True)`:
+
+1. *"cannot read the module's genome_build: module_spec.yaml []: … unreplaced template placeholder
+   '<<REPLACE>>' … module.description, module.report_title, module.title … fix module_spec.yaml, or
+   pass genome_build= explicitly."* `draft_from_cpic` has no `genome_build` argument, and neither
+   does upstream's `draft_gene`: the remedy is the enricher CLI's, relayed raw because
+   `EnrichmentError` was not in the tuple `_guard` translates.
+2. After filling the three fields: *"existing haplotypes.csv does not validate, so a draft cannot be
+   keyed against it: haplotypes.csv line 2 []: … '<<REPLACE>>' in HaplotypeRow row: allele,
+   haplotype_name, rsid."* The compiler's `draft.merge_rows` refuses a file that does not validate,
+   and the scaffold's stub is a placeholder in every required cell — so the tables scaffolded *for*
+   the drafter are what block it. A header-only file drafts cleanly, and upstream's `stub_template`
+   takes `rows=0`; our `scaffold_module` refused anything under 1.
+
+Reproduced offline in a scratch directory against the built CPIC snapshot, both errors in order.
+The promise it broke is `create-module`'s stage table, 1 scaffold → 2 draft, with nothing in between.
+Upstream's own reference README recipe fails identically; the tester filed that as format-tree
+`S103` (read `genome_build` leniently, or say to fill the titles and scaffold without `--kind`).
+
+**Upstream half released 2026-09-21 — enricher/compiler 0.7.1 carry `S103` (their RM250):** a
+draft reads past the scaffold's stubs in the fields it never uses, so only a placeholder in
+`genome_build` itself refuses now, and the compiler names a stub row by its line. Adopted in 0.37.0:
+the remedy text and its test moved to that one case.
+
+**Fixed 2026-09-20.** `rows=0` on `scaffold_module`; `EnrichmentError` and `DraftError` translated
+by `_guard`, each with the repair this surface can make appended after upstream's verbatim text and
+keyed on `<<REPLACE>>`; the order written into `module-start` (stage 1 owns it), the two messages
+into `module-draft`'s symptoms and `SYMPTOMS.md`. Not run: the tester's `probe/` directories and the
+live CPIC path — the reproduction and the tests use the snapshot, `dry_run` and `offline`. **Not
+re-probed**: the run ended with the tester's stdio server still on 0.35.0, and a `/mcp` reconnect is
+not something that session could do for itself, so the re-probe needs the user or a fresh session.
+
+## F101 — the two PGx cross-checks had no tool, so a PGx module could not read its own function calls back
+
+Found 2026-09-20 by the dogfooding seat on the second module of the ClawBio PGx run, plugin 0.35.0.
+`skills/module-check/GUIDE.md` listed `just-dna-enricher pgx` and `just-dna-enricher clinpgx check`
+as bare CLI lines beside four tools, and `CLI.md`'s wrapped-or-not table carried them with an empty
+tool column. Eleven of the run's thirteen modules are `haplotypes` + `allele_function` +
+`diplotypes`, so none had an in-surface way to compare `function_status` against PharmVar or CPIC,
+and a `pharm_variants.csv` module had no check against ClinPGx. The tester ran the CLI instead —
+*"sources recorded: 2 … routes: cpic=snapshot, pharmvar=snapshot"* — which is the ad-hoc route the
+product exists to remove, and the "surface teaches a step it cannot run" shape §5 names. The parity
+rule that wrapped `check_acmg`, `check_repeat_bands` and `check_literature_coverage` at 0.35.0 had
+left these two, with no written reason.
+
+**Fixed 2026-09-20, 0.36.0.** `check_pgx` and `check_clinpgx` in the `pgx` toolbox group beside the
+drafters they pair, carrying upstream's `PgxResult` / `ClinPgxResult` field-for-field: `compared` as
+the denominator, `routes` for who answered, the licence skip and the offline skip as two lists, and
+`not_checked` verbatim as the third value. Neither exposes `mode`, on the tester's point and the
+guide's own ROADWORKS: upstream stores it and never reads it. Both let upstream attest and read
+`verification.json` back for `attested`. Measured on a scratch copy of the tester's CYP2C19 module
+against the built snapshots: 5 compared, PharmVar answered, CPIC reported `tautology`. Tested with a
+disagreeing snapshot client injected under the real comparison, and hermetic offline runs.
+
+**Left open, named rather than forgotten**: `clinpgx check-labels` (a module's drug claims against
+five regulators' labels) is the third PGx check and is still CLI-only; `CLI.md` says so on its own
+row. Not run: the tester's module directories and the live PharmVar path. **Not re-probed**: same as
+`F100` — the tester's server stayed on 0.35.0 for the whole run, so a `/mcp` reconnect by the user or
+a fresh session is what the re-probe needs.
+
+## F102 — eleven dry runs in one batch: one verdict, four `503 enrichment_busy`, six `429 rate_limited`, and nothing said which budget or what to do
+
+Found 2026-09-20 by the dogfooding seat, thirteen modules into the ClawBio PGx run, plugin 0.35.0.
+`registry_check` fired once per module against the polygon; the tool surfaced each refusal raw —
+*"the polygon could not complete the dry run: HTTP 429: rate_limited"* — with no bucket named, no
+`Retry-After`, and no `next_step`. Read from the registry's own tree: `/check` sits on the `enrich`
+bucket (operator default five an hour, refilling one per twelve minutes) plus a concurrency gate that
+answers `503 enrichment_busy`; `/validate` is on its own `validate` bucket (sixty an hour), `/publish`
+on `publish` (ten). So the taught rehearsal — a dry run before every publish — caps an author at five
+modules an hour, and the tester switched to `registry_validate` + `registry_publish` for the remaining
+eleven; only two went through the full dry run. The registry-tree half (name the bucket in `detail`,
+derive `Retry-After` from the bucket's refill) is the tester's `S23`.
+
+**Fixed 2026-09-20 (unreleased on 0.36.0).** `targets.throttle_note` is the suffix beside
+`instance_note` on the three write arms: a 429 names the bucket (`enrich`, `validate`, `publish`) and
+says it is the instance's budget rather than the module, and on the dry run's bucket points at
+`registry_validate` as the pre-flight for a batch; a `503 enrichment_busy` says the instance runs one
+dry run at a time and to re-run sequentially. No retry inside the tool: a five-an-hour bucket cannot
+be waited out in a call, and a retry on the busy gate would be a policy invented here.
+`registry_check`'s docstring and `module-publish` state the rule — rationed by design, never batched,
+validate for a batch — and deliberately not the numbers, which are the operator's settings. Not run
+against the live polygon from this seat; the refusal shapes come from the registry's source.
+
+## F103 — `resolved: 5, sources: ["authored"], vrs_minted: 0` read as a clean run on every CPIC-drafted module
+
+Found 2026-09-20 by the dogfooding seat on `cyp2c19`, and the tester corrected their own reading the
+same day. Every CPIC-drafted `haplotypes.csv` row carries `rsid` + `chrom` + `start`, and the
+enricher's last resolver branch — *"already complete, or has a position — nothing to resolve"* —
+restates the authored coordinate into `resolution.csv` under `source=authored` with empty `ref`/`alts`
+and no VRS id. `compile_module` then warns *"VRS allele identity covers 0/5 allele(s)"* on all
+thirteen modules. **What is true and what is not**: the coordinate-agreement check *does* run —
+`verification.json` carries `rsid_coordinate_agreement` with five subjects on CYP2C19, and on CYP2D6
+it found five CPIC positions off Ensembl's — so the skills' sentence *"the resolution table is the
+independent second value the cross-check needs"* was right about the check and wrong about the
+sidecar, which holds no second value for this shape. Upstream half is the tester's `S104`.
+
+**Upstream half released 2026-09-21 — enricher 0.7.1 carries `S104` (their RM251):** a row authoring
+both an rsID and a coordinate takes the forward branch when the reference knows its rsID, so a fresh
+`enrich` records the loci and mints an id, and a pair that disagrees with Ensembl warns in
+`best_effort` and refuses in `strict`. A sidecar written before the fix keeps its `authored` rows under
+merge-not-clobber, so the warning below now names `refresh_sidecar` as the repair instead of calling
+the shape expected; the thirteen polygon rehearsals from 2026-09-20 are exactly that case. Adopted in
+0.37.0.
+
+**Fixed 2026-09-20 (unreleased on 0.36.0).** `enrich_module` now appends a warning counting the rows
+that came back `resolved` under `source=authored` with an rsID and no VRS id, naming the shape, the
+compile warning it will produce and `S104`. The sentence in `module-start` and `module-curate` is
+narrowed to what the sidecar actually carries per shape; `module-draft`'s CPIC section says the VRS
+warning is expected on every drafted module and why; `SYMPTOMS.md`'s VRS-coverage entry gains the
+fourth cause. Nothing here alters the sidecar — the second value is upstream's to record. The tool
+path is tested with a faked enrichment result; the predicate was measured over a real sidecar, the
+scratch copy of the tester's CYP2C19 `resolution.csv`, where it counts 5 of 5 rows.
+
+## F71 — `record_override` logged every authored cell as "outranks", claiming disputes that never happened
+
+**Found:** 2026-08-31, reading six benchmark runs' `logs/authoring.log` · **Severity:** medium ·
+**Status:** fixed here. Not upstream's — their field is scoped correctly and we were misusing it.
+
+`record_override` has two jobs, stated in its own docstring: *"outranks a source, **or** that you
+edited"*. `server.INSTRUCTIONS` rule 2 tells every agent to call it for **every** hand edit. Both
+outputs said only the first thing:
+
+```
+override rs117385980 weight='-0.2 on C/T…' outranks authored judgement, no source consulted
+```
+
+**Six of seven records across two runs were judged cells** — `weight`, `conclusion`, `genotype`,
+`state`, `stat_significance`, `direction` — cells no source supplies. One record was a real
+disagreement (`effect_size='3.58' outranks pmid:28399814 ('3.53')`). The agents were compliant; the
+surface mislabelled them.
+
+**Both artifacts publish.** `logs/**.log` is swept into every compile with no opt-out, and
+`provenance.json` is in `RECOGNIZED_SPEC_FILES`. So a module reaches the catalog asserting its author
+overruled sources they never consulted — and it corrodes the signal `overrides.py` exists to protect:
+if most records say *outranks* but mean *authored*, the real disputes stop standing out.
+
+**Upstream is not at fault and there is no `S` to file.** `ProvenanceItem.outranks` is documented as
+*"per-column justification for this row deliberately disagreeing with a source"*, and *"a key's
+presence is what a tool may read"*. That is exact. We were writing a key for records that are not
+disagreements. `rationale` — *"why this annotation was made"* — is the right shelf and every record
+already filled it.
+
+**The fix, and it needed no schema change:** `source_value is None` already separated the two cases.
+The log now writes `authored … (judged; no value from X to disagree with)` where there is no source
+value, and `to_items` leaves `outranks` empty for those records while still writing the reason to
+`rationale`. Verified by reverting the fix and watching
+`test_a_judged_cell_claims_no_dispute_it_did_not_have` fail.
+
+**One agent diagnosed this unprompted**, which is the part worth keeping: *"the log renders my entries
+as 'outranks [the sources]' when I passed no `source_value` and was recording authorship of a judged
+cell, not overriding a source. That wording publishes verbatim."* A run asked for blunt feedback about
+the surface produced a defect report about the surface.
+
+## F77 — the version handshake certifies a registry pair that then refuses our own rows, and our workspace note said the opposite
+
+**Found:** 2026-08-31, in a single-run SIRT6 benchmark on plugin 0.25.0 · **Severity:** high ·
+**Status: CLOSED 2026-09-12** — both instances now serve format 0.7.0 and the column is accepted.
+Filed as registry-tree `S18`; symptom entry shipped; `CLAUDE.md` §11 corrected at the time.
+
+> **Closed on a measurement rather than on the handshake**, because the handshake is what made this
+> finding possible: `assert_compatible()` passed throughout the outage. The proof is the call that
+> failed, re-run — a `studies.csv` carrying `curator` put through `registry_validate` against the
+> live polygon on 2026-09-12 returns `valid: true` with **zero findings**, where it returned
+> `studies.csv line 2 [curator]: Extra inputs are not permitted`. `registry_health(target="test")`
+> reports `server_format 0.7.0 / client_format 0.7.0 / contract_compatible true` beside it.
+>
+> **What generalises is the closing procedure, not the fix.** A contract finding is closed by
+> re-running the call that produced it, never by reading a version line: the whole content of this
+> entry is that the two disagree. Plugin 0.35.0 moved the floor to `>=0.7.0,<0.8` for the same
+> reason in the opposite direction — the instances moved first, so a 0.6.6 client is now the
+> refused end.
+
+A module green through every local gate — strict validate, strict enrich, strict compile, verified
+digests, closed with eleven check records — is refused by both live registries:
+
+```
+valid: false — studies.csv line 2 [curator]: Extra inputs are not permitted
+```
+
+`StudyRow.curator` shipped in format **0.6.5**. Both instances validate at **0.6.1**
+(`/api/v1/version`, prod and polygon, measured) and `StudyRow` is `extra="forbid"`. Removing that one
+column returns `verdict: true, blocking: []`.
+
+**The part that is ours is the claim we had written down.** `CLAUDE.md` §11 said *"every 0.6.x
+interoperates"*, measured on `assert_compatible()`, which is scoped to major.minor below 1.0 and
+therefore **cannot fail** for the class of change that actually breaks a publish — a field added in a
+patch release. That is the "could this check have failed?" defect, in our own workspace facts, and it
+stood for ten days.
+
+**The obvious repair is the wrong one and the run got that right.** Dropping `curator` makes the
+publish go green and silently deletes the per-row record of *who located a quote* — the attribution
+that field exists for, and which `server.INSTRUCTIONS` rule 5 pushes an author toward filling. The run
+kept the column, published nothing, and surfaced it as a decision. Conforming a module to a registry
+that lags the format is the stale-source move §2 forbids.
+
+**Surface it, and why one candidate is wrong.** Pre-stripping fields the target instance does not know
+would require us to model their validation, would delete authored provenance, and would make a
+module's bytes depend on which registry it was aimed at. `S18` asks instead that the refusal name the
+version gap. **A product guard is worth building** — compare the fields a module uses against the
+target's reported format version and warn by name — and is deferred rather than dismissed: it needs a
+version-to-model mapping and a probe, which is more than a patch.
+
+## F65 — four of the runs' registry findings did not survive verification, and one was ours
+
+**Found:** 2026-08-22, verifying before filing · **Severity:** n/a ·
+**Status:** closed. Recorded so nobody re-investigates.
+
+Checked against the live instances and the registry's own source before filing upstream.
+Four claims from the two runs were **not filed**, because they are wrong:
+
+- **"Every warning a local strict compile produced was discarded at publish."** Refuted
+  three ways. Production manifests carry `compilation.warnings` — two to four each —
+  **including the licence-conflict warning the finding said was dropped**. The server's
+  compiler version is readable at `/api/v1/version`, and digest non-reproducibility across
+  compiler versions is documented twice in their API reference (*"a recompile of the same
+  spec need not produce the same digest"*). The remaining true part is a **deployment lag**,
+  not a defect: their 0.20 roadmap already adopts 0.6.6.
+- **"`module_spec.yaml` never matches its own published digest."** Refuted by sweep: every
+  input of all eight production modules fetched through `/files/` and hashed — **29 of 29
+  match on both `sha256` and `size`**. The "374 bytes recorded vs 1198 served" observation
+  does not reproduce.
+- **"The `/files/` endpoint is undocumented."** It is documented in their API reference, and
+  the supported client route to authored source is `download(include_inputs=True)`, also
+  documented. Our own tier is what made it unreachable, which is `F60`'s neighbour and is
+  fixed.
+- **"The registry truncates the gene list without saying so."** The truncation is real and
+  documented, and `gene_count` sits beside the three genes in the live payload. **The bug
+  was ours**: `_module_card` read `genes` and never read `gene_count`, so a module naming 22
+  genes projected three and looked complete. Fixed; a caller filtering on `genes` now has
+  the number that says the list is a sample.
+
+**The pattern worth keeping.** Every one of these read as a confident measurement in a
+careful report, and three of the four dissolved on contact with the source. One run said it
+of itself — two of its three findings needed retracting, and the toolchain contributed to
+neither retraction. **Verify before filing, and verify against the producer rather than
+against the observation**; a note filed on a refuted claim costs upstream a triage cycle and
+costs us the next note's credibility.
+
+## F60 — the surface answers "will this build?" four ways and "is this any good?" not at all
+
+**Found:** 2026-08-21, two independent unattended runs · **Severity:** high ·
+**Status: closed 2026-08-24.** The tier and discovery half shipped 2026-08-22; the audit surface
+shipped in 0.20.0 as `audit_module` (`RM26`).
+
+Run 1 curated the eight modules then on the production registry; run 2 revised the ten
+modules in `just-dna-lite`'s v1 port. Neither had prior context. Both ran in the default
+tier. **Every module passed `validate_module(strict=true)` with zero errors**, and every
+real defect either run found was found by writing arithmetic over the CSVs.
+
+`registry_check`, `registry_validate`, `validate_module`, `compile_module` and `lint_rows`
+all answer *"will this build?"*. The offline gate is **right** to pass those modules and
+says so itself — *"strict means reproducible, not correct"* — so this is not a broken
+check. It is that the entry point to a curation pass tells you nothing, and the caveat
+that says so is prose while the green result is a tool call.
+
+What run 1 measured in modules that passed every gate, all by hand:
+
+| defect | how it was found | scale |
+|---|---|---|
+| `effect_measure` says `beta` on a Z-statistic | compare `effect_size` against `-Φ⁻¹(p/2)` | 242 variants, 4 modules |
+| `effect_size` dosage-doubled on hom rows | hom value = 2 × het value | 10 of 13 variants, 1 module |
+| `weighting:` never declared | read `module_spec.yaml` | every module in both runs |
+| the reference-base check had never run | read `verification.json` | every module in run 1 |
+| `gene: KIBRA` not HGNC-approved | `check_identifiers` — the one tool that found anything | 1 module |
+
+A "beta" of 7.29 on an item-level irritability score is not a possible effect size; it is
+the Z for that row's own p-value to three decimals, and in one module that column then
+held Z-statistics beside genuine per-allele betas of order 0.02 under one unit label.
+
+Run 2 found the same shape from the other side: a module with **190 rows and an empty
+`weight` on every one**, no `weighting:` block, passing strict and compiling green with
+`weights_rows: 190`. Nothing distinguishes "the author deliberately authors none" from
+"the author forgot", which is the question `weighting:` exists to answer.
+
+**Every signal in that table is computable offline from files the plugin already reads.**
+That is what makes this a gap rather than a wish, and `audit_module` now computes them: it
+reproduces `superhuman`'s 190 empty weights, the six curated modules' undeclared scale, the 52
+`detail: null` findings split 20/32 across two modules, and `clinical_significance` recorded at
+`subjects: 0` on all eight modules of the other corpus — measured against those directories rather
+than against fixtures. **It also finds seven rows the hand-repair pass missed**, still labelled
+`beta` while carrying the Z of their own p-value, which is the argument for the tool in one line.
+The one row in that table it does **not** cover is `gene: KIBRA` — that is `check_identifiers`,
+which needs HGNC and is therefore a check rather than an audit. See `RM26` in
+[ROADMAP_HISTORY.md](ROADMAP_HISTORY.md) for what was deliberately not built and why.
+
+## F6 — two of five literature sources refuse this host, and the tool is right to say so
+
+**Found:** 2026-08-11, capturing fixtures · **Severity:** medium ·
+**Status:** **RESOLVED 2026-08-20 — and the diagnosis below was wrong.** Both fixtures are
+captured and both parsers are tested; `RM6` is closed in
+[ROADMAP_HISTORY.md](ROADMAP_HISTORY.md). The tri-state finding this entry exists for **stands
+unchanged** and is why it stays here.
+
+> **Corrected 2026-08-20.** *"IP block"* was the wrong conclusion from a real observation.
+> Re-probed through our own client: **arXiv answers HTTP 200** — six requests, no throttling —
+> and Semantic Scholar's 429 is **intermittent and endpoint-specific**, `paper/search` shedding
+> load while `paper/{id}` answers reliably. arXiv had a genuine rate-limit incident in late
+> February 2026 that its maintainers acknowledged and fixed; we measured it during that window
+> and then carried the conclusion for six months without re-probing. **The lesson is the
+> re-probe, not the block:** an environmental verdict is a measurement with a date on it, and
+> ours had no expiry. `assets/literature/` now holds `arxiv_query.xml` and
+> `semanticscholar_search.json`, captured through `Discovery` itself so each is a real response
+> to the exact request the client makes.
+
+The original observation, which was accurate on the day: Semantic Scholar and arXiv both answered
+HTTP 429 from this machine regardless of user-agent, arXiv on a *first* request with no prior
+traffic. Confirmed with plain `curl` outside the client.
+
+Reported here rather than routed around because it is the best available
+evidence that the tri-state design earns its keep. A live `literature_search`
+returns `results=null` and `rate_limited=true` for those two, plus a warning that
+their part of the literature is **unchecked, not empty** — while PubMed and
+Europe PMC answer normally. Had the model used `0`, the same call would have
+read as "no preprints exist on this subject", which is a conclusion an author
+would act on.
+
+The cost was real while it lasted: `parse_semantic_scholar` and `parse_arxiv` had no committed
+fixture and therefore no test, for six months. Both now have both — six tests, including the
+`arxiv:doi` branch that only fires for a preprint that was later published, which is the branch a
+fixture-less parser was most likely to have got wrong.
+
+## F7 — a `limit` was spent entirely on whichever source was asked first
+
+**Found:** 2026-08-11, first live search · **Severity:** medium ·
+**Status:** resolved same day, kept here as the reason the ordering rule exists
+
+The first working `literature_search` asked four sources with `limit=5` and
+returned five PubMed papers. Europe PMC had answered with five of its own and
+none of them appeared: the merge preserved first-appearance order, so source one
+filled every slot.
+
+Nothing was broken and every count in `sources` was accurate — which is what made
+it easy to miss. It only showed up because the live run printed `found_in` per
+paper and every row said `['pubmed']`.
+
+Merge now interleaves by each source's own rank, so every source's top hit
+outranks anyone's second. Ties break on first appearance, so the order stays
+deterministic.
+
+**Why it stays in this file rather than moving to previous_issues.md:** the
+finding is not the bug, it is that asking several sources can silently degrade
+into asking one, and nothing in the result said so. A future federated tool wants
+the same guard.
+
+## F28 — `literature_search` tells you a preprint has no PMID while handing you one that does
+
+**Found:** 2026-08-12, authoring a module from three PDFs · **Severity:** medium ·
+**Status:** fixed in this change
+
+`discovery.py` fired this on `any(p.preprint for p in papers)`:
+
+> *"Some results are preprints: not peer-reviewed, and they carry no PMID, so they cannot ground a
+> studies.csv row (pmid is required)."*
+
+It fired on a result whose `pmid` was **`41427385`** — a bioRxiv posting with a PMID *and* a PMCID
+(`PMC12713140`), because bioRxiv and medRxiv are indexed in PubMed under the NIH preprint pilot. The
+warning contradicted the payload in the same response.
+
+**The cost is a citation not made.** An agent reading the warning rather than the field concludes the
+paper cannot ground a row, and either drops the finding or hunts for a journal version that may not
+exist yet. Here it was the *centrepiece* — the cGAS variant with the functional work — and only
+re-reading the raw `pmid` recovered it.
+
+**Fixed by counting instead of assuming**: the finding now reports how many preprints carry a PMID and
+how many do not, and leads with the part that is always true and got buried — none of them is peer
+reviewed, so a row grounded on one must say so in its `conclusion`. `skills/find-evidence/SKILL.md`
+carried the same false claim ("A preprint has **no PMID** … full stop") and is corrected.
+
+**The generalisable bug is a class claim standing in for a field read.** "Preprints have no PMID" was
+true of the arXiv index and got written as a property of the category; the fix is that the record
+answers, never the class.
+
+---
+
+## F80 — a benchmark's isolation was breached by our own memory index, and by "read" not covering "list"
+
+**Found:** 2026-08-31, running three scored benchmark runs on 0.27.0 · **Severity:** high ·
+**Status:** memory entry retired the same day; runbook in `docs/BENCHMARKING.md`.
+
+Every benchmark prompt banned reading `data/interim/` and `assets/benchmarks/`, where the
+adjudicated reference and the sibling runs live. Two things got past that, and neither is the
+agents' fault.
+
+**The project memory told each run to open the answer key.** A memory entry read *"read
+`data/interim/repro-bench-2/HANDOFF.md` first"* — the round's own handoff, naming the reference, the
+scores and the findings. One run flagged the contradiction and refused; nothing in the setup would
+have detected compliance. **The prompt is not the isolation boundary**: `CLAUDE.md`, the memory
+index and the skills all reach a subagent unasked.
+
+**"Read" did not cover "list".** A run's first bundled command included `ls data/interim/` and it
+saw five directory names. Names only, no contents, it never descended, and it disclosed this before
+being asked — but the clause has to say *list* too.
+
+**Neither voided a run, and that is why they are worth writing down.** Both were caught by an agent
+volunteering against its own interest, which is not a control.
+
+**Surface it, and the candidates that are wrong.** Rewriting prompts is necessary and not
+sufficient, since the leak was in injected context. Removing the memory entirely loses a real
+pointer. What is built instead is a transcript audit that does not depend on anyone's honesty —
+parse `tool_use` inputs in the subagent JSONL for forbidden paths, check which tool first surfaced
+the answer, and ask for the reasoning chain separately, since grep cannot tell a derivation from a
+reconstruction. **Counting name mentions does not work**: `registry_download` and `registry_search`
+appeared 18 times in one transcript with zero invocations, the hits being tool-schema text.
+
 ## F47 — a skill can teach a step the running tier cannot run
 
 **Found:** 2026-08-20, trying to refresh `literature.csv` from a default-tier session ·
