@@ -2073,3 +2073,28 @@ The module was finished from the BioC copy, fetched with a raw `curl` — the ad
 exists to remove. **Candidate fix:** add PMC BioC as a rung after Europe PMC in the fulltext ladder,
 behind `ServiceGate` under the NCBI budget, and return table passages as text rather than dropping
 them: for a GWAS paper the tables are where the rows are.
+
+## F109 — `literature_search` tells the author to add the `pubmed` licensing row three skills forbid
+
+**Found:** 2026-09-24, same run as `F108` · **Severity:** low · **Status:** open
+
+Every `literature_search` result carries a `licensing` note from `discovery.py`: *"You read pubmed by
+hand, so nothing wrote a licensing.csv row for it and the compile gate cannot see it. Add the row
+yourself."* But `module-start`, `module-tables/references/licensing.md` and `.../literature.md` all say
+**no `pubmed` row, ever** (upstream RM46: literature terms are per article and live on
+`literature.csv`), and the 2026-08-31 measurement there found the row changes nothing. An agent that
+trusts the tool over the skill writes a row upstream has refused. This run followed the skills and
+compiled strict with no licensing warning. **Candidate fix:** drop the "add the row" sentence for
+literature services and keep the second half about the article's licence, pointing at
+`lookup_open_access`.
+
+## F110 — `lookup_variant(frequencies=true)` is silent on every multi-allelic locus (upstream `S108`)
+
+**Found:** 2026-09-24, same run · **Severity:** medium · **Status:** filed as format-tree `S108`,
+open upstream
+
+15 of 25 GWAS lead rsIDs came back with `populations: []` and no finding, because the enricher's
+`_lookup_frequencies` returns early when `alts` holds a comma. That left the MAF match, which is the
+only way to fix a palindromic pair's strand, with nothing to work from. HLA-DRB1 rs9271058 (T/A) was
+dropped from the module for that reason. Our tool passes the upstream result through, so there is
+nothing to add on our side beyond a finding, and once upstream answers, that belongs to them.
