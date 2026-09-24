@@ -694,3 +694,11 @@ That refusal is from a server older than 0.21.0, where two sidecars needed the e
 current one the same call warns and runs: `literature.csv` and `gwas_effects.csv` re-derive through
 passes sized by how much the world has published, so the budget is real, and it is now yours to
 weigh rather than the server's to refuse.
+
+**`No module named '<package>…'` (a `ModuleNotFoundError`) from a tool that has nothing to do with
+that package.** The running server's environment changed under it — usually a `uv sync` or a plugin
+update that swapped a dependency while the process was alive. The server imports lazily, so the next
+tool to touch the moved package fails with a message about the package rather than about your call
+(`F107`; measured when fastmcp 3 became 4 mid-session). Nothing is wrong with the module. Run
+`/reload-plugins` (or reconnect the server with `/mcp`) and re-run the call; do not reinstall or
+downgrade to make the message go away.

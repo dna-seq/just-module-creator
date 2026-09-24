@@ -1548,6 +1548,12 @@ keeping: a forty-line script that builds the server in-process and drives tools 
 `fastmcp.client.Client(server, mode="legacy")` is the whole product surface without the host, and
 it is what the unattended run used for every call above.
 
+**Status 2026-09-24: documented, not fixed.** `SYMPTOMS.md` now maps the message to the cause and to
+`/reload-plugins`, so an agent that looks it up has the repair. The message itself is unchanged: a
+middleware translating `ModuleNotFoundError` would run inside the same swapped environment and can
+fail the same way, so it is not worth building on a guess. The durable fix would be a host-side
+notice that the plugin's venv changed — a Claude Code / Codex behaviour, not ours.
+
 ## F110 — `lookup_variant(frequencies=true)` is silent on every multi-allelic locus (upstream `S108`)
 
 **Found:** 2026-09-24, same run · **Severity:** medium · **Status:** format-tree `S108` accepted
