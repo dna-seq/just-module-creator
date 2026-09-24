@@ -3,6 +3,12 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [Unreleased]
+
+- **`literature_search` no longer tells an author to add a `pubmed` licensing row** (`F109`). Its
+  `licensing` notes now say a literature service takes no `licensing.csv` row at any layer (RM46) and
+  point at `literature.csv` and `lookup_open_access` for the article's own terms.
+
 ## [0.37.0] — 2026-09-21
 
 ### fastmcp 4, and enricher/compiler 0.7.1 with registry 0.26.1

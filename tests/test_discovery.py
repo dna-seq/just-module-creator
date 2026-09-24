@@ -25,7 +25,9 @@ from just_module_creator.discovery import (
     PREPRINTS,
     PUBMED,
     SEARCHABLE,
+    SOURCES,
     UNPAYWALL,
+    _licensing_notes,
     arxiv_query,
     doi_refusals,
     doi_token,
@@ -701,3 +703,17 @@ def test_every_parser_normalizes_the_pmcid_it_reads() -> None:
     for candidate in parse_semantic_scholar(load("semanticscholar_search.json")):
         if candidate.pmcid is not None:
             assert candidate.pmcid == pmcid_token(candidate.pmcid)
+
+
+def test_a_literature_source_is_never_told_to_take_a_licensing_row() -> None:
+    """F109: the note said "Add the row yourself" while three skills and upstream's RM46
+    say a literature service takes no `licensing.csv` row at any layer."""
+    notes = _licensing_notes(sorted(SOURCES))
+    assert {n.source for n in notes} == set(SOURCES)
+    assert len(notes) >= 3
+    for n in notes:
+        assert n.layer == "literature"
+        assert "No licensing.csv row" in n.note
+        assert "Add the row" not in n.note
+        assert "layer='annotation'" not in n.note
+        assert "literature.csv" in n.note and "lookup_open_access" in n.note

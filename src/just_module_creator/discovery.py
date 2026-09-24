@@ -940,16 +940,14 @@ def resolve_sources(
 # Orchestration — one query, several sources, one honest answer
 # --------------------------------------------------------------------------- #
 def _licensing_notes(sources_used: list[str]) -> list[SourceLicenseNote]:
-    """The `licensing.csv` rows the author now owes, and why none was written.
+    """Where the licence of what this search found actually lives — not `licensing.csv`.
 
-    `licensing.csv` (`sources.csv` before format 0.6 — both spellings still read)
-    must cover every source a fact table cites, and a missing row is
-    a **warning, not an error**, so it ships unnoticed. Upstream's
-    `TERMS_BY_SOURCE` has no entry for any literature service — not even `pubmed`,
-    which `enrich_literature` writes itself — so nothing can state these terms
-    today. We report that and refuse to invent it: `declared_use` is a licence
-    position only the author can take, and a fabricated licence string would be
-    worse than the missing warning.
+    A literature service gets **no** `licensing.csv` row at any layer, and upstream
+    will not add a `pubmed` entry to `TERMS_BY_SOURCE` (RM46): its terms are per
+    *article*, so they live on `literature.csv` (`license` and the three rights
+    columns `enrich_literature_pass` maps from it). This note used to tell the
+    author to add the row, which three skills forbid and which changes nothing when
+    added (F109) — an agent trusting the tool over the skill wrote a refused row.
     """
     notes: list[SourceLicenseNote] = []
     for name in sorted(set(sources_used)):
@@ -961,11 +959,10 @@ def _licensing_notes(sources_used: list[str]) -> list[SourceLicenseNote]:
                 terms_url=spec.terms_url,
                 stateable_upstream=name in TERMS_BY_SOURCE,
                 note=(
-                    f"You read {name} by hand, so nothing wrote a licensing.csv row for it and the "
-                    "compile gate cannot see it. Add the row yourself. If you copy a passage from "
-                    "an article into studies.csv, that is a SECOND row at layer='annotation' "
-                    "carrying the ARTICLE's licence, not this service's — use lookup_open_access "
-                    "to read it, because those terms are per-article."
+                    f"No licensing.csv row for {name}, at any layer: a literature service's terms "
+                    "are per article, so they live on literature.csv (license and the rights "
+                    "columns enrich_literature_pass fills from it). Before copying a passage into "
+                    "studies.csv, read that ARTICLE's licence with lookup_open_access."
                 ),
             )
         )

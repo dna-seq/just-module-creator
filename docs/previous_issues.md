@@ -8,6 +8,22 @@ are not copied.
 
 ---
 
+## F109 — `literature_search` tells the author to add the `pubmed` licensing row three skills forbid
+
+**Found:** 2026-09-24, same run as `F108` · **Severity:** low · **Status:** open
+
+Every `literature_search` result carries a `licensing` note from `discovery.py`: *"You read pubmed by
+hand, so nothing wrote a licensing.csv row for it and the compile gate cannot see it. Add the row
+yourself."* But `module-start`, `module-tables/references/licensing.md` and `.../literature.md` all say
+**no `pubmed` row, ever** (upstream RM46: literature terms are per article and live on
+`literature.csv`), and the 2026-08-31 measurement there found the row changes nothing. An agent that
+trusts the tool over the skill writes a row upstream has refused. This run followed the skills and
+compiled strict with no licensing warning. **Candidate fix:** drop the "add the row" sentence for
+literature services and keep the second half about the article's licence, pointing at
+`lookup_open_access`.
+
+**Fixed 2026-09-24.** `discovery._licensing_notes` now says no `licensing.csv` row is owed for a literature service at any layer, that the article's terms live on `literature.csv`, and to read them with `lookup_open_access` before quoting. The old note's second half — a `layer='annotation'` row carrying the article's licence — contradicted the same rule and went with it. `SourceLicenseNote`'s field descriptions followed. Pinned by `tests/test_discovery.py::test_a_literature_source_is_never_told_to_take_a_licensing_row`, which fails on the old text.
+
 ## F98 — `clinical_claims_without_studies` keys on `clin_sig`, so a module can assert a clinical direction with no study behind it and the audit calls it clear
 
 Found 2026-09-12 building `apoe_locus_compound` against 0.7.0 — a module deliberately shaped to have

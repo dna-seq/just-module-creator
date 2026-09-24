@@ -1178,21 +1178,21 @@ class SourceStatus(BaseModel):
 
 
 class SourceLicenseNote(BaseModel):
-    """A source consulted, and the `licensing.csv` row nothing will write for it.
+    """A literature source consulted, and where its licence lives instead of `licensing.csv`.
 
     Deliberately carries no `license`, `commercial_use` or `share_alike`: pointing
     at the terms is help, asserting them is a guess, and `declared_use` is a
     licence position only the author can take. Upstream's `TERMS_BY_SOURCE` has no
-    entry for any literature service, which is filed rather than papered over.
+    entry for any literature service and will not (RM46): the terms are per article.
     """
 
-    source: str = Field(description="The join value for licensing.csv, e.g. `pubmed`.")
-    layer: str = Field(description="`literature` for the sidecar; `annotation` if you quote text.")
+    source: str = Field(description="The literature service consulted, e.g. `pubmed`.")
+    layer: str = Field(description="Always `literature`; a layer that takes no licensing.csv row (RM46).")
     terms_url: str | None = Field(default=None, description="Where to read the terms.")
     stateable_upstream: bool = Field(
         description="Whether `licensing.TERMS_BY_SOURCE` can state this source's terms today."
     )
-    note: str = Field(description="What the author still has to do.")
+    note: str = Field(description="Where the article's terms live, and what to read before quoting.")
 
 
 class LiteratureCandidate(BaseModel):
@@ -1257,7 +1257,7 @@ class LiteratureSearchResult(BaseModel):
     findings: list[LintFinding] = Field(default_factory=list, description="Notes and warnings.")
     licensing: list[SourceLicenseNote] = Field(
         default_factory=list,
-        description="The licensing.csv rows you now owe, and why none was written.",
+        description="Per literature source: why it takes no licensing.csv row, and where its terms live.",
     )
 
 
