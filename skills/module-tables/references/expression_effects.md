@@ -160,10 +160,21 @@ overwrites it, and nothing records that it was ever changed. See
 ```
 describe_machine_table("expression_effects.csv")   # every column, type, meaning
 enrich_expression_effects(spec_dir, gene, chrom=…, start=…, end=…, dry_run=True)
+enrich_expression_effects(spec_dir, rows=True, dry_run=True)   # windows from YOUR rows; a plan
 top_expression_effects(spec_dir, gene=…, min_consensus=0.8, limit=20)
+top_expression_effects(spec_dir, module_rows_only=True)          # your rows, per-row status
 record_override(...)                                # log any judgement taken off these rows
 audit_module(spec_dir)                              # directional_claims_without_studies
 ```
+
+**For a module that already exists, start from its rows, not from a gene** (`F105`, `F106`).
+`rows=True` plans one small window per cluster of the module's own positions, keyed on each row's own
+`gene`, and `module_rows_only=True` keeps only the predictions for that gene and the genotype's
+non-reference allele. Read `row_status` before the effects: `gene_not_at_locus` means the row's `gene`
+label is not one the Atlas scores there, `no_gene` means the row has none — and supplying one from a
+reference is an authored value, so it is a decision to surface, not a gap the tool fills. Count
+`direction_counts`, not the sign of `effect_size`: the direction is the track-majority sign and the
+two disagree on some rows.
 
 Then read the **warnings on a green run**: the licence row this pass added is the one that decides
 whether the module can be used commercially, and it arrives without being asked for.

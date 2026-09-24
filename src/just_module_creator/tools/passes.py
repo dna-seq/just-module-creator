@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import csv
 import inspect
+from collections import Counter
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
@@ -100,6 +101,13 @@ from just_dna_enricher.strchive_draft import StrchiveDraftError, draft_repeat_lo
 from just_dna_format.vocab import VALID_DECLARED_USE
 from mcp.types import ToolAnnotations
 
+from just_module_creator.expression import (
+    ROW_STATUSES,
+    effect_key,
+    module_sites,
+    plan_windows,
+    report_rows,
+)
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
     DraftedTable,
@@ -1654,7 +1662,8 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
     )
     async def enrich_expression_effects(
         spec_dir: str,
-        gene: str,
+        gene: str | None = None,
+        rows: bool = False,
         chrom: str | None = None,
         start: int | None = None,
         end: int | None = None,
@@ -1675,8 +1684,14 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         **CORPUS-SIZED, and the corpus is the interval rather than your rows.** A whole
         gene plus its attribution flanks is ~3.1M SNVs, about **47 minutes**; the cost is
         printed before the query runs. Pass `chrom`/`start`/`end` for a window — a 4 kb
-        one is ~12,000 SNVs and takes seconds. `gene` is required either way, because the
-        server-side gene filter is a requirement and not an optimisation.
+        one is ~12,000 SNVs and takes seconds. `gene` is required, because the server-side
+        gene filter is a requirement and not an optimisation. **`rows=true` aims the pass
+        at the module instead**: windows are planned from variants.csv × resolution.csv — grouped by each row's own `gene` and chromosome,
+        neighbours within 100 bp merged, ~21 bp each — and queried one after another, at
+        about two seconds a window (longevitymap: 377 windows for 1033 rows). `gene`,
+        `chrom`, `start`, `end` are ignored. `row_status` then says per row whether it was
+        scored; rows with no `gene` are reported, never given one. `dry_run` returns the
+        plan and asks nothing.
 
         **This makes the module non-commercial and there is no way to run it otherwise.**
         AlphaGenome **Atlas** output is non-commercial-only, so `use` defaults to
@@ -1702,6 +1717,17 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         """
         target = resolve_dir(spec_dir, settings)
         declared = _check_use(use)
+        # A rows-mode dry run is a plan read off local files and asks nothing, so it
+        # answers under offline too; everything else below is egress.
+        if rows and dry_run:
+            return await _expression_for_rows(
+                target,
+                declared=declared,
+                min_score=min_score,
+                max_rows=max_rows,
+                dry_run=True,
+                ctx=ctx,
+            )
         if offline_for(settings, offline):
             return ExpressionReport(
                 success=False,
@@ -1714,6 +1740,18 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
                 ],
                 next_step="Re-run without offline, or drop JMC_OFFLINE, if you meant to ask.",
             )
+
+        if rows:
+            return await _expression_for_rows(
+                target,
+                declared=declared,
+                min_score=min_score,
+                max_rows=max_rows,
+                dry_run=dry_run,
+                ctx=ctx,
+            )
+        if not gene:
+            raise ToolError("Provide a gene, or rows=true to plan windows from the module's rows.")
 
         if ctx:
             await narrate(ctx, f"Querying the AlphaGenome Atlas for {gene} in {target.name}")
@@ -1770,10 +1808,10 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
             else None
         )
         on_disk = target / "expression_effects.csv"
-        rows = None
+        row_count = None
         if on_disk.is_file():
             with on_disk.open(newline="") as handle:
-                rows = sum(1 for _ in csv.DictReader(handle))
+                row_count = sum(1 for _ in csv.DictReader(handle))
         return ExpressionReport(
             success=True,
             spec_dir=str(target),
@@ -1782,7 +1820,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
             dataset=result.dataset,
             candidates=result.candidates,
             written=result.written,
-            rows=rows,
+            rows=row_count,
             withheld=dict(result.withheld),
             accounts_for_every_candidate=result.accounts_for_every_candidate(),
             dry_run=dry_run,
@@ -1822,6 +1860,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         min_consensus: float = 0.0,
         min_magnitude: float = 0.0,
         in_gene_only: bool = False,
+        module_rows_only: bool = False,
         limit: int = 20,
     ) -> ExpressionRanking:
         """Read `expression_effects.csv` back, strongest predictions first. Offline.
@@ -1830,6 +1869,12 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         ~12,000 rows and a gene-wide one millions. This is how an author finds the handful
         worth reading without paging through them: sorted by `|effect_size|`, filtered by
         track consensus, magnitude, gene, and optionally to variants inside the gene span.
+
+        `module_rows_only=true` answers *which of MY variants does the model call
+        disruptive*: it keeps only predictions for a `variants.csv` row's own gene and
+        effect allele (the genotype's non-reference allele, placed via resolution.csv),
+        and `row_status` says for every authored row whether it was scored and, if not,
+        why. `direction_counts` is the tally to quote.
 
         `min_consensus` is `tracks_agreeing / tracks_total` — 1.0 is unanimous across the
         tissue tracks. **A row where no track agreed comes back with `effect_direction`
@@ -1856,6 +1901,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
             )
         with path.open(newline="") as handle:
             raw = list(csv.DictReader(handle))
+        rows = report_rows(target) if module_rows_only else None
 
         def _f(row: dict, key: str) -> float | None:
             try:
@@ -1871,6 +1917,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
 
         ranked: list[tuple[float, RankedExpressionEffect]] = []
         unknown = 0
+        directions: Counter[str] = Counter()
         for row in raw:
             if gene and (row.get("gene") or "").upper() != gene.upper():
                 continue
@@ -1884,7 +1931,11 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
                 continue
             if in_gene_only and distance != 0:
                 continue
-            if not (row.get("effect_direction") or "").strip():
+            if rows is not None and effect_key(row) not in rows.matched_keys:
+                continue
+            direction = (row.get("effect_direction") or "").strip()
+            directions[direction or "unknown"] += 1
+            if not direction:
                 unknown += 1
             ranked.append(
                 (
@@ -1913,6 +1964,13 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
             matched=len(ranked),
             returned=min(limit, len(ranked)),
             direction_unknown=unknown,
+            direction_counts=dict(sorted(directions.items())),
+            row_status=(
+                {status: rows.status.get(status, 0) for status in ROW_STATUSES}
+                if rows is not None
+                else None
+            ),
+            row_examples=rows.examples if rows is not None else {},
             effects=[effect for _, effect in ranked[:limit]],
             next_step=(
                 "A large predicted effect is a reason to READ the variant, not a role to assign "
@@ -1921,6 +1979,114 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
                 "AlphaGenome's — say so in the conclusion and log it with record_override."
             ),
         )
+
+
+async def _expression_for_rows(
+    target: Path,
+    *,
+    declared: str,
+    min_score: float | None,
+    max_rows: int,
+    dry_run: bool,
+    ctx: Context | None,
+) -> ExpressionReport:
+    """The AlphaGenome pass over the module's own positions, one window at a time (F105).
+
+    Stops at the first window that fails, because a failure may have left rows on disk
+    (F95) and a merge-not-clobber sidecar folds a retry's rows in silently. What ran is
+    reported, and `row_status` is read off the sidecar as it now stands.
+    """
+    windows = plan_windows(module_sites(target)[0])
+    planned = len(windows)
+    candidates = written = 0
+    withheld: Counter[str] = Counter()
+    warnings: list[str] = []
+    datasets: set[str] = set()
+    ran = 0
+    failed = False
+    if not dry_run:
+        for gene, chrom, start, end in windows:
+            if ctx:
+                await narrate(ctx, f"Window {ran + 1}/{planned}: {gene} {chrom}:{start}-{end}")
+                await ctx.report_progress(progress=ran, total=planned)
+            try:
+                result = await run_sync(
+                    lambda g=gene, c=chrom, s=start, e=end: enrich_expression(
+                        target,
+                        g,
+                        chrom=c,
+                        start=s,
+                        end=e,
+                        min_score=min_score,
+                        max_rows=max_rows,
+                        declared_use=declared,
+                        write=True,
+                    )
+                )
+            except ExpressionUnavailable as exc:
+                warnings += [
+                    f"{gene} {chrom}:{start}-{end}: {exc}",
+                    "The Atlas is unreachable "
+                    "or unconfigured (ALPHAGENOME_API_KEY, the `atlas` extra); stopped.",
+                ]
+                failed = True
+                break
+            except ExpressionError as exc:
+                warnings += [
+                    f"{gene} {chrom}:{start}-{end}: {exc}",
+                    "Stopped at this window: a "
+                    "failure may have left rows on disk (F95), and a retry would fold "
+                    "them in silently. Check expression_effects.csv before re-running.",
+                ]
+                failed = True
+                break
+            ran += 1
+            candidates += result.candidates or 0
+            written += result.written or 0
+            withheld.update(dict(result.withheld))
+            warnings += [f"{gene} {chrom}:{start}-{end}: {w}" for w in result.warnings]
+            if result.dataset:
+                datasets.add(result.dataset)
+    report = report_rows(target)
+    on_disk = target / "expression_effects.csv"
+    rows_on_disk = None
+    if on_disk.is_file():
+        with on_disk.open(newline="") as handle:
+            rows_on_disk = sum(1 for _ in csv.DictReader(handle))
+    return ExpressionReport(
+        success=not failed,
+        spec_dir=str(target),
+        dataset=", ".join(sorted(datasets)) or None,
+        candidates=None if dry_run else candidates,
+        written=None if dry_run else written,
+        rows=rows_on_disk,
+        withheld=dict(sorted(withheld.items())),
+        accounts_for_every_candidate=(
+            None if dry_run or failed else candidates == written + sum(withheld.values())
+        ),
+        dry_run=dry_run,
+        windows=planned,
+        windows_run=ran,
+        row_status={status: report.status.get(status, 0) for status in ROW_STATUSES},
+        row_examples=report.examples,
+        licence_note=(
+            None
+            if dry_run or not ran
+            else (
+                "This module is now NON-COMMERCIAL: alphagenome_atlas is in licensing.csv with "
+                "commercial_use=false, and the most restrictive term binds the whole artifact."
+            )
+        ),
+        warnings=warnings,
+        next_step=(
+            f"Plan only: {planned} window(s), about {planned * 2} s at ~2 s each. Drop dry_run "
+            "to run it."
+            if dry_run
+            else "Read the scored rows with top_expression_effects(module_rows_only=true). A "
+            "predicted direction is not a clinical direction: a variants.csv role written from "
+            "one is an authored judgement that needs record_override."
+        ),
+    )
 
 
 def _run_pass(name: str, target: Path, mode: str, offline: bool, use: str) -> Any:

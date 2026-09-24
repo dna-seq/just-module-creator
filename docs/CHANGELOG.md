@@ -5,6 +5,11 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **The AlphaGenome pass and its reader can be aimed at the module's own rows** (`F105`, `F106`).
+  `enrich_expression_effects(rows=true)` plans small windows from `variants.csv` × `resolution.csv`
+  keyed on each row's own gene and queries them in turn; `top_expression_effects(module_rows_only=true)`
+  keeps only predictions for a row's own gene and non-reference allele. Both report a per-row status,
+  and the reader adds a `direction_counts` tally. The join is `expression.py`.
 - **`fetch_fulltext` reads PMC's BioC copy when Europe PMC has none** (`F108`). A new rung after Europe
   PMC, on the shared NCBI budget, returning tables as tab-separated rows and naming itself
   `text_source: "pmc_bioc"`; "PMC holds no copy" and "PMC could not be asked" stay two answers. The

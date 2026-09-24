@@ -3145,6 +3145,28 @@ class ExpressionReport(BaseModel):
             "from `alphagenome_avi`, whose terms are permissive."
         ),
     )
+    windows: int | None = Field(
+        default=None,
+        description="With `rows=true`: windows planned from the module's own rows. Null otherwise.",
+    )
+    windows_run: int | None = Field(
+        default=None,
+        description=(
+            "With `rows=true`: windows actually queried. Below `windows` when a window failed and "
+            "the run stopped there; zero on a dry run."
+        ),
+    )
+    row_status: dict[str, int] | None = Field(
+        default=None,
+        description=(
+            "With `rows=true`: one status per variants.csv row after the run, as "
+            "`top_expression_effects(module_rows_only=true)` reports it. Null otherwise."
+        ),
+    )
+    row_examples: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description="Up to ten variant keys per non-`scored` status.",
+    )
     warnings: list[str] = Field(default_factory=list, description="Upstream's own warnings.")
     next_step: str | None = Field(default=None, description="What to do with the rows.")
 
@@ -3207,6 +3229,30 @@ class ExpressionRanking(BaseModel):
             "Rows whose `effect_direction` is null — no track agreed on a sign. Counted rather "
             "than dropped: a prediction with no direction is a real answer about the variant."
         ),
+    )
+    direction_counts: dict[str, int] = Field(
+        default_factory=dict,
+        description=(
+            "`effect_direction` over every matched row, not just the returned ones, with null "
+            "counted as `unknown`. The track-majority sign: count this column, not the sign of "
+            "`effect_size`, which disagrees with it on some rows."
+        ),
+    )
+    row_status: dict[str, int] | None = Field(
+        default=None,
+        description=(
+            "With `module_rows_only`: one status per variants.csv row, summing to the rows read. "
+            "`scored` — a prediction for the row's own gene and effect allele; "
+            "`gene_not_at_locus` — the model answered there for other genes only; `not_scored` — "
+            "nothing at that position (not queried, or withheld); `reference_only` — the genotype "
+            "has no non-reference allele to score; `no_gene` / `unresolved` — no gene or no "
+            "coordinate to ask with; `unreadable` — rows variants.csv validation refused, "
+            "with the errors in `row_examples`. Null when the filter was not asked for."
+        ),
+    )
+    row_examples: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description="Up to ten variant keys per non-`scored` status, so a gap can be looked at.",
     )
     effects: list[RankedExpressionEffect] = Field(default_factory=list)
     next_step: str | None = None

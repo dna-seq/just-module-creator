@@ -18,7 +18,10 @@ import pytest
 from conftest import offline_settings
 from fastmcp.exceptions import ToolError
 
+from just_module_creator.expression import ROW_STATUSES, module_sites, plan_windows, report_rows
 from just_module_creator.models import DraftResult
+from just_module_creator.settings import Settings
+from just_module_creator.tools import passes
 from just_module_creator.tools.passes import (
     VALID_USE,
     _check_use,
@@ -1357,3 +1360,135 @@ async def test_a_restated_authored_coordinate_is_named_rather_than_counted_as_re
     assert len(named) == 1
     assert named[0].startswith("2 row(s)")
     assert "S104" in named[0]
+
+
+# --------------------------------------------------------------------------- #
+# F105 / F106 — the AlphaGenome pass and its reader aimed at the module's own rows
+# --------------------------------------------------------------------------- #
+#: One authored row per status, placed on the positions the `effects_spec` fixture
+#: carries real Atlas rows for. Coordinate rows rather than rsIDs, so no identifier
+#: is paired with a position it does not have; rs429358 is real and left unresolved.
+_ROWS_VARIANTS = (
+    "rsid,chrom,start,ref,alts,genotype,gene,weight,state,conclusion\n"
+    ",19,44919171,A,T,A/T,APOC1,0.5,risk,predicted only\n"  # scored (k1)
+    ",19,44891698,C,G,C/C,TOMM40,0,neutral,predicted only\n"  # reference_only
+    ",19,44890500,A,C,A/C,APOE,0.5,risk,predicted only\n"  # gene_not_at_locus (k3 is TOMM40)
+    ",19,44892735,C,T,C/T,,0.5,risk,predicted only\n"  # no_gene
+    ",19,44905000,G,A,A/G,APOE,0.5,risk,predicted only\n"  # not_scored
+    "rs429358,,,,,C/C,APOE,0.5,risk,predicted only\n"  # unresolved
+)
+
+
+def _online_settings() -> Settings:
+    """Offline off, env neutralised by the autouse fixture. Only for tests whose one
+    egress point is monkeypatched, or that refuse before reaching it."""
+    return Settings(_env_file=None)  # type: ignore[call-arg]
+
+
+@pytest.fixture
+def rows_spec(effects_spec: Path) -> Path:
+    (effects_spec / "variants.csv").write_text(_ROWS_VARIANTS)
+    return effects_spec
+
+
+def test_every_authored_row_lands_in_exactly_one_status(rows_spec: Path) -> None:
+    report = report_rows(rows_spec)
+    assert report.rows_read == 6
+    assert {s: report.status[s] for s in ROW_STATUSES} == {
+        **dict.fromkeys(ROW_STATUSES, 1),
+        "unreadable": 0,
+    }
+    assert report.matched_keys == {("19", 44919171, "T", "APOC1")}
+    assert report.examples["unresolved"] == ["rs429358"]
+
+
+def test_windows_come_from_rows_the_model_could_score(rows_spec: Path) -> None:
+    """Only the three rows with a gene, a coordinate and a non-reference allele plan a
+    window; the two APOE ones are 4.5 kb apart, so they are not merged."""
+    assert plan_windows(module_sites(rows_spec)[0]) == [
+        ("APOC1", "19", 44919161, 44919181),
+        ("APOE", "19", 44890490, 44890510),
+        ("APOE", "19", 44904990, 44905010),
+    ]
+
+
+async def test_module_rows_only_keeps_the_rows_own_gene_and_allele(make_client, rows_spec):
+    async with make_client(offline_settings()) as client:
+        out = await client.call_tool(
+            "top_expression_effects", {"spec_dir": str(rows_spec), "module_rows_only": True}
+        )
+    body = json.loads(out.content[0].text)
+    assert [e["start"] for e in body["effects"]] == [44919171]
+    assert body["total_rows"] == 4
+    assert body["direction_counts"] == {"decrease": 1}
+    assert sum(body["row_status"].values()) == 6
+    assert body["row_status"]["unreadable"] == 0
+    assert body["row_status"]["gene_not_at_locus"] == 1
+
+
+async def test_without_the_filter_there_is_no_row_status(make_client, rows_spec):
+    async with make_client(offline_settings()) as client:
+        out = await client.call_tool("top_expression_effects", {"spec_dir": str(rows_spec)})
+    body = json.loads(out.content[0].text)
+    assert body["row_status"] is None
+    assert body["direction_counts"] == {"decrease": 1, "increase": 2, "unknown": 1}
+
+
+async def test_a_rows_dry_run_is_a_plan_and_asks_nothing(make_client, rows_spec, monkeypatch):
+    def _no_egress(*_a, **_k):
+        raise AssertionError("a dry run reached the Atlas")
+
+    monkeypatch.setattr(passes, "enrich_expression", _no_egress)
+    async with make_client(offline_settings()) as client:
+        out = await client.call_tool(
+            "enrich_expression_effects",
+            {"spec_dir": str(rows_spec), "rows": True, "dry_run": True},
+        )
+    body = json.loads(out.content[0].text)
+    assert body["windows"] == 3 and body["windows_run"] == 0
+    assert body["written"] is None
+    assert body["row_status"]["scored"] == 1
+
+
+async def test_a_rows_run_queries_each_window_and_stops_at_a_failure(
+    make_client, rows_spec, monkeypatch
+):
+    asked: list[tuple[str, str, int, int]] = []
+
+    class _Result:
+        candidates, written, withheld, warnings, dataset = 3, 3, {}, [], "ds"
+
+    def _fake(_target, gene, *, chrom, start, end, **_k):
+        asked.append((gene, chrom, start, end))
+        if len(asked) == 2:
+            raise passes.ExpressionError("licence row could not be written")
+        return _Result()
+
+    monkeypatch.setattr(passes, "enrich_expression", _fake)
+    async with make_client(_online_settings()) as client:
+        out = await client.call_tool(
+            "enrich_expression_effects", {"spec_dir": str(rows_spec), "rows": True}
+        )
+    body = json.loads(out.content[0].text)
+    assert asked == [("APOC1", "19", 44919161, 44919181), ("APOE", "19", 44890490, 44890510)]
+    assert body["success"] is False
+    assert body["windows"] == 3 and body["windows_run"] == 1
+    assert body["accounts_for_every_candidate"] is None
+    assert any("F95" in w for w in body["warnings"])
+
+
+async def test_without_rows_a_gene_is_still_required(make_client, tmp_path):
+    spec = tmp_path / "spec"
+    spec.mkdir()
+    async with make_client(_online_settings()) as client:
+        with pytest.raises(Exception, match="Provide a gene"):
+            await client.call_tool("enrich_expression_effects", {"spec_dir": str(spec)})
+
+
+def test_a_row_validation_refuses_is_counted_not_dropped(rows_spec: Path) -> None:
+    with (rows_spec / "variants.csv").open("a") as handle:
+        handle.write(",19,44905000,G,A,G/A,APOE,0.5,risk,unsorted genotype\n")
+    report = report_rows(rows_spec)
+    assert report.rows_read == 7
+    assert report.status["unreadable"] == 1
+    assert "alphabetically sorted" in report.examples["unreadable"][0]
