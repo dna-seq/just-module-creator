@@ -1303,6 +1303,20 @@ have been questions.
   Say which of those it is, or wrap it.
 
 
+- **"Making decision != executing it."** Said 2026-09-24 approving `prune_rows` (`F104`), with the
+  condition that its wording not contradict `module-curate`'s *"the trim is a decision no tool makes"*.
+  It does not: the author's keep-list is the decision, and a tool that applies a keep-list it was
+  handed makes none. The general line, worth holding for every future write tool: **a tool may execute
+  any authored decision it is given explicitly; it may not infer one.** The capture-and-verify rule
+  for destroyed content still applies to the execution.
+- **"Enricher's item or ours? Can we get gene if derived sidecars or not? If yes — ours, if none
+  provides it — theirs."** Said 2026-09-24 of filling a missing `gene` for the AlphaGenome pass
+  (`F105`). A usable rule for any derived value a tool of ours wants: **if an existing sidecar already
+  carries it, deriving it is our join; if no sidecar does, producing it is upstream's pass**, and it is
+  filed. With a corollary: *"This makes one sidecar depended on other's outputs, worth reporting to
+  upstream for them to build a graph or something"* — a cross-sidecar dependency is itself a finding
+  (format-tree `S112`).
+
 ## 11. Learned workspace facts
 
 *Append-only. Environment, ports, credential layout, host quirks, sibling paths.*
