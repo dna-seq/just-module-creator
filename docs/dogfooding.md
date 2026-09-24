@@ -776,6 +776,14 @@ absorbed as its own.
 
 Recorded so the gaps in *this* file are visible too, per the completeness rule.
 
+- **Re-probe `F100` and `F101` on a current server** (both fixed 2026-09-20, now in
+  `previous_issues.md`). The tester's stdio server stayed on 0.35.0 for the whole run, so neither fix
+  has been exercised by the seat that found it: scaffold with `rows=0` → `draft_from_cpic` on a fresh
+  spec, and `check_pgx` / `check_clinpgx` on one of the ClawBio modules under
+  `data/interim/clawbio_pgx/modules/`. Needs a fresh session or a `/mcp` reconnect.
+- **Run `enrich_expression_effects(rows=true)` against the live Atlas** (`F105`, 2026-09-24). The
+  window loop is tested with the upstream call replaced; a real run on a small module is the missing
+  half.
 - **Author a real module end to end and publish it.** Everything up to
   `compile_module` has been exercised on a real spec; `enrich_module` and
   `registry_publish` have not ([RM4](ROADMAP.md)). This probe would also hit F1
