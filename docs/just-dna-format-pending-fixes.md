@@ -74,8 +74,13 @@ exists to force, and the reason its status lines name both halves.
 
 ## F113 — `lookup_citation(doi=…)` returns existence and no title (format `S113`)
 
-**Status (2026-09-25):** filed as format-tree `S113`, unanswered. Nothing is mitigated here; our tool
-passes the null through. Found in the 2026-08-31 round (4 of 4 runs) and given no id until today:
+**Status (2026-09-25):** filed as format-tree `S113`, unanswered. **Mitigated here in 0.41.0**:
+given a DOI and no PMID, `lookup_citation` reads Crossref's `/works/{doi}` itself
+(`discovery.crossref_work`, called from `_crossref_identity` in `tools/research.py`), fills `title`,
+`journal`, `year` and `first_author`, and adds an info finding with `source: just-module-creator`
+naming Crossref. `pmid` stays null. Checked live: `10.1038/ng826` returns Enattah 2002's title.
+Remove the bandaid and `tests/test_f113_doi_title.py` when a release we install fills `title` on the
+DOI path. Found in the 2026-08-31 round (4 of 4 runs) and given no id until today:
 
 **`lookup_citation(doi=…)` returns `doi_exists: true` and null title, journal, year, author** — and
 all four runs arrived holding a DOI, because that is what the prompt gives them. Each identified the

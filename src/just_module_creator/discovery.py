@@ -456,7 +456,6 @@ def parse_arxiv(xml_text: str) -> list[LiteratureCandidate]:
     return out
 
 
-
 # --------------------------------------------------------------------------- #
 # OpenAlex and Crossref
 #
@@ -586,9 +585,7 @@ def parse_crossref(payload: dict) -> list[LiteratureCandidate]:
                     if isinstance(a, dict)
                     and (
                         name := " ".join(
-                            part
-                            for part in (_text(a.get("given")), _text(a.get("family")))
-                            if part
+                            part for part in (_text(a.get("given")), _text(a.get("family"))) if part
                         )
                         or _text(a.get("name"))
                     )
@@ -611,6 +608,24 @@ def parse_crossref(payload: dict) -> list[LiteratureCandidate]:
             )
         )
     return out
+
+
+def crossref_work(services: NetworkServices, doi: str) -> LiteratureCandidate | None:
+    """Crossref's own record for one DOI, or None when it has none.
+
+    ``/works/{doi}`` returns a single record under ``message`` rather than a list
+    under ``message.items``, so it is wrapped to reuse the search parser. Raises
+    ``ServiceUnavailable`` when Crossref could not be asked.
+    """
+    payload = (
+        Discovery(services=services)
+        .service(CROSSREF)
+        .get(f"works/{doi}", {"mailto": services.contact_email()})
+        .json()
+    )
+    record = _mapping(payload.get("message"))
+    found = parse_crossref({"message": {"items": [record]}}) if record else []
+    return found[0] if found else None
 
 
 # --------------------------------------------------------------------------- #

@@ -11,6 +11,10 @@ on our side, so agents in sibling repos are not surprised.
   checks each with a HEAD request, which also fills `size_bytes`. A file no reachable host serves is
   still listed, with `url: null`. **`SupplementaryFileInfo.url` is now nullable.** PLOS (`10.1371`)
   gets a publisher-pattern rung. The Springer probe uses HEAD, so it no longer downloads each file.
+- **`lookup_citation(doi=…)` returns the paper's title** (`F113`, a stopgap until format-tree `S113`
+  ships). Upstream's DOI path only confirms the DOI exists. Given a DOI and no PMID, we now read
+  Crossref's record for it and fill `title`, `journal`, `year` and `first_author`, with an info finding
+  naming Crossref as the source. `pmid` stays null.
 - **`fetch_supplementary` fetches from any host.** A full URL was joined onto Springer's base, so every
   other host answered 404. That 404 was then explained with Springer's 403 wording. Both are fixed, and
   a web page returned in place of the file (PMC's bot challenge) is refused rather than saved.

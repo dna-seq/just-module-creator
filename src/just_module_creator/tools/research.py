@@ -45,8 +45,10 @@ from just_dna_registry.version import VersionInfo, compatibility_error
 from mcp.types import ToolAnnotations
 
 from just_module_creator import alleles, routing, supplementary
+from just_module_creator.authored_checks import OURS
 from just_module_creator.discovery import (
     DEFAULT_EUROPEPMC_BASE,
+    crossref_work,
     fulltext,
     open_access,
     search_literature,
@@ -60,6 +62,7 @@ from just_module_creator.models import (
     FullTextResult,
     IdentifierStatus,
     InstanceHealth,
+    LintFinding,
     LiteratureSearchResult,
     NamespaceAvailability,
     OpenAccessResult,
@@ -355,7 +358,8 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         1-8 digits, so a nine-digit id is not one. `withheld` carries PubMed's DOI with
         its refusal rather than as a cell to paste, because filling `doi` from the
         record that gave you the PMID makes the DOI cross-check compare PubMed with
-        itself.
+        itself. Given a DOI alone, the title comes from Crossref's record for it, and
+        a finding says so; `pmid` stays null.
         """
         if not pmid and not doi:
             raise ToolError("Provide either pmid or doi.")
@@ -366,7 +370,7 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
                 pmid=pmid, doi=doi, offline=eff_offline, clients=services.lookup_clients
             )
         )
-        return CitationLookup(
+        result = CitationLookup(
             pmid=getattr(hint, "pmid", None) or pmid,
             doi=getattr(hint, "doi", None) or doi,
             pmid_exists=getattr(hint, "pmid_exists", None),
@@ -381,6 +385,46 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             first_author=getattr(hint, "first_author", None),
             findings=to_findings(getattr(hint, "findings", [])),
             withheld=to_alterations(getattr(hint, "alterations", [])),
+        )
+        # BANDAID for `F113` / format-tree `S113`: upstream's DOI branch asks Crossref
+        # whether the DOI exists and drops the record that names the paper, so a DOI
+        # came back with no title. Delete this block, `crossref_work` and its test
+        # when a release we install fills `title` on the DOI path.
+        if doi and not pmid and result.title is None and result.doi_exists and not eff_offline:
+            await _crossref_identity(result, doi)
+        return result
+
+    async def _crossref_identity(result: CitationLookup, doi: str) -> None:
+        """Fill title, journal, year and first author from Crossref, and say so."""
+        try:
+            work = await run_sync(lambda: crossref_work(services, doi))
+        except ServiceUnavailable as exc:
+            result.findings.append(
+                LintFinding(
+                    column="title",
+                    level="info",
+                    message=f"Title not looked up: Crossref could not be asked ({exc}).",
+                    source=OURS,
+                )
+            )
+            return
+        if work is None or work.title is None:
+            return
+        result.title = work.title
+        result.journal = work.venue
+        result.year = str(work.year) if work.year is not None else None
+        result.first_author = work.authors[0] if work.authors else None
+        result.findings.append(
+            LintFinding(
+                column="title",
+                level="info",
+                message=(
+                    "title, journal, year and first_author are Crossref's record for this DOI, "
+                    "read by this plugin because the enricher's DOI path does not look them up "
+                    "(F113). pmid stays null: take a PMID from a literature_search result."
+                ),
+                source=OURS,
+            )
         )
 
     @mcp.tool(
