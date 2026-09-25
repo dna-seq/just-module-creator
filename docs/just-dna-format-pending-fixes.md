@@ -801,6 +801,12 @@ work here for us. Removed 2026-08-11.
 
 **Closes when** upstream decides the granularity question.
 
+**Status (2026-09-25): decided and installed.** `RM46` settled it per article: `LiteratureRow` in
+format 0.7.0 carries `license`, `commercial_use`, `share_alike` and `redistribution` (checked with
+`__file__` under `.venv/site-packages`), and `TERMS_BY_SOURCE` still has no `pubmed`, as intended. Our
+note now says so (`discovery._licensing_notes`, `F109`). The stub in `dogfooding.md` was removed and
+this entry is the whole record.
+
 ---
 
 ## F9 — `lookup_citation` cannot detect a fabricated PMID, because nothing returns a title
@@ -1799,6 +1805,11 @@ by `uv sync`.
 
 **Status: filed 2026-08-21 against format 0.6.6, open. Our side is mitigated and does not wait on it.**
 
+**Status (2026-09-25): released and installed.** In format 0.7.0 (`__file__` under
+`.venv/site-packages`), `ModuleInfo.title`, `description` and `report_title` all have field
+descriptions, and `description`'s names the 5–15 word band. The closing condition below is met. The
+dogfooding half moved to `previous_issues.md`.
+
 `module.title`, `module.description` and `module.report_title` are the three fields an author must
 replace before a spec validates, and the only three in `ModuleInfo` whose `Field` carries no
 description — while `icon`, `icon_set`, `color`, `name` and `version` beside them all do. So the model
@@ -1909,6 +1920,12 @@ field exists with its bound *and* the registry's card reads it.
 
 **Status: filed 2026-08-22 against enricher 0.6.6, open. Mitigated here, and the mitigation is
 narrower than the fix.**
+
+**Status (2026-09-25): released and installed.** `S66` → `RM128` shipped in 0.7.0, and enricher
+0.7.2 is installed (`__file__` under `.venv/site-packages`). `just_dna_enricher/transaction.py`
+provides `spec_lock` (an advisory `flock`), `ResolutionJournal` (staged answers that survive a kill)
+and `atomic_writer` (write, then rename into place). Those are the three things listed below as
+upstream's. The dogfooding half moved to `previous_issues.md`.
 
 `enrich()` writes `resolution.csv` once, at the very end, after every network link — so a run killed
 at minute 29 has written nothing, and thirty minutes of successful per-variant resolution is

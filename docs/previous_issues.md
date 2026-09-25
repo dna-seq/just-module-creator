@@ -8,6 +8,1020 @@ are not copied.
 
 ---
 
+## F83 — two runs picked the identical 49 variants and split on all 49 reference-homozygote rows
+
+**Measured 2026-09-01, one paper, two independent runs** (`10.1007/s11357-025-02044-3`). The agreement
+is the striking half and the disagreement is the useful one:
+
+| | `run-ards-c` | `run-ards-d` |
+|---|---|---|
+| rsIDs selected | 49 of the paper's 263 | the same 49 |
+| `(rsid, genotype)` pairs | 147 | the same 147, `key_jaccard` **1.00** |
+| `stat_significance` | — | agrees on **147/147** |
+| `direction` | — | agrees on **98/147** |
+
+**Every one of the 49 disagreements is the same cell**: the reference homozygote. `run-ards-c` wrote
+`direction: neutral` there; `run-ards-d` wrote the variant's own direction. Both wrote
+`state: neutral`, `weight: 0.0` and `effect_allele: A` on that row, so the two runs agree on
+everything except what `direction` is *about*.
+
+**The schema settles it and no skill of ours said so.** `describe_table` returns `direction` as
+*"orthogonal to `state`"* and `effect_allele` as *"the allele that `direction`/`weight`/`effect_size`
+refer to"* — a property of the allele, which repeats across the variant's genotype rows. `run-ards-d`
+is right. `run-ards-c` read `direction` as per-genotype, which is `state`'s job, and produced a row
+whose `direction: neutral` silently answers a different question from the two rows above it.
+`skills/module-tables/references/variants.md` carried the orthogonality bullet and never named the
+subject; it does now, with the ref-hom row called out as the case that tempts.
+
+**Why this is worth an F rather than a note.** It is a 100% systematic split, not noise: same paper,
+same tool surface, opposite readings on every instance, and both compiled green under `--strict`. A
+consumer reading `effective_direction` gets a different answer per run for the same genotype at the
+same locus. **A vocabulary being closed and validated does not make its subject unambiguous**, and
+nothing in the gates can catch a column that is filled consistently with the wrong question in mind.
+
+*(A cosmetic tail: `run-ards-d`'s ref-hom weights are `-0.0000` — negative zero, from dosage-scaling a
+negative beta by zero copies. Harmless to the compiler and ugly in a published CSV.)*
+
+**Status (2026-09-25): resolved —** the skill half this entry reports as done is in place: `skills/module-tables/references/variants.md` (the `direction` / `state` bullet) now names the subject of `direction` as the allele, across every genotype row including the reference homozygote, and calls the ref-hom out as the tempting case. The `-0.0000` weight tail was cosmetic and was not acted on.
+
+## F84 — `trait_tally: {checked: 0}` reads as a clean run, and a corrected diagnosis is why it is here
+
+**Found 2026-09-01, and the version that survived verification is narrower than the version reported.**
+A run said `check_identifiers`' trait check *never runs*, because it does not read
+`studies.csv:trait_efo_id` — and reported that its own wrong CURIE (`EFO_0007796`, which is *parental*
+longevity) had therefore passed every gate.
+
+**Half of that is wrong and the transcript says so.** The check ran three times: `checked: 0` on the
+first call, then `checked: 1, clean: 1` on the two after it. The `0` was honest for what it read — at
+that moment `variants.csv` had no `trait_efo_id` column at all; the run added it later. And the wrong
+CURIE never reached a gate: the run's own `lookup_identifier` call caught it before the column existed.
+**Recorded because the correction is the lesson** — a run's self-report is evidence, not a finding, and
+this one would have gone into the queue as a dead check if the tool calls had not been read back. Same
+rule as `F65`.
+
+**What survives is real, and it is two things.** The roster is `module_trait_ids(variants)`, so trait
+ids living only in `studies.csv` — which has carried `trait_efo_id` since 0.3 — are never checked. And
+`checked: 0, clean: 0, flagged: 0` is **indistinguishable from a module that declares no trait at all**,
+which is the three-valued rule at a finer grain: a check that read an empty roster is not a check that
+passed. The gene half is the same defect (a `gene` on a binning row is never checked), noted in our own
+prose audit on 2026-08-20 and never filed, which was our mistake. Both filed together as format-tree
+`S86`.
+
+**Ours to improve too, and cheap**: our wrapper sees both tables, so it can say *"`studies.csv` carries
+N trait ids this check does not read"* beside the tally. That is a plaster over a scope question that is
+upstream's, and it is worth having anyway, because the `0` is what a reader acts on.
+
+**Status (2026-09-25): resolved —** upstream `S86` shipped as `RM155` and is installed (enricher 0.7.2, `just_dna_enricher/identifiers.py::authored_identifiers`, `__file__` under `.venv/site-packages`): `check_identifiers(spec_dir=…)` builds the trait and gene rosters from every authored table carrying the column, and records the rest in `tables_not_read`. Our wrapper passes `spec_dir` (`tools/checks.py`, `_check_identifiers(spec_dir=target, …)`) and surfaces `tables_read` / `tables_not_read` on the result, so a `checked: 0` now says which tables it read.
+
+## F78 — one PMC accession, two spellings, one session
+
+**Found:** 2026-08-31 · **Severity:** low · **Status:** fixed here, 0.26.0.
+
+`literature_search` returned `pmcid` as `"pmc-id: PMC12624115;"` while `fetch_fulltext` returned
+`PMC12624115` for the same article, in the same session. Not a service disagreeing with itself:
+PubMed's esummary spells the `pmcid` idtype with its label and a trailing semicolon, Europe PMC and
+the OA service return the bare accession, and all three reached the caller verbatim because only
+`doi` had a normalizer.
+
+`pmcid_token` now mirrors `doi_token` at all three parse sites. It returns **`None`** for a string
+with no accession rather than handing the wrapper back — a value that is not an id but looks like one
+is worse than nothing, which is the same reason the DOI helper does it.
+
+**Status (2026-09-25): resolved —** `discovery.pmcid_token` is applied at all three parse sites (PubMed esummary, Europe PMC, Semantic Scholar's `PubMedCentral`) and at the BioC rung. Same defect as `F30`, which retires with it.
+
+## F81 — runs converging on our reference partly measure our own guidance
+
+**Found:** 2026-08-31 · **Severity:** medium, and it is an interpretation defect rather than a code
+one · **Status:** stated in the manuscript, `docs/BENCHMARKING.md` and `CLAUDE.md` §11.
+
+Two of three runs matched the adjudicated SIRT6 reference **cell-for-cell on all three genotype
+rows**, including the homozygous row that asserts nothing because neither cohort observed a carrier.
+The obvious reading is that two independent judgements agreed and the reference is therefore sound.
+
+**One of the runs volunteered the deflation, and it verifies.** `validate_module` names the missing
+row explicitly — *"1 genotype(s) at 1 site(s) have no row… a gap in a set the author started rather
+than a rule that fires once — e.g. rs117385980 T/T"* — and `skills/module-weights/GUIDE.md:122`
+states *"A zero is a claim too — it says this genotype changes nothing, which is different from a
+blank."* Its own summary: *"an expert following the same rulebook and receiving the same warning has
+a fairly narrow path to anywhere else."*
+
+So the supportable claim is narrower: **the workflow is prescriptive enough to produce consistent
+output from independent runs.** That is worth having and it is not confirmation the output is
+correct — it is the self-agreement shape the title-as-quote finding already taught us to distrust,
+and upstream states the same about a module drafted from PubMind and checked against PubMind.
+
+**The rule this leaves:** when a benchmark scores well, go find the tool output or skill line that
+produced the score before crediting the run. The residual variance in this round was a single cell
+(`suggestive` vs `not_significant` at p ≈ 0.07, upstream `S83`) that an aggregate score would have
+hidden entirely.
+
+**Status (2026-09-25): resolved —** the narrower claim is stated where it will be read — `docs/BENCHMARKING.md` ("the workflow is prescriptive enough to…"), `CLAUDE.md` §11 ("When benchmark runs converge on our reference…") and the manuscript. Nothing in code was owed.
+
+## F76 — `output_dir` inside the spec directory poisons a registry call two steps later
+
+**Found:** 2026-08-31 · **Severity:** medium · **Status:** fixed here, 0.26.0.
+
+`compile_module(spec_dir=X, output_dir=X/build)` is the obvious call and nothing warned. The compile
+copies `README.md` into `output_dir`; the registry uploader walks the spec tree recursively; and
+`registry_check` then answers `ambiguous_spec_layout — README.md arrives from more than one path` with
+a 422. The cost lands nowhere near the argument that caused it — the run that hit it lost a confusing
+detour and a full restructure, with nothing pointing back at the compile.
+
+**A warning, not a refusal, and that is the interesting half.** `reference-sirt6/` itself uses
+`build/` inside the spec, and its artifact is fine. The layout is legal; what it costs is a later
+call. Refusing would condemn working modules to catch a mistake that only matters if you publish.
+
+**Status (2026-09-25): resolved —** `compile_module` appends a `layout_note` when `output_dir` is the spec directory or inside it (`tools/authoring.py`, the `out == source or source in out.parents` branch), naming the `ambiguous_spec_layout` refusal it leads to and telling the author to move the output beside the spec. A warning by design, as argued above. `F62` is the same mechanism and retires with it.
+
+## F75 — one refusal, one reason, ten copies
+
+**Found:** 2026-08-31 · **Severity:** low · **Status:** fixed here, 0.26.0.
+
+A single `literature_search` emitted the same ninety-word DOI-refusal paragraph once per result — ten
+copies — which is the repeated-warning shape `CLAUDE.md` §5 names outright: *aggregate repeated
+warnings by reason, with a count, never one per row.* It was the run's loudest complaint about output
+volume, in a report that had eleven other things to complain about.
+
+The reason is now written once, with the count. Every row keeps its machine-readable
+`refusal="redundancy_bearing"` token, so a caller filtering on it loses nothing — the prose was the
+only duplicated part, and the prose is the expensive part.
+
+**Status (2026-09-25): resolved —** `discovery._DOI_REFUSAL` is written once, on the first withheld row with the count (`"… ({n} DOIs withheld in this result.)"`), and every later row carries `_DOI_REFUSAL_REPEAT`; each keeps `refusal="redundancy_bearing"`.
+
+## F74 — the same argument, accepted by two of our tools and refused by the third
+
+**Found:** 2026-08-31 · **Severity:** medium · **Status:** fixed here, 0.26.0.
+
+`declared_use` takes `non_commercial`; the enricher's CLI flag is written `non-commercial`. So an
+author who has just read a `--use` line types the hyphen. `enrich_facts` and `refresh_sidecar` folded
+it; `registry_check` passed it straight through and the server answered 422 without naming the hyphen
+or the accepted spellings.
+
+**Two-and-a-half rules, not two.** `passes.py` also carried its own hardcoded
+`("unstated", "non_commercial", "commercial")` tuple — the hardcoded-vocabulary defect §2 forbids,
+sitting next to a correct call that read format's `VALID_DECLARED_USE`. One helper in `_shared` now,
+reading the format's own vocabulary, with all three call sites through it and a test that exercises
+the entry points rather than the helper: the defect was never in the fold, it was in a call site that
+did not use one.
+
+**Status (2026-09-25): resolved —** `tools/_shared.normalize_declared_use` reads format's `VALID_DECLARED_USE` and folds the hyphen, and every entry point goes through it: `tools/checks.py` (two sites), `tools/registry.py` (`registry_check`), `tools/passes.py` and `tools/refresh.py`.
+
+## F71b — `record_override`'s returned note described a mode the call had not used
+
+**Found:** 2026-08-31 · **Severity:** medium · **Status:** fixed here, 0.26.0.
+
+`F71` split the persisted log line on `source_value` — *outranks* with one, *authored* without — and
+left the returned `note` unconditional. So a call recording a judged cell got back *"the cross-check
+still reports this mismatch … a recorded outrank is downgraded, never passed"*, when there was no
+source, no mismatch and nothing to downgrade. The note is the one field a caller reads to learn what
+just happened.
+
+**Kept under `F71`'s number with a suffix on purpose**: it is the same defect, one field over, and
+numbering it separately would hide that fixing half a surface is how this happened. The test asserts
+both branches and was run against the old code and watched to fail.
+
+**Status (2026-09-25): resolved —** `record_override`'s returned `note` branches the same way as `move_line` (`tools/provenance.py`, the `note=(…)` block with the `F71b` comment): table-scope, outranking (with `source_value`) and authored (without) each get their own sentence.
+
+## F71c — `OverrideRecord.authored_value` promised what the read path cannot deliver
+
+**Found:** 2026-08-31 · **Severity:** low · **Status:** documented here, 0.26.0; not fixable in code.
+
+`review_queue` reports `authored_value: ""` on every entry, always. Upstream's `ProvenanceItem` has no
+slot for it, so our field, value, source and timestamp are packed into a `[jmc field=… value_sha256=…]`
+suffix inside the free-text rationale and only the digest survives. The code says so in a comment —
+`# not stored; the digest is what binds` — while the field's own description said *"What the module
+says, at the moment of the record."*
+
+**The description was the defect, not the design.** The digest is the right binding and
+`current_value` / `still_bound` answer the question a reader actually has. The field now says it is
+set on write and empty on read-back, and points at the two that work. A gap named in a comment and
+denied in a description is the shape §7 exists to catch.
+
+**Status (2026-09-25): resolved —** `OverrideRecord.authored_value`'s description (`overrides.py`) now says it is set on write and empty on read-back, explains that upstream's `ProvenanceItem` has no slot for it, and points at `current_value` / `still_bound`.
+
+## F73 — a paper's published coordinates are GRCh37 and nothing warns you; two independent runs caught it, and neither was told to look
+
+**Found:** 2026-08-31, both centenarian benchmark runs, independently · **Severity:** high ·
+**Status:** open. The behaviour is correct at every layer; the gap is that nothing *says* so in time.
+
+Both runs authoring from PMID 41057961 discovered the paper publishes **GRCh37/hg19** coordinates
+while the module declares **GRCh38**, and both reached the same repair: author `rsid` only, never
+paste the paper's `chrom`/`start`/`ref`/`alts`.
+
+**Verified here, not taken on trust** (live Ensembl, both assemblies):
+
+| rsID | GRCh37 | GRCh38 | delta |
+|---|---|---|---|
+| `rs61849494` | `chr10:51613269 G/A` | `chr10:45982565 C/T` | **5.6 Mb, and strand-flipped** |
+| `rs11228733` | `chr11:56468368 C/T` | `chr11:56700892 C/T` | 232 kb |
+
+**Why this is worse than an ordinary mistake.** A pasted GRCh37 coordinate is a *well-formed* row.
+`lint_rows` passes it, `validate_module` passes it, and the compile is green — because
+`compiler.resolution._verify` compares an authored coordinate against the resolver's, and an author
+who pastes both a GRCh37 `chrom/start` **and** the matching GRCh37 `ref` has written a
+self-consistent pair. The module then annotates nothing, or worse, annotates the wrong locus. `F73`
+is the coordinate half of the same shape as the `provenance_quote` title problem: a check that
+passes over a value nobody could have got wrong in the way the check tests for.
+
+**One run put the rule in its own words**, which is the phrasing worth keeping: *"author rsid-only
+rows; never paste the paper's chrom/start/ref/alt"*. The other reached it from the methods section
+and cross-checked one variant. Two independent arrivals at the same repair, from the same paper, with
+nothing in the prompt pointing either of them at it.
+
+**They also agreed on a second consequence.** The paper's supplementary carries **47 variants with no
+rsID**, which are unusable without a liftover this plugin does not do. Both excluded them and said so
+rather than pasting the GRCh37 positions. That is the right call and it is a real capability gap: a
+module cannot carry a position-only variant from a GRCh37 source at all.
+
+**What the skills say today, and why it was not enough.** `module-enrich` covers the off-by-one
+signature and the *recovery* of an rsID from an old-assembly coordinate — the repair after the fact.
+`module-curate` warns about the coordinate mistake no offline gate catches. Neither says *check the
+source's assembly before you author a coordinate at all*, which is the moment the decision is made.
+Both runs got there by reading the paper's methods, not by being told.
+
+**Measured properly the next day, and the picture is sharper than the first report.** Probed with a
+minimal spec pasting `rs61849494`'s GRCh37 coordinate onto a GRCh38 module: `validate_spec` passes
+(correctly — it is offline); **`enrich(mode="strict")` REFUSES**, raising `EnrichmentError` and
+leaving the module untouched, with a diagnosis that names the repair outright; `best_effort` reports
+all three lines then writes the wrong coordinate into `resolution.csv`; and
+**`compile_module(strict=True)` then succeeds silently** over that file. So the enricher's strict flag
+already does the right thing, and the hole is that the diagnosis is discarded before the compiler sees
+it. Filed as `S78`. Our own default is `best_effort`, which is the path that meets this.
+
+**The ask filed is broader than the coordinate**, on the owner's framing: *a `compile --strict` over a
+`resolution.csv` produced by a `best_effort` enrichment should be blocked.* The two strict flags
+promise different things — the enricher's means every row was checked against the reference, the
+compiler's means the artifact is reproducible — and a module that ran `best_effort` then compiled
+`--strict` collects the second stamp without the first having been earned, with nothing in the
+artifact recording which happened. That makes the mode a property of the **sidecar** rather than of
+the run: `resolution.csv` should carry the mode that wrote it. Refusal rather than a warning, because
+the softer option has already failed once here — upstream's diagnosis is excellent and a green
+artifact still came out the end, since a report nobody must read is not a gate. Migration cost is
+real and stated in the item: an existing sidecar carries no stamp, so absent must read as *unknown*
+rather than as `best_effort`, or the rule retroactively blocks recompiling published modules — `None`
+is not `False`, at the artifact level.
+
+**Surface it, and the fix is prose plus possibly a check.**
+
+- **The prose fix, which is ours and cheap:** `module-curate` and `module-start` should say that a
+  source's genome build is a triage question, and that the safe authoring default from any paper is
+  **rsID-only** — let resolution supply the coordinate, so the compiler's rsid-vs-coordinate check has
+  something independent to compare. That is the rule both runs invented.
+- **A check is harder than it looks and may be upstream's.** "Does this authored coordinate match the
+  declared build" is exactly what resolution already answers — but only for rows that carry an rsID.
+  A position-only row from a GRCh37 source has nothing to disagree with. That may be worth an `S`
+  once we can state the ask precisely; not filed yet, because we have not established what upstream
+  could check that it does not already.
+
+**Status (2026-09-25): resolved —** both halves the entry asked for are done. The prose is `skills/module-start/GUIDE.md` step 0: ask what build the source is on, default to `rsid` only, and exclude variants that have no rsID. The check is upstream `S78` → `RM143`, in installed compiler 0.7.1: `verification_findings_recorded` makes strict validate and compile refuse over a coordinate the enricher found to be on the wrong build. Carrying a position-only GRCh37 variant still needs a liftover nothing here does. The skill states that limit and nothing plans to build it.
+
+## F72 — a corpus-sized `enrich` is indistinguishable from a hang, and the fix is upstream's but not ours to wait for
+
+**Found:** 2026-08-31 · **Severity:** medium · **Status:** worked around here, with a dismantle note.
+Upstream's real fix is `S66` ask 4, accepted and shipping in **0.7** (`RM128`).
+
+A 263-rsID module ran **20+ minutes** inside `enrich_module` writing nothing. `enrich()` persists
+`resolution.csv` only at the end, so silence is the expected appearance of work — and an operator
+watching it cannot tell that from a dead process. The run that left the short sidecar in `F70` died
+during one of these silences — though the sidecar itself turned out to be a completed write, so the
+ambiguity is what made the death invisible, not what shortened the file.
+
+**Upstream already owns this and already answered it.** `S66` ask 4 is the progress callback; it is
+accepted, minor-legal, and lands in 0.7 with the transaction and the `flock`. Verified against the
+**installed** package rather than the changelog: `inspect.signature(enrich)` has no `progress`
+parameter and `just_dna_format.layout` has neither `atomic_writer` nor `atomic_write_text` at 0.6.6.
+
+**So we hold a workaround, and the owner's call is the reason:** 0.7 is being built and is not
+expected soon, so waiting means every long run stays ambiguous until it lands.
+
+**What the workaround is careful about.** It reports **elapsed seconds, never a fraction**. We cannot
+know the denominator — upstream batches inside `resolver.py` rather than looping per subject, which
+is precisely why *they* have not settled what the callback counts — and a percentage of ours would be
+a fabricated measurement of another layer's work. A heartbeat answers the question actually being
+asked, which is *alive or dead*, and answers nothing it cannot.
+
+**TO DISMANTLE AT 0.7**, and the marker is in the code beside the task group: delete `_heartbeat`,
+`_HEARTBEAT_SECONDS` and the task group, pass `progress=` into `enrich()`, report real
+`(done, total)`, and delete
+`test_a_long_enrich_reports_it_is_alive_without_inventing_a_fraction`. The subject count then comes
+from upstream instead of being unknown, which is the whole reason to stop doing it ourselves.
+
+**Status (2026-09-25): resolved —** the upstream half is installed (enricher 0.7.2: `enrich(…, progress=…)`, `RM128`), and `enrich_module` passes a `progress` callback and reports real `(done, total)` (`tools/passes.py`, `_note_progress`, commit `160ee5a`). The heartbeat was kept on purpose, because the callback is silent while the resolver batches. It now says elapsed time only before the first subject completes. Left for cleanup: `_ENRICH_TAKES_PROGRESS` / `_progress_kwarg` and the workaround test's docstring still treat pre-0.7 as possible, and the floor is 0.7.
+
+## F70 — a completed `enrich` can leave a `resolution.csv` covering fewer subjects than the module authored, and nothing in the file says so
+
+**Found:** 2026-08-31, in the benchmark round · **Severity:** medium ·
+**Status:** filed upstream as format-tree `S76`, withdrawn there as a duplicate of `S66`, and the
+withdrawal's arithmetic was **wrong in the reporter's favour** — corrected upstream 2026-08-31 under
+the same entry. The reading that closes it is upstream's `RM141`, which is **in the 0.7.0 tree and not
+installable**: 0.7.0 is bumped and untagged, and `uv sync` still gives 0.6.6.
+
+**The heading and the mechanism both changed. What was reported first, and why it was wrong.** The
+original write-up said an *interrupted* `enrich` left a *partial* file, that merge-not-clobber made
+re-running entrench it, and that the correct recovery was to delete the sidecar or `refresh_sidecar`
+first. Two of those three are false, and the preserved artifact is what says so.
+
+**Proven, from the file** (`evidence-S76-partial-resolution/resolution.partial.csv`, hash-verified):
+203 rows over **201 distinct rsIDs**, against **263** authored in that run's `variants.csv`. The rows
+are sorted by rsid end to end and the last line terminates with a clean CRLF, and the 62 absent rsIDs
+scatter across the whole alphabetical range of the authored set rather than falling off the tail. That
+is a **complete write of an incomplete resolution set**, not a truncated file.
+
+**Why the enricher produces one, by design.** `_write_resolution_csv` runs once, at the end. A subject
+whose live request could not be *made* joins `unreachable_rsids` and is written as **no row at all** —
+deliberately, because `status="not_found"` would state that a source was asked and said no, which is a
+negative nobody established. So an ordinary `best_effort` run over a source that stops answering
+produces exactly this file, with no interruption anywhere.
+
+**Re-running is the correct recovery, and the original advice to delete first was wrong.** In the
+installed 0.6.6, `need_pos` and `need_rsid` skip only the subjects an existing row already covers
+(`enrich.py`, the partition below the merge). The 62 missing subjects are not in `existing`, have
+nothing to merge onto, and go to the resolver like any other. Upstream measured the same on their tree
+and on `v0.6.6` from its own tag. **Do not delete a sidecar to recover from this** — that is the
+destructive move `refresh_sidecar` exists to make safe, and here it buys nothing.
+
+**What survives, and it is the whole finding.** Nothing in the file, its header or any sibling records
+that it covers 201 of 263. A reader opening the directory has to count distinct authored rsIDs and diff
+the two sets. The `verification.json` half also survives for 0.6.6: it was written before the run ended
+and attests bytes a completed enrich would change, and that half at least announces itself through the
+stale-verification warning. Upstream reports the two are inside one commit block in 0.7.
+
+**Where the fix actually comes from, which the first write-up got wrong too.** This is not `S66`'s
+family: `RM128`'s transaction and atomic write cannot prevent a file that was never half-written.
+`RM141` is what closes it — `validate --strict` refuses a table that cannot place every authored
+subject and names them, `validate` warns per uncovered row — and it is a **reading computed from the
+spec beside the table**, not a marker in it. Upstream refuses a durable partial marker on the grounds
+that it is a fact about a *run* living in a table of facts about *variants*, and that a killed process
+writes no marker anyway. Both arguments hold.
+
+**Ours, until 0.7 is installable.** Count `resolution.csv`'s distinct subjects against the authored
+set before trusting anything downstream — which is what `enrich_module`'s own refusal text already
+tells a caller to do. A detector of ours would belong beside `audit_module`'s decision list, three-valued,
+with `unknown` where the authored subject set cannot be determined; it is **not worth building**, because
+upstream's own `validate` answers it in the command our loop already runs first.
+
+**Status (2026-09-25): resolved —** upstream `RM141` shipped in 0.7.0 and is installed (compiler 0.7.1). Probed on a copy of `assets/longevity_2026` with `resolution.csv` cut to two rows: `validate_spec` warns `rsid_unresolved: 11` and strict refuses with `strict compile: 17 variant(s) have unresolved genomic positions` and names them. A short sidecar is now caught by the command the loop already runs.
+
+## F69 — a `p_value` and an `effect_size` on one row are asserted to belong together, and nothing records or checks that they do
+
+**Found:** 2026-08-31, reviewing the two-agent reproducibility benchmark · **Severity:** medium ·
+**Status:** filed upstream as format-tree `S75`; nothing to build here until the column exists.
+
+The benchmark's two runs overlapped on exactly one row and disagreed on it: `rs117385980` / PMID
+41249831, both writing `effect_size 1.42 / OR / not_significant`, one writing `p_value 0.36` and the
+other `0.75`. **Neither was a misreading.** The paper reports two tests of the same association —
+Table 3/5's allelic Fisher's exact (`OR 1.4, p 0.36`) and Table 6's univariate logistic
+(`OR 1.42, CI 0.18–11.67, p 0.75`) — and each run took one.
+
+Run B's row is internally consistent. **Run A's is not**: Table 6's effect size beside Table 3's
+p-value, with its own `conclusion` citing Table 6's CI, so the row names one analysis's estimate and
+another's p-value. Run A identified this itself when asked, and the run is frozen with the mispairing
+in place and annotated, because repairing it would have destroyed the comparison it is evidence for.
+
+**Everything was green** — strict validate, strict compile, `audit_module`, and `quotes_found`. The
+provenance quote is verbatim and correct: it grounds the significance *verdict* and contains no
+statistic, so quote verification is structurally blind to this. `audit_module`'s
+`effect_size_is_its_own_z` is a different check and does not reach it.
+
+`StudyRow` has `study_design` (*"e.g. meta-analysis, GWAS"*), which describes the **study**; nothing
+describes the **analysis**. And `key.columns` is `["variant_key", "pmid"]` on equality, so a paper
+reporting several analyses of one variant is representable by exactly one — chosen silently, with no
+field recording which. A correct row and a mispaired one are byte-indistinguishable to every consumer.
+
+**Ours to file, not to build, and that is the unusual part.** §11 says an authoring-workflow gap is
+ours to build first — this is not one. The missing thing is a **column**, which is schema, which we own
+none of. Until `S75` lands there is nowhere to put the fact, and a lint of ours could only compare two
+numbers it has no way to attribute. What we can do meanwhile is what the reference module does: carry
+one analysis, name the other in the README and `logs/authoring.log`, and say which was chosen.
+
+**Surface it, and why the candidate repairs are wrong.**
+
+- **A lint comparing `p_value` against `effect_size`.** There is nothing to compare. Both can be
+  verbatim-correct and still come from different tables; correctness is not a property of either number
+  alone. Only provenance separates them, and provenance is exactly what is not recorded.
+- **Requiring `study_design` to carry the test.** It would overload a field that already means
+  something else, on rows six published modules have already written, and it would still not associate
+  the test with a *particular* pair on a multi-analysis paper.
+- **A convention in our skills — "always take the regression model".** It picks a winner the source
+  does not; here the right answer is the *other* one, because a zero cell makes Fisher's exact the
+  appropriate test and the logistic MLE unstable. A rule that would have produced the wrong number on
+  the first case it met is not a rule.
+
+**Status (2026-09-25): resolved —** upstream `S75` shipped as `RM140` and is installed: `StudyRow.statistical_test` exists in format 0.7.0 (`__file__` under `.venv/site-packages`), described as which analysis produced the row's `p_value`/`effect_size`. `skills/module-tables/references/studies.md` teaches it. It is not part of the row key, so one `(variant, pmid)` still carries one analysis, but which one is now recorded.
+
+## F68 — nothing on the surface reaches a supplementary table, and the skill taught the empty cell because of it
+
+**Found:** 2026-08-30, reproducing a supplementary table retrieval from a PDF the owner supplied ·
+**Severity:** medium · **Status:** the skill half is fixed in this change
+(`skills/find-evidence/references/SUPPLEMENTARY.md`, plus the corrected passage in `SKILL.md`); the
+tool half is open and deliberately not built.
+
+For a GWAS paper the per-variant numbers a `studies.csv` row asserts are almost never in the article
+body. The body says *"263 independent variants across 180 genomic loci"*; the rsIDs, positions,
+alleles and p-values are in the supplementary workbook. `fetch_fulltext` returns the JATS body and
+nothing else, and **no tool on the surface lists, fetches or reads a supplementary file.**
+
+**The cost is not the missing tool. It is what the skill concluded from it.**
+`skills/find-evidence/SKILL.md` said, of the exact case it names:
+
+> `fetch_fulltext` returns the JATS body and no supplementary file, so for those rows there is
+> nothing in reach to quote — and the honest cell is empty.
+
+That is `F42`'s shape one layer up: a surface limit written up as a fact about the world, teaching an
+author to record *nothing available* for something that is available. Measured against its own
+example — PMID `29500382`, `10.1038/s41467-018-03242-8`, the 65 `aggression_anger` rows — the
+supplementary is **two HTTP requests from the DOI**, on an open host, no authentication, CC-BY, and
+its *Supplementary Data 2* carries 504 lead-SNP rsIDs of which **42 of the 65 are present**, with the
+per-item association p-values those rows assert. The rows did not get the honest empty cell either:
+all 65 shipped carrying the article title (`F42` / upstream `S54`).
+
+**What was measured, on four real articles.** The ladder is DOI → Europe PMC record → `fullTextXML`
+inventory → publisher pattern, and the negative results are the load-bearing half:
+
+- `link.springer.com` is behind a JavaScript bot challenge — a `curl` of the resolved DOI returns
+  3 KB titled *Client Challenge* under HTTP 200. Scraping the article page finds no links and looks
+  like an article with no supplementary material.
+- Europe PMC reported `hasSuppl: N`, `inEPMC: N`, `isOpenAccess: N` for `10.1007/s11357-025-02044-3`,
+  which is CC-BY and has two openly downloadable ESM files. The flag describes their holdings, not the
+  article. Crossref carries no `relation` for the ESM and Unpaywall points only at the article PDF, so
+  **no metadata API in our stack exposes supplementary files.**
+- Europe PMC's `supplementaryFiles` endpoint works and returns one zip of everything including every
+  figure, unselectable: **224 MB** on `PMC12506250` to reach a 14 KB table.
+- Extensions are not guessable — `MOESM1` was `.txt` on one article and `.pdf` on another, and
+  `MOESM3` was a peer-review PDF rather than data. A 403 across the extensions tried means *unknown*,
+  not *absent*, which is the three-valued rule at the corpus level.
+
+**A second counter reads wrong, and this one is ours.** `enrich_literature_pass` searches the Europe
+PMC body, so a quote lifted from a supplementary workbook scores `quotes_found: 0` — indistinguishable
+from *read and not found*, which the skill teaches "says something". A correct supplementary quote
+therefore reports as a suspect one. The skill now names the fifth state and tells the author to record
+the source file, because nothing on the surface can.
+
+**Surface it, do not build it yet — and why each candidate repair is wrong today.**
+
+- **A `fetch_supplementary` tool.** The obvious shape, and the reason to wait is that rung 3 is
+  publisher-specific: we measured the Springer Nature family only (`10.1007`, `10.1186`, `10.1038`).
+  A tool that silently covers one family and returns nothing for Elsevier or Oxford reproduces exactly
+  the defect above — a surface limit an author reads as an absence — unless it distinguishes *no
+  pattern for this publisher* from *no supplementary material*, which is a three-valued return the
+  design has not been through yet.
+- **Wrapping Europe PMC's `supplementaryFiles`.** One call, no pattern table, and it is the 224 MB
+  route. It also answers nothing for the article that prompted this, which is not in PMC at all — the
+  common case for a paper published in the last few months, which is exactly when a module is being
+  written about it.
+- **Teaching the ladder in prose only, which is what shipped here.** Honest and immediately useful,
+  and it costs a network call the `ServiceGate` never sees: §2 says every outbound request goes
+  through `net.py` so pacing and the shared NCBI budget cannot drift, and a taught `curl` is outside
+  it. The two hosts involved (`static-content.springer.com`, EBI) are not NCBI and are not metered
+  against that budget, so the ceiling is not breached today — but this is the argument that makes the
+  tool the right end state rather than an optional convenience.
+- **Parsing the ESM into rows for the author.** Out of scope and the wrong layer — which sheet answers
+  a row's claim is a judgement about that row, the same reason `fetch_fulltext` does not return a
+  best-matching passage.
+
+  > **Overturned 2026-09-01, by measurement, and the error is worth naming.** This bullet bundled two
+  > different acts under one refusal. *Choosing which sheet answers a row's claim* is a judgement and
+  > is still refused — `describe_supplementary` returns no rows and `read_supplementary` picks no sheet.
+  > *Handing back the cells of a sheet the author named* is not a judgement; it is decoding a zip
+  > container, and the layer argument never applied to it. Four independent authoring runs — 4 of 4 —
+  > then hand-wrote an xlsx parser to get past the gap, two with a column-alignment bug that puts a
+  > BETA in the chromosome column, one calling it 40% of its run. `read_supplementary` ships in 0.29.0
+  > with `openpyxl` as a hard dependency. **The general lesson: a refusal that names a judgement should
+  > be checked against what it actually blocks** — this one blocked the mechanical half for a month and
+  > sent every author to write the same buggy parser.
+
+**Not filed upstream, and nothing is owed.** This is authoring workflow, which is ours to build
+(§11); the schema and the checks are unchanged. `S54` was the obvious place for a corroboration — its
+evidence was that a rule against machine-located quotes produced 3668 titles, and the 42-of-65 number
+says those rows had a real passage in reach the whole time — but **`S54` is answered and has moved to
+`CONSUMER_SUGGESTIONS_HISTORY.md`**, and an answered entry is a closed record rather than an inbox.
+The number is recorded here instead. Checked 2026-08-30, so nobody re-investigates whether it was
+filed.
+
+**Status (2026-09-25): resolved —** the tool half is built. `list_supplementary`, `fetch_supplementary`, `describe_supplementary` and `read_supplementary` are in `tools/research.py`, and `read_supplementary` shipped in 0.29.0 with `openpyxl` as a hard dependency (see the overturn note above). They return the cells of a sheet the author names and never pick one, which keeps choosing a sheet as a judgement. One thing remains and belongs to upstream: `LiteratureRow.quote_source` records only `fulltext|abstract`, so the pass still cannot say a quote was checked against a supplementary file.
+
+## F61 — `review_queue` reports nothing to review while holding the evidence
+
+**Found:** 2026-08-21, run 1 · **Severity:** high · **Status:** **fixed 2026-08-24**, and the
+cause was not the one this entry assumed.
+
+`review_queue` is introduced as the priority list for a review pass — *"these are the rows
+to start with … the highest-value judgements in the module and the easiest to forget."*
+Run 1 recorded six overrides through `record_override`, including a ten-row correction to
+a fabricated `effect_size`, and every one was written to `provenance.json` and
+`logs/authoring.log`. The tool then returned `{"total": 0, "entries": []}` on both modules,
+with the records shunted into an `other_provenance` bucket of flattened strings.
+
+This entry read the symptom correctly and the cause wrongly, and both halves are worth
+keeping. The reading it proposed — that the queue can only decide `clin_sig` offline, so
+everything else should surface as `unknown` rather than as silence — describes behaviour the
+tool **already had**: `review_queue` emits an entry per record whatever the field, and
+`unknown` is one of its three documented states. `RM26` inherited the misreading and proposed
+widening a thing that was not narrow.
+
+**The actual defect was a codec that disagreed with itself.** `record_override` appends a
+marker to `rationale`; the reader's pattern encoded `source=` as `[A-Za-z0-9_.-]+` and the
+writer enforced nothing, so a source named `GWAS Catalog` — or `ClinVar 2024-06`, or
+`gnomAD v4.1 (non-neuro)` — was written and then read back as **somebody else's provenance**.
+Hence `total: 0` beside a bucket of flattened strings: not a question that could not be put,
+but a record that could not be recognised as ours. Fixed 2026-08-24, and the recovery is **measured
+on that run's own files** rather than asserted: the six records still sitting in
+`modules_dogfooding/work/*/provenance.json` parse **0 of 6 under the old pattern and 6 of 6 under the
+new one**. Every one of them names its source as something like *"module's own prior authored value
+(big_five_personality_snps@2.1.0 as published)"* — which is a good source name and an impossible
+`[A-Za-z0-9_.-]+`.
+
+**What generalises: a round trip that is only ever tested against the values the test author
+chose is not tested.** Every existing test used `source_name="clinvar"`, which the pattern
+accepted. Ask of a green round-trip what §6 asks of a green fixture — could this have
+failed? Four of the five source names in the new parametrization would have failed before
+the fix, and every one of them is a string somebody would actually type.
+
+**Status (2026-09-25): resolved —** the marker codec reads `source=(?P<source>.+?)` (`overrides.py`, the pattern under the comment dated 2026-08-24), so a source name with spaces or parentheses round-trips; the parametrized round-trip test covers the real names that failed.
+
+## F62 — `compile_module` accepts an output directory that makes the spec unpublishable
+
+**Found:** 2026-08-21, run 1 · **Severity:** medium · **Status:** open.
+
+`out/` inside the spec directory is the obvious choice. `compile_module` accepts it and
+copies `README.md` into it, and the **publish** then fails two steps later:
+
+```
+HTTP 422 ambiguous_spec_layout
+  "`README.md` arrives from more than one path (`README.md`, `out/README.md`);
+   send one copy, since only the author knows which is current"
+```
+
+The error is excellent — it names both paths and refuses to guess — but it lands at the
+one operation with real consequences, and nothing upstream of it warns. Either
+`compile_module` should refuse an `output_dir` inside `spec_dir`, or the copy should
+exclude authored files.
+
+**Status (2026-09-25): resolved —** closed by the `F76` fix in 0.26.0: `compile_module` now warns at the call that causes it when `output_dir` is inside `spec_dir` (`tools/authoring.py`, `layout_note`), naming the later `ambiguous_spec_layout` 422. It warns rather than refuses because working modules use that layout, which is the reasoning recorded under `F76`.
+
+## F63 — an aborted `enrich_module` keeps running and overwrites the spec directory afterwards
+
+**Found:** 2026-08-21, run 1 · **Severity:** high, data integrity ·
+**Status:** mitigated 2026-08-22; the upstream half is format-tree `S66`, tracked as `F63`
+in [just-dna-format-pending-fixes.md](just-dna-format-pending-fixes.md).
+
+The mechanism, localized by reading both trees rather than by reproducing the timeout.
+`enrich_module` dispatches through `anyio.to_thread.run_sync` with the default
+`abandon_on_cancel=False`, and a worker thread cannot be interrupted at all — so a
+client-side abort leaves the work running, unaware and still holding its write. The
+enricher reads `resolution.csv` at the start of the run and rewrites it in one truncating,
+non-atomic write at the very end, with no lock anywhere in either tree, so the
+read-modify-write window is the whole run and two concurrent enrichments are
+last-writer-wins.
+
+What that produced: a run aborted client-side at 1800s; the published 330-row
+`resolution.csv` restored by hand; a second `enrich_module` returning `resolved: 330,
+sources: ["cache"]` correctly and instantly; and then the first call reaching its write and
+leaving **162 distinct rsIDs**, plus a rewritten `verification.json`. Subjects that never
+resolved contribute no row at all rather than an unresolved one, which is why the file
+shrank rather than degrading visibly. The module validated, closed and compiled green.
+
+**Partly fixed 2026-08-22.** A directory with an enrichment in flight is claimed, and a
+second enrichment of it raises with what is running and when it began rather than
+succeeding into a file about to be overwritten. The claim releases in `finally`, which
+covers exactly the window the abandoned write can land in, because `run_sync` defaults to
+`abandon_on_cancel=False`. The docstring also carries the reading guard — count
+`resolution.csv` against the authored subject count after any timeout.
+
+**What stays open.** The claim is in-process: it cannot see an enrichment started by a
+different server process, and there is no lockfile in this tree or upstream's. And
+`enrich_module` still destroys `resolution.csv` with no capture, while the sibling
+`refresh_sidecar` has exactly the pattern it needs — copy out, read the copy back, hash it,
+only then let anything destroy the original. The durable repairs are upstream's: a
+tmp+rename write, incremental persistence so an interrupted run keeps what it resolved, and
+an advisory lock over the read-modify-write window, which is the whole run.
+
+**Status (2026-09-25): resolved —** the upstream half (`S66` → `RM128`) shipped in 0.7.0 and is installed in enricher 0.7.2 (`just_dna_enricher/transaction.py`: `spec_lock` advisory `flock`, `ResolutionJournal` staging, `atomic_writer`, with `__file__` under `.venv/site-packages`). An interrupted run keeps its staged answers, the table is renamed into place, and a second concurrent run refuses. Those are the three things listed above as upstream's. Our in-process claim stays and is harmless.
+
+## F18 — "a green pre-flight should mean a green compile" is false before `resolution.csv` exists
+
+**Found:** 2026-08-11, authoring `assets/fto_bmi` · **Severity:** medium · **Status:** open
+
+`skills/create-module/SKILL.md` §6 says:
+
+> `validate_module` refuses everything `compile_module` refuses that does not need resolved rows, so
+> **a green pre-flight should mean a green compile**.
+
+The qualifier is correct and the conclusion drawn from it is not. On a freshly authored spec with no
+`resolution.csv`:
+
+```
+validate_module(strict=True)  →  valid: true,  errors: [],  warnings: [],  info: []
+compile_module(strict=True)   →  success: false
+    "strict compile: 3 variant(s) have unresolved genomic positions after resolution"
+```
+
+Green pre-flight, refused compile — the exact implication the sentence licenses. Not one of the three
+finding levels carried anything, so there is no hint in the payload that the most consequential step
+has not run.
+
+**The compile gate itself is fine** and is the reason this is medium and not high: it refuses, it names
+the count, and its warning names the remedy (*"No resolution.csv and no ensembl_cache injected …
+Produce a resolution.csv with just-dna-enricher"*). The defect is that the pre-flight advertises
+itself as predictive of that outcome when it cannot be.
+
+**Why it matters more than the wording suggests.** `valid: true, strict: true` with three empty
+finding lists is the most reassuring output this surface produces, and the state it is reassuring
+about is *a module that cannot match any genome*. The skill's own done-checklist carries "every weight
+row has a coordinate" as a **manual** checkbox, which concedes that nothing checks it — so the one
+condition the author must remember is the one the tool is silent on. It compounds with `F19`: an author
+who cannot reach `enrich_module` sees a green strict validate and no reason to doubt it.
+
+**Candidate fix**, cheapest first: have `validate_module` emit an `info` (or `warning` under strict)
+when the spec has variant rows and no `resolution.csv` — "resolution has not run; a strict compile will
+refuse N row(s)". It needs no network and no resolution, only a file-existence test plus the row count
+it already has in `stats`. Then correct the skill sentence to say a green pre-flight predicts a green
+compile *once resolution exists*.
+
+**A candidate that is wrong:** having `validate_module` resolve anything itself. It is documented as
+writing nothing and touching no network, both worth keeping, and authoring a second resolution path
+is how the two sides of a redundancy check end up produced by one process.
+
+**Status (2026-09-25): resolved —** fixed upstream and installed. Measured on compiler 0.7.1 (`__file__` under `.venv/site-packages`): `validate_spec(strict=True)` on `assets/fto_bmi` with `resolution.csv` removed returns `valid=False` with the same `strict compile: 3 variant(s) have unresolved genomic positions` error the compile gives, plus the `resolution_not_injected` warning. A green strict pre-flight no longer precedes a refused compile, so the sentence in `skills/module-compile/GUIDE.md` holds.
+
+## F19 — nothing on the tool surface reports the running server's version, and a stale process is invisible
+
+**Found:** 2026-08-11, blocked mid-probe · **Severity:** medium · **Status:** open, partially
+mitigated 2026-08-20
+
+**Partial mitigation (RM13).** Every generated schema answer now carries
+`produced_by.format_version` / `produced_by.compiler_version`, and `server.INSTRUCTIONS` names the
+same pair instead of a hardcoded `(format 0.5)`. That makes a stale *toolchain* visible without
+being asked, which is a strong proxy — a cached plugin build pins its own resolved dependencies. It
+is not the whole finding: what is reported is the toolchain, not our own package version, and a
+missing tool still reports nothing at all, because a tool that is not registered cannot stamp
+anything.
+
+The connected stdio server was missing nine tools the skill lists as **essentials** — `enrich_module`,
+`check_identifiers`, `lookup_identifier`, `lookup_open_access`, `fetch_fulltext`,
+`authoring_reference`, `module_signature`, `verify_artifact`, `registry_get_module` — which is exactly
+the set 0.4.0 moved *into* essentials. The tree registers `enrich_module` in `register_passes`
+(`tools/passes.py:297`), the essentials tier, so the code is right and the **process** was old:
+
+```
+2669780  Tue Aug 11 17:01:58   uv run --project … just-module-creator stdio
+2726281  Tue Aug 11 18:03:54   uv run --project … just-module-creator stdio
+HEAD     3a6d20d              2026-08-11 20:30:30 +0300
+```
+
+Two of them, both hours older than HEAD, consistent with the known behaviour that `/reload-plugins`
+does not re-exec a stdio server and stale ones accumulate.
+
+**The finding is not the staleness — it is that the staleness is undiagnosable from inside the
+surface.** No tool reports the server's version, so the symptom presented as *"the plugin does not
+have `enrich_module`"*, indistinguishable from *"this tier does not include it"* and from *"the skill
+documents a tool that does not exist"*. Diagnosing it took `ps`, `git log` and a grep through
+`tools/passes.py` — three moves outside the product, to answer a question the product is the only
+authority on.
+
+It is worse for the taught workflow than for an arbitrary missing tool, because `enrich_module` is
+step 4 and unreachable means no `resolution.csv`, which `F18` shows a green strict validate will not
+mention. The failure chain is: stale process → missing step → silent pre-flight → an author with a
+module that compiles under best-effort and matches nothing.
+
+**Candidate fix:** report the version where an agent will see it without asking — appended to
+`server.INSTRUCTIONS` at build time from `importlib.metadata.version("just-module-creator")`, which is
+already the single source of truth and already read by `tests/test_plugin_manifest.py`. That is
+cheaper than a tool and cannot be forgotten, since the instructions are always in context. A
+`server_info` tool would also work but has to be *called* to help, and nothing prompts an agent to
+call it before the thing it is diagnosing.
+
+**Not a candidate:** having the server detect its own staleness against the working tree. It would
+make the server read git state it has no business reading, and it is wrong for anyone who installed
+from PyPI, where there is no tree to compare against.
+
+**Status (2026-09-25): resolved —** `server.INSTRUCTIONS` opens with `plugin v{__version__}` beside the format and compiler versions (`server.py`, commit `efc8fa9`, 2026-08-22), read from package metadata, so a stale process shows its own version before the first call. This is the stronger candidate the entry nominated. What it cannot do is stated above and is not a defect: a tool that is not registered stamps nothing, so the reader still has to compare the version.
+
+## F26 — a stale plugin build serves an old tool surface, and no result says which build answered
+
+**Found:** 2026-08-12, authoring a longevity module · **Severity:** high · **Status:** open,
+partially mitigated 2026-08-20
+
+**Partial mitigation (RM13).** The stronger candidate below shipped: `server.INSTRUCTIONS` now names
+the running `just-dna-format` and `just-dna-compiler`, and the weaker one shipped too — every
+generated schema answer carries the same pair, `authoring_reference` included. The first symptom in
+the table below would now be visible in the answer itself. **The second and third would not**: a
+tool that is absent stamps nothing, and a warning that fires from old code carries no version. So
+the "stale build looks like a regression" trap is narrowed to the tool *roster*, not closed.
+
+**Confirmed 2026-08-12 by `/reload-plugins`.** All three symptoms below cleared at once on 0.7.0:
+`sources.csv` moved from `sidecars` into `tables` with `SourceRow` and `(source, layer)`,
+`check_identifiers` returned `gene_locus_conflicts: []` **and** `gene_locus_check_skipped: null`
+explicitly, and the `S23` orphan warning stopped firing. The `artifact_digest` was identical before
+and after, so nothing built on the stale surface was wrong — only everything concluded *about* the
+surface was.
+
+`/plugin` reported *"Updated just-dna Module Creator. Run `/reload-plugins` to apply."* The reload
+did not happen, so **every tool call in that session was answered by the 0.2.0 build** while the
+repo, the skill and `docs/` were all 0.7.0. Nothing in any tool result said so, and the mismatch is
+invisible: the tools are all still there, they all still answer, and the answers are internally
+consistent — with a surface that shipped months ago.
+
+**Four conclusions were drawn and had to be retracted.** Each looked like a defect in 0.7.0:
+
+| Observed | Actually |
+|---|---|
+| `describe_table("sources.csv")` / `get_template(…)` reject it, `list_tables` files it under `sidecars` | exactly `F20`, closed in 0.5.4. 0.2.0's sidecar literal still contains `sources.csv` and its `_SUBJECTS` does not |
+| `check_identifiers` omits `gene_locus_conflicts` / `gene_locus_check_skipped` | 0.2.0's `models.py` contains **zero** `gene_locus` references — the fields do not exist there. Read as "empty, therefore clean", which is the exact inversion the fields exist to prevent |
+| the `S23` literature exemption never fires | 0.2.0 pins `just-dna-compiler>=0.5.3`; its resolved compiler predates the exemption |
+| the skill's advice was wrong on all three | the skill was right; the server was old |
+
+**Third instance, 2026-08-20, and the window was twenty minutes.** A dogfooding session loaded
+`fetch_fulltext`'s schema and got the docstring from *before* `211dac5`, which had reversed it
+twenty minutes earlier in the same tree. Nothing said so; the description simply read as the current
+contract, and it said the opposite of the policy the session was working under. The narrower
+symptom this time is that the surface goes stale **against a commit made in the same session by
+another agent**, so "reload after installing" is not the whole discipline — a long-running server is
+stale against every edit made while it runs, and only the two version strings `RM13` added would
+show it, neither of which moves on a docstring change.
+
+**Second instance, 2026-08-12, and it is not the same one.** A later session authoring
+`assets/longevity_2026` found `registry_check`, `registry_validate`, `registry_health` and
+`registry_is_published` **absent from the tool surface** while `pyproject.toml`, the manifest and
+`skills/create-module/SKILL.md` were all 0.8.0 — and `git log -S "async def registry_check"` puts all
+four in `2e77c4e`, the 0.8.0 commit itself. The stale surface also still emitted the pre-`F28` preprint
+warning. So this is not "the reload never happened once": a build that had already been reloaded went
+stale again at the next version bump, and the symptom moved from *wrong answers about tables* to
+*four tools the skill teaches simply not being there*. That is the failure mode §5 of `CLAUDE.md`
+names — a surface that teaches a step it cannot run — arriving by staleness rather than by tiering,
+where no test can catch it. **The tell that cost the least time was reading `git log -S` for the
+missing symbol**, which separates "not built yet" from "built, not running" in one command; nothing in
+any tool result does.
+
+Three of those were written into `SKILL.md` as corrections before the cause was found, which would
+have enshrined 0.2.0's bugs as 0.7.0's documented behaviour — including restating `SourceRow`'s
+columns in the skill, **the exact fix `F20` explicitly rejected**. Reverted.
+
+**The trap is that a stale build is indistinguishable from a regression**, and the natural response
+to an apparent regression is to document it. A version skew that presents as a defect will therefore
+tend to get written down as one. The give-away was cheap and was found late: our own source already
+had the fix, so the code and the running behaviour disagreed — but that check only happens if you
+think to make it.
+
+**Candidate fix:** report the build on something every session already reads. `server.INSTRUCTIONS`
+is the natural home — it is in front of an agent before the first call, costs nothing, and a version
+line there would have ended this in seconds. A `version` field on `authoring_reference()` is the
+weaker second choice, since nothing forces an agent to call it.
+
+**A candidate that is wrong:** having tools detect their own staleness by comparing against the
+checkout. There is no reliable link from a running server back to "the" repo — the cached copy *is*
+a legitimate install — and a wrong answer here is worse than none. Report the build, and let the
+reader compare.
+
+**Not an upstream note.** Every symptom is our build being old; the format tree is not involved.
+
+**Status (2026-09-25): resolved —** same fix as `F19`: `server.INSTRUCTIONS` names the plugin version (`efc8fa9`), the candidate this entry called the natural home. The residual is the one the entry already names: a docstring edit made while a server runs moves no version string. The venv-swap variant of a stale server is tracked separately as `F107`.
+
+## F30 — we read PubMed's `pmcid` display string instead of its `pmc` identifier
+
+**Found:** 2026-08-12, authoring `assets/longevity_2026` · **Severity:** high · **Status:** open
+
+`literature_search` returns PMCIDs that are not PMCIDs:
+
+```json
+{"pmid": "41427385", "pmcid": "pmc-id: PMC12713140;"}
+```
+
+`esummary` publishes the same id twice under two `idtype`s, and only one of them is an identifier:
+
+```
+'pmc'   -> 'PMC12713140'
+'pmcid' -> 'pmc-id: PMC12713140;'
+```
+
+`discovery.parse_pubmed_summaries` does `pmcid=ids.get("pmcid")`, so it takes the display string. Every
+PubMed-sourced result in a mixed search carries the mangled form while every Europe PMC-sourced result
+in the *same response* carries a clean `PMC12155586`, so the field's shape depends on which service
+answered — and an agent reading down a result list has no reason to expect that.
+
+**The cost is that the value cannot be passed on.** `fetch_fulltext(pmcid=…)` wants a real PMCID.
+Getting one out of our own search result means noticing the prefix and stripping it by eye, which is
+what happened here — and only because the paper mattered enough to chase. The fix is `ids.get("pmc")`,
+with the `pmcid` key kept as a fallback that strips `pmc-id:` and `;` rather than trusted.
+
+**The generalisable point: two keys differing by four characters, one of which is a label.** Nothing
+downstream type-checks a PMCID, so a display string travels as far as the first thing that dereferences
+it, and that thing is usually a network call that comes back empty rather than an error.
+
+**Status (2026-09-25): resolved —** fixed with `F78` in 0.26.0. `discovery.parse_pubmed_summaries` now returns `pmcid=pmcid_token(ids.get("pmcid"))`, which strips the `pmc-id:` label and trailing `;` and returns `None` for a string with no accession, so every service in a mixed search yields the bare `PMC…` form. The retrieval half (`F31`) is still open.
+
+## F32 — `validate_module`'s warnings are a silent subset of the compile's, including one that needs no resolution
+
+**Found:** 2026-08-12, authoring `assets/longevity_2026` · **Severity:** medium · **Status:** open
+
+Same spec, same `strict=True`, `resolution.csv` present for both:
+
+| | warnings |
+|---|---|
+| `validate_module` | 2 — both the VRS coverage pair |
+| `compile_module` | 5 — those two, two locus expansions, **and the licence pair** |
+
+The licence one is the problem:
+
+> *module declares license 'CC0-1.0' but annotation-layer sources report ['public-domain']. Not
+> adjudicated here — a compatible pair is legitimate, an incompatible one is a real problem, and only a
+> human can tell which.*
+
+It compares `module_spec.yaml` against `sources.csv`. It reads no resolved row and could run on a spec
+with no `resolution.csv` at all, yet it is reachable only by compiling.
+
+**`F18` is not this.** That one is about a pre-flight run *before* resolution exists. Here resolution
+existed and the pre-flight still withheld a check that does not depend on it.
+
+**Why it matters more than the count suggests.** The message says only a human can adjudicate — it is
+addressed to the author, and it is the one warning in the set that asks for a *decision* rather than
+reporting a fact about coverage. The documented contract is about refusals, so nothing is technically
+broken; but the skill also says to read the warnings on a green run, and an author who pre-flights,
+sees two warnings about VRS coverage and stops has not been asked the question.
+
+**Candidate fix:** move the licence-pair check into the shared pre-flight both entry points call, and
+say in the docstring that `validate_module`'s warnings are the resolution-independent subset — because
+if they are going to be a subset, that should be a stated property rather than something discovered by
+diffing two outputs.
+
+**Status (2026-09-25): resolved —** the licence-pair check is in the pre-flight in installed compiler 0.7.1: `_validate_spec` calls `_check_declared_license_agrees` on the `SourceRow` table. Probed on a copy of `assets/longevity_2026`: `validate_spec` reports `declared_license_disagrees: 1`. `skills/module-compile/GUIDE.md` states which checks appear only at compile (those that need resolved rows).
+
+## F46 — the licensing obligation is announced only by the one tool in the chain you need not call
+
+**Found:** 2026-08-20, adding the article licence row after quoting a paper · **Severity:** medium ·
+**Status:** open
+
+Quoting an article's text into `studies.csv` puts publisher text in the module's **annotation**
+layer, which is the layer where `commercial_use=false` actually bites. `licensing.csv` needs a row
+carrying **that article's** terms — not the service's, because the terms are per article.
+
+The product says so, once, in the right words: `discovery._licensing_notes` builds a
+`SourceLicenseNote` whose text ends *"If you copy a passage from an article into studies.csv, that
+is a SECOND row at layer='annotation' carrying the ARTICLE's licence, not this service's — use
+lookup_open_access to read it, because those terms are per-article."*
+
+**It rides on `LiteratureSearchResult` and nothing else.** `lookup_citation`, `lookup_open_access`
+and `fetch_fulltext` carry no `licensing` field at all. So:
+
+- the tool that *knows* the article's licence (`lookup_open_access`) says nothing about owing a row;
+- the tool that hands you the text you are about to quote (`fetch_fulltext`) says nothing either;
+- the only tool that mentions it is `literature_search`, and an author working from a PMID they
+  already hold — a remediation, a hand-off, a module somebody else started — never calls it.
+
+**Measured by being that author.** This whole session ran `lookup_citation` → `lookup_open_access` →
+`fetch_fulltext`, three tools, six calls, and received not one licensing note. The `sources.csv` row
+for the quoted CC-BY article got written because I re-read the skill, not because anything asked.
+
+And a missing `licensing.csv` row is a **warning, not an error**, so the module publishes green.
+
+**The fix is small and the right shape is a question.** Attaching `licensing` to
+`OpenAccessResult` is one line of model plus one call to the existing builder — but the note it
+would carry is per *service*, and what is owed here is per *article*. `lookup_open_access` is the
+one tool that holds the article's own `license` string, so it can say the true thing:
+*"you now owe a `licensing.csv` row at `layer=annotation` for `pmid:24489884` carrying `cc-by`"*.
+That is more useful than the generic note and it is only available there.
+
+**A candidate that is wrong: writing the row.** `declared_use` is a licence position only the author
+can take, and a fabricated licence string is worse than the missing warning. Name the obligation,
+name the licence you read, and stop.
+
+**Status (2026-09-25): resolved —** overtaken by a reversal rather than fixed as asked. The row this entry wanted `lookup_open_access` to announce, a `licensing.csv` row at `layer=annotation` for the article, is one upstream `RM46` and our own skills now say must not be written. Per-article terms live on `literature.csv` (`LiteratureRow.license`, `commercial_use`, `share_alike`, `redistribution` in installed format 0.7.0), `discovery._licensing_notes` says so and points at `lookup_open_access` before quoting (`F109`, 2026-09-24), and the installed compiler 0.7.1 warns `quoted_article_license_restrictive` when a quoted PMID's article forbids commercial reuse.
+
+## F51 — `uv run` answers about whichever repo you are standing in, and both report `just-dna-format 0.6.1`
+
+**Found:** 2026-08-20, checking whether an upstream fix had reached us · **Severity:** high ·
+**Status:** open
+
+`CLAUDE.md` §8's rule for an upstream fix is *"verify state 2 against the installed package, never
+the sibling checkout"*, and it names the exact move: import the symbol and check. That check was run
+and it lied, because `uv run` resolves against the project of the **current working directory** and
+the command happened to be chained after a `cd` into `../just-dna-format`.
+
+```
+cd /data/sources/just-dna-format     && uv run python -c "…'curator' in StudyRow.model_fields"  -> True
+uv run python -c "…'curator' in StudyRow.model_fields"  -> False
+```
+
+Both print `just-dna-format 0.6.1` from `importlib.metadata`. Both resolve `just_dna_format.__file__`
+to a `site-packages` path — a *different* venv, but the path shape is identical and nothing in the
+output says which project answered. So the one discriminator the rule relies on is silently
+working-directory-scoped, and the version string cannot break the tie because upstream develops in
+tree without bumping it.
+
+**It nearly shipped a false status line.** `F43` was seconds from recording `StudyRow.curator` as
+available; it is not, and every mitigation resting on its absence would have come out early. The
+sibling tree is where a fix appears *first*, so this failure mode is most likely at exactly the moment
+it matters most — the hour after upstream answers.
+
+**What actually protects against it, in order of strength.**
+
+1. **Print `__file__` in the same command as the symbol check** and read the venv path, not just the
+   symbol. Two lines, no ambiguity, and it is what caught this.
+2. **Never chain a symbol check after a `cd`.** Run it as its own command from this repository, or
+   use `uv run --project /data/sources/just-module-creator`, which pins the environment regardless of
+   cwd. The agent guidelines already say to use absolute paths in git commands for the same reason;
+   this is the same trap on a different tool.
+3. Do not lean on `importlib.metadata.version` to tell two code states apart. It is right about the
+   release and says nothing about an in-tree change, which is the whole of state 2.
+
+**Why this is ours and not a note upstream.** Nothing is wrong with `uv`; the defect is in a
+verification recipe of ours that assumes a command means the same thing from any directory. The fix
+is the recipe.
+
+**Status (2026-09-25): resolved —** the recipe is fixed where it is read. `CLAUDE.md` §8 now requires `uv run --project /data/sources/just-module-creator` and printing `just_dna_format.__file__` beside the symbol check, and says `hasattr` or the version string alone does not tell the two trees apart. Nothing in code was owed.
+
+## F58 — nothing tells an author how long a `description` should be, and six of seven published cards are paragraphs
+
+**Found:** 2026-08-21, from the owner reading `antonkulaga/cognitive_intelligence`'s catalog card ·
+**Severity:** medium · **Status:** mitigated here in `8fb2825` — the norm is homed in
+`skills/module-tables/references/module_spec.md` and repeated at `scaffold_module`'s `next_step`. The
+upstream half is open as format-tree `S63` and is tracked in `docs/just-dna-format-pending-fixes.md`;
+the tool-surface prose change rides into the CHANGELOG at the next bump.
+
+The card's description ran to fourteen rows. The owner's read: *"Although there is no restriction I'd
+say 5-15 words length is optimum otherwise it looks bloated."*
+
+There is indeed no restriction, and that is the finding — not that one module overran, but that **no
+surface an author touches states a target at all**, so every module that came out long came out long
+for the same reason.
+
+**What the published catalog actually looks like.** `registry_search()` against production, all seven
+modules, word count of `description`:
+
+```
+ 79 words  antonkulaga/aggression_anger_snps@2.0.0
+ 60 words  antonkulaga/cognitive_intelligence@2.0.0     <- the fourteen-row card
+ 45 words  antonkulaga/bodybuilding@1.0.0
+ 38 words  antonkulaga/big_five_personality_snps@2.1.0
+ 36 words  ksuha-dna/placebo_response_claude@1.0.0
+ 25 words  antonkulaga/risk_impulsivity_snps@2.0.0
+  8 words  eric-mods/lactose_tolerance@1.0.1
+```
+
+One of seven is inside the band, and it is the outside author's two-variant module. **Measure the
+published record, not the sibling checkout** — `../just-dna-format`'s spec for
+`cognitive_intelligence` says 33 words where the published version says 60, and the immutable one is
+the one a consumer sees.
+
+**The length is the symptom; the repetition is the defect.** Four of the five specs under
+`data/output/corrected_modules/` end with the byte-identical sentence *"Curated from the GWAS Catalog
+(GRCh38), allele/strand-validated against dbSNP with a gnomAD r4 second witness."* Fifteen words, four
+cards, and on a search-results page the description's only job is to tell this module apart from the
+ones beside it. A sentence four modules share does the exact opposite of that while spending most of
+each card to do it. Methodology already has three homes that persist and are meant for it —
+`weighting:`, `authorship:` and `README.md` — and none of them is the card subtitle.
+
+**We had already asserted the norm twice and stated it nowhere.** `tools/registry.py`'s
+`registry_amend_readme` docstring says *"`description` is one sentence and cannot carry that"*, and
+`skills/module-tables/references/readme.md` says *"because `display.description` is one sentence"*.
+Both use the claim as a premise for something else; neither is anywhere an author looks while writing
+the line, and the corpus above is what the unenforced claim was worth. This is §8's third prose-rot
+shape exactly — an enforcement claim with no surface named. Two restatements, and the field's own
+model carries no `Field(description=…)` at all, which is `S63`.
+
+**Fix it.** The norm gets **one home** (`skills/module-tables/references/module_spec.md`, which owns
+the field), and it is repeated at the one point an author actually meets the field: `scaffold_module`'s
+`next_step`, which is the string an agent reads immediately before replacing the `<<REPLACE>>`. The two
+existing assertions are sharpened to agree with it rather than left as independent claims.
+
+**Surface it, do not fix it — and why each candidate repair is wrong.**
+
+- **A `max_length` or a validator on the field.** Refuses a spec that is merely verbose, and refuses it
+  at validate time, long after the prose was written and for a property that is taste rather than
+  correctness. It would also make six published modules retroactively invalid, which is a false claim
+  about finished work — they met every requirement that existed. Argued in `S63` and declined there.
+- **A `lint_rows`-style length warning of ours.** Cheaper, but it fires at the wrong end of the stage:
+  by the time a module lints, the description has been written, reviewed and forgotten. A warning that
+  arrives after the decision is a warning that gets waved through.
+- **The registry clamping or folding the card.** Rendering is theirs, and clamping hides content the
+  author chose to write — the description would still be a paragraph, just an invisible one. Not filed
+  in their intake for that reason.
+- **Amending the four long ones.** `description` lives in `module_spec.yaml`, inside the attestation
+  binding, so unlike the README it is not amendable — it costs a new version. That is the module
+  author's call and not ours, and it is a decision for their list rather than a repair for ours.
+
+**Sharpened the next day, and the correction matters.** Measuring it rather than reasoning about it
+showed the cost is *worse* than a version: editing only `module.description` leaves `content_signature`,
+`artifact.digest` and `resolution_signature` byte-identical and **wipes `manifest.verification` to
+`null`** — a closed module becomes one that "records no closure". So the sentence to quote is *costs a
+version and the closure record, in exchange for changing nothing measurable*. That is `F59`, filed as
+format `S64` and registry `S16`; the decision-list framing above is unchanged, only its price tag.
+
+**Status (2026-09-25): resolved —** upstream `S63` is released and installed. `ModuleInfo.description` in format 0.7.0 carries *"One short sentence — roughly 5–15 words — saying what this module is about…"*, and `title` and `report_title` have descriptions too. Our point-of-write repetition at `scaffold_module`'s `next_step` stays, as the pending-fixes entry says it should.
+
+## F110 — `lookup_variant(frequencies=true)` is silent on every multi-allelic locus (upstream `S108`)
+
+**Found:** 2026-09-24, same run · **Severity:** medium · **Status:** format-tree `S108` accepted
+2026-09-24 as their `RM255`, fixed in tree, **not in a release we install** — close on the release
+
+15 of 25 GWAS lead rsIDs came back with `populations: []` and no finding, because the enricher's
+`_lookup_frequencies` returns early when `alts` holds a comma. That left the MAF match, which is the
+only way to fix a palindromic pair's strand, with nothing to work from. HLA-DRB1 rs9271058 (T/A) was
+dropped from the module for that reason. Our tool passes the upstream result through, so there is
+nothing to add on our side beyond a finding, and once upstream answers, that belongs to them.
+
+**Status (2026-09-25): resolved —** upstream `S108` → `RM255` shipped in enricher 0.7.2 (2026-09-25) and is installed. `just_dna_enricher/lookup.py` now splits `alts` on commas and asks about every allele, where it used to return early on a comma. `lookup_variant` passes the result through, so there was nothing to change on our side.
+
 ## F104 — a table-level authoring move had no honest home in the log
 
 Found 2026-09-20 by the dogfooding seat. `record_override` is the only writer to
