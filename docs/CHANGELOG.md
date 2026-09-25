@@ -3,6 +3,18 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.41.1] — 2026-09-25
+
+- **Stripped upstream-version archaeology from the skills.** The "used to / fixed in 0.6.x / since 0.N /
+  new in 0.7" package history woven through the skills is gone, along with the three era-corpus census
+  sections (`readme` "Era buckets", `module_spec` "0.1-era corpus", `gene_validity` §11 "Era check") and
+  the `logs` era-classification table — a backwards-compatibility measurement is upstream's to hold, not
+  a result we report (§10). The floor is 0.7.x, so every dated fix below it is strictly dead. Each edit
+  keeps the present-tense fact; reversion-guards, verification stamps, ⚠️ CHECK markers, live
+  cross-version handshake behaviour, and the "out of date, not broken" stance are kept. Fixed a stale
+  "not released yet" on the thin path (registry 0.25.0 is released; floor is 0.26.1). Skills only — no
+  tool-surface change.
+
 ## [0.41.0] — 2026-09-25
 
 - **`list_supplementary` hands out only URLs that download** (`F114`). The Europe PMC rung used to
