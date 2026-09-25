@@ -3,6 +3,16 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.40.1] — 2026-09-25
+
+- **Adopts `just-dna-enricher` 0.7.2; the floor is now `>=0.7.2`.** `lookup_variant(frequencies=true)`
+  now asks gnomAD about every allele at a site with more than one alternate allele, where it used to
+  return `populations: []` with no finding (`F110`, upstream `S108`/`RM255`). Each population row now
+  carries `allele`, `variant_id` and `vrs_id`, and we pass them through unchanged. The same release
+  stops the Atlas tier dying at import beside `protobuf<7` (`RM254`). Format stays 0.7.0 and the
+  compiler 0.7.1. The same lock refresh takes fastmcp 4.0.9, cyclopts 5 and huggingface-hub 2; the
+  suite passes on all three.
+
 ## [0.40.0] — 2026-09-25
 
 - **`registry_publish` hands back the module's page in the registry's web console.** Both instances

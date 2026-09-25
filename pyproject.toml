@@ -1,6 +1,6 @@
 [project]
 name = "just-module-creator"
-version = "0.40.0"
+version = "0.40.1"
 description = "MCP server and skills for authoring and publishing just-dna annotation modules; a Claude Code and Codex plugin"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -46,7 +46,7 @@ dependencies = [
     # S41/S45, our F36) are all below 0.7.0. `docs/CHANGELOG.md` at 0.16.0 carries it.
     "just-dna-compiler>=0.7.1,<0.8",
     "just-dna-format>=0.7.0,<0.8",
-    "just-dna-enricher[atlas]>=0.7.1,<0.8",
+    "just-dna-enricher[atlas]>=0.7.2,<0.8",
     # 0.25.2 is the first PUBLISHED client carrying the whole caching-proxy surface —
     # `cache_status`, `derived`, `draft`, the six `hint_*` methods and
     # `models.api.VariantHintReport`. Verified against the wheel rather than a sibling
