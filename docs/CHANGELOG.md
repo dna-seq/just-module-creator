@@ -3,6 +3,18 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.41.0] — 2026-09-25
+
+- **`list_supplementary` hands out only URLs that download** (`F114`). The Europe PMC rung used to
+  list `europepmc.org/articles/<PMCID>/bin/…` links, and none of those serve a file. It now takes the
+  file names from Europe PMC, addresses them on the publisher's host (Springer family or PLOS), and
+  checks each with a HEAD request, which also fills `size_bytes`. A file no reachable host serves is
+  still listed, with `url: null`. **`SupplementaryFileInfo.url` is now nullable.** PLOS (`10.1371`)
+  gets a publisher-pattern rung. The Springer probe uses HEAD, so it no longer downloads each file.
+- **`fetch_supplementary` fetches from any host.** A full URL was joined onto Springer's base, so every
+  other host answered 404. That 404 was then explained with Springer's 403 wording. Both are fixed, and
+  a web page returned in place of the file (PMC's bot challenge) is refused rather than saved.
+
 ## [0.40.1] — 2026-09-25
 
 - **Adopts `just-dna-enricher` 0.7.2; the floor is now `>=0.7.2`.** `lookup_variant(frequencies=true)`

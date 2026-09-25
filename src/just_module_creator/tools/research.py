@@ -31,6 +31,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from anyio.to_thread import run_sync
 from fastmcp import FastMCP
@@ -1002,9 +1003,11 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         Two rungs. When the article is in Europe PMC its fulltext XML names every
         file **with its real extension**, which is authoritative — extensions are
         not guessable, and a peer-review PDF and a data workbook sit at adjacent
-        indices. Otherwise the publisher's ESM URL pattern is probed, which is the
-        common case for a paper published this month, and exactly when somebody is
-        writing a module about it.
+        indices. Otherwise the publisher's URL pattern is probed (Springer, BMC,
+        Nature, PLOS), which is the common case for a paper published this month,
+        and exactly when somebody is writing a module about it. Every `url` listed
+        was checked before it was listed; a `null` one is a real file no reachable
+        host serves.
 
         **Read `verdict` as three-valued.** `none_published` says the paper has no
         supplementary material. `not_determinable` says no rung could answer —
@@ -1273,36 +1276,73 @@ def _supplementary_list(
     )
 
 
+def _host_service(services: NetworkServices, url: str) -> HttpService:
+    """A paced service for the host a supplementary URL is on, built once per host.
+
+    Springer's object store keeps its own entry, since the listing probes it too.
+    """
+    host = urlparse(url).netloc
+    if url.startswith(supplementary.ESM_HOST):
+        return _esm_service(services)
+    name = f"supplementary:{host}"
+    for existing in services._extra:  # noqa: SLF001 — the registry is ours
+        if existing.name == name:
+            return existing
+    return services.register(
+        HttpService(
+            name=name,
+            base_url=f"https://{host}",
+            gate=ServiceGate(interval=0.5),
+            headers={"User-Agent": f"just-module-creator (mailto:{services.contact_email()})"},
+        )
+    )
+
+
 def _supplementary_fetch(services: NetworkServices, url: str) -> SupplementaryFetch:
     if not url.startswith(("http://", "https://")):
         raise ToolError("Pass a url from list_supplementary.")
-    service = _esm_service(services)
     on_esm_host = url.startswith(supplementary.ESM_HOST)
-    path = url[len(supplementary.ESM_HOST) :] if on_esm_host else url
     try:
-        response = service.probe(path)
+        response = _host_service(services, url).probe(url)
     except ServiceUnavailable as exc:
         return SupplementaryFetch(url=url, retrieved=False, note=f"{exc}")
     if response.status_code >= 400:
+        # The 403 reading is measured on Springer's store only (`F114`: it used to be
+        # attached to every status on every host, so a 404 was explained as a 403).
+        note = (
+            f"HTTP {response.status_code}. On this host a 403 means no such object — "
+            "the file is not published under that name, which is not the same as the "
+            "article having no supplementary material."
+            if on_esm_host and response.status_code == 403
+            else f"HTTP {response.status_code} from {urlparse(url).netloc}: nothing was "
+            "served at this URL."
+        )
+        return SupplementaryFetch(url=url, retrieved=False, note=note)
+    # The name is the last segment of where the bytes came from: PLOS answers on a
+    # `file?type=…&id=…` URL and redirects to the file under its real name.
+    name = str(response.url).split("?", 1)[0].rsplit("/", 1)[-1] or "download"
+    content_type = response.headers.get("content-type")
+    if content_type and content_type.startswith("text/html") and not name.endswith(".html"):
+        # PMC's file links answer a script with a bot-challenge page under HTTP 200.
         return SupplementaryFetch(
             url=url,
             retrieved=False,
+            content_type=content_type,
             note=(
-                f"HTTP {response.status_code}. On this host a 403 means no such object — "
-                "the file is not published under that name, which is not the same as the "
-                "article having no supplementary material."
+                f"{urlparse(url).netloc} answered with a web page, not the file (a bot "
+                "challenge or a landing page). Nothing was saved."
             ),
         )
     target = _supplementary_cache(services.settings)
     target.mkdir(parents=True, exist_ok=True)
-    destination = target / url.rsplit("/", 1)[-1]
+    destination = target / name
     destination.write_bytes(response.content)
     return SupplementaryFetch(
         url=url,
         path=str(destination),
         retrieved=True,
         size_bytes=len(response.content),
-        content_type=response.headers.get("content-type"),
+        content_type=content_type,
     )
 
 

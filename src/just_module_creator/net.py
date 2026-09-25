@@ -179,8 +179,19 @@ class HttpService:
         Throttling and 5xx still retry exactly as in `get` — the difference is
         only what happens to a 4xx that survives them.
         """
+        return self._tolerant("GET", path, params)
+
+    def head(self, path: str, params: dict[str, Any] | None = None) -> httpx.Response:
+        """`probe`, as a HEAD: whether an object exists and how big it is, without the body.
+
+        An existence check on an object store must not download the object. A GET
+        probe fetched a 19 MB workbook to read one `content-length` header.
+        """
+        return self._tolerant("HEAD", path, params)
+
+    def _tolerant(self, method: str, path: str, params: dict[str, Any] | None) -> httpx.Response:
         try:
-            return self._get(path, params, tolerate_client_error=True)
+            return self._get(path, params, tolerate_client_error=True, method=method)
         except _Throttled as exc:
             raise ServiceUnavailable(
                 self.name, f"HTTP {exc.status_code}", rate_limited=exc.status_code == 429
@@ -200,6 +211,7 @@ class HttpService:
         params: dict[str, Any] | None,
         *,
         tolerate_client_error: bool = False,
+        method: str = "GET",
     ) -> httpx.Response:
         """The retried attempt. Same shape as the enricher's own clients.
 
@@ -208,9 +220,16 @@ class HttpService:
         safe because the gate paces *before* each retry, so an extra attempt
         spends a slot of the budget rather than bursting past it.
         """
-        url = f"{self.base_url.rstrip('/')}/{path.lstrip('/')}" if path else self.base_url
+        # An absolute URL is taken as it is. Joined onto `base_url`, a Europe PMC link
+        # passed to the ESM service became `https://static-content.springer.com/https://…`
+        # and answered 404, which is how `fetch_supplementary` could fetch from no other
+        # host (`F114`).
+        if path.startswith(("http://", "https://")):
+            url = path
+        else:
+            url = f"{self.base_url.rstrip('/')}/{path.lstrip('/')}" if path else self.base_url
         self.gate.wait()
-        response = self._http().get(url, params=params)
+        response = self._http().request(method, url, params=params)
         if response.status_code == 429 or response.status_code >= 500:
             raise _Throttled(response)
         if not tolerate_client_error:

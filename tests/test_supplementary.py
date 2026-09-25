@@ -10,10 +10,14 @@ from __future__ import annotations
 import zipfile
 from pathlib import Path
 
+import httpx
 import pytest
 from conftest import offline_settings
 
+from just_module_creator import net
 from just_module_creator import supplementary as S
+from just_module_creator.net import HttpService, ServiceGate, build_services
+from just_module_creator.tools import research
 
 
 @pytest.mark.parametrize(
@@ -80,9 +84,7 @@ def test_an_unknown_publisher_is_not_determinable_and_never_none_published() -> 
     two verdicts is how that happens. An Elsevier DOI must come back as a gap in
     our coverage, naming the prefix, not as an article without supplements.
     """
-    result = S.inventory(
-        doi="10.1016/j.cell.2019.03.043", xml=None, xml_base_url=None, probe=None
-    )
+    result = S.inventory(doi="10.1016/j.cell.2019.03.043", xml=None, xml_base_url=None, probe=None)
     assert result.verdict == "not_determinable"
     assert result.verdict != "none_published"
     assert "10.1016" in (result.why_not or "")
@@ -91,9 +93,7 @@ def test_an_unknown_publisher_is_not_determinable_and_never_none_published() -> 
 
 def test_offline_cannot_answer_the_pattern_rung_and_says_so() -> None:
     """A rung that could not run is not a rung that found nothing."""
-    result = S.inventory(
-        doi="10.1007/s11357-025-02044-3", xml=None, xml_base_url=None, probe=None
-    )
+    result = S.inventory(doi="10.1007/s11357-025-02044-3", xml=None, xml_base_url=None, probe=None)
     assert result.verdict == "not_determinable"
     assert "Offline" in (result.why_not or "")
 
@@ -161,7 +161,7 @@ _CONTENT_TYPES = (
     '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
     '<Default Extension="xml" ContentType="application/xml"/>'
     '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package'
-    ".relationships+xml\"/>"
+    '.relationships+xml"/>'
     '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-'
     'officedocument.spreadsheetml.sheet.main+xml"/>'
     '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-'
@@ -298,3 +298,140 @@ async def test_the_tool_reports_truncation_against_populated_rows(make_client, t
         "sheet with trailing padding as incomplete forever"
     )
     assert whole.data.sheets_available == ["ST9"]
+
+
+# --------------------------------------------------------------------------- #
+# F114: every URL handed out is one a host serves
+# --------------------------------------------------------------------------- #
+#: The real PLOS article F114 was re-probed on, and the Nature Genetics one whose
+#: MOESM names Springer's store serves.
+_PLOS_DOI = "10.1371/journal.pgen.1006528"
+_NATURE_DOI = "10.1038/s41588-019-0358-2"
+_PLOS_STORE = "https://storage.googleapis.com/plos-corpus-prod/10.1371/journal.pgen.1006528/1"
+
+
+def _host(routes: dict[str, httpx.Response], monkeypatch) -> HttpService:
+    """A paced service whose transport answers from ``routes`` (full URL → response),
+    404 for anything else, and records what it was asked."""
+    monkeypatch.setattr(net, "_JITTER", lambda _state: 0.0)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        asked.append((request.method, str(request.url)))
+        return routes.get(str(request.url), httpx.Response(404))
+
+    asked: list[tuple[str, str]] = []
+    service = HttpService(name="fake", base_url=S.ESM_HOST, gate=ServiceGate(interval=0.0))
+    service._client = httpx.Client(transport=httpx.MockTransport(handler), follow_redirects=True)
+    service.asked = asked  # type: ignore[attr-defined]
+    return service
+
+
+def _plos_redirect(index: str, extension: str) -> dict[str, httpx.Response]:
+    target = f"{_PLOS_STORE}/pgen.1006528.{index}.{extension}"
+    return {
+        S.plos_url(_PLOS_DOI, index): httpx.Response(302, headers={"location": target}),
+        target: httpx.Response(200, headers={"content-length": "37084"}),
+    }
+
+
+def test_a_jats_name_is_addressed_on_the_publishers_host_never_europe_pmcs() -> None:
+    springer = S.resolve_url(_NATURE_DOI, "41588_2019_358_MOESM3_ESM.xlsx")
+    plos = S.resolve_url(_PLOS_DOI, "pgen.1006528.s002.docx")
+    assert springer == (
+        f"{S.ESM_HOST}/esm/art%3A10.1038%2Fs41588-019-0358-2/MediaObjects/"
+        "41588_2019_358_MOESM3_ESM.xlsx"
+    )
+    assert plos == S.plos_url(_PLOS_DOI, "s002")
+    # Elsevier: no host we can address, so no URL rather than a guessed one.
+    assert S.resolve_url("10.1016/j.ajhg.2018.11.008", "mmc2.xlsx") is None
+
+
+def test_the_xml_rung_keeps_a_file_no_host_serves_but_hands_out_no_url_for_it(
+    monkeypatch,
+) -> None:
+    """Listed-but-unservable is still `found`: dropping the file would turn *we
+    cannot fetch it* into *the paper has none*, which this module exists to refuse."""
+    xml = "".join(
+        f'<supplementary-material><media xlink:href="pgen.1006528.{i}.docx"/>'
+        "</supplementary-material>"
+        for i in ("s001", "s002")
+    )
+    served = _plos_redirect("s002", "docx")
+    probe = _host(served, monkeypatch)
+    result = S.inventory(
+        doi=_PLOS_DOI,
+        xml=xml,
+        xml_base_url="https://europepmc.org/articles/PMC5407576/bin",
+        probe=probe,
+    )
+    assert result.verdict == "found"
+    assert [f.name for f in result.files] == ["pgen.1006528.s001.docx", "pgen.1006528.s002.docx"]
+    assert [f.url for f in result.files] == [None, S.plos_url(_PLOS_DOI, "s002")]
+    assert result.files[1].size_bytes == 37084
+    assert any("1 of 2" in n for n in result.notes)
+    # Checked by HEAD, and nothing was asked of Europe PMC's file links.
+    assert {m for m, _ in probe.asked} == {"HEAD"}  # type: ignore[attr-defined]
+    assert not any("europepmc.org" in u for _, u in probe.asked)  # type: ignore[attr-defined]
+
+
+def test_the_plos_pattern_rung_names_files_from_where_plos_redirects(monkeypatch) -> None:
+    routes = {**_plos_redirect("s001", "xlsx"), **_plos_redirect("s002", "docx")}
+    result = S.inventory(
+        doi=_PLOS_DOI, xml=None, xml_base_url=None, probe=_host(routes, monkeypatch)
+    )
+    assert result.verdict == "found"
+    assert result.rung == "publisher_pattern"
+    assert result.publisher == "PLOS"
+    assert [(f.name, f.extension) for f in result.files] == [
+        ("pgen.1006528.s001.xlsx", "xlsx"),
+        ("pgen.1006528.s002.docx", "docx"),
+    ]
+
+
+def test_an_unreachable_plos_is_not_determinable_never_none_published(monkeypatch) -> None:
+    monkeypatch.setattr(net, "_JITTER", lambda _state: 0.0)
+
+    def down(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("refused", request=request)
+
+    probe = HttpService(name="fake", base_url=S.ESM_HOST, gate=ServiceGate(interval=0.0))
+    probe._client = httpx.Client(transport=httpx.MockTransport(down))
+    result = S.inventory(doi=_PLOS_DOI, xml=None, xml_base_url=None, probe=probe)
+    assert result.verdict == "not_determinable"
+    assert result.files == []
+
+
+def _fetch_with(routes: dict[str, httpx.Response], url: str, monkeypatch, tmp_path: Path):
+    services = build_services(offline_settings(workspace=str(tmp_path)))
+    service = _host(routes, monkeypatch)
+    service.name = (
+        "publisher_esm" if url.startswith(S.ESM_HOST) else (f"supplementary:{httpx.URL(url).host}")
+    )
+    services.register(service)
+    return research._supplementary_fetch(services, url)
+
+
+def test_a_404_off_springers_store_is_not_explained_as_a_403(monkeypatch, tmp_path) -> None:
+    """F114: the fetch note said *"HTTP 404. On this host a 403 means no such object"*."""
+    url = "https://europepmc.org/articles/PMC5407576/bin/pgen.1006528.s002.docx"
+    got = _fetch_with({}, url, monkeypatch, tmp_path)
+    assert got.retrieved is False
+    assert "HTTP 404 from europepmc.org" in (got.note or "")
+    assert "403" not in (got.note or "")
+
+
+def test_a_plos_file_is_fetched_under_its_real_name(monkeypatch, tmp_path) -> None:
+    got = _fetch_with(
+        _plos_redirect("s002", "docx"), S.plos_url(_PLOS_DOI, "s002"), monkeypatch, tmp_path
+    )
+    assert got.retrieved is True
+    assert got.path is not None and got.path.endswith("pgen.1006528.s002.docx")
+
+
+def test_a_bot_challenge_page_is_not_saved_as_the_file(monkeypatch, tmp_path) -> None:
+    url = "https://pmc.ncbi.nlm.nih.gov/articles/instance/5407576/bin/pgen.1006528.s002.docx"
+    page = httpx.Response(200, headers={"content-type": "text/html; charset=utf-8"}, text="<html/>")
+    got = _fetch_with({url: page}, url, monkeypatch, tmp_path)
+    assert got.retrieved is False
+    assert got.path is None
+    assert "web page" in (got.note or "")

@@ -1299,7 +1299,13 @@ class SupplementaryFileInfo(BaseModel):
     """One supplementary object as the publisher posted it."""
 
     name: str = Field(description="Filename as published, e.g. `41467_2018_3242_MOESM5_ESM.xlsx`.")
-    url: str = Field(description="Where it is, ready to pass to `fetch_supplementary`.")
+    url: str | None = Field(
+        description=(
+            "Where it downloads from, checked before it was listed; pass it to "
+            "`fetch_supplementary`. **null means the file exists and no host we can reach "
+            "serves it**, not that it is missing. `notes` says so."
+        )
+    )
     extension: str = Field(description="Lowercased, from the name. Never inferred from content.")
     caption: str | None = Field(
         default=None,

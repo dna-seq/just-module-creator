@@ -43,7 +43,20 @@ PATTERNED_PREFIXES: dict[str, str] = {
     "10.1007": "Springer",
     "10.1186": "BMC",
     "10.1038": "Nature Portfolio",
+    "10.1371": "PLOS",
 }
+
+#: The prefixes whose files sit on Springer's ESM host. PLOS has its own.
+_SPRINGER_FAMILY = frozenset({"10.1007", "10.1186", "10.1038"})
+
+#: PLOS serves every supplement through one endpoint keyed on `<doi>.sNNN`, and it
+#: redirects to a storage URL whose last segment is the real filename. The journal
+#: slug in the path is not checked: a `pgen` DOI answers under `plosone`, measured
+#: 2026-09-25. A missing index is a 404.
+PLOS_FILE_ENDPOINT = "https://journals.plos.org/plosone/article/file"
+
+#: `pgen.1006528.s002.docx` → `s002`: the index a PLOS JATS name carries.
+_PLOS_INDEX = re.compile(r"\.(s\d{3})(?:\.|$)")
 
 #: Probed in this order when no inventory named the extension. Ordered by what
 #: actually carries tables. Guessing is the fallback rung and its misses mean
@@ -67,7 +80,8 @@ class SupplementaryFile:
     reported as the publisher wrote it rather than improved."""
 
     name: str
-    url: str
+    #: None when the file is listed but no host we can reach serves it.
+    url: str | None
     extension: str
     caption: str | None = None
     size_bytes: int | None = None
@@ -107,6 +121,53 @@ def esm_path(doi: str, stem: str, index: int, extension: str) -> str:
 def esm_url(doi: str, stem: str, index: int, extension: str) -> str:
     """The full addressable form, for reporting back to a caller."""
     return f"{ESM_HOST}{esm_path(doi, stem, index, extension)}"
+
+
+def plos_url(doi: str, index: str) -> str:
+    """``index`` is ``s002``. The DOI goes into the query as it is, slash included."""
+    return f"{PLOS_FILE_ENDPOINT}?type=supplementary&id={doi}.{index}"
+
+
+def resolve_url(doi: str | None, name: str) -> str | None:
+    """Where a file named in the article's JATS can actually be downloaded, or None.
+
+    Europe PMC's ``/articles/<pmcid>/bin/<name>`` looks like a download URL and is
+    not one: it answered 404 or 403 for every file tried, and PMC's own ``/bin/``
+    serves a bot-challenge page. The JATS *names* are the publisher's, so the file
+    is addressed on the publisher's host instead (`F114`).
+    """
+    if not doi:
+        return None
+    prefix = doi.split("/", 1)[0]
+    if prefix in _SPRINGER_FAMILY:
+        return f"{ESM_HOST}/esm/art%3A{quote(doi, safe='')}/MediaObjects/{name}"
+    if prefix == "10.1371" and (match := _PLOS_INDEX.search(name)):
+        return plos_url(doi, match.group(1))
+    return None
+
+
+def _size(response: object) -> int | None:
+    length = getattr(response, "headers", {}).get("content-length")
+    return int(length) if length and length.isdigit() else None
+
+
+def _verify(probe: HttpService, files: list[SupplementaryFile]) -> None:
+    """HEAD every URL and keep only the ones that answer. Fills ``size_bytes``.
+
+    An outage leaves the URL in place: the host did not say no, so dropping it would
+    turn *unknown* into *absent*.
+    """
+    for f in files:
+        if f.url is None:
+            continue
+        try:
+            response = probe.head(f.url)
+        except ServiceUnavailable:
+            continue
+        if response.status_code >= 400:
+            f.url = None
+        else:
+            f.size_bytes = _size(response)
 
 
 def parse_jats_supplementary(xml: str, base_url: str) -> list[SupplementaryFile]:
@@ -274,9 +335,27 @@ def inventory(
     if xml and xml_base_url:
         files = parse_jats_supplementary(xml, xml_base_url)
         if files:
+            for f in files:
+                f.url = resolve_url(doi, f.name)
+            notes.append("Names and extensions are the publisher's own, not guessed.")
+            if probe is not None:
+                _verify(probe, files)
+            else:
+                notes.append("Offline: no URL was checked.")
+            unserved = sum(f.url is None for f in files)
+            if unserved:
+                notes.append(
+                    f"{unserved} of {len(files)} file(s) are listed in the article but have no "
+                    "URL: no host we can reach serves them. Europe PMC's and PMC's own file "
+                    "links do not serve downloads to a script. The files exist, so fetch "
+                    "them from the article page by hand."
+                )
             return Inventory(
-                verdict="found", rung="europepmc_xml", files=files, doi=doi,
-                notes=["Names and extensions are the publisher's own, not guessed."],
+                verdict="found",
+                rung="europepmc_xml",
+                files=files,
+                doi=doi,
+                notes=notes,
             )
         notes.append(
             "The article is in Europe PMC and its fulltext XML lists no supplementary file."
@@ -284,7 +363,10 @@ def inventory(
 
     if not doi:
         return Inventory(
-            verdict="not_determinable", rung="none", doi=doi, notes=notes,
+            verdict="not_determinable",
+            rung="none",
+            doi=doi,
+            notes=notes,
             why_not="No DOI, so the publisher pattern cannot be addressed.",
         )
 
@@ -292,7 +374,10 @@ def inventory(
     publisher = PATTERNED_PREFIXES.get(prefix)
     if publisher is None:
         return Inventory(
-            verdict="not_determinable", rung="none", doi=doi, notes=notes,
+            verdict="not_determinable",
+            rung="none",
+            doi=doi,
+            notes=notes,
             why_not=(
                 f"No ESM URL pattern is known for DOI prefix {prefix}. This is a gap in "
                 f"our coverage, not evidence the article has no supplementary material — "
@@ -300,15 +385,66 @@ def inventory(
             ),
         )
 
+    if publisher == "PLOS":
+        if probe is None:
+            return Inventory(
+                verdict="not_determinable",
+                rung="none",
+                doi=doi,
+                publisher=publisher,
+                notes=notes,
+                why_not="Offline: the publisher pattern can only be answered by asking the host.",
+            )
+        files, cut_short = _probe_plos(probe, doi, max_index)
+        if cut_short:
+            notes.append("PLOS stopped answering part-way, so the list may be incomplete.")
+            if not files:
+                return Inventory(
+                    verdict="not_determinable",
+                    rung="none",
+                    doi=doi,
+                    publisher=publisher,
+                    notes=notes,
+                    why_not="PLOS could not be reached.",
+                )
+        if files:
+            notes.append(
+                "Found by probing PLOS's numbered supplement endpoint; enumeration stops "
+                "after two consecutive absent indices."
+            )
+            return Inventory(
+                verdict="found",
+                rung="publisher_pattern",
+                files=files,
+                doi=doi,
+                publisher=publisher,
+                notes=notes,
+            )
+        return Inventory(
+            verdict="none_published",
+            rung="publisher_pattern",
+            doi=doi,
+            publisher=publisher,
+            notes=notes,
+        )
+
     stem = esm_stem(doi)
     if stem is None:
         return Inventory(
-            verdict="not_determinable", rung="none", doi=doi, publisher=publisher, notes=notes,
+            verdict="not_determinable",
+            rung="none",
+            doi=doi,
+            publisher=publisher,
+            notes=notes,
             why_not=f"The DOI suffix does not parse into a {publisher} ESM stem.",
         )
     if probe is None:
         return Inventory(
-            verdict="not_determinable", rung="none", doi=doi, publisher=publisher, notes=notes,
+            verdict="not_determinable",
+            rung="none",
+            doi=doi,
+            publisher=publisher,
+            notes=notes,
             why_not="Offline: the publisher pattern can only be answered by asking the host.",
         )
 
@@ -333,33 +469,71 @@ def inventory(
             "did not try reads as absent. Prefer the Europe PMC inventory where it exists."
         )
         return Inventory(
-            verdict="found", rung="publisher_pattern", files=files,
-            doi=doi, publisher=publisher, notes=notes,
+            verdict="found",
+            rung="publisher_pattern",
+            files=files,
+            doi=doi,
+            publisher=publisher,
+            notes=notes,
         )
     return Inventory(
-        verdict="none_published", rung="publisher_pattern", doi=doi,
-        publisher=publisher, notes=notes,
+        verdict="none_published",
+        rung="publisher_pattern",
+        doi=doi,
+        publisher=publisher,
+        notes=notes,
     )
 
 
-def _probe_one(
-    probe: HttpService, doi: str, stem: str, index: int
-) -> SupplementaryFile | None:
+def _probe_one(probe: HttpService, doi: str, stem: str, index: int) -> SupplementaryFile | None:
     """One index across the candidate extensions. 403 on this host means no key."""
     for extension in CANDIDATE_EXTENSIONS:
         url = esm_url(doi, stem, index, extension)
         try:
-            response = probe.probe(esm_path(doi, stem, index, extension))
+            response = probe.head(url)
         except ServiceUnavailable:
             # Throttling and outages already retried in net.py. Reaching here means
             # the host stayed unreachable: unknown for this index, never absent.
             return None
         if response.status_code < 400:
-            length = response.headers.get("content-length")
             return SupplementaryFile(
                 name=f"{stem}_MOESM{index}_ESM.{extension}",
                 url=url,
                 extension=extension,
-                size_bytes=int(length) if length and length.isdigit() else None,
+                size_bytes=_size(response),
             )
     return None
+
+
+def _probe_plos(
+    probe: HttpService, doi: str, max_index: int
+) -> tuple[list[SupplementaryFile], bool]:
+    """``.s001``, ``.s002``… until two consecutive 404s. The name comes from the
+    storage URL PLOS redirects to, so the extension is the publisher's own.
+
+    The flag is True when the host stopped answering, which is unknown, not absent.
+    """
+    files: list[SupplementaryFile] = []
+    misses = 0
+    for index in range(1, max_index + 1):
+        url = plos_url(doi, f"s{index:03d}")
+        try:
+            response = probe.head(url)
+        except ServiceUnavailable:
+            return files, True
+        if response.status_code >= 400:
+            misses += 1
+            if misses >= 2:
+                break
+            continue
+        misses = 0
+        name = str(response.url).split("?", 1)[0].rsplit("/", 1)[-1]
+        files.append(
+            SupplementaryFile(
+                name=name,
+                url=url,
+                extension=name.rsplit(".", 1)[-1].lower() if "." in name else "",
+                size_bytes=_size(response),
+            )
+        )
+    return files, False

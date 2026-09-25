@@ -8,6 +8,44 @@ are not copied.
 
 ---
 
+## F114 — `list_supplementary`'s Europe PMC rung returns URLs that 404, and `fetch_supplementary` explains the 404 as a 403
+
+**Found:** 2026-08-31 round (2 of 4 runs), no id until 2026-09-25 · **Severity:** medium ·
+**Status:** open, ours. The URL is built in `tools/research.py` (`xml_base`), not upstream.
+
+**`list_supplementary`'s Europe PMC rung returned 13 URLs that all 404**, on two runs and two papers,
+while the rung it labels *"bounded by a guess"* worked every time and returned sizes. The notes tell
+the caller to prefer the EPMC inventory, and the 404 has no entry — the guidance names what a **403**
+means. One run blind-downloaded a 50 MB file it never used, because the EPMC listing carried
+`size_bytes: null`.
+
+**Re-probed 2026-09-25, plugin 0.40.1.** `list_supplementary(pmid="28448500")` (PLoS Genetics,
+PMC5407576) takes the `europepmc_xml` rung and returns eight
+`https://europepmc.org/articles/PMC5407576/bin/pgen.1006528.s00N.*` URLs, all `size_bytes: null`.
+`fetch_supplementary` on `.s002.docx` returns `retrieved: false` with the note *"HTTP 404. On this host
+a 403 means no such object"*. That note contradicts itself: the 404 branch reuses the 403 wording.
+The same file name under `pmc.ncbi.nlm.nih.gov/articles/PMC5407576/bin/` is also a 404. The PLoS
+publisher URL (`journals.plos.org/plosgenetics/article/file?type=supplementary&id=10.1371/journal.pgen.1006528.s002`)
+returns 200 and 37 KB. On the same day, the four Nature Genetics papers tried got HTTP 500 from Europe
+PMC's `fullTextXML`, fell through to the `publisher_pattern` rung, and every URL returned 200. So
+the listing works where a publisher pattern exists, and the Europe PMC rung is the one that
+hands out URLs that don't resolve. Two gaps sit beside it: PLoS (`10.1371`) and Elsevier (`10.1016`) have no
+publisher pattern, so `24489884` and `30595370` come back `not_determinable`.
+
+**Status (2026-09-25): resolved in 0.41.0.** Two defects, not one. Europe PMC's `/bin/` links
+genuinely don't serve downloads (404/403, and PMC's `/bin/` serves a bot-challenge page). Separately,
+`HttpService._get` joined a full URL onto the ESM service's base, so `fetch_supplementary` asked
+`https://static-content.springer.com/https://europepmc.org/…` and could fetch from no host except
+Springer. Now: `supplementary.resolve_url` addresses each JATS name on the publisher's host (Springer
+family or PLOS). `_verify` HEADs every URL before listing it, fills `size_bytes`, and sets `url: null`
+for a file no host serves. `net.HttpService` takes absolute URLs and has `head()`, so the Springer
+probe no longer downloads the file. `_host_service` paces each host separately. The fetch note words a
+403 as "no such object" only on Springer's store. A web page returned in place of a file is refused.
+PLOS (`10.1371`) has a pattern rung. Live, same day: PMID 28448500 lists 27 of 27 files with PLOS URLs
+and sizes, and `.s006` downloads as `pgen.1006528.s006.xlsx` (84,754 bytes).
+`tests/test_supplementary.py`: six of the new tests fail on 0.40.1.
+
+
 ## F83 — two runs picked the identical 49 variants and split on all 49 reference-homozygote rows
 
 **Measured 2026-09-01, one paper, two independent runs** (`10.1007/s11357-025-02044-3`). The agreement

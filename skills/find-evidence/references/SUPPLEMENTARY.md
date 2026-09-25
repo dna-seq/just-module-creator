@@ -1,9 +1,9 @@
 # Supplementary tables: finding them, fetching them, quoting them
 
 > **Scope — measured 2026-08-30 against four real articles.** The retrieval ladder below is
-> publisher-general at rungs 0–2 and **Springer Nature family only** at rung 3 (DOI prefixes
-> `10.1007` Springer, `10.1186` BMC, `10.1038` Nature). That family covers most of the genetics
-> literature a module cites, and it is not all of it. Meeting another publisher is not a failure of
+> publisher-general at rungs 0–2 and **Springer Nature family and PLOS only** at rung 3 (DOI
+> prefixes `10.1007` Springer, `10.1186` BMC, `10.1038` Nature, `10.1371` PLOS, the last added
+> 2026-09-25). That covers most of the genetics literature a module cites, and it is not all of it. Meeting another publisher is not a failure of
 > this file — it is the moment to add a row to the pattern table, with the probe that established it.
 
 | Section | Answers |
@@ -79,6 +79,14 @@ supplementary material. Two agents recorded exactly that inference as a fact abo
 `notes` says what the answer is bounded by. The pattern rung stops enumerating on a guess, so its file
 list is a floor rather than a count; the Europe PMC rung is authoritative because it carries each
 file's real extension.
+
+**Every `url` was checked before it was listed, and a `null` one is a real file with no reachable
+host.** The Europe PMC rung takes its *names* from Europe PMC and addresses them on the publisher's
+host. Europe PMC's own `/articles/<PMCID>/bin/` links answer 404 or 403, and PMC's serve a
+bot-challenge page, so neither is handed out. For a publisher with no pattern (Elsevier, `10.1016`),
+the files are listed with `url: null` and the verdict is still `found`: fetch those from the article
+page by hand. `fetch_supplementary` refuses a web page returned in place of the file rather than
+saving it.
 
 They go through `net.py`'s `ServiceGate`, so pacing, retries on 429/503 and the contact header are
 handled — nothing below needs saying in a prompt.
@@ -166,6 +174,16 @@ curl -sS -L -r 0-0 -o /dev/null -w '%{http_code}\n' "<url>"
 `206`/`200` = the key exists. `403` = **no such key** (the host answers absent objects with an S3
 access-denied, not a 404). Iterate `n` from 1 upward; two consecutive absences across every extension
 you try is a reasonable stop, and it is a *guess*, not a count.
+
+**PLOS** (`10.1371`) numbers its supplements `.s001`, `.s002`… on one endpoint, with no extension to
+guess:
+
+```
+https://journals.plos.org/plosone/article/file?type=supplementary&id=<DOI>.s<NNN>
+```
+
+It redirects to a storage URL whose last segment is the real filename. A missing index is a **404**
+here, not a 403. The journal slug in the path is not checked: a `pgen` DOI answers under `plosone`.
 
 ---
 
