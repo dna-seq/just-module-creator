@@ -72,6 +72,24 @@ the installed packages, not the sibling checkouts** — which is the check this 
 exists to force, and the reason its status lines name both halves.
 
 
+## F113 — `lookup_citation(doi=…)` returns existence and no title (format `S113`)
+
+**Status (2026-09-25):** filed as format-tree `S113`, unanswered. Nothing is mitigated here; our tool
+passes the null through. Found in the 2026-08-31 round (4 of 4 runs) and given no id until today:
+
+**`lookup_citation(doi=…)` returns `doi_exists: true` and null title, journal, year, author** — and
+all four runs arrived holding a DOI, because that is what the prompt gives them. Each identified the
+paper by putting the DOI through `literature_search` as free text instead. The tool's own thesis is
+that *existence never settles identity, only a title does*; on the DOI path it hands back existence
+and no title, which is the one shape it exists to refuse. This is the highest-count finding in the
+round with no id of its own.
+
+**Re-probed 2026-09-25, enricher 0.7.2.** `lookup_citation(doi="10.1038/ng826")` (Enattah 2002, PMID
+11788828) returns `doi_exists: true` with `pmid`, `pmcid`, `title`, `journal`, `year` and
+`first_author` all null, and `findings: []`. Upstream's DOI branch calls `CrossrefClient.exists()`,
+which already fetches `/works/{doi}`, and discards the body that carries the title. That is candidate
+fix 1 in the note. Close when a release we install fills `title` on the DOI path.
+
 ## F108 — the literature pass checks quotes against the abstract when PMC serves the paper whole (format `S110`)
 
 **Status (2026-09-24):** format-tree `S110` accepted the same day — the BioC rung is their `RM257` and
