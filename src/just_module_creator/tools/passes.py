@@ -37,9 +37,8 @@ whole task on it, which is what the flag did.
 from __future__ import annotations
 
 import csv
-import inspect
 from collections import Counter
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -619,7 +618,7 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
                             mode=mode,
                             offline=eff_offline,
                             write=True,
-                            **_progress_kwarg(_note_progress),
+                            progress=_note_progress,
                         )
                     )
                     beat.cancel_scope.cancel()
@@ -732,27 +731,9 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
 #: How often the enrich heartbeat speaks. Thirty seconds is short enough that an
 #: operator watching a silent tool learns it is alive before deciding it is not, and
 #: long enough that a normal small module finishes without emitting one at all.
-#: Paired with the workaround in `enrich_module`; both go at 0.7.
+#: It is also what carries upstream's `progress` count to the caller, so it stays
+#: now that the enricher reports one.
 _HEARTBEAT_SECONDS = 30.0
-
-#: Whether the installed enricher takes the `progress` callback (RM128, our `S66` ask
-#: 4). Probed once, by signature against the INSTALLED package — never by version
-#: string, which says nothing about what `uv sync` actually put in the venv.
-#:
-#: **This exists only while the declared floor is below 0.7**, which is where it has to
-#: stay until 0.7 is cut: passing a keyword an installed 0.6.6 has never heard of is a
-#: `TypeError` on the one call that costs an author twenty minutes. It is an optional
-#: keyword's capability probe, not an era branch — there is one code path, and the older
-#: toolchain gets a heartbeat with no denominator, which is exactly what it had.
-#:
-#: **Delete this and pass `progress=` outright the moment the floor moves to 0.7.**
-_ENRICH_TAKES_PROGRESS = "progress" in inspect.signature(enrich).parameters
-
-
-def _progress_kwarg(callback: Callable[[int, int], None]) -> dict[str, Any]:
-    """`{"progress": callback}` where upstream accepts it, and `{}` where it does not."""
-    return {"progress": callback} if _ENRICH_TAKES_PROGRESS else {}
-
 
 _ENRICHMENTS_IN_FLIGHT: dict[Path, str] = {}
 

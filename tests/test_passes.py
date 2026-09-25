@@ -874,9 +874,7 @@ async def test_the_claim_is_released_so_a_later_enrichment_is_not_blocked_foreve
 async def test_a_long_enrich_reports_it_is_alive_without_inventing_a_fraction(
     make_client, tmp_path
 ):
-    """WORKAROUND TEST — delete with the heartbeat when the enricher ships `progress`.
-
-    `enrich()` is one opaque blocking call in 0.6.6: a 263-rsID module ran 20+ minutes
+    """`enrich()` was one opaque blocking call in 0.6.6: a 263-rsID module ran 20+ minutes
     writing nothing, and an operator could not tell work from a hang. That ambiguity
     killed a benchmark run and produced the partial sidecar in `F70`.
 
