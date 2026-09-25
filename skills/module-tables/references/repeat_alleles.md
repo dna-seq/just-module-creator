@@ -136,7 +136,7 @@ module compiles **closed**).
 - **It drags in nothing.** `studies.csv` is required *iff* `variants.csv` is present, so a bin-only
   module compiles green under `--strict` citing nothing at all. Since 0.5.4 that produces a warning
   (`_check_binning_grounding`, `compiler.py`), never an error.
-- **`studies.csv` is accepted with no `variants.csv` and, since 0.6/RM47, with no subject either.**
+- **`studies.csv` is accepted with no `variants.csv` and with no subject either.**
   `fmr1_cgg_repeat/studies.csv` has exactly two columns, `pmid,conclusion`, and names no variant. That
   is the honest way to describe an ACMG technical standard which is about thresholds, not loci.
 - Genome build: declared in `module_spec.yaml` and part of `content_signature` when non-default, but
@@ -221,10 +221,8 @@ Ordered by how likely a first-timer is to hit them.
    tiling, a shared endpoint is a real overlap and a **hard error**: measured, `[36,40]` beside
    `[40,∞)` refuses with *"both select a phenotype for a measurement in the overlap"*. Since 0.6 that
    is a default and not a law — `measure_tiling: continuous` flips it, and the group is *read* as
-   continuous without being asked if it carries any fractional bound. Any doc that states "integer
-   bins must not touch" flatly is describing the pre-0.6 rule. **Checked 2026-08-20:** the skill's body was correct and keyed the
-   rule on `measure_tiling` as 0.6 does; only its beginner summary row stated it flatly, and that row
-   was fixed before the skill was split. [`module-curate`](../../module-curate/GUIDE.md) and this dossier now agree.
+   continuous without being asked if it carries any fractional bound. The rule is keyed on
+   `measure_tiling`, never stated flatly; [`module-curate`](../../module-curate/GUIDE.md) and this dossier agree.
 9. **A fractional bound silently changes the rules for the whole group, and then invents gaps.**
    Measured: change one bound to `35.5` and the module still compiles, but you get *"tiling inferred
    … so this group was read as continuous"* plus **three new coverage-gap warnings** for
@@ -252,9 +250,7 @@ Ordered by how likely a first-timer is to hit them.
 
 ## What does not exist
 
-- **No coordinate columns, and that is a known gap rather than a property of the thing.** The
-  compiler's own comment used to claim these tables are unjoinable "which is a property of what they
-  describe"; 0.6 corrected it as false (`compiler.py`). VCF 4.4 §5.6/§5.7 make a tandem
+- **No coordinate columns, and that is a known gap rather than a property of the thing.** VCF 4.4 §5.6/§5.7 make a tandem
   repeat a locus with published coordinates, so "a consumer holding an ExpansionHunter or `<CNV:TR>`
   VCF has to annotate a gene symbol for themselves to reach our HTT row." Adding `chrom`/`start`
   is **RM65**, deferred pending a real repeat-caller VCF, and it carries an RM87 obligation (the
@@ -340,12 +336,12 @@ comments. `just-prs` and `just-prs-mcp` do not mention the table at all.
   could report *four* states (bin matched / no bin matched / measurement absent / measurement spans
   bins) rather than three. What breaks today: no consumer exists to get this wrong yet — which is
   exactly why the state should be in the report-card shape from the start rather than retrofitted.
-- **A binning module's genes reach the catalog card as of compiler 0.6.6.** `manifest.stats.genes`
-  came from `variants.csv` alone until then, and the shipped HTT manifest reads `gene_count: 0,
-  genes: []` — verified in `data/interim/allcheck/htt_repeat_expansion/manifest.json`, so
-  `registry_search(gene="HTT")` cannot find *that published version*. **Fixed in compiler 0.6.6** (upstream **RM121**): `module_stats` takes the gene facets over every authored table, `variant_stats` keeps its `variants.csv` promise, and a module already published carries the stats its compile wrote — recompile and re-publish to be findable by gene. Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`.
+- **A binning module's genes reach the catalog card.** `manifest.stats.genes` is taken over every
+  authored table, so a binning module whose rows name a gene is findable by `registry_search(gene=…)`
+  — the registry indexes that field into `version_genes`. A module already published carries the stats
+  its compile wrote, so recompile and re-publish to move them.
 - **Check bin `pmid`s at revalidation.** `registry/services/revalidate.py` (`gather_pmids`)
-  reads `studies.csv` only. Since 0.6 a threshold's citation may live *only* on the bin row — the
+  reads `studies.csv` only. A threshold's citation may live *only* on the bin row — the
   case `fmr1_cgg_repeat`'s README says it probed — and such a module's PMIDs are never verified by
   `revalidate --check-pmids`. The enricher's literature pass already reads both sites via
   `compiler.binning_citations` / `load_binning_rows` (`enricher/literature.py`), so the two

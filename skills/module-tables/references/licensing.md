@@ -45,7 +45,7 @@ inclusion as a bug. It is not.
 | Filename | **`licensing.csv`** preferred; **`sources.csv`** deprecated-but-read, removal queued for 1.0 (`layout.py`, `layout.py`). Root or `derived/` — four legal paths, measured: `['sources.csv', 'licensing.csv', 'derived/sources.csv', 'derived/licensing.csv']` |
 | Parquet | **`sources.parquet`** — the rename stops at the CSV. In `ARTIFACT_PARQUETS` (`compiler.py`), so in `artifact.digest` |
 | Manifest key | **`manifest.sources`** → `manifest.Sources` (`manifest.py`). Also a published key that only a major may rename |
-| Natural / dedup key | `(source, layer)` — `draft._CORE_DUPE_KEYS[SourceRow]` (`draft.py`) and `licensing.merge_sources_csv` (`licensing.py`). **A duplicate is an ERROR since compiler 0.6.6**, in validate and compile, in both modes — this row used to say *not enforced*, which was true only up to 0.6.5; see Gotcha 4 |
+| Natural / dedup key | `(source, layer)` — `draft._CORE_DUPE_KEYS[SourceRow]` (`draft.py`) and `licensing.merge_sources_csv` (`licensing.py`). **A duplicate is an ERROR**, in validate and compile, in both modes; see Gotcha 4 |
 | Authored or machine-produced | **both, genuinely.** A plain `BaseModel` with `extra="forbid"`, not an `AuthoredModel` — but the *only* fact sidecar in `draft.DRAFTABLE` and the only one with a template (S21) |
 | Who writes it | eleven enricher passes via `licensing.merge_sources_file`; and a human, for a source read by hand |
 | Fact signature | `integrity.source_signature` (`integrity.py`) over `sources.SOURCE_FACT_FIELDS` — **12 of 14** fields → `manifest.sources.signature` |
@@ -250,7 +250,7 @@ Ordered by how likely a first-timer is to hit them.
    human-overridable, so two copies are two legitimate claims. The realistic route in is a
    `derived/`-split downloaded module plus a pass that wrote the flat preferred spelling; **always go
    through `layout.sidecar_write_path`** (`layout.py`), never `spec_dir / "licensing.csv"`.
-4. **A duplicate `(source, layer)` row is an ERROR as of compiler 0.6.6**, in `validate` and
+4. **A duplicate `(source, layer)` row is an ERROR**, in `validate` and
    `compile`, in both modes: `licensing.csv: duplicate row for key ('clinvar', 'annotation')`,
    re-measured against the installed release on `hfe_hemochromatosis`. Until 0.6.1 it compiled green
    under `--strict` — measured on `hboc_palb2`, appending an exact copy of row 2 gave
@@ -324,19 +324,14 @@ Ordered by how likely a first-timer is to hit them.
    blank and you have a legal row whose every permission is unknown. It will not refuse, it will not
    warn — it will show up in `unknown_terms_sources` and drag the module-wide verdict to `None`.
    That is honest, but it is not a licence record.
-12. **A `<<REPLACE>>` here used to compile green under `--strict` and reach the published manifest.**
-   RM76: `SourceRow` is not an `AuthoredModel`, so it inherited no placeholder guard, and
-   `manifest.sources` published `"sources": ["<<REPLACE>>"]` **inside the block its own signature
-   covers**. Fixed on the model (`sources.py`, `reject_template_placeholders`). Verified fixed in
-   format 0.6.1 by measurement, not by changelog.
-13. **0.1-era material carries none of this, and that is an era gap rather than a defect.** Measured
-   over the 27 submitted bundles in `/data/sources/just-dna-registry/data/input/`: **0 of 27 carry
-   `sources.csv` or `licensing.csv` under either spelling, and 0 of 27 declare `license:` in
-   `module_spec.yaml`.** A typical bundle is `MODULE.md` + `module_spec.yaml` + `studies.csv` +
-   `variants.csv` + a log. The table did not exist in 0.1, so its absence is not a fault; such a
-   module compiles with no `manifest.sources` block and the registry projects the licensing facets
-   as `None` — undetermined, honestly. No genuine break was found: nothing a 0.1 module legitimately
-   contained is refused by today's `SourceRow`.
+12. **A `<<REPLACE>>` here is rejected on the model** (`sources.py`, `reject_template_placeholders`).
+   `SourceRow` is not an `AuthoredModel`, so it inherits no placeholder guard from that base — the guard
+   is on the model itself. Without it, `manifest.sources` would publish `"sources": ["<<REPLACE>>"]`
+   **inside the block its own signature covers**.
+13. **0.1-era material carries none of this, and that is an era gap rather than a defect.** The table
+   did not exist in 0.1, so its absence is not a fault: such a module compiles with no
+   `manifest.sources` block and the registry projects the licensing facets as `None` — undetermined,
+   honestly. Nothing a 0.1 module legitimately contained is refused by today's `SourceRow`.
 14. **`license` is an open string, and `manifest.sources.licenses` drops the nulls.** Several sources
    are an SPDX licence *plus* a bespoke clause, which no single identifier expresses — do not read a
    bare "CC BY-SA 4.0" as permission to sell; the CC grant covers the content while the surrounding
@@ -383,9 +378,8 @@ Ordered by how likely a first-timer is to hit them.
   source is to write the row yourself — nothing marks it as hand-written. **Except a literature
   service, which has no row at any layer**: Crossref, Europe PMC, OpenAlex, PubMed and Unpaywall read
   by hand still record nothing here, because their terms are per *article* and live on
-  `literature.csv`. See *Who populates what*. The two rules meet here and it used to read as a
-  contradiction — write the row yourself, at the one layer that is forbidden — which is exactly what
-  the benchmark reference did before this was scoped.
+  `literature.csv`. See *Who populates what*. The two rules meet here as an apparent
+  contradiction — write the row yourself, at the one layer that is forbidden.
 
   **The principle that settles it is upstream's own, from `S77`/`RM142`:** a pass that put no row in a
   table records no source. Consultation is not consumption, and reading a service that yielded nothing
@@ -432,7 +426,7 @@ Ordered by how likely a first-timer is to hit them.
   `noncommercial_layers`, `nonredistributable_layers`, `unknown_terms_sources`, `licenses`,
   `attributions`, `declared_uses` — tri-state throughout. `db/facets.py` `version_facets`
   projects `commercial_use` / `redistribution` / `share_alike` into per-version SQL columns
-  (`db/schema.py`, since registry 0.11).
+  (`db/schema.py`).
 - **`just-prs` / `just-prs-mcp` — nothing.** Grepped for `sources.parquet`, `licensing.csv` and
   `SourceRow`: no hits in either repo.
 

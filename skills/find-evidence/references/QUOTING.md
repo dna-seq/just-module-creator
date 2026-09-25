@@ -61,8 +61,7 @@ rsIDs drawn from PMID 29500382 appears anywhere in that article's retrievable te
 associations live in its supplementary data and downloadable summary statistics.
 
 **`fetch_fulltext` returns the JATS body and no supplementary file — a limit of the tool, not of what
-is in reach. Corrected 2026-08-30; this passage used to end "there is nothing in reach to quote, and
-the honest cell is empty".** That was wrong on its own example: PMID 29500382's workbook is two HTTP
+is in reach.** PMID 29500382's workbook is two HTTP
 requests from the DOI, openly CC-BY, and **42 of those 65 rsIDs are in it** with the p-values the rows
 assert. All 65 shipped carrying the title instead. Go and get it: `list_supplementary`,
 `fetch_supplementary`, `describe_supplementary`, `read_supplementary`, with the ladder and the routes
@@ -135,7 +134,7 @@ retyped span is a fabricated one.
 
 ### 4. Record who located it — and know where that record does and does not go
 
-**`studies.csv` has a `curator` column since format 0.6.5** — our `F43` / upstream `S55`, the field
+**`studies.csv` has a `curator` column** — the field
 `VariantRow` always had, put on the table where the attestation lives. Optional free text: a name, a
 handle or a model id, resolvable against the module's `authorship`. **Fill it on every row whose quote
 you located**, with whatever identifies you as the one who did the reading.
@@ -197,7 +196,7 @@ modules beside 3668 authored quotes, with the manifest summing the nulls into a 
 numbers, and publishes `quotes_unchecked` beside the other two so the zero is no longer confident —
 but **it still does not rewrite the sidecar**, and a version published earlier keeps the counters its
 own compile wrote. **`lint_rows` and `validate_module` detect the title case for you** (`RM17`), as
-does the literature pass itself since 0.6.5 (`titles_as_quotes`, decided from the citation's metadata
+does the literature pass itself (`titles_as_quotes`, decided from the citation's metadata
 rather than the string's shape): all report a
 warning naming any PMID whose every quoted row carries the same passage, with the row count and the
 first few words. It arrives in `validate_module`'s `authored_findings` rather than in `warnings`,

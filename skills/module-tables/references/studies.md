@@ -23,7 +23,7 @@
 ## What it is
 
 `studies.csv` answers *why do I believe this row?* One row is one **(subject, paper)** link: a
-PubMed id, plus — optionally, since 0.6 — the variant it is about, plus whatever the curator can
+PubMed id, plus — optionally — the variant it is about, plus whatever the curator can
 honestly say about what that paper found. It is written by the curator, for a reader who wants to
 check the module against the literature. It is not a bibliography (`literature.csv` is the machine's
 verification record over these citations) and it is not a provenance ledger (`licensing.csv` /
@@ -167,8 +167,8 @@ Baseline: `content_signature sha256:44ad4449…` (matches the value published in
 - **`p_value_num` is (0, 1]** and an exact `0` is **refused**, not stored: a zero is a source's own
   float64 underflow, not a probability (`spec.py`). A mantissa/exponent pair was drafted
   and dropped — see *What does not exist*.
-- **`effect_size` + `effect_measure` + `effect_allele`** — `effect_allele` is new in 0.6 (RM91,
-  `spec.py`) and it is what the magnitude is *relative to*. Absent means the study did not
+- **`effect_size` + `effect_measure` + `effect_allele`** — `effect_allele` (`spec.py`) is what the
+  magnitude is *relative to*. Absent means the study did not
   state one, **which is not the reference allele**. Getting it wrong **inverts** the finding rather
   than breaking it, which is why the compiler checks it against `resolution.csv`
   (`_check_study_effect_alleles`, `compiler.py`) — and **withholds** on any row it cannot
@@ -185,7 +185,7 @@ Baseline: `content_signature sha256:44ad4449…` (matches the value published in
 - **`doi`** — must contain a `10.<registrant>/<suffix>` token, kept verbatim; a `doi.org` URL is
   fine. It does **not** relax the `pmid` requirement.
 
-### Three columns arrived in 0.7, and two of them are one column
+### Three columns, and two of them are one column
 
 **`statistical_test`** (RM140) — which analysis produced *this row's* `p_value`/`effect_size`: the
 test or the model, and what it was adjusted for. `Fisher's exact (allelic)`.
@@ -285,8 +285,7 @@ Ordered by how likely a first-timer is to hit them.
    > substantive point above, and it stands.
    > **Expected state.** Until that item ships, `extract_pmids` keeps returning every 1–8 digit run
    > in the cell. Write the digits alone, or `[PMID: N]` with no year beside it.
-3. **PMC is not PubMed, and it used to turn on a space (RM50).** `PMC 3110566` once parsed as PMID
-   3110566, a real record for another paper. Both spellings now refuse, and the message **names the
+3. **PMC is not PubMed.** A PMC id one letter from a real PMID is refused, and the message **names the
    id it saw** (`validate_pmid_cell`, `spec.py`). It **never repairs** — use
    `lookup_citation(pmcid=…)`, which reports the PMID as an advisory. A cell carrying **both**
    (`21551363; PMC3110566`) is accepted and yields the real PMID.

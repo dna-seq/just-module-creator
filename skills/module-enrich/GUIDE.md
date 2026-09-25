@@ -171,7 +171,7 @@ The same distinction runs through the downstream passes: `not_found` (the source
 - **`resolution.csv` is the pin.** Once it and `literature.csv` exist, every later compile is offline
   and reproducible.
 - **It reaches three positional tables as well as `variants.csv`** — `pharm_variants.csv`,
-  `haplotypes.csv`, `heteroplasmy.csv` — in `validate` **and** `compile` since format 0.6. The set is
+  `haplotypes.csv`, `heteroplasmy.csv` — in `validate` **and** `compile`. The set is
   derived, not listed: every table kind whose model carries both `chrom` and `start`.
 - **`diplotypes.csv` and `pgs.csv` are not filled**, for a different reason with a different remedy:
   those models have **no coordinate columns at all**, so a consumer joins them on `rsid` + `genotype`.

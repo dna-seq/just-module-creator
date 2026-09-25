@@ -23,7 +23,7 @@ Every other file in a spec directory is optional in some combination. This one i
 is the only always-present file, and at least one recognised table must exist"*
 (`src/just_module_creator/tools/authoring.py`). It answers four questions no CSV can — **what is this
 module called and how does it present**, **what assembly are the coordinates in**, **what values apply to a
-row that states none**, and (since 0.6) **what does the `weight` column mean**. It is the *input* half's
+row that states none**, and **what does the `weight` column mean**. It is the *input* half's
 header; `manifest.json` is what the compiler turns it into (`schema/src/just_dna_format/spec.py`).
 
 It is not a table. It has no rows, no parquet, no dedup key and no fact signature. Almost all of it is
@@ -190,7 +190,7 @@ omits them. `license:` is only checked against `licensing.csv` when that file ex
   (`compiler.py`).
 - **`defaults.priority`** — the one `Defaults` field with no model default (`None`), so writing it is
   the only way `defaults:` moves `content_signature`.
-- **`authority_precedence`** — new in 0.7 (RM134), and the one key here that is easiest to
+- **`authority_precedence`** — the one key here that is easiest to
   over-read. An ordered list of the annotation authorities this module's curator weighted while
   deciding its clinical calls, most-trusted first. **Nothing computes with it**: no tier reads it to
   resolve anything, no check consults it, no verdict and no emitted row depends on it, and changing
@@ -292,23 +292,6 @@ Ordered by how likely a first-timer is to hit them.
    `defaults:` are **one content**, so a `compile → reverse → compile` cycle no longer moves the
    signature over where the author happened to type it.
 
-### The 0.1-era corpus, loaded on 0.6.1 — measured
-
-All 27 submitted bundles in `/data/sources/just-dna-registry/data/input/*.zip` were extracted and their
-`module_spec.yaml` loaded with the installed `ModuleSpecConfig` (format 0.6.1).
-
-- **Genuine breaks: 0.** 27 of 27 validate. Nothing a 0.1-era spec legitimately contained is refused —
-  CONSTITUTION P3 holds on this file.
-- **Live deprecations hit: 0.** None carries `panel:`, so none trips the 0.6 deprecation.
-- **Era gaps: 27 of 27**, in the same shape every time. Not one carries `weighting:`, `license:`,
-  `authorship:` or `module.icon_set` — none of which existed when they were written. Absence is not a
-  fault; a module of that vintage could not have had them.
-- **One measurement worth carrying:** all 27 write `module.version` as an **unquoted YAML integer**
-  (`version: 5`), and all 27 therefore coerce — `1`→`1.0.0` … `5`→`5.0.0`. That is the RM17 widening
-  earning its keep on a corpus the format measured separately at 26 of 61. All 27 also carry
-  `defaults.priority` (`medium`), which is the field `reverse_module` drops.
-- Zero carry a registry authority key, so `strip_authority_keys` has nothing to do on this corpus.
-
 ## What does not exist
 
 - **No `describe_table` for this file.** The tool surface covers CSV kinds only; `authoring_reference()`
@@ -316,10 +299,8 @@ All 27 submitted bundles in `/data/sources/just-dna-registry/data/input/*.zip` w
 - **No SPDX validation on `license:`.** Any string is accepted. The compiler compares it to
   `licensing.csv` for *equality* and nothing more; an SPDX compatibility matrix was refused as
   *"world-knowledge that would go stale, and the compiler is not the tier that should hold it"*.
-- **No registry override of `license:` either.** Three upstream strings used to say there was — two
-  of them `Field(description=…)`, which reach an author through `describe_table` and
-  `authoring_reference` — and all three were corrected in 0.6.6 (upstream **RM111**), so the
-  descriptions you read from those tools now say what the compiler actually does: warn when the
+- **No registry override of `license:` either.** The descriptions you read from `describe_table` and
+  `authoring_reference` say what the compiler actually does: warn when the
   declaration contradicts the annotation-layer sources. The registry never assigns `manifest.license`:
   `_finalize` stamps six fields on publish and that is not one of them; the only other references are
   reads into a DB column and a facet. Verified by grep in both directions, and by upstream's own

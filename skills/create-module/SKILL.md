@@ -108,8 +108,8 @@ the allele pair, and `lookup_variant` gives you the same for a row you are writi
 | 8 publish | **the immutable one.** Only on an explicit ask for the official catalog | `module-publish` | `registry_register` → `registry_whoami` → `registry_claim_namespace` → `registry_publish` |
 | 9 join | how a consumer will read what you wrote — decided long before this step | [`module-consumer`](../module-consumer/GUIDE.md), `module-install-local` | none here; `just-dna-lite` runs it |
 
-**One surface, no tiers.** Every tool named above is registered, always — the `extended` tier went
-in 0.21.0. A few tools are expensive because a corpus sizes their work rather than your rows, and
+**One surface, no tiers.** Every tool named above is registered, always. A few tools are expensive
+because a corpus sizes their work rather than your rows, and
 each says so in its own description; [`module-101`](../module-101/GUIDE.md) carries the whole roster and which those are. What
 still gates is a **token**, and only for registry writes.
 

@@ -395,25 +395,9 @@ two places in any consumer repo that mention `manifest.logs` (`clinvar_panel.py`
 thresholds a build ran with rather than the module defaults, because a caller overriding either "got a
 log that quietly disagreed with its own artifact".
 
-### Era classification — measured, not assumed
+### What a log is for now
 
-All 27 submitted bundles loaded with the installed **format/compiler 0.6.1** via
-`just_dna_compiler.compiler.validate_spec`:
-
-| bucket | count | what |
-|---|---|---|
-| **genuine break** (0.6.1 refuses something a 0.1 module legitimately had) | **0 / 27** | none found. Additive-within-a-major holds |
-| **live deprecation** (read, warn-only) | **27 / 27** | `module.version: 2` as a bare YAML int → *"module.version '2' was read as SemVer '2.0.0'. It is advisory either way"*. Coerced, never refused |
-| **era gap** (absent because it did not exist yet) | **27 / 27** | no closure (*"This module records no closure"* on every one), no `verification.json`, no `authorship:`, no `provenance.json`, no `licensing.csv`/`sources.csv`, no `weighting:`, no fact sidecars |
-| **author defect** (wrong in any era) | **3 / 27** | `longevity_rare_v1`, `longevity_rare_v1(1)`, `putter_v1` — *"studies.csv is missing. Grounding evidence is mandatory"*. Three others warn that studies cite rsIDs absent from `variants.csv` |
-
-Net: **24 of 27 still validate on 0.6.1, and the 3 that do not are the submitter's fault, not the
-format's.** The bare-int `version:` is worth a note — the lite pipeline's own comment
-(`module_creator.py`) records that it *was* refused once (`Input should be a valid string`)
-and the producer now quotes it and widens `1` → `1.0.0`. Today's compiler coerces with a warning, so
-the break was repaired into a deprecation on both sides.
-
-**The question underneath.** These logs predate `verification.json`, the closure and `authorship`, so
+These logs predate `verification.json`, the closure and `authorship`, so
 when they were written the log genuinely was the only place an agentic run could leave a trace. That is
 no longer true: who ran it → `authorship` with `kind: [ai, team]`; what was checked →
 `verification.json`; why a variant was called → `provenance.json`. What keeps no better home is the

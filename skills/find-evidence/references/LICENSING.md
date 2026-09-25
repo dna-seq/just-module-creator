@@ -54,8 +54,8 @@ no table on this side could replace it.
 ## `licensing.csv` when you read by hand
 
 `licensing.csv` must cover every source your fact tables cite, and **a missing row is a warning, not
-an error**, so a module ships without one unnoticed. The file was called `sources.csv` before format
-0.6; both spellings still read, only the new one is created, and a module carrying **both** is
+an error**, so a module ships without one unnoticed. `sources.csv` is the deprecated spelling; both
+spellings still read, only `licensing.csv` is created, and a module carrying **both** is
 refused rather than merged.
 
 **Only `literature_search` carries a `licensing` block** naming what you now owe — and it is the one

@@ -94,7 +94,7 @@ kind, so the compile succeeds and writes a module whose every row has no `chrom`
 | `draft <dir> --gene G` | CPIC → the three PGx tables. `--drug`, `--allele`, `--population`, `--use`, `--dry-run` |
 | `draft-panel <dir> --gene G` | ClinVar → `variants.csv` + `studies.csv`. `--snapshot`, `--offline`, `--clin-sig`, `--min-review-stars`, `--max-citations`, `--use`, `--download/--no-download`, `--dry-run` |
 | `draft-clinpgx <dir> --snapshot S` | ClinPGx → `pharm_variants.csv`. `--gene`, `--drug`, `--min-evidence-level`, `--use`, `--dry-run` |
-| `check-identifiers <dir>` | trait CURIEs (OLS4), gene symbols (HGNC). `--no-traits`, `--no-genes`. Writes no authored cell — but since 0.6 it **does** record that the question was put, into `verification.json`, unconditionally |
+| `check-identifiers <dir>` | trait CURIEs (OLS4), gene symbols (HGNC). `--no-traits`, `--no-genes`. Writes no authored cell — but it **does** record that the question was put, into `verification.json`, unconditionally |
 | `gene-validity <dir>` | → `gene_validity.csv` from ClinGen / GenCC |
 | `assertions <dir>` | → `clinical_assertions.csv` from ClinVar |
 | `gwas <dir>` | → `gwas_effects.csv` from the GWAS Catalog. It deliberately does **not** fill `weight`. Budget is `1 + 2N` requests per variant — measured at 382 for one real module — so `--no-study-facts` before you script it |
@@ -117,8 +117,8 @@ Unpaywall — have no CLI equivalent anywhere in the toolchain. Discovery is an 
 the enricher's literature tier verifies citations you already have and deliberately does not search.
 
 **Snapshot builders and the cache lanes (dev/publisher surface).** One command group per lane, and
-the roster below is what `caches.CACHE_LANES` declares — **ask that rather than this list**, which is
-the hand-kept copy that had gone six groups stale before format 0.7:
+the roster below is what `caches.CACHE_LANES` declares — **ask that rather than this list**, a hand-kept
+copy that drifts:
 `clinvar`, `clinpgx`, `acmg`, `gnomad`, `cpic`, `pharmvar`, `civic`, `pubmind`, `mane`, `strchive`,
 `mitomap`, `alphagenome`, `atlas`, plus `cache` and `upload`.
 
@@ -150,10 +150,9 @@ Reads `REGISTRY_URL`, `REGISTRY_TOKEN`, `REGISTRY_TIMEOUT`. The MCP server reads
 author already logged in does not have to re-declare either.
 
 **The client has one URL, so which instance it drives is whatever `REGISTRY_URL` points at.** The
-CLI cannot tell you which one that is from the URL alone, so exporting the production URL and
-running a rehearsal used to be a mistake nothing caught. **Registry 0.13 closed that**: `mode` is on
-`/health` and `/api/v1/version`, and the MCP tools take `target="test" | "prod"` rather than a URL,
-pin `expect_mode` to it, and refuse before spending anything when the instance disagrees.
+CLI cannot tell you which one that is from the URL alone. The MCP tools take `target="test" | "prod"`
+rather than a URL, pin `expect_mode` to it, and refuse before spending anything when the instance
+disagrees; `mode` is on `/health` and `/api/v1/version`.
 `registry_health` shows you the same answer up front. Prefer the tools for anything that publishes.
 
 **What the CLI still owns:** `yank` / `unyank` (production's delisting, which does **not** free the

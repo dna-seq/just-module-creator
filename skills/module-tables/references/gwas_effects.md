@@ -376,16 +376,12 @@ parquets — `frequencies`, `gene_metrics`, `literature`, `gene_validity`, `clin
   manifest; two modules in one report may carry different releases and nothing surfaces it. **Ask:**
   surface `manifest.gwas_effects.datasets` wherever a magnitude is shown, before anything reads a
   magnitude.
-- **The population that needs this table does not have it, and the format's own corpus understates
-  the problem.** Measured across the 27 submitted bundles in
-  `/data/sources/just-dna-registry/data/input/`: **0 carry `gwas_effects.csv`** (era gap — the table
-  did not exist), **27/27 carry rsIDs** (826 distinct, largest bundle 177), and **27/27 fill every
-  `weight` cell — 2439 of 2439**, over 26 distinct values in `[-1.5, 1.5]`. Contrast the reference
-  corpus, where `weight` is authored **zero** times in 42 cells. So S36's diagnosis is about the
-  submitted corpus, none of which can yet be checked against a published effect. **Ask:** run
-  `just-dna-enricher gwas --no-study-facts` over those bundles at re-publish and surface the
-  resulting `units` set on the card, so a curator's 1.5 can be read beside what was actually
-  measured. Budget it: 826 requests at `--no-study-facts`, unbounded with study facts on.
+- **The population that needs this table does not have it.** A module routinely authors a `weight` on
+  every variant with no `gwas_effects.csv` beside it to say what the magnitude is relative to — a
+  curator's `1.5` with nothing published to check it against. That is S36's diagnosis. **Ask:** run
+  `just-dna-enricher gwas --no-study-facts` at re-publish and surface the resulting `units` set on the
+  card, so a curator's magnitude can be read beside what was actually measured. Budget it: one request
+  per rsID at `--no-study-facts`, unbounded with study facts on.
 
 ## Ask the live schema
 

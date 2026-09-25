@@ -318,12 +318,12 @@ author's `genotype` names the specific allele — but any consumer that reads `c
 row and applies it to whatever ALT it observed will call a 0-star VUS pathogenic.
 
 **11 — the drafter's identity collapse upstream of this table.** ClinVar's ordinary dup/del mirror
-pair at one position collapsed to one drafted row before enricher 0.6.3, and the survivor was chosen
+pair at one position could collapse to one drafted row in an earlier drafter, and the survivor was chosen
 by allele spelling rather than star rating — *"on `cancer` the kept row is the lower-starred one in
 400 of 1,481 collapses"* (`docs/CONSUMER_SUGGESTIONS_HISTORY.md:1940-1944`, S41). Records that never
-reached `variants.csv` never reach `resolution.csv` and so never reach this table. **A module drafted
-before 0.6.3 has an assertion table that is complete with respect to its own variant list and
-incomplete with respect to ClinVar**, and no signature says so.
+reached `variants.csv` never reach `resolution.csv` and so never reach this table. **An assertion
+table is complete with respect to its own variant list and can be incomplete with respect to
+ClinVar**, and no signature says so.
 
 ## What does not exist
 

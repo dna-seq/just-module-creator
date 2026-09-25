@@ -230,8 +230,8 @@ citation(s) no study or bin in this module cites … left out of the artifact, a
 Ordered by how likely a first-timer is to hit them.
 
 1. **Merge-not-clobber means a re-run answers nothing new — including the columns that did not exist
-   when the row was written.** `wanted` excludes every pinned PMID. Rows written before 0.6 carry no
-   `license`, and re-running **will not** back-fill them, "because merge-not-clobber cannot tell an
+   when the row was written.** `wanted` excludes every pinned PMID. A row that lacks a `license` value is **not** back-filled by a
+   re-run, "because merge-not-clobber cannot tell an
    absent value from a curator's deliberate blank. Delete the sidecar to re-derive"
    (`enricher/literature.py`). Same for `doi_checked`. **Measured on the whole reference corpus:** all
    three modules carrying a `literature.csv` (`fmr1_cgg_repeat` 2 rows, `hboc_palb2` 10,
@@ -275,7 +275,7 @@ Ordered by how likely a first-timer is to hit them.
    no authored edit able to clear it (`enricher/literature.py`). Fixed — every tally now runs over
    `subject_rows` — but the consequence remains: **`--strict` on an already-enriched module refuses on
    the pin, not on a fresh lookup.**
-4. **There are TWO citation sites since 0.6 (RM47), and a bin-only one is not a gap.** `studies.csv`,
+4. **There are TWO citation sites, and a bin-only one is not a gap.** `studies.csv`,
    and a `pmid` on a binning row grounding the threshold it sits on. `_citations`
    (`enricher/literature.py`) maps a bin-only citation to an **empty** study list — a real citation to
    check for existence and identifiers, carrying no quote and no authored DOI because a bin row has
@@ -309,28 +309,21 @@ Ordered by how likely a first-timer is to hit them.
 
    Three things follow, and the third is the one that bites:
 
-   - **The published manifest reported a confident zero before 0.6.5.** `_literature_block` guarded the
-     per-row null correctly, but summing over rows that are *all* null gives `0`, and
-     `manifest.literature.quotes_found` is `int` with `default=0` and had no `quotes_unchecked`
-     beside it. So the manifest said `quotes_authored: 0, quotes_found: 0` for a module with 859
-     authored quotes. Filed as upstream `S56`, fixed as their RM119. **A version published before
-     that release still carries the zero** — a manifest is written at compile time.
-   - **These counters are therefore not a detector** for a module whose quotes are worthless — see
+   - **A version's `manifest.literature` counters are whatever its compile wrote.** A manifest is
+     written at compile time and a published version is immutable, so `quotes_authored`/`quotes_found`
+     on an old card reflect that old compile — recompile and re-publish to move them.
+   - **These counters are not a detector** for a module whose quotes are worthless — see
      `studies.md` gotcha 1 on the title case. Group `studies.csv` by `pmid` and count *distinct*
      quotes instead; that reads the authored file directly and needs no pass. The pass has its own
-     detector since 0.6.5 — `LiteratureResult.titles_as_quotes`, which our `enrich_literature_pass`
+     detector — `LiteratureResult.titles_as_quotes`, which our `enrich_literature_pass`
      surfaces as a warning — and it decides from the citation's **metadata**, not from the string's
      shape, because length cannot separate a 17-word title from a 17-word sentence. It answers for a
      **pinned** row too, which is what makes it useful on exactly the modules that provoked it.
-   - **Correcting it needs the pass, and since 0.21.0 the pass is simply there.**
-     `enrich_literature_pass` needed `JMC_MODE=extended` until the tier was removed, and
-     `refresh_sidecar("literature.csv")` reaches the same pass through the other door and used to
-     refuse for the same reason; it now warns and runs. The cost is real either way — the search is
-     per variant across the corpus — so plan the run on a large module. **This paragraph used to end
-     "on a default install there is no way to bring these counters up to date at all", and that
-     sentence was the tier's whole cost in one line:** it was true, and it left published modules
-     carrying a stale `literature.csv` (`F47`). The CLI, `just-dna-enricher literature <dir>`, is
-     now the fallback for an older build rather than the only route.
+   - **Correcting it needs the pass, which is there.** `enrich_literature_pass` and
+     `refresh_sidecar("literature.csv")` both reach it, and both warn and run. The cost is real
+     either way — the search is per variant across the corpus — so plan the run on a large module. A
+     module never re-run keeps a stale `literature.csv` (`F47`). The CLI, `just-dna-enricher
+     literature <dir>`, does the same from outside the plugin.
 8. **`--offline` is a no-op that keeps the pin, and it may still write the file.** It fetches nothing,
    re-examines nothing, warns, and rewrites the existing rows sorted by PMID (`enricher/literature.py`).
    If a pinned row covers every current citation it records **no verification record at all** —
@@ -343,8 +336,7 @@ Ordered by how likely a first-timer is to hit them.
    copyright question".
 10. **`pmid` here is digits only; the free-form form lives in `studies.csv`.** The validator refuses
    anything else and names `spec.extract_pmids` (`format/literature.py`). And PMC ids are one letter
-   away from a real PMID: `PMC 3110566` used to extract as PMID **3110566**, a real record for an
-   unrelated article (RM50). `_pmcid_conflicts` catches the spelling the schema cannot refuse —
+   away from a real PMID. `_pmcid_conflicts` catches the spelling the schema cannot refuse —
    `21551363 (PMC3110567)` carries a valid PMID while the two halves name different papers.
 11. **Existence is not identity (S12).** PMIDs are densely allocated, so a recalled eight-digit number
    is usually a real record for a *different* article — `exists=True` can never catch a fabricated

@@ -92,8 +92,8 @@ false. If `gene_locus_check_skipped` is non-null the comparison never ran, which
 
 ⚠️ **CHECK — a check is only as wide as the table it reads.** `check_identifiers` reads
 `variants.csv`, so a binning row's `gene` or `trait_efo_id` is **never checked for currency**. The
-shape recurs across the toolchain and two instances of it closed in 0.6.6 — `stats.genes` now reads
-every gene-bearing table, and a redundancy advisory now says when its checker cannot see your table —
+shape recurs across the toolchain, and two instances of it are closed — `stats.genes` reads
+every gene-bearing table, and a redundancy advisory says when its checker cannot see your table —
 while `enrich-pgx` still never opens `diplotypes.csv`. **Naming a check without naming its scope is how
 a reader over-trusts it**, and the fix for the reader is the same either way: ask what the checker
 loads before reading a green run as agreement.
@@ -168,7 +168,7 @@ Two `clin_sig` skip reasons that read alike and are not:
 **Every check member has a live emitter except `gene_disease_validity` and `dosage_sensitivity`,
 which are RESERVED** (RM72). Name the two exceptions rather than a ratio: measured on 2026-09-11
 against the installed enricher it is 24 of 26, where the same walk answered 23 of 25 eight days
-earlier and 15 of 17 under 0.6.4 — both halves keep moving, so a fraction copied out of any of them is
+earlier — both halves keep moving, so a fraction copied out of any of them is
 wrong within the week. The widely-cited *"five of seventeen"* is stale in the corpus README.
 
 ## Attestations that record a check nobody could have run
@@ -213,16 +213,14 @@ check counts only rows that carry a quote.
 
 ## Counting findings honestly
 
-**The `faf95` arithmetic warning used to reach `manifest.compilation.warnings` twice** — the check
-runs in `validate_spec` and again on the compile side, and the compile side had no filter. Fixed in
-compiler 0.6.6 (upstream **RM106**), so a module recompiled under it publishes one fewer warning with
-no text changed. If you pinned a warning count against an older artifact, that is why it moved.
+**The `faf95` arithmetic warning reaches `manifest.compilation.warnings` once.** The check runs in
+`validate_spec` and again on the compile side, and the compile side dedupes it — so count it once.
 
-**A duplicate `(source, layer)` row in `licensing.csv` is an ERROR** since compiler 0.6.6 (upstream
-**RM107**), in `validate` and in `compile` alike, in both modes:
-`licensing.csv: duplicate row for key ('clinvar', 'annotation')`. It used to pass silently, even
-carrying the opposite `commercial_use`, so an inherited module may carry one and stop compiling on the
-first run under this toolchain — that is the pair being noticed, not the module breaking. Which of the
+**A duplicate `(source, layer)` row in `licensing.csv` is an ERROR**, in `validate` and in `compile`
+alike, in both modes:
+`licensing.csv: duplicate row for key ('clinvar', 'annotation')`. An inherited module may carry one —
+possibly with the opposite `commercial_use` — and stop compiling on the first run: that is the pair
+being noticed, not the module breaking. Which of the
 two rows is right is a decision, not a merge: `licensing.merge_sources_csv` keeps the LAST row under
 the key, which is exactly the wrong tool where the two disagree. One source at two layers is
 untouched, which is why the key is a pair.

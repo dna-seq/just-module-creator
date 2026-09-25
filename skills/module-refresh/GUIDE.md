@@ -43,8 +43,7 @@ attempt is a repair rather than a second loss.
 **Two names cost far more than the rest, and nothing stops you.** A sidecar whose pass is sized by
 how much the world has published, rather than by the rows you wrote: `literature.csv` searches per
 variant across the corpus, and `gwas_effects.csv` costs `1 + 2N` requests per variant, measured at
-382 for one real module. Naming one of those used to **raise** unless the server was started in the
-extended tier; since 0.21.0 there is no tier, so the run warns and proceeds. Everything else,
+382 for one real module. Naming one of those warns and proceeds. Everything else,
 `resolution.csv` included, is bounded by the rows you wrote.
 
 **Five honest limits, because a tool that hid them would be worse than the manual route:**
@@ -80,8 +79,8 @@ and reports the rest instead of losing them, which is the whole difference betwe
 |---|---|---|---|
 | `resolution.csv` | skips every `variant_key` already covered, and **asks about every one it does not** — a subject with no row has nothing to merge onto, so a table that came back short is refilled by re-running rather than entrenched by it | an identity column changed, or a locus resolved wrongly | **hand-authored `source=manual` rows** — real, and not reproducible. `reference_examples/cyp2c9_warfarin_grch37` carries three |
 | `frequencies.csv` | merges; existing rows win | the variant set changed, or you want a newer gnomAD | normally nothing hand-written |
-| `gene_metrics.csv` | merges, and a `source="manual"` row suppresses the fetch for its `(gene, dataset)` since enricher 0.6.6 | the gene set changed | curator overrides |
-| `literature.csv` | refetches nothing, and **will not back-fill** the 0.6 licence columns onto older rows | you need the licence columns, or a `doi_checked` verdict re-put | a curator's deliberate **blank**, which merge cannot distinguish from an absent value |
+| `gene_metrics.csv` | merges, and a `source="manual"` row suppresses the fetch for its `(gene, dataset)` | the gene set changed | curator overrides |
+| `literature.csv` | refetches nothing, and **will not back-fill** the licence columns onto older rows | you need the licence columns, or a `doi_checked` verdict re-put | a curator's deliberate **blank**, which merge cannot distinguish from an absent value |
 | `gene_validity.csv`, `clinical_assertions.csv` | merge, on the same governing rule | the source cut a newer release | curator overrides |
 | `licensing.csv` | never clobbers a row — **except** `withdraw_stale_dataset` blanking `dataset` when rows were actually added, and `draft_digest` being re-stamped | rarely; those two machine-owned columns maintain themselves | the curator's hand-written **terms** — which is exactly what never-clobber exists to protect |
 | `verification.json` | replaces **per check**, and never erases a check this run did not put | never by hand | the record of every other check |
@@ -146,22 +145,14 @@ reference variants not in variants.csv"* orphan warning, which **blames the cita
 re-draft. **Guard:** after any re-draft, diff `studies.csv`'s rsIDs against `variants.csv`'s and delete
 the stale rows before compiling.
 
-## Two passes that break on a second run
+## Correcting `gene_metrics.csv` on a re-run
 
-**`enrich_gene_metrics` re-runs cleanly as of enricher 0.6.6** (upstream **RM104**). It used to raise
-`UnboundLocalError` out of the pass on the **ordinary idempotent re-run** — every gene already carrying
-a `gnomad*` row — and on any module with no `variants.csv`, because `reference` was bound inside
-`if wanted:` and read below it. It was outside `GeneMetricsEnrichmentError`, so the one `except` that
-exists for this caller did not hold. If you are on an older enricher, run the pass once and catch
-`Exception` at that call site.
-
-**A `source="manual"` correction on `gene_metrics.csv` now suppresses the fetch** (upstream **RM109**,
-enricher 0.6.6): the suppression set is derived from the merge key `(gene, dataset)` rather than from a
-`gnomad`-prefix scan over `source`, so an honest override no longer lands *beside* the fetched row as a
-second row under one key, contradicting it with zero compiler warnings. The scoping is deliberate — a
-ClinGen dosage row for the same gene carries a different `dataset`, so it is a different key and does
-not suppress anything. **Check an inherited `gene_metrics.csv` for pairs written before 0.6.6**;
-nothing removes them, because the merge keeps what is already there.
+**A `source="manual"` correction on `gene_metrics.csv` suppresses the fetch**: the suppression set is
+derived from the merge key `(gene, dataset)` rather than from a `gnomad`-prefix scan over `source`, so
+an honest override lands *as* the row for that key rather than beside the fetched one. The scoping is
+deliberate — a ClinGen dosage row for the same gene carries a different `dataset`, so it is a different
+key and does not suppress anything. **An inherited `gene_metrics.csv` may carry a duplicate pair under
+one key**; nothing removes it, because the merge keeps what is already there.
 
 🚧 **ROADWORKS — a ClinGen re-curation appends beside the old row with nothing marking it superseded.**
 ClinGen's `assertion_id` embeds the curation timestamp, so a re-curated assertion misses the merge key.

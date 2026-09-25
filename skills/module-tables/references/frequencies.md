@@ -240,8 +240,8 @@ Ordered by how likely a first-timer is to hit them.
    perfectly reproducible — it will be outside it on every run — so refusing "would make a
    pseudoautosomal module uncompilable under `strict` for a reason no authored edit could fix". The
    motivating case is real and probed live 2026-08-04: gnomAD hard-masks the **Y** PAR (X PAR1
-   640000-641500 serves 880 variants, the identical interval on Y serves none), so a Y-PAR row used to
-   be written as `not_found` — ten absences nobody had established. See
+   640000-641500 serves 880 variants, the identical interval on Y serves none), so a Y-PAR row comes
+   back `not_found` — ten absences nobody established. See
    `reference_examples/shox_par1/README.md:95` and `par_boundary/README.md:50`.
 6. **Online only, permanently.** v4.1's sites VCFs are 58 GB (exomes) / 742 GB (genomes), so there is
    no slice to ship and there will not be one (FAQ.md:251, answered *no*). `--offline` makes the pass
@@ -267,11 +267,9 @@ Ordered by how likely a first-timer is to hit them.
    worked, 29 returned HTTP 400 — which is ~200 variants/minute. A genome-wide panel is hours. Our
    `enrich_facts` is a background task for exactly this reason.
 10. **`FrequencyUnavailable` is a *subclass* of `FrequencyEnrichmentError`, so the narrow arm must come
-    first.** Since enricher 0.6.2 / RM101 the outage case has its own type; a parent-first `except`
+    first.** The outage case has its own type; a parent-first `except`
     ordering makes the outage arm dead code, silently, raising nothing. See
-    `services/enrich.py` for the correct ordering and the history it replaces (a 502 used to
-    answer `/check` with a 500). Before RM101 a `GnomadError` travelled straight out through a
-    `try/finally` with no `except` at all.
+    `services/enrich.py` for the correct ordering.
 11. **A first row wins on gnomAD's duplicates, and sex splits are dropped.** The payload, probed on
     `11-5227002-T-A`, carries sex-stratified ids (`nfe_XX`, `XY`) beside ancestry groups, lists
     `XX`/`XY` **twice**, and names the whole-dataset row with a bare empty id. `_populations_from_joint`
@@ -304,19 +302,12 @@ Ordered by how likely a first-timer is to hit them.
 - **No cross-check against the module's `AF`.** `variants.csv` has no allele-frequency column and the
   compiler compares nothing between the two; the only linkage is the position-level orphan warning
   and the BA1 lint.
-- **Genuine upstream defect: the `faf95` warning is duplicated in `manifest.compilation.warnings`.**
-  `compile_module` runs `validate_spec`, which since RM93 runs `_check_frequency_arithmetic` — and the
-  compile-side `_frequency_checks` (`compiler.py`) runs it again with no dedup. `_literature_checks`
-  three lines below it *does* dedup, with a comment naming exactly this hazard ("a finding living in
-  both places would otherwise print twice"). Measured on a doctored `hboc_palb2`: **15 warnings, 14
-  distinct**, the `faf95 … exceeds the group's own allele frequency` line appearing twice. The
-  integer *errors* are not duplicated (compile aborts first). `manifest.compilation.warnings` is a
-  published field (RM44), so the duplicate is published.
-
-  **Fixed in compiler 0.6.6** (upstream **RM106**): the compile side carries the same filter its
-  neighbour did, and the warning is published once. The text did not change, so a module recompiled
-  under 0.6.6 publishes **one fewer warning** than the same module compiled under 0.6.1 — worth
-  knowing if anything of yours pins a count, and it is the count that was wrong before, not now.
+- **The `faf95` warning is published once in `manifest.compilation.warnings`.** `compile_module` runs
+  `validate_spec` (which runs `_check_frequency_arithmetic`) and the compile-side `_frequency_checks`
+  (`compiler.py`) runs it again, and the compile side dedups — as `_literature_checks` does three lines
+  below, with a comment naming exactly this hazard ("a finding living in both places would otherwise
+  print twice"). The integer *errors* are not duplicated (compile aborts first).
+  `manifest.compilation.warnings` is a published field (RM44).
 
 ## Consumption today
 

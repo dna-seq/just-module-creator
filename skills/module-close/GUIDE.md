@@ -2,7 +2,7 @@
 name: module-close
 description: >-
   End the authoring phase deliberately and write down how it was done. Covers what a closure binds,
-  what re-opens a module and what no longer does, the way closing can throw your check records away,
+  what re-opens a module and what does not, the way closing can throw your check records away,
   why a closed module is not a checked module, and where the methodology actually lives — `weighting:`,
   `authorship:` and `verification.json` rather than prose. Also the README, which becomes the catalog
   card.
@@ -44,13 +44,13 @@ Three things worth being exact about:
 An unclosed module still compiles and still publishes; it carries a warning saying nobody has declared
 it done. Requiring a closure is filed for format 1.0 (RM73).
 
-## What re-opens a module, and what no longer does
+## What re-opens a module, and what does not
 
 There is no `reopen` command and none is needed.
 
 | Un-closes | Does not |
 |---|---|
-| any changed **value** in `module_spec.yaml` or an authored CSV | line endings — `\r\n` reads as `\n` since format 0.6 (RM82) |
+| any changed **value** in `module_spec.yaml` or an authored CSV | line endings — `\r\n` reads as `\n` |
 | a row added, removed or reordered | a re-enrichment that rewrites a derived sidecar |
 | a cell requoted, a column reordered | a README, changelog or logo edit |
 | **an `authorship:` entry appended** | |

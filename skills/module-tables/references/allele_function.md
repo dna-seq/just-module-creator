@@ -365,11 +365,12 @@ Nothing anywhere reads a value out of `allele_function.parquet`. That is the fin
   `POST /{ns}/{name}/check?pgx=true` runs `enrich_pgx(write=False)` and surfaces conflicts as
   `PgxCheck.conflicts`. Gated on `declared_use`: `unstated` (the server default) skips every PGx source
   without asking, `commercial` is `422 license_refused`. Never moves `would_publish`.
-- **Read by `manifest.stats.genes` as of compiler 0.6.6**, which is what populates the catalog's
+- **Read by `manifest.stats.genes`**, which is what populates the catalog's
   `version_genes` index (`db/repository.py`) and the card's gene chips
-  (`services/catalog.py`). It came from `variant_stats` over `variants.csv` before that, measured
-  `"gene_count": 0, "genes": []` on `cyp2c19_star_alleles`, whose 36 rows all say `CYP2C19`.
-  **Fixed in compiler 0.6.6** (upstream **RM121**): `module_stats` takes the gene facets over every authored table, `variant_stats` keeps its `variants.csv` promise, and a module already published carries the stats its compile wrote — recompile and re-publish to be findable by gene. Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`.
+  (`services/catalog.py`). The facets are taken over every authored table, so a star-allele module
+  whose rows name a gene is findable — `cyp2c19_star_alleles`, whose 36 rows all say `CYP2C19`,
+  reports `gene_count: 1, genes: ['CYP2C19']`. A module already published carries the stats its
+  compile wrote, so recompile and re-publish to move them.
 
 **just-prs / just-prs-mcp** — zero references. Expected.
 

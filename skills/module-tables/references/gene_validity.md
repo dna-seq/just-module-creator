@@ -315,9 +315,8 @@ and the grade (`Definitive` 2019 → `Moderate` 2026, same gene/disease/MOI/subm
 file came back with **both**, and `manifest.gene_validity.classifications` would then read
 `["definitive", "moderate"]` with nothing saying which is current. `classification_date` and
 `dataset` are the only discriminators, and no consumer reads either. **Genuine upstream defect
-candidate**, and it is the same shape as the ClinVar drafter's `S45`, which upstream fixed in
-enricher 0.6.4 by naming the superseded rows and deleting nothing (`clinvar_draft._superseded_rsid_rows`);
-this pass has no equivalent. The enricher's own merge test only re-runs the *identical* export
+candidate**, and it is the same shape as the ClinVar drafter's `S45` (fixed by naming the superseded
+rows and deleting nothing, `clinvar_draft._superseded_rsid_rows`); this pass has no equivalent. The enricher's own merge test only re-runs the *identical* export
 (`enricher/tests/test_gene_validity.py`), so it cannot see this.
 
 > 🚧 **ROADWORKS — re-curation duplicates, and the manifest can publish two contradictory grades.**
@@ -370,19 +369,6 @@ you will scroll past, and nothing in the CSV, manifest or parquet records that i
 `"gene_validity.csv names 1 gene(s) this module never mentions: ['BRCA1']"` — warning, compile
 succeeds. **There is no check in the other direction**, and the check is skipped entirely when
 `variants.csv` has no rows or no gene cells.
-
-### 11 — Era check: nothing pre-0.6 can carry this table, and nothing does
-
-Verified against the 27 submitted bundles in `/data/sources/just-dna-registry/data/input/*.zip`,
-unpacked and inventoried: **27/27** carry `module_spec.yaml` + `variants.csv`, 24 carry
-`studies.csv`, and **0** carry `gene_validity.csv` or any validity-shaped column (the three distinct
-`variants.csv` headers across all 27 are `rsid,chrom,start,ref,alts,genotype,weight,state,conclusion,[priority,]gene,phenotype,category`
-and an rsID-only variant of it). Bucket counts against the ERA NOTE: **era gap 27, live deprecation
-0, genuine break 0.** The table landed in format 0.6 (RM24), so a module of that vintage could not
-have had it; `just-dna-lite/data/interim/v1_port/*/manifest.json` honestly records
-`"gene_validity": null`, and the registry projects that as `has_gene_validity = 0` rather than
-"unknown" — deliberately, because "the table did not exist to be omitted"
-(`just-dna-registry/src/just_dna_registry/db/facets.py`).
 
 ## What does not exist
 

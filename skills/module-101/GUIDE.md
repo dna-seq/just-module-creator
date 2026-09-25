@@ -62,12 +62,12 @@ tool fills `weight` — that is the author's model of the finding. It does not c
 score. And it cannot tell you whether your annotation is medically *correct*: it can only make what
 you claimed legible, attributable and checkable.
 
-**One thing worth knowing about a module you did not just compile: `manifest.stats` describes the
-whole module only since compiler 0.6.6.** Before that the gene facets came from `variants.csv` alone,
-so a PGx, copy-number or activity-bin module published `genes: []` and `registry_search(gene=…)` would
-not return it however many rows carried a `gene` cell. A manifest is written at compile time, so a
-version published earlier still carries the old numbers — recompiling and publishing again is what
-moves them. Never repair it with an empty `variants.csv`. [`module-tables`](../module-tables/GUIDE.md) carries the detail.
+**One thing worth knowing about a module you did not just compile: `manifest.stats` is written at
+compile time.** It describes the whole module, every authored table — so a PGx, copy-number or
+activity-bin module reports the genes its rows name, and `registry_search(gene=…)` returns it. A
+version published earlier carries whatever its own compile wrote, and the registry is immutable, so
+`genes: []` on an old card is a stale snapshot rather than a module with no genes — recompiling and
+publishing again is what moves it. Never repair it with an empty `variants.csv`. [`module-tables`](../module-tables/GUIDE.md) carries the detail.
 
 **`--strict` is not a correctness gate.** It means *reproducible*. The compiler never fetches, so it
 holds no reference to check a coordinate against: a module shifted one base passes validate, passes
@@ -124,8 +124,8 @@ policy and `JMC_OFFLINE` outranks it, because routing out is egress.
 from a live service or reports the question as unasked, and `registry_caches` names those in
 `unreachable`. And **anything that uploads your module is never automatic**: reads route themselves,
 `remote_derive` and `remote_draft` are tools you call. The thin path needs the registry running
-`just-dna-registry` 0.25.0 or later, which is **not released yet** — until then those tools refuse
-with a sentence saying so rather than failing vaguely.
+`just-dna-registry` 0.25.0 or later; against an older instance those tools refuse with a sentence
+saying so rather than failing vaguely.
 
 ## The lifecycle
 
@@ -214,8 +214,8 @@ starts answering schema questions has become a second source of truth.
 
 ## First: confirm the tools are actually reachable
 
-**There are no tiers. Every tool is on one surface** — the `essentials`/`extended` axis was removed in
-0.21.0, so a tool you cannot see is never a tool you lack permission for. It is one of three things,
+**There are no tiers. Every tool is on one surface** — there is no `essentials`/`extended` axis, so a
+tool you cannot see is never a tool you lack permission for. It is one of three things,
 and they need opposite responses:
 
 | what you observe | what it is | what to do |
@@ -282,10 +282,9 @@ match.
 | ask whether it would publish, cost-free | `registry_check`, `registry_validate` | gated |
 | publish, or rehearse a publish | `authenticate` → `registry_whoami` → `registry_claim_namespace` → `registry_publish` | gated |
 
-**There is one surface: every tool above is there, always.** Nothing has to be switched on. The
-mode axis — `JMC_MODE`, `--mode`, the `extended` tier — was removed in 0.21.0, after the line had
-been drawn four times and moved three, each time because the narrower surface taught a step it could
-not run. `registry_register` is ungated for the same family of reason: it is what mints the token,
+**There is one surface: every tool above is there, always.** Nothing has to be switched on. There is
+no mode axis — no `JMC_MODE`, no `--mode`, no `extended` tier — because a narrower surface kept teaching
+a step it could not run. `registry_register` is ungated for the same family of reason: it is what mints the token,
 so gating it would be a cycle.
 
 **What is left of that line is a warning, and it is worth reading.** The rows marked *a corpus sizes

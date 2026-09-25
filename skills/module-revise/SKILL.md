@@ -135,7 +135,7 @@ reviewer saying *I submit this exactly as received*. That is a new claim, made b
 made it before, so the old closure is genuinely spent, and the reviewer is exactly the person who
 should re-close.
 
-**Line endings cost nothing since format 0.6 (RM82).** The binding reads `\r\n` as `\n`, because no
+**Line endings cost nothing.** The binding reads `\r\n` as `\n`, because no
 human made a claim there — an editor did, or Git did through `core.autocrlf`. **It stops at newlines:** a
 BOM, trailing whitespace and a missing final newline are still edits, because a human typed those.
 And it is the *binding* only — `manifest.inputs[]` still lists the raw hash and size, so that entry
@@ -144,7 +144,7 @@ exact bytes*.
 
 **Editing an authored file is what re-opens a module.** There is no `reopen` command and none is
 needed. What un-closes: any changed *value* in `module_spec.yaml` or an authored CSV, a row added or
-removed, a column reordered, a cell requoted — and an `authorship:` entry. What no longer does: line
+removed, a column reordered, a cell requoted — and an `authorship:` entry. What does not: line
 endings, and a re-enrichment that rewrites a derived sidecar.
 
 **Prose is genuinely free.** README and logo sit outside both identities *and* outside the binding.
@@ -250,7 +250,7 @@ matter, and the second is the one an agent gets wrong:
   module-detail response as a `VerificationInfo` block — `closed`, `closed_at`, `closed_by`, `producer`,
   `produced_at`, and a per-check list of `check`/`subjects`/`findings`/`skipped`. It reads the **latest**
   version's manifest; per-version access is the `…/manifest` route. And the bytes come back too:
-  `include_inputs=True` has fetched the machine-written sidecars since registry 0.17, so
+  `include_inputs=True` fetches the machine-written sidecars, so
   `verification.json` arrives with the rest. `layout` only decides where they land — `split` moves
   them under `derived/` **after** the download so a reader can tell the author's files from the
   enricher's — and `registry_download` pins `flat`, which is the tree a compile wants, so you get
@@ -265,12 +265,12 @@ matter, and the second is the one an agent gets wrong:
   sources.
 - **So do not invert the advice.** *Visible* is not *recommended*. The default instrument for a plain
   review is still the `reviews` row above. A skill that told authors to bump a version for every review
-  would be the opposite error to the one this box used to correct.
+  would be the opposite error.
 
 Two neighbouring facts, both current:
 
-- **The pre-flight no longer refuses a review publish.** It did, and that disagreement was repaired in
-  registry **0.16.0**: `would_publish_module_level` now quantifies over `published_elsewhere` — content
+- **The pre-flight does not refuse a review publish.** `would_publish_module_level` quantifies over
+  `published_elsewhere` — content
   hits under a *different* `(namespace, name)`, which is what the gate actually refuses — while
   `published_as` still lists the same-module hit, because *"this data is already published as 1.0.0"* is
   exactly what a review pass wants to confirm. **The honest caveat is a version floor**: a deployment

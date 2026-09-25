@@ -42,10 +42,10 @@ Each one closes off a class of wrong turn.
 a coordinate mistake, and the resolution table [`module-enrich`](../module-enrich/GUIDE.md) produces
 then carries Ensembl's answer — `ref`, `alts`, a VRS id — as the independent second value. A row
 authored with **both** is checked the same way — the agreement check compares it with Ensembl and
-records the verdict in `verification.json` — and since enricher 0.7.1 the sidecar also carries the
-reference's answer when it knows the rsID (upstream `S104`). A sidecar written before that restates
-your coordinate under `source=authored` with none of the three and the compile warns that VRS identity
-covers none of them; `enrich_module` names the rows and `refresh_sidecar` re-derives the table.
+records the verdict in `verification.json` — and the sidecar also carries the reference's answer when it
+knows the rsID. A sidecar with no rsID to resolve restates your coordinate under `source=authored` with
+none of the three, and the compile warns that VRS identity covers none of them; `enrich_module` names
+the rows and `refresh_sidecar` re-derives the table.
 Author coordinates only when you have a reason: no rsID exists
 (roughly 10% of ClinVar pathogenic variants), one rsID names several alleles and the row must say
 which, or the module is not GRCh38.
@@ -387,12 +387,12 @@ check, so write the row yourself.**
   See `module-tables/references/licensing.md`, which owns this rule.
 - **`--use` accepts `non-commercial`; the `declared_use` *column* takes `non_commercial`** with an
   underscore. The flag normalises; a cell you type by hand does not.
-- **The file was `sources.csv` before format 0.6 and both spellings still read.** Create only
+- **`sources.csv` is the deprecated spelling and both still read.** Create only
   `licensing.csv`; write to whichever one an inherited module already carries; **never let a module
   carry both** — that is an error naming both paths rather than a merge.
 
 **A duplicate `(source, layer)` row is refused** — `licensing.csv: duplicate row for key
-('<source>', '<layer>')`, from `validate` and `compile` both, since compiler 0.6.6. One source at two
+('<source>', '<layer>')`, from `validate` and `compile` both. One source at two
 layers is fine; the same pair twice is two claims about one thing, and where they disagree on
 `commercial_use` picking the survivor is yours to do rather than a merge's.
 

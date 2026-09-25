@@ -61,7 +61,7 @@ its internal arithmetic (`compiler.py _check_gene_metrics_arithmetic`).
 | In `content_signature`? | **No.** `content_signature` reads `variants.csv`, `studies.csv` and `_TABLE_KINDS` only (`compiler.py`) |
 | In `artifact.digest`? | **Yes**, via its parquet. Also byte-hashed into `manifest.derived[]` — transport only (`compiler.py`) |
 | Manifest block | `manifest.gene_metrics` = `{signature, sources, datasets, row_count, genes}` (`compiler.py _gene_metrics_block`); absent when the module carries no such sidecar |
-| Location | root or `derived/gene_metrics.csv`. Both at once = `layout.SidecarCollision`, an error, never a merge. Both passes route through `licensing.sidecar_path` since enricher 0.6.1 (RM99) |
+| Location | root or `derived/gene_metrics.csv`. Both at once = `layout.SidecarCollision`, an error, never a merge. Both passes route through `licensing.sidecar_path` |
 
 ## Who populates what
 
@@ -221,30 +221,11 @@ and the delete.
 
 Ordered by how likely a first-timer is to hit it.
 
-### 1 — Re-running the gene-metrics pass on an already-enriched module **crashes**
+### 1 — Re-running the gene-metrics pass is safe: it merges, never clobbers
 
-`enrich_gene_metrics` binds `reference` only inside `if wanted:` (`gene_metrics.py`) and then
-reads it unconditionally at `gene_metrics.py`
-(`constraint_routes_consulted = reference is not None or not offline`). `wanted` is empty whenever
-**every gene already has a `source`-startswith-`gnomad` row** — i.e. the ordinary idempotent re-run —
-or when the module has no `variants.csv`. Reproduced on `reference_examples/hboc_palb2` with enricher
-**0.6.4**, both online and offline, through the library *and* through the CLI:
-
-```
-$ just-dna-enricher gene-metrics hboc_palb2/ --offline
-:255 in enrich_gene_metrics
-UnboundLocalError: cannot access local variable 'reference' where it is not associated with a value
-```
-
-Cost, on an enricher older than 0.6.6: the pass documented as "existing rows are authoritative and
-merged, never clobbered" raised an undocumented `UnboundLocalError` in exactly the merge case, so a
-caller's `except GeneMetricsEnrichmentError` — the type RM101 was built to make reliable — did not
-catch it. Reproduced on a scratch module against 0.6.4, offline.
-
-**Fixed in enricher 0.6.6** (upstream **RM104**): `reference` is bound before the branch, which is also
-the honest value — with nothing wanted, no snapshot was resolved. The re-run and the no-`variants.csv`
-module are both ordinary now. On an older enricher, run the pass once and catch `Exception` rather than
-`GeneMetricsEnrichmentError` at that call site.
+`enrich_gene_metrics` re-runs cleanly on the ordinary idempotent re-run — **every gene already carrying
+a `source`-startswith-`gnomad` row** — and on a module with no `variants.csv`. Existing rows are
+authoritative and merged, never clobbered; with nothing wanted, no snapshot is resolved.
 
 ### 2 — `constraint_flags` has three incompatible encodings, and the snapshot's "empty" is a non-empty string
 
@@ -320,17 +301,15 @@ kinds too — `HaplotypeRow`, `AlleleFunctionRow`, `DiplotypeRow`, `PgsRow`, `Ph
 "keyed kind ⇒ dupe-checked" does not hold either. `SourceRow` is another one it misses; see
 `licensing.md`.)
 
-**Fixed in enricher 0.6.6** (upstream **RM109**): the suppression set is derived from the merge key
-`(gene, dataset)` and scoped to the two dataset labels this pass writes, so a `source="manual"`
-correction suppresses the fetch and a second authority's row for the same gene — a ClinGen dosage row,
-carrying a different `dataset` — still does not. Before that release the suppression key was a
-`gnomad`-prefix scan over `source`, so any override that changed `source` failed to suppress and landed
-beside the fetched row.
+**The suppression set is derived from the merge key** `(gene, dataset)` and scoped to the two dataset
+labels this pass writes, so a `source="manual"` correction suppresses the fetch and a second
+authority's row for the same gene — a ClinGen dosage row, carrying a different `dataset` — still does
+not.
 
-> ⚠️ **CHECK — a pair written before 0.6.6 is still in the file.**
+> ⚠️ **CHECK — a pair from before the `(gene, dataset)` suppression key is still in the file.**
 > The merge keeps what is already there, so nothing removes a duplicate `(gene, dataset)` pair the old
 > behaviour created, and no compiler warning names it: fact tables are outside `_TABLE_DUPE_KEYS`.
-> **Guard.** On a module enriched before enricher 0.6.6, check `gene_metrics.csv` for repeated
+> **Guard.** On an inherited module, check `gene_metrics.csv` for repeated
 > `(gene, dataset)` pairs yourself and delete the one you did not mean to keep. The
 manifest reports it as ordinary: `{"row_count": 2, "genes": ["PALB2"], "datasets":
 ["gnomad_v4.1_constraint"], "sources": ["gnomad", "manual"]}`. Cost: a consumer joining on gene gets
@@ -521,7 +500,7 @@ Use these instead:
 authoring_reference()                    # → models["GeneMetricsRow"], vocabularies["dosage_sensitivity"]
 authoring_reference(schemas=true)        # → raw JSON Schema
 
-# Verified: reference._ALL_MODELS contains GeneMetricsRow (since format 0.6.1 / RM96),
+# Verified: reference._ALL_MODELS contains GeneMetricsRow,
 # which is what makes the above true and what makes `status` enforced.
 ```
 

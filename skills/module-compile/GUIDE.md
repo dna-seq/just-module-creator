@@ -36,9 +36,6 @@ p-value pair, and whether every genotype and `effect_allele` names an allele its
 What appears only at compile is anything computed from **resolved** rows — the expansion and hosting
 findings — because resolution has not run when `validate` does.
 
-*(Two shapes broke that promise on format 0.6.0 — a module with `frequencies.csv`, and a table-only
-module with `studies.csv`. Both fixed in 0.6.1, which is this plugin's floor.)*
-
 ## `--strict` means reproducible, never right
 
 **The compiler never fetches, so it holds no reference sequence to check a coordinate against.** A
@@ -102,11 +99,9 @@ Several are **unclearable by any authored edit**, and chasing them is wasted wor
 - **`This module records no closure`** — a true statement about a module still being written. Do not
   run `close_module` to clear it. [`module-close`](../module-close/GUIDE.md) owns why.
 
-**A warning count moved in compiler 0.6.6, and no text did.** The `faf95` arithmetic warning was
-published **twice** into `manifest.compilation.warnings` — the check runs in `validate_spec` and again
-on the compile side, and only the compile side lacked the dedup filter its neighbour carries. Fixed
-(upstream **RM106**), measured at 15 warnings and 14 distinct beforehand. A recompile under 0.6.6
-publishes one fewer warning on such a module; if something of yours pins a count, that is why.
+**The `faf95` arithmetic warning is published once into `manifest.compilation.warnings`.** The check
+runs in `validate_spec` and again on the compile side, and the compile side dedups it — as its
+neighbour does. Count it once.
 
 **A wall of near-identical warnings should not happen** — findings aggregate per gene with a count and
 examples. If you see one, that is a bug worth reporting upstream rather than filtering.

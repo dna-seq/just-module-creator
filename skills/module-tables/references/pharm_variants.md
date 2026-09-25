@@ -200,7 +200,7 @@ Four answers in prose:
 - **`response` is free-form** and read straight into the report; `trait_efo_id` exists for a
   cross-module join.
 
-### Two columns arrived in 0.7
+### Two columns: `requires_callable` and `pmid`
 
 **`requires_callable`** (RM70) — True when a consumer must prove this position was callable before
 concluding the sample carries **this row's genotype**. *The reference-homozygote row is the case*: a
@@ -313,7 +313,7 @@ Ordered by how likely a first-timer is to hit them.
   `content_signature` by content and inside `artifact.digest` by bytes.
 - **No `recommendation_strength`, no `clinical_context`.** Both are on `DiplotypeRow` only. A CPIC
   recommendation scoped to `CVI ACS PCI` vs `NVI` has no home on this row.
-- **`requires_callable` is HERE now — RM70 shipped in 0.7, and this entry used to deny it.**
+- **`requires_callable` is present.**
   Measured 2026-09-13: this model and `HaplotypeRow` carry it, `DiplotypeRow` and `AlleleFunctionRow`
   do not. See the column's own section above.
 - **No `callable_from`.** It stayed `VariantRow`-only, so this row can demand a proof of callability
@@ -403,8 +403,7 @@ table* peer of `weights.parquet`:
   `report_logic.py` does `"/".join(row.get("alts", []) or [])`. On `weights.parquet` `alts` is
   `List(Utf8)` and that works; on `pharm_variants.parquet` it is `String` — measured value `'A,C'` —
   and `"/".join("A,C")` returns **`'A/,/C'`** (verified in a REPL), which is what reaches the report
-  as *"Module alternate alleles"* and goes into the AI prompt. **Newly reachable**: before format
-  0.6 the column did not exist, so `row.get("alts", [])` returned `[]` and rendered empty. Ask:
+  as *"Module alternate alleles"* and goes into the AI prompt. Ask:
   route the cell through `alleles`-style splitting the way `_genotype_alleles` already does for
   `genotype`, and file the type asymmetry upstream.
 

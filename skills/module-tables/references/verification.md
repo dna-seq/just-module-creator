@@ -85,7 +85,7 @@ There is no author column here. Use these words:
   > The Typer CLI prints one line for it (`cli.py`, *"dropped N check record(s) attested over
   > different bytes"*), and **this plugin's `close_module` carries it through as
   > `CloseResult.dropped_checks`** — measured 2026-09-11, `tools/authoring.py` passes it into our own
-  > result model, so "only the CLI says so" is no longer the whole story and an agent driving this
+  > result model, so an agent driving this
   > surface does see the loss. What is still true is the part that matters most: a **library** caller
   > that ignores the field is told nothing, it is not a compile warning, and nothing about the loss
   > reaches `manifest.verification`, so a consumer reading the artifact cannot tell a module whose
@@ -227,7 +227,7 @@ filed for 1.0 and is **blocked** there, because `reverse` cannot re-emit the doc
   publishes none. The binding deliberately does **not** answer this: re-running against a fresher
   ClinVar leaves the attestation matching, so a consumer reads currency here or nowhere
   (`verification.py`).
-- **`checks[].producer`** — new in 0.7 (RM129, upstream `S71`), and it exists because the
+- **`checks[].producer`** — it exists because the
   block-level `producer` answers a different question. **Read the per-record one when asking whether
   a check predates a fix**: `merge_records` carries an older run's record across unchanged and
   restamps only the block-level field, so the block says *who last wrote this file* — which is what
@@ -285,8 +285,8 @@ Ordered by how likely a first-timer is to hit them.
    (`models/api.py`). Do not read `closed_by` as attribution unless `signature` is present
    **and** you pin the key: the signature block carries its own `public_key`, so verifying it proves
    only that *the holder of that key* signed, never *whose* key it is.
-4. **A `--offline` re-run used to overwrite a real answer with "never asked" — RM72 fixed it, and the
-   fix has a condition.** `merge_records` refuses to let a fresh `skipped` displace an existing `ran`
+4. **A `--offline` re-run will not overwrite a real answer with "never asked", and the rule has a
+   condition.** `merge_records` refuses to let a fresh `skipped` displace an existing `ran`
    (`verification.py`). Measured directly:
    `merge_records([ran(clinical_significance, subjects=13)], [skipped(clinical_significance, "offline")],
    existing_still_binds=True)` → keeps `subjects=13`; with `existing_still_binds=False` → `skipped=offline`.
@@ -342,14 +342,9 @@ Ordered by how likely a first-timer is to hit them.
     here is built to resist a deliberate one" (`docs/SCHEMAS.md:1462-1466`). The real guarantee is
     `manifest.signature`, a detached Ed25519 signature over `artifact.digest` by a party the client
     pins.
-12. **Era gap: no real-world submission carries one.** Checked all 27 bundles in
-    `/data/sources/just-dna-registry/data/input/`: **0 of 27** contain a `verification.json`. That is
-    an era gap, not a defect — the whole submitted corpus predates 0.6. The two 0.6-era `v1_port`
-    modules in `just-dna-lite/data/interim/v1_port/` *do* carry a manifest block, written by enricher
-    0.6.4 on 2026-08-19, and they are the largest real attestations in the workspace:
-    `pathogenic` records `clinical_significance subjects=618629 findings=32`, `cancer` records
-    `141616 / 20`, and **both have `closure: null`** — attested but never closed, the legitimate
-    "either alone" state (`SCHEMAS.md:1423-1425`).
+12. **`closure: null` on an attested block is the legitimate "either alone" state** — attested but
+    never closed (`SCHEMAS.md:1423-1425`). A real attestation carries its counts and may still be
+    unclosed: `clinical_significance subjects=618629 findings=32` with `closure: null` is valid.
 
 ## What does not exist
 
@@ -388,8 +383,7 @@ Ordered by how likely a first-timer is to hit them.
 **The consumer picture changed in the last three days and the format tree's own docs have not caught
 up. Verify before you repeat either version.**
 
-- **`just-dna-registry` — reads it, since 0.16, and *surfaces* it since 0.17.** Installed and checked
-  out at **0.18.2** (2026-08-19).
+- **`just-dna-registry` reads it and *surfaces* it.**
   - `specfiles.py` — in `RECOGNIZED_SPEC_FILES`, so `revalidate`/`upgrade` rebuild a spec dir
     *with* it (their S11); `:234` — in `DERIVED_FILES`, so `download(layout="split")` puts it in
     `derived/` (`client.py`); `:280` — out of `SIGNATURE_INPUTS`, so shipping one cannot move a

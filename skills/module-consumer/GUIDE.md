@@ -96,7 +96,7 @@ The binning family — `repeat_alleles.csv`, `copynumbers.csv`, `heteroplasmy.cs
 table kinds annotate nothing downstream, however correct they are. `just-dna-lite` touches all four
 kinds in exactly two places and both count rows.
 
-**What changed in 0.6.6 is that the rule is now normative rather than inferable** (our `S58`, upstream
+**The measure-lookup rule is normative, not merely inferable** (our `S58`, upstream
 RM122): `SCHEMAS.md` carries the **measure lookup** beside the genotype join contract — scope to the
 group, select the row whose inclusive range contains the value, greatest `measure_min` on a shared
 endpoint, compare in float32, `unresolved` on a missing measurement and withhold on no match, and
@@ -127,12 +127,12 @@ bytes that produced it**, and nothing can answer *"which of my saved results are
 place: two versions of one module cannot coexist locally, and nothing notifies anybody that a newer one
 exists.
 
-**A module compiled before compiler 0.6.6 cannot be found by gene unless it has a `variants.csv`.**
-`manifest.stats` took its gene facets from `variants.csv` alone until then and the registry's gene
-index reads `stats.genes`, so a PGx, copy-number or activity-bin module published `genes: []`. The
-compiler now takes them over every gene-bearing authored table, but a published manifest is immutable —
-what is in the catalog today is what its own compile wrote. **Never add an empty `variants.csv` to fix
-it**; name the genes in the README and in the display prose, where a text search finds them.
+**An old published module may not be findable by gene.** `manifest.stats` is written at compile time
+and a published manifest is immutable, so a module whose early compile took its gene facets from
+`variants.csv` alone can carry `genes: []` even though its rows name a gene — and the registry's gene
+index reads `stats.genes`. The compiler takes them over every gene-bearing authored table, so recompile
+and re-publish to be findable. **Never add an empty `variants.csv` to fix it**; name the genes in the
+README and in the display prose, where a text search finds them.
 
 ## What needs a pilot, and what you may simply fix
 

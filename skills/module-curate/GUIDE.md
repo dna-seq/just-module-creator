@@ -40,10 +40,10 @@ conforming it silently *degrades* the module, and the check then agrees with its
 Editing against a source needs a reason that outranks the source, **and that reason gets written
 down** — `record_override` is where it goes, after the mismatch has been reported and never before.
 
-### The third option, new in 0.7: overrule a derived cell on the record
+### The third option: overrule a derived cell on the record
 
-Until 0.7 a derived value you rejected left you two choices — accept it, or re-derive and hope. There
-is now a third, and it is the right one whenever the disagreement is a **judgement** rather than a
+A derived value you reject leaves two obvious choices — accept it, or re-derive and hope. There is a
+third, and it is the right one whenever the disagreement is a **judgement** rather than a
 stale snapshot: an [`overrides.csv`](../module-tables/references/overrides.md) row, laid over the
 derived table at compile time and carrying the reason it was made.
 
@@ -64,9 +64,9 @@ Three things to know before writing one, and the rest is in the dossier:
   publishes.
 - **No operation reports its own no-op**, so a `suppress` with a typo'd subject does nothing and
   cannot warn. The one finding that does fire is an `update` reaching no row.
-- **It is safe to publish now and was not before.** The overlay reached the registry's
-  `RECOGNIZED_SPEC_FILES` in 0.25.0, so a server-side rebuild carries it. Below that release it was
-  dropped silently and the module recompiled green carrying the value you had rejected.
+- **Whether it survives depends on the instance.** The overlay is in the registry's
+  `RECOGNIZED_SPEC_FILES` from 0.25.0, so a server-side rebuild carries it; against an instance without
+  that support it is dropped silently and the module recompiles green carrying the value you rejected.
 
   **Neither release is cut, and `registry_health` is not the check.** It reports the format contract,
   which is a different question — a server can certify your client and still rebuild a spec without a
@@ -140,7 +140,7 @@ honest; a falsely verified one is not, and nothing downstream can tell them apar
 **A redundancy advisory can name a checker that never sees your table, and `describe_table` says so.**
 `hints.REDUNDANCY_BEARING` is keyed on a **bare column name**, so the `clin_sig` advisory reaches
 binning tables and `clin_sig` / `evidence_level` reach `diplotypes.csv`, while the checkers are driven
-from `variants.csv` and the PGx annotation tables. Since 0.6.6 the entry carries the scope — *that
+from `variants.csv` and the PGx annotation tables. The entry carries the scope — *that
 checker does not read this table; it loads X only* — so you can tell the two cases apart. The advice is
 the same in both and the stakes are higher in the second: **a green run there is not evidence of
 agreement with anything**, and your own independent reading is all that stands behind the cell.
@@ -315,9 +315,8 @@ hand against `ref` and `alts`, and never read "no genotype warnings" as "every g
   so `state='risk'` or `direction='risk'` wants `weight < 0` and `protective` wants `weight > 0`.
   Getting it backwards is a **warning**, so it compiles.
 - **`direction` is not a magnitude.** Its members are the same axis as `state`, never
-  `increase` / `decrease` — ask `describe_table` for them. Format 0.7 added a fifth (`contested`,
-  their RM150: the sources disagree about the *sign*, where `unknown` means nobody assessed it), and
-  this line named the four until it did.
+  `increase` / `decrease` — ask `describe_table` for them. One member is `contested` (the sources
+  disagree about the *sign*, where `unknown` means nobody assessed it).
 - **`direction` is authored or it is empty; nothing computes it.** `state` is required; the compiler
   never fills a blank `direction` from `state`, because that would assert a claim you did not make
   (`state='significant'` names no direction at all). So a module carrying only `state` compiles fine and

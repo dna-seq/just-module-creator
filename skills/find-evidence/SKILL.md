@@ -70,9 +70,7 @@ enrich_literature_pass(spec_dir="spec")                       # a corpus sizes i
 `fetch_fulltext`'s `text_source` names what came back: `fulltext` (Europe PMC), `pmc_bioc` (PMC's
 copy, asked when Europe PMC has none), `abstract`, or null for nothing — which is unchecked, not empty.
 
-**All five are always there.** The last two used to need `JMC_MODE=extended` and be absent without
-it, so on a default install the verify step of this loop could not be run at all; the tier went in
-0.21.0. What is still true is the **cost**: `paper_citations` follows a citation graph as large as
+**All five are always there.** Mind the **cost**: `paper_citations` follows a citation graph as large as
 the paper is cited, and `enrich_literature_pass` spends at least one request per citation in the
 module, so on a module with hundreds of studies it is a long run rather than a lookup. Weigh it,
 then run it.

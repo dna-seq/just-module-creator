@@ -43,8 +43,8 @@ a `state` to make the compile pass.
 
 **`Input should be a valid boolean, unable to interpret input` on a column you wrote correctly**
 An unquoted comma inside a free-text cell — `conclusion` and `phenotype` invite one — split the row and
-shifted every later column left by one, so the error names the wrong column. Since compiler/enricher
-0.5.4 the ragged row is reported **first**, ahead of the error it causes, so read the findings in order
+shifted every later column left by one, so the error names the wrong column. The ragged row is reported
+**first**, ahead of the error it causes, so read the findings in order
 rather than jumping to the last one. Quote every free-text cell.
 
 **A finding whose `row` and `line` disagree about the same CSV**
@@ -107,8 +107,8 @@ link runs next. Offline, that is the end of the road and the row stays unresolve
 incomplete is what tells you whether to warm it, which is why the line stays on the record even when
 the lookup then succeeds.
 
-**Both strings lost a trailing `, position remains unset` in enricher 0.6.6, and that clause is now its
-own finding** (upstream RM125, our `S61`). It said something the cache link could not know: a leg that
+**The `, position remains unset` clause is its own finding, not a trailing note on these strings**
+(upstream RM125, our `S61`). It said something the cache link could not know: a leg that
 had not run yet may still answer, so at that moment whether the position stays unset is *unknown*
 rather than false. `lookup_variant` — the one caller that sees both halves — states
 **`<rsid>: position remains unset`** once at the end, and only when nothing placed the variant. If you
@@ -256,18 +256,15 @@ then re-run. Our `F95`, filed upstream as format-tree `S98`.
 by `compile --strict` is a pre-flight for the *other* compile, so pass the same flag to both:
 `validate spec/ --strict`.
 With the modes matched it should not happen, and if it does, that is a bug worth reporting upstream
-rather than working around. Two shapes genuinely did on format 0.6.0 — a module with
-`frequencies.csv`, and a table-only module with `studies.csv` — both fixed in 0.6.1, which is this
-plugin's floor. `validate` covers `resolution.csv`, the four fact sidecars (`licensing.csv`,
+rather than working around. `validate` covers `resolution.csv`, the four fact sidecars (`licensing.csv`,
 `literature.csv`, `frequencies.csv`, `gene_metrics.csv`), the licence gate, the stored `vrs_id`, the
 p-value pair, and whether every genotype and `effect_allele` names an allele its locus actually has.
 What still only appears at compile is anything computed from *resolved* rows — the expansion and hosting
 findings above — because resolution has not run when `validate` does.
 
 **A `pmid` cell holding a PMC id is refused by name**
-`PMC 3110566` used to be accepted as PMID 3110566 — a real identifier, for an unrelated article. A
-cell that compiled before can refuse now (RM50), and that is the fix rather than a regression: the
-row was citing the wrong paper. Look the record up again and write the PMID it actually has.
+A PMC id can be one digit from a real — but unrelated — PMID, so the refusal is protecting you from
+citing the wrong paper. Look the record up again and write the PMID it actually has.
 
 **A coordinate past its contig's end, or on a contig only the other assembly names**
 An error in **both** modes (RM48). `--strict` is deliberately not the switch, because this is
@@ -332,11 +329,11 @@ offline*, the mint pass has not run — `just-dna-enricher vrs mint <spec_dir>` 
 indel/MNV, re-run that command **without** `--offline`, which is what lets it read the reference
 sequence. If it names a build with no refget table, nothing can be done today and the module is fine.
 It never refuses, in either mode, because the last two causes are fixable by no edit you could make.
-**`0/N` on a CPIC-drafted haplotype table is a fourth cause, and it dates the sidecar**: every drafted
-row carries an rsID *and* a coordinate, and an enricher before 0.7.1 restated the coordinate under
-`source=authored` with no `ref`/`alts`/VRS id, so `vrs mint` had nothing to mint from (upstream `S104`,
-fixed in 0.7.1). The table keeps those rows under merge-not-clobber: `enrich_module` names them, and
-`refresh_sidecar(sidecar="resolution.csv")` re-derives it. Leave the drafted coordinates in place.
+**`0/N` on a CPIC-drafted haplotype table is a fourth cause**: every drafted row carries an rsID
+*and* a coordinate, but where the sidecar restates the coordinate under `source=authored` with no
+`ref`/`alts`/VRS id, `vrs mint` has nothing to mint from (upstream `S104`). The table keeps those rows
+under merge-not-clobber: `enrich_module` names them, and `refresh_sidecar(sidecar="resolution.csv")`
+re-derives it. Leave the drafted coordinates in place.
 
 **`p_value '1.2e-14' reads as 1.2e-14, but p_value_num says 1.2e-41`** — a warning under
 `--best-effort`, an error under `--strict`
@@ -428,13 +425,12 @@ enough that failing the build would have the format arbitrate somebody else's di
 so. **Silent when no attestation exists** — an unenriched module is the ordinary case, not a hole.
 
 **`<key>: dbSNP has WITHDRAWN <rsid> — the variant itself was retracted`**
-New in 0.7 (`RM207`), and it is the one refusal here that **fires in `best_effort` too** — unlike a
+It is the one refusal here that **fires in `best_effort` too** — unlike a
 merged or an absent rsID, which warn. dbSNP withdrew the variant, so the annotation resting on it may
-be describing nothing. Remove the row or re-key it onto a coordinate. **A spec that passed `validate`
-at 0.6.6 can newly fail on this**, and that is the failure moving earlier rather than a new one:
-`compile` already refused it in both modes and the pre-flight simply said nothing. The sharper case is
-an *expanded* variant carrying such a row — that artifact used to compile clean and was never legal.
-GRCh38 only; on another build the check does not run, which is not the same as passing.
+be describing nothing. Remove the row or re-key it onto a coordinate. The pre-flight catches this; `compile` already refused it in both modes, so it is the failure moving
+earlier rather than a new one. The sharper case is an *expanded* variant carrying such a row, which is
+refused as never legal. GRCh38 only; on another build the check does not run, which is not the same as
+passing.
 
 **`inconsistent reference allele`**
 Two rows share a key while disagreeing about `ref`. Exactly one can be right — a VRS allele id names the
@@ -456,12 +452,11 @@ Same unphased genotype, different conclusions, but the haplotype definitions *do
 resolves it. Correct and expected for a cis/trans pair; a consumer with unphased calls must withhold.
 
 **`sources.csv declares N source(s) no table in this module uses`**
-Over-declaration; usually a stale row after you removed a table. Harmless. It also fired
-spuriously on the pubmed/europepmc rows of any module carrying `studies.csv` — that was `F21`/`S23`
-and it is **fixed as of format 0.6**, so on the current floor this message means what it says.
+Over-declaration; usually a stale row after you removed a table. Harmless — the message means what it
+says, so remove the stale row.
 
 **`sources.csv is the deprecated spelling of this table and will be removed at 1.0`**
-Format 0.6 renamed the file to `licensing.csv`. Nothing is broken: it reads exactly as before, and
+`licensing.csv` is the current name. Nothing is broken: `sources.csv` reads exactly as before, and
 `sources.parquet` and `manifest.sources` deliberately keep their names. Rename the CSV. Do not
 "finish" the rename into the parquet or the manifest key — a test upstream pins those, because
 renaming either breaks every reader.
@@ -540,7 +535,7 @@ read the primary literature may correctly disagree with a one-star submission. T
 ClinVar's review-star count so you can weigh it. The allele-function check behaves the same way.
 
 **`N row(s) already in variants.csv identify by rsID alone … this run writes those rsIDs with their full coordinate`**
-Your module was drafted before enricher 0.6.3, when the drafter keyed a site on `ref` and an ordinary
+Your module carries rsID-only rows from an earlier drafter that keyed a site on `ref`, where an ordinary
 dup/del mirror pair (`A>AT` beside `ATT>A` at one position) collapsed onto a single rsid-only row —
 the second ClinVar record was dropped, in silence, and which one survived was decided by allele
 spelling rather than by review stars. Re-drafting recovered every dropped record; it did **not**
@@ -615,13 +610,12 @@ one number `/health` never carried.
 
 **`<table>.csv line N [<column>]: Extra inputs are not permitted` from the registry, while every local
 gate passed.** Not a typo, and usually not your spec. The instance validates against the format
-version **it** runs, and it can be several patch releases behind the one you compiled with — measured
-2026-08-31: both instances serve `format: 0.6.1`, `uv sync` installs 0.6.6, and every row model is
-`extra="forbid"`. So a column that shipped in 0.6.2 or later is a valid, current column that the
+version **it** runs, and it can be several patch releases behind the one you compiled with. Every row
+model is `extra="forbid"`, so a column newer than the instance's format is a valid, current column the
 server has never heard of, and the message says what pydantic says about a misspelling. Check the
 column against `describe_table` first; if it is real, this is the gap. **The version handshake does
-not catch it** — `assert_compatible()` is scoped to major.minor, so a 0.6.6 client and a 0.6.1 server
-certify each other and then disagree row by row.
+not catch it** — `assert_compatible()` is scoped to major.minor, so a client and a server on different
+patch releases certify each other and then disagree row by row.
 
 **The call that separates the two readings** — a real current column against a misspelling — is
 `base.field_first_seen`, which reads each column's release of origin off the field itself
@@ -684,7 +678,7 @@ tool does beyond fetching, which for `enrich_gwas_effects` is the sidecar it wri
 rows it records on the way.
 
 **`No such option: --mode` when starting the server, or a launch config that sets `JMC_MODE`.**
-The other direction of the same change: `--mode` was removed in 0.21.0, so a launch line carrying it
+There is no `--mode` option, so a launch line carrying it
 fails before the server starts. Drop the flag. A `JMC_MODE` left in a `.env`, an `.mcp.json` or a
 plugin manifest is harmless — it is read as an unknown setting and ignored — but it is worth deleting
 so nobody reads it as still doing something.

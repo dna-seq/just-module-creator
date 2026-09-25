@@ -274,7 +274,7 @@ Ordered by how likely a first-timer is to hit them.
     resolved"; do not create the file to look tidy.
 11. **Both homes at once is an error, not a merge.** Root **and** `derived/` → `SidecarCollision`,
     naming both paths, "because two fact-hashed, human-overridable copies are two legitimate claims"
-    (`layout.py`). Running `enrich` on a downloaded split tree used to create exactly this.
+    (`layout.py`).
 12. **An older table legitimately lacks columns.** Three of the eleven reference examples with a
     `resolution.csv` (`apoe_epsilon`, `hfe_compound_het`, `hfe_hemochromatosis`) have no `authority`
     column at all — written before RM33. It loads as `None` and contributes nothing to the licence
@@ -288,7 +288,7 @@ Ordered by how likely a first-timer is to hit them.
   proposes"* (`SCHEMAS.md:1471-1481`). Three reasons: its provenance columns are deliberately outside
   the fact set, `reverse_module` cannot reconstruct half of them, and a downstream reader keying on it
   "would be reading the *lookup* rather than the *answer*". The right repair was RM43 — materialize
-  the coordinate into the positional tables — and that shipped in 0.6 (`COMPILER.md`, *The positional
+  the coordinate into the positional tables (`COMPILER.md`, *The positional
   fill*). Do not re-propose it.
 - **Recovery of provenance after a round trip.** `reverse_module` writes 11 columns and drops
   `authority`, `rsid_alternates`, `rsid_current`, `rsid_status`, `vrs_id`, `vrs_spec`, `caid`. Filed

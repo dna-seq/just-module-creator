@@ -164,7 +164,7 @@ attest these bytes, and close the module again."*
   module's scope from this column and `allele_function.gene`, and answers *"the module names no
   genes … so there is nothing to check against"* when both are blank.
 
-### `requires_callable` arrived in 0.7, and it is per locus for a reason
+### `requires_callable` is per locus for a reason
 
 **RM70.** True says a consumer must prove this position was **callable** before reading the *absence*
 of the defining allele as reference — that is, before assigning the reference haplotype at this
@@ -280,20 +280,18 @@ Ordered by how likely a first-timer is to hit them.
     `pharm_variants`/`haplotypes`/`heteroplasmy` (`manifest.py`). `table_rows` exists in
     `ValidationResult.stats` (`compiler.py`) and does **not** reach `Stats`.
 
-13. **`gene` on this table reaches the catalog as of compiler 0.6.6.** `manifest.stats.genes` used to
-    be `variant_stats(variants)`, running only `if variants:`, so a module whose 106 haplotype rows
-    all say `gene=CYP2C19` published `genes: []` and `gene_count: 0` — invisible to a gene search,
-    since the registry indexes that field into `version_genes`
-    (`just-dna-registry/src/just_dna_registry/db/repository.py`).
-    **Fixed in compiler 0.6.6** (upstream **RM121**): `module_stats` takes the gene facets over every authored table, `variant_stats` keeps its `variants.csv` promise, and a module already published carries the stats its compile wrote — recompile and re-publish to be findable by gene. Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`.
+13. **`gene` on this table reaches the catalog.** `manifest.stats.genes` is taken over every authored
+    table, so a module whose haplotype rows all say `gene=CYP2C19` is findable by a gene search — the
+    registry indexes that field into `version_genes`
+    (`just-dna-registry/src/just_dna_registry/db/repository.py`). A module already published carries the
+    stats its compile wrote, so recompile and re-publish to move them.
 
 ## What does not exist
 
-- **`requires_callable` is HERE now — RM70 shipped in 0.7, and this entry used to say it did not
-  exist.** Measured 2026-09-13 on the installed models: `HaplotypeRow` and `PharmVariantRow` carry
-  `requires_callable`; `DiplotypeRow` and `AlleleFunctionRow` do not, and that absence is a decision
+- **`requires_callable` is present.** Measured 2026-09-13 on the installed models: `HaplotypeRow` and
+  `PharmVariantRow` carry `requires_callable`; `DiplotypeRow` and `AlleleFunctionRow` do not, and that absence is a decision
   rather than a gap (a diplotype names a *pair*, not a locus, so the column could only restate a
-  fact about this table's rows). See *`requires_callable` arrived in 0.7*, above, for what the three
+  fact about this table's rows). See *`requires_callable` is per locus for a reason*, above, for what the three
   values mean.
 - **No `callable_from`, anywhere but `variants.csv`.** *"A proof is required"* travelled and *"here
   is where the proof lives"* did not, so a star-allele row can demand callability and cannot say

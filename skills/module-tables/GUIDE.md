@@ -69,7 +69,7 @@ here would be the hand-kept list this whole file argues against.
 | [`heteroplasmy.md`](references/heteroplasmy.md) | an mtDNA fraction range, in one tissue | binning family; `tissue` is in the key |
 | [`pgs.md`](references/pgs.md) | a published polygenic score you point at | plus the envelope it is valid in |
 | [`licensing.md`](references/licensing.md) | what one source is, and on what terms | **author or enricher** — see *three levels*, below |
-| [`overrides.md`](references/overrides.md) | a **correction** laid over one derived row, and why | new in 0.7. Authored input, and the only way to overrule a machine-written table |
+| [`overrides.md`](references/overrides.md) | a **correction** laid over one derived row, and why | Authored input, and the only way to overrule a machine-written table |
 
 **Machine-produced — you read these, and never hand-finish one.**
 
@@ -161,9 +161,9 @@ each table's natural key. Use it rather than the tuples any prose gives you.
   from `record_override`, which logs a hand edit to an **authored** cell and applies nothing.
 
 **`list_tables` generates every key it reports** — `keyed_on` and `key_rule` both come from the model's
-own declaration since format 0.6.5, so the deprecated `modifier_cn` it used to name for
-`copynumbers.csv` cannot recur. Author `modifier_copy_number`, which holds the fractional dosages
-VCF 4.4 §7.2 allows; both are read, setting both is an **error**, and the old one is removed at 1.0.
+own declaration, so a deprecated key cannot recur. Author `modifier_copy_number` for `copynumbers.csv`,
+which holds the fractional dosages VCF 4.4 §7.2 allows; `modifier_cn` is also read, setting both is an
+**error**, and it is removed at 1.0.
 
 ### Axes that look interchangeable and are not
 
@@ -212,14 +212,13 @@ ran, so no pass will write the row — and the compile licence gate reads that f
 all, and six of those carry no `studies.csv` either. Adding an empty `variants.csv` to a PGx module to
 make it look complete is the mistake this rule exists to prevent.
 
-**`manifest.stats` describes the module, and since compiler 0.6.6 it is taken over every authored
-table** (upstream **RM121**). Until then `stats.genes` came from `variants.csv` alone, so a star-allele,
-copy-number or activity-bin module published `gene_count: 0, genes: []` however many rows named a gene
-— and the registry's gene index is fed from that field, so `registry_search(gene=…)` missed it.
-Re-measured on `cyp2c19_star_alleles`, which carries no `variants.csv`: `gene_count: 1,
+**`manifest.stats` describes the module, and is taken over every authored table** — so a star-allele,
+copy-number or activity-bin module with no `variants.csv` still reports the genes its rows name. The
+registry's gene index is fed from `stats.genes`, so this is what makes `registry_search(gene=…)` find
+the module: `cyp2c19_star_alleles`, which carries no `variants.csv`, reports `gene_count: 1,
 genes: ['CYP2C19']`.
 
-**A module published before that release still carries the old stats**, because a manifest is written
+**A module published earlier carries whatever stats its compile wrote**, because a manifest is written
 at compile time — recompile and re-publish if being findable by gene matters. Naming the genes in
 `README.md` is still worth doing: it is what a text search reads, and the readme becomes the catalog
 card. What has never been the answer is adding an empty or invented `variants.csv` — that trades a

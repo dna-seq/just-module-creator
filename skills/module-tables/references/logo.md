@@ -294,20 +294,12 @@ Ordered by how likely a first-timer is to hit them.
    (`compiler.py`) and `docs/audit/COMPILER_FROM_CODE.md:695` states it plainly: "Logs,
    `provenance.json`, logo and readme are not re-emitted." So `compile → reverse → compile` loses
    the logo without touching the digest — the round-trip *looks* perfect and the picture is gone.
-5. **`logo.jpeg` does not survive the enricher's HuggingFace upload.** `upload.py` allowlists
-   `logo.png` and `logo.jpg` only, and the comment at `:47` calls it out: "`logo.jpeg` is a
-   pre-existing instance of that same skew, left alone here because widening it is not this item's
-   decision." Publish a `.jpeg` logo to HF and the manifest attests a file the repo does not carry.
-
-   **Fixed in enricher 0.6.6** (upstream **RM105**): the publisher's logo allowlist now derives from
-   `LOGO_EXTENSIONS`, the way the readme half already derived from `README_CANDIDATES`, so the
-   spelling the compiler *prefers* is no longer the one the upload dropped. **If you published a
-   module carrying a `logo.jpeg` before that release, re-publish it** — the manifest attested bytes
-   the repository did not carry, and nothing in `verify_manifest(check_logo=True)` catches an absent
-   file. Discovery order is deliberately unchanged: it still sorts `LOGO_EXTENSIONS`, so **`jpeg`
-   beats `jpg` beats `png`** and a spec directory holding two logos still ships the jpeg and does not
-   even copy the loser. **Keep exactly one logo in the spec directory** — that half was never the
-   bug and is not fixed.
+5. **The HuggingFace publisher uploads the logo spelling the compiler prefers.** `upload.py`'s logo
+   allowlist derives from `LOGO_EXTENSIONS`, the way the readme half derives from `README_CANDIDATES`,
+   so the spelling the compiler *prefers* is the one that ships. `verify_manifest(check_logo=True)`
+   does not catch an absent logo file, so confirm the intended logo shipped. Discovery sorts
+   `LOGO_EXTENSIONS`, so **`jpeg` beats `jpg` beats `png`** and a spec directory holding two logos
+   ships the jpeg and does not even copy the loser. **Keep exactly one logo in the spec directory.**
    The registry does not share this hole — `gather_spec_files` uploads everything that is not a
    parquet.
 6. **`amend_logo` renames your file.** Upload `heart-v3.png` and it is stored as `logo.png`
@@ -400,8 +392,7 @@ both live instances (`registry 0.18.2 / format 0.6.1 / compiler 0.6.1`): product
   or say so — when the field is darker than its 235 threshold, which is the
   `recent_longevity_2024` case where the crop is a measured no-op.
 - **Ask `hf_modules` to trust `manifest.logo` and stop probing.** The comment at `:237-238` says a
-  manifest "says nothing about" the logo. That was true when only `ARTIFACT_PARQUETS` was attested;
-  `manifest.logo` carries `{name, sha256, size}` and has since format 0.5. Today lite serves a
+  manifest "says nothing about" the logo, but `manifest.logo` carries `{name, sha256, size}`. Today lite serves a
   logo it has not verified while the hash sits unread one field away. Probing can stay as the
   fallback for manifest-less sources; when a manifest is present it should name the file and lite
   should check the digest.

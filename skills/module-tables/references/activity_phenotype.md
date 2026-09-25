@@ -62,7 +62,7 @@ Column by column. As of format 0.6.1 — run `describe_table` for the live list.
 | `measure_kind` | **author, but it has exactly one legal value.** Defaulted to `activity_score` and pinned by `_EXPECTED_KIND` (`binning.py`); the field carries its own one-member vocabulary `measure_kind_activity_score` rather than `VALID_MEASURE_KINDS`, because offering the full set would offer values this model rejects. |
 | `measure_tiling` | **author — and on this kind the right answer is almost always to leave it empty.** See gotcha 2. |
 | `unresolved` | **author.** `stub_template` stamps the sentinel row for you (`draft.py`, `_unresolved_cell` `:312`); nothing else ever writes it. |
-| `direction`, `phenotype`, `trait_efo_id` | **author.** `direction` is a closed vocabulary and an axis, not a magnitude — `describe_table` returns the members, and this line used to spell them out until format 0.7 added a fifth (`contested`, RM150) and made the spelling wrong. |
+| `direction`, `phenotype`, `trait_efo_id` | **author.** `direction` is a closed vocabulary and an axis, not a magnitude — `describe_table` returns the members; do not restate them here, the set moves. |
 | `clin_sig` | **author, and no tool may fill it** — `hints.REDUNDANCY_BEARING["clin_sig"]` (`compiler/src/just_dna_compiler/hints.py`) registers it against `enricher.clinical.verify_clin_sig`, which compares the authored call against ClinVar's. Filling it from ClinVar makes that comparison compare ClinVar with itself. |
 | `pmid` | **author, and no tool may fill it** — `REDUNDANCY_BEARING["pmid"]` = *"enricher.literature (authored pmid vs PubMed's record: LiteratureRow.exists)"*. A lookup reports the id with `applied: false` and its refusal; preserve both. |
 | `source_field`, `source_element` | **author.** Declarative VCF pointers, never expressions. |
@@ -151,7 +151,7 @@ the "moves the digest and no signature" row that derived sidecars have has no in
   `_check_binning_grounding` (`compiler.py`) warns — measured on a solo module with the pmids
   stripped: *"activity_phenotype.csv: 4 of 4 bin(s) state a threshold and the module records no
   grounding evidence at all (no studies.csv rows, no bin pmid)"*, with the remedy naming
-  `pmid` + a `studies.csv` row that since 0.6 need not name a variant. Warning in both modes.
+  `pmid` + a `studies.csv` row that need not name a variant. Warning in both modes.
 
 ## The columns that carry judgement
 
@@ -347,9 +347,9 @@ no single column to name. Read the message, not the bracket.
   has the same problem and this tier says nothing about it. Not established whether that is a
   decision or an omission; the RM56 policy vocabulary (withhold / worst bin / point estimate) is
   deferred to 0.7 and its grain is deliberately undecided.
-- **No `requires_callable` on any binning row**, and RM70 is no longer the reason. It shipped in 0.7
-  onto `HaplotypeRow` and `PharmVariantRow` — the tables whose rows name a locus — and deliberately
-  not onto `DiplotypeRow`, `AlleleFunctionRow` or any binning model (measured 2026-09-13). A band is
+- **No `requires_callable` on any binning row.** It is on `HaplotypeRow` and `PharmVariantRow` — the
+  tables whose rows name a locus — and deliberately not on `DiplotypeRow`, `AlleleFunctionRow` or any
+  binning model (measured 2026-09-13). A band is
   not a position, so there is nothing here for the column to be about. `unresolved` is the nearest
   thing this table has, and it answers a narrower question.
 - **No positional key.** `(gene)` is the whole identity, and RM65/RM66 record that the
@@ -411,13 +411,11 @@ ecosystem knows exactly how to **write** `activity_phenotype.csv` and has no cod
   four tables plus `lead`. A binning module gets a `lead_url` and no reader. **What breaks today:**
   `get_module_table_url()` (`:513-547`) cannot even name the table, so a consumer that wanted to
   read it has no accessor to call.
-- **Gene-keyed tables are indexed into `manifest.stats.genes` as of compiler 0.6.6.** Until then the
-  gene set came **from `variants.csv` alone**, so an `activity_phenotype`-only CYP2D6 module published
-  `gene_count: 0, genes: []` and `registry_search(gene="CYP2D6")` could not find it — the registry
-  indexes `version_genes` straight off that field
-  (`just-dna-registry/src/just_dna_registry/db/repository.py`). **Fixed in compiler 0.6.6** (upstream **RM121**): `module_stats` takes the gene facets over every authored table, `variant_stats` keeps its `variants.csv` promise, and a module already published carries the stats its compile wrote — recompile and re-publish to be findable by gene. Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`. It affected
-  `copynumbers.csv`, `repeat_alleles.csv`, `allele_function.csv`,
-  `haplotypes.csv` and `diplotypes.csv`.
+- **Gene-keyed tables are indexed into `manifest.stats.genes`.** The gene set is taken over every
+  authored table, so an `activity_phenotype`-only CYP2D6 module is findable by
+  `registry_search(gene="CYP2D6")` — the registry indexes `version_genes` straight off that field
+  (`just-dna-registry/src/just_dna_registry/db/repository.py`). A module already published carries the
+  stats its compile wrote, so recompile and re-publish to move them.
 - **Draft the bins from CPIC instead of leaving them hand-typed.** The CPIC snapshot's
   `diplotypes.parquet` carries `(gene, diplotype, phenotype, activity_score)`
   (`enricher/src/just_dna_enricher/cpic.py`), which is exactly what the reference example's

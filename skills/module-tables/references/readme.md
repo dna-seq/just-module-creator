@@ -72,15 +72,14 @@ And its neighbour:
 - **nobody, ever** — there is no field in `module_spec.yaml` for prose and no plan to add one. The
   file is the field.
 
-**Which cells no tool may fill.** None, and the reason is narrower than this section used to claim.
-It read *"all of them — the strongest form of the report-never-repair rule in the whole spec
-directory"*, corrected 2026-08-20 under `RM15`. A readme is prose an agent may write; what it must
+**Which cells no tool may fill.** None — a readme is prose an agent may write. What it must
 not do is **assert a judgement nobody made**, and that is a rule about the content, not the typist.
+Report-never-repair does not forbid the typing here, only the judgement.
 
-- `hints.ATTESTATION_BEARING` (`provenance_quote`, `provenance_regex` on `studies.csv`) used to be
-  glossed here as existing *because a quote records that a **curator** read the paper*. That gloss is
-  withdrawn (`S55`): an agent that reads the article is a real reader, and what the column needs is
-  **attribution** — who located the passage — not abstention. A readme is the same kind of object one
+- `hints.ATTESTATION_BEARING` (`provenance_quote`, `provenance_regex` on `studies.csv`) exists for
+  **attribution** — who located the passage — not abstention: an agent that reads the article is a real
+  reader, so it may locate and quote, recording who did. It is not a requirement that a *curator* read
+  the paper. A readme is the same kind of object one
   level up: it records what somebody decided this module is *for*. So write one, and let `authorship`
   say who wrote it; the thing to avoid is a readme that invents a purpose nobody chose.
 - **`enrich_literature` will happily check a readme's claims against nothing at all.** There is no
@@ -277,8 +276,7 @@ rehearsal of `1.0.0` is not a prior publish of production's `1.0.0`.
 
 It exists because the registry owns four identity keys and `module_spec.yaml`'s `module:` block is
 `extra="forbid"` — those keys are rejected there *precisely because* the registry owns them (upstream
-`S1`). So the stamped identity had nowhere on disk to land, and the tool used to return it in a
-message and drop it.
+`S1`). So the stamped identity had nowhere on disk to land — this file is where it lands.
 
 **Its contract with the compiler is narrow and deliberate.** `compiler.py`:
 
@@ -331,47 +329,6 @@ it to your own repo**; that is the only place it survives.
   not a question each version re-answers."* `manifest.readme` is per-version; the card is not.
 - **A `MODULE.md` era-gap.** It is not a deprecation and not a break — it is a name this project
   advised for two releases and then changed, with a rename that repairs its own advice.
-
-## Era buckets — 27 submitted bundles under installed format 0.6.1
-
-Ran `validate_spec` (compiler 0.6.1) over all 27 extracted bundles. **24 valid, 3 invalid, 0
-exceptions.**
-
-- **Genuine breaks: 0.** Nothing a 0.1-era bundle legitimately contained is refused by 0.6.1.
-  Additive-within-a-major (P3) holds on this corpus.
-- **Live deprecations exercised: 0** — but only because none of the bundles is new enough to carry
-  one. Zero `sources.csv`, zero `panel:`, zero `modifier_cn` across all 27. The one deprecation
-  they *do* touch is `MODULE.md`, which is the registry's rename, not the format's.
-- **Era gaps: 27/27, in five kinds.** None is a fault. Census across the corpus:
-  `verification.json` 0, `provenance.json` 0, `resolution.csv` 0, `licensing.csv` 0, `sources.csv` 0,
-  any fact sidecar 0, `weighting:` 0, `authorship:` 0, `published.json` 0, `README.md` 0. Every
-  bundle warns *"records no closure"* — closure is RM73 and did not exist. 12 warn that
-  `module.version '1'` was read as SemVer `1.0.0`; the corpus writes bare integers throughout.
-  A module of that vintage could not have had any of these.
-- **Plain author defects (in no bucket, wrong in any era): 3.** `longevity_rare_v1`,
-  `longevity_rare_v1(1)` and `putter_v1` ship `variants.csv` with **no `studies.csv`** —
-  *"Grounding evidence is mandatory; add study rows with PMIDs."* Also, warn-level: 5 bundles have 9
-  expressible genotypes with no row; 3 have `studies.csv` rows citing rsIDs absent from
-  `variants.csv`.
-
-**The duplicate `(1)`/`(2)` filenames are half real.** `sha256sum` over the zips: `familial_longevity_v1`,
-`longevity_rare_v1`, `longevity_variants_2026_v2` are byte-identical to their `(1)` siblings, and
-`latest_longevity_v2` is identical across all three copies — careless re-downloads. But
-`longevity_2025_v2` vs `longevity_2025_v2(1)` genuinely differ (the `(1)` has a `MODULE.md`; the
-plain one has **none** — the single readme-less bundle in the corpus), and
-`multimorbidity_aging_v2`, `v2(1)`, `v2(2)` are **three different modules under one version number**:
-v2 is titled *"Multimorbidity & Healthy Aging"* with 22 variants, while `v2(1)`/`v2(2)` are titled
-*"Longevity & ARD Risks 2025"* with a 42 KB `variants.csv`. Same `version: 2`, different content, and
-only the prose records the retitle. 21 distinct bundles under 27 filenames.
-
-**What a submitted bundle contains beyond the tables.** `chd_depression_v1` (757 KB, the largest) is
-six files: `MODULE.md` (2.0 KB), `module_spec.yaml` (413 B), `variants.csv` (3.3 KB), `studies.csv`
-(1.5 KB), `logo.png` (664 KB) and **`v1.log` (450 KB)** — a full agent transcript naming the PI model
-(`gemini-3-pro-preview`), the team roles, the attached PDF and every tool call, including
-`write_module_md`. Across the corpus: 8 bundles ship a `logo.png`, 11 ship a `.log`
-(`latest_longevity_v3`'s is **4.0 MB**), and 7 ship **compiled parquets** (`annotations.parquet`,
-`studies.parquet`, `weights.parquet`) alongside the spec — which the registry drops on upload,
-because it recompiles. No nested archives, no editor droppings, no scripts.
 
 ## Consumption today
 

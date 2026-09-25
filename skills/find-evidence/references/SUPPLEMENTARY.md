@@ -34,7 +34,7 @@ as tab-separated rows; when Europe PMC has no fulltext it reads PMC's BioC copy 
 with `text_source: "pmc_bioc"`, which is how an author manuscript Europe PMC answers with a 500 is
 still reachable (`F108`).
 
-**The measured case, and it is the one this skill used to teach the opposite of.** PMID `29500382`
+**The measured case.** PMID `29500382`
 (*Item-level analyses reveal genetic heterogeneity in neuroticism*, `10.1038/s41467-018-03242-8`)
 backs 65 rows of the published `aggression_anger` module. Its JATS body names none of those rsIDs.
 Its **Supplementary Data 2** — described in its own index file as *"Association P values for all
@@ -51,7 +51,7 @@ rule 3's *read and not found* versus *unchecked* distinction exists to keep sepa
 
 ## Four tools do this now
 
-Since 0.25.0 the ladder is a tool surface, not a procedure you drive by hand, and since 0.29.0 it
+The ladder is a tool surface, not a procedure you drive by hand, and it
 reaches the cells:
 
 | call | what it does |

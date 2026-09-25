@@ -335,9 +335,9 @@ Ordered by how likely a first-timer is to hit them.
   on and must annotate a gene symbol for itself.
 - **No provenance columns.** No `fetched_at`, no `source`, no `status`, no `dataset`. Nothing here
   records where a bound came from except `pmid`.
-- **No `requires_callable`, and RM70 is no longer the reason.** It shipped in 0.7 onto `HaplotypeRow`
-  and `PharmVariantRow` — the rows that name a locus — and not onto any binning model (measured
-  2026-09-13). So this table still cannot state which loci a caller must be able to call, and a copy
+- **No `requires_callable`.** It is on `HaplotypeRow` and `PharmVariantRow` — the rows that name a
+  locus — and not on any binning model (measured 2026-09-13). So this table still cannot state which
+  loci a caller must be able to call, and a copy
   number from a seg-dup region like SMN1 is exactly the case that needs it; what changed is that the
   column now exists elsewhere rather than nowhere, so the ask is *extend it to the binning grain*
   rather than *add it to the format*.
@@ -367,11 +367,12 @@ Ordered by how likely a first-timer is to hit them.
 Two consequences worth stating plainly, both measured on a `module_spec.yaml` +
 `copynumbers.csv` module naming SMN1 and SMN2:
 
-- `manifest.stats` read **`variants.csv` only** until compiler 0.6.6 (`compiler.variant_stats`, the
-  gene set inside it). Measured then: `genes: []`, `gene_count: 0`, `variant_count: 0`,
-  `study_count: 0` — so `registry_search(gene="SMN1")` could not find an SMN copy-number module,
-  because the gene index is fed from `stats.genes`. **Fixed in compiler 0.6.6** (upstream **RM121**): `module_stats` takes the gene facets over every authored table, `variant_stats` keeps its `variants.csv` promise, and a module already published carries the stats its compile wrote — recompile and re-publish to be findable by gene. Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`. `manifest.Stats` still has no
-  `table_rows` field, so the row count `validate_spec` computes never reaches the manifest.
+- `manifest.stats` takes the gene facets over **every authored table** (`compiler.module_stats`);
+  `variant_stats` keeps its `variants.csv` promise. So an SMN copy-number module whose rows name a
+  gene is findable by `registry_search(gene="SMN1")` — the gene index is fed from `stats.genes` — and
+  a module already published carries the stats its compile wrote, so recompile and re-publish to move
+  them. `manifest.Stats` still has no `table_rows` field, so the row count `validate_spec` computes
+  never reaches the manifest.
 - The full annotate path is: discovered → publishable → installable → **skipped by name** at
   annotation. `just-dna-lite` contains no `FORMAT/CN` read, no `INFO/CN` read, and no `copy_number`
   handling of any kind (`grep -rniE "FORMAT/CN|INFO/CN|copy.number"` over all `.py` returns nothing).
@@ -402,10 +403,9 @@ Two consequences worth stating plainly, both measured on a `module_spec.yaml` +
 - **Select the `unresolved` sentinel when no CN was called.** The contract is explicit that a missing
   measurement selects that row and never the lowest bin. There is no consumer implementing it, so
   today "no CN" and "2 copies" are the same output: nothing.
-- **Shipped: the gene index is fed from every table that names a gene** (compiler 0.6.6). While
-  `manifest.stats.genes` was variant-derived, a copy-number module was invisible to
-  `registry_search(gene=…)` and its catalog card read 0/0/0. The card projection is still what a
-  reader sees, and a module published before that release still shows the old numbers.
+- **The gene index is fed from every table that names a gene.** So a copy-number module whose rows
+  name a gene is found by `registry_search(gene=…)`. The card projection is what a reader sees, and a
+  module published before its last recompile still shows whatever numbers its compile wrote.
 
 ## Ask the live schema
 

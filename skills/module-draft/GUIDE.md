@@ -159,15 +159,14 @@ every `draft --gene` and check each against CPIC's table.
 the allele-function loop and 164 from `_haplotype_rows`. Expect volume; read the counts rather than the
 lines.
 
-**Every CPIC-drafted `haplotypes.csv` row carries `rsid`, `chrom` and `start`, and before enricher
-0.7.1 that shape cost the VRS id.** A row authored with both took the "nothing to resolve" branch:
-`resolution.csv` restated the drafted coordinate under `source=authored` with no `ref`, `alts` or
-`ga4gh:VA`, and the compile warned *"VRS allele identity covers 0/N allele(s)"* on every CPIC-drafted
-module (upstream `S104`). Since 0.7.1 such a row takes the forward branch when the reference knows its
-rsID: the loci are recorded, an id mints, and a pair that disagrees with Ensembl warns in
-`best_effort` and refuses in `strict`. A sidecar written **before** that keeps its `authored` rows,
-because a sidecar is merge-not-clobber — `enrich_module` names them and the repair is
-`refresh_sidecar(sidecar="resolution.csv")`, never deleting the drafter's coordinates. The
+**Every CPIC-drafted `haplotypes.csv` row carries `rsid`, `chrom` and `start`.** Such a row takes the
+forward branch when the reference knows its rsID: the loci are recorded, an id mints, and a pair that
+disagrees with Ensembl warns in `best_effort` and refuses in `strict`. When the reference cannot
+resolve it, `resolution.csv` restates the drafted coordinate under `source=authored` with no `ref`,
+`alts` or `ga4gh:VA`, and the compile warns *"VRS allele identity covers 0/N allele(s)"* (upstream
+`S104`). A sidecar carrying such `authored` rows keeps them, because a sidecar is merge-not-clobber —
+`enrich_module` names them and the repair is `refresh_sidecar(sidecar="resolution.csv")`, never
+deleting the drafter's coordinates. The
 coordinate-agreement check runs either way (`verification.json`, `rsid_coordinate_agreement` — it
 found five CPIC positions off Ensembl's on CYP2D6).
 
@@ -216,11 +215,10 @@ remediations:
 | **skipped** rows | converges exactly | re-run, and you are done |
 | **wrote** rows under an identity that has since **moved** | restores the lost records and **leaves the collapsed ones beside them** | re-run, then delete the stale rows by hand |
 
-Measured on MLH1 after enricher 0.6.3: the ClinVar identity fix left **0 missing, 31 stale**; the
-ClinPGx fix only skipped, so it converged at **0 stale, 0 missing**. *Skipped converges; moved does
-not.*
+*Skipped converges; moved does not:* a re-run over skipped rows converges, while a re-run over a moved
+identity restores the lost records and leaves the collapsed ones beside them.
 
-Since enricher **0.6.4** the ClinVar drafter **names** the superseded rows — *"N row(s) already in
+The ClinVar drafter **names** the superseded rows — *"N row(s) already in
 variants.csv identify by rsID alone…"* — with counts and examples, and **deletes nothing**, because by
 re-draft time that row is authored material you may have curated. **The deletion is yours**, once the
 coordinate rows cover the same records. Drafting into an empty directory and reconciling against that is

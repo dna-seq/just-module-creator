@@ -129,8 +129,8 @@ files is a contract, and a rule invented at the registry for them would quietly 
 
 | Arrives as | Stored as | Why |
 |---|---|---|
-| `MODULE.md` | `README.md` | **the corpus lags us.** This project advised `MODULE.md` for two releases and `just-dna-pipelines`' `write_module_md` still emits it. Refusing it — or silently dropping the prose, which is what happened until registry 0.14 — would charge the author for our rename |
-| `sources.csv` | `licensing.csv` | **the direction inverted at format 0.6.** A 0.6 compiler reads both, prefers `licensing.csv`, and warns that the old spelling is removed at 1.0. Left alone, every publish of a legacy spec would carry that deprecation into `manifest.compilation.warnings` forever |
+| `MODULE.md` | `README.md` | **the corpus lags us.** `just-dna-pipelines`' `write_module_md` still emits `MODULE.md`. Refusing it — or silently dropping the prose — would charge the author for our rename |
+| `sources.csv` | `licensing.csv` | **`sources.csv` is the deprecated spelling.** The compiler reads both, prefers `licensing.csv`, and warns that the old spelling is removed at 1.0. Left alone, every publish of a legacy spec would carry that deprecation into `manifest.compilation.warnings` forever |
 
 That second map is **derived from `SIDECAR_SPELLINGS`, never written down** — upstream owns which
 spellings exist and which are deprecated, and restating it is how the two halves got out of step in

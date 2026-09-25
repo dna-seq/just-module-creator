@@ -290,10 +290,11 @@ Ordered by how likely a first-timer is to hit it.
     `positional_rows: 106` (all from `haplotypes.csv`), `vrs_alleles: 57`, and
     `resolution_subjects: 0` with `fully_resolved: true` — the empty-`all()` trap. Read
     `fully_resolved` only together with `resolution_subjects`.
-11. **A diplotype-only module published `genes: []` before compiler 0.6.6.** `manifest.stats` for
-    `cyp2c19_star_alleles` was `gene_count: 0, genes: [], variant_count: 0` while all 1190 rows carry
-    `gene=CYP2C19`. **Fixed in compiler 0.6.6** (upstream **RM121**): `module_stats` takes the gene facets over every authored table, `variant_stats` keeps its `variants.csv` promise, and a module already published carries the stats its compile wrote — recompile and re-publish to be findable by gene. Re-measured on `cyp2c19_star_alleles`: `gene_count: 1, genes: ['CYP2C19']`. `variant_count` is still 0 there, and correctly so — it counts
-    what `variants.csv` holds.
+11. **A diplotype-only module's genes reach the catalog.** `manifest.stats` takes the gene facets over
+    every authored table, so `cyp2c19_star_alleles`, whose 1190 rows all carry `gene=CYP2C19`, reports
+    `gene_count: 1, genes: ['CYP2C19']` and is findable by gene. A module already published carries the
+    stats its compile wrote, so recompile and re-publish to move them. `variant_count` is `0` there,
+    and correctly so — it counts what `variants.csv` holds.
 12. **The drafter and the enricher never verify a single cell of this table.** `enrich-pgx` reads
     `haplotypes.csv` and `allele_function.csv` and cross-checks `function_status` against PharmVar and
     CPIC; it does not open `diplotypes.csv` (grepped: zero occurrences of `diplotype` in
@@ -334,8 +335,7 @@ Ordered by how likely a first-timer is to hit it.
   so a haplotype is same-strand conjunction, and a diplotype is already a statement about two homologs
   — cis and trans are two rows (`compiler.py`; `schema/spec.py` points a `VariantRow`
   author here for the same reason). `docs/FAQ.md:241` refuses expressions module-wide.
-- **`requires_callable`: absent, and the absence is the DECISION — RM70 settled it in 0.7, the other
-  way from what this entry used to say.** Measured 2026-09-13: `HaplotypeRow` and `PharmVariantRow`
+- **`requires_callable`: absent, and the absence is the DECISION.** Measured 2026-09-13: `HaplotypeRow` and `PharmVariantRow`
   carry the column and `DiplotypeRow` does not, because a diplotype names a **pair** and not a locus.
   The column could only mean *"the variants defining these two haplotypes were callable"* — a fact
   about `haplotypes.csv` rows, restated one table over and free to drift the moment a definition is
@@ -369,10 +369,10 @@ Ordered by how likely a first-timer is to hit it.
 | `just-dna-lite/just-dna-pipelines/src/just_dna_pipelines/module_config.py` | `LEAD_TABLES` includes `diplotypes` third, after `weights` and `pharm_variants`. This is what makes a diplotype-led directory count as a module at all — discovery, listing, editing and the HuggingFace publisher all key on it |
 | …`module_config.py` (`find_lead_table`) | probes `diplotypes.parquet` on disk to answer "is this a module" |
 | …`annotation/hf_logic.py` (`_lead_join_strategy`) | classifies it **`unsupported`** — no populated coordinates and no `rsid`+`genotype` to fall back on. Classified by schema, not family name, so it absorbs new families for free |
-| …`hf_logic.py`, `:304`, `:602` | raises `UnsupportedLeadTable` and the per-module loop records it in `skipped[]` and continues. It used to raise `ColumnNotFoundError` and abort every other selected module with it |
+| …`hf_logic.py`, `:304`, `:602` | raises `UnsupportedLeadTable` and the per-module loop records it in `skipped[]` and continues |
 | …`v1_port/publish.py` | a 0.4-family-led module publishes like any other |
 | `just-dna-registry/src/just_dna_registry/specfiles.py` | `diplotypes.csv` is a recognized spec file, so it survives store → `revalidate` → `upgrade` round-trips |
-| …`services/upgrade.py` | `_ROW_MODELS["diplotypes.csv"] = DiplotypeRow`, used by `offending_columns` / `trim_unknown_columns` so a pre-0.4 spec's stray column is reported or trimmed rather than crashing the recompile planner |
+| …`services/upgrade.py` | `_ROW_MODELS["diplotypes.csv"] = DiplotypeRow`, used by `offending_columns` / `trim_unknown_columns` so a spec's stray column is reported or trimmed rather than crashing the recompile planner |
 | …`models/api.py` | `SpecStats.table_rows` carries per-CSV row counts from `validate_spec`. Measured: `{"haplotypes.csv": 106, "allele_function.csv": 36, "diplotypes.csv": 1190}` |
 | …`db/repository.py` | inserts `manifest.stats.genes` into `version_genes`, which `db/repository.py` joins for the `gene=` search facet |
 | **not** `services/enrich.py` | `ENRICHMENT_SUBJECT_TABLES` is `pharm_variants.csv`, `haplotypes.csv`, `heteroplasmy.csv`. `diplotypes.csv` rows are **not** counted against `enrich_max_variants` |
@@ -394,7 +394,7 @@ is stale.
   **What breaks today:** a published CYP2C19 module annotates zero rows and appears in
   `skipped[module_name]` with *"lead table has no populated coordinates and no rsid + genotype"* —
   which reads as a defective module rather than as "this module answers a question we do not ask".
-  `lnewco` (APOE ε) is the concrete first customer and has been waiting since 0.5.
+  `lnewco` (APOE ε) is the concrete first customer.
 - **Ask: select on `drug` + `clinical_context` before reporting.** Unread today — nothing in the
   consumer knows either column exists. Measured on the reference module: 1190 rows over 595 pairs,
   half of them drug rows, so a naive reader double-reports every diplotype; and CPIC's settings
@@ -410,9 +410,9 @@ is stale.
   unphased genotype, opposite conclusions — will either manufacture an at-risk finding or suppress
   one, silently. Note the two warning classes are different asks: one is resolved by phasing, one
   cannot be resolved at all.
-- **Shipped: `genes` is surfaced for a table-kind-led module** (compiler 0.6.6, upstream RM121). It
-  was `variants.csv`-only, so `registry_search(gene="CYP2C19")` could not find a CYP2C19 star-allele
-  module while the gene sat on every row. A module published before that release needs a recompile.
+- **`genes` is surfaced for a table-kind-led module.** So `registry_search(gene="CYP2C19")` finds a
+  CYP2C19 star-allele module even when the gene sits only on table rows. A module published before its
+  last recompile carries its old stats and needs a recompile.
 
 ## Ask the live schema
 
