@@ -137,6 +137,12 @@ will reject.
 **Read the rehearsal back.** What came back is what a consumer sees; the card, the readme projection and
 the resolution facets are all server-side.
 
+**Give the author the link.** Every successful `registry_publish` returns `data.page_url`, the module's
+page in that registry's web console: polygon for a rehearsal, catalog for a promotion. Paste it into
+your reply verbatim and say which registry it is. For a rehearsal that page is the thing to look at before
+deciding on production. It opens on the module's latest version, so after publishing an older version
+the one you just published is on the page's version list.
+
 ## Promote
 
 ```

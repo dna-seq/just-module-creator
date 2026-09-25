@@ -42,6 +42,7 @@ from just_module_creator.targets import (
     client_for,
     describe,
     instance_note,
+    module_page_url,
     polygon_naming_note,
     prod_refusal,
     throttle_note,
@@ -815,6 +816,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         old major would otherwise silently receive different content. Write the
         changelog as a continuation of the previous one, not a fresh
         "initial release".
+
+        On success, `data.page_url` is the module's page in that registry's web
+        console. Hand it to the author: it is how they see what was published.
         """
         # The naming refusal comes FIRST, before the credential and before the
         # offline ceiling: it needs neither to be decided, and telling an author
@@ -949,14 +953,23 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
             else ""
         )
         naming = polygon_naming_note(target, namespace=namespace, name=name)
+        # Kept out of the receipt: `published.json` records what the registry stamped,
+        # and this is our derivation from `registry_url` and the identity beside it.
+        page_url = module_page_url(
+            target,
+            settings,
+            namespace=str(receipt.get("namespace") or namespace),
+            name=str(receipt.get("name") or name),
+        )
         return OpResult(
             success=True,
-            message=f"Published {canonical} to {describe(target, settings)}. {note}"
+            message=f"Published {canonical} to {describe(target, settings)}. "
+            f"Its page: {page_url} — give the author this link. {note}"
             + rehearsal
             + duplicate_note
             + log_note
             + (f" {naming}" if naming else ""),
-            data={**receipt, "receipt_file": str(spec / RECEIPTS_FILE)},
+            data={**receipt, "page_url": page_url, "receipt_file": str(spec / RECEIPTS_FILE)},
         )
 
     # ----------------------------------------------------------------- #

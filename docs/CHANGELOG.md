@@ -3,6 +3,16 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.40.0] — 2026-09-25
+
+- **`registry_publish` hands back the module's page in the registry's web console.** Both instances
+  serve a console at `/ui/` (checked 2026-09-25: `200` on production and the polygon, registry 0.25.2),
+  and a successful publish now returns `data.page_url` — `<instance>/ui/#/m/<namespace>/<name>` — and
+  names it in the message. `module-publish` tells the agent to give the author that link and say which
+  registry it is on. The console has no per-version route, so the page opens on the latest version.
+  The URL is built in `targets.module_page_url` and kept out of `published.json`. A test reads the
+  installed wheel's console script, so the test fails if upstream moves the route.
+
 ## [0.39.0] — 2026-09-24
 
 - **`prune_rows` applies an author's keep-list to one authored table** (`F104`). The list is the

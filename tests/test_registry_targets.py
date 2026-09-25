@@ -17,6 +17,9 @@ happen before any request, which is exactly why they are worth having.
 
 from __future__ import annotations
 
+from pathlib import Path
+
+import just_dna_registry
 import pytest
 from conftest import offline_settings
 
@@ -36,7 +39,10 @@ from just_module_creator.settings import (
 from just_module_creator.targets import (
     TEST_MODULE_PREFIX,
     TEST_NAMESPACE_PREFIX,
+    UI_MODULE_ROUTE,
+    UI_PREFIX,
     client_for,
+    module_page_url,
     polygon_naming_note,
     prod_refusal,
 )
@@ -1086,3 +1092,26 @@ def test_a_busy_dry_run_gate_says_sequential_not_broken() -> None:
     # Any other refusal is left to upstream's sentence.
     assert throttle_note(RegistryError(422, "test_data_on_prod"), "publish") == ""
     assert throttle_note(RegistryError(503, "upstream_down"), "check") == ""
+
+
+def test_a_module_page_is_on_the_instance_its_target_names():
+    settings = offline_settings()
+    prod = module_page_url("prod", settings, namespace="eric-mods", name="lactose_tolerance")
+    test = module_page_url("test", settings, namespace="test-sheep", name="test_lactose")
+    assert prod == f"{settings.registry_url.rstrip('/')}/ui/#/m/eric-mods/lactose_tolerance"
+    assert test == f"{settings.registry_test_url.rstrip('/')}/ui/#/m/test-sheep/test_lactose"
+
+
+def test_the_page_route_is_one_the_installed_console_serves():
+    """Our literals against the console script the installed registry wheel ships.
+
+    Two producers on different cadences: if the console moves its module route or its
+    mount point, every link `registry_publish` hands out goes nowhere, silently.
+    """
+    static = Path(just_dna_registry.__file__).parent / "ui" / "static"
+    script = (static / "app.js").read_text()
+    assert "site-packages" in str(static)
+    assert "viewModule" in script  # the haystack is the console, not an empty file
+    assert f"`{UI_MODULE_ROUTE}${{encodeURIComponent(" in script
+    # `mount.py` is read, not imported: it imports fastapi, which a client install lacks.
+    assert f'UI_PREFIX: str = "{UI_PREFIX}"' in (static.parent / "mount.py").read_text()

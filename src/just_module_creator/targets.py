@@ -42,6 +42,8 @@ other direction is nothing, because the publish already happened.
 
 from __future__ import annotations
 
+from urllib.parse import quote
+
 from just_dna_registry import RegistryError
 from just_dna_registry.client import ModeMismatchError, RegistryClient, VersionMismatchError
 
@@ -105,6 +107,28 @@ def describe(target: RegistryTarget, settings: Settings) -> str:
     """``"the polygon (https://…)"`` — for messages that must name the instance."""
     url = settings.registry_url_for(target)
     return f"{'the polygon' if target == 'test' else 'production'} ({url})"
+
+
+#: The console a registry serves beside its API (registry 0.25+, on by default), and
+#: its hash route for one module. Literals rather than an import: upstream keeps
+#: them in ``just_dna_registry.ui.mount`` and the console script, and ``mount``
+#: imports fastapi, which the client install does not carry.
+#: ``tests/test_registry_targets.py`` reads the installed console script and fails
+#: if either stops appearing there.
+UI_PREFIX = "/ui"
+UI_MODULE_ROUTE = "#/m/"
+
+
+def module_page_url(
+    target: RegistryTarget, settings: Settings, *, namespace: str, name: str
+) -> str:
+    """The module's page in ``target``'s browser console, for handing to a person.
+
+    The console has no per-version route: the page opens on the module's latest
+    version, and the others are one click away on it.
+    """
+    base = settings.registry_url_for(target).rstrip("/")
+    return f"{base}{UI_PREFIX}/{UI_MODULE_ROUTE}{quote(namespace, safe='')}/{quote(name, safe='')}"
 
 
 def prod_refusal(target: RegistryTarget, *, namespace: str = "", name: str = "") -> str | None:
