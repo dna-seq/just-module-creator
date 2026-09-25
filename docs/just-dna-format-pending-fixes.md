@@ -1974,7 +1974,10 @@ into it is what §2 forbids outright, so the mitigation is to not need it. The h
 `audit.read_spec`'s docstring — three keys, no defaults folding — and anything needing the validated
 shape goes through `validate_module`, which has it.
 
-## F64 — the warning surface cannot be read on the module that needs it most (format `S67`, `S68`)
+## F112 — the warning surface cannot be read on the module that needs it most (format `S67`, `S68`)
+
+*Numbered `F64` until 2026-09-25, when the clash with `dogfooding.md`'s earlier `F64` (the
+HuggingFace channel) was found; this one was renumbered because it was filed second.*
 
 **Status: filed 2026-08-22 against compiler 0.6.6, open. No mitigation here and none is right.**
 
@@ -2000,14 +2003,14 @@ instruction is only followable if the list is readable, and readability is the p
 ## The 2026-08-22 filing set, and what did not survive verification
 
 Eight entries went to the format tree as **`S66`–`S73`** out of the two 2026-08-21 dogfooding runs.
-`F63` and `F64` above track the two we mitigated or deliberately did not; the rest are upstream-only
+`F63` and `F112` above track the two we mitigated or deliberately did not; the rest are upstream-only
 and have no our-side half to record:
 
 | upstream | what |
 |---|---|
 | `S66` | `enrich()`'s single, unlocked, non-atomic terminal write — `F63` |
-| `S67` | `_verify_vrs_ids` per-allele where `_vrs_coverage` aggregates — `F64` |
-| `S68` | `warnings` is a flat `list[str]` with no code, count, or clearable/carried split — `F64` |
+| `S67` | `_verify_vrs_ids` per-allele where `_vrs_coverage` aggregates — `F112` |
+| `S68` | `warnings` is a flat `list[str]` with no code, count, or clearable/carried split — `F112` |
 | `S69` | the `panel:` deprecation's *"nothing else is lost"* |
 | `S70` | `verification.json` counts a check's findings and keeps none |
 | `S71` | `verification.json`'s `producer` is document-scoped, so a merge restamps records it did not produce |
