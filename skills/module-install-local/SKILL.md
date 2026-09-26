@@ -34,7 +34,24 @@ checkout answered; a machine can hold two.
 **If the tools are not there, set the server up; do not hand the author commands to type.** Ask one
 question: *where is just-dna-lite installed?* Offer what you can find first: check the siblings of
 this plugin's checkout and of the working directory for a folder holding a `pyproject.toml` whose
-`[project] name` is `just-dna-lite`, and propose the match rather than asking cold. Then:
+`[project] name` is `just-dna-lite`, and propose the match rather than asking cold.
+
+**If there is no checkout, offer to clone one, and do it only on a yes.** Say what it costs first: a
+repository plus its Python environment (a few GB once dependencies install), and `uv` must be on the
+PATH. Propose a location beside this plugin's checkout, let the author change it, then:
+
+```bash
+git clone https://github.com/dna-seq/just-dna-lite "$LITE"
+```
+
+It holds no genomes yet: the author adds their own through its web UI, or the public ones
+(`list_samples` names them) download on first use.
+
+**Pick the registration format from the host you are running in, not from a menu.** Claude Code
+(the `claude` CLI is on the PATH and this session has `CLAUDE_CODE_*` variables) → `claude mcp add`.
+Codex (`CODEX_*` variables, `codex` on the PATH) → `codex mcp add`. Cursor (`CURSOR_*` variables,
+or a `.cursor/` directory in the workspace) → the `mcp.json` entry. If you genuinely cannot tell, ask
+which client this is; never write all three. Then:
 
 1. **Check the checkout** with its own interpreter. This also installs its environment, so the first
    launch does not spend the client's startup window on `uv sync`:
