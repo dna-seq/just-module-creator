@@ -161,7 +161,7 @@ def test_the_codex_mcp_config_launches_this_checkout(codex_manifest):
     # Codex, unlike Claude Code, reads a per-server timeout from the plugin declaration. Its
     # 30 s default loses the cold-install race (uv builds the venv on first launch) and its
     # 300 s tool default is shorter than a corpus-sized enrich pass.
-    assert server["startup_timeout_sec"] >= 120
+    assert server["startup_timeout_sec"] >= 300
     assert server["tool_timeout_sec"] >= 1800
 
 

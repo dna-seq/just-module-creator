@@ -3,6 +3,12 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.43.3] — 2026-09-27
+
+- **Codex startup timeout back to 300 s.** 0.43.2 set 120 s, which is Claude Code's hard cap and
+  not a Codex limit; Codex honours the per-server value, so a cold Windows install gets the full
+  five minutes to build its venv.
+
 ## [0.43.2] — 2026-09-27
 
 - **The Codex manifest sets its own timeouts: 120 s to start, 1800 s per tool call.** Codex reads

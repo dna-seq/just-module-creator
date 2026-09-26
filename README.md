@@ -54,7 +54,7 @@ environment and build the package the first time the server starts, and a host t
 for an MCP server to come up can lose the race — the connection then succeeds on the retry, in about
 three seconds, because the environment is warm.
 
-The Codex manifest allows 120 seconds itself, so this is mostly a Claude Code concern.
+The Codex manifest allows 300 seconds itself, so this is mostly a Claude Code concern.
 
 Warm it yourself right after installing or upgrading and it never happens:
 
