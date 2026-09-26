@@ -3,6 +3,16 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.43.2] — 2026-09-27
+
+- **The Codex manifest sets its own timeouts: 120 s to start, 1800 s per tool call.** Codex reads
+  `startup_timeout_sec` / `tool_timeout_sec` from a plugin's server declaration (Claude Code does
+  not), and its defaults are 30 s and 300 s. The first launch builds the venv — on Windows with
+  `UV_LINK_MODE=copy`, and possibly a Python download — which can lose a 30 s race, and a
+  corpus-sized pass like `enrich_gwas_effects` can outrun 300 s.
+- **The repo `.mcp.json` launches with `"cwd": "."`** so the fallback Codex reads when a manifest
+  declares no servers does not depend on the host's working directory. Claude Code still parses it.
+
 ## [0.43.1] — 2026-09-27
 
 - **The Codex plugin's MCP server starts again; in 0.43.0 and before it never did.** The Codex

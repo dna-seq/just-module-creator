@@ -1,6 +1,6 @@
 {
   "name": "just-module-creator",
-  "version": "0.43.1",
+  "version": "0.43.2",
   "description": "Author, validate, compile, and publish research-use just-dna annotation modules with schema-aware tools and literature search.",
   "author": {
     "name": "DNA Seq",
@@ -29,6 +29,8 @@
         "stdio"
       ],
       "cwd": ".",
+      "startup_timeout_sec": 120,
+      "tool_timeout_sec": 1800,
       "env": {
         "UV_LINK_MODE": "copy"
       }

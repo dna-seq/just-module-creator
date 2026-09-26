@@ -158,6 +158,22 @@ def test_the_codex_mcp_config_launches_this_checkout(codex_manifest):
     assert "--project" not in server["args"], "uv finds the project from cwd"
     assert "just-module-creator" in server["args"]
     assert "--no-dev" in server["args"], "the codex launch must skip the dev group too"
+    # Codex, unlike Claude Code, reads a per-server timeout from the plugin declaration. Its
+    # 30 s default loses the cold-install race (uv builds the venv on first launch) and its
+    # 300 s tool default is shorter than a corpus-sized enrich pass.
+    assert server["startup_timeout_sec"] >= 120
+    assert server["tool_timeout_sec"] >= 1800
+
+
+def test_the_repo_mcp_json_launches_from_its_own_directory():
+    """`.mcp.json` names no project, so the directory it runs in is the project.
+
+    Codex reads it as the fallback when a manifest declares no servers and joins a relative
+    `cwd` onto the plugin root; without one the launch depends on wherever the host started.
+    """
+    server = json.loads((REPO / ".mcp.json").read_text())["mcpServers"]["just-module-creator"]
+    assert server["cwd"] == "."
+    assert "--no-dev" in server["args"]
 
 
 # --------------------------------------------------------------------------- #
