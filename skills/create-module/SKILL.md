@@ -102,11 +102,11 @@ the allele pair, and `lookup_variant` gives you the same for a row you are writi
 | 3′ evidence | which paper stands behind each claim, what may honestly be quoted, **and how to reach the supplementary table the numbers are actually in** | [`find-evidence`](../find-evidence/SKILL.md) — **load it; the tool list beside it is not a substitute** | `literature_search`, `lookup_citation`, `lookup_open_access`, `fetch_fulltext`, and for the tables the body does not print, `list_supplementary`, `fetch_supplementary`, `describe_supplementary` ([`SUPPLEMENTARY.md`](../find-evidence/references/SUPPLEMENTARY.md)) |
 | 4 enrich | nothing — you read the report. It is the only tier that can catch an off-by-one | [`module-enrich`](../module-enrich/GUIDE.md) | `enrich_module`, `refresh_sidecar` |
 | 5 cross-check | what to do about each disagreement, one by one | [`module-check`](../module-check/GUIDE.md) | `check_identifiers`, `lookup_identifier`, `review_queue`; `enrich_facts`; `check_pgx` / `check_clinpgx` on a PGx module |
-| 6 compile | whether the build's warnings are acceptable — `--strict` is determinism, not correctness | [`module-compile`](../module-compile/GUIDE.md) | `validate_module`, `compile_module`, `module_signature`, `verify_artifact` |
+| 6 compile | whether the build's warnings are acceptable — `--strict` is determinism, not correctness; **then ask whether to try it on this machine's genomes** (`module-install-local`) | [`module-compile`](../module-compile/GUIDE.md) | `validate_module`, `compile_module`, `module_signature`, `verify_artifact` |
 | 6b close | that these bytes are final, and how the module was made | [`module-close`](../module-close/GUIDE.md) | `close_module` |
 | 7 rehearse | nothing irreversible. This is where mistakes are supposed to happen | `module-publish` | `registry_check`, `registry_validate`, `registry_publish(target="test")` |
 | 8 publish | **the immutable one.** Only on an explicit ask for the official catalog | `module-publish` | `registry_register` → `registry_whoami` → `registry_claim_namespace` → `registry_publish` |
-| 9 join | how a consumer will read what you wrote — decided long before this step | [`module-consumer`](../module-consumer/GUIDE.md), `module-install-local` | none here; `just-dna-lite` runs it |
+| 9 join | how a consumer will read what you wrote — decided long before this step; a trial run over real genomes shows it early, and its findings (variants no genome carries, odd score distributions) route back to 3 | [`module-consumer`](../module-consumer/GUIDE.md), `module-install-local` | the `just-dna-lite` MCP server's own tools: `install_module`, `start_annotation`, `validate_module` |
 
 **One surface, no tiers.** Every tool named above is registered, always. A few tools are expensive
 because a corpus sizes their work rather than your rows, and
@@ -145,4 +145,4 @@ silently, and surface only what a human must choose.
 | what a module is, the four packages, the whole tool roster — **and the words to explain any of it to the person in front of you** | [`module-101`](../module-101/GUIDE.md) |
 | which table a finding belongs in, and where every file sits | [`module-tables`](../module-tables/GUIDE.md) |
 | a message you do not recognise | `module-symptom` |
-| run the finished module on a genome here, publishing nothing | `module-install-local` |
+| run the finished module on this machine's genomes, read coverage and score distribution, publishing nothing | `module-install-local` |

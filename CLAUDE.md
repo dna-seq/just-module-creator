@@ -12,7 +12,9 @@ touches two manifests rather than one.
 It is **not** a format, a schema or an annotation engine. We own no schema:
 every column list, vocabulary and requirement comes from the live pydantic
 models in `just-dna-format`. It also never executes a VCF — nothing here reads a
-sample or calls a genotype.
+sample or calls a genotype. Running a module over real genomes is `just-dna-lite`'s MCP
+server (`just-dna-lite`), which the host runs **beside** this one and the agent drives
+directly, following `module-install-local`; no code here talks to it.
 
 `AGENTS.md` is a symlink to this file. If the two ever differ, that is a bug —
 `ln -sf CLAUDE.md AGENTS.md`.
@@ -66,7 +68,7 @@ same change** — an unlinked guide is unreachable content, not a smaller surfac
 | **The second-pass three** | `module-revise` (which kind of pass, and what it invalidates), `module-refresh` (re-running anything that already ran), `module-diff` (what moved, and the one reading that means an upstream source changed its answer). A second pass is the normal case, not the exception. |
 | **The references the stages load** | `module-weights` (the column everyone fills and nobody declares), `module-consumer` (the far side of the seam), `find-evidence` (search, verify a PMID, read a paper, and what may honestly be quoted), whose `references/SUPPLEMENTARY.md` holds the retrieval ladder for the supplementary tables a GWAS row's numbers actually live in. |
 | **The two doors into a module you did not just create** | `module-status` (read the spec directory, work out which stage it is actually at, and hand back the short list of decisions somebody must make next) and `module-symptom` (a message arrived and its meaning is unknown — the door to `SYMPTOMS.md`, and how to tell which layer emitted it). Neither is a stage: they are entered sideways, from an inherited directory or an error, and they route to the stage that owns the work. |
-| `skills/module-install-local/SKILL.md` | **The third destination, and it is not a registry.** Installing a compiled module into `just-dna-lite` on this machine so it can meet a real VCF without being published anywhere — the three routes in, which one preserves the compiled bytes, and the manifest line that decides whether the module is visible at all. A side door off stage 6, **not** a stage and **not** a rehearsal for publishing: it exercises the *annotation* seam where the polygon exercises the *registry* one. Every command in it runs in the -lite checkout; nothing here depends on that package or shells into it. |
+| `skills/module-install-local/SKILL.md` | **The third destination, and it is not a registry.** Running a compiled module over this machine's genomes through just-dna-lite's MCP server, and reading what it did: check the server is connected (`status`), **ask** whether to run and on which genomes, `install_module` → `start_annotation` → `wait_for_job` → `validate_module`, then route each finding (a variant no genome carries, a locus called but never matched, a constant or one-sided score) back to the stage that owns the cell, and re-run on the same genomes. A side door off stage 6 and the usual way back into 3, **not** a stage and **not** a rehearsal for publishing. The three manual routes (no server) live in its `references/MANUAL_INSTALL.md`. No tool here calls -lite; the agent calls -lite's tools. |
 | `skills/module-tables/GUIDE.md` | **Which table, and where every file sits.** The router: table choice keyed on grain, the axes that must go in a key, composition, the three on-disk shapes, and the registry's `derived/` layout. Holds no column list and no procedure. |
 | `skills/module-tables/references/*.md` | One dossier per table kind — the roster is the `ls`, and `hints.DERIVED_TABLE_MODELS ∪ draft.DRAFTABLE` is what it must cover — plus five for the non-table spec files and `LAYOUT.md` (the tree, and the registry's upload normalisation). **The schema half is no longer here**: upstream generates a page per table kind at `https://just-dna.life/just-dna-compiler/tables/<name>/`, and these keep what a model cannot state — who decides which cell, what an edit moves, the symptom when the table lies. Each carries an audit banner, 🚧 ROADWORKS and ⚠️ CHECK markers; **anchor on symbol names, never `file:line`** — the 1237 line numbers these carried were stripped on 2026-09-13 because they had all drifted. |
 | `skills/module-101/references/SYMPTOMS.md` | Upstream message text → cause → action. Read *from* every stage, which is why it sits with the map rather than with one stage. |
@@ -1323,6 +1325,20 @@ have been questions.
   filed. With a corollary: *"This makes one sidecar depended on other's outputs, worth reporting to
   upstream for them to build a graph or something"* — a cross-sidecar dependency is itself a finding
   (format-tree `S112`).
+
+- **"I want to be able to apply it on a set of genomes I selected, see which results I get, and
+  iteratively improve the module."** Asked 2026-09-26, with two failures named: variants from the
+  papers that none of the genomes carry ("decide if you keep this way or add more"), and a module
+  whose setup looks fine while *"the distribution of scores looks weird"*. Settled by questionnaire
+  the same day, and each answer is a rule now:
+  **two servers, the skill orchestrates** — just-dna-lite ships its own MCP server and this plugin
+  neither proxies it nor depends on it (a proxy would have put a sample-reading client inside a
+  server whose premise is that it reads none); **per-sample rows may flow to the agent** — the
+  owner chose full per-genome genotypes over aggregates-only, so `module-install-local` asks which
+  genomes and quotes what the question needs rather than refusing; **validation is coverage, score
+  shape and join health**, computed on the -lite side where the genomes are. What was not asked and
+  stays true regardless: no sample id or genotype is ever written into a module, because
+  `logs/authoring.log` publishes with no opt-out.
 
 ## 11. Learned workspace facts
 

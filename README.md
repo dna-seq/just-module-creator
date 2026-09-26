@@ -196,6 +196,29 @@ Edit any authored file afterwards and the binding moves, the closure is dropped,
 open again — that is the feature. Compiling without one is a warning, not a refusal, so an
 unfinished module stays compilable and simply says it is unfinished.
 
+## Trying it on real genomes
+
+This plugin never opens a genome, but [just-dna-lite](https://github.com/dna-seq/just-dna-lite) does,
+and it has its own MCP server. Connect both, and after a module compiles the agent can offer to run it
+over genomes on your machine, which you choose, and tell you what came back:
+
+- which of the module's variants each genome actually carries, and which variants from the papers none
+  of them has, so you can decide whether to keep those or test on more genomes;
+- how the scores fall across the genomes: all the same, all on one side, carried by a single variant,
+  or shifted by a genotype everybody has;
+- whether the module could be matched against the genomes at all.
+
+Then it fixes what you agree to fix, rebuilds, and runs the same genomes again. Nothing is published
+along the way. To connect just-dna-lite:
+
+```bash
+claude mcp add just-dna-lite -- uv run --project /path/to/just-dna-lite python -m just_dna_pipelines.lite_mcp
+```
+
+Results include the genotypes of the people whose genomes you pick, and the agent reads them. Pick
+genomes you are allowed to use, and remember they go to whichever model provider runs the agent. The
+steps are in [`/module-install-local`](./skills/module-install-local/SKILL.md).
+
 ## Publishing
 
 The catalog comes in two instances: a **polygon**, where a publish is a rehearsal you can delete
