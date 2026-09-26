@@ -53,6 +53,11 @@ def test_the_manifest_launches_the_console_script_pyproject_declares(manifest):
     args = manifest["mcpServers"]["just-module-creator"]["args"]
     assert "just-module-creator" in args
     assert "${CLAUDE_PLUGIN_ROOT}" in args, "the project path must stay plugin-relative"
+    # The runtime install must NOT sync the `dev` group — pypandoc-binary, tecto,
+    # grpcio-tools, pyright etc. are ~350 MB the stdio server never touches. `uv run`
+    # syncs default groups (dev among them) unless told otherwise, so the launch line
+    # carries `--no-dev`. Found on an installed 0.41.1 whose .venv was 735 MB.
+    assert "--no-dev" in args, "the plugin launch must skip the dev group"
 
     pyproject = (REPO / "pyproject.toml").read_text()
     assert 'just-module-creator = "just_module_creator.server:cli_app"' in pyproject
@@ -140,6 +145,7 @@ def test_the_codex_mcp_config_launches_this_checkout(codex_manifest):
     assert server["command"] == "uv"
     assert "${PLUGIN_ROOT}" in server["args"]
     assert "just-module-creator" in server["args"]
+    assert "--no-dev" in server["args"], "the codex launch must skip the dev group too"
 
 
 # --------------------------------------------------------------------------- #

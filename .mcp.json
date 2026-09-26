@@ -2,7 +2,7 @@
   "mcpServers": {
     "just-module-creator": {
       "command": "uv",
-      "args": ["run", "just-module-creator", "stdio"]
+      "args": ["run", "--no-dev", "just-module-creator", "stdio"]
     }
   }
 }

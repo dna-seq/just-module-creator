@@ -3,6 +3,18 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.43.0] — 2026-09-26
+
+- **The installed plugin no longer ships the `dev` dependency group (~350 MB it never runs).**
+  Every launch — both plugin manifests and the repo `.mcp.json` — used `uv run … stdio`, and
+  `uv run` syncs the default groups, `dev` among them, so every install pulled `pypandoc-binary`
+  (a bundled pandoc, 155 MB), `pyright`, `tecto`, `grpcio-tools`, `pytest` and `ruff` — none of
+  which the stdio server touches. Added `--no-dev` to all three launch commands; measured on a
+  clean sync the `.venv` drops from 739 MB to 392 MB and the server still builds and lists its
+  tools. The dev workflow is unchanged — a plain `uv run pytest` / `ruff` / `manuscript` still
+  resolves `dev`. `test_plugin_manifest.py` now pins `--no-dev` in both manifests so it cannot be
+  dropped. Reported from the just-dna-lite session against an installed 0.41.1.
+
 ## [0.42.0] — 2026-09-26
 
 - **Pinned `fastmcp[tasks]>=3.4.6,<4`, reversing the 0.37.0 fastmcp-4 adoption.** fastmcp 4
