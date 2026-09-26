@@ -1,6 +1,6 @@
 [project]
 name = "just-module-creator"
-version = "0.41.1"
+version = "0.42.0"
 description = "MCP server and skills for authoring and publishing just-dna annotation modules; a Claude Code and Codex plugin"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -12,8 +12,19 @@ dependencies = [
     # `tasks` extra enables real MCP background tasks (@mcp.tool(task=True)).
     # Default backend is in-memory (memory://) — zero config, no Redis needed.
     # Set FASTMCP_DOCKET_URL=redis://... only for distributed/persistent tasks.
-    "fastmcp[tasks]>=4.0.5",
-    "fastmcp-tasks>=4.0.5",
+    #
+    # PINNED <4 on 2026-09-26. FastMCP 4 (MCP SDK 2.x) makes clients negotiate the
+    # sessionless 2026-07-28 wire by default, where each request is a fresh session:
+    # `ctx.enable_components` / `set_state` last one request and `tools/list_changed`
+    # is silently dropped (fastmcp#4920), which breaks the layered/hide-gated reveal —
+    # and a comment on that issue reports Antigravity 2.0 cannot connect at all to a
+    # FastMCP 4 server without `subscriptions/listen`. This is a user-facing plugin, so
+    # we hold at 3 and let upstream fix compatibility. Lift condition: the reveal reaches
+    # a default-mode client — `test_a_reveal_reaches_a_default_mode_client` passes on a
+    # 4.x. See CLAUDE.md §11. The 3.x `[tasks]` extra carries background tasks in-process;
+    # the standalone `fastmcp-tasks` package and `mcp.add_extension(TasksExtension())` are
+    # the 4-only shape and are gone.
+    "fastmcp[tasks]>=3.4.6,<4",
     "pydantic>=2",
     "pydantic-settings>=2",
     "typer>=0.16",

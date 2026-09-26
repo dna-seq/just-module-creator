@@ -182,7 +182,7 @@ async def test_docstrings_only_name_tools_that_exist(client):
     # tools but are not" would.
     data_words: set[str] = set()
     for tool in listed:
-        data_words |= set((tool.input_schema or {}).get("properties", {}))
+        data_words |= set((tool.inputSchema or {}).get("properties", {}))
     for obj in vars(models).values():
         if inspect.isclass(obj) and issubclass(obj, BaseModel):
             data_words |= set(obj.model_fields)
@@ -854,5 +854,5 @@ async def test_a_drafting_tool_requires_a_declared_use(make_client):
     async with make_client(offline_settings()) as client:
         tools = {tool.name: tool for tool in await client.list_tools()}
     for name in sorted(set(DRAFTER_TOOLS.values())):
-        schema = tools[name].input_schema
+        schema = tools[name].inputSchema
         assert "use" in schema.get("required", []), f"{name} does not require `use`"

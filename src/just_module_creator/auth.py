@@ -53,7 +53,6 @@ from fastmcp.exceptions import ToolError
 from just_dna_format.identity import NAMESPACE_PATTERN, is_valid_namespace
 from just_dna_registry import RegistryError, generate_install_id
 from mcp.types import ToolAnnotations
-from mcp_types.version import MODERN_PROTOCOL_VERSIONS
 
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import AuthResult, OpResult, RegistrationResult
@@ -98,17 +97,18 @@ def session_state_persists(ctx: Context) -> bool:
     """Whether a value put in `ctx.set_state` will still be there on the next call.
 
     On the initialize handshake one connection lives for the whole client session and the
-    store is keyed to it. On the 2026-07-28 wire every request is its own connection, so
-    the only stable key is a transport-level session id — streamable HTTP's
-    `mcp-session-id` — and stdio or an in-memory client has none: a token stored there is
-    gone before the call that needs it. A store that cannot hold the token says so
-    rather than reporting a success that did not happen (fastmcp 4, 2026-09-21).
+    store is keyed to it, so state always persists — that is the only wire the fastmcp <4
+    pin lets a client negotiate, hence the unconditional True.
+
+    Dormant under the pin, kept for a re-upgrade: fastmcp 4's modern (2026-07-28) wire made
+    every request its own connection, so this checked `rc.protocol_version` against
+    `mcp_types.version.MODERN_PROTOCOL_VERSIONS` and fell back to a transport-level session
+    id (streamable HTTP's `mcp-session-id`, absent on stdio/in-memory — a token stored there
+    was gone before the call that needed it). That branch and its `mcp_types` import went out
+    with the pin (CLAUDE.md §11); restore both when a 4.x is re-adopted. The guard call sites
+    and `_no_session_note` are left in place for exactly that.
     """
-    rc = ctx.request_context
-    if rc is None or rc.protocol_version not in MODERN_PROTOCOL_VERSIONS:
-        return True
-    connection = getattr(ctx.session, "_connection", None)
-    return getattr(connection, "session_id", None) is not None
+    return ctx is not None
 
 
 def _no_session_note(settings: Settings, target: RegistryTarget) -> str:
@@ -255,12 +255,12 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Registry: register an account and mint a token",
-            read_only_hint=False,
+            readOnlyHint=False,
             # Each call issues a NEW api key, even when the account already
             # exists, so repeating it is not a no-op.
-            idempotent_hint=False,
-            destructive_hint=False,
-            open_world_hint=True,
+            idempotentHint=False,
+            destructiveHint=False,
+            openWorldHint=True,
         )
     )
     async def registry_register(
@@ -417,9 +417,9 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Authenticate to the registry (this session)",
-            read_only_hint=False,
-            idempotent_hint=True,
-            destructive_hint=False,
+            readOnlyHint=False,
+            idempotentHint=True,
+            destructiveHint=False,
         )
     )
     async def authenticate(

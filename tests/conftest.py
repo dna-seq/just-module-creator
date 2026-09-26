@@ -252,13 +252,13 @@ def routed_settings(**overrides) -> Settings:
 
 @pytest.fixture
 async def client():
-    """The whole tool surface. There is one — the mode axis went in 0.21.0.
+    """The whole tool surface, over a fresh in-memory client.
 
-    Deliberately the fastmcp 4 default: a modern-era (2026-07-28) client, which runs every
-    `task=True` tool as a background task, so this fixture is what exercises the worker
-    path — `_shared.narrate` above all. It also has no session identity, so nothing that
-    depends on `ctx.set_state` surviving a call (a stored token, a revealed group) can be
-    tested through it; that is `make_client`, and the difference is the point.
+    Under the fastmcp <4 pin (CLAUDE.md §11) a client speaks the initialize handshake: one
+    connection for the whole session, so session state persists and a `task=True` tool runs
+    inline. That is why this and `make_client` now build the same client — the fastmcp-4
+    mode axis they used to straddle is gone with the pin, and the docstrings are kept as the
+    record of what a re-upgrade has to re-split.
     """
     server = build_server(settings=offline_settings())
     async with Client(transport=server) as connected:
@@ -269,17 +269,18 @@ async def client():
 def make_client():
     """Factory returning a fresh in-memory client (its own session).
 
-    `mode="legacy"` is the initialize handshake, byte-identical to what fastmcp 3 did and
-    what a handshake-era host does: one connection for the whole session, so session
-    state persists across calls and a `task=True` tool runs inline. On the 2026-07-28
-    wire each request is its own connection and a stdio/in-memory session has no id —
-    `authenticate` refuses there rather than storing a token that cannot be read back
-    (`auth.session_state_persists`). Use the `client` fixture for the modern path.
+    Dormant under the pin, kept for a re-upgrade: on fastmcp 4 this passed `mode="legacy"`
+    (the initialize handshake — one connection, session state survives across calls) so that
+    reveal/token tests had a wire where `ctx.set_state` and `ctx.enable_components` hold,
+    while the `client` fixture exercised the modern (2026-07-28) worker path where they do
+    not. Under fastmcp 3 the handshake is the only wire, so the `mode` kwarg is gone (it does
+    not exist there) and the two fixtures coincide. Re-add `mode="legacy"` here and re-split
+    `client` to the modern default when a 4.x is re-adopted.
     """
 
     def _make(settings: Settings | None = None):
         server = build_server(settings=settings or offline_settings())
-        return Client(transport=server, mode="legacy")
+        return Client(transport=server)
 
     return _make
 

@@ -282,9 +282,9 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
             # It writes `verification.json` — an attestation, never an authored
             # cell. Claiming read-only here would be the same lie the split exists
             # to avoid.
-            read_only_hint=False,
-            idempotent_hint=True,
-            open_world_hint=True,
+            readOnlyHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
         ),
     )
     async def check_identifiers(
@@ -471,9 +471,9 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Check acmg_sf against the ACMG secondary-findings list",
-            read_only_hint=False,  # writes verification.json — an attestation, not a cell
-            idempotent_hint=True,
-            open_world_hint=True,
+            readOnlyHint=False,  # writes verification.json — an attestation, not a cell
+            idempotentHint=True,
+            openWorldHint=True,
         ),
     )
     async def check_acmg(
@@ -585,9 +585,9 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Check repeat bands against STRchive",
-            read_only_hint=False,
-            idempotent_hint=True,
-            open_world_hint=False,  # reads a provisioned snapshot; no request of its own
+            readOnlyHint=False,
+            idempotentHint=True,
+            openWorldHint=False,  # reads a provisioned snapshot; no request of its own
         ),
     )
     async def check_repeat_bands(spec_dir: str, catalogue: str | None = None) -> RepeatBandReport:
@@ -682,9 +682,9 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Which papers a variant-literature index holds per locus",
-            read_only_hint=False,
-            idempotent_hint=True,
-            open_world_hint=True,
+            readOnlyHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
         ),
     )
     async def check_literature_coverage(
@@ -775,9 +775,9 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Check allele functions against PharmVar and CPIC",
-            read_only_hint=False,  # licensing.csv rows and verification.json, never a cell
-            idempotent_hint=True,
-            open_world_hint=True,
+            readOnlyHint=False,  # licensing.csv rows and verification.json, never a cell
+            idempotentHint=True,
+            openWorldHint=True,
         ),
     )
     async def check_pgx(
@@ -866,9 +866,9 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Check pharm_variants.csv against the ClinPGx snapshot",
-            read_only_hint=False,
-            idempotent_hint=True,
-            open_world_hint=True,
+            readOnlyHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
         ),
     )
     async def check_clinpgx(

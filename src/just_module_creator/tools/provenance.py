@@ -101,9 +101,9 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Record why an authored value outranks a source",
-            read_only_hint=False,
-            idempotent_hint=True,
-            destructive_hint=False,
+            readOnlyHint=False,
+            idempotentHint=True,
+            destructiveHint=False,
         )
     )
     async def record_override(
@@ -224,9 +224,9 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Apply an author's keep-list to one authored table",
-            read_only_hint=False,
-            idempotent_hint=True,
-            destructive_hint=True,
+            readOnlyHint=False,
+            idempotentHint=True,
+            destructiveHint=True,
         )
     )
     async def prune_rows(
@@ -359,8 +359,8 @@ def register_provenance(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="The overridden rows a reviewer should open first",
-            read_only_hint=True,
-            idempotent_hint=True,
+            readOnlyHint=True,
+            idempotentHint=True,
         )
     )
     async def review_queue(spec_dir: str) -> ReviewQueue:

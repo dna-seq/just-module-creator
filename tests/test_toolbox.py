@@ -21,8 +21,9 @@ from __future__ import annotations
 import re
 
 from conftest import offline_settings
+from fastmcp.client import Client
 
-from just_module_creator.server import INSTRUCTIONS, LAYERED_NOTE, instructions_for
+from just_module_creator.server import INSTRUCTIONS, LAYERED_NOTE, build_server, instructions_for
 from just_module_creator.toolbox import BY_NAME, CORE, GROUPS, HIDDEN
 
 _CEILING = 2048
@@ -117,6 +118,33 @@ async def test_a_revealed_tool_is_callable(make_client, tmp_path):
         await client.call_tool("toolbox", {"groups": ["closing"]})
         answer = await client.call_tool("authoring_reference", {})
         assert answer.data is not None
+
+
+async def test_a_reveal_reaches_a_default_mode_client():
+    """A reveal must land on the wire real hosts negotiate, not only the legacy one.
+
+    Every other reveal test runs through `make_client`, which pins `mode="legacy"` (one
+    connection, session state persists), so none of them can see whether the reveal
+    survives on the default wire — which is why the fastmcp 4 upgrade went green with the
+    reveal broken. This builds the default-mode client the `client` fixture uses and
+    asserts the whole promise: after `toolbox` reports a group revealed, that group's
+    tools are actually reachable on the next request.
+
+    Dated measurement of the break this guards against — fastmcp 4.0.9, 2026-09-26, before
+    the pin to <4: `toolbox(groups=["evidence"])` returned `revealed=["evidence"]` and the
+    server logged "revealed evidence (7 tools)", yet the next `list_tools` carried none of
+    them. fastmcp 4 (MCP SDK 2.x) makes the default client negotiate the stateless
+    2026-07-28 wire, where each request is its own session with no identity, so the
+    session-scoped `ctx.enable_components` does not survive and `tools/list_changed` is
+    dropped (fastmcp#4920). Under the <4 pin the default wire is the one-connection
+    handshake and the reveal holds. It re-fails the day a 4.x is adopted with the bug
+    still present, which is the whole reason it exists.
+    """
+    revealed_tools = set(BY_NAME["evidence"].tools)
+    async with Client(transport=build_server(settings=_layered())) as client:
+        answer = await client.call_tool("toolbox", {"groups": ["evidence"]})
+        assert answer.data.revealed == ["evidence"]
+        assert revealed_tools <= await _names(client)
 
 
 async def test_all_reveals_every_group(make_client):

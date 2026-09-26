@@ -556,12 +556,15 @@ comparison against ISO values.
   present, `contact_email()` returns `str`, and any `if not email:` branch is dead
   code — Unpaywall used to be the one source that reported itself unavailable on
   a fresh checkout, and that branch is gone rather than left to rot.
-- **A long tool talks to its caller through `_shared.narrate`, never `ctx.info`.** fastmcp 4
-  runs a `task=True` tool as a background task whenever the client declared the tasks
-  extension, and a worker context has no live session, so `ctx.info` raises there; on the
-  2026-07-28 wire the logging capability is deprecated outright (SEP-2577). `narrate` puts
-  the sentence on `report_progress`, which reaches both modes, and on stderr. The `client`
-  test fixture is modern-era on purpose so that path is the one it exercises.
+- **A long tool talks to its caller through `_shared.narrate`, never `ctx.info`.** `narrate`
+  puts the sentence on `report_progress`, which reaches every mode, and on stderr — so the
+  rule holds whatever the pin. The reason it exists is a fastmcp-4 hazard, now dormant under
+  the `<4` pin (§11): fastmcp 4 runs a `task=True` tool as a background task whenever the
+  client declared the tasks extension, and a worker context has no live session, so
+  `ctx.info` raises there; on the 2026-07-28 wire the logging capability is deprecated
+  outright (SEP-2577). Under the pin the handshake wire runs `task=True` tools inline, so
+  `ctx.info` would not raise — but `narrate` stays, because a re-upgrade brings the worker
+  path straight back and `report_progress` is correct on both wires.
 - **Typer for the CLI. Pydantic 2 at every boundary** — every tool returns a
   model from `models.py`, never a bare dict, because an agent reads the field
   descriptions.
@@ -705,14 +708,18 @@ a deployment rather than an author. Say which, in the note.
    entries expire after 24h and that a multi-process HTTP deployment needs a
    shared `FastMCP(session_state_store=...)` or one worker cannot see what
    another stored. The target stays *in* the key: flatten it and the second
-   `authenticate` silently retargets the first. **On the 2026-07-28 protocol era the
-   store holds across calls only where the transport carries a session id** (streamable
-   HTTP's `mcp-session-id`): every request is its own connection there, and stdio or the
-   in-memory client has no id, so a stored token is gone by the call that needs it. Check
-   `auth.session_state_persists` before storing and refuse naming the env var — never
-   report a success the next call cannot find. Found 2026-09-21 adopting fastmcp 4, where
-   `authenticate` had passed its own test for exactly that reason; the handshake era is
-   unaffected and the suite's `make_client` pins it with `mode="legacy"`.
+   `authenticate` silently retargets the first. Still call `auth.session_state_persists`
+   before storing and refuse naming the env var — **never report a success the next call
+   cannot find**. That guard is DORMANT under the `<4` pin (§11) and kept for a re-upgrade:
+   fastmcp 3 speaks only the handshake wire, where one connection lives for the whole
+   session and a stored token always survives, so `session_state_persists` returns `True`
+   and the refusal never fires. **On fastmcp 4's 2026-07-28 wire the store holds across
+   calls only where the transport carries a session id** (streamable HTTP's
+   `mcp-session-id`): every request is its own connection there, and stdio or the in-memory
+   client has none, so a stored token is gone by the call that needs it. Found 2026-09-21
+   adopting fastmcp 4, where `authenticate` had passed its own test for exactly that reason.
+   On re-upgrade, restore the `MODERN_PROTOCOL_VERSIONS` branch in `session_state_persists`
+   and re-add `mode="legacy"` to the suite's `make_client`; the call sites are kept for it.
 6. Add a test using the in-memory client.
 7. **Visibility is not authorization, and the two enable APIs are not
    interchangeable.** `mcp.enable()` / `mcp.disable()` are **server-global**:
@@ -1321,6 +1328,26 @@ have been questions.
 
 *Append-only. Environment, ports, credential layout, host quirks, sibling paths.*
 
+- **fastmcp is pinned `>=3.4.6,<4` (2026-09-26, our 0.42.0), reversing the 0.37.0 fastmcp-4
+  adoption.** Two causes: fastmcp 4 (MCP SDK 2.x) makes clients negotiate the sessionless
+  2026-07-28 wire by default, so `ctx.enable_components`/`set_state` last one request and
+  `tools/list_changed` is silently dropped (fastmcp#4920) — which breaks the layered/
+  hide-gated reveal — and a comment on that issue reports Antigravity 2.0 cannot connect at
+  all to a FastMCP 4 server lacking `subscriptions/listen`. This is a user-facing plugin, so
+  we hold at 3 and let upstream fix compat; migration is possible (the `mcp_template` repo's
+  `fastmcp4` branch does it with a private-API session-identity middleware) but not worth the
+  hack here. **The gate:** `tests/test_toolbox.py::test_a_reveal_reaches_a_default_mode_client`
+  is unmarked — green on 3, red on any 4.x where the reveal still evaporates — so it blocks a
+  blind re-upgrade. **Lift condition:** that test passes on a 4.x. The lock moved fastmcp
+  4.0.9→3.4.7, mcp SDK 2.2.0→**1.30.0**, and removed `fastmcp-tasks` and `mcp-types`; nothing
+  else. **The full blast radius and the re-upgrade recipe are in the memory
+  `fastmcp-pinned-below-4.md`** — read it before touching the pin. The one non-obvious edit:
+  `ToolAnnotations` kwargs were converted snake_case→**camelCase** (SDK 1.x drops a snake_case
+  hint SILENTLY as an extra field; SDK 2.x accepts camelCase via aliases + `populate_by_name`),
+  so camelCase is version-robust and **must NOT be reverted** on re-upgrade. **Parked, owed on
+  re-upgrade beside the gate:** `toolbox` reports `revealed` for a reveal the next call cannot
+  find, and `registry_register` lacks the `session_state_persists` guard `authenticate` has —
+  both moot under the pin (the handshake session always persists), both real on the modern wire.
 - **This repo IS the authoring tool, so an authoring-workflow gap is ours to BUILD FIRST — but
   asking upstream is still cheap, just never empty-handed.** The user's read, 2026-08-20, offered
   explicitly as an impression rather than a ruling: the format tree appears to have in-repo constraints

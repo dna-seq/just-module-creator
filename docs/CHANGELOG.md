@@ -3,6 +3,29 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.42.0] — 2026-09-26
+
+- **Pinned `fastmcp[tasks]>=3.4.6,<4`, reversing the 0.37.0 fastmcp-4 adoption.** fastmcp 4
+  (MCP SDK 2.x) makes clients negotiate the sessionless 2026-07-28 wire by default, so
+  `ctx.enable_components` / `set_state` last one request and `tools/list_changed` is silently
+  dropped (fastmcp#4920) — which breaks the layered / hide-gated tool reveal — and a comment on
+  that issue reports Antigravity 2.0 cannot connect at all to a FastMCP 4 server lacking
+  `subscriptions/listen`. This is the only user-side exposure of the toolchain, so we hold at 3
+  and let upstream fix compatibility. The lock moved fastmcp 4.0.9→3.4.7 and mcp SDK 2.2.0→1.30.0
+  and dropped `fastmcp-tasks` and `mcp-types`; no just-dna package moved.
+- **New guard against a blind re-upgrade:** `test_a_reveal_reaches_a_default_mode_client` builds
+  the default-mode client and asserts a revealed group's tools are actually reachable on the next
+  request. It went green under the pin and fails on any 4.x where the reveal evaporates — the
+  thing the 0.37.0 upgrade did not catch, because every other reveal test runs the legacy
+  handshake. Measured break, fastmcp 4.0.9, 2026-09-26: `toolbox` returned `revealed=["evidence"]`
+  and the server logged "revealed evidence (7 tools)", yet the next `list_tools` carried none.
+- **Under the hood for the pin:** dropped the fastmcp-4-only `mcp.add_extension(TasksExtension())`
+  (the 3.x `[tasks]` extra carries background tasks in-process); `session_state_persists` returns
+  `True` because the handshake wire always persists (the `MODERN_PROTOCOL_VERSIONS` branch is kept
+  dormant for a re-upgrade); `ToolAnnotations` kwargs converted snake_case→camelCase, which is
+  version-robust (SDK 1.x drops a snake_case hint silently; SDK 2.x accepts camelCase via aliases)
+  and must not be reverted. Lift condition and full re-upgrade recipe: CLAUDE.md §11.
+
 ## [0.41.1] — 2026-09-25
 
 - **Stripped upstream-version archaeology from the skills.** The "used to / fixed in 0.6.x / since 0.N /

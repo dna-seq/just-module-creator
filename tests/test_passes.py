@@ -97,7 +97,7 @@ async def test_use_is_a_required_argument_not_a_defaulted_one(make_client) -> No
     """
     async with make_client(offline_settings()) as client:
         tool = next(t for t in await client.list_tools() if t.name == "draft_from_clinvar")
-        assert "use" in (tool.input_schema.get("required") or [])
+        assert "use" in (tool.inputSchema.get("required") or [])
 
 
 async def test_a_licence_refusal_is_reported_not_raised() -> None:
@@ -1240,7 +1240,7 @@ async def test_the_pass_says_it_makes_the_module_non_commercial(make_client):
     async with make_client(offline_settings()) as client:
         tool = next(t for t in await client.list_tools() if t.name == "enrich_expression_effects")
     assert "non-commercial" in (tool.description or "").lower()
-    assert tool.input_schema["properties"]["use"]["default"] == "non-commercial"
+    assert tool.inputSchema["properties"]["use"]["default"] == "non-commercial"
 
 
 # --------------------------------------------------------------------------- #

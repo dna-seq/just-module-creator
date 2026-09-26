@@ -325,7 +325,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # ----------------------------------------------------------------- #
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Review the logs before publishing", read_only_hint=True, idempotent_hint=True
+            title="Review the logs before publishing", readOnlyHint=True, idempotentHint=True
         )
     )
     def review_logs(spec_dir: str) -> LogReview:
@@ -385,7 +385,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # ----------------------------------------------------------------- #
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Study facts already in this module", read_only_hint=True, idempotent_hint=True
+            title="Study facts already in this module", readOnlyHint=True, idempotentHint=True
         )
     )
     def study_facts(spec_dir: str) -> StudyFacts:
@@ -473,7 +473,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # ----------------------------------------------------------------- #
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="List table kinds", read_only_hint=True, idempotent_hint=True
+            title="List table kinds", readOnlyHint=True, idempotentHint=True
         )
     )
     def list_tables() -> TableList:
@@ -518,7 +518,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Describe a table kind", read_only_hint=True, idempotent_hint=True
+            title="Describe a table kind", readOnlyHint=True, idempotentHint=True
         )
     )
     def describe_table(csv_name: str) -> TableDescription:
@@ -587,7 +587,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Describe module_spec.yaml", read_only_hint=True, idempotent_hint=True
+            title="Describe module_spec.yaml", readOnlyHint=True, idempotentHint=True
         )
     )
     def describe_spec_file() -> SpecFileDescription:
@@ -648,7 +648,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # edits the code.
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Describe a machine-produced table", read_only_hint=True, idempotent_hint=True
+            title="Describe a machine-produced table", readOnlyHint=True, idempotentHint=True
         )
     )
     def describe_machine_table(csv_name: str) -> MachineTableDescription:
@@ -697,7 +697,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Table requirements", read_only_hint=True, idempotent_hint=True
+            title="Table requirements", readOnlyHint=True, idempotentHint=True
         )
     )
     def table_requirements(csv_name: str) -> TableRequirements:
@@ -723,7 +723,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Get a CSV template", read_only_hint=True, idempotent_hint=True
+            title="Get a CSV template", readOnlyHint=True, idempotentHint=True
         )
     )
     def get_template(csv_name: str, stub: bool = False, rows: int = 1) -> TemplateResult:
@@ -772,9 +772,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Scaffold a spec directory",
-            read_only_hint=False,
-            idempotent_hint=True,
-            destructive_hint=False,
+            readOnlyHint=False,
+            idempotentHint=True,
+            destructiveHint=False,
         )
     )
     def scaffold_module(
@@ -879,7 +879,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Lint CSV rows", read_only_hint=True, idempotent_hint=True
+            title="Lint CSV rows", readOnlyHint=True, idempotentHint=True
         )
     )
     def lint_rows(csv_name: str, csv_text: str) -> LintResult:
@@ -919,7 +919,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # ----------------------------------------------------------------- #
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Validate a spec", read_only_hint=True, idempotent_hint=True
+            title="Validate a spec", readOnlyHint=True, idempotentHint=True
         )
     )
     async def validate_module(spec_dir: str, strict: bool = True) -> ValidationReport:
@@ -948,7 +948,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Audit a module offline", read_only_hint=True, idempotent_hint=True
+            title="Audit a module offline", readOnlyHint=True, idempotentHint=True
         )
     )
     async def audit_module(spec_dir: str, fill: bool = True) -> AuditReport:
@@ -1008,9 +1008,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Compile a module",
-            read_only_hint=False,
-            idempotent_hint=True,
-            destructive_hint=False,
+            readOnlyHint=False,
+            idempotentHint=True,
+            destructiveHint=False,
         )
     )
     # Why the warning channel is three fields rather than one list (upstream RM131):
@@ -1134,7 +1134,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Close a module", read_only_hint=False, idempotent_hint=True
+            title="Close a module", readOnlyHint=False, idempotentHint=True
         )
     )
     async def close_module(
@@ -1183,7 +1183,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # ----------------------------------------------------------------- #
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Authoring reference", read_only_hint=True, idempotent_hint=True
+            title="Authoring reference", readOnlyHint=True, idempotentHint=True
         ),
     )
     def authoring_reference(schemas: bool = False) -> str:
@@ -1207,7 +1207,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # ----------------------------------------------------------------- #
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Content signature", read_only_hint=True, idempotent_hint=True
+            title="Content signature", readOnlyHint=True, idempotentHint=True
         ),
     )
     async def module_signature(spec_dir: str) -> SignatureResult:
@@ -1234,7 +1234,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Verify an artifact", read_only_hint=True, idempotent_hint=True
+            title="Verify an artifact", readOnlyHint=True, idempotentHint=True
         ),
     )
     async def verify_artifact(

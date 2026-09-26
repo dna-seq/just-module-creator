@@ -106,7 +106,7 @@ def _no_credentials(monkeypatch) -> None:
 
 
 async def _schemas(client) -> dict[str, dict]:
-    return {t.name: t.input_schema for t in await client.list_tools()}
+    return {t.name: t.inputSchema for t in await client.list_tools()}
 
 
 # --------------------------------------------------------------------------- #
@@ -969,7 +969,7 @@ async def test_yank_defaults_to_the_polygon_like_every_other_write(make_client):
     same class of mistake the tool exists to recover from.
     """
     async with make_client(offline_settings()) as client:
-        schemas = {t.name: t.input_schema for t in await client.list_tools()}
+        schemas = {t.name: t.inputSchema for t in await client.list_tools()}
         for name in ("registry_yank", "registry_unyank"):
             assert schemas[name]["properties"]["target"]["default"] == "test"
 

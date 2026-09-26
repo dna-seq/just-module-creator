@@ -157,11 +157,17 @@ async def test_search_indexes_only_what_this_session_has_revealed(make_client):
         assert "paper_citations" in _text(found)
 
 
-async def test_a_session_that_cannot_keep_a_token_says_so_instead_of_storing_it(client):
-    """The modern-era in-memory client has no session id, so `set_state` cannot survive
-    the call. `authenticate` must refuse and name the env var, never report a success
-    that the next gated call cannot find (fastmcp 4, 2026-09-21)."""
+async def test_a_handshake_session_keeps_the_token_it_was_given(client):
+    """Under the fastmcp <4 pin the only wire is the initialize handshake, where one
+    connection lives for the whole session, so a stored token survives the call and
+    `authenticate` stores it (CLAUDE.md §11).
+
+    Dormant under the pin, restored on a re-upgrade: on fastmcp 4's modern (2026-07-28)
+    wire the in-memory client has no session id, `set_state` cannot survive, and this
+    asserted the refusal instead — `authenticated is False`, the env var named,
+    `unlocked_tools == []`, so a success is never reported that the next gated call cannot
+    find. Re-add that assertion when a 4.x reintroduces the sessionless wire; the seam it
+    guards (`auth.session_state_persists`) is kept for it."""
     result = await client.call_tool("authenticate", {"token": "tok_abc123", "target": "test"})
-    assert result.data.authenticated is False
-    assert "JMC_TEST_API_KEY" in result.data.message
-    assert result.data.unlocked_tools == []
+    assert result.data.authenticated is True
+    assert set(result.data.unlocked_tools) == set(GATED_TOOLS)

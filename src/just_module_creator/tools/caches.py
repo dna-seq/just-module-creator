@@ -36,9 +36,9 @@ def register_caches(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="What the snapshot caches would cost here, and build them",
-            read_only_hint=False,
-            idempotent_hint=True,
-            open_world_hint=True,
+            readOnlyHint=False,
+            idempotentHint=True,
+            openWorldHint=True,
         )
     )
     async def provision_caches(
