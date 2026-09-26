@@ -1340,6 +1340,22 @@ have been questions.
   stays true regardless: no sample id or genotype is ever written into a module, because
   `logs/authoring.log` publishes with no opt-out.
 
+- **"When we are in plugin development mode we should remove and reinstall it on changes."** Stated
+  2026-09-26, after a skill change could not be tested because the session was still loading 0.20.0
+  from the `dna-seq` git marketplace. A plugin install is a **copy** in `~/.claude/plugins/cache/`, so an
+  edit to this checkout reaches no session until it is reinstalled. On this machine the plugin is now
+  installed from the checkout itself (`just-module-creator@just-dna`, the directory marketplace in
+  `.claude-plugin/marketplace.json`). After any change to skills, manifests or the server, run:
+
+  ```bash
+  claude plugin uninstall just-module-creator@just-dna
+  claude plugin marketplace update just-dna
+  claude plugin install just-module-creator@just-dna
+  ```
+
+  then tell the user to start a new session: skills and MCP tools load at session start. Check the
+  installed version in `~/.claude/plugins/installed_plugins.json` matches `pyproject.toml`.
+
 ## 11. Learned workspace facts
 
 *Append-only. Environment, ports, credential layout, host quirks, sibling paths.*
