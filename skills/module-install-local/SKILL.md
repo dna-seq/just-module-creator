@@ -24,28 +24,52 @@ You drive the two servers yourself; neither calls the other.
 
 These catch **different failures** and neither substitutes for the other.
 
-## 1. Is just-dna-lite connected?
+## 1. Is just-dna-lite connected? If not, connect it yourself
 
 Look for the `just-dna-lite` server's tools in your tool list (`status`, `list_samples`,
 `start_annotation`, `validate_module`, …) and call **`status`**. It answers with the checkout's
 path, its versions, how many genomes and modules it holds, and any jobs already running. Say which
 checkout answered; a machine can hold two.
 
-**If the tools are not there, say so plainly and offer to connect it.** Do not shell into the -lite
-checkout on your own initiative. The author runs one of these, then reconnects (`/mcp` in Claude
-Code, or restart the session; Cursor picks up `mcp.json` on reload):
+**If the tools are not there, set the server up; do not hand the author commands to type.** Ask one
+question: *where is just-dna-lite installed?* Offer what you can find first: check the siblings of
+this plugin's checkout and of the working directory for a folder holding a `pyproject.toml` whose
+`[project] name` is `just-dna-lite`, and propose the match rather than asking cold. Then:
 
-```bash
-# stdio: works whether or not the app is running
-claude mcp add just-dna-lite -- uv run --project /path/to/just-dna-lite python -m just_dna_pipelines.lite_mcp
-# HTTP: served by `uv run start` in the -lite checkout, port 3006 by default
-claude mcp add --transport http just-dna-lite http://localhost:3006/mcp
-```
+1. **Check the checkout** with its own interpreter. This also installs its environment, so the first
+   launch does not spend the client's startup window on `uv sync`:
+   ```bash
+   uv run --project "$LITE" python -c "import just_dna_pipelines.lite_mcp.server"
+   ```
+   If this fails, stop and report the error. A server registered against a broken checkout only
+   fails later, at session start, where the reason is harder to see.
+2. **If `claude mcp get just-dna-lite` already answers, do not add a second entry.** Report what it
+   points at. If it points at another checkout, ask before replacing it (`claude mcp remove
+   just-dna-lite -s <scope>`, then add).
+3. **Register it** (Claude Code). User scope, so it follows the author into every project:
+   ```bash
+   claude mcp add -s user just-dna-lite -- uv run --project "$LITE" python -m just_dna_pipelines.lite_mcp
+   claude mcp get just-dna-lite      # must say Connected
+   ```
+   The `python -m` form avoids the `pipelines` console-script wrapper, which locked-down Windows
+   machines refuse to run. **Codex:** `codex mcp add just-dna-lite -- uv run --project "$LITE" python -m
+   just_dna_pipelines.lite_mcp`. **Cursor:** merge an entry into `~/.cursor/mcp.json` under
+   `mcpServers` (`{"command": "uv", "args": ["run", "--project", "<LITE>", "python", "-m",
+   "just_dna_pipelines.lite_mcp"]}`), preserving every server already there. Use stdio for a checkout on this
+   machine: the client starts the server itself, so nothing else has to be running. HTTP
+   (`/mcp` on port 3006, served by `uv run start`) is only for reaching a just-dna-lite on another host.
+4. **Say the one thing you cannot do:** a client loads a server's tools when the session starts, so
+   the author reconnects (`/mcp` in Claude Code, reload in Cursor, a new Codex task). Tell them that,
+   and continue from step 2 below once `status` answers.
 
-For Cursor, the same two go under `mcpServers` in `.cursor/mcp.json`: `{"command": "uv", "args":
-[...]}` for stdio, `{"url": "http://localhost:3006/mcp"}` for HTTP. The -lite repository's
-`docs/MCP_SERVER.md` is the reference. If the author would rather run commands than connect a
-server, [`references/MANUAL_INSTALL.md`](references/MANUAL_INSTALL.md) has the three manual routes.
+**If the server is registered but did not connect** ("Request timed out" at session start), the
+checkout works but started too slowly. Module discovery reads every configured source at startup, and
+a slow HuggingFace answer can take it past the client's window. Re-run step 1 to check it works, then
+have the author reconnect; if it keeps timing out, a longer startup window
+(`MCP_TIMEOUT=60000` in the environment Claude Code starts from) is the fix. Never retry in a loop.
+
+If the author would rather not connect a server at all,
+[`references/MANUAL_INSTALL.md`](references/MANUAL_INSTALL.md) has the three manual routes.
 
 ## 2. Offer the run, and let the author choose the genomes
 
@@ -142,7 +166,7 @@ it can say a score is odd, and it cannot say what the right one is. Same rule as
 
 ## What needs a pilot, and what you may simply fix
 
-**Apply silently:** choosing a non-colliding install name, keeping it across iterations, re-running
+**Apply silently:** registering the -lite server once the author has named the checkout, choosing a non-colliding install name, keeping it across iterations, re-running
 on the same genomes, reading findings aloud with their thresholds.
 
 **Put in front of a pilot:** which genomes to use (and whether someone else's may be used), whether
@@ -157,7 +181,7 @@ over five genomes is weaker evidence than the paper the row came from.
 - **It does not compare versions of the module itself.** [`module-diff`](../module-diff/GUIDE.md) reads what moved in the
   artifact; this compares what moved in the *results*.
 - **No tool in this plugin talks to just-dna-lite.** You call its server's tools; when it is not
-  connected, the author connects it or runs [`references/MANUAL_INSTALL.md`](references/MANUAL_INSTALL.md) by hand.
+  connected, you register it (step 1) or the author runs [`references/MANUAL_INSTALL.md`](references/MANUAL_INSTALL.md) by hand.
 
 ## Symptoms
 
