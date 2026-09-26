@@ -140,10 +140,22 @@ def test_the_codex_manifest_matches_the_package_and_skills(codex_manifest, manif
 
 
 def test_the_codex_mcp_config_launches_this_checkout(codex_manifest):
+    """The checkout is found through `cwd`, because Codex expands nothing inside `args`.
+
+    0.43.0 passed `--project ${PLUGIN_ROOT}` and Codex handed uv the literal string: uv
+    warned the directory did not exist, ran outside any project, and failed with
+    `Failed to spawn: just-module-creator`, so the handshake closed and every tool was
+    dropped while the skills still loaded. Codex's `parse_plugin_mcp_config` joins a
+    relative `cwd` onto the installed plugin root and does no `${...}` substitution in an
+    MCP declaration — `PLUGIN_ROOT` exists only for hook commands.
+    """
     server = codex_manifest["mcpServers"]["just-module-creator"]
     assert server["type"] == "stdio"
     assert server["command"] == "uv"
-    assert "${PLUGIN_ROOT}" in server["args"]
+    assert server["cwd"] == "."
+    assert server["args"], "an empty args list would make the check below vacuous"
+    assert not any("${" in arg for arg in server["args"]), "Codex never expands args"
+    assert "--project" not in server["args"], "uv finds the project from cwd"
     assert "just-module-creator" in server["args"]
     assert "--no-dev" in server["args"], "the codex launch must skip the dev group too"
 

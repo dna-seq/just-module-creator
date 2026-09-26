@@ -42,7 +42,7 @@ codex plugin add just-module-creator@dna-seq
 ```
 
 Every skill appears in Codex's skill picker, and every skill is invocable as a slash command by its own name.
-The Codex package uses `${PLUGIN_ROOT}` to start the same source checkout as the Claude plugin.
+The Codex package starts the same source checkout from its installed plugin root (`"cwd": "."`).
 
 Needs [`uv`](https://docs.astral.sh/uv/) on PATH and Python ≥ 3.13; dependencies install on first
 use. Nothing else to configure — you only need an account when you decide to publish.

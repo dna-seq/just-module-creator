@@ -3,6 +3,21 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.43.1] — 2026-09-27
+
+- **The Codex plugin's MCP server starts again; in 0.43.0 and before it never did.** The Codex
+  manifest launched `uv run --no-dev --project ${PLUGIN_ROOT} …`, and Codex substitutes nothing
+  inside an MCP declaration's `args` — `PLUGIN_ROOT` is an environment variable for hook commands
+  only. So uv received the literal `${PLUGIN_ROOT}`, warned that the directory did not exist, ran
+  outside any project and failed with `Failed to spawn: just-module-creator`; the handshake closed
+  before `initialize` and Codex dropped every tool while the skills still loaded. Reported from a
+  Codex Desktop install on Windows with the uv stderr from `logs_2.sqlite`. The manifest now sets
+  `"cwd": "."`, which Codex's `parse_plugin_mcp_config` joins onto the installed plugin root, and
+  drops `--project` so uv discovers the project from that directory. The Claude manifest is
+  unchanged — Claude Code does expand `${CLAUDE_PLUGIN_ROOT}` in `args`.
+  `test_the_codex_mcp_config_launches_this_checkout` now refuses any `${` in the Codex `args` and
+  was run against the 0.43.0 manifest to watch it fail.
+
 ## [0.43.0] — 2026-09-26
 
 - **The installed plugin no longer ships the `dev` dependency group (~350 MB it never runs).**

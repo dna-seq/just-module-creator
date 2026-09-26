@@ -73,7 +73,7 @@ same change** — an unlinked guide is unreachable content, not a smaller surfac
 | `skills/module-101/references/CLI.md` | The full CLI surface, and what this server deliberately does **not** wrap. |
 | `.claude-plugin/plugin.json` | Claude plugin manifest; declares the MCP server via `${CLAUDE_PLUGIN_ROOT}`. |
 | `.claude-plugin/marketplace.json` | Lets `/plugin marketplace add ./` work. |
-| `.codex-plugin/plugin.json` | Codex plugin manifest; same skills and server, via `${PLUGIN_ROOT}`. Carries the **second** hand-bumped version string. |
+| `.codex-plugin/plugin.json` | Codex plugin manifest; same skills and server, launched with a plugin-relative `"cwd": "."` — Codex substitutes `${PLUGIN_ROOT}` only in hook commands, never in MCP `args`. Carries the **second** hand-bumped version string. |
 
 > **`skills/create-module/` was the one canonical copy of the procedure. That copy is dead; the NAME is
 > back, and the difference is the whole rule.** The 1431-line version was dismantled 2026-08-20 on the
