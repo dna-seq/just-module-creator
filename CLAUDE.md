@@ -1345,7 +1345,10 @@ have been questions.
   from the `dna-seq` git marketplace. A plugin install is a **copy** in `~/.claude/plugins/cache/`, so an
   edit to this checkout reaches no session until it is reinstalled. On this machine the plugin is now
   installed from the checkout itself (`just-module-creator@just-dna`, the directory marketplace in
-  `.claude-plugin/marketplace.json`). After any change to skills, manifests or the server, run:
+  `.claude-plugin/marketplace.json`). **Reinstall once per batch, when the edits are done and a test in a
+  new session is next; never per edit.** Reinstalling cannot loop (it copies files and changes none),
+  but it also does not reach the running session, which loaded its copy at start, and the uninstall
+  step deletes the cache that session's plugin server was launched from. So:
 
   ```bash
   claude plugin uninstall just-module-creator@just-dna
