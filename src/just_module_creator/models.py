@@ -41,6 +41,31 @@ class OpResult(BaseModel):
     data: dict | None = Field(default=None, description="Optional payload.")
 
 
+class SettingState(BaseModel):
+    """One setting: what is in force, where it came from, and what the user config file holds."""
+
+    name: str = Field(description="The variable name.")
+    in_force: str | None = Field(
+        description="The value this server is using now; null when unset. Secrets show their last "
+        "four characters."
+    )
+    source: str | None = Field(
+        description="Where the value in force came from: `environment`, `project .env (<path>)` or "
+        "`user config (<path>)`. null when unset."
+    )
+    saved: str | None = Field(
+        description="What the user config file holds for this name, if anything."
+    )
+    previous: str | None = Field(
+        default=None,
+        description="The value that was saved before this call: replaced, or kept because "
+        "`replace` was false.",
+    )
+    written: bool = Field(description="Whether this call wrote the file.")
+    config_file: str = Field(description="The user config file this server reads and writes.")
+    note: str = Field(description="What happened, in one sentence.")
+
+
 class ToolboxGroup(BaseModel):
     """One layer-2 group, as `toolbox` reports it."""
 
@@ -120,8 +145,9 @@ class RegistrationResult(BaseModel):
     token: str | None = Field(
         default=None,
         description=(
-            "The API key. SECRET — put it in .env as JMC_API_KEY for production or "
-            "JMC_TEST_API_KEY for the polygon; never commit it, and never write it into a "
+            "The API key. SECRET — save it with `remember_setting` as JMC_API_KEY for "
+            "production or JMC_TEST_API_KEY for the polygon; never commit it, and never "
+            "write it into a "
             "module, fixture or doc. It is only valid on the instance that issued it."
         ),
     )
@@ -130,7 +156,8 @@ class RegistrationResult(BaseModel):
         description=(
             "The proof-of-work id bound to this account. SAVE IT: it is the account's ONLY "
             "recovery path — re-registering it reissues a key for the same account, and there is "
-            "no email or admin to recover through. Put it in .env as JMC_INSTALL_ID."
+            "no email or admin to recover through. Save it with `remember_setting` as "
+            "JMC_INSTALL_ID."
         ),
     )
     install_id_origin: str | None = Field(
@@ -2860,7 +2887,7 @@ class DerivedTreeReport(BaseModel):
     decisions: list[str] = Field(
         default_factory=list,
         description="Rows present locally and absent from the incoming tree, one line "
-        "each. **Not applied.** A `source=\"manual\"` row here is hand curation the "
+        'each. **Not applied.** A `source="manual"` row here is hand curation the '
         "remote derivation did not reproduce, and only you know whether that is the "
         "archive catching up or the tree being short.",
     )
@@ -2874,7 +2901,7 @@ class DerivedTreeReport(BaseModel):
     not_produced: list[str] | None = Field(
         default=None,
         description="Derived names the run did not produce, from its own report. "
-        "**\"Not produced here\", never \"this module has none\"** — a pass whose "
+        '**"Not produced here", never "this module has none"** — a pass whose '
         "credential the deployment lacks writes nothing and says nothing, so an entry "
         "may be a question about the server rather than about your module; "
         "`registry_caches` answers the snapshot half. **Null means the archive carried "
@@ -3004,9 +3031,7 @@ class CachePlanLane(BaseModel):
     env_var: str | None = Field(
         default=None, description="The variable that moves this lane's location."
     )
-    release: str | None = Field(
-        default=None, description="Which snapshot is here, when one is."
-    )
+    release: str | None = Field(default=None, description="Which snapshot is here, when one is.")
     occupied_path: str | None = Field(
         default=None,
         description="The directory to move aside, when the state is `occupied`.",
@@ -3419,9 +3444,7 @@ class RepeatBandReport(BaseModel):
     findings: list[BandDifference] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     mode: str | None = None
-    dataset: str | None = Field(
-        default=None, description="Which STRchive release answered."
-    )
+    dataset: str | None = Field(default=None, description="Which STRchive release answered.")
     attested: bool = Field(
         description="Whether `verification.json` records that the question was put."
     )

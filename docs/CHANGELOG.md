@@ -3,6 +3,27 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.46.0] — 2026-09-27
+
+- **Settings an author gives once now survive, on Codex as well as Claude Code.** The skills and
+  `registry_register` told the agent to "save it in `.env`"; the agent wrote the project's, and
+  Codex starts the server inside the plugin's per-version copy, so it never read that file. The
+  contact email was lost after the first run and a registry token with it. The server now reads
+  three layers, highest first: the process environment, a `.env` walked up from the working
+  directory, and a **user config file** (`~/.config/just-module-creator/.env` on Linux, the
+  platform config directory elsewhere, or `JMC_CONFIG_FILE`), which is the same for every host
+  and project and survives plugin updates.
+- **New core tool `remember_setting`.** Writes the user config file (owner-only) for a name this
+  server or the enricher reads, applies it to the running session at once, and with no value
+  reports what is in force and where it came from. A different saved value is kept unless
+  `replace=true`; secrets come back as their last four characters. `module-start` (email, cache
+  answers), `module-publish` and the `registry_register` messages now point at it instead of a
+  file, and a test fails if any skill or source line tells an agent to persist into `.env`.
+- **The project `.env` is found from the working directory.** `load_dotenv()` with no path walks
+  up from the package's own file, which under any install is the plugin copy, so non-`JMC_`
+  variables in a project `.env` (`JUST_DNA_CONTACT_EMAIL`, `NCBI_API_KEY`, cache locations) did
+  not reach the server on either host.
+
 ## [0.45.0] — 2026-09-27
 
 - **Adopted upstream's `v0.7.3` cut and registry 0.27.0.** Floors are now format `>=0.7.1`, compiler

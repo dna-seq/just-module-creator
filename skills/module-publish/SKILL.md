@@ -84,8 +84,10 @@ ground locally in about a second.
 registry_register(account="my-name", target="test")
 ```
 
-It hands back **the token and the install-id**. Save both in `.env` — `JMC_INSTALL_ID`, plus
-`JMC_API_KEY` for production and `JMC_TEST_API_KEY` for the polygon. `.env` is what the server reads on
+It hands back **the token and the install-id**. Save both with `remember_setting` — `JMC_INSTALL_ID`,
+plus `JMC_API_KEY` for production and `JMC_TEST_API_KEY` for the polygon, the token with
+`replace=true` because the last key minted is the one that works. The user config file it writes is
+what the server reads on
 the next boot; a token that lives only in the session dies with it, and an install-id that lives only in
 a transcript is gone.
 
@@ -99,7 +101,8 @@ a transcript is gone.
   and re-registering with the same install-id returns the account that id already owns and **ignores**
   the `account` argument. So a second register will not rename an account, and it mints a fresh key
   every time — the last one you saved is the one that works.
-- **Never paste either into a module, a fixture, a commit or a note.** `.env` is gitignored; everything
+- **Never paste either into a module, a fixture, a commit or a note.** The user config file is outside
+  the tree; everything
   else here is not.
 
 **Names split two ways and both rules are enforced, not normalised.** An account or namespace is

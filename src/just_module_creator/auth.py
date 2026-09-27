@@ -116,7 +116,8 @@ def _no_session_note(settings: Settings, target: RegistryTarget) -> str:
     return (
         "This connection speaks the 2026-07-28 protocol over a transport with no session "
         "id, so a token stored here is gone by the next call. Put it in the environment "
-        f"instead — `{var}` in `.env` reaches every call for {describe(target, settings)} — "
+        f"instead — `{var}` saved with `remember_setting` reaches every call for "
+        f"{describe(target, settings)} — "
         "or connect over a session-bearing HTTP transport."
     )
 
@@ -280,8 +281,8 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
         not exist on the other; register on both with the same install-id. **Save the
         install-id this returns**: it is the account's only recovery path, re-
         registering it reissues a key for the SAME account and ignores `account`, while
-        calling again without one silently creates a different account. Put it in `.env`
-        as `JMC_INSTALL_ID`, the tokens as `JMC_API_KEY` and `JMC_TEST_API_KEY`.
+        calling again without one silently creates a different account. Save it with
+        `remember_setting` as `JMC_INSTALL_ID`, the tokens as `JMC_API_KEY` / `JMC_TEST_API_KEY`.
         `account` obeys the namespace rule — lowercase letters and digits with single
         hyphens, underscores rejected rather than normalised, and a `test-` handle is
         fine on the polygon and refused by production. The token is stored for this
@@ -382,11 +383,13 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
             )
         key_var = "JMC_TEST_API_KEY" if target == "test" else "JMC_API_KEY"
         notes.append(
-            f"SAVE BOTH SECRETS in .env — {key_var} for the token, JMC_INSTALL_ID for the "
-            "install-id. The install-id is the only way back to this account, and reusing it on "
-            "the other instance registers its counterpart there."
+            f"SAVE BOTH SECRETS with `remember_setting` — {key_var} for the token "
+            "(replace=true), JMC_INSTALL_ID for the install-id. The install-id is the only way "
+            "back to this account, and reusing it on the other instance registers its "
+            "counterpart there."
             if origin == "generated"
-            else f"Token stored; save it in .env as {key_var}. The install-id is unchanged."
+            else f"Token stored for this session; save it with `remember_setting` as {key_var} "
+            "(replace=true). The install-id is unchanged."
         )
         notes.append(
             "The token is stored for this session, so registry tools work now without "

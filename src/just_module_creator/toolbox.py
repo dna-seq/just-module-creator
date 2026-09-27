@@ -107,6 +107,7 @@ CORE = (
     "record_override",
     "registry_register",
     "authenticate",
+    "remember_setting",
 )
 
 #: Layer 2, granular on purpose: a session that needs to read one paper should

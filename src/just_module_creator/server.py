@@ -51,10 +51,9 @@ import signal
 import sys
 
 import typer
-from dotenv import load_dotenv
 from fastmcp import FastMCP
 
-from just_module_creator import __version__
+from just_module_creator import __version__, userconfig
 from just_module_creator.auth import hide_gated_tools, register_auth
 from just_module_creator.logging_setup import get_logger, setup_logging
 from just_module_creator.net import build_services
@@ -70,6 +69,7 @@ from just_module_creator.tools.authoring import register_essentials
 from just_module_creator.tools.caches import register_caches
 from just_module_creator.tools.checks import register_checks
 from just_module_creator.tools.comparison import register_comparison
+from just_module_creator.tools.config import register_config
 from just_module_creator.tools.passes import register_bulk_passes, register_passes
 from just_module_creator.tools.provenance import register_provenance
 from just_module_creator.tools.proxy import register_proxy
@@ -197,6 +197,7 @@ def build_server(
     # bounded by what the caller named. Two unattended runs in the default tier each
     # concluded the first was impossible and the third did not exist.
     register_artifact_reads(mcp, settings, services)
+    register_config(mcp, settings, services)
     register_refresh(mcp, settings, services)
     register_citation_graph(mcp, settings, services)
     register_bulk_passes(mcp, settings, services)
@@ -294,14 +295,14 @@ _SEARCH_OPT = typer.Option(
 
 
 def _load_env() -> None:
-    """Load ``.env`` before any configuration is read.
+    """Load the project ``.env`` and the user config file before any configuration is read.
 
-    ``override=False`` so a variable already exported in the shell wins over the
-    file. The just-dna toolchain reads its own cache/API-key variables straight
-    from ``os.environ``, so loading here is what makes a single ``.env`` serve
-    both this server and the enricher it calls.
+    The shell outranks both, the project outranks the user file (``userconfig``). The
+    just-dna toolchain reads its own cache/API-key variables straight from
+    ``os.environ``, so loading here is what makes one file serve both this server and
+    the enricher it calls.
     """
-    load_dotenv(override=False)
+    userconfig.load_env()
 
 
 def _run(

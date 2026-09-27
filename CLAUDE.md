@@ -496,6 +496,17 @@ serve both this server and the enricher it shells into. New configurable values
 are read from env with sensible defaults, documented in `.env.template`, and
 mentioned here.
 
+**The server reads three layers and writes one, and the one it writes is never a
+project `.env`.** `userconfig.load_env`: process environment, then a `.env` walked up
+from the **working directory** (never `load_dotenv()` bare — that walks up from the
+package's own file, which under any install is the plugin copy), then the user config
+file (`platformdirs.user_config_dir("just-module-creator")/.env`, or `JMC_CONFIG_FILE`).
+`remember_setting` writes the last, owner-only, for a name on `userconfig.SAVABLE`.
+The reason is the hosts: Claude Code starts the server in the author's project, Codex
+in the plugin's per-version copy, so "save it in `.env`" meant a file Codex never read
+and a plugin-dir `.env` is gone at the next update. **A skill or tool message that asks
+an agent to persist anything names `remember_setting`, never a file.**
+
 **A new env-backed preference is three-valued and documented, and its BEHAVIOUR is not
 written here.** `JMC_CACHE_PREWARM` / `JMC_CACHE_FULL` are `bool | None` because null
 means *not asked* and `False` means *asked and declined*; both go in `.env.template`.

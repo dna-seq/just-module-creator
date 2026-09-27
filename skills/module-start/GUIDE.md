@@ -200,13 +200,16 @@ contact per address**:
 Nothing breaks without an answer — which is exactly why you ask *once*, take no for an answer, and
 never raise it again.
 
-**Only ask when nothing is configured.** Check `JMC_USER_EMAIL` first, then the enricher's
-`JUST_DNA_CONTACT_EMAIL`. No tool reports the resolved contact or which step supplied it, so read
-`.env` directly. If either is set, say nothing at all.
+**Only ask when nothing is configured.** `remember_setting("JMC_USER_EMAIL")` and
+`remember_setting("JUST_DNA_CONTACT_EMAIL")`, with no value, report whether each is in force and
+where it came from. If either is set, say nothing at all. Do not read a `.env` to find out: the
+server may not be reading the one you can see.
 
-**If they agree, write it into `.env` as `JMC_USER_EMAIL`.** A value that lives only in the session
-dies with it. Never overwrite an address already there, and never put one anywhere else — `.env` is
-gitignored and every other file in the tree is not.
+**If they agree, save it with `remember_setting("JMC_USER_EMAIL", "<address>")`.** That writes the
+user config file, which every later session reads whichever host starts the server and survives
+plugin updates, and it applies to this session at once. Never write it into a project `.env` or any
+file in the tree yourself. If the result says a different address is already saved, ask before
+passing `replace=true`.
 
 **Never invent an address, and never *infer* one.** Not from `git config user.email`, not off a commit,
 not from the registry account. An address the author did not offer is personal data volunteered on
@@ -249,8 +252,8 @@ set is done and the disk has room for the rest — Ensembl's 14 GB included, sin
 refusal answers the question of whether they want caches at all, and coming back with a bigger
 number is what gets a first-run prompt turned off for good.
 
-**Record the answer in `.env`, whichever way it went.** `JMC_CACHE_PREWARM=true` or `=false`,
-`JMC_CACHE_FULL` the same; the plan's `record_with` carries the lines. **Recording a refusal matters
+**Record the answer with `remember_setting`, whichever way it went.** `JMC_CACHE_PREWARM` as
+`true` or `false`, `JMC_CACHE_FULL` the same; the plan's `record_with` lists the names and values. **Recording a refusal matters
 more than recording a yes** — it is the only thing that stops the next session asking again. Never
 overwrite a value already there.
 
@@ -265,7 +268,7 @@ a **default, not a problem**: `cache_dir` names where the lanes already resolve 
 fits there, and `fits` declines per lane if the volume is cramped. Nobody sets an environment
 variable as their opening move, and requiring it made the offer conditional on the one thing an
 author has no reason to have done. Two things are worth saying, in the right places: mention moving
-the caches **before a multi-gigabyte pull** (one `.env` line, in `record_with`), and if
+the caches **before a multi-gigabyte pull** (one `remember_setting` call, named in `record_with`), and if
 `cache_dir_usable` is false — something that is not a directory is in the way, which some boxes keep
 there deliberately so an unconfigured run raises rather than filling the root filesystem — hand over
 that line as **the fix**, with the path the plan named.

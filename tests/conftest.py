@@ -31,6 +31,7 @@ from just_dna_registry import specfiles as _specfiles
 
 from just_module_creator.server import build_server
 from just_module_creator.settings import Settings
+from just_module_creator.userconfig import CONFIG_FILE_VAR
 
 #: Variables read by code we do **not** control, so no field on our model names them
 #: and nothing can derive them. Hand-maintained by necessity; a test asserts the three
@@ -139,7 +140,7 @@ def _refuse_dotenv(*args: object, **kwargs: object) -> bool:
 
 
 @pytest.fixture(autouse=True)
-def _hermetic_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+def _hermetic_configuration(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Make a forgotten ``_env_file=None`` harmless instead of silently live.
 
     ``F24``: ``CLAUDE.md`` §6 claimed the suite could not read a developer's
@@ -191,6 +192,9 @@ def _hermetic_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
             monkeypatch.setattr(module, "load_dotenv", _refuse_dotenv, raising=False)
     for var in _ECOSYSTEM_VARS:
         monkeypatch.delenv(var, raising=False)
+    # The user config file (`userconfig`) is the one place `remember_setting` writes, and
+    # it lives in the developer's home directory. Every test gets its own, not yet created.
+    monkeypatch.setenv(CONFIG_FILE_VAR, str(tmp_path / "user-config" / ".env"))
 
 
 MODULE_SPEC = """\

@@ -168,7 +168,11 @@ without a running server, or `--difficulty` control the tool exposes as `difficu
 
 ## Environment
 
-A `.env` found by walking up from the working directory is loaded automatically.
+Three layers, highest first: the process environment, a `.env` found by walking up from the working
+directory, and the user config file (`~/.config/just-module-creator/.env` on Linux, the platform's
+config directory elsewhere, or `JMC_CONFIG_FILE`). The server writes only the last, through
+`remember_setting`, because it is the one that survives plugin updates and does not depend on which
+directory a host starts the server in.
 
 | Variable | For |
 |---|---|
@@ -178,8 +182,9 @@ A `.env` found by walking up from the working directory is loaded automatically.
 | `JUST_DNA_CONTACT_EMAIL` | sent to NCBI/Europe PMC as the polite-pool contact; omitted when unset |
 | `PHARMVAR_API_KEY` | the PharmVar leg of `pgx`. **Personal under PharmVar's ToS §2 — never bake it into a module, fixture or snapshot.** |
 
-The MCP server reads none of these; the enricher reads them straight from the process environment.
-Set them once in `.env` and both surfaces see them.
+The enricher reads these straight from the process environment, and the server loads all three
+layers into it before anything runs, so one saved value reaches both surfaces. A CLI run from a shell
+reads its own `.env` only.
 
 ## Python, when neither CLI nor tool is enough
 
