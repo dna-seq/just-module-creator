@@ -3146,8 +3146,9 @@ class CachePlan(BaseModel):
     )
     record_with: list[str] = Field(
         default_factory=list,
-        description="The `.env` lines that record an answer, whichever way it goes — write "
-        "the one that matches what the author said, into `.env` and nowhere else. Recording "
+        description="`NAME=value` pairs that record an answer, whichever way it goes — save "
+        "the one that matches what the author said with `remember_setting`, never into a file "
+        "yourself. Recording "
         "a refusal matters more than recording a yes: it is what stops the next session "
         "asking again.",
     )

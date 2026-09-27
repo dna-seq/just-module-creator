@@ -19,6 +19,12 @@ on our side, so agents in sibling repos are not surprised.
   `replace=true`; secrets come back as their last four characters. `module-start` (email, cache
   answers), `module-publish` and the `registry_register` messages now point at it instead of a
   file, and a test fails if any skill or source line tells an agent to persist into `.env`.
+  **Only an author's own answers are savable**: the email, the two tokens, the install-id, the
+  cache answers, the Semantic Scholar key, cache locations, `JUST_DNA_CONTACT_EMAIL` and
+  `NCBI_API_KEY`. The registry URLs, `JMC_WORKSPACE`, `JMC_OFFLINE` and the deployment settings
+  are refused, since a registry URL saved by one injected tool call would collect every later
+  session's token. A test makes every new setting pick a side. The cache-offer messages and
+  `record_with` point at the tool too.
 - **The project `.env` is found from the working directory.** `load_dotenv()` with no path walks
   up from the package's own file, which under any install is the plugin copy, so non-`JMC_`
   variables in a project `.env` (`JUST_DNA_CONTACT_EMAIL`, `NCBI_API_KEY`, cache locations) did

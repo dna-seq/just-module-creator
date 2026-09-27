@@ -101,6 +101,25 @@ def test_the_file_holding_tokens_is_owner_only():
     assert mode & (stat.S_IRWXG | stat.S_IRWXO) == 0, oct(mode)
 
 
+def test_every_setting_is_decided_savable_or_not():
+    """A new `Settings` field fails here until someone decides whether an agent may write it."""
+    from just_module_creator.settings import Settings
+
+    fields = set(Settings.model_fields)
+    assert len(fields) > 15
+    savable, refused = userconfig.SAVABLE_FIELDS, set(userconfig.NOT_SAVABLE_FIELDS)
+    assert not (savable & refused), savable & refused
+    assert savable | refused == fields, fields ^ (savable | refused)
+
+
+def test_nothing_that_moves_a_boundary_or_a_token_can_be_saved():
+    for name in ("JMC_REGISTRY_URL", "JMC_REGISTRY_TEST_URL", "JMC_WORKSPACE", "JMC_OFFLINE"):
+        assert name not in userconfig.SAVABLE, name
+        with pytest.raises(KeyError):
+            userconfig.remember(name, "x", replace=False)
+    assert not userconfig.config_file().exists()
+
+
 def test_only_a_setting_this_server_reads_can_be_saved():
     assert "JMC_USER_EMAIL" in userconfig.SAVABLE
     assert "NCBI_API_KEY" in userconfig.SAVABLE

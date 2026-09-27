@@ -20,7 +20,7 @@ So, highest precedence first, never overriding a value already set:
 
 Only the third is ever written, by `remember`, and only for a name on `SAVABLE`: this is a
 credential store for a server that runs tools on an agent's behalf, and an unrestricted
-key would let a tool call plant `PATH` or `PYTHONPATH` for the next start.
+key would let a tool call plant `PATH`, or a registry URL that collects the next token.
 """
 
 from __future__ import annotations
@@ -41,11 +41,52 @@ CONFIG_FILE_VAR = "JMC_CONFIG_FILE"
 
 _PREFIX = (Settings.model_config.get("env_prefix") or "").upper()
 
-#: Names `remember` may write. **Derived**: every field of ours (a setting added later is
-#: savable without anyone remembering this line), every enricher cache location, and the two
+#: The `Settings` fields an author answers once, and which `remember` may therefore write.
+#: **An allowlist, not a derivation, and that is deliberate** — it answers a question about
+#: intent (what is an author's own answer?) that the schema cannot. Deriving it from every
+#: field made `JMC_REGISTRY_URL` writable, so one tool call, from a session reading untrusted
+#: fulltext, could send every later session's token to another host; `JMC_WORKSPACE` and
+#: `JMC_OFFLINE` would have moved the containment boundary and the egress ceiling. A test
+#: puts every field in exactly one of these two, so a new setting forces the decision.
+SAVABLE_FIELDS: frozenset[str] = frozenset(
+    {
+        "api_key",
+        "test_api_key",
+        "install_id",
+        "user_email",
+        "cache_prewarm",
+        "cache_full",
+        "s2_api_key",
+    }
+)
+
+#: Every other field, with why an agent may not set it. Deployment configuration belongs to
+#: whoever starts the server; the boundaries are not an author's answer at all.
+NOT_SAVABLE_FIELDS: dict[str, str] = {
+    "registry_url": "redirects tokens",
+    "registry_test_url": "redirects tokens",
+    "api_key_header": "wire",
+    "test_api_key_header": "wire",
+    "workspace": "containment",
+    "offline": "egress ceiling",
+    "hide_gated_until_auth": "deployment",
+    "tool_search": "deployment",
+    "tool_search_max_results": "deployment",
+    "toolbox": "deployment",
+    "registry_timeout": "deployment",
+    "snapshot_route": "deployment",
+    "proxy_target": "deployment",
+    "transport": "deployment",
+    "host": "deployment",
+    "port": "deployment",
+    "log_level": "deployment",
+    "literature_sources": "deployment",
+}
+
+#: Names `remember` may write: the fields above, every enricher cache location, and the two
 #: upstream variables the contact chain and the NCBI budget read.
 SAVABLE: frozenset[str] = frozenset(
-    {f"{_PREFIX}{name}".upper() for name in Settings.model_fields}
+    {f"{_PREFIX}{name}".upper() for name in SAVABLE_FIELDS}
     | {lane.env_var for lane in CACHE_LANES if lane.env_var}
     | {CACHE_BASE_VAR, "JUST_DNA_CONTACT_EMAIL", "NCBI_API_KEY"}
 )

@@ -437,15 +437,16 @@ def _decide(
     # mindset wearing a prompt. Unset simply means the location the resolvers already
     # chose, `cache_dir` names it, and the small offer fits under `$HOME` anyway. What
     # still withholds is a location that cannot be *used* — and then the obstruction is
-    # named with the one `.env` line that moves it, which is a fix rather than a
+    # named with the one saved setting that moves it, which is a fix rather than a
     # prerequisite. Size is handled by `fits`, per lane, so a cramped `$HOME` declines
     # Ensembl and still builds the 15 MB set.
     withheld: str | None = None
     if usable is False:
         withheld = (
             f"The caches resolve to {root}, and that path cannot be written: something "
-            "that is not a directory is in the way, or nothing there is writable. One line "
-            f"in `.env` moves them — {CACHE_DIR_VAR}=<a directory on a volume with room> — "
+            "that is not a directory is in the way, or nothing there is writable. One saved "
+            f'setting moves them — `remember_setting("{CACHE_DIR_VAR}", <a directory on a volume '
+            "with room>)` — "
             "and nothing here is offered until they have somewhere to go."
         )
     elif free is None:
@@ -533,7 +534,7 @@ def _note(
         parts.append(
             f"The caches resolve to {root_note} because {CACHE_DIR_VAR} is unset — which is "
             "a default, not a problem, and the small set fits there. Worth moving before a "
-            "multi-gigabyte pull, and one line in `.env` does it."
+            "multi-gigabyte pull, and one `remember_setting` call does it."
         )
     parts.append(
         "Every size but one is an estimate measured on a provisioned box on 2026-09-11, not a "
