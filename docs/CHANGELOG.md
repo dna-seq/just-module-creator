@@ -32,6 +32,9 @@ on our side, so agents in sibling repos are not surprised.
   uses it, full sentences rather than telegraphic ones, and a README `## How this works` section, which
   just-dna-lite shows before a phenotype module's results. The twin of just-dna-lite's
   `docs/REPORT_VOICE.md`; `module-curate` and `create-module` link it.
+  Every conclusion says what the reader would notice compared with people who carry the most common
+  version (not always the reference genome's), how big it is and how sure, or that no noticeable
+  difference is known; what the gene does is the supporting sentence, never the substitute.
 - **The manual install routes** (no server) live in `module-install-local/references/MANUAL_INSTALL.md`.
 - **No sample id or genotype goes into a module.** `record_override`'s reason is published in
   `logs/authoring.log`, so a finding is named by its code and locus, never by whose genome showed it.

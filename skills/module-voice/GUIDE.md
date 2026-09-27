@@ -111,7 +111,16 @@ learns something, the professional finds nothing wrong. And **always look for tw
 practical implication, and an interesting fact the reader probably never knew.
 
 1. **The result, about the reader, in plain words.** *"You have blood group AB."*
-2. **What it means**, in everyday terms.
+2. **What you would notice, compared with most people, and how sure that is.** Say what the result
+   changes that a person could feel, see or measure, against people who carry the **most common
+   version** (often called the wild type, and not always the reference genome's: for ABO the reference
+   is O): *"you probably taste salt a little less strongly than most people"*, *"your body clears
+   caffeine more slowly than average"*. Give the size in words (*slightly*, *clearly*, *about twice as
+   often*) and the certainty from the certainty ladder below (*well established*, *likely*, *early evidence*,
+   *not known*). When no noticeable difference is known, say that plainly instead of filling the space
+   with what the gene does: *"no difference you would notice is known"*. What the gene does is the
+   supporting sentence, never a substitute for this one.
+   Then, briefly, what the gene does, in everyday terms.
 3. **How common**, as a natural frequency for a named group (*"about 4 in 100 people in Europe"*), or
    a range across populations. With no sourced figure, *common* / *uncommon* / *rare*; never an
    invented number.
@@ -277,6 +286,7 @@ start writing conclusions, each with a sensible default so a one-word answer wor
 
 - [ ] Every label is something a person would say; no codes; every common regional name is given (blood group B (III)).
 - [ ] Every conclusion opens with the result, about the reader.
+- [ ] Every conclusion says what the reader would notice compared with people who carry the most common version, how big that is, and how sure (or that no noticeable difference is known). A description of what the gene does is not that sentence.
 - [ ] Clear practical implications are stated; an interesting, sourced *why* is there where one exists; a way to check it yourself is named where one exists.
 - [ ] No rsID, HGVS, subtype code, coordinate, p-value or odds ratio in labels or conclusions.
 - [ ] Every term a lay reader may not know (ε4, C282Y, FUT2, *secretor*) is explained in the same conclusion, at its first mention.

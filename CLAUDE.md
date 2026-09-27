@@ -1358,6 +1358,14 @@ have been questions.
   The trigger is the author's words (run it on my genome, try it on these VCFs, annotate with it,
   just-dna-lite), not the agent's judgement that a run would be informative.
 
+- **"It should focus on explainable potential phenotype changes (and if things are not fully clear also
+  give uncertainty estimation) in comparison to wildtype humans."** Stated 2026-09-27, after reading
+  conclusions that described what a gene does and never said whether the reader would, say, taste salt
+  more or less strongly. `module-voice` now requires every conclusion to say what the reader would
+  notice compared with people who carry the most common version (not always the reference genome's:
+  for ABO the reference is O), how big it is, and how sure on the certainty ladder, or that no
+  noticeable difference is known. The gene's job is the supporting sentence, never the substitute.
+
 - **"When we are in plugin development mode we should remove and reinstall it on changes."** Stated
   2026-09-26, after a skill change could not be tested because the session was still loading 0.20.0
   from the `dna-seq` git marketplace. A plugin install is a **copy** in `~/.claude/plugins/cache/`, so an
