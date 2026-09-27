@@ -141,8 +141,9 @@ def origin(name: str) -> str | None:
     first loader in the process: constructing the enricher's `EutilsSettings` (which
     `net.build_services` does) runs `locations.load_env`, exporting the working directory's
     whole `.env`, and so does resolving a cache path. A snapshot taken after that called a
-    project `.env` value "environment" (`F115`, format-tree `S124`). The cost of deciding by value: a shell export identical to a file's value
-    is attributed to the file, which names a place that does hold it.
+    project `.env` value "environment" (`F115`, format-tree `S124`). The cost of deciding by
+    value: a shell export identical to a file's value is attributed to the file, which names
+    a place that does hold it.
     """
     value = os.environ.get(name, "").strip()
     if not value:
