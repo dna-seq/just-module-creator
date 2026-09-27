@@ -1,128 +1,98 @@
 # just-module-creator
 
-A **Claude Code and Codex plugin** that writes [just-dna](https://module-registry.just-dna.life) annotation
-modules with you. You bring a topic and some sources — a paper, a PDF, a lecture. The agent does the
-rest: reads the evidence, writes the rows, checks them, compiles the module and publishes it.
+You bring a question and a paper. An assistant in Claude Code or Codex reads the evidence, writes the claims, checks them, and builds a [just-dna](https://module-registry.just-dna.life) module other people can install.
 
-You do not need to be a geneticist, and you do not need to write code.
+You do not need a genetics degree, and you do not need to write code.
 
-## What a module is, in 30 seconds
+The thing you are making is a **rulebook**: *if the DNA says this at that spot, the claim is that, and here is the paper.* Reading someone's genome file is a different job. This plugin writes the rulebook. [just-dna-lite](https://github.com/dna-seq/just-dna-lite) is what runs it, and only if you ask.
 
-**A module is a rulebook**: *if the DNA says X at spot Y, that means Z, and here is who showed it.*
+## What a row is
 
 | | |
 |---|---|
-| **A variant is a street address** | `rs1421085` names one specific spot where people differ |
-| **Your genotype is which letters you have there** | `C/C`, `C/T`, `T/T` |
-| **Every row is a claim with a receipt** | the conclusion is the claim, the paper's PMID is the receipt |
-| **A blank cell means "we don't know"** | never "no" |
+| **A variant is a street address** | `rs1421085` names one spot where people differ |
+| **A genotype is which letters you have there** | `C/C`, `C/T`, `T/T` |
+| **Every row is a claim with a receipt** | the conclusion is the claim, the paper is the receipt |
+| **A blank cell means "we don't know"** | never a quiet "no" |
 
-There are two separate jobs: **writing the rulebook**, and **reading somebody's DNA file against
-it**. This tool only does the first. It never opens a genome, never calls a genotype, and gives no
-medical advice — whoever runs the module later brings the measurement.
+Some topics are one spot per row. Others are a combination. A blood group is the familiar combination: several spots, one plain result ("you have blood group AB"). APOE type and some drug-response classes are the same shape. Say which kind you want. The report can lead with the result in a sentence, and keep the identifiers for a professional reader.
 
 ## Install
 
+This repository is its own marketplace. You do not need a second catalog to get the plugin.
+
 ### Claude Code
 
-```bash
-/plugin marketplace add /path/to/just-module-creator
+From GitHub:
+
+```text
+/plugin marketplace add dna-seq/just-module-creator
 /plugin install just-module-creator@just-dna
 ```
 
-Or for a single session, straight from a checkout: `claude --plugin-dir /path/to/just-module-creator`
+From a checkout you already have, the same two lines with `.` in place of the GitHub name. One session, without installing: `claude --plugin-dir /path/to/just-module-creator`.
 
 ### Codex
 
-Add the DNA Seq marketplace, install the plugin, then start a new task:
-
 ```bash
-codex plugin marketplace add dna-seq/dna-seq-claude-marketplace
-codex plugin add just-module-creator@dna-seq
+codex plugin marketplace add dna-seq/just-module-creator
+codex plugin add just-module-creator@just-dna
 ```
 
-Every skill appears in Codex's skill picker, and every skill is invocable as a slash command by its own name.
-The Codex package starts the same source checkout from its installed plugin root (`"cwd": "."`).
+Every skill shows up in Codex's skill picker and runs as a slash command under its own name. Codex starts the plugin from its installed folder.
 
-Needs [`uv`](https://docs.astral.sh/uv/) on PATH and Python ≥ 3.13; dependencies install on first
-use. Nothing else to configure — you only need an account when you decide to publish.
+Needs [`uv`](https://docs.astral.sh/uv/) on your PATH and Python 3.13 or newer. Dependencies install themselves the first time the plugin starts. You only need an account when you decide to publish.
 
-### If the first launch times out
+<details>
+<summary><strong>If the first launch times out</strong></summary>
 
-**Expected once, on a cold install, and it fixes itself on reconnect.** `uv` has to create the
-environment and build the package the first time the server starts, and a host that allows 30 seconds
-for an MCP server to come up can lose the race — the connection then succeeds on the retry, in about
-three seconds, because the environment is warm.
+Expected once, on a cold install. `uv` builds the environment the first time, and a host that allows about 30 seconds for a server to come up can lose that race. Reconnect. The second start is a few seconds.
 
-The Codex manifest allows 300 seconds itself, so this is mostly a Claude Code concern.
+Codex allows 300 seconds for this first start, so it is mostly a Claude Code issue.
 
-Warm it yourself right after installing or upgrading and it never happens:
+Or warm it yourself right after installing:
 
 ```bash
 uv sync --project ~/.claude/plugins/cache/dna-seq/just-module-creator/<version>
 ```
 
-If you would rather raise the limit, `MCP_TIMEOUT` is read from **Claude Code's own environment**, not
-from the plugin manifest — `MCP_TIMEOUT=120000 claude`. A timeout cannot be set per server in the
-manifest, so nothing here can do it for you.
+`MCP_TIMEOUT=120000 claude` raises the limit from Claude Code's own environment. The plugin manifest cannot set that for you.
 
-The logs that show which of the two happened live in
-`~/.cache/claude-cli-nodejs/<project-slug>/mcp-logs-<server>/*.jsonl`, and `/mcp` reports current
-status. A cold start looks like `Creating virtual environment` on stderr followed by
-`Connection timeout triggered`; anything else is a real failure worth reporting.
+</details>
 
 ## How a module gets made
 
-Just say what you want: *"make me a module about FTO and body weight from this paper"*. The agent
-follows this order.
+Say what you want, in your own words: *"make me a module about caffeine metabolism from this paper."*
 
-| | Step | Who decides |
-|---|---|---|
-| 1 | **Start the spec** — a folder with `module_spec.yaml` and a stub CSV per table | agent |
-| 2 | **Draft** from a source that already publishes the data, if one does | agent |
-| 3 | **Curate** — what survives, what each genotype means, which paper backs it | **agent, and it is the real work** |
-| 4 | **Enrich** — look each variant up and fill in its coordinates, recording where they came from | agent (the one step that needs the network) |
-| 5 | **Check** — what you wrote against what the sources actually say | agent |
-| 6 | **Compile** — the folder becomes a data file with a fingerprint | agent |
-| 7 | **Rehearse**, then **publish** | **you**, for the production catalog |
+1. It opens a folder for the module.
+2. If a public source already publishes the rows, it can draft from that.
+3. It decides what survives, what each genotype means, and which paper backs it. This is the real work.
+4. It looks up where each variant sits, and records where the coordinate came from.
+5. It checks what was written against what the sources say.
+6. It compiles the folder into a file with a fingerprint.
+7. Publishing waits for you.
 
-Step 3 is where a module is won or lost. Four rules the tools enforce rather than merely suggest:
+Four habits the tools hold you to:
 
-- **A look-up shows you a value; it does not paste it in for you.** A later check compares what you
-  wrote against the same source, so if the source had filled it in, the check would be comparing that
-  source with itself and would always agree. You get the value to compare against, and the reason
-  it was not written.
-- **Unknown is not "no".** A check that could not run is not a check that passed, and nothing here
-  quietly turns a failed lookup into a zero.
-- **Nobody quotes a paper nobody read — and it is fine for the reader to be the AI.** Two columns
-  mean *someone read this article and found the sentence in it*. The assistant can genuinely do
-  that: it fetches the paper, reads it, and quotes the passage word for word, and the module should
-  say who found it. What is not allowed is a quote nobody located — pasting the article's **title**
-  into that column passes every automatic check while proving nothing, because a title is always
-  somewhere in its own article.
-- **Drop what you cannot support.** A source that lists seven variants often supports one. See
-  `assets/fto_bmi/README.md` for a real case where six of seven were dropped, and why.
+- A lookup shows you a value. It does not paste that value in, because a later check compares what you wrote with the same source.
+- A check that could not run stays unknown. Nothing here turns a failed lookup into a zero.
+- A quote is a sentence someone found in the paper. The assistant can be that someone: it fetches the article, reads it, quotes it word for word, and the row records who found it. Pasting the article's title passes every automatic check and proves nothing.
+- A source that lists seven variants often supports one. The rest get dropped. [`assets/fto_bmi`](./assets/fto_bmi) is a real case: six of seven rows were dropped, and the README there says why.
 
-## A worked example you can run
+<details>
+<summary><strong>The FTO example, command by command</strong></summary>
 
-One variant, one paper: **rs1421085 in FTO**, from the 2015 study that dissected the FTO obesity
-locus (PMID `26287746`). The finished module is committed at [`assets/fto_bmi`](./assets/fto_bmi).
+One variant, one paper: **rs1421085 in FTO**, from the 2015 study that took apart the FTO obesity locus (PMID `26287746`). The finished module is [`assets/fto_bmi`](./assets/fto_bmi).
 
-**1 — start the spec.**
+Start the folder. `studies.csv` comes along because a claim without a paper is not a claim.
 
-```
+```text
 scaffold_module(spec_dir="fto_bmi", name="fto_bmi", kinds=["variants.csv", "studies.csv"])
 ```
 
-You get `module_spec.yaml`, `variants.csv` and `studies.csv`, with `<<REPLACE>>` wherever a decision
-is owed. `studies.csv` comes along because a variant claim without a receipt is not a claim.
+Find the paper with `literature_search`, which returns titles, so you can see that a PMID is the article you meant. A half-remembered PMID is usually a real paper about something else.
 
-**2 — find the evidence, and read it.** `literature_search` returns papers *with titles*, so you can
-confirm a PMID names the paper you meant. Never take a PMID from memory: they are dense enough that
-a half-remembered one is usually a real record for a different paper.
-
-**3 — write the rows.** One row per genotype — three, because there are three ways to carry a
-two-letter address:
+Three rows, because a two-letter address has three genotypes:
 
 ```csv
 rsid,gene,genotype,state,direction,effect_allele,weight,phenotype,conclusion
@@ -131,127 +101,77 @@ rs1421085,FTO,C/T,risk,risk,C,-0.25,Body mass index / adiposity,One copy…
 rs1421085,FTO,T/T,neutral,neutral,C,0.0,Body mass index / adiposity,No copy…
 ```
 
-`lint_rows` checks that text before it is even saved, and tells you which cells it is deliberately
-leaving to you:
+No chromosome and no position in those rows. You do not paste a coordinate you looked up yourself. `enrich_module` does that, writes `resolution.csv`, and is what catches a variant whose position quietly shifted.
 
-```
-errors: 0, warnings: 0
-info  chrom — left to the author on purpose: a later check compares it against a source,
-      and filling it from that same source would make the check vacuous
-info  start, ref, alts, clin_sig, acmg_sf — same reason
-```
+`validate_module` then `compile_module` turn the folder into a build. A green compile means the module rebuilds the same way. It has no opinion on whether the biology is right. Read the warnings. `audit_module` asks the other question: what a person still has to decide, such as what the `weight` column means.
 
-Note what is **not** in those rows: no chromosome, no position. You never paste coordinates you
-looked up yourself. That is step 4's job, and it is what makes the cross-check mean something.
+`close_module` is you saying these bytes are finished. Edit an authored file afterwards and the module is open again.
 
-**4 — enrich.** `enrich_module` resolves the rsID to a coordinate and writes `resolution.csv`,
-recording the source it came from. It is the only thing that catches a variant whose position
-silently shifted. Delete `resolution.csv` from the committed example to watch it run.
+</details>
 
-**5 and 6 — validate, then compile.**
+## Try it on a real genome
 
-```
-validate_module(spec_dir="assets/fto_bmi", strict=True)
-→ valid: true, 0 errors, 0 warnings
+Optional. The module is finished, as a module, when it compiles.
 
-compile_module(spec_dir="assets/fto_bmi", output_dir="out", strict=True)
-→ sha256:c3d633f06c216440892ca571e2b88e6e2b7734cbffd0ac76991bbd7e8071aa09
-```
+If you want to see what it says about genomes on your machine, say so. The assistant can connect [just-dna-lite](https://github.com/dna-seq/just-dna-lite) and will ask which files to use. It can tell you which of the module's variants those genomes carry, which variants from the papers none of them has, and whether the scores come out lopsided. Then you fix what you agree to fix, and run the same files again. Nothing is published along the way.
 
-That digest is reproducible: compiling the untouched folder gives the same one every time, on any
-machine, and the registry's own server recomputes it independently on publish. It is reproducible
-**under one compiler version** — upgrading the compiler moves it on purpose, which is why this line
-changed when the toolchain went to format 0.6. What does *not* move is `content_signature`, the
-identity of the authored rows; that is the one to compare across an upgrade.
+The assistant reads the results you ask it to look at, and those results go to whichever model provider is running the chat. Use genomes you are allowed to share with it.
 
-`strict` means **reproducible**, not **correct**. A green compile says the module rebuilds
-identically; it has no opinion on whether the biology is right. Read the warnings on a green run —
-they are the interesting output.
+<details>
+<summary><strong>Connect just-dna-lite yourself</strong></summary>
 
-`audit_module` asks the other question, offline and over the same files: not *will this build* but
-*what does somebody still have to decide*. Whether `weighting:` says what the `weight` column means.
-Whether a recorded check ran over zero subjects, which reads exactly like a clean one. Whether an
-`effect_size` labelled `beta` is really the Z-statistic of its own p-value. Whether rows asserting a
-clinical significance have a paper behind them.
-
-```
-audit_module(spec_dir="assets/fto_bmi")
-→ decisions: 2 · clear: 2 · not_computed: 1
-  decide  weight_scale — 3 of 3 row(s) carry a weight and nothing says what the scale is
-  decide  checks_that_never_ran — verification.json carries no records at all
-```
-
-It reports and never repairs, and its three lists are three different claims: **`not_computed` is not
-a pass** — the file that signal reads is absent, so nothing about it is established.
-
-**7 — say you are finished.** `close_module` writes the one thing no check can write for you: that a
-person considers this module done, bound to the exact bytes of the files as they stand.
-
-```
-close_module(spec_dir="assets/fto_bmi", closed_by="your-name")
-→ closed: true
-```
-
-Edit any authored file afterwards and the binding moves, the closure is dropped, and the module is
-open again — that is the feature. Compiling without one is a warning, not a refusal, so an
-unfinished module stays compilable and simply says it is unfinished.
-
-## Trying it on real genomes
-
-This plugin never opens a genome, but [just-dna-lite](https://github.com/dna-seq/just-dna-lite) does,
-and it has its own MCP server. Connect both, and after a module compiles the agent can offer to run it
-over genomes on your machine, which you choose, and tell you what came back:
-
-- which of the module's variants each genome actually carries, and which variants from the papers none
-  of them has, so you can decide whether to keep those or test on more genomes;
-- how the scores fall across the genomes: all the same, all on one side, carried by a single variant,
-  or shifted by a genotype everybody has;
-- whether the module could be matched against the genomes at all.
-
-Then it fixes what you agree to fix, rebuilds, and runs the same genomes again. Nothing is published
-along the way. To connect just-dna-lite:
+The assistant can register the server once you have said you want a run, and once you have pointed it at a checkout (it can clone [just-dna-lite](https://github.com/dna-seq/just-dna-lite) if you agree). If you would rather add it by hand, in Claude Code:
 
 ```bash
-claude mcp add just-dna-lite -- uv run --project /path/to/just-dna-lite python -m just_dna_pipelines.lite_mcp
+claude mcp add -s user just-dna-lite -- uv run --project /path/to/just-dna-lite python -m just_dna_pipelines.lite_mcp
 ```
 
-Results include the genotypes of the people whose genomes you pick, and the agent reads them. Pick
-genomes you are allowed to use, and remember they go to whichever model provider runs the agent. The
-steps are in [`/module-install-local`](./skills/module-install-local/SKILL.md).
+Reconnect the session afterwards. Clients load a new server's tools at start. The steps, including Codex and Cursor, are in [`/module-install-local`](./skills/module-install-local/SKILL.md).
+
+</details>
 
 ## Publishing
 
-The catalog comes in two instances: a **polygon**, where a publish is a rehearsal you can delete
-again, and **production**, which is what people install from. They share no database.
+There are two catalogs. The **polygon** is a rehearsal you can delete. **Production** is what other people install, and a version there stays. Start on the polygon. An assistant should ask you before it touches production.
 
-```
-registry_register(account="my-name")      # self-service — no admin, no email, no approval
+Publishing a module an assistant wrote is ordinary. Record who wrote it and who reviewed it, and let a reader judge from that.
+
+<details>
+<summary><strong>The publish commands</strong></summary>
+
+```text
+registry_register(account="my-name")
 registry_claim_namespace("my-ns")
-registry_check(target="test")             # would this publish? costs nothing, spends no version
-registry_publish(target="test")           # rehearse
-registry_publish(target="prod")           # promote, once you are happy
+registry_check(target="test")
+registry_publish(target="test")
+registry_publish(target="prod")
 ```
 
-**Rehearse first.** A production version is immutable: it cannot be edited, and the claim on your
-rows outlives even a withdrawal. Publishing to the polygon is the default everywhere for that
-reason, and an agent should ask you explicitly before touching production.
+`registry_check` asks whether a publish would succeed. It spends no version.
 
-Publishing an AI-written module is normal, not a shortcut. The bar is *honest, checked and
-declared* — record who wrote and who reviewed it in `authorship:`, and let a reader judge from
-that.
+</details>
 
 ## Where to go next
 
 | | |
 |---|---|
-| [**What more can be done**](./docs/BEYOND_BASICS.md) | drug response and star alleles, polygenic scores, repeat counts and other measured quantities, digging into replication, learning from published modules |
-| [**For developers**](./docs/FOR_DEVELOPERS.md) | running the server standalone, the full tool list, auth, discovery, configuration, deployment |
-| [`/create-module`](./skills/create-module/SKILL.md) | make one — from nothing, from sources you were handed, or from a module that exists |
-| [`/find-evidence`](./skills/find-evidence/SKILL.md) | find, verify and legally reuse the literature behind a row |
-| [`skills/module-101`](./skills/module-101/GUIDE.md) | the map an agent reads: what a module is, what the plugin can and cannot do |
-| [`docs/DOMAIN.md`](./docs/DOMAIN.md) | what a just-dna module is, and the traps that shaped these tools |
-| [`CLAUDE.md`](./CLAUDE.md) | house rules for agents working *on* this repo |
+| [`/create-module`](./skills/create-module/SKILL.md) | make one, from a paper, from a source, or from a module you already have |
+| [`/find-evidence`](./skills/find-evidence/SKILL.md) | find the papers behind a row, and quote them honestly |
+| [What more can be done](./docs/BEYOND_BASICS.md) | drug response, scores, repeat counts, learning from modules already published |
+
+<details>
+<summary><strong>For contributors</strong></summary>
+
+The product is the tools and the skills, not a library people import. [docs/FOR_DEVELOPERS.md](./docs/FOR_DEVELOPERS.md) covers running the server on its own, auth, and configuration. [docs/DOMAIN.md](./docs/DOMAIN.md) is what a module is and which mistakes the tools exist to prevent. [`skills/module-101`](./skills/module-101/GUIDE.md) is the map an agent reads. House rules for working *on* this repo are in [`CLAUDE.md`](./CLAUDE.md).
+
+```bash
+uv sync
+uv run pytest
+uv run ruff check .
+```
+
+</details>
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT. See [LICENSE](./LICENSE).
