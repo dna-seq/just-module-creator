@@ -576,7 +576,7 @@ notice that the plugin's venv changed — a Claude Code / Codex behaviour, not o
 on their `0.8` branch — close on that release; its root on the fetch side is `S110` (`F108`).
 **2026-09-27:** format 0.7.1 (installed) shipped only RM264, the descriptions: `quotes_found` and
 `quotes_unchecked` now send a reader to `abstract_only_count`. The shape is kept for 0.7.x, so
-`module-publish`'s read-back step now carries the sentence below.
+`skills/module-publish/SKILL.md`'s read-back step now carries the sentence.
 
 `enrich_literature_pass` reported `quotes_unchecked: 24`. The manifest it fed reports
 `quotes_found: 0, quotes_unchecked: 0`, because an abstract-only row stores `quotes_found=0` rather
