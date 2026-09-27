@@ -164,6 +164,27 @@ Where each finding goes:
 coverage_status=...)` pulls the (genome, locus) rows behind any status; without `coverage_status` it
 returns each genome's matched rows with genotype and weight. Ask for what the question needs.
 
+### A phenotype module reads differently
+
+A module with `haplotypes` plus a combiner (`diplotypes`, or `allele_function` + `activity_phenotype`)
+produces one call per gene, not scored rows. `get_results` then carries `phenotype_calls` for it: per
+gene, the status (`called`, `ambiguous`, `not_assessable`, `no_match`), the result, the allele pairs
+that fit, and whether phase would decide. **`validate_module` refuses such a module and says why**: its
+checks are about per-variant weights. That refusal is an answer, not a failure to route around.
+
+Read the calls against what the author expects, and route them:
+
+| What the calls show | Usually means | Where the decision is made |
+|---|---|---|
+| `no_match` on genomes that should fit | an allele or pair the module does not define, or a defining site authored at the wrong position or spelling | [`module-curate`](../module-curate/GUIDE.md) and `lookup_variant` |
+| `ambiguous` with phase deciding | these genomes are unphased at those sites; expected, not a defect | nothing to fix; the report lists every reading |
+| `not_assessable` everywhere | a structural allele the file cannot show, or no callable site: check the sites resolved | [`module-enrich`](../module-enrich/GUIDE.md) |
+| a result that reads wrong in the report | the label or conclusion, not the rule | [`module-voice`](../module-voice/GUIDE.md) |
+
+Real ground truth for a phenotype module is a family: a child's pair must be buildable from one
+version of each parent's. If the author has a trio on this machine, just-dna-lite's
+`scripts/family_check.py` checks every call for that and reports unreadable positions as unchecked.
+
 ## 5. Iterate
 
 A trial run is **a reading, not a defect report**, and the editing discipline is the owning stage's:
