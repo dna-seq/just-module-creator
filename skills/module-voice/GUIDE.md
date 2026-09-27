@@ -55,7 +55,7 @@ a colour.
 
 **A combination module needs its rule in words.** Write a `## How this works` section in
 `README.md`: how the versions of each gene combine into the result, in the same plain voice as the
-conclusions. The report shows it before the results. The exact version of the rule (which bases
+conclusions. The report shows it after the results, closed, since each conclusion explains its own terms. The exact version of the rule (which bases
 define each allele, and the full allele-pair table or activity values and bins) is generated from the
 module's tables into each result's **More details** fold, so it never needs to be written twice.
 
