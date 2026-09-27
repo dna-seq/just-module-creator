@@ -161,3 +161,50 @@ Note that the schema cannot yet record *who* located a passage on a per-row basi
 is an attestation. That has been asked of upstream and accepted. Until it ships, module-level
 `authorship` is where the mixed human-and-agent reality gets stated, which is another reason item 4
 is worth doing first.
+
+---
+
+# Update, 2026-09-27
+
+Written from just-dna-lite, against what is published now.
+
+## Where the six items stand
+
+Checked against the latest published versions (`aggression_anger_snps@2.0.1`,
+`big_five_personality_snps@2.1.1`, `cognitive_intelligence@2.0.1`, `risk_impulsivity_snps@2.0.1`, all
+2026-09-12):
+
+| # | item | now |
+|---|---|---|
+| 1 | four `big_five` rows cite a sociability table for a neuroticism item | **half open.** `rs34588274` and `rs3742021` are gone. `rs4245154` and `rs527528` still cite PMID `34054130` under `EFO_0007660` (neuroticism), with the conclusion "Worry too long after an embarrassment". The `GCST012111` lookup that settles it has not been recorded. |
+| 2 | three `aggression` rows behind a paywall (PMID `20585324`) | closed: no row cites it any more |
+| 3 | `population` held a citation label | closed: it now states the cohort ("366,726 European ancestry individuals") |
+| 4 | no `authorship` | closed: all four declare `ai-module-creator` (`ai`, `agent`) |
+| 5 | `provenance_quote` held the article title | closed: quotes emptied, only located ones remain (aggression 2, cognitive 4, risk 0) |
+| 6 | two modules never read against their papers | decided: emptied without the reading pass, which the list allowed |
+
+## 7. `blood_groups@0.1.0`: two decisions about RHD
+
+just-dna-lite now reads a deletion allele from the coverage inside its span on a whole-genome callset
+(a small-variant VCF never lists a large deletion, so a missing `<DEL>` record says nothing). Calls
+throughout the span mean at least one copy is present. An empty span with calls on both sides means
+both copies are gone. Anything else is left unsettled, with the reason shown. It also no longer reads
+any missing call as reference inside GIAB's low-mappability and segmental-duplication regions, and
+all of RHD and RHCE is inside them. Two things in the module now matter because of that:
+
+1. **The `RHD_deletion` span does not sit on RHD.** It is authored as `<DEL:68163>` at rs1132760
+   (1:25,284,731), which by VCF convention covers 1:25,284,732-25,352,894: it starts about 12 kb inside
+   RHD (1:25,272,393-25,330,445) and ends about 22 kb past it. On your genome all 15 calls in that span
+   lie past the gene's end, with nothing inside RHD, so a reader that asked "is there any call in the
+   span?" would have called you RhD-positive. The caller now refuses a span with a long call-free
+   stretch inside it, so it reports you as not assessable, but the span is the module's claim. **Route:**
+   re-anchor it on the common RhD-negative deletion (RHD plus its flanking Rhesus boxes). That costs a
+   version, because the allele is part of the content signature.
+2. **The weighting note is now stale.** It says RhD is "deliberately reported as not assessable from a
+   variant-only VCF". That is still true on an exome, on a panel, and where coverage is ambiguous. On a
+   whole genome with calls across the gene the report now says RhD-positive, labelled as read from
+   coverage. **Route:** a prose-only change, so it rides along with item 1 or goes in a README amend.
+
+**One question only you can answer:** your genome has no calls at all across RHD (a 72 kb hole), while
+the three other genomes here have 45-56 calls inside it. That is what RhD-negative looks like, and also
+what unplaceable reads look like. If you know your Rh type, it is the real-sample test for this code.
