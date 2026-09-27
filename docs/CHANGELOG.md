@@ -3,6 +3,40 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.44.0] — 2026-09-27
+
+- **`module-install-local` drives just-dna-lite's MCP server, and is the loop back into curation.**
+  just-dna-lite ships an MCP server (`just-dna-lite`, stdio or HTTP) that lists the machine's genomes
+  and modules, installs a compiled module by copying its bytes, runs annotation jobs in the background
+  and validates one module across several genomes: per locus, whether each genome matched, was restored
+  as hom-ref, was called with a genotype the module never authored, was called with a different ref, or
+  had no call; per genome, the summed weight; across genomes, whether the scores are constant,
+  one-sided, dominated by one variant, carried by inferred rows or shifted by a genotype everyone
+  shares. The skill maps each finding to the stage that owns the cell. No code here talks to -lite: the
+  host runs the two servers side by side and the agent calls both. **Cross-repo:** the server lives in
+  just-dna-lite's `just_dna_pipelines.lite_mcp`, documented in its `docs/MCP_SERVER.md`.
+- **It connects just-dna-lite itself, in the host's own format.** When the `just-dna-lite` tools are
+  absent, the agent asks where the checkout is, checks it with `uv run --project <path> python -c
+  "import just_dna_pipelines.lite_mcp.server"` (which also installs its environment, so the first launch
+  does not time out on `uv sync`), and registers it over stdio for Claude Code, Codex or Cursor, asking
+  only when it cannot tell which host it is in. With no checkout, it offers to clone one and clones only
+  on a yes.
+- **just-dna-lite is opt-in.** The agent engages it only when the author asks for a run on real genomes
+  or VCFs, or names just-dna-lite. A green compile ends stage 6; nothing offers a trial run unasked, and
+  an unqualified `validate_module` means this plugin's spec check, not -lite's.
+- **A phenotype module's run reads differently.** -lite's `get_results` returns its per-gene calls and
+  its `validate_module` refuses it with the reason (its checks are about per-variant weights). The skill
+  routes each kind of call to the stage that owns it and names a family check as the real ground truth.
+- **New skill: `module-voice`.** How a module's labels, conclusions, title and description read to a lay
+  reader and a professional: three layers, every term explained at first mention in the conclusion that
+  uses it, full sentences rather than telegraphic ones, and a README `## How this works` section, which
+  just-dna-lite shows before a phenotype module's results. The twin of just-dna-lite's
+  `docs/REPORT_VOICE.md`; `module-curate` and `create-module` link it.
+- **The manual install routes** (no server) live in `module-install-local/references/MANUAL_INSTALL.md`.
+- **No sample id or genotype goes into a module.** `record_override`'s reason is published in
+  `logs/authoring.log`, so a finding is named by its code and locus, never by whose genome showed it.
+- **README rewritten in plain language.**
+
 ## [0.43.3] — 2026-09-27
 
 - **Codex startup timeout back to 300 s.** 0.43.2 set 120 s, which is Claude Code's hard cap and

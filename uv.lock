@@ -1041,7 +1041,7 @@ wheels = [
 
 [[package]]
 name = "just-module-creator"
-version = "0.43.3"
+version = "0.44.0"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },

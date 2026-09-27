@@ -123,7 +123,7 @@ def test_the_command_menu_is_what_a_person_would_ask_for():
 
 def test_the_document_set_is_what_the_manifest_promises():
     """A document added or removed without the count moving is the drift this catches."""
-    assert len(ALL) == 20, f"documents shipped: {sorted(NAMES)}"
+    assert len(ALL) == 21, f"documents shipped: {sorted(NAMES)}"
 
 
 #: `create-module` is the one skill whose *shape* is pinned rather than only its
@@ -259,6 +259,8 @@ def test_every_skill_it_names_actually_ships(skill: Path):
 def test_every_relative_link_resolves(markdown: Path):
     text = markdown.read_text(encoding="utf-8")
     for target in re.findall(r"\]\(([^)#][^)]*\.md)\)", text):
+        if "://" in target:  # an absolute URL (another repo's doc) is not a relative link
+            continue
         assert (markdown.parent / target).resolve().is_file(), (
             f"{markdown.relative_to(SKILLS)} links to {target}, which does not exist"
         )
