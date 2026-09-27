@@ -72,16 +72,26 @@ the installed packages, not the sibling checkouts** — which is the check this 
 exists to force, and the reason its status lines name both halves.
 
 
-## F115 — importing the registry client loads a `.env` found from its own package directory (registry `S27`)
+## F115 — constructing an enricher client exports the working directory's whole `.env` (format `S124`)
 
-**Status (2026-09-27):** filed as registry-tree `S27`, unanswered. `just_dna_registry/config.py` calls a
-bare `load_dotenv()` at import, before `userconfig.load_env` runs, so a value it brought in looked like
-a shell export: `remember_setting` reported `source: environment` for a project `.env` value in this
-checkout. Mitigated here: `userconfig.origin` decides the layer by comparing the value with each file
-rather than by a snapshot, pinned by
-`test_a_value_an_earlier_loader_brought_in_is_still_attributed_to_its_file`. What it cannot mitigate:
-the import can still load a `.env` above the installed venv that neither the author nor the server
-chose. Close when a release we install loads nothing at import.
+**Status (2026-09-27):** **fixed in tree, not released** — format-tree `S124`, answered as their
+`RM301` (commit `abaaf28` on `just-dna-format` main): every enricher credential reader now uses
+`locations.env_value(var)`, which reads one key and exports nothing. The cache resolvers still export
+the file unless called with `load_dotenv_file=False`. Close when an enricher release carrying RM301 is
+what `uv sync` installs, and re-check the cache-resolver half then.
+
+**Filed first against the wrong package, and corrected by the registry's own triage.** We reported it
+as registry-tree `S27`, blaming `just_dna_registry/config.py`'s bare `load_dotenv()`. That call is
+real, but our import path never loads that module: measured by spying on `load_dotenv`, the first
+export comes from `EutilsSettings.__post_init__` → `locations.load_env`, reached through
+`net.build_services`. The registry archived `S27` pointing at `S124` and fixed its own CLI's lookup to
+search from the working directory anyway (`30acc83`, unreleased). **Lesson: name the loader from a
+stack trace, not from a grep for `load_dotenv(`** — the grep found a real call on a path we never take.
+
+The symptom: `remember_setting` reported `source: environment` for a project `.env` value. Mitigated
+here by `userconfig.origin` deciding the layer by value rather than by a snapshot, pinned by
+`test_a_value_an_earlier_loader_brought_in_is_still_attributed_to_its_file`. That mitigation stays
+correct after the fix, so nothing here needs to come out when it lands.
 
 ## F113 — `lookup_citation(doi=…)` returns existence and no title (format `S113`)
 

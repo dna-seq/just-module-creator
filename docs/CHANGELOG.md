@@ -13,6 +13,10 @@ on our side, so agents in sibling repos are not surprised.
 - **The start-up check skips a token answered `valid` within the last hour.** Several sessions start
   several servers, and the polygon rate-limits a burst, which would record an outage over a good
   answer. `registry_accounts(action="refresh")` always asks.
+- **Correction to 0.46.1:** the early `.env` load that mislabelled a value's source is the enricher's,
+  not the registry client's. `EutilsSettings` runs `locations.load_env` when `net.build_services`
+  constructs it; `just_dna_registry.config` is never imported on our path. Refiled upstream as
+  format-tree `S124`, fixed in their tree as `RM301` and not yet released (`F115`).
 
 ## [0.47.1] — 2026-09-27
 
