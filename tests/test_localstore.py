@@ -121,6 +121,30 @@ async def test_the_resolver_asks_rather_than_guessing_when_no_saved_account_matc
     assert refusal.data and refusal.data["needs"] == "choose_account"
     assert "sheep" in refusal.message and "goat" in refusal.message
     assert "mk_sheep_aaaa" not in refusal.message, "the listing names accounts, never tokens"
+    # Every remedy it names is one the agent can run; none needs a token it cannot see,
+    # and `set_default` would not change a namespace pick.
+    for remedy in ("registry_claim_namespace", '"refresh"', '"add"'):
+        assert remedy in refusal.message, remedy
+    assert "set_default" not in refusal.message
+    assert "authenticate" not in refusal.message
+
+
+def test_an_account_shared_namespace_goes_to_the_default_owner():
+    _seed(
+        ("test", "sheep", "mk_sheep_aaaa", ["test-herd"]),
+        ("test", "goat", "mk_goat_bbbb", ["test-herd"]),
+    )
+    state = localstore.load()
+    assert localstore.pick_token(state, "test", "test-herd") == "mk_sheep_aaaa"
+
+    def _swap(state: localstore.State) -> None:
+        for a in state.accounts:
+            a.default = False
+
+    localstore.update(_swap)
+    assert localstore.pick_token(localstore.load(), "test", "test-herd") is None
+    refusal = auth.unauthenticated_result(offline_settings(), "test", "test-herd")
+    assert "more than one owns" in refusal.message and "set_default" in refusal.message
 
 
 # --- saving what the registry hands back --------------------------------------------------

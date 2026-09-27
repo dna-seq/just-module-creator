@@ -250,16 +250,26 @@ def _saved_accounts_note(target: RegistryTarget, namespace: str | None) -> str |
         f": {', '.join(a.namespaces) or 'no namespaces'}"
         for a in saved
     )
-    question = (
-        f"none of them owns {namespace!r}, or more than one does"
-        if namespace is not None
-        else "none is the default"
-    )
+    if namespace is None:
+        return (
+            f"Saved accounts for this instance — {listing} — but none is the default. Ask the "
+            'author which to use, then `registry_accounts(action="set_default", target=…, '
+            "account=…)`."
+        )
+    owners = [a for a in saved if namespace in a.namespaces]
+    if len(owners) > 1:
+        return (
+            f"Saved accounts for this instance — {listing} — and more than one owns "
+            f"{namespace!r}, none of them the default. Ask the author which, then "
+            '`registry_accounts(action="set_default", target=…, account=…)`.'
+        )
     return (
-        f"Saved accounts for this instance — {listing} — but {question}. Ask the author which "
-        "account to use, then `authenticate` with it for this session or "
-        '`registry_accounts(action="set_default")`. If the namespace was claimed elsewhere, '
-        '`registry_accounts(action="refresh")` re-reads every account\'s namespaces.'
+        f"Saved accounts for this instance — {listing} — and none owns {namespace!r}. Which "
+        "fits: if it is not claimed yet, `registry_claim_namespace` claims it with the default "
+        "account and records it; if it was claimed elsewhere, "
+        '`registry_accounts(action="refresh")` re-reads every account\'s namespaces; '
+        "if another account owns it, ask the author for "
+        'that token and save it with `registry_accounts(action="add", target=…, token=…)`.'
     )
 
 

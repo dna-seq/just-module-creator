@@ -109,13 +109,15 @@ def accounts_for(state: State, target: str) -> list[StoredAccount]:
 def pick_token(state: State, target: str, namespace: str | None) -> str | None:
     """The saved token a call should use, or None when none answers the question.
 
-    With a namespace: the one saved account on `target` that owns it. Without: the
-    default account on `target`. Two accounts owning one namespace is an ambiguity, so it
-    answers None rather than choosing.
+    With a namespace: the one saved account on `target` that owns it; when several do (an
+    organisation's namespace shared between accounts), the default among them, and None if
+    the default is not one of them. Without: the default account on `target`.
     """
     usable = [a for a in accounts_for(state, target) if a.status != "invalid"]
     if namespace is not None:
         owners = [a for a in usable if namespace in a.namespaces]
+        if len(owners) > 1:
+            owners = [a for a in owners if a.default]
         return owners[0].token if len(owners) == 1 else None
     defaults = [a for a in usable if a.default]
     return defaults[0].token if defaults else None
