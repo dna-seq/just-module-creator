@@ -29,7 +29,6 @@ from just_dna_enricher.caches import CACHE_LANES
 from just_dna_enricher.locations import CACHE_BASE_VAR
 from just_dna_registry import specfiles as _specfiles
 
-from just_module_creator import userconfig
 from just_module_creator.server import build_server
 from just_module_creator.settings import Settings
 from just_module_creator.userconfig import CONFIG_FILE_VAR
@@ -196,9 +195,6 @@ def _hermetic_configuration(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> 
     # The user config file (`userconfig`) is the one place `remember_setting` writes, and
     # it lives in the developer's home directory. Every test gets its own, not yet created.
     monkeypatch.setenv(CONFIG_FILE_VAR, str(tmp_path / "user-config" / ".env"))
-    # Where each loaded variable came from is process state; a test that loads must not
-    # leave it for the next one to read.
-    monkeypatch.setattr(userconfig, "_ORIGINS", {})
 
 
 MODULE_SPEC = """\

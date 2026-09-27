@@ -95,10 +95,6 @@ SAVABLE: frozenset[str] = frozenset(
 #: recognise and an install-id is the account's only recovery path.
 _SECRET_MARKERS = ("KEY", "TOKEN", "INSTALL_ID", "SECRET", "PASSWORD")
 
-#: Where each variable present after `load_env` came from. Filled once at start; a value
-#: `remember` adds later is recorded here too.
-_ORIGINS: dict[str, str] = {}
-
 
 def config_file() -> Path:
     """The user config file: `JMC_CONFIG_FILE` if set, else the platform's config dir."""
@@ -122,28 +118,33 @@ def shown(name: str, value: str | None) -> str | None:
 def load_env() -> None:
     """Load the project `.env`, then the user config file, under the process environment.
 
-    `override=False` throughout, so the order above is the precedence. Records where each
-    variable came from, which is what lets `remember` say *why* a saved value is not the one
-    in force.
+    `override=False` throughout, so the order above is the precedence.
     """
-    _ORIGINS.clear()
-    for name in os.environ:
-        _ORIGINS[name] = "environment"
-    project = find_dotenv(usecwd=True)
-    user = config_file()
-    for label, path in (("project .env", project), ("user config", str(user))):
-        if not path or not Path(path).is_file():
-            continue
-        for name in dotenv_values(path):
-            _ORIGINS.setdefault(name, f"{label} ({path})")
-        load_dotenv(path, override=False)
+    for path in (find_dotenv(usecwd=True), str(config_file())):
+        if path and Path(path).is_file():
+            load_dotenv(path, override=False)
 
 
 def origin(name: str) -> str | None:
-    """Where the value in force came from, or None when the variable is unset."""
-    if not os.environ.get(name, "").strip():
+    """Where the value in force came from, or None when the variable is unset.
+
+    **Decided by value, not by recording what `load_env` loaded**, because we are not the
+    first loader in the process: `just_dna_registry.config` calls a bare `load_dotenv()` at
+    import, and the enricher loads the working directory's `.env` when it resolves a cache
+    path, both before `load_env` runs. A snapshot taken there called a project `.env` value
+    "environment". The cost of deciding by value: a shell export identical to a file's value
+    is attributed to the file, which names a place that does hold it.
+    """
+    value = os.environ.get(name, "").strip()
+    if not value:
         return None
-    return _ORIGINS.get(name, "environment")
+    for label, path in (
+        ("project .env", find_dotenv(usecwd=True)),
+        ("user config", str(config_file())),
+    ):
+        if path and Path(path).is_file() and (dotenv_values(path).get(name) or "").strip() == value:
+            return f"{label} ({path})"
+    return "environment"
 
 
 def saved(name: str) -> str | None:
@@ -175,16 +176,16 @@ def remember(name: str, value: str, *, replace: bool) -> Remembered:
     if previous is not None and previous != value and not replace:
         return Remembered(written=False, previous=previous, in_force=os.environ.get(name) == value)
     path = config_file()
+    # The shell and the project `.env` outrank this file at the next start, so they outrank
+    # it now; a value the file itself supplied is the one being replaced.
+    source = origin(name)
+    outranked = source is not None and not source.startswith("user config")
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     path.touch(mode=0o600, exist_ok=True)
     # Tightened on every write, not only at creation: a file the author made by hand, or
     # one copied from a project `.env`, would otherwise keep whatever it had.
     path.chmod(0o600)
     set_key(str(path), name, value, quote_mode="auto")
-    # The process gets it too unless a higher layer already set it: the shell and the
-    # project `.env` outrank this file at the next start, so they outrank it now.
-    outranked = _ORIGINS.get(name) not in (None, "user config", f"user config ({path})")
-    if not outranked or not os.environ.get(name, "").strip():
+    if not outranked:
         os.environ[name] = value
-        _ORIGINS[name] = f"user config ({path})"
     return Remembered(written=True, previous=previous, in_force=os.environ.get(name) == value)

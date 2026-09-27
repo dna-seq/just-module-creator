@@ -3,6 +3,18 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.46.1] — 2026-09-27
+
+- **`remember_setting` names the right layer when another loader got there first.** The registry client
+  loads a `.env` at import (`F115`, registry-tree `S27`), before our loader runs, so a value from the
+  project `.env` was reported as `source: environment`. The layer is now decided by comparing the value
+  with each file. What is in force was already right; only the label was wrong.
+- **Checked on Linux end to end:** a stdio server started outside any project saved to the platform
+  config directory (`$XDG_CONFIG_HOME/just-module-creator/.env`, directory `700`, file `600`), kept a
+  saved value against a second one without `replace`, and read both values back after a restart.
+  Started inside a project, the project `.env` outranks the saved value and is named as the source.
+  The same flow was confirmed on Codex under Windows.
+
 ## [0.46.0] — 2026-09-27
 
 - **Settings an author gives once now survive, on Codex as well as Claude Code.** The skills and

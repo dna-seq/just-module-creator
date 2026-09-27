@@ -72,6 +72,17 @@ the installed packages, not the sibling checkouts** — which is the check this 
 exists to force, and the reason its status lines name both halves.
 
 
+## F115 — importing the registry client loads a `.env` found from its own package directory (registry `S27`)
+
+**Status (2026-09-27):** filed as registry-tree `S27`, unanswered. `just_dna_registry/config.py` calls a
+bare `load_dotenv()` at import, before `userconfig.load_env` runs, so a value it brought in looked like
+a shell export: `remember_setting` reported `source: environment` for a project `.env` value in this
+checkout. Mitigated here: `userconfig.origin` decides the layer by comparing the value with each file
+rather than by a snapshot, pinned by
+`test_a_value_an_earlier_loader_brought_in_is_still_attributed_to_its_file`. What it cannot mitigate:
+the import can still load a `.env` above the installed venv that neither the author nor the server
+chose. Close when a release we install loads nothing at import.
+
 ## F113 — `lookup_citation(doi=…)` returns existence and no title (format `S113`)
 
 **Status (2026-09-25):** filed as format-tree `S113`, unanswered. **Mitigated here in 0.41.0**:

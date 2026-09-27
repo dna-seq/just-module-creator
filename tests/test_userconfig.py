@@ -67,6 +67,23 @@ def test_the_project_file_is_found_from_the_working_directory_and_outranks_the_u
     assert os.environ["JMC_INSTALL_ID"] == "abc", "a name the project lacks still arrives"
 
 
+def test_a_value_an_earlier_loader_brought_in_is_still_attributed_to_its_file(
+    live_loader, monkeypatch, tmp_path
+):
+    """An upstream import loads the project `.env` before ours runs; the label must survive that.
+
+    `just_dna_registry.config` calls `load_dotenv()` at import, so by the time `load_env`
+    runs the value is already in the environment and a snapshot calls it "environment".
+    """
+    _write(tmp_path / ".env", "JMC_USER_EMAIL=project@example.org\n")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("JMC_USER_EMAIL", "project@example.org")  # the earlier loader's work
+
+    userconfig.load_env()
+
+    assert (userconfig.origin("JMC_USER_EMAIL") or "").startswith("project .env")
+
+
 def test_the_shell_outranks_both(live_loader, monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
     _write(userconfig.config_file(), "JMC_USER_EMAIL=user@example.org\n")
