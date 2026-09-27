@@ -3,6 +3,13 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.47.1] — 2026-09-27
+
+- **`registry_accounts(action="add")` without a token imports `JMC_INSTALL_ID` along with the
+  environment's token.** Found on the first real import: the account came back `valid` with its
+  namespace but no install-id, although the environment had one. An explicit `token` still takes only
+  the `install_id` passed beside it, and re-saving an account keeps the install-id it already had.
+
 ## [0.47.0] — 2026-09-27
 
 - **Any number of registry accounts per instance, each with its namespaces and install-id.** Kept in

@@ -93,8 +93,8 @@ def register_memory(mcp: FastMCP, settings: Settings) -> None:
         Registry calls pick the saved account that owns the namespace they name, or the
         default account when they name none, and ask when nothing matches.
         `registry_register` saves a new account itself. `add` saves a token you already hold
-        (omit `token` to import this instance's env token), asking the registry for its
-        account and namespaces; `refresh` re-checks every token, recording `valid`,
+        (omit `token` to import this instance's env token and `JMC_INSTALL_ID`), asking the
+        registry for its account and namespaces; `refresh` re-checks every token, recording `valid`,
         `invalid`, `unreachable` or `timeout` with its time, and re-reads namespaces — the
         server already does this when it starts, so read `list` first. `set_default` needs
         `target` and `account`; `forget` deletes one saved account — ask the author first.
@@ -135,6 +135,12 @@ def register_memory(mcp: FastMCP, settings: Settings) -> None:
             if target is None:
                 raise ToolError("`add` needs `target`: a token is valid on one instance only.")
             key = (token or "").strip() or settings.registry_token(target)
+            # Importing the environment's token brings the environment's install-id with it:
+            # the two were set up together, and a saved account without its install-id has
+            # lost the one recovery path the store exists to keep.
+            given_id = (install_id or "").strip() or (
+                (settings.install_id or "").strip() or None if not (token or "").strip() else None
+            )
             if not key:
                 raise ToolError(
                     f"No token given and none in the environment for {describe(target, settings)}."
@@ -157,7 +163,7 @@ def register_memory(mcp: FastMCP, settings: Settings) -> None:
                     target=target,
                     account=name,
                     token=key,
-                    install_id=(install_id or "").strip() or None,
+                    install_id=given_id,
                     namespaces=namespaces,
                 )
             )

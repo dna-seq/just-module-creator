@@ -303,3 +303,25 @@ async def test_todos_carry_a_module_close_and_stay(make_client):
     assert texts == ["read PMID 11788828"]
     assert open_for_module.structured_content["open_count"] == 1
     assert len(everything.structured_content["todos"]) == 3, "a closed record is kept"
+
+
+async def test_importing_the_env_token_brings_the_env_install_id(make_client, monkeypatch):
+    monkeypatch.setattr(
+        accountcheck, "client_for", _RegistryStub(whoami={"account": "sheep", "namespaces": []})
+    )
+    monkeypatch.setattr(
+        "just_module_creator.tools.memory.client_for",
+        _RegistryStub(whoami={"account": "sheep", "namespaces": ["test-sheep"]}),
+    )
+    settings = Settings(offline=False, _env_file=None, test_api_key="mk_env_token_7777")  # type: ignore[call-arg]
+    settings.install_id = "envinstall01"
+    async with make_client(settings=settings) as client:
+        await client.call_tool("registry_accounts", {"action": "add", "target": "test"})
+        await client.call_tool(
+            "registry_accounts", {"action": "add", "target": "test", "token": "mk_other_8888"}
+        )
+
+    saved = localstore.load().accounts[0]
+    assert (saved.token, saved.install_id) == ("mk_other_8888", "envinstall01"), (
+        "an explicit token re-saves the same account and keeps the install-id it already had"
+    )
