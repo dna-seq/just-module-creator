@@ -1588,6 +1588,13 @@ have been questions.
   2026-09-21**, so a `registry_check` is still the only proof of a publish. Also adopted the same day:
   **fastmcp 4.0.5** — the tasks extension is registered by hand, and the modern protocol era has no
   session identity on stdio (see §5, the session-store bullet).
+- **Format 0.7.1 / compiler 0.7.2 / enricher 0.7.3 / registry 0.27.0 installed — adopted 2026-09-27
+  (our 0.45.0), upstream's `v0.7.3` patch cut.** No authored field moved: all 57 `just_dna_format`
+  pydantic models diffed field-for-field against 0.7.0. Verify with `--project`:
+  `'pack' in inspect.signature(RegistryClient.publish).parameters` (0.27.0). Both live instances
+  moved to `registry 0.27.0 / format 0.7.1` the same day, within an hour of answering 0.25.2 / 0.7.0,
+  and a polygon `registry_check` with this client returned `verdict: true`. `pack` stays opt-in. From `v0.7.4` upstream publishes each moved package under the cut's number, so the three
+  versions will stop differing.
 - **SUPERSEDED 2026-09-12 — both instances now serve `format: 0.7.0` / `compiler: 0.7.0` /
   `registry: 0.25.2`, and our floor moved to match (`>=0.7.0,<0.8`, registry `>=0.25.2`, plugin
   0.35.0).** The bullet below is kept because its *lesson* outlived its numbers and is the one that

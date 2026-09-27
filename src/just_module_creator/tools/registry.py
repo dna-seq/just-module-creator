@@ -793,6 +793,7 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         ctx: Context,
         changelog: str = "",
         target: RegistryTarget = DEFAULT_WRITE_TARGET,
+        pack: bool = False,
     ) -> OpResult:
         """Publish a spec directory as a module version. The server recompiles it.
 
@@ -805,9 +806,8 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
 
         Publish for real with `target="prod"` once the rehearsal is clean. The
         two instances share no data, so a polygon publish never becomes a
-        production one: promoting means publishing again.
-
-        Before either: `validate_module(strict=true)` must pass — the registry
+        production one: promoting means publishing again. Before either:
+        `validate_module(strict=true)` must pass — the registry
         compiles with strict, so a best-effort-only pre-flight answers for a
         different compile.
 
@@ -819,7 +819,17 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
 
         On success, `data.page_url` is the module's page in that registry's web
         console. Hand it to the author: it is how they see what was published.
+
+        `pack=true` uploads the spec as one compressed archive instead of loose
+        files, for a spec over the 25 MiB transfer bound. It needs a registry
+        server at 0.27 or later; an older one refuses the archive. A dropped
+        connection on a large publish is not a failed publish: check
+        `registry_is_published` before retrying.
         """
+        # `pack` is registry 0.27.0's `publish(pack=True)` (their S25), wrapped under
+        # the parity rule. Off by default: loose files are the route every publish has
+        # taken, and an instance older than 0.27 refuses the archive part (both live
+        # ones served 0.27.0 on 2026-09-27). The retry sentence is their S26.
         # The naming refusal comes FIRST, before the credential and before the
         # offline ceiling: it needs neither to be decided, and telling an author
         # to go and get a token for a call that could never succeed is the dead
@@ -919,7 +929,7 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         try:
             manifest = await run_sync(
                 lambda: _client(token, target).publish(
-                    namespace, name, version, spec, changelog=changelog
+                    namespace, name, version, spec, changelog=changelog, pack=pack
                 )
             )
         except RegistryError as exc:

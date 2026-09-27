@@ -3,6 +3,28 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.45.0] — 2026-09-27
+
+- **Adopted upstream's `v0.7.3` cut and registry 0.27.0.** Floors are now format `>=0.7.1`, compiler
+  `>=0.7.2`, enricher `>=0.7.3` and registry `>=0.27.0`, ceilings unchanged. Checked by symbol, not
+  by changelog: all 57 pydantic models in `just_dna_format` carry the same fields as in 0.7.0, so no
+  authored field arrived to sweep. What a module gains comes from re-running the enricher: indels
+  anchored and same-size indels settled against the reference, non-base alleles withheld rather than
+  served as a locus, STRchive's own Refuted/Disputed grade named on a drafted locus, MITOMAP `:`
+  deletions joined, and a stale literature quote count re-fetched on an online run.
+- **`registry_publish` takes `pack`.** It uploads the spec as one compressed archive instead of loose
+  files, which is the only way a spec over the registry's 25 MiB transfer bound publishes through
+  `publish`. Off by default, since an instance older than 0.27 refuses the archive; both live
+  instances serve registry 0.27.0 / format 0.7.1, and a polygon `registry_check` of `assets/fto_bmi`
+  with this client came back `verdict: true, blocking: []`. The docstring also says a dropped connection on a
+  large publish is not a failed publish, and to check `registry_is_published` before retrying.
+- **The literature dossier no longer says the pass cannot fix a stale quote count.** An online re-run
+  now re-fetches a pin whose `quotes_authored` disagrees with `studies.csv`; deleting the sidecar is
+  still the only way to back-fill `license` or `doi_checked`.
+- **`module-publish`'s read-back step says how to read an abstract-only zero** (`F111`): `quotes_found:
+  0, quotes_unchecked: 0` beside `abstract_only_count > 0` means nothing was checked against a full
+  text. Upstream kept that shape for 0.7.x and moved the settling field to 0.8.
+
 ## [0.44.0] — 2026-09-27
 
 - **`module-install-local` drives just-dna-lite's MCP server, and is the loop back into curation.**

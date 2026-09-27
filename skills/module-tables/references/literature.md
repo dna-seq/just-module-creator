@@ -239,7 +239,9 @@ Ordered by how likely a first-timer is to hit them.
    `doi_exists` verdict the current pass counts as `doi_verdicts_stale` and leaves outside the
    denominator. A re-run reports *"N pinned DOI verdict(s) are about a DOI the module no longer
    cites"* — misleading wording for *written before the column existed* — and only `rm literature.csv`
-   clears it.
+   clears it. **The one exception is the quote count**: a pin whose
+   `quotes_authored` no longer matches the quotes in `studies.csv` is re-fetched and its quotes
+   re-checked on an online run. That reaches the quote columns only, not `license` or `doi_checked`.
 2. **The three licence rights are frozen into the CSV, NOT re-derived at read time — the docs say
    otherwise and they are wrong.** `docs/SCHEMAS.md:1176-1178`, `docs/ENRICHER.md:1679-1681`, `enricher/licensing.py`,
    `enricher/literature.py` and
@@ -304,8 +306,9 @@ Ordered by how likely a first-timer is to hit them.
    **Both halves are fixed in 0.6.5** (upstream RM119): `_check_quote_counter_is_current` warns when
    `literature.csv`'s counter disagrees with the quotes actually in `studies.csv`, naming both
    numbers, and `manifest.literature.quotes_unchecked` exists so a block summed over all-null rows
-   stops publishing a confident zero. **What it does not do is rewrite the sidecar** — merge-not-clobber
-   is unchanged, so a module carrying stale counters keeps them until the pass runs again.
+   stops publishing a confident zero. **Re-running the pass online fixes it**: a pin whose quote count disagrees with `studies.csv` is re-fetched and its quotes
+   re-checked, so the warning's remedy works without deleting the sidecar. An offline run keeps the
+   pin, and a module that is never re-run keeps its stale counters.
 
    Three things follow, and the third is the one that bites:
 
@@ -367,8 +370,9 @@ Ordered by how likely a first-timer is to hit them.
   and omits the third, with no marker. PubMed decides existence; Europe PMC decides retrievability.
 - **No Google Scholar route.** No API, and automated querying violates its terms.
 - **No offline snapshot, and there will not be one.** Once written, `literature.csv` *is* the pin.
-- **No `--refresh`.** The only way to re-ask is `rm literature.csv`, which also discards curator
-  overrides — upstream **RM83**, still open.
+- **No `--refresh`.** Apart from a stale quote count, which an online re-run re-fetches, the
+  only way to re-ask is `rm literature.csv`, which also discards curator overrides — upstream
+  **RM83**, still open.
 - **No `describe_table` / `table_requirements` / `get_template` support.** All three route through
   `known_kind(csv_name, draft.DRAFTABLE)` (`src/just_module_creator/tools/_shared.py`) and
   `literature.csv` is not draftable, so they raise *"Unknown table kind"*.

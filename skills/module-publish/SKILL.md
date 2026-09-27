@@ -132,10 +132,14 @@ itself.
 **You upload the spec, not the parquets.** The server enriches, strict-compiles and stores the artifact
 itself, which is why a published digest is **trusted rather than claimed**. `registry_publish` also
 re-runs `validate_module(strict=True)` locally first and refuses rather than shipping a spec the server
-will reject.
+will reject. A spec over the 25 MiB transfer bound goes up with `pack=true`, one compressed archive
+in place of loose files; an instance older than registry 0.27 refuses it, and `registry_health` shows
+what each one runs.
 
 **Read the rehearsal back.** What came back is what a consumer sees; the card, the readme projection and
-the resolution facets are all server-side.
+the resolution facets are all server-side. On the card, `quotes_found: 0` and `quotes_unchecked: 0` beside
+`abstract_only_count` above zero means no quote was checked against a full text, not that the quotes
+were looked for and missed.
 
 **Give the author the link.** Every successful `registry_publish` returns `data.page_url`, the module's
 page in that registry's web console: polygon for a rehearsal, catalog for a promotion. Paste it into

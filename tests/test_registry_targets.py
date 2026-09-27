@@ -1115,3 +1115,50 @@ def test_the_page_route_is_one_the_installed_console_serves():
     assert f"`{UI_MODULE_ROUTE}${{encodeURIComponent(" in script
     # `mount.py` is read, not imported: it imports fastapi, which a client install lacks.
     assert f'UI_PREFIX: str = "{UI_PREFIX}"' in (static.parent / "mount.py").read_text()
+
+
+class _PublishStub:
+    """Answers the two calls `registry_publish` makes, and records the publish kwargs."""
+
+    def __init__(self) -> None:
+        self.published: dict = {}
+
+    def is_published(self, spec):
+        return []
+
+    def publish(self, namespace, name, version, spec_dir, **kwargs):
+        self.published = {"spec_dir": spec_dir, **kwargs}
+        return None
+
+
+@pytest.mark.parametrize("pack", [False, True])
+async def test_pack_reaches_the_registry_client(make_client, monkeypatch, tmp_path, pack):
+    """Registry 0.27.0's archive upload (their S25) is passed through, and stays off unasked.
+
+    The default matters as much as the pass-through: an instance older than 0.27
+    refuses the archive part, so `pack` must never be sent unless the caller chose it.
+    """
+    import shutil
+
+    from just_module_creator.tools import registry
+
+    spec = tmp_path / "fto_bmi"
+    shutil.copytree(Path(__file__).parent.parent / "assets" / "fto_bmi", spec)
+    stub = _PublishStub()
+    monkeypatch.setattr(registry, "client_for", lambda *a, **kw: stub)
+
+    settings = Settings(offline=False, _env_file=None, test_api_key="mk", workspace=str(tmp_path))  # type: ignore[call-arg]
+    args: dict[str, object] = {
+        "namespace": "test-sheep",
+        "name": "test_fto_bmi",
+        "version": "1.0.0",
+        "spec_dir": str(spec),
+        "target": "test",
+    }
+    if pack:
+        args["pack"] = True
+    async with make_client(settings=settings) as client:
+        await client.call_tool("registry_publish", args)
+
+    assert stub.published["spec_dir"] == spec, "the publish was never reached"
+    assert stub.published["pack"] is pack

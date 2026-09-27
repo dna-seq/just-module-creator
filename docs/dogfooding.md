@@ -572,8 +572,11 @@ notice that the plugin's venv changed — a Claude Code / Codex behaviour, not o
 ## F111 — a published card says 24 quotes were read and missed when none could be checked (upstream `S109`)
 
 **Found:** 2026-09-24, reading back `test-sheep/test_late_onset_alzheimers_kunkle2019@0.1.0` ·
-**Severity:** medium · **Status:** format-tree `S109` accepted 2026-09-24 as their `RM256`, in
-tree and uncut — close on the release; its root on the fetch side is `S110` (`F108`)
+**Severity:** medium · **Status:** format-tree `S109` accepted 2026-09-24 as their `RM256`, which is
+on their `0.8` branch — close on that release; its root on the fetch side is `S110` (`F108`).
+**2026-09-27:** format 0.7.1 (installed) shipped only RM264, the descriptions: `quotes_found` and
+`quotes_unchecked` now send a reader to `abstract_only_count`. The shape is kept for 0.7.x, so
+`module-publish`'s read-back step now carries the sentence below.
 
 `enrich_literature_pass` reported `quotes_unchecked: 24`. The manifest it fed reports
 `quotes_found: 0, quotes_unchecked: 0`, because an abstract-only row stores `quotes_found=0` rather
