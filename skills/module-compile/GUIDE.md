@@ -222,5 +222,5 @@ land here:
 | to re-derive a sidecar before rebuilding | [`module-refresh`](../module-refresh/GUIDE.md) |
 | the coordinates to be right in the first place | [`module-enrich`](../module-enrich/GUIDE.md) |
 | what a consumer will do with the artifact | [`module-consumer`](../module-consumer/GUIDE.md) |
-| to see it meet real genomes before anyone else can: which variants they carry, how the scores fall, whether the join works. **Offer this after a green compile; do not start it unasked** | `module-install-local` |
+| to see it meet real genomes before anyone else can: which variants they carry, how the scores fall, whether the join works. **Only when the author asks to run it on real genomes / VCFs or names just-dna-lite.** Do not offer it after a compile, and do not set just-dna-lite up unasked: a green compile needs no trial run | `module-install-local` |
 | the full CLI surface, and what is not wrapped | `../module-101/references/CLI.md` |

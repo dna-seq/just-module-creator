@@ -98,15 +98,22 @@ the allele pair, and `lookup_variant` gives you the same for a row you are writi
 | 0 origin | is there a module here, who else has built one, may its sources be redistributed | [`module-start`](../module-start/GUIDE.md) | `registry_search`, `list_tables` |
 | 1 scaffold | which tables, which build, what the weights will mean | [`module-start`](../module-start/GUIDE.md) | `scaffold_module`, `describe_table`, `table_requirements`, `get_template` |
 | 2 draft | which of the rows a source already publishes are worth carrying | [`module-draft`](../module-draft/GUIDE.md) | `draft_from_clinvar`; `draft_from_cpic`, `draft_from_clinpgx` (a corpus sizes those two) |
-| 3 curate | **the cells only a pilot can settle** — genotype, weight, state, direction, conclusion | [`module-curate`](../module-curate/GUIDE.md) | `lint_rows`, `lookup_variant`, `record_override`; [`module-weights`](../module-weights/GUIDE.md) for the one column no tool fills |
+| 3 curate | **the cells only a pilot can settle** — genotype, weight, state, direction, conclusion | [`module-curate`](../module-curate/GUIDE.md) | `lint_rows`, `lookup_variant`, `record_override`; [`module-weights`](../module-weights/GUIDE.md) for the one column no tool fills; [`module-voice`](../module-voice/GUIDE.md) for how every label and conclusion reads |
 | 3′ evidence | which paper stands behind each claim, what may honestly be quoted, **and how to reach the supplementary table the numbers are actually in** | [`find-evidence`](../find-evidence/SKILL.md) — **load it; the tool list beside it is not a substitute** | `literature_search`, `lookup_citation`, `lookup_open_access`, `fetch_fulltext`, and for the tables the body does not print, `list_supplementary`, `fetch_supplementary`, `describe_supplementary` ([`SUPPLEMENTARY.md`](../find-evidence/references/SUPPLEMENTARY.md)) |
 | 4 enrich | nothing — you read the report. It is the only tier that can catch an off-by-one | [`module-enrich`](../module-enrich/GUIDE.md) | `enrich_module`, `refresh_sidecar` |
 | 5 cross-check | what to do about each disagreement, one by one | [`module-check`](../module-check/GUIDE.md) | `check_identifiers`, `lookup_identifier`, `review_queue`; `enrich_facts`; `check_pgx` / `check_clinpgx` on a PGx module |
-| 6 compile | whether the build's warnings are acceptable — `--strict` is determinism, not correctness; **then ask whether to try it on this machine's genomes** (`module-install-local`) | [`module-compile`](../module-compile/GUIDE.md) | `validate_module`, `compile_module`, `module_signature`, `verify_artifact` |
+| 6 compile | whether the build's warnings are acceptable — `--strict` is determinism, not correctness. A green compile is the end of this stage; a genome run is **not** part of it (see below) | [`module-compile`](../module-compile/GUIDE.md) | `validate_module`, `compile_module`, `module_signature`, `verify_artifact` |
 | 6b close | that these bytes are final, and how the module was made | [`module-close`](../module-close/GUIDE.md) | `close_module` |
 | 7 rehearse | nothing irreversible. This is where mistakes are supposed to happen | `module-publish` | `registry_check`, `registry_validate`, `registry_publish(target="test")` |
 | 8 publish | **the immutable one.** Only on an explicit ask for the official catalog | `module-publish` | `registry_register` → `registry_whoami` → `registry_claim_namespace` → `registry_publish` |
-| 9 join | how a consumer will read what you wrote — decided long before this step; a trial run over real genomes shows it early, and its findings (variants no genome carries, odd score distributions) route back to 3 | [`module-consumer`](../module-consumer/GUIDE.md), `module-install-local` | the `just-dna-lite` MCP server's own tools: `install_module`, `start_annotation`, `validate_module` |
+| 9 join | how a consumer will read what you wrote — decided long before this step. **Only if the author asks**, a trial run over real genomes shows it early, and its findings (variants no genome carries, odd score distributions) route back to 3 | [`module-consumer`](../module-consumer/GUIDE.md); `module-install-local` on an ask | on an ask only: the `just-dna-lite` MCP server's own tools, `install_module`, `start_annotation`, and *its* `validate_module` |
+
+**just-dna-lite is optional; by default you do not use it.** Every stage above except the trial run in
+9 is done with this plugin's tools alone, and that is the normal way to build, check and publish a
+module. Go to `module-install-local` only when the author asks to run the module on real genomes or
+VCFs, or names just-dna-lite. Unasked, do not check whether it is connected, do not offer to clone or
+register it, and do not call a module unfinished because nobody ran it on a genome. Both servers have
+a tool named `validate_module`: without that ask it always means this plugin's spec check.
 
 **One surface, no tiers.** Every tool named above is registered, always. A few tools are expensive
 because a corpus sizes their work rather than your rows, and
@@ -145,4 +152,4 @@ silently, and surface only what a human must choose.
 | what a module is, the four packages, the whole tool roster — **and the words to explain any of it to the person in front of you** | [`module-101`](../module-101/GUIDE.md) |
 | which table a finding belongs in, and where every file sits | [`module-tables`](../module-tables/GUIDE.md) |
 | a message you do not recognise | `module-symptom` |
-| run the finished module on this machine's genomes, read coverage and score distribution, publishing nothing | `module-install-local` |
+| **when the author asks for it:** run the finished module on this machine's genomes, read coverage and score distribution, publishing nothing | `module-install-local` |

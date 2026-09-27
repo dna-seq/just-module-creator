@@ -1,8 +1,8 @@
 ---
 name: module-install-local
 description: >-
-  Run a module you compiled against real genomes on this machine through just-dna-lite's MCP server, then read what it did: which variants each genome carries, how the scores are distributed, whether the join worked. Publishes nothing. Also the loop back into curation when the run shows something odd.
-  Triggers: "run it on my genome", "try it locally", "try it on these genomes", "apply the module", "test the module", "annotate with my module", "just-dna-lite", "does it actually match anything", "0 variants annotated", "the scores look weird", "none of my genomes have these variants", "my module does not show up", "install without publishing", "local install".
+  Optional, and only on the author's ask. Run a module you compiled against real genomes on this machine through just-dna-lite's MCP server, then read what it did: which variants each genome carries, how the scores are distributed, whether the join worked. Publishes nothing. Also the loop back into curation when the run shows something odd. Load it only when the author asks to run the module on real genomes or VCFs, or names just-dna-lite; never as the step after a compile.
+  Triggers: "run it on my genome", "try it locally", "try it on these genomes", "apply the module to my VCF", "annotate with my module", "just-dna-lite", "does it actually match anything", "0 variants annotated", "the scores look weird", "none of my genomes have these variants", "my module does not show up", "install without publishing", "local install".
 ---
 
 # Run a module on real genomes, without publishing it
@@ -11,6 +11,12 @@ description: >-
 stage 3. The module compiles; now you want to see it meet genomes, and the author wants to know
 whether the variants from the papers are in those genomes at all and whether the scores come out
 sensible. Nothing here touches a registry, and nothing here is a prerequisite for `module-publish`.
+
+**Optional, and entered only on an ask.** Use this skill when the author asks to run the module on
+real genomes or VCFs ("run it on my genome", "try it on these VCFs", "annotate with it") or names
+just-dna-lite or its tools. If they did not, you are not here: build, check, compile and publish with
+this plugin's own tools and stop at a green compile. Do not probe whether just-dna-lite is connected,
+do not offer to clone or register it, and do not report its absence as a missing step.
 
 The consumer is **just-dna-lite**. This plugin does not depend on it and never reads a VCF. The work
 happens in just-dna-lite's own MCP server (`just-dna-lite`), which the host runs **next to** this one.
@@ -25,6 +31,8 @@ You drive the two servers yourself; neither calls the other.
 These catch **different failures** and neither substitutes for the other.
 
 ## 1. Is just-dna-lite connected? If not, connect it yourself
+
+(Everything from here on assumes the author asked for a run. Without that ask, none of it applies.)
 
 Look for the `just-dna-lite` server's tools in your tool list (`status`, `list_samples`,
 `start_annotation`, `validate_module`, …) and call **`status`**. It answers with the checkout's
@@ -88,11 +96,11 @@ have the author reconnect; if it keeps timing out, a longer startup window
 If the author would rather not connect a server at all,
 [`references/MANUAL_INSTALL.md`](references/MANUAL_INSTALL.md) has the three manual routes.
 
-## 2. Offer the run, and let the author choose the genomes
+## 2. Let the author choose the genomes
 
-After a green compile, **ask** whether to try the module now. Do not start a run unasked. If the
-answer is yes, call `list_samples` and show a short table (sample id, label, size, whether it is
-already normalized), and ask which genomes to use. Things worth saying while they choose:
+The author asked for a run, so do not ask again whether to run; ask **which genomes**. Call
+`list_samples` and show a short table (sample id, label, size, whether it is already normalized).
+Things worth saying while they choose:
 
 - **Three whole genomes or more** make the distribution checks meaningful; fewer and those checks
   report `not_assessed`. A family is not a population either: related genomes share genotypes, so a
@@ -183,7 +191,7 @@ it can say a score is odd, and it cannot say what the right one is. Same rule as
 
 ## What needs a pilot, and what you may simply fix
 
-**Apply silently:** registering the -lite server once the author has named the checkout, choosing a non-colliding install name, keeping it across iterations, re-running
+**Apply silently (once the author has asked for a run):** registering the -lite server once the author has named the checkout, choosing a non-colliding install name, keeping it across iterations, re-running
 on the same genomes, reading findings aloud with their thresholds.
 
 **Put in front of a pilot:** which genomes to use (and whether someone else's may be used), whether

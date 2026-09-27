@@ -16,6 +16,15 @@ sample or calls a genotype. Running a module over real genomes is `just-dna-lite
 server (`just-dna-lite`), which the host runs **beside** this one and the agent drives
 directly, following `module-install-local`; no code here talks to it.
 
+**just-dna-lite is optional, and the default is to leave it alone.** Engage it only when the
+author asks to run the module on real genomes or VCFs, or names just-dna-lite (or its tools)
+themselves. Otherwise the whole job is done with this plugin's own surface: `lint_rows`,
+`validate_module`, `enrich_module`, the cross-checks, `compile_module`, `verify_artifact`. Do not
+check whether -lite is connected, do not offer to clone or register it, and do not treat a missing
+-lite server as a gap in the work. A green compile is a finished step without a trial run. Both
+servers ship a tool called `validate_module`; unless the author asked for a genome run, it means
+**ours** (the spec check), never -lite's.
+
 `AGENTS.md` is a symlink to this file. If the two ever differ, that is a bug —
 `ln -sf CLAUDE.md AGENTS.md`.
 
@@ -66,9 +75,9 @@ same change** — an unlinked guide is unreachable content, not a smaller surfac
 | `skills/create-module/SKILL.md` | **The door, and the name people asked back.** Where to enter the lifecycle from wherever the author is actually standing — nothing yet, a theme plus sources, a handed bundle, a source that publishes rows, or a module that already exists — plus the stage diagram, the stage order, and the two to four tools each stage calls. It owns **no procedure**: every stage skill keeps its own, and the router's job ends the moment the right one is loaded. Ceiling 200 lines, half the skill ceiling, pinned by `tests/test_skills.py::test_the_router_routes_and_does_not_regrow_into_the_procedure`, because regrowth is the risk this name carries. |
 | **The stage spine**, one skill per lifecycle stage | `module-start` (0–1: triage, licence, the spec), `module-draft` (2), `module-curate` (3), `module-enrich` (4), `module-check` (5), `module-compile` (6), `module-close` (6b), `module-publish` (7–8). **Each owns its stage's procedure outright — there is no second copy anywhere**, and each ends with the discriminator (what to apply silently, what to put in front of a pilot) rather than a list of refusals. |
 | **The second-pass three** | `module-revise` (which kind of pass, and what it invalidates), `module-refresh` (re-running anything that already ran), `module-diff` (what moved, and the one reading that means an upstream source changed its answer). A second pass is the normal case, not the exception. |
-| **The references the stages load** | `module-weights` (the column everyone fills and nobody declares), `module-consumer` (the far side of the seam), `find-evidence` (search, verify a PMID, read a paper, and what may honestly be quoted), whose `references/SUPPLEMENTARY.md` holds the retrieval ladder for the supplementary tables a GWAS row's numbers actually live in. |
+| **The references the stages load** | `module-weights` (the column everyone fills and nobody declares), `module-voice` (how every label, conclusion, title and description reads to a lay reader and a professional; the twin of just-dna-lite's `docs/REPORT_VOICE.md`), `module-consumer` (the far side of the seam), `find-evidence` (search, verify a PMID, read a paper, and what may honestly be quoted), whose `references/SUPPLEMENTARY.md` holds the retrieval ladder for the supplementary tables a GWAS row's numbers actually live in. |
 | **The two doors into a module you did not just create** | `module-status` (read the spec directory, work out which stage it is actually at, and hand back the short list of decisions somebody must make next) and `module-symptom` (a message arrived and its meaning is unknown — the door to `SYMPTOMS.md`, and how to tell which layer emitted it). Neither is a stage: they are entered sideways, from an inherited directory or an error, and they route to the stage that owns the work. |
-| `skills/module-install-local/SKILL.md` | **The third destination, and it is not a registry.** Running a compiled module over this machine's genomes through just-dna-lite's MCP server, and reading what it did: check the server is connected (`status`), **ask** whether to run and on which genomes, `install_module` → `start_annotation` → `wait_for_job` → `validate_module`, then route each finding (a variant no genome carries, a locus called but never matched, a constant or one-sided score) back to the stage that owns the cell, and re-run on the same genomes. A side door off stage 6 and the usual way back into 3, **not** a stage and **not** a rehearsal for publishing. The three manual routes (no server) live in its `references/MANUAL_INSTALL.md`. No tool here calls -lite; the agent calls -lite's tools. |
+| `skills/module-install-local/SKILL.md` | **The third destination, and it is not a registry.** Running a compiled module over this machine's genomes through just-dna-lite's MCP server, and reading what it did: **entered only when the author asks for a run on real genomes / VCFs or names just-dna-lite, never offered unprompted**; check the server is connected (`status`), ask which genomes, `install_module` → `start_annotation` → `wait_for_job` → `validate_module`, then route each finding (a variant no genome carries, a locus called but never matched, a constant or one-sided score) back to the stage that owns the cell, and re-run on the same genomes. A side door off stage 6 and the usual way back into 3, **not** a stage and **not** a rehearsal for publishing. The three manual routes (no server) live in its `references/MANUAL_INSTALL.md`. No tool here calls -lite; the agent calls -lite's tools. |
 | `skills/module-tables/GUIDE.md` | **Which table, and where every file sits.** The router: table choice keyed on grain, the axes that must go in a key, composition, the three on-disk shapes, and the registry's `derived/` layout. Holds no column list and no procedure. |
 | `skills/module-tables/references/*.md` | One dossier per table kind — the roster is the `ls`, and `hints.DERIVED_TABLE_MODELS ∪ draft.DRAFTABLE` is what it must cover — plus five for the non-table spec files and `LAYOUT.md` (the tree, and the registry's upload normalisation). **The schema half is no longer here**: upstream generates a page per table kind at `https://just-dna.life/just-dna-compiler/tables/<name>/`, and these keep what a model cannot state — who decides which cell, what an edit moves, the symptom when the table lies. Each carries an audit banner, 🚧 ROADWORKS and ⚠️ CHECK markers; **anchor on symbol names, never `file:line`** — the 1237 line numbers these carried were stripped on 2026-09-13 because they had all drifted. |
 | `skills/module-101/references/SYMPTOMS.md` | Upstream message text → cause → action. Read *from* every stage, which is why it sits with the map rather than with one stage. |
@@ -1339,6 +1348,15 @@ have been questions.
   shape and join health**, computed on the -lite side where the genomes are. What was not asked and
   stays true regardless: no sample id or genotype is ever written into a module, because
   `logs/authoring.log` publishes with no opt-out.
+
+- **"just-dna-lite as MCP is optional: if the user does not ask to run stuff against real VCFs and
+  does not ask to use just-dna-lite, we just use what we already have in just-module-creator."**
+  Stated 2026-09-27. This narrows the 2026-09-26 answer above: the two-server design stands, but the
+  -lite side is **opt-in by the author's request**, not a step the agent proposes after every green
+  compile. So `create-module`'s stage 6, `module-compile`'s next-steps table and
+  `module-install-local` no longer tell the agent to offer a run; they route there only on an ask.
+  The trigger is the author's words (run it on my genome, try it on these VCFs, annotate with it,
+  just-dna-lite), not the agent's judgement that a run would be informative.
 
 - **"When we are in plugin development mode we should remove and reinstall it on changes."** Stated
   2026-09-26, after a skill change could not be tested because the session was still loading 0.20.0

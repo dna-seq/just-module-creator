@@ -87,7 +87,7 @@ green.
 | `state` (when stubbed) | The record is `uncertain_significance` and **no vocabulary member means "undecided"** — `neutral` says benign, `risk` says a direction. If you can justify neither, **drop the row** rather than pick one to make the compile pass |
 | `weight`, `direction`, `effect_size` | Your model of the finding. ClinVar publishes no effect statistic. [`module-weights`](../module-weights/GUIDE.md) owns the whole question. **`direction` has a case of its own — see below** |
 | `trait_efo_id` | A source's condition is free text or MedGen. Mapping it to an ontology is inference |
-| `conclusion` | What the module *says*. Keep it hedged where the biology is — penetrance, tissue, co-factors |
+| `conclusion` | What the module *says*. Keep it hedged where the biology is — penetrance, tissue, co-factors. **How it says it** (plain first sentence about the reader, frequency, practical note, no codes) is [`module-voice`](../module-voice/GUIDE.md) |
 
 To write a genotype you need the alleles. Ask, without writing anything:
 
@@ -456,6 +456,7 @@ this stage:
 | You need | Load |
 |---|---|
 | what a `weight` means and what to declare | [`module-weights`](../module-weights/GUIDE.md) |
+| how a `conclusion` and a `phenotype` label should read, for lay readers and professionals | [`module-voice`](../module-voice/GUIDE.md) |
 | finding, verifying and reading the evidence | `find-evidence` |
 | which table a finding belongs in | [`module-tables`](../module-tables/GUIDE.md) |
 | the variants table in full, and the sign check that cannot fire | [`module-tables`](../module-tables/GUIDE.md) → `references/variants.md` |
