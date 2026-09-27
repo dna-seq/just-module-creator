@@ -93,6 +93,13 @@ REGISTRY_TOOL_DEFAULTS = {
 }
 
 
+#: Registry tools whose `target` is an optional FILTER over this machine's saved state,
+#: not the instance a call is aimed at. `registry_accounts` lists both instances when
+#: `target` is omitted, and the actions that do reach an instance (`add`, and the
+#: per-account ones) refuse without it — so neither default in the map above describes it.
+_LOCAL_STATE_REGISTRY_TOOLS = ("registry_accounts",)
+
+
 def _no_credentials(monkeypatch) -> None:
     """Say "this environment has no registry token", for all four variables.
 
@@ -235,6 +242,11 @@ async def test_every_registry_tool_takes_a_target(make_client):
     registry_tools = {
         name for name in schemas if name.startswith("registry_") or name == "authenticate"
     }
+    for name in _LOCAL_STATE_REGISTRY_TOOLS:
+        assert name in registry_tools, f"{name} is not registered"
+        target = schemas[name]["properties"]["target"]
+        assert target.get("default") is None and "target" not in schemas[name].get("required", [])
+    registry_tools -= set(_LOCAL_STATE_REGISTRY_TOOLS)
     assert registry_tools == set(REGISTRY_TOOL_DEFAULTS), (
         "a registry tool was added or renamed without deciding its default instance"
     )

@@ -41,6 +41,56 @@ class OpResult(BaseModel):
     data: dict | None = Field(default=None, description="Optional payload.")
 
 
+class AccountView(BaseModel):
+    """One saved registry account, with its secrets shortened."""
+
+    target: str = Field(description="The instance: `prod` or `test` (the polygon).")
+    account: str = Field(description="The account name the registry reports.")
+    token: str = Field(description="The token's last four characters.")
+    install_id: str | None = Field(description="The install-id's last four characters, if saved.")
+    namespaces: list[str] = Field(description="Namespaces this account owns, as last read.")
+    default: bool = Field(description="Used for calls on this instance that name no namespace.")
+    saved_at: str = Field(description="When the record was last written (ISO-8601 UTC).")
+    namespaces_checked_at: str | None = Field(
+        description="When the namespaces were last read from the registry."
+    )
+    status: str = Field(
+        description="The last check of this token: `valid`, `invalid` (the registry refused "
+        "it), `unreachable`, `timeout` or `unchecked`. Only `invalid` stops it being used; the "
+        "server checks every saved token when it starts."
+    )
+    status_at: str | None = Field(description="When that answer was given (ISO-8601 UTC).")
+    status_detail: str | None = Field(description="The error behind a status other than valid.")
+
+
+class AccountsResult(BaseModel):
+    """What `registry_accounts` did, and every saved account it concerns."""
+
+    success: bool = Field(description="Whether the action did what was asked.")
+    message: str = Field(description="What happened, and anything to ask the author.")
+    accounts: list[AccountView] = Field(description="The saved accounts, after the action.")
+    state_file: str = Field(description="Where accounts and todos are kept on this machine.")
+
+
+class TodoView(BaseModel):
+    """One todo record."""
+
+    id: int = Field(description="Stable number; pass it to `done` / `reopen`.")
+    text: str = Field(description="What has to be done or decided.")
+    module: str | None = Field(description="The module it belongs to, if any.")
+    created_at: str = Field(description="When it was added (ISO-8601 UTC).")
+    done_at: str | None = Field(description="When it was closed; null while open.")
+
+
+class TodoResult(BaseModel):
+    """The todo list after an action."""
+
+    message: str = Field(description="What happened.")
+    todos: list[TodoView] = Field(description="The matching records, oldest first.")
+    open_count: int = Field(description="Open records matching the filter.")
+    state_file: str = Field(description="Where accounts and todos are kept on this machine.")
+
+
 class SettingState(BaseModel):
     """One setting: what is in force, where it came from, and what the user config file holds."""
 
@@ -145,9 +195,8 @@ class RegistrationResult(BaseModel):
     token: str | None = Field(
         default=None,
         description=(
-            "The API key. SECRET — save it with `remember_setting` as JMC_API_KEY for "
-            "production or JMC_TEST_API_KEY for the polygon; never commit it, and never "
-            "write it into a "
+            "The API key. SECRET — already saved on this machine with the account "
+            "(`registry_accounts`); never commit it, and never write it into a "
             "module, fixture or doc. It is only valid on the instance that issued it."
         ),
     )
@@ -156,8 +205,8 @@ class RegistrationResult(BaseModel):
         description=(
             "The proof-of-work id bound to this account. SAVE IT: it is the account's ONLY "
             "recovery path — re-registering it reissues a key for the same account, and there is "
-            "no email or admin to recover through. Save it with `remember_setting` as "
-            "JMC_INSTALL_ID."
+            "no email or admin to recover through. Saved on this machine with the account "
+            "(`registry_accounts`)."
         ),
     )
     install_id_origin: str | None = Field(

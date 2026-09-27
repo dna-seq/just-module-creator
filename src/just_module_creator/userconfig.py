@@ -25,12 +25,16 @@ key would let a tool call plant `PATH`, or a registry URL that collects the next
 
 from __future__ import annotations
 
+import hashlib
 import os
+import shutil
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 import platformdirs
 from dotenv import dotenv_values, find_dotenv, load_dotenv, set_key
+from filelock import FileLock
 from just_dna_enricher.caches import CACHE_LANES
 from just_dna_enricher.locations import CACHE_BASE_VAR
 
@@ -38,6 +42,9 @@ from just_module_creator.settings import Settings
 
 APP_NAME = "just-module-creator"
 CONFIG_FILE_VAR = "JMC_CONFIG_FILE"
+BACKUP_DIR = "backups"
+#: The newest backups kept per file; the owner chose the number.
+KEEP_BACKUPS = 50
 
 _PREFIX = (Settings.model_config.get("env_prefix") or "").upper()
 
@@ -50,9 +57,6 @@ _PREFIX = (Settings.model_config.get("env_prefix") or "").upper()
 #: puts every field in exactly one of these two, so a new setting forces the decision.
 SAVABLE_FIELDS: frozenset[str] = frozenset(
     {
-        "api_key",
-        "test_api_key",
-        "install_id",
         "user_email",
         "cache_prewarm",
         "cache_full",
@@ -63,6 +67,11 @@ SAVABLE_FIELDS: frozenset[str] = frozenset(
 #: Every other field, with why an agent may not set it. Deployment configuration belongs to
 #: whoever starts the server; the boundaries are not an author's answer at all.
 NOT_SAVABLE_FIELDS: dict[str, str] = {
+    # Many per instance, each with its namespaces: `localstore` holds them, and a token
+    # saved here as well would be a second home for the same fact.
+    "api_key": "registry_accounts",
+    "test_api_key": "registry_accounts",
+    "install_id": "registry_accounts",
     "registry_url": "redirects tokens",
     "registry_test_url": "redirects tokens",
     "api_key_header": "wire",
@@ -156,6 +165,39 @@ def saved(name: str) -> str | None:
     return value if value and value.strip() else None
 
 
+def lock(path: Path) -> FileLock:
+    """Serialise writers of `path`: two sessions on one machine are two server processes."""
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    return FileLock(str(path.with_name(path.name + ".lock")))
+
+
+def _digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def backup(path: Path) -> Path | None:
+    """Copy `path` into `backups/`, verify the copy, prune past `KEEP_BACKUPS`.
+
+    Returns the copy, or None when there was nothing to back up. Raises `OSError` when the
+    copy does not read back identical, and the caller must then not write.
+    """
+    if not path.is_file():
+        return None
+    folder = path.parent / BACKUP_DIR
+    folder.mkdir(exist_ok=True, mode=0o700)
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
+    copy = folder / f"{path.name}.{stamp}"
+    shutil.copyfile(path, copy)
+    copy.chmod(0o600)
+    if _digest(copy) != _digest(path):
+        raise OSError(f"backup of {path} did not verify; nothing was written")
+    # The stamp sorts lexically in time order, so the oldest are at the front.
+    older = sorted(folder.glob(f"{path.name}.*"))[:-KEEP_BACKUPS]
+    for stale in older:
+        stale.unlink()
+    return copy
+
+
 @dataclass(frozen=True)
 class Remembered:
     written: bool
@@ -176,6 +218,11 @@ def remember(name: str, value: str, *, replace: bool) -> Remembered:
     if previous is not None and previous != value and not replace:
         return Remembered(written=False, previous=previous, in_force=os.environ.get(name) == value)
     path = config_file()
+    with lock(path):
+        return _remember_locked(path, name, value, previous)
+
+
+def _remember_locked(path: Path, name: str, value: str, previous: str | None) -> Remembered:
     # The shell and the project `.env` outrank this file at the next start, so they outrank
     # it now; a value the file itself supplied is the one being replaced.
     source = origin(name)
@@ -185,6 +232,7 @@ def remember(name: str, value: str, *, replace: bool) -> Remembered:
     # Tightened on every write, not only at creation: a file the author made by hand, or
     # one copied from a project `.env`, would otherwise keep whatever it had.
     path.chmod(0o600)
+    backup(path)
     set_key(str(path), name, value, quote_mode="auto")
     if not outranked:
         os.environ[name] = value

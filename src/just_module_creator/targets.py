@@ -70,7 +70,11 @@ DEFAULT_WRITE_TARGET: RegistryTarget = "test"
 
 
 def client_for(
-    target: RegistryTarget, settings: Settings, *, token: str | None = None
+    target: RegistryTarget,
+    settings: Settings,
+    *,
+    token: str | None = None,
+    timeout: float | None = None,
 ) -> RegistryClient:
     """A client for ``target``, pinned to the mode that target names.
 
@@ -88,7 +92,7 @@ def client_for(
     return RegistryClient(
         settings.registry_url_for(target),
         token=token,
-        timeout=settings.registry_timeout,
+        timeout=settings.registry_timeout if timeout is None else timeout,
         expect_mode=target,
     )
 

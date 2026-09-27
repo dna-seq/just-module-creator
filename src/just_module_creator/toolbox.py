@@ -108,6 +108,8 @@ CORE = (
     "registry_register",
     "authenticate",
     "remember_setting",
+    "registry_accounts",
+    "todo",
 )
 
 #: Layer 2, granular on purpose: a session that needs to read one paper should

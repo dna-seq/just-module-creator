@@ -3,6 +3,30 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.47.0] — 2026-09-27
+
+- **Any number of registry accounts per instance, each with its namespaces and install-id.** Kept in
+  `state.json` beside the user config file, so they survive plugin updates on every host. A registry
+  call picks the saved account that **owns the namespace it names**, or the instance's default account
+  when it names none, and when neither answers it refuses with the saved accounts listed so the author
+  can choose. New core tool `registry_accounts` (`list`, `add`, `refresh`, `set_default`, `forget`).
+- **`registry_register` saves what it mints** (token, install-id, namespaces) before it answers, so the
+  install-id, the account's only recovery path, no longer depends on an agent remembering to save it.
+  A later register with no install-id reuses the saved one. `registry_claim_namespace` records the
+  namespace on the account that claimed it.
+- **Saved tokens are checked when the server starts**, on a background thread: each account records
+  `valid`, `invalid`, `unreachable` or `timeout` with the time, and a valid answer refreshes its
+  namespaces. An agent reads `registry_accounts` instead of spending a `whoami` per token. Only
+  `invalid` takes a token out of selection. Live on the polygon: a real token came back `valid` with
+  its namespace, a made-up one `invalid` (HTTP 401).
+- **New core tool `todo`**: a list that outlives the session, each record optionally tagged with a
+  module. `module-status` reads it before the disk, and `create-module` asks for a record whenever
+  work stops unfinished. Closed records are kept.
+- **Every change to the saved state or the settings file takes a verified backup first**, newest 50
+  kept, under a file lock so two sessions cannot interleave writes.
+- Registry tokens and install-ids are no longer `remember_setting` names; `JMC_API_KEY` /
+  `JMC_TEST_API_KEY` in the environment still work as the single-token fallback.
+
 ## [0.46.1] — 2026-09-27
 
 - **`remember_setting` names the right layer when another loader got there first.** The registry client

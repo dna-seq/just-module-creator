@@ -33,6 +33,15 @@ instances share no database. Which version to name is `registry_get_module`'s an
 **That is acquisition, not a status read.** Once the directory exists, the four passes below run on the
 disk and nothing else, for the reason in the next paragraph.
 
+## Read what the last session left first
+
+`todo(module="<namespace/name or the spec directory>")` returns what an earlier session recorded as
+still to do or decide for this module, and `todo()` the author's open items across all of them. It is
+the one record that survives a restart, so read it before the disk: a pending decision written down
+there is cheaper than one re-derived from files. Treat it as a claim about the past, not the present —
+check each item against the disk before repeating it, and close with `todo(action="done", id=…)` what
+the disk shows was done.
+
 ## Read it in four passes, cheapest first
 
 1. **The names on disk.** Which files are there at all. That alone brackets the stage.

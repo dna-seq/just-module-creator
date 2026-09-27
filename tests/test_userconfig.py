@@ -96,24 +96,24 @@ def test_the_shell_outranks_both(live_loader, monkeypatch, tmp_path):
 
 
 def test_remember_keeps_a_different_saved_value_unless_told_to_replace(monkeypatch):
-    monkeypatch.delenv("JMC_TEST_API_KEY", raising=False)
-    first = userconfig.remember("JMC_TEST_API_KEY", "mk_first_token", replace=False)
-    kept = userconfig.remember("JMC_TEST_API_KEY", "mk_second_token", replace=False)
+    monkeypatch.delenv("JMC_S2_API_KEY", raising=False)
+    first = userconfig.remember("JMC_S2_API_KEY", "mk_first_token", replace=False)
+    kept = userconfig.remember("JMC_S2_API_KEY", "mk_second_token", replace=False)
     assert first.written and not kept.written
     assert kept.previous == "mk_first_token"
-    assert userconfig.saved("JMC_TEST_API_KEY") == "mk_first_token"
+    assert userconfig.saved("JMC_S2_API_KEY") == "mk_first_token"
 
-    replaced = userconfig.remember("JMC_TEST_API_KEY", "mk_second_token", replace=True)
+    replaced = userconfig.remember("JMC_S2_API_KEY", "mk_second_token", replace=True)
     assert replaced.written and replaced.in_force
-    assert userconfig.saved("JMC_TEST_API_KEY") == "mk_second_token"
-    assert os.environ["JMC_TEST_API_KEY"] == "mk_second_token"
+    assert userconfig.saved("JMC_S2_API_KEY") == "mk_second_token"
+    assert os.environ["JMC_S2_API_KEY"] == "mk_second_token"
 
 
 def test_the_file_holding_tokens_is_owner_only():
     """Including a file that already existed with looser permissions."""
     _write(userconfig.config_file(), "JMC_USER_EMAIL=author@example.org\n")
     userconfig.config_file().chmod(0o664)
-    userconfig.remember("JMC_INSTALL_ID", "0000abcd", replace=False)
+    userconfig.remember("NCBI_API_KEY", "0000abcdef12", replace=False)
     mode = stat.S_IMODE(userconfig.config_file().stat().st_mode)
     assert mode & (stat.S_IRWXG | stat.S_IRWXO) == 0, oct(mode)
 
@@ -137,6 +137,12 @@ def test_nothing_that_moves_a_boundary_or_a_token_can_be_saved():
     assert not userconfig.config_file().exists()
 
 
+def test_registry_tokens_are_not_settings():
+    """Many per instance, with namespaces: they live in `registry_accounts`, not here."""
+    for name in ("JMC_API_KEY", "JMC_TEST_API_KEY", "JMC_INSTALL_ID"):
+        assert name not in userconfig.SAVABLE, name
+
+
 def test_only_a_setting_this_server_reads_can_be_saved():
     assert "JMC_USER_EMAIL" in userconfig.SAVABLE
     assert "NCBI_API_KEY" in userconfig.SAVABLE
@@ -148,16 +154,16 @@ def test_only_a_setting_this_server_reads_can_be_saved():
 async def test_a_saved_token_and_email_reach_this_session_without_a_restart(make_client):
     settings = offline_settings()
     async with make_client(settings=settings) as client:
-        before = await client.call_tool("remember_setting", {"name": "JMC_TEST_API_KEY"})
+        before = await client.call_tool("remember_setting", {"name": "JMC_S2_API_KEY"})
         assert before.structured_content["in_force"] is None
         await client.call_tool(
-            "remember_setting", {"name": "JMC_TEST_API_KEY", "value": "mk_live_polygon_1234"}
+            "remember_setting", {"name": "JMC_S2_API_KEY", "value": "mk_live_polygon_1234"}
         )
         email = await client.call_tool(
             "remember_setting", {"name": "JMC_USER_EMAIL", "value": "author@example.org"}
         )
 
-    assert settings.registry_token("test") == "mk_live_polygon_1234"
+    assert settings.s2_api_key == "mk_live_polygon_1234"
     assert settings.user_email == "author@example.org"
     payload = email.structured_content
     assert payload["written"] is True
@@ -168,7 +174,7 @@ async def test_a_saved_token_and_email_reach_this_session_without_a_restart(make
 async def test_a_secret_is_never_echoed_whole(make_client):
     async with make_client(settings=offline_settings()) as client:
         result = await client.call_tool(
-            "remember_setting", {"name": "JMC_TEST_API_KEY", "value": "mk_live_polygon_1234"}
+            "remember_setting", {"name": "JMC_S2_API_KEY", "value": "mk_live_polygon_1234"}
         )
     text = str(result.structured_content)
     assert "…1234" in text

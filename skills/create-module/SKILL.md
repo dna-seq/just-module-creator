@@ -115,6 +115,10 @@ VCFs, or names just-dna-lite. Unasked, do not check whether it is connected, do 
 register it, and do not call a module unfinished because nobody ran it on a genome. Both servers have
 a tool named `validate_module`: without that ask it always means this plugin's spec check.
 
+**Leave a todo when work stops unfinished.** `todo(action="add", text=…, module=…)` for anything
+undone or waiting on a decision; it is the only thing the next session reads before the disk
+(`module-status` starts there). Close items as they are done.
+
 **One surface, no tiers.** Every tool named above is registered, always. A few tools are expensive
 because a corpus sizes their work rather than your rows, and
 each says so in its own description; [`module-101`](../module-101/GUIDE.md) carries the whole roster and which those are. What

@@ -28,7 +28,7 @@ from just_dna_format.identity import is_valid_version, validate_namespace
 from just_dna_registry import RegistryError
 from mcp.types import ToolAnnotations
 
-from just_module_creator import logscan
+from just_module_creator import localstore, logscan
 from just_module_creator.auth import (
     GATED_TAG,
     resolve_api_key,
@@ -411,7 +411,7 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         the registry requires the publish capability on the namespace to accept a
         spec upload at all.
         """
-        token = await resolve_api_key(ctx, settings, target)
+        token = await resolve_api_key(ctx, settings, target, namespace)
         if token is None:
             return _unauthenticated_preflight(
                 spec_dir=spec_dir, namespace=namespace, name=name, target=target
@@ -499,7 +499,7 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         forbids sale, so on `unstated` each source is skipped with a reason rather
         than queried, and `"commercial"` is refused outright.
         """
-        token = await resolve_api_key(ctx, settings, target)
+        token = await resolve_api_key(ctx, settings, target, namespace)
         if token is None:
             return _unauthenticated_preflight(
                 spec_dir=spec_dir, namespace=namespace, name=name, target=target
@@ -676,9 +676,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
                 "there instead of leaving it alone."
             )
 
-        token = await resolve_api_key(ctx, settings, target)
+        token = await resolve_api_key(ctx, settings, target, namespace)
         if token is None:
-            return unauthenticated_result(settings, target)
+            return unauthenticated_result(settings, target, namespace)
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
 
@@ -768,6 +768,27 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
                 data={"target": target, "namespace": namespace},
             )
         note = polygon_naming_note(target, namespace=namespace)
+
+        # The saved account that made the claim now owns the namespace, so the next publish
+        # to it picks this token by itself. A token saved nowhere (a header, `authenticate`
+        # with a key never saved) has no record to update, and that is not an error.
+        def _record(state: localstore.State) -> bool:
+            owner = localstore.account_for_token(state, target, token)
+            if owner is None:
+                return False
+            owner.namespaces = sorted({*owner.namespaces, namespace})
+            return True
+
+        try:
+            recorded = localstore.update(_record)
+        except OSError as exc:
+            recorded = False
+            note = f"{note} The claim is not recorded on this machine ({exc}).".strip()
+        if not recorded:
+            note = (
+                f"{note} No saved account holds this token, so nothing here knows it owns "
+                f'{namespace}: `registry_accounts(action="add")` saves it.'
+            ).strip()
         return OpResult(
             success=True,
             message=f"Claimed {namespace} on {describe(target, settings)}."
@@ -842,9 +863,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
                 data={"target": target, "namespace": namespace, "name": name},
             )
 
-        token = await resolve_api_key(ctx, settings, target)
+        token = await resolve_api_key(ctx, settings, target, namespace)
         if token is None:
-            return unauthenticated_result(settings, target)
+            return unauthenticated_result(settings, target, namespace)
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
 
@@ -1036,9 +1057,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         Reversible with `registry_unyank` — which is exactly why it is the right
         first move when something looks wrong and you are not yet certain.
         """
-        token = await resolve_api_key(ctx, settings, target)
+        token = await resolve_api_key(ctx, settings, target, namespace)
         if token is None:
-            return unauthenticated_result(settings, target)
+            return unauthenticated_result(settings, target, namespace)
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
 
@@ -1087,9 +1108,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         restores nothing about the module itself — the bytes never changed, which
         is why this is safe.
         """
-        token = await resolve_api_key(ctx, settings, target)
+        token = await resolve_api_key(ctx, settings, target, namespace)
         if token is None:
-            return unauthenticated_result(settings, target)
+            return unauthenticated_result(settings, target, namespace)
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
 
@@ -1175,9 +1196,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         blocked = _prod_delete_refusal(target, "version")
         if blocked is not None:
             return blocked
-        token = await resolve_api_key(ctx, settings, target)
+        token = await resolve_api_key(ctx, settings, target, namespace)
         if token is None:
-            return unauthenticated_result(settings, target)
+            return unauthenticated_result(settings, target, namespace)
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
 
@@ -1228,9 +1249,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         blocked = _prod_delete_refusal(target, "module")
         if blocked is not None:
             return blocked
-        token = await resolve_api_key(ctx, settings, target)
+        token = await resolve_api_key(ctx, settings, target, namespace)
         if token is None:
-            return unauthenticated_result(settings, target)
+            return unauthenticated_result(settings, target, namespace)
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
 

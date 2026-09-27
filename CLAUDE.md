@@ -507,6 +507,17 @@ in the plugin's per-version copy, so "save it in `.env`" meant a file Codex neve
 and a plugin-dir `.env` is gone at the next update. **A skill or tool message that asks
 an agent to persist anything names `remember_setting`, never a file.**
 
+**Lists live beside it in `state.json` (`localstore`): registry accounts and the todo list.**
+Many tokens per instance, each with its namespaces and install-id; `auth.resolve_api_key`
+picks by the namespace a call names, falls back to the instance's default account, and
+refuses with the saved accounts listed when neither answers (the owner's rule: *pick by
+namespace, or ask*). `registry_register` saves what it mints, a claim records its namespace,
+and `accountcheck` re-checks every saved token on a daemon thread at a real start (never in
+`build_server`, which the suite calls by the hundred), recording `valid` / `invalid` /
+`unreachable` / `timeout` with the time — only `invalid` takes a token out of selection.
+**Every write to either file takes a verified backup first** (`userconfig.backup`, newest
+50 kept, the owner's number), under a `filelock` because two sessions are two processes.
+
 **A new env-backed preference is three-valued and documented, and its BEHAVIOUR is not
 written here.** `JMC_CACHE_PREWARM` / `JMC_CACHE_FULL` are `bool | None` because null
 means *not asked* and `False` means *asked and declined*; both go in `.env.template`.

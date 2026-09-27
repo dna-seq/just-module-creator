@@ -1053,11 +1053,12 @@ wheels = [
 
 [[package]]
 name = "just-module-creator"
-version = "0.46.1"
+version = "0.47.0"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
     { name = "fastmcp", extra = ["tasks"] },
+    { name = "filelock" },
     { name = "httpx" },
     { name = "just-dna-compiler" },
     { name = "just-dna-enricher", extra = ["atlas"] },
@@ -1088,6 +1089,7 @@ dev = [
 requires-dist = [
     { name = "anyio", specifier = ">=4" },
     { name = "fastmcp", extras = ["tasks"], specifier = ">=3.4.6,<4" },
+    { name = "filelock", specifier = ">=4.0.4" },
     { name = "httpx", specifier = ">=0.28" },
     { name = "just-dna-compiler", specifier = ">=0.7.2,<0.8" },
     { name = "just-dna-enricher", extras = ["atlas"], specifier = ">=0.7.3,<0.8" },

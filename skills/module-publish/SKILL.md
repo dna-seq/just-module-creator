@@ -84,12 +84,19 @@ ground locally in about a second.
 registry_register(account="my-name", target="test")
 ```
 
-It hands back **the token and the install-id**. Save both with `remember_setting` — `JMC_INSTALL_ID`,
-plus `JMC_API_KEY` for production and `JMC_TEST_API_KEY` for the polygon, the token with
-`replace=true` because the last key minted is the one that works. The user config file it writes is
-what the server reads on
-the next boot; a token that lives only in the session dies with it, and an install-id that lives only in
-a transcript is gone.
+It hands back **the token and the install-id, and saves both on this machine by itself**, with the
+account's namespaces, before it answers. `registry_accounts` lists what is saved: every account on
+each instance, its namespaces, and whether its token was still good when the server last started
+(`valid`, `invalid`, `unreachable` or `timeout`, with the time). **Read that before spending a call to
+find out.** A token held from elsewhere goes in with `registry_accounts(action="add", target=…,
+token=…)`, which asks the registry whose it is.
+
+**Which token a call uses is decided by the namespace.** A publish, check, yank or delete names a
+namespace, and the saved account that owns it is used; a call naming none (`whoami`, a claim) uses the
+instance's default account. When nothing matches, the tool refuses with the saved accounts listed —
+**ask the author which one**, then `authenticate` with it or `registry_accounts(action="set_default")`.
+A claim records the new namespace on the account that made it, so the next publish there needs no
+choice.
 
 - **The install-id is the account's only recovery path.** There is no email and no admin. Re-registering
   that same id reissues a key for the same account; registering again *without* it creates a
@@ -101,9 +108,10 @@ a transcript is gone.
   and re-registering with the same install-id returns the account that id already owns and **ignores**
   the `account` argument. So a second register will not rename an account, and it mints a fresh key
   every time — the last one you saved is the one that works.
-- **Never paste either into a module, a fixture, a commit or a note.** The user config file is outside
-  the tree; everything
-  else here is not.
+- **Never paste either into a module, a fixture, a commit or a note.** The saved state is outside the
+  tree, owner-only, and backed up before every change; everything else here is not.
+- **`forget` deletes a saved account.** Ask first. The backup keeps it, but an author who does not know
+  that has lost the install-id as far as they can tell.
 
 **Names split two ways and both rules are enforced, not normalised.** An account or namespace is
 lowercase letters and digits with single hyphens — `my_ns` is rejected. A *module* name is the opposite,

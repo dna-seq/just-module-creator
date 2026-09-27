@@ -79,13 +79,13 @@ def register_config(mcp: FastMCP, settings: Settings, services: NetworkServices)
         Writes the user config file (`config_file` in the result), which survives plugin
         updates and is shared by every host and project, and applies the value to this
         session at once. Use it for anything an author answers once: `JMC_USER_EMAIL`,
-        `JMC_TEST_API_KEY` / `JMC_API_KEY`, `JMC_INSTALL_ID`, `JMC_CACHE_PREWARM` /
-        `JMC_CACHE_FULL`, a cache location. Never write these into a project `.env`
-        yourself: under some hosts the server does not read it. A different value already
-        saved is kept unless `replace=true`; tokens are the case for that, since the last
-        key minted is the one that works. A shell variable or a project `.env` outranks the
-        file, and `source` says which is in force. Secrets come back as their last four
-        characters.
+        `JMC_CACHE_PREWARM` / `JMC_CACHE_FULL`, a cache location, an API key for a
+        literature source. Registry tokens and install-ids go to `registry_accounts`
+        instead. Never write these into a project `.env` yourself: under some hosts the
+        server does not read it. A different value already saved is kept unless
+        `replace=true`, and every change backs the file up. A shell variable or a project
+        `.env` outranks the file, and `source` says which is in force. Secrets come back as
+        their last four characters.
         """
         name = name.strip()
         if name not in userconfig.SAVABLE:

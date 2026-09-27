@@ -54,6 +54,7 @@ from just_dna_format.identity import NAMESPACE_PATTERN, is_valid_namespace
 from just_dna_registry import RegistryError, generate_install_id
 from mcp.types import ToolAnnotations
 
+from just_module_creator import localstore
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import AuthResult, OpResult, RegistrationResult
 from just_module_creator.settings import RegistryTarget, Settings
@@ -116,7 +117,8 @@ def _no_session_note(settings: Settings, target: RegistryTarget) -> str:
     return (
         "This connection speaks the 2026-07-28 protocol over a transport with no session "
         "id, so a token stored here is gone by the next call. Put it in the environment "
-        f"instead — `{var}` saved with `remember_setting` reaches every call for "
+        f"instead — `{var}` in the environment, or the account saved with "
+        f"`registry_accounts`, reaches every call for "
         f"{describe(target, settings)} — "
         "or connect over a session-bearing HTTP transport."
     )
@@ -161,16 +163,20 @@ def _header_key(settings: Settings, target: RegistryTarget) -> str | None:
     return request.headers.get(settings.api_key_header_for(target))
 
 
-async def resolve_api_key(ctx: Context, settings: Settings, target: RegistryTarget) -> str | None:
-    """Resolve the registry token for THIS request and THIS instance.
+async def resolve_api_key(
+    ctx: Context, settings: Settings, target: RegistryTarget, namespace: str | None = None
+) -> str | None:
+    """Resolve the registry token for THIS request, THIS instance and, if named, THIS namespace.
 
-    Returns ``None`` if the caller must authenticate. Gated tools take that
-    branch and return a friendly ``OpResult`` rather than raising, so an agent
-    gets an actionable message instead of a traceback.
+    Order: the request header, the session's `authenticate`, the saved account that owns
+    `namespace` (or the default saved account when no namespace is named), then the single
+    env token. Returns ``None`` if the caller must authenticate or choose; gated tools then
+    return `unauthenticated_result`, which lists the saved accounts so the choice can be made.
     """
     return (
         _header_key(settings, target)
         or await ctx.get_state(state_key(target))
+        or localstore.pick_token(localstore.load(), target, namespace)
         or settings.registry_token(target)
     )
 
@@ -192,6 +198,9 @@ def resolve_install_id(explicit: str | None, settings: Settings) -> tuple[str | 
         return explicit.strip(), "argument"
     if settings.install_id and settings.install_id.strip():
         return settings.install_id.strip(), "environment"
+    saved = localstore.saved_install_id(localstore.load())
+    if saved:
+        return saved, "saved account"
     return None, "generated"
 
 
@@ -230,7 +239,40 @@ def _registration_failure(exc: RegistryError, *, account: str, origin: str) -> s
     return f"The registry refused the registration: {exc}"
 
 
-def unauthenticated_result(settings: Settings, target: RegistryTarget = "prod") -> OpResult:
+def _saved_accounts_note(target: RegistryTarget, namespace: str | None) -> str | None:
+    """Why no saved account answered, naming the ones there are, or None when none is saved."""
+    saved = localstore.accounts_for(localstore.load(), target)
+    if not saved:
+        return None
+    listing = "; ".join(
+        f"{a.account}{' (default)' if a.default else ''}"
+        f"{' (token refused)' if a.status == 'invalid' else ''}"
+        f": {', '.join(a.namespaces) or 'no namespaces'}"
+        for a in saved
+    )
+    question = (
+        f"none of them owns {namespace!r}, or more than one does"
+        if namespace is not None
+        else "none is the default"
+    )
+    return (
+        f"Saved accounts for this instance — {listing} — but {question}. Ask the author which "
+        "account to use, then `authenticate` with it for this session or "
+        '`registry_accounts(action="set_default")`. If the namespace was claimed elsewhere, '
+        '`registry_accounts(action="refresh")` re-reads every account\'s namespaces.'
+    )
+
+
+def unauthenticated_result(
+    settings: Settings, target: RegistryTarget = "prod", namespace: str | None = None
+) -> OpResult:
+    note = _saved_accounts_note(target, namespace)
+    if note is not None:
+        return OpResult(
+            success=False,
+            message=note,
+            data={"target": target, "namespace": namespace, "needs": "choose_account"},
+        )
     env_var = (
         "JMC_TEST_API_KEY / REGISTRY_TEST_TOKEN"
         if target == "test"
@@ -281,8 +323,8 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
         not exist on the other; register on both with the same install-id. **Save the
         install-id this returns**: it is the account's only recovery path, re-
         registering it reissues a key for the SAME account and ignores `account`, while
-        calling again without one silently creates a different account. Save it with
-        `remember_setting` as `JMC_INSTALL_ID`, the tokens as `JMC_API_KEY` / `JMC_TEST_API_KEY`.
+        calling again without one silently creates a different account. The account, token,
+        install-id and namespaces are saved on this machine automatically (`registry_accounts`).
         `account` obeys the namespace rule — lowercase letters and digits with single
         hyphens, underscores rejected rather than normalised, and a `test-` handle is
         fine on the polygon and refused by production. The token is stored for this
@@ -352,6 +394,27 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
             if settings.hide_gated_until_auth:
                 # Session-scoped: reveals the gated tools to THIS client only.
                 await ctx.enable_components(tags={GATED_TAG})
+        # Saved before anything else can go wrong: the install-id is the account's only
+        # recovery path, and a reply an agent forgets to act on is how it used to be lost.
+        # A failure to save is reported, never swallowed — the registration itself stands.
+        saved_note = ""
+        if token:
+            try:
+                localstore.update(
+                    lambda state: localstore.save_account(
+                        state,
+                        target=target,
+                        account=granted,
+                        token=token,
+                        install_id=resolved,
+                        namespaces=namespaces,
+                    )
+                )
+            except OSError as exc:
+                saved_note = (
+                    f"NOT SAVED on this machine ({exc}). Save the token and install-id now with "
+                    '`registry_accounts(action="add", ...)` — the install-id is the only way back.'
+                )
         # The token is a secret and never reaches the log.
         log.info(
             "Registered account %s on %s (install-id origin=%s, namespaces=%d)",
@@ -381,15 +444,11 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
                 f"{granted!r}, so the registry reissued a key for it and ignored {account!r}. No "
                 "new account was created."
             )
-        key_var = "JMC_TEST_API_KEY" if target == "test" else "JMC_API_KEY"
         notes.append(
-            f"SAVE BOTH SECRETS with `remember_setting` — {key_var} for the token "
-            "(replace=true), JMC_INSTALL_ID for the install-id. The install-id is the only way "
-            "back to this account, and reusing it on the other instance registers its "
-            "counterpart there."
-            if origin == "generated"
-            else f"Token stored for this session; save it with `remember_setting` as {key_var} "
-            "(replace=true). The install-id is unchanged."
+            saved_note
+            or f"Saved on this machine: the token, the install-id and the namespaces, under "
+            f"{localstore.state_file()} (a backup of the previous state is kept). Reusing this "
+            "install-id on the other instance registers its counterpart there."
         )
         notes.append(
             "The token is stored for this session, so registry tools work now without "
