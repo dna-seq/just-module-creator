@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 
 import httpx
 from just_dna_registry import RegistryError
@@ -32,6 +33,9 @@ STARTUP_TIMEOUT = 10.0
 
 _TOKEN_REFUSED = frozenset({401, 403})
 
+#: How long a `valid` answer is trusted at start before the token is asked about again.
+FRESH_FOR = timedelta(hours=1)
+
 
 @dataclass(frozen=True)
 class TokenCheck:
@@ -44,32 +48,52 @@ class TokenCheck:
 
 def check_token(
     target: RegistryTarget, token: str, settings: Settings, timeout: float
-) -> tuple[str, list[str] | None, str | None]:
-    """`(status, namespaces, detail)` for one token; namespaces only when `valid`."""
+) -> tuple[str, list[str] | None, str | None, str | None]:
+    """`(status, namespaces, detail, account)` for one token; the last two only when `valid`."""
     try:
         with client_for(target, settings, token=token, timeout=timeout) as client:
             reply = dict(client.whoami())
     except RegistryError as exc:
         status = "invalid" if exc.status_code in _TOKEN_REFUSED else "unreachable"
-        return status, None, str(exc)
+        return status, None, str(exc), None
     except httpx.TimeoutException as exc:
-        return "timeout", None, f"no answer within {timeout:g}s ({type(exc).__name__})"
+        return "timeout", None, f"no answer within {timeout:g}s ({type(exc).__name__})", None
     except httpx.TransportError as exc:
-        return "unreachable", None, f"{type(exc).__name__}: {exc}"
-    return "valid", [str(n) for n in reply.get("namespaces") or []], None
+        return "unreachable", None, f"{type(exc).__name__}: {exc}", None
+    namespaces = [str(n) for n in reply.get("namespaces") or []]
+    return "valid", namespaces, None, str(reply.get("account") or "") or None
+
+
+def _fresh(saved: localstore.StoredAccount, now: datetime) -> bool:
+    """A `valid` answer younger than `FRESH_FOR` — worth trusting instead of asking again."""
+    if saved.status != "valid" or saved.status_at is None:
+        return False
+    return now - datetime.fromisoformat(saved.status_at) < FRESH_FOR
 
 
 def validate_saved(
-    settings: Settings, target: str | None = None, timeout: float = STARTUP_TIMEOUT
+    settings: Settings,
+    target: str | None = None,
+    timeout: float = STARTUP_TIMEOUT,
+    *,
+    skip_fresh: bool = False,
 ) -> list[TokenCheck]:
-    """Check every saved account (on `target`, or all) and record each answer."""
+    """Check every saved account (on `target`, or all) and record each answer.
+
+    `skip_fresh` leaves alone an account answered `valid` within `FRESH_FOR`: the start-up
+    check passes it, because several sessions start servers on one machine and the polygon
+    rate-limits a burst, which would record an outage over a good answer. `refresh` does not.
+    """
     state = localstore.load()
+    now = datetime.now(UTC)
     checks: list[TokenCheck] = []
     for saved in state.accounts:
         if target is not None and saved.target != target:
             continue
+        if skip_fresh and _fresh(saved, now):
+            continue
         which: RegistryTarget = "prod" if saved.target == "prod" else "test"
-        status, namespaces, detail = check_token(which, saved.token, settings, timeout)
+        status, namespaces, detail, _ = check_token(which, saved.token, settings, timeout)
         checks.append(TokenCheck(saved.target, saved.account, status, namespaces, detail))
     if not checks:
         return checks
@@ -94,18 +118,72 @@ def validate_saved(
     return checks
 
 
-def start_background_validation(settings: Settings) -> threading.Thread | None:
-    """Validate saved tokens on a daemon thread, so the server answers while it runs.
+def import_env_tokens(settings: Settings, timeout: float = STARTUP_TIMEOUT) -> list[str]:
+    """Save the environment's registry token for each instance, if no saved account holds it.
 
-    Nothing to do offline or with nothing saved. A failure is logged and never stops the
-    server: a check that could not run leaves the previous answers in place.
+    The single-token setup (`JMC_API_KEY` / `JMC_TEST_API_KEY`, and `JMC_INSTALL_ID`) predates
+    the store, and a token left outside it is one a second saved account would silently
+    outrank as the default. So at start it goes in, with the environment's install-id, after
+    one `whoami` says whose it is. A token already saved only gains a missing install-id —
+    no request. A token the registry does not answer for is left where it is.
     """
-    if settings.offline or not localstore.load().accounts:
+    env_install = (settings.install_id or "").strip() or None
+    state = localstore.load()
+    imported: list[str] = []
+    for which in ("prod", "test"):
+        target: RegistryTarget = "prod" if which == "prod" else "test"
+        token = (settings.registry_token(target) or "").strip()
+        if not token:
+            continue
+        held = localstore.account_for_token(state, target, token)
+        if held is not None:
+            if env_install and not held.install_id:
+                account = held.account
+
+                def _fill(state: localstore.State, target=target, account=account) -> None:
+                    for a in localstore.accounts_for(state, target):
+                        if a.account == account and not a.install_id:
+                            a.install_id = env_install
+
+                localstore.update(_fill)
+                imported.append(f"{account}@{target} install-id")
+            continue
+        status, namespaces, _, name = check_token(target, token, settings, timeout)
+        if status != "valid" or namespaces is None or not name:
+            continue
+        localstore.update(
+            lambda state, target=target, name=name, token=token, namespaces=namespaces: (
+                localstore.save_account(
+                    state,
+                    target=target,
+                    account=name,
+                    token=token,
+                    install_id=env_install,
+                    namespaces=namespaces,
+                )
+            )
+        )
+        imported.append(f"{name}@{target}")
+    return imported
+
+
+def start_background_validation(settings: Settings) -> threading.Thread | None:
+    """Import the environment's tokens and validate saved ones on a daemon thread.
+
+    Nothing to do offline, or with nothing saved and no environment token. A failure is
+    logged and never stops the server: a check that could not run leaves the previous
+    answers in place.
+    """
+    has_env = any(settings.registry_token(t) for t in ("prod", "test"))
+    if settings.offline or not (localstore.load().accounts or has_env):
         return None
 
     def _run() -> None:
         try:
-            checks = validate_saved(settings)
+            imported = import_env_tokens(settings)
+            if imported:
+                log.info("Saved from the environment at start: %s", ", ".join(imported))
+            checks = validate_saved(settings, skip_fresh=True)
         except Exception:
             log.exception("Saved-token check at start did not complete")
             return

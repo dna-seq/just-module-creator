@@ -1343,6 +1343,13 @@ have been questions.
   Say which of those it is, or wrap it.
 
 
+- **"Tools are automation. Minimizing excessive calls from model is favorable."** Said 2026-09-27,
+  approving the start-up token work: a check the server can run on its own — validating saved tokens,
+  importing the environment's token, filling a missing install-id — runs at start and is recorded, so
+  the agent reads an answer instead of spending a call per question. The corollary is the cost side:
+  such a check must not itself multiply requests (one `whoami` answers status *and* name, and an
+  answer under an hour old is not re-asked), and it must never make a decision a person owns.
+
 - **"Making decision != executing it."** Said 2026-09-24 approving `prune_rows` (`F104`), with the
   condition that its wording not contradict `module-curate`'s *"the trim is a decision no tool makes"*.
   It does not: the author's keep-list is the decision, and a tool that applies a keep-list it was

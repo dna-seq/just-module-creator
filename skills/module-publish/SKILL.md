@@ -88,8 +88,9 @@ It hands back **the token and the install-id, and saves both on this machine by 
 account's namespaces, before it answers. `registry_accounts` lists what is saved: every account on
 each instance, its namespaces, and whether its token was still good when the server last started
 (`valid`, `invalid`, `unreachable` or `timeout`, with the time). **Read that before spending a call to
-find out.** A token held from elsewhere goes in with `registry_accounts(action="add", target=…,
-token=…)`, which asks the registry whose it is.
+find out.** A token in the environment (`JMC_TEST_API_KEY`, `JMC_API_KEY`, with `JMC_INSTALL_ID`) is
+saved at start by the server itself; one held from elsewhere goes in with
+`registry_accounts(action="add", target=…, token=…)`, which asks the registry whose it is.
 
 **Which token a call uses is decided by the namespace.** A publish, check, yank or delete names a
 namespace, and the saved account that owns it is used; a call naming none (`whoami`, a claim) uses the

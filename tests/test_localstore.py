@@ -7,6 +7,8 @@ the one construction point for a registry client.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+
 import httpx
 import pytest
 from conftest import offline_settings
@@ -324,4 +326,76 @@ async def test_importing_the_env_token_brings_the_env_install_id(make_client, mo
     saved = localstore.load().accounts[0]
     assert (saved.token, saved.install_id) == ("mk_other_8888", "envinstall01"), (
         "an explicit token re-saves the same account and keeps the install-id it already had"
+    )
+
+
+def _env_settings(**fields) -> Settings:
+    settings = Settings(offline=False, _env_file=None)  # type: ignore[call-arg]
+    for name, value in fields.items():
+        setattr(settings, name, value)
+    return settings
+
+
+def test_the_env_token_is_saved_at_start_with_one_request(monkeypatch):
+    stub = _RegistryStub(whoami={"account": "sheep", "namespaces": ["test-sheep"]})
+    monkeypatch.setattr(accountcheck, "client_for", stub)
+    settings = _env_settings(test_api_key="mk_env_token_7777", install_id="envinstall01")
+
+    assert accountcheck.import_env_tokens(settings) == ["sheep@test"]
+    assert stub.tokens == ["mk_env_token_7777"], "one whoami answers both status and name"
+    saved = localstore.load().accounts[0]
+    assert (saved.account, saved.install_id, saved.namespaces, saved.status) == (
+        "sheep",
+        "envinstall01",
+        ["test-sheep"],
+        "valid",
+    )
+
+
+def test_a_saved_env_token_only_gains_its_missing_install_id_and_costs_nothing(monkeypatch):
+    localstore.update(
+        lambda state: localstore.save_account(
+            state,
+            target="test",
+            account="sheep",
+            token="mk_env_token_7777",
+            install_id=None,
+            namespaces=["test-sheep"],
+        )
+    )
+    stub = _RegistryStub()
+    monkeypatch.setattr(accountcheck, "client_for", stub)
+    settings = _env_settings(test_api_key="mk_env_token_7777", install_id="envinstall01")
+
+    assert accountcheck.import_env_tokens(settings) == ["sheep@test install-id"]
+    assert stub.tokens == []
+    assert localstore.load().accounts[0].install_id == "envinstall01"
+
+
+def test_a_token_the_registry_refuses_is_not_imported(monkeypatch):
+    monkeypatch.setattr(
+        accountcheck, "client_for", _RegistryStub(whoami=RegistryError(401, "unknown key"))
+    )
+    settings = _env_settings(test_api_key="mk_dead_token_0000")
+    assert accountcheck.import_env_tokens(settings) == []
+    assert localstore.load().accounts == []
+
+
+def test_start_skips_a_token_answered_valid_within_the_hour(monkeypatch):
+    _seed(("test", "sheep", "mk_sheep_aaaa", ["test-sheep"]))
+    stub = _RegistryStub(whoami={"account": "sheep", "namespaces": ["test-sheep"]})
+    monkeypatch.setattr(accountcheck, "client_for", stub)
+
+    assert accountcheck.validate_saved(_online(), skip_fresh=True) == []
+    assert stub.tokens == []
+
+    def _age(state: localstore.State) -> None:
+        state.accounts[0].status_at = (
+            datetime.now(UTC) - accountcheck.FRESH_FOR - timedelta(minutes=1)
+        ).isoformat()
+
+    localstore.update(_age)
+    assert [c.status for c in accountcheck.validate_saved(_online(), skip_fresh=True)] == ["valid"]
+    assert [c.status for c in accountcheck.validate_saved(_online())] == ["valid"], (
+        "refresh never skips"
     )

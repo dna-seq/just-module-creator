@@ -96,7 +96,8 @@ def register_memory(mcp: FastMCP, settings: Settings) -> None:
         (omit `token` to import this instance's env token and `JMC_INSTALL_ID`), asking the
         registry for its account and namespaces; `refresh` re-checks every token, recording `valid`,
         `invalid`, `unreachable` or `timeout` with its time, and re-reads namespaces — the
-        server already does this when it starts, so read `list` first. `set_default` needs
+        server already does this when it starts (skipping answers under an hour old) and
+        saves the environment's token there too, so read `list` first. `set_default` needs
         `target` and `account`; `forget` deletes one saved account — ask the author first.
         Every change backs the file up; secrets come back shortened.
         """

@@ -3,6 +3,17 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.48.0] — 2026-09-27
+
+- **The server saves the environment's registry token by itself at start.** A `JMC_TEST_API_KEY` /
+  `JMC_API_KEY` no saved account holds is saved with `JMC_INSTALL_ID` after one `whoami`, which answers
+  both whether it is good and whose it is; a refused one is left alone. A token already saved only gains
+  a missing install-id, with no request. So the single-token setup moves into `registry_accounts`
+  without an agent call, and a second account can no longer silently outrank it as the default.
+- **The start-up check skips a token answered `valid` within the last hour.** Several sessions start
+  several servers, and the polygon rate-limits a burst, which would record an outage over a good
+  answer. `registry_accounts(action="refresh")` always asks.
+
 ## [0.47.1] — 2026-09-27
 
 - **`registry_accounts(action="add")` without a token imports `JMC_INSTALL_ID` along with the
