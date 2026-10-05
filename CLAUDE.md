@@ -1414,6 +1414,20 @@ have been questions.
   then tell the user to start a new session: skills and MCP tools load at session start. Check the
   installed version in `~/.claude/plugins/installed_plugins.json` matches `pyproject.toml`.
 
+- **"It remains unstructured & unqueryable until somebody makes it, it's not a theoretical limitation,
+  rather a format constraint/layer problem."** Said 2026-10-05 of row-level provenance (`RM31`), and it
+  answers upstream's S82 / RM147 *"you should not build a `logs/` writer either"*: their *we shouldn't*
+  is right for their layer, the *you shouldn't* was not theirs to give. Their uncited `literature.csv`
+  row is lossy by design (read it, no row came of it, and nothing on why), and *"it is somewhat an
+  atavism from human DBs era, where capturing reasoning/traceability was 10x work on top of curator
+  … It costs AI nothing now."* So we build the ledger and the retracing engine, and offer upstream the
+  generalisation once it exists. Three decisions taken the same day: **the capture hook is always on
+  with a notice**, not asked per module; **an author's decision is recorded as an English paraphrase
+  after approval**, and the hook's post-processing drops what is sensitive; and **"journaling in skills
+  should be minimized and substituted by tooling where possible. llms forget stuff alright"** — a
+  record a skill asks an agent to remember is a record that goes missing, so capture is a hook or a
+  tool argument, and a forgotten one is caught by the retrace join rather than prevented by prose.
+
 ## 11. Learned workspace facts
 
 *Append-only. Environment, ports, credential layout, host quirks, sibling paths.*

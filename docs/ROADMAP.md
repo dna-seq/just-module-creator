@@ -400,6 +400,67 @@ positive, which is the calibration.
 **Do not generalise it into a secret scanner.** The question is narrow: *would the author be
 surprised to see this in the catalog?*
 
+## RM31 — a row cannot be traced back to the search and the reading that produced it
+
+**Severity:** medium · **Status:** open, designed 2026-10-05, nothing built · **Owner:** unassigned ·
+**Opened** 2026-10-05 · **Upstream:** format-tree `S125` (`F116`) for the transport
+
+**The gap.** A finished module says which paper a row cites (`studies.csv.pmid`), the passage
+(`provenance_quote`) and who located it (`curator`). It does not say how the paper was found, what
+else was read and rejected, or why. The Agno chain answered that by dumping every step. Under a plugin
+the host owns the loop, other servers (biomcp, WebFetch) are invisible to us, and a person edits CSVs
+between sessions, so a transcript is neither available nor wanted: it is unstructured, it carries
+prompts and paths (RM25 measured one), and nobody can query it.
+
+**The decision behind the design, in the owner's words:** *"It remains unstructured & unqueryable
+until somebody makes it, it's not a theoretical limitation, rather a format constraint/layer
+problem."* Upstream's S82 / RM147 answer — an uncited `literature.csv` row, and no `logs/` writer — is
+right for their layer and lossy for ours: it records *read, no row* and drops the reasoning between.
+**That row is also a derived table** (`hints.DERIVED_TABLE_MODELS`; `LiteratureRow` is not an
+`AuthoredModel` and has no column for a reason, a reader or a date). Recording that reasoning used to
+cost a curator a hand-written lab journal; for an agent it costs nothing.
+
+**The shape.**
+
+1. **Ledger.** Per-session, append-only JSON Lines under `logs/trace/`, so it travels with the module
+   and two sessions never write one file. Every line carries `"v"`. Paths are spec-relative only.
+   **Files are named `*.log`** until `S125` is answered: the compile sweeps `*.log` and nothing else,
+   and a `.jsonl` there compiles green and is dropped without a warning (measured, `F116`).
+2. **Witness, by host hook, always on with a notice.** A `PostToolUse` hook in both manifests records
+   an allowlist of tool kinds — our research tools, biomcp, WebFetch, Write/Edit on spec-directory
+   files, and `AskUserQuestion` — as metadata: queries, IDs returned, fetched-text hash and length,
+   row keys an edit touched, a question and its answer. Never fetched text, never dialogue. Calls are
+   buffered outside the spec directory until the session binds to a module (a write into a spec
+   directory, or one of our tools called with `spec_dir`), then flushed. **Post-processing decides what
+   to drop as sensitive** before anything reaches `logs/`; `review_logs` reads `logs/trace/` too.
+3. **Decisions through tools, not through skill reminders** — *"journaling in skills should be
+   minimized and substituted by tooling where possible. llms forget stuff alright."* The author's
+   answers come from the hook on `AskUserQuestion` and from the arguments of tools that already take a
+   decision (`prune_rows`, `record_override`, the `audit_module` decisions). A paper read and not used
+   goes through one tool that does real work (writing the reason to the ledger and the paper to
+   `literature.csv`), so the agent has a reason to call it. **Author decisions are paraphrased, in
+   English**, as *"Author decided to …"*, and written only after approval, which is a gate inside a
+   tool the agent already runs (`close_module`, or a `review_trace`), not a step a skill asks for.
+4. **Retrace.** A join at audit time classifies every authored row: *traced* (a full chain exists),
+   *contradicted* (PMID never returned by any search, quote not in the fetched text, quote equals the
+   title), or *not_computed* with `why_not` (no receipt: a handed PDF, a human, a pre-ledger row).
+   Every edge is labelled witnessed, computed or declared. **It never produces a pass.** A
+   `trace_row(spec_dir, table, key)` reads one chain back.
+5. **Critic.** A reviewer subagent on a fresh context — never the agent that wrote the rows — reads the
+   module and the ledger and reports what the join cannot judge: reasoning that does not support its
+   row, and rows from thin air (no receipt, no declared decision). Its output is a decision list. *Thin
+   air* is a flag for the author, not a verdict.
+
+**Why a narrated reason is not evidence.** Tool I/O is witnessed; an agent's stated *why* is
+self-report and may be invented after the fact. Both are kept and labelled; only the first ever feeds
+a classification.
+
+**Cost, estimated.** Hooks plus ledger writer about a day; join plus `trace_row` about a day; the critic
+and the decision tool about a day.
+
+**Closes when** a real module authored end to end under the hook retraces every row it can, the
+critic flags the rows it cannot, and `S125` has an answer we have acted on.
+
 ---
 
 ## Owed to `just-dna-lite`, and not yet packaged
