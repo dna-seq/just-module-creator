@@ -2262,3 +2262,23 @@ which is why the error above talks about *annotation-layer content* for a row ab
 `skills/module-tables/references/pgs.md`. Nothing in the tool surface changes; a `pgs.csv` module
 with no licence ledger is a real and legal module, and telling an author otherwise would be the
 mirror of the defect.
+
+## F116 — `logs/` ships only `*.log`; a `.jsonl` ledger beside it is dropped silently (format `S125`)
+
+**State: filed upstream 2026-10-05, unanswered. Nothing shipped here yet; the mitigation is a
+naming convention for the provenance ledger we are designing.**
+
+**Measured**, format 0.7.1 / compiler 0.7.2 as installed: `assets/fto_bmi` compiled with
+`authoring.log`, `trace/session-a.jsonl`, `run.json`, `notes.md`, `notes.txt` and `fig.png` under
+`logs/`. `success=True`, zero warnings, `manifest.logs` = `[logs/authoring.log]`. The other five never
+reach the artifact. `_collect_logs` globs `*.log` only, and the registry's server-side compile defers
+to it, so an uploaded `logs/notes.md` is accepted and then missing from the published version.
+
+**Why it matters to us.** The per-row provenance ledger (search receipts, fetch hashes, decisions
+anchored to fetched text, a reviewer pass that flags rows with no chain) is JSON Lines and needs to
+travel with the module. We diverge from upstream's S82 / RM147 advice against a `logs/` writer: their
+uncited `literature.csv` row records *read, no row* and drops the reasoning in between, and recording
+that reasoning is authoring workflow, which is our layer.
+
+**Mitigation until answered:** ledger files are named `*.log` with JSON Lines inside. They travel, but
+the name hides the type.
