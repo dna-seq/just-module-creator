@@ -437,8 +437,9 @@ cost a curator a hand-written lab journal; for an agent it costs nothing.
    minimized and substituted by tooling where possible. llms forget stuff alright."* The author's
    answers come from the hook on `AskUserQuestion` and from the arguments of tools that already take a
    decision (`prune_rows`, `record_override`, the `audit_module` decisions). A paper read and not used
-   goes through one tool that does real work (writing the reason to the ledger and the paper to
-   `literature.csv`), so the agent has a reason to call it. **Author decisions are paraphrased, in
+   goes through one tool that records the paper, the verdict and the reason **in the ledger only**.
+   It writes no `literature.csv` row: that table is derived, and whether a ledger entry deserves a
+   typed home upstream is upstream's call once the ledger exists. **Author decisions are paraphrased, in
    English**, as *"Author decided to …"*, and written only after approval, which is a gate inside a
    tool the agent already runs (`close_module`, or a `review_trace`), not a step a skill asks for.
 4. **Retrace.** A join at audit time classifies every authored row: *traced* (a full chain exists),
