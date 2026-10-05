@@ -403,7 +403,8 @@ surprised to see this in the catalog?*
 ## RM31 — a row cannot be traced back to the search and the reading that produced it
 
 **Severity:** medium · **Status:** open, designed 2026-10-05, nothing built · **Owner:** unassigned ·
-**Opened** 2026-10-05 · **Upstream:** format-tree `S125` (`F116`) for the transport
+**Opened** 2026-10-05 · **Upstream:** format-tree `S125` (`F116`) for the transport · **Rationale
+and decisions in prose:** [DESIGN-traceability.md](DESIGN-traceability.md)
 
 **The gap.** A finished module says which paper a row cites (`studies.csv.pmid`), the passage
 (`provenance_quote`) and who located it (`curator`). It does not say how the paper was found, what
