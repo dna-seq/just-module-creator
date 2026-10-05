@@ -1,439 +1,246 @@
 # Agent Guidelines — just-module-creator
 
-A plugin for **Claude Code and Codex** — two manifests, one server, one skill set —
-shipping two halves: an MCP server that wraps the just-dna toolchain with
-agent-shaped tools, and the skills that teach the workflow those tools serve. It is
-an **application, not a published library** — the contract is the MCP tool surface
-and the skills, not Python imports, so internals are free to change and no
-`__all__` is curated. **Neither host is the primary one**: a change to the tool
-surface or the skill set owes the same to both, which is why the version bump
-touches two manifests rather than one.
+A plugin for **Claude Code and Codex**: two manifests, one MCP server, one skill set. The server
+wraps the just-dna toolchain in agent-shaped tools; the skills teach the workflow those tools
+serve. It is an **application, not a library** — the contract is the MCP tool surface, the skills
+and the CLI, so internals are free to change and no `__all__` is curated. **Neither host is
+primary**: a change to the tool surface or the skills owes the same to both.
 
-It is **not** a format, a schema or an annotation engine. We own no schema:
-every column list, vocabulary and requirement comes from the live pydantic
-models in `just-dna-format`. It also never executes a VCF — nothing here reads a
-sample or calls a genotype. Running a module over real genomes is `just-dna-lite`'s MCP
-server (`just-dna-lite`), which the host runs **beside** this one and the agent drives
-directly, following `module-install-local`; no code here talks to it.
+It is **not** a format, a schema or an annotation engine. We own no schema: every column list,
+vocabulary and requirement comes from the live pydantic models in `just-dna-format`. Nothing here
+reads a sample or calls a genotype. Running a module over real genomes is `just-dna-lite`'s MCP
+server, which the host runs **beside** this one; the agent drives it directly via
+`module-install-local`, and no code here talks to it.
 
-**just-dna-lite is optional, and the default is to leave it alone.** Engage it only when the
-author asks to run the module on real genomes or VCFs, or names just-dna-lite (or its tools)
-themselves. Otherwise the whole job is done with this plugin's own surface: `lint_rows`,
-`validate_module`, `enrich_module`, the cross-checks, `compile_module`, `verify_artifact`. Do not
-check whether -lite is connected, do not offer to clone or register it, and do not treat a missing
--lite server as a gap in the work. A green compile is a finished step without a trial run. Both
-servers ship a tool called `validate_module`; unless the author asked for a genome run, it means
-**ours** (the spec check), never -lite's.
+**just-dna-lite is opt-in.** Engage it only when the author asks to run the module on real
+genomes/VCFs or names just-dna-lite. Otherwise the job is done with our own surface (`lint_rows`,
+`validate_module`, `enrich_module`, the cross-checks, `compile_module`, `verify_artifact`). Do not
+check whether -lite is connected, do not offer to install it, and do not treat its absence as a
+gap. A green compile is a finished step. Both servers ship `validate_module`; unless a genome run
+was asked for, it means **ours**.
 
-`AGENTS.md` is a symlink to this file. If the two ever differ, that is a bug —
-`ln -sf CLAUDE.md AGENTS.md`.
+`AGENTS.md` is a symlink to this file. If they differ, that is a bug: `ln -sf CLAUDE.md AGENTS.md`.
 
 ---
 
 ## Read these first, in this order
 
-Obligatory. Read them yourself. **Do not delegate a document you are about to
-judge a design against** — a subagent returns a summary, and a summary of a rule
-drops the qualifier the decision turned on. Delegation is for finding, never for
-deciding.
+Read them yourself. **Do not delegate a document you are about to judge a design against** — a
+summary of a rule drops the qualifier the decision turned on. Delegate finding, never deciding.
 
-1. **[docs/DOMAIN.md](docs/DOMAIN.md)** — what a just-dna module is, what the
-   four upstream packages guarantee, and the traps that constrain what we may
-   build. Every tool here is a promise about one of its rules.
-2. **[docs/ROADMAP.md](docs/ROADMAP.md)** — active-only, forward-only. One
-   `## RMn — name` section per *open* item.
-3. **[docs/CHANGELOG.md](docs/CHANGELOG.md)** — what actually shipped, newest first.
-4. **[docs/dogfooding.md](docs/dogfooding.md)** — open findings from using the
-   shipped surface for real work. Read before touching the tool surface.
+1. **[docs/DOMAIN.md](docs/DOMAIN.md)** — what a module is, what the four upstream packages
+   guarantee, and the traps that constrain what we may build.
+2. **[docs/ROADMAP.md](docs/ROADMAP.md)** — active-only; one `## RMn — name` per open item.
+3. **[docs/CHANGELOG.md](docs/CHANGELOG.md)** — what shipped, newest first.
+4. **[docs/dogfooding.md](docs/dogfooding.md)** — open findings from real use. Read before touching
+   the tool surface.
 
-Everything below is self-contained: no rule here requires following a link to
-know what you must not do. Links carry positive detail only.
+No rule below requires following a link to know what you must not do; links carry positive detail.
 
 ### The agent assets this repo ships
 
-**Two kinds of document, and the difference is who invokes them.** A `SKILL.md` is a
-**command**: `/`-invocable, listed in every session's prompt, written for a person
-deciding what they want. There are **seven**, and the set is pinned by name in
-`tests/test_skills.py::test_the_command_menu_is_what_a_person_would_ask_for` —
-`create-module`, `module-status`, `module-revise`, `find-evidence`, `module-publish`,
-`module-symptom`, `module-install-local`. A `GUIDE.md` is the same content loaded by a
-router, **by path**, when an agent reaches that step; there are thirteen and they are
-in nobody's menu.
+**Two kinds of document, split by who invokes them.** A `SKILL.md` is a **command**:
+`/`-invocable, listed in every session's prompt, written for a person deciding what they want.
+The set is pinned by name in
+`tests/test_skills.py::test_the_command_menu_is_what_a_person_would_ask_for` — `create-module`,
+`module-status`, `module-revise`, `find-evidence`, `module-publish`, `module-symptom`,
+`module-install-local`. A `GUIDE.md` is the same kind of content loaded **by path** by a router
+when an agent reaches that step; guides are in nobody's menu. Don't count them in prose — the
+roster is `ls skills/`.
 
-Thirteen skills became guides at 0.24.0 because twenty menu entries cost 14,688
-characters of every session's prompt and asked a layman to choose between
-`module-curate` and `module-enrich` — steps an agent is mid-way through, not things a
-person types. **What that move costs is auto-loading**: a guide can no longer be matched
-from its description, so a router has to name it, and
-`test_every_guide_is_reachable_from_a_command` walks the link graph from the seven doors
-to prove every one still can be. **When you add a guide, link it from a router in the
-same change** — an unlinked guide is unreachable content, not a smaller surface.
+The split exists because a twenty-entry menu cost ~14.7k characters of every prompt and asked a
+layman to choose between `module-curate` and `module-enrich`. What it costs is auto-loading: a
+guide cannot be matched from its description, so a router must name it.
+`test_every_guide_is_reachable_from_a_command` walks the link graph from the commands. **When you
+add a guide, link it from a router in the same change.**
 
 | Path | What |
 |---|---|
-| `skills/module-101/GUIDE.md` | **The map — high level only, and no longer the entry point: `/create-module` is the door and `server.INSTRUCTIONS` names it.** What a module is, what the plugin can and cannot do, the four packages, the lifecycle *including second and later passes*, and the **minimal** authored surface (`module_spec.yaml` + `variants.csv` + `studies.csv` + `README.md`) and nothing beyond it — the table roster, the on-disk shapes and the `derived/` layout are `module-tables`'. It holds no column list, no procedure and no symptom lookup: anything answerable only with a specific cell value, flag or warning phrase belongs in a subskill, and this file growing to hold one is the drift to watch for. |
-| `skills/create-module/SKILL.md` | **The door, and the name people asked back.** Where to enter the lifecycle from wherever the author is actually standing — nothing yet, a theme plus sources, a handed bundle, a source that publishes rows, or a module that already exists — plus the stage diagram, the stage order, and the two to four tools each stage calls. It owns **no procedure**: every stage skill keeps its own, and the router's job ends the moment the right one is loaded. Ceiling 200 lines, half the skill ceiling, pinned by `tests/test_skills.py::test_the_router_routes_and_does_not_regrow_into_the_procedure`, because regrowth is the risk this name carries. |
-| **The stage spine**, one skill per lifecycle stage | `module-start` (0–1: triage, licence, the spec), `module-draft` (2), `module-curate` (3), `module-enrich` (4), `module-check` (5), `module-compile` (6), `module-close` (6b), `module-publish` (7–8). **Each owns its stage's procedure outright — there is no second copy anywhere**, and each ends with the discriminator (what to apply silently, what to put in front of a pilot) rather than a list of refusals. |
-| **The second-pass three** | `module-revise` (which kind of pass, and what it invalidates), `module-refresh` (re-running anything that already ran), `module-diff` (what moved, and the one reading that means an upstream source changed its answer). A second pass is the normal case, not the exception. |
-| **The references the stages load** | `module-weights` (the column everyone fills and nobody declares), `module-voice` (how every label, conclusion, title and description reads to a lay reader and a professional; the twin of just-dna-lite's `docs/REPORT_VOICE.md`), `module-consumer` (the far side of the seam), `find-evidence` (search, verify a PMID, read a paper, and what may honestly be quoted), whose `references/SUPPLEMENTARY.md` holds the retrieval ladder for the supplementary tables a GWAS row's numbers actually live in. |
-| **The two doors into a module you did not just create** | `module-status` (read the spec directory, work out which stage it is actually at, and hand back the short list of decisions somebody must make next) and `module-symptom` (a message arrived and its meaning is unknown — the door to `SYMPTOMS.md`, and how to tell which layer emitted it). Neither is a stage: they are entered sideways, from an inherited directory or an error, and they route to the stage that owns the work. |
-| `skills/module-install-local/SKILL.md` | **The third destination, and it is not a registry.** Running a compiled module over this machine's genomes through just-dna-lite's MCP server, and reading what it did: **entered only when the author asks for a run on real genomes / VCFs or names just-dna-lite, never offered unprompted**; check the server is connected (`status`), ask which genomes, `install_module` → `start_annotation` → `wait_for_job` → `validate_module`, then route each finding (a variant no genome carries, a locus called but never matched, a constant or one-sided score) back to the stage that owns the cell, and re-run on the same genomes. A side door off stage 6 and the usual way back into 3, **not** a stage and **not** a rehearsal for publishing. The three manual routes (no server) live in its `references/MANUAL_INSTALL.md`. No tool here calls -lite; the agent calls -lite's tools. |
-| `skills/module-tables/GUIDE.md` | **Which table, and where every file sits.** The router: table choice keyed on grain, the axes that must go in a key, composition, the three on-disk shapes, and the registry's `derived/` layout. Holds no column list and no procedure. |
-| `skills/module-tables/references/*.md` | One dossier per table kind — the roster is the `ls`, and `hints.DERIVED_TABLE_MODELS ∪ draft.DRAFTABLE` is what it must cover — plus five for the non-table spec files and `LAYOUT.md` (the tree, and the registry's upload normalisation). **The schema half is no longer here**: upstream generates a page per table kind at `https://just-dna.life/just-dna-compiler/tables/<name>/`, and these keep what a model cannot state — who decides which cell, what an edit moves, the symptom when the table lies. Each carries an audit banner, 🚧 ROADWORKS and ⚠️ CHECK markers; **anchor on symbol names, never `file:line`** — the 1237 line numbers these carried were stripped on 2026-09-13 because they had all drifted. |
-| `skills/module-101/references/SYMPTOMS.md` | Upstream message text → cause → action. Read *from* every stage, which is why it sits with the map rather than with one stage. |
-| `skills/module-101/references/CLI.md` | The full CLI surface, and what this server deliberately does **not** wrap. |
-| `.claude-plugin/plugin.json` | Claude plugin manifest; declares the MCP server via `${CLAUDE_PLUGIN_ROOT}`. |
-| `.claude-plugin/marketplace.json` | Lets `/plugin marketplace add ./` work. |
-| `.codex-plugin/plugin.json` | Codex plugin manifest; same skills and server, launched with a plugin-relative `"cwd": "."` — Codex substitutes `${PLUGIN_ROOT}` only in hook commands, never in MCP `args`. Carries the **second** hand-bumped version string. |
+| `skills/create-module/SKILL.md` | **The door.** Entry points (nothing yet, a theme plus sources, a handed bundle, a source that publishes rows, an existing module), the stage diagram and order, and the two to four tools each stage calls. Owns **no procedure**. Ceiling 200 lines, pinned by `test_the_router_routes_and_does_not_regrow_into_the_procedure`. |
+| `skills/module-101/GUIDE.md` | **The map, high level only** — what a module is, what the plugin can and cannot do, the four packages, the lifecycle including later passes, and the minimal authored surface (`module_spec.yaml` + `variants.csv` + `studies.csv` + `README.md`). No column list, no procedure, no symptom lookup. Written for an LLM to explain modules to a human. |
+| **The stage spine** | `module-start` (0–1: triage, licence, spec), `module-draft` (2), `module-curate` (3), `module-enrich` (4), `module-check` (5), `module-compile` (6), `module-close` (6b), `module-publish` (7–8). Each owns its stage's procedure outright, and ends with the discriminator: what to apply silently, what to put in front of a pilot. |
+| **The second-pass three** | `module-revise` (which kind of pass, what it invalidates), `module-refresh` (re-running what already ran), `module-diff` (what moved, and the reading that means a source changed its answer). A second pass is the normal case. |
+| **References the stages load** | `module-weights` (the column everyone fills and nobody declares), `module-voice` (how labels, conclusions and descriptions read to a lay reader and a professional; twin of just-dna-lite's `docs/REPORT_VOICE.md`), `module-consumer` (the far side of the seam), `find-evidence` (search, verify a PMID, read a paper, what may be quoted; `references/SUPPLEMENTARY.md` is the retrieval ladder for supplementary tables). |
+| **Sideways doors** | `module-status` (read a spec directory, work out its stage, list the decisions due) and `module-symptom` (decode a message via `SYMPTOMS.md`, and which layer emitted it). Not stages; they route to the stage that owns the work. |
+| `skills/module-install-local/SKILL.md` | Running a compiled module over this machine's genomes via just-dna-lite's MCP server, **only on the author's ask**: `status`, ask which genomes, `install_module` → `start_annotation` → `wait_for_job` → `validate_module`, route each finding back to the stage that owns the cell, re-run on the same genomes. Not a stage, not a publish rehearsal. Manual routes in `references/MANUAL_INSTALL.md`. |
+| `skills/module-tables/GUIDE.md` | Which table and where every file sits: table choice by grain, key axes, composition, the three on-disk shapes, the registry's `derived/` layout. No column list. |
+| `skills/module-tables/references/*.md` | One dossier per table kind (must cover `hints.DERIVED_TABLE_MODELS ∪ draft.DRAFTABLE`), five for the non-table spec files, and `LAYOUT.md`. The schema half lives upstream at `https://just-dna.life/just-dna-compiler/tables/<name>/`; these keep what a model cannot state — who decides which cell, what an edit moves, the symptom when the table lies. **Anchor on symbol names, never `file:line`.** |
+| `skills/module-101/references/SYMPTOMS.md` | Upstream message → cause → action. Read from every stage. |
+| `skills/module-101/references/CLI.md` | The CLI surface, and what this server deliberately does not wrap. |
+| `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` | Claude manifest (MCP server via `${CLAUDE_PLUGIN_ROOT}`) and the marketplace file for `/plugin marketplace add ./`. |
+| `.codex-plugin/plugin.json` | Codex manifest; launched with `"cwd": "."` because Codex substitutes `${PLUGIN_ROOT}` only in hook commands. Carries the second hand-bumped version. |
 
-> **`skills/create-module/` was the one canonical copy of the procedure. That copy is dead; the NAME is
-> back, and the difference is the whole rule.** The 1431-line version was dismantled 2026-08-20 on the
-> owner's instruction — *"drag away every quote until that doc is empty"* — because a file loaded whole
-> to answer any question is a file every session re-reads and no session updates in the right place. On
-> 2026-08-21 the owner asked for `/create-module` back: *"make it a small helper/wrapper skill hinting at
-> relevant sequence of actions"*. **What shipped is a router and nothing else** — entry points, stage
-> order, the tools per stage, and a hand-off. **Do not let it, or any stage skill, grow back into the
-> procedure**: the moment it holds a column value, a warning phrase or a judgement call, the monolith is
-> being rebuilt. The rule that replaces "do not restate the procedure beside its skill" is narrower and
-> stricter: **one fact, one home.** If two skills need the same rule, one owns it and the other links —
-> which is why `module-101` no longer carries the lifecycle diagram, the stage roster or the "how do I
-> create one" answer. Those moved; they were not copied.
+**One fact, one home.** The old 1431-line `create-module` monolith was dismantled on the owner's
+instruction; the name came back as a router only. If two skills need the same rule, one owns it
+and the other links. The moment the router holds a column value, a warning phrase or any judgement
+call — or a stage skill holds another stage's — the monolith is being rebuilt. The lifecycle diagram
+and stage roster moved out of `module-101`; don't copy them back. Skill ceiling: 500 lines.
 
 ---
 
 ## 1. Adopting these guidelines: ask, never infer
 
-**When two rules conflict — this file against a sibling repo's, this file
-against the user's global preferences, a rule against what the code actually
-does — stop and run a questionnaire.** Do not pick the one that looks better, do
-not synthesize a compromise, and do not silently follow the more specific file. A
-contradiction between two live rules is almost always a real difference in the
-repos' natures, and inferring which nature applies here is exactly the guess that
-produces a rule nobody agreed to.
+**When two rules conflict** — this file against a sibling repo's, against the user's global
+preferences, or against what the code does — **stop and run a questionnaire.** Don't pick, don't
+synthesize a compromise, don't silently follow the more specific file.
 
-1. **Survey first, ask second.** Read the conflicting rules in full and find out
-   *why* each side adopted its version. A question that does not carry the reason
-   is unanswerable.
-2. **One question per contradiction, batched** — never drip-fed. Two to four
-   concrete options each, never an open prompt.
-3. **Each option states its cost**: what breaks, what it forces on other repos,
-   which existing rule it contradicts.
-4. **Recommend one and say so.** A questionnaire with no recommendation offloads
-   work the survey already did.
-5. **Record the answer where it will be read again** — the rule into its section
-   below, the reasoning into §10 in the user's own words. An answered
-   contradiction that is not written down gets re-asked, which is worse than a guess.
+1. **Survey first**: read both rules in full and find *why* each exists.
+2. **One question per contradiction, batched**, two to four concrete options each.
+3. **Each option states its cost**: what breaks, what it forces elsewhere, which rule it contradicts.
+4. **Recommend one.**
+5. **Record the answer**: the rule into its section, the reasoning into §10 in the user's words.
 
 ---
 
 ## 2. Non-negotiables
 
-Read the whole list before the first edit. The reason follows each one, because a
-rule without its reason gets rationalised away at 2 a.m.
+Read the whole list before the first edit. Each carries its reason, because a rule without one
+gets rationalised away.
 
 ### Environment and packaging
 
-- **Never `uv pip install`.** Use `uv sync` / `uv add` / `uv add --dev`.
-  `uv pip install` writes into the venv without touching `pyproject.toml` or the
-  lockfile, so the next clean checkout silently lacks the dependency.
-- **Never call bare `python` / `python3`.** Always `uv run python …`,
-  `uv run pytest …`. A bare interpreter bypasses the workspace environment.
-- **Never hardcode a version string.** It comes from `pyproject.toml` via
-  `importlib.metadata.version("just-module-creator")`. Two sources of truth drift,
-  and the one you read is the wrong one.
-
-  **The unavoidable exceptions are the two plugin manifests** —
-  `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json`. Both are JSON and
-  cannot read `importlib.metadata`, so both `version` fields **must be bumped by hand
-  in the same commit as the `pyproject.toml` bump** — a version bump touches **three**
-  files here, always. It was two until the Codex manifest landed; a rule that still
-  says "two" will leave the Codex one behind. The drift is silent: loading is
-  unaffected, so the only symptom is an installed plugin misreporting itself, and
-  0.3.0 shipped with a manifest still saying 0.2.0 because of exactly that.
-  `tests/test_plugin_manifest.py` fails on either mismatch, which is the guard — do
-  not rely on remembering. Keep it at those two and no more:
-  `.claude-plugin/marketplace.json` deliberately carries none, and a test pins that
-  too.
-- **Never rename a user-facing command to dodge a stale `uv run` wrapper.** Bump
-  the version and re-run `uv sync` so uv rebuilds the entry points.
-- **Never use a placeholder path or a fabricated example value** in committed
-  code — `/my/custom/path/`, a dummy digest, `rs999999999`, `1e-328`. Fixtures use
-  real identifiers (`rs4988235`, PMID `11788828`). A fabricated value proves
-  nothing and outlives the session that invented it.
-- **Never commit large data.** No VCF/parquet/gz/BAM/FASTA/`.db`. Anything over
-  ~5 MB that must travel goes through Git LFS. A blob committed *before*
-  `git lfs track` stays in every past commit even after the pointer replaces it at
-  HEAD, so the pack still ships it — surface it, and hand the remediation to the user.
-- **Never run tree operations.** No tags, releases, branch management or history
-  rewriting except where §10 grants it. **Never `git stash drop` /
-  `git stash clear`**, even on explicit request. **Never `git add -A` or
-  `git add .`** — it sweeps in `.env` files and editor swap files; stage explicit
-  paths.
-- **Every git permission is bounded to THIS repository.** A commit, push or tag
-  grant covers `/data/sources/just-module-creator` and nothing else — never a
-  sibling, a parent or a downstream repo, whatever the state of its tree. Writing a
-  file into `../just-dna-format` or `../just-dna-marketplace` is how an upstream
-  note gets filed; committing it there is not ours to do, and the note is complete
-  the moment it is written. Leaving their working tree dirty is the expected
-  outcome, not an unfinished job.
+- **Never `uv pip install`.** Use `uv sync` / `uv add` / `uv add --dev`; `uv pip install` bypasses
+  `pyproject.toml` and the lockfile.
+- **Never call bare `python` / `python3`.** Always `uv run python …`, `uv run pytest …`.
+- **Never hardcode a version string.** It comes from `importlib.metadata.version("just-module-creator")`.
+  **Exception: the two plugin manifests** (`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`)
+  are JSON and must be bumped by hand **in the same commit as `pyproject.toml`** — a version bump
+  touches **three files**. `tests/test_plugin_manifest.py` fails on a mismatch.
+  `.claude-plugin/marketplace.json` deliberately carries no version, and a test pins that too.
+- **Never rename a user-facing command to dodge a stale `uv run` wrapper.** Bump the version and
+  `uv sync`.
+- **Never use a placeholder path or a fabricated example value** in committed code
+  (`/my/custom/path/`, `rs999999999`, `1e-328`). Use real identifiers (`rs4988235`, PMID `11788828`).
+- **Never commit large data.** No VCF/parquet/gz/BAM/FASTA/`.db`. Over ~5 MB goes through Git LFS;
+  a blob committed before `git lfs track` stays in history — surface it and hand the fix to the user.
+- **Never run tree operations** beyond what §10 grants. **Never `git stash drop` / `git stash clear`**,
+  even on request. **Never `git add -A` / `git add .`** — stage explicit paths.
+- **Every git permission is bounded to THIS repository.** Writing a note into `../just-dna-format`
+  or `../just-dna-marketplace` is how an upstream finding is filed; committing there is never ours.
+  Leaving their tree dirty is the expected outcome.
 
 ### Code
 
-- **Never write an inline import.** Every import at module top level, absolute.
-  The sole exception is a guarded module-level `try/except ImportError` for an
-  *optional* dependency — and this repo has none: all four just-dna packages are
-  hard dependencies, so every tool works after a bare `uv sync`. See §5.
-- **Never nest a `try`/`except` inside another.** It hides the real error. Let
-  typed exceptions propagate; wrap only where a genuine recovery path exists.
-- **Never `print` for diagnostics.** Stdlib `logging` to **stderr** — under stdio
-  the JSON-RPC stream owns stdout, and a log line on stdout corrupts the protocol.
-  `print`/`typer.echo` is only for CLI output the user asked to see.
-- **Never curate `__all__` or add a re-export `__init__.py`.** This is an
-  application; import from where the symbol actually lives.
-- **Never open a socket outside `net.py`.** Every outbound request goes through a
-  `ServiceGate` there, so pacing, User-Agent and the shared NCBI budget cannot
-  drift between clients. This server was socket-free until literature discovery
-  landed; that is a normal thing for an app surface to own, but only in one place.
-  **`RegistryClient` is not an exception to this and never was**: it is upstream's
-  client holding upstream's pacing, and routing a lookup through it (RM30) spends the
-  *deployment's* budget rather than ours. What that costs instead is **attribution** —
-  the caller has to be told who answered, which is what `RouteInfo.answered_by` is for.
-- **Never let a routed answer hide who answered it.** A snapshot-backed answer may come
-  from a local lane, from a registry acting as a caching proxy, or from a live service
-  after the proxy missed — and the third is the one that must never be reported as the
-  first, because the values can be identical while the egress and the provenance are
-  not. `routing.route_for` decides and `routing.missed_at_registry` re-labels; a new
-  routed tool owes both. **`offline` outranks every route**: routing out is egress, so a
-  cache-only run answers locally or reports the question as unasked.
+- **Never write an inline import.** Top-level, absolute imports. The only exception would be a
+  guarded optional dependency, and this repo has none (§5).
+- **Never nest a `try`/`except` inside another.** Let typed exceptions propagate; wrap only where a
+  real recovery path exists.
+- **Never `print` for diagnostics.** `logging` to **stderr** — under stdio the JSON-RPC stream owns
+  stdout. `print`/`typer.echo` only for CLI output the user asked for.
+- **Never curate `__all__` or add a re-export `__init__.py`.**
+- **Never open a socket outside `net.py`.** Every outbound request goes through a `ServiceGate` so
+  pacing, User-Agent and the shared NCBI budget cannot drift. `RegistryClient` is upstream's client
+  with upstream's pacing and is not an exception; routing through it spends the deployment's budget,
+  so the cost is **attribution** (`RouteInfo.answered_by`).
+- **Never let a routed answer hide who answered it.** A snapshot-backed answer may come from a local
+  lane, from a registry caching proxy, or from a live service after the proxy missed — the values can
+  match while egress and provenance differ. `routing.route_for` decides, `routing.missed_at_registry`
+  re-labels; a new routed tool owes both. **`offline` outranks every route.**
 - **Never make anything that uploads the author's spec automatic.** `POST /drafts` and
-  `POST .../derived` send every authored CSV, `module_spec.yaml` and the `logs/` subtree
-  to a third party. Reads may route themselves; a send is a tool the author calls, aimed
-  with an explicit `target`. Reversal recipe is in `routing.py`'s docstring, if that ever
-  turns out to be one hop too many.
-- **Never reach into an upstream private API.** No `EutilsClient._get`, no
-  `EuropePmcClient._get`, no reassigning another package's decorator state.
-  Everything we need is public — `EutilsSettings.identity_params()`,
-  `PacingGate`, `EuropePmcClient.lookup()/.fulltext()`, and the injectable
-  `LookupClients`. If something genuinely is not, file it; do not tunnel to it.
+  `POST .../derived` send every authored CSV, `module_spec.yaml` and `logs/` to a third party. Reads
+  may route themselves; a send is a tool the author calls with an explicit `target`. Reversal recipe
+  in `routing.py`'s docstring.
+- **Never reach into an upstream private API** (`EutilsClient._get`, reassigning another package's
+  decorator state). Use the public surface — `EutilsSettings.identity_params()`, `PacingGate`,
+  `EuropePmcClient.lookup()/.fulltext()`, injectable `LookupClients`. If something isn't public, file it.
 
 ### The domain rules this server exists to enforce
 
-Each corresponds to a trap in [docs/DOMAIN.md](docs/DOMAIN.md). Breaking one does
-not merely bend a convention — it deletes a class of validation the upstream
-design depends on.
+Each maps to a trap in [docs/DOMAIN.md](docs/DOMAIN.md). These were audited under `RM15` against
+this layer's purpose. **Keep applying the test to anything new:** is it physics, is it format's
+policy that is also correctly ours, or is it format's policy we should not hold? "Upstream does it
+that way" is not an argument. And a refusal that produces a *convincing-looking* artifact instead of
+an honest gap is worse than what it refused (title-as-quote, §11).
 
-> ✅ **AUDITED — `RM15`, 2026-08-20. Every bullet below has now been read against this
-> layer's purpose rather than inherited.** Three moved: `report, never repair` became a
-> counterstance, the `provenance_quote` prohibition was reversed outright, and
-> "never widen the write surface" was split because two of its three clauses were
-> format's boundary and contradicted the counterstance. The rest stand — most because
-> they are **physics** (a three-valued answer, `all()` over an empty list, except-arm
-> ordering, a determinism gate not being a correctness gate), the remainder because they
-> are format's policy that is **also correctly ours**, now justified from our own reason
-> rather than from theirs.
->
-> **The test survives the audit, so keep applying it to anything new:** is it physics,
-> is it format's policy that is also correctly ours, or is it format's policy we should
-> not be holding at all? A prohibition whose only justification is "upstream does it
-> that way" is the defect RM15 existed to find, not an argument. And the reverse now has
-> a worked example too: a refusal that produces a *convincing-looking* artifact instead
-> of an honest gap is worse than the thing it refused — see the title-as-quote
-> calibration case in §11.
+- **Never hardcode a schema fact** — no column list, vocabulary or requirement. Call `describe_table`
+  / `table_requirements` / `authoring_reference` and pass through what they return. The one
+  exception is the **subject half** of `authoring._SUBJECTS` ("which table?" is about intent, not
+  schema), commented as such. Everything structural is generated: `hints.key_fields(csv)`,
+  `hints.DERIVED_TABLE_MODELS`, `scaffold.companions_for`, `compiler.spec_tables`. **A fact you
+  cannot generate is guarded by a test, never a comment**, and when it becomes generated the test's
+  subject moves rather than the test being deleted. Prefer guards that compare two **independent**
+  producers over a derivation compared with itself.
+- **Never fill a value from the same source that checks it.** The check then compares a convention
+  against itself and agrees, and the row moves from honestly unverified to **apparently verified** —
+  which nothing downstream can tell apart. This is one cell/source pair, not a licence to read it as
+  "do not write". **The same defect arrives vacuously too**: a `provenance_quote` set to the article
+  title always passes `quotes_found`. Ask of any green check: **could this have failed?**
+- **Report-never-repair is the FORMAT's stance; we hold a counterstance.** Three parts, all required:
+  1. **We may write.** Business decisions are delegated to this layer; filling or correcting a cell
+     is legitimate here.
+  2. **Every authoring move goes through the log.** `record_override` appends to
+     `logs/authoring.log`, which every compile sweeps up and **publishes with no opt-out** — so never
+     write an absolute path, credential or transcript fragment there. A hand edit must go through a
+     tool or skill that logs. Every new write surface owes the same.
+  3. **The agent needs a discriminator.** The real risk is that **the source lags the edge**: ClinVar
+     may be stale, an article retracted, a conclusion refuted. "Your row disagrees with ClinVar" is not
+     a defect report; silently conforming the row can degrade a module and make the check agree with
+     itself. Editing *against* a source needs a reason that outranks the source.
 
-- **Never hardcode a schema fact** — no column list, no vocabulary, no
-  requirement. Call `describe_table` / `table_requirements` /
-  `authoring_reference` and pass through what they return. A hardcoded vocabulary
-  is a bug waiting for the next upstream release. The single exception is the
-  **subject half** of `authoring._SUBJECTS`, which answers "which table?" — a
-  question about *intent* that the schema cannot answer — and is commented as such.
-  **The exception stops there, and RM10 is what it cost to learn that.** The `keyed_on`
-  half of the same entries was structure, and it drifted exactly the way this rule
-  predicts: it named `modifier_cn` for all of 0.6, after upstream deprecated that column
-  in favour of `modifier_copy_number`. **It is generated now** — `hints.key_fields(csv)`
-  since 0.6.5 (`S48`), returning columns, the collision `rule`, the stamped columns and a
-  second-level `fallback`, for authored kinds and machine-produced sidecars alike, read
-  off each model's own `_KEY_FIELDS` — as are the sidecar roster and its models
-  (`hints.DERIVED_TABLE_MODELS`, `S47`), the companion pull (`scaffold.companions_for`,
-  `S49`) and the defaults-folded rows behind `content_signature` (`compiler.spec_tables`,
-  `S53`). Four restatements, one release; **that is what filing costs and what it buys.**
+  When we pass upstream's own answer across the boundary, `applied: false` and its `refusal` are
+  preserved verbatim — that is upstream reporting its act. Our writes are logged as ours, never
+  laundered as upstream's. **Who is flying is unknown**: the agent may serve a layman expecting it
+  driven or a geneticist expecting fine control, so a tool writes, logs, and surfaces the decisions
+  that need a pilot.
+- **An agent MAY locate and write a `provenance_quote`.** The agent reads the article
+  (`fetch_fulltext` hands it over whole), so the reading is real; the old prohibition protected a
+  fiction about *who* read it and produced empty columns or unmarked title-quotes. The rule is
+  **attribution, not abstention**:
+  1. Quote **verbatim** and record who located it in `StudyRow.curator` (free text: name, handle or
+     model id, row-level because work is mixed — "scientist reads review, agent traverses
+     citations"). Nothing checks `curator`; it is for reviewers, paired with `authorship` and the
+     `logs/` entry. It is deliberately not a `machine_located` boolean. Combined authority already
+     exists upstream (`Contribution.who` = name/handle/model id; `Contribution.kind` ladders
+     human…human_certified against ai/agent/team/swarm) — don't re-ask for it.
+  2. **The human author holds full responsibility regardless.** Attribution is about the real
+     distribution of roles, never about moving liability.
+  3. Honest attribution beats an empty column.
 
-  **The rule the four leave behind is about the interval, not the exception.** A fact you
-  cannot generate is guarded by a **test**, never by a comment — and the test's subject
-  moves when the fact starts being generated rather than the test being deleted: the
-  `keyed_on` guard now asks whether the *generated* answer resolves on a live,
-  undeprecated field, because that drift can still arrive from upstream and an author
-  reading a retired key column is misled either way. Where a hand-kept map is replaced,
-  prefer a guard that compares two **independent** producers (the compiler's fact roster
-  against the registry's, which ship on different cadences) over one that compares a
-  derivation with itself.
-- **Never fill a value from the same source that checks it.** *(Audited under RM15
-  2026-08-20: **kept**, and it is ours rather than inherited — but it is one cell/source
-  pair, not a licence to read it as "do not write".)* A cross-check compares an
-  independently authored value against a source; filling it *from* that source makes
-  the check compare a convention against itself, and it agrees perfectly. The cost that
-  is specifically **ours** is the second one: the row moves from honestly unverified to
-  **apparently verified**, and we are the layer that hands somebody a module to trust.
-  An unverified row is honest; a falsely verified one is not, and nothing downstream can
-  tell them apart.
-
-  **The same defect arrives from the other direction, so watch for it there too**: a
-  value that satisfies a check *vacuously* is as bad as one copied from the checker.
-  `provenance_quote` set to the article's **title** passes `quotes_found` every time,
-  because a title is always in its own fulltext — 3668 published rows do exactly that
-  (§11, `F42`). Ask of any green check: **could this have failed?** If not, it measured
-  nothing, whoever wrote the value.
-- **Report-never-repair is the FORMAT's stance, and we hold a counterstance. Corrected
-  2026-08-20 — this bullet used to forbid writing outright.** *"Report-never-repair is
-  format's stance, correct for that layer: they delegate business decision to us here;
-  we're more high-level user-facing app level, we have a counterstance."* So the rule
-  here is now three parts, and dropping any one of them is what makes it dangerous:
-
-  1. **We may write. Full stop.** *"Yes, we may write, fullstop… we may revise and fix
-     — yes absolutely."* A business decision is delegated to this layer, so a tool of
-     ours filling or correcting a cell is legitimate where the same act in the compiler
-     would not be.
-  2. **Every authoring move goes through the log.** *"Logged — absolutely, yes; there's
-     a whole `logs/` surface for this and I would want to have every authoring move
-     going through any tool logged."* **That surface finally has a writer**:
-     `record_override` appends to `logs/authoring.log` (`RM16`, 2026-08-20), and its
-     dossier was titled *the provenance subtree nobody fills* until it did. It is swept
-     up by every compile and **published with no opt-out**, so it is the right place, it
-     costs an author nothing, and nothing may write an absolute path or a credential
-     into it. **A move the agent makes by hand is harder to capture, so make it go
-     through a tool or a skill** that logs. Every *new* write surface owes the same.
-  3. **The agent needs a DISCRIMINATOR, and this is the hard part.** The vacuity
-     argument was never the real risk. The real risk is that **the source lags the
-     edge**: *"why not?? ClinVar lags behind edge, say the article is retracted,
-     metaresearch refutes conclusion etc — validation against ClinVar this way makes
-     the correction done mindlessly, wrong."* So "your row disagrees with ClinVar" is
-     not a defect report. It may be the module being **right and current** while the
-     archive is stale. An agent that silently conforms the row to the source can
-     **degrade** a module, and the check will then agree with itself and call it green.
-     Editing *against* a source needs a reason that outranks the source.
-
-  **What has NOT changed:** when we pass upstream's own answer across the MCP boundary,
-  `applied: false` and its `refusal` are preserved verbatim. That is upstream reporting
-  what *it* did, and rewriting it would be misreporting another layer's act. Our writes
-  are our own, logged as ours, and never laundered as upstream's.
-
-  **Who is flying is unknown until they take the seat.** The direct consumer of this
-  toolset is an *agent*, and that agent may be the Author or the Assistant: a layman may
-  hand over vague directions and expect it driven, while a geneticist expects
-  fine-grained control. So a tool may not assume either — it writes, it logs, and it
-  surfaces the decisions that need a pilot.
-- **An agent MAY locate and write a `provenance_quote`. Reversed 2026-08-20 — this bullet used to
-  forbid it outright, and the prohibition was a derived false direction.** *"Yes, it is a derived
-  false direction: demolish full force."* The old case: a machine-located quote *"asserts a reading
-  that never happened"*. It does not. The agent reads the article — `fetch_fulltext` hands it over
-  whole — so the reading happens; what the old rule actually protected was a **fiction about who
-  did the reading**, and it protected it by leaving the column empty for the exact audience this
-  plugin exists for. §10 settles that: **"AI totaly can read articles"**, and asking the layman
-  driving the plugin for a quote is *"v2 work from a wrong person"*.
-
-  What replaces it is **attribution, not abstention**:
-
-  1. **Locate it, quote it verbatim, and record who located it.** The honest instrument is a per-row
-     *whodunit*, because real work is mixed: *"example: scientist reads review, agent traverses
-     citations"*. Per-row quote provenance **does not exist in the schema** — we own none — so it is
-     asked of upstream (`S55`, filed 2026-08-20, beside `S54` — the measurement that the old rule
-     produced title-as-quote on 3668 published rows). **`StudyRow.curator` shipped in format 0.6.5
-     and is installed**: free text — a name, a handle or a model id — resolvable against
-     `authorship`, row-level because the work is mixed at row granularity, and deliberately **not** a
-     `machine_located` boolean. Fill it on every row whose quote was located, and know that **nothing
-     checks it**: it is legible to a reviewer routing scrutiny, not to a gate, which is the point
-     rather than a shortcoming. `authorship` and the `logs/` entry still carry what kind of
-     contributor an identity is; the pairing is the record and neither half means much alone.
-  2. **The human author holds the responsibility regardless.** *"AI is not a subject of right, so the
-     human author holds the full responsibility"* — so attribution honesty is about the **real
-     distribution of roles**, never about moving liability onto a machine. A declared agent-located
-     quote does not dilute an author's accountability for it by one inch.
-  3. **Honesty beats the empty column, which is the whole trade.** *"At least honest highlights of
-     real distribution of roles is 100% better than fake 'I read it all' fingerscrossed confirmation
-     of what never happened to push thru the block; realpolitik so to say."* The old rule did not
-     produce human-read quotes; it produced **no quotes**, and where it was worked around it produced
-     an unmarked one.
-
-  **What survives, and it is physics rather than policy:** a quote lifted from a fulltext is not
-  independently confirmed by a check against that same fulltext. Once the text has been read through
-  `fetch_fulltext`, `quotes_found` on that row is a **citation-pairing check** — it still catches a
-  quote written against the wrong PMID, and it is no longer evidence that the claim is in the
-  literature. **State that consequence; never use it to refuse.** And never write a passage that is
-  not verbatim in the retrieved text: a fabricated quote is a fabricated quote whoever typed it.
-
-  **Upstream carries our old argument.** `hints.ATTESTATION_BEARING` (`{provenance_quote,
-  provenance_regex}`) shipped in format 0.5.4 on the reasoning in `S11` — the reasoning now reversed.
-  The constant may still be right for *their* layer, where nothing can record a reader; the
-  justification we handed them is not ours any more, and `S55` withdraws it.
-- **Never collapse "unknown" into a boolean.** Answers are three-valued: true /
-  false / **unknown**, and `None` is never `False`. When unknown, withhold — never
-  report, never negate. **A check that could not run is not a check that passed**,
-  and tool output must keep that visible. Combine with Kleene semantics, not
-  withhold-on-any-unknown: `unknown AND false` really is `false`.
-- **Never treat a determinism gate as a correctness gate.** `--strict`, a digest
-  match, a reproducible build mean *reproducible*, not *right*.
-- **Never expose a path to `resolve_with_ensembl=False`.** Despite its name it is
-  the master switch for *all* resolution, injected `resolution.csv` included; it
-  compiles every row with `chrom=None` and **succeeds**. `compile_module` pins it
-  `True` with `ensembl_cache=None`.
-- **Never let a module carry two spellings of one sidecar.** `licensing.csv` and `sources.csv`
-  are one table with one model; both read, only the preferred one is created, and both present is
-  an **error** rather than a merge. Route every write through `layout.sidecar_write_path` (write to
-  the file you read) and read `layout.preferred_spelling` / `is_deprecated_spelling` rather than
-  restating which is which. The rename stops at the CSV: `sources.parquet` and `manifest.sources`
-  keep their names for the whole 0.x tail, so never "finish" it into a published key.
-- **Never read `fully_resolved` without `resolution_subjects`, and never coalesce a null counter
-  to zero.** Over an empty list the flag is `all()` over nothing. All five RM44/S31/S33 counters
-  are `int | None` where `0` is a real answer and `None` means nothing counted — which is what
-  every pre-0.6 manifest honestly is.
-- **Never place a `*Unavailable` except-arm after its parent.** Since enricher 0.6.2 each is a
-  subclass of the type beside it, so parent-first catches every outage in the parent arm and the
-  outage arm goes dead — silently, raising nothing. One tuple is safe; two arms must be
+  **Physics that survives:** once a quote is lifted from a fulltext, `quotes_found` on that row is a
+  citation-pairing check (catches a wrong PMID), not evidence the claim is in the literature. State
+  that; never use it to refuse. Never write a passage that isn't verbatim in the retrieved text.
+  Upstream's `hints.ATTESTATION_BEARING` was built on our old reasoning; `S55` withdraws it.
+- **Never collapse "unknown" into a boolean.** True / false / **unknown**; `None` is never `False`. A
+  check that could not run is not a check that passed. Combine with Kleene semantics:
+  `unknown AND false` is `false`.
+- **Never treat a determinism gate as a correctness gate.** `--strict`, a digest match, a
+  reproducible build mean *reproducible*, not *right*.
+- **Never expose a path to `resolve_with_ensembl=False`.** It is the master switch for *all*
+  resolution, injected `resolution.csv` included, and compiles every row with `chrom=None`
+  **successfully**. `compile_module` pins it `True` with `ensembl_cache=None`; upstream refused the
+  rename (`S14`), so the pin is permanent.
+- **Never let a module carry two spellings of one sidecar.** `licensing.csv` and `sources.csv` are
+  one table; both read, only the preferred one is created, both present is an **error**. Route writes
+  through `layout.sidecar_write_path` and read `layout.preferred_spelling` /
+  `is_deprecated_spelling`. The rename stops at the CSV: `sources.parquet` and `manifest.sources`
+  keep their names.
+- **Never read `fully_resolved` without `resolution_subjects`, and never coalesce a null counter to
+  zero.** Over an empty list the flag is `all([])`. The RM44/S31/S33 counters are `int | None`: `0`
+  is an answer, `None` means nothing counted.
+- **Never place a `*Unavailable` except-arm after its parent.** Each is a subclass of the type beside
+  it, so parent-first makes the outage arm dead code. One tuple is safe; separate arms go
   narrow-first. `tests/test_passes.py` walks the AST for this.
-- **Containment never moves; the write surface does. Split under RM15, 2026-08-20 —
-  this bullet used to read "never widen the write surface: tools write only where the
-  upstream API already writes … and never overwrite an authored file", and those two
-  clauses were format's boundary adopted whole.** They contradict the counterstance
-  above outright: *"we may write, fullstop… we may revise and fix — yes absolutely."*
-  A layer that may not touch an authored file is not an authoring layer. So the bullet
-  is now two rules that were tangled into one:
+- **Containment never moves; the write surface does.**
+  1. **Containment is absolute.** Every path resolves through `_shared.resolve_dir` so
+     `JMC_WORKSPACE` holds. Nor may we invent a file **inside** a spec directory: a name absent from
+     `specfiles.RECOGNIZED_SPEC_FILES` is dropped by the next server-side rebuild, so our bookkeeping
+     goes to a resolved cache/workspace path.
+  2. **What we may write is decided by the counterstance, not by upstream's surface.** Revising an
+     authored cell is legitimate if it is logged, respects the discriminator (evident and mechanical
+     → apply silently; judged or checked → surface), and any write that destroys content captures
+     first and **verifies the capture**.
 
-  1. **Containment is absolute and is not under review.** Every path resolves through
-     `_shared.resolve_dir` so `JMC_WORKSPACE` containment holds. This is a security
-     boundary, it is ours, and no argument about authoring reaches it. Nor does it
-     license inventing a file **inside** a spec directory: a name absent from
-     `specfiles.RECOGNIZED_SPEC_FILES` is dropped by the next server-side rebuild, so
-     our own bookkeeping goes to a resolved cache/workspace path (§11).
-  2. **What we may write is decided by the counterstance, not by upstream's surface.**
-     Scaffold, enrich and the compile out-dir are where upstream writes; they are the
-     floor, not the ceiling. Revising an authored cell is legitimate **here** — provided
-     it goes through the log, it respects the discriminator (evident and mechanical
-     applied silently, anything judged or checked surfaced instead), and a write that
-     destroys prior content captures first and **verifies the capture** before
-     destroying anything, which is already the rule for a derived sidecar below and
-     generalises to every overwrite.
-
-  **What is NOT licensed by this**: overwriting an authored value silently, or writing
-  one from the source that checks it, or conforming a row to an archive that disagrees
-  with it. Those are forbidden by the three bullets around this one, each for its own
-  reason, and none of them is "upstream would not do it".
-- **Never delete a derived sidecar without a verified capture, and never put the
-  capture in the spec directory.** Re-deriving one requires deleting it — every
-  sidecar is merge-not-clobber — and the delete discards hand-curated rows,
-  `resolution.csv`'s `source="manual"` above all. So `refresh_sidecar` copies the
-  file out, **reads the copy back and hashes it**, and only then unlinks; a
-  capture that did not verify means nothing is touched. The copy goes to a
-  resolved cache/workspace path, never beside the spec: an invented file there is
-  not in `specfiles.RECOGNIZED_SPEC_FILES` and a server-side rebuild drops it
-  without saying so, which is how `licensing.csv` was lost before registry 0.16.2.
-  Then **never classify against a partial re-derivation** — an unreachable source,
-  a pass that did nothing, or an empty fresh table restores the captured bytes,
-  because a table that was never filled reports every real row as one the source
-  withdrew.
-- **Never let a per-call argument loosen the offline ceiling.** `JMC_OFFLINE`
-  combines with a per-call `offline` by **OR**, via `_shared.offline_for`. Never
-  read the two separately.
-- **Never silently fall back when primary data is missing.** Refuse explicitly or
-  name the substitute. The caller cannot see that the source differed.
+  Not licensed: overwriting an authored value silently, writing one from the source that checks it,
+  or conforming a row to an archive that disagrees with it.
+- **Never delete a derived sidecar without a verified capture, and never put the capture in the spec
+  directory.** Sidecars are merge-not-clobber, so re-deriving means deleting, which discards
+  hand-curated rows (`resolution.csv`'s `source="manual"` above all). `refresh_sidecar` copies out,
+  reads back and hashes, and only then unlinks. **Never classify against a partial re-derivation**:
+  an unreachable source, a no-op pass or an empty fresh table restores the captured bytes, because an
+  unfilled table reports every real row as withdrawn.
+- **Never let a per-call argument loosen the offline ceiling.** `JMC_OFFLINE` ORs with a per-call
+  `offline` via `_shared.offline_for`; never read them separately.
+- **Never silently fall back when primary data is missing.** Refuse, or name the substitute.
 - **Never resolve a contradiction between two rules by inference.** Run §1.
 
 ---
@@ -441,574 +248,288 @@ design depends on.
 ## 3. Repository layout, data and assets
 
 ```
-src/just_module_creator/   source (src layout). `routing.py` is the thick/thin
-                           decision and the hint translation; `tools/proxy.py` the
-                           three tools that talk to a registry's caching proxy;
-                           `provisioning.py` prices this machine's snapshot lanes
-                           and decides whether to offer anything at all
+src/just_module_creator/   source (src layout). routing.py = thick/thin decision;
+                           tools/proxy.py = registry caching-proxy tools;
+                           provisioning.py = snapshot-lane pricing and offers
 tests/                     pytest suite — in-memory, offline
 docs/                      all markdown except this file and README.md
-skills/<name>/             one directory per skill — the map, the two doors, the stage spine,
-                           the second-pass three, the references. No skill holds another's
-                           procedure; the roster is the asset table above, and a test pins it
-.claude-plugin/            plugin + marketplace manifests
+skills/<name>/             one directory per skill or guide (roster: the table above)
+.claude-plugin/ .codex-plugin/   manifests
 assets/                    fixtures that MUST travel — committed
 data/input|interim|output  git-ignored, never travels
-scripts/                   operational one-offs, not importable code
+scripts/                   operational one-offs, not importable
 ```
 
-- `data/` is git-ignored by ignore-all + allowlist. To commit a subtree, add
-  explicit `!<dir>/` and `!<dir>/**`.
-- Committed test data lives in `assets/`, not `data/`. Tests write to `tmp_path`
-  or a resolved cache dir, **never** into the project tree.
-- Sibling repos, **read-only** unless the task explicitly targets them:
-  `../just-dna-format` (which also hosts the compiler, enricher and their docs),
-  `../just-dna-lite`, `../just-dna-registry`.
+- `data/` is ignore-all + allowlist; to commit a subtree add `!<dir>/` and `!<dir>/**`.
+- Test data lives in `assets/`. Tests write to `tmp_path` or a resolved cache dir, never the tree.
+- Sibling repos are **read-only** unless the task targets them (§11 for paths).
 
 ---
 
 ## 4. Build, run, test
 
 ```bash
-uv sync                                        # install
-uv run pytest                                  # the suite; -vvv when diagnosing
-uv run ruff check . && uv run pyright          # lint + types
-uv run just-module-creator stdio               # run over stdio
-uv run just-module-creator http --port 3011    # run over HTTP
+uv sync
+uv run pytest                                  # -vvv when diagnosing
+uv run ruff check . && uv run pyright
+uv run just-module-creator stdio
+uv run just-module-creator http --port 3011
 uv run fastmcp dev fastmcp.json                # MCP Inspector
-claude --plugin-dir .                          # load as a plugin for one session
-uv run manuscript template                     # EASRP template → .md + .pdf
-uv run manuscript manuscript                   # paper draft → .md + .pdf
+claude --plugin-dir .
+uv run manuscript manuscript                   # paper → .md + .pdf (§8)
 ```
 
-`just <recipe>` wraps all of these **on a box that has `just`, and this one does not** —
-`just --version` is *command not found* here (checked 2026-09-11), so the `uv run` lines
-above are the ones that run and the `justfile` is where to read them, not something to
-invoke. The condition for deleting this clause is a check rather than a date: run
-`just --version` and read the exit. **Always run `uv run pytest` and
-`uv run ruff check .` after changing code.** Python **≥ 3.13** — the just-dna
-packages require it.
+`just` is not installed on this box; read the `justfile` for recipes, don't invoke it (re-check with
+`just --version`). **Always run `uv run pytest` and `uv run ruff check .` after changing code.**
+Python ≥ 3.13.
 
-Every CLI that starts a network transport **prints its URL** in the first lines
-of output, and every CLI **loads `.env` via `python-dotenv`** (`_load_env`,
-`override=False`) before reading configuration — which is what lets one `.env`
-serve both this server and the enricher it shells into. New configurable values
-are read from env with sensible defaults, documented in `.env.template`, and
-mentioned here.
+Every network CLI **prints its URL** in its first lines. Every CLI loads `.env` via `python-dotenv`
+(`override=False`) before reading config. New configurable values are read from env with defaults,
+documented in `.env.template`, and mentioned here.
 
-**The server reads three layers and writes one, and the one it writes is never a
-project `.env`.** `userconfig.load_env`: process environment, then a `.env` walked up
-from the **working directory** (never `load_dotenv()` bare — that walks up from the
-package's own file, which under any install is the plugin copy), then the user config
-file (`platformdirs.user_config_dir("just-module-creator")/.env`, or `JMC_CONFIG_FILE`).
-`remember_setting` writes the last, owner-only, for a name on `userconfig.SAVABLE`.
-The reason is the hosts: Claude Code starts the server in the author's project, Codex
-in the plugin's per-version copy, so "save it in `.env`" meant a file Codex never read
-and a plugin-dir `.env` is gone at the next update. **A skill or tool message that asks
-an agent to persist anything names `remember_setting`, never a file.**
+**Configuration: three layers read, one written, never a project `.env`.** `userconfig.load_env`
+reads process env, then a `.env` walked up from the **working directory** (never bare
+`load_dotenv()`, which walks from the package file — the plugin copy), then the user config file
+(`platformdirs.user_config_dir("just-module-creator")/.env` or `JMC_CONFIG_FILE`).
+`remember_setting` writes the last, owner-only, for names on `userconfig.SAVABLE`. Reason: Claude
+Code starts the server in the author's project, Codex in the plugin's per-version copy. **A skill or
+tool message asking to persist anything names `remember_setting`, never a file.**
 
-**Lists live beside it in `state.json` (`localstore`): registry accounts and the todo list.**
-Many tokens per instance, each with its namespaces and install-id; `auth.resolve_api_key`
-picks by the namespace a call names, falls back to the instance's default account, and
-refuses with the saved accounts listed when neither answers (the owner's rule: *pick by
-namespace, or ask*). `registry_register` saves what it mints, a claim records its namespace,
-and `accountcheck` re-checks every saved token on a daemon thread at a real start (never in
-`build_server`, which the suite calls by the hundred), recording `valid` / `invalid` /
-`unreachable` / `timeout` with the time — only `invalid` takes a token out of selection.
-**Every write to either file takes a verified backup first** (`userconfig.backup`, newest
-50 kept, the owner's number), under a `filelock` because two sessions are two processes.
+**Lists live in `state.json` (`localstore`): registry accounts and the todo list.** Many tokens per
+instance, each with namespaces and install-id. `auth.resolve_api_key` picks by the namespace a call
+names, falls back to the instance's default account, otherwise refuses listing the saved accounts
+(*pick by namespace, or ask*). `accountcheck` re-checks saved tokens on a daemon thread at a real
+start (never in `build_server`), recording `valid` / `invalid` / `unreachable` / `timeout`; only
+`invalid` removes a token from selection. **Every write to either file takes a verified backup
+first** (`userconfig.backup`, newest 50 kept) under a `filelock`.
 
-**A new env-backed preference is three-valued and documented, and its BEHAVIOUR is not
-written here.** `JMC_CACHE_PREWARM` / `JMC_CACHE_FULL` are `bool | None` because null
-means *not asked* and `False` means *asked and declined*; both go in `.env.template`.
-When and how an author is asked lives in the skill that ships — `skills/module-start/GUIDE.md`
-for these two — because **this file reaches nobody's install**. A plugin deployment gets the
-skills and the tool descriptions; a rule about how the agent talks to an author is inert
-here and is only in force where it ships. Put the design constraint in this file and the
-conduct in the skill, and never split one rule across the two.
+**An env-backed preference is three-valued** (`bool | None`: null = not asked, `False` = declined),
+e.g. `JMC_CACHE_PREWARM` / `JMC_CACHE_FULL`, documented in `.env.template`. **How an author is asked
+lives in the skill that ships** (`skills/module-start/GUIDE.md` here), because this file reaches
+nobody's install. Design constraint here, conduct in the skill; never split one rule across both.
 
-**A first-run question may not require configuration the author has no reason to have
-done**, which is the design half of the above and is why the pair exists at all.
-`provision_caches` withheld its whole offer until `JUST_DNA_PIPELINES_CACHE_DIR` was set:
-unset is the default location, not a defect. *"No regular user sets envs as a first move;
-that is a dev mindset, not users."* So a tool may withhold on a condition it can **name
-and repair** — a path that cannot be written — never on an unset variable, and a cost
-ceiling is per item so a cramped disk declines the expensive one and still does the cheap
-one.
+**A first-run question may not require configuration the author has no reason to have done.** A tool
+may withhold on a condition it can **name and repair** (an unwritable path), never on an unset
+variable — unset is the default location ("No regular user sets envs as a first move; that is a dev
+mindset, not users."). Cost ceilings are per item, so a cramped disk declines the expensive offer and
+still takes the cheap one.
 
-**Timestamps: store ISO-8601 UTC, display local.** Never a naive
-`YYYY-MM-DD HH:MM:SS` — it is misparsed as local time and breaks string
-comparison against ISO values.
+**Timestamps: store ISO-8601 UTC, display local.** Never naive `YYYY-MM-DD HH:MM:SS`.
 
 ---
 
 ## 5. Coding standards
 
-- **Type hints mandatory. `pathlib.Path` for every path** internally. Tool
-  *signatures* take `str` because that is the MCP wire type, and convert
-  immediately via `_shared.resolve_dir`.
-- **Dependency tier: everything is a hard dependency.** All four just-dna
-  packages (`format`, `compiler`, `enricher`, `registry`) plus `fastmcp[tasks]`,
-  `pydantic`, `pydantic-settings`, `typer`, `anyio`, `python-dotenv`, `httpx`,
-  `tenacity`. Chosen so every tool works after a bare `uv sync` and the plugin's
-  one-command install stays true; the cost is a heavier install for someone who
-  only wants offline linting. There are no extras and no optional imports.
-  `httpx` and `tenacity` are **declared** rather than leaned on transitively,
-  because `net.py` calls both directly and a transitive pin is not a contract.
-- **Do not hand-roll what the enricher already uses.** Retries are `tenacity`
-  with upstream's own `net.attempt_floor` stop, so one deployment variable tunes
-  our persistence and theirs together. Pacing is upstream's `PacingGate` — not a
-  rate-limiter library — because `ServiceGate` must share the *same instance*
-  with `EutilsClient` for the NCBI budget to be one budget. `ServiceGate` adds a
-  lock and nothing else.
-- **We read the ecosystem's env vars; we never forward them.** `settings.py`
-  passes nothing through to the enricher — it reads its own configuration from
-  the process environment. But when *we* are the one making the call, reading a
-  variable the enricher also reads is right, not a leak: `JUST_DNA_CONTACT_EMAIL`
-  and `NCBI_API_KEY` reach our clients through `EutilsSettings`, so one `.env`
-  configures both surfaces and upstream's precedence is inherited rather than
-  copied.
-- **The polite-pool contact is a three-step chain, and step 2 stays *inherited*.**
-  `JMC_USER_EMAIL` → `JUST_DNA_CONTACT_EMAIL` → `settings.DEFAULT_CONTACT_EMAIL`.
-  Ours goes first because the address says *whose* rate-limit budget is being
-  spent — NCBI and Unpaywall both meter and contact per address. The middle step
-  is not re-implemented: `build_services` passes `email=None` when ours is unset
-  and lets `EutilsSettings.__post_init__` do that read, so a change to upstream's
-  precedence is followed rather than copied. **Never build the chain by reading
-  `JUST_DNA_CONTACT_EMAIL` yourself.**
-- **Never fabricate a contact address** — an invented one misattributes the
-  traffic to a stranger. `DEFAULT_CONTACT_EMAIL` is not an exception to that: it
-  is the project's own address, supplied by its owner, who accepts the traffic.
-  What it does cost is *attribution*, and the cost is real — an install that sets
-  nothing pools its budget with every other unconfigured install and sends any
-  abuse report to the project's inbox rather than the user's. So the default
-  exists to stop a source sitting out a call for want of a contact, **not** to
-  make configuring one optional: `.env.template` asks for `JMC_USER_EMAIL` in its
-  own section, and `build_services` logs which of the three steps answered so
-  "project default" is visible rather than silent. Since the default is always
-  present, `contact_email()` returns `str`, and any `if not email:` branch is dead
-  code — Unpaywall used to be the one source that reported itself unavailable on
-  a fresh checkout, and that branch is gone rather than left to rot.
-- **A long tool talks to its caller through `_shared.narrate`, never `ctx.info`.** `narrate`
-  puts the sentence on `report_progress`, which reaches every mode, and on stderr — so the
-  rule holds whatever the pin. The reason it exists is a fastmcp-4 hazard, now dormant under
-  the `<4` pin (§11): fastmcp 4 runs a `task=True` tool as a background task whenever the
-  client declared the tasks extension, and a worker context has no live session, so
-  `ctx.info` raises there; on the 2026-07-28 wire the logging capability is deprecated
-  outright (SEP-2577). Under the pin the handshake wire runs `task=True` tools inline, so
-  `ctx.info` would not raise — but `narrate` stays, because a re-upgrade brings the worker
-  path straight back and `report_progress` is correct on both wires.
-- **Typer for the CLI. Pydantic 2 at every boundary** — every tool returns a
-  model from `models.py`, never a bare dict, because an agent reads the field
-  descriptions.
-- **Constrained vocabularies:** `Mode` is a `Literal` because it is local config
-  read from env and never appears in a wire artifact. Anything that *does* reach a
-  persisted artifact would need `frozenset[str]` + a validator, so additions stay
-  non-breaking — but nothing here does; upstream owns every wire vocabulary.
-- **Polars only where upstream hands it to us.** We do not build dataframes; we
-  read the parquet upstream wrote.
-- **We compute two kinds of finding of our own, and they are different layers, not
-  one.** `authored_checks.py` holds per-table lint findings (the repeated
-  `provenance_quote`, the two `conclusion` rules) that ride out through `lint_rows`
-  and `validate_module` carrying `source="just-module-creator"`; `audit.py` holds the
-  whole-directory **decision list** behind `audit_module`. The line between them is
-  the unit, not the subject: a finding about one table's rows is a lint finding, and
-  a question that needs `module_spec.yaml` beside `verification.json` beside two CSVs
-  is an audit signal. Both are offline and neither blocks a compile. **Anything that
-  asks a source is a check** and belongs beside `check_identifiers`, where it writes
-  an attestation — an audit writes nothing at all.
-- **An audit signal is three-valued and the third state has its own list.**
-  `decide` / `clear` / `not_computed`, and `not_computed` carries `why_not`. Folding
-  "the file this reads is not here" into "nothing to decide" is `F61`'s shape: a
-  question that could not be put, presented as nothing to answer. Same rule as
-  `None`-is-not-`False` one bullet up, at a coarser grain.
-- **Deterministic ordering is load-bearing** wherever output is compared or
-  hashed. Never emit from `set`/`dict` iteration without an explicit sort —
-  `sorted(draft.DRAFTABLE)`, `sorted(...checked...)`.
-- **Preserve upstream's distinctions.** `error` / `warning` / `info`,
-  `applied` / `refusal`, and `None`-means-unchecked are all load-bearing.
-  `_shared.to_findings` / `to_alterations` exist to carry them across the boundary
-  field-for-field.
-- **Aggregate repeated warnings** by *reason*, with a count — never one per row.
-- **Heed terminal warnings, deprecations especially.** A deprecation in code you
-  touched is a **blocker**: find the current API, fix it, and update this file.
-- **Refactor internals aggressively** — no dead code, no API kept for nostalgia.
-  The contract is the MCP tool surface, the skill and the CLI; breaking *that* is
-  allowed but deliberate and versioned.
+- **Type hints mandatory; `pathlib.Path` internally.** Tool signatures take `str` (the MCP wire
+  type) and convert immediately via `_shared.resolve_dir`.
+- **Everything is a hard dependency**: the four just-dna packages plus `fastmcp[tasks]`, `pydantic`,
+  `pydantic-settings`, `typer`, `anyio`, `python-dotenv`, `httpx`, `tenacity`. No extras, no optional
+  imports. `httpx`/`tenacity` are declared because `net.py` uses them directly.
+- **Don't hand-roll what the enricher already uses.** Retries: `tenacity` with upstream's
+  `net.attempt_floor`. Pacing: upstream's `PacingGate`, shared as the **same instance** with
+  `EutilsClient` so the NCBI budget is one budget. `ServiceGate` adds a lock and nothing else.
+- **We read the ecosystem's env vars; we never forward them.** When we make the call, reading
+  `JUST_DNA_CONTACT_EMAIL` / `NCBI_API_KEY` through `EutilsSettings` is right.
+- **Contact chain**: `JMC_USER_EMAIL` → `JUST_DNA_CONTACT_EMAIL` → `settings.DEFAULT_CONTACT_EMAIL`.
+  The middle step stays inherited: `build_services` passes `email=None` and lets
+  `EutilsSettings.__post_init__` read it. **Never read `JUST_DNA_CONTACT_EMAIL` yourself.** Never
+  fabricate an address. The default is the project's own and exists so no source sits out a call —
+  not to make configuring optional: the address says whose rate-limit budget is spent and who gets
+  abuse reports, so `.env.template` asks for `JMC_USER_EMAIL`. `build_services` logs which step
+  answered. `contact_email()` returns `str`, so `if not email:` branches are dead code.
+- **A long tool talks to its caller through `_shared.narrate`, never `ctx.info`.** It uses
+  `report_progress` plus stderr, which works on every wire; `ctx.info` raises in a fastmcp-4
+  background task.
+- **Typer for the CLI. Pydantic 2 at every boundary** — every tool returns a model from `models.py`.
+- **Constrained vocabularies**: local config may be a `Literal`; anything persisted to a wire artifact
+  would need `frozenset[str]` + validator. Upstream owns every wire vocabulary.
+- **Polars only where upstream hands it to us.**
+- **Two kinds of our own finding, split by unit.** `authored_checks.py`: per-table lint findings via
+  `lint_rows` / `validate_module`, `source="just-module-creator"`. `audit.py`: the whole-directory
+  decision list behind `audit_module`. Both offline, neither blocks a compile. **Anything that asks a
+  source is a check** and belongs beside `check_identifiers`, where it writes an attestation; an audit
+  writes nothing.
+- **An audit signal is three-valued**: `decide` / `clear` / `not_computed` (with `why_not`). Never fold
+  "the file is missing" into "nothing to decide".
+- **Deterministic ordering is load-bearing** wherever output is compared or hashed — sort explicitly.
+- **Preserve upstream's distinctions** (`error`/`warning`/`info`, `applied`/`refusal`,
+  `None`-means-unchecked) via `_shared.to_findings` / `to_alterations`.
+- **Aggregate repeated warnings** by reason, with a count.
+- **A deprecation in code you touched is a blocker**: fix it and update this file.
+- **Refactor internals aggressively.** Breaking the tool surface, skills or CLI is allowed but
+  deliberate and versioned.
 
 ### Parity with upstream is the default, and a gap is a bug
 
-**This plugin is the only user-side exposure of the just-dna toolchain.** Upstream ships a library
-and a CLI; neither reaches somebody driving an agent. So when upstream adds a drafting source, a
-pass or a check, **wrapping it is the default and not wrapping it is the thing that needs a written
-reason** in `docs/just-dna-format-pending-fixes.md`.
+This plugin is the **only** user-side exposure of the just-dna toolchain. When upstream adds a
+drafting source, pass or check, **wrapping it is the default**; not wrapping it needs a written reason
+in `docs/just-dna-format-pending-fixes.md`. The signature of the defect: **the surface names a thing
+it cannot do** (e.g. `list_tables` naming a sidecar no tool could fill) — invisible from inside the
+code.
 
-The failure this prevents has a signature worth recognising: **the surface names a thing it cannot
-do.** `list_tables` listed `expression_effects.csv` among the sidecars for a whole release while no
-tool could fill it, and `refresh_sidecar` told the author to go run the CLI. That is the same defect
-the tier removal in 0.21.0 existed to end, arriving from the other direction — and it is invisible
-from inside the code, because every test passed. It took building a module to see it.
-
-**Measure the gap rather than remembering it**, because both sides move:
+Measure the gap; both sides move:
 
 ```bash
-ls ../just-dna-format/enricher/src/just_dna_enricher/*_draft.py    # the drafting sources
-uv run just-dna-enricher --help                                    # the pass and check surface
+ls ../just-dna-format/enricher/src/just_dna_enricher/*_draft.py
+uv run just-dna-enricher --help
 uv run python -c "from just_dna_compiler import hints; print(sorted(hints.DERIVED_TABLE_MODELS))"
 ```
 
-Two things are **not** grounds for leaving one out: that it would make a module non-commercial (a
-licence is a property of the module that used it, recorded per-module in `licensing.csv`, not of the
-plugin that offers the tool), and that nobody here has exercised it yet (that is an argument for a
-test). What *is* grounds: it is an operator's sweep, a build hook, or something whose only caller is
-a deployment rather than an author. Say which, in the note.
+**Not grounds** for leaving one out: that it makes a module non-commercial (licence is per-module, in
+`licensing.csv`), or that nobody has exercised it (argues for a test). **Grounds**: it is an
+operator's sweep, a build hook, or only a deployment calls it. Say which.
 
 ### How to add a tool
 
-1. **There is no tier. Register it, and if it is expensive, SAY SO in its
-   docstring.** `JMC_MODE`, `--mode` and the `extended` tier were removed in
-   0.21.0. The only registration question left is which `register_*` groups it —
-   subject matter, not cost — plus one binary: does it write to the registry, in
-   which case it is token-gated.
+1. **There is no tier** (removed in 0.21.0 — it repeatedly hid steps the taught workflow named).
+   Pick the `register_*` group by subject matter. If it writes to the registry, it is token-gated.
+   **If its cost scales with a corpus, say so in the docstring** (e.g. `enrich_gwas_effects` spends
+   `1 + 2N` requests); `test_the_corpus_sized_tools_say_what_they_cost` pins that.
+   `test_every_tool_the_taught_workflow_names_exists` and
+   `test_docstrings_only_name_tools_that_exist` guard the surface against naming tools that aren't
+   registered.
 
-   **The cost argument was real and is kept as prose.** A tool whose work a
-   *corpus* sizes — a citation graph, a whole-source draft, a pass that rewrites
-   every row — must say so where the caller reads it, and
-   `test_the_corpus_sized_tools_say_what_they_cost` fails if one stops saying it.
-   `enrich_gwas_effects` spends `1 + 2N` requests for a variant with N published
-   associations, measured at 382 for one real module; that sentence belongs in the
-   docstring, because a caller can weigh it against what they are doing and a flag
-   read at server start cannot.
-
-   **What the tier actually cost, four times over.** Read-vs-write was the first
-   line and it never described the code — `scaffold_module` and `compile_module`
-   both write and were never gated — while it put `lookup_identifier` behind the
-   flag, so the default surface could tell you `trait_efo_id` takes an ontology
-   CURIE and give you no way to check one: an invitation to write it from memory,
-   the exact thing rule 1 of the server instructions forbids. `enrich_module` was
-   extended-only while being step 6 of the taught order (fixed in 0.4.0).
-   `compare_to_published`'s docstring handed the caller a `registry_download` +
-   `compare_modules` pair the default tier did not have, and an unattended run
-   followed that sentence into nothing and concluded the capability existed
-   nowhere. `refresh_sidecar` was invisible to both 2026-08-21 runs, which each
-   reported that `rm resolution.csv` is how you re-derive a sidecar. **Every one of
-   those is the same defect: the surface taught a step it could not run**, and each
-   fix narrowed the line instead of asking whether the line paid for itself.
-
-   Two tests survive the tier and both are narrower now:
-   `tests/test_surface_and_auth.py::test_every_tool_the_taught_workflow_names_exists`
-   parses `server.INSTRUCTIONS` and fails on a taught name that is not registered,
-   and `test_docstrings_only_name_tools_that_exist` asserts the same over every
-   description, with the "that is a field, not a tool" exclusions generated from
-   the live input schemas and our own models rather than hand-kept.
-
-   **The one exception left, and its test.** `registry_register` writes to the
-   registry and is *not* gated, because it is what mints the token — gating it
-   would be a cycle. So the rule is: a registry write is token-gated **unless the
-   token is its output**, and that is a set of exactly one. It lives in `auth.py`
-   beside `authenticate` rather than in `tools/registry.py`, and it is pinned
-   visible wherever the listing can be narrowed — by tool search, or by
-   `JMC_HIDE_GATED_UNTIL_AUTH` — because hiding the only route to a credential
-   reproduces the dead end it exists to remove (`F12`). If a second such tool ever
-   appears, that is the moment to ask whether "ungated onboarding" is a category
-   rather than an exception — do not grow the exception silently.
-2. Add it inside the matching `register_*` with type hints, a docstring (it
-   becomes the description) and `ToolAnnotations`. **A description is context, and
-   the ceiling depends on who pays for it.** In `toolbox.CORE` — what every
-   session gets whether or not the server is layered — one paragraph is right, two
-   is the outside, and three is water; outside it, five is fine where the tool
-   genuinely takes five, and the ceiling is six before it reads as an essay. Two
-   tests pin those. Measured at 0.23.0 — re-run rather than trusting these, they
-   are undated constants of exactly the kind §8 warns about — the listing is
-   58,586 tokens, 29% of a 200k window, with 59,751 characters of it in
-   descriptions, down from 70,528 when the rule landed, which took the layered
-   surface down 11.7%. This is the difference between a surface an agent can hold
-   and one it cannot. Say what the tool does, what the arguments
-   mean and what it refuses; **the reasoning — why it is shaped this way, which
-   defect it closed, what was measured — goes in a comment above it**, where
-   whoever edits the code reads it and no session pays for it. Deleting the reason
-   is never the alternative: moving it is.
+   **The one ungated registry write is `registry_register`**, because it mints the token. It lives in
+   `auth.py` and stays visible however the listing is narrowed. If a second such tool appears, ask
+   whether "ungated onboarding" is a category — don't grow the exception silently.
+2. Add it inside its `register_*` with type hints, a docstring and `ToolAnnotations`. **Descriptions
+   are context someone pays for.** In `toolbox.CORE`: one paragraph, two at most. Elsewhere: up to
+   five, ceiling six. Tests pin both. Say what it does, what arguments mean, what it refuses; **the
+   reasoning goes in a comment above it**, not in the description. Move reasons, never delete them.
+   Re-measure listing size rather than trusting old numbers.
 3. Return a model from `models.py`.
-4. Paths through `resolve_dir`; network through `offline_for` and
-   `anyio.to_thread.run_sync`.
-5. Gated tools are `async def`, take `ctx: Context`, `await
-   resolve_api_key(ctx, settings, target)`, return
-   `unauthenticated_result(settings, target)` on `None`, are tagged
-   `registry_write`, and are listed in `auth.GATED_TOOLS`. **The session store is
-   FastMCP's own** — `ctx.set_state` / `ctx.get_state` under
-   `auth.state_key(target)`, never a dict of ours: it is namespaced by
-   `ctx.session_id` already, and the two things that dict did not do are that
-   entries expire after 24h and that a multi-process HTTP deployment needs a
-   shared `FastMCP(session_state_store=...)` or one worker cannot see what
-   another stored. The target stays *in* the key: flatten it and the second
-   `authenticate` silently retargets the first. Still call `auth.session_state_persists`
-   before storing and refuse naming the env var — **never report a success the next call
-   cannot find**. That guard is DORMANT under the `<4` pin (§11) and kept for a re-upgrade:
-   fastmcp 3 speaks only the handshake wire, where one connection lives for the whole
-   session and a stored token always survives, so `session_state_persists` returns `True`
-   and the refusal never fires. **On fastmcp 4's 2026-07-28 wire the store holds across
-   calls only where the transport carries a session id** (streamable HTTP's
-   `mcp-session-id`): every request is its own connection there, and stdio or the in-memory
-   client has none, so a stored token is gone by the call that needs it. Found 2026-09-21
-   adopting fastmcp 4, where `authenticate` had passed its own test for exactly that reason.
-   On re-upgrade, restore the `MODERN_PROTOCOL_VERSIONS` branch in `session_state_persists`
-   and re-add `mode="legacy"` to the suite's `make_client`; the call sites are kept for it.
+4. Paths through `resolve_dir`; network through `offline_for` and `anyio.to_thread.run_sync`.
+5. Gated tools are `async def`, take `ctx: Context`, `await resolve_api_key(ctx, settings, target)`,
+   return `unauthenticated_result(settings, target)` on `None`, are tagged `registry_write`, and are
+   listed in `auth.GATED_TOOLS`. **Session state is FastMCP's own** (`ctx.set_state` / `get_state`
+   under `auth.state_key(target)`, never a dict of ours: entries expire after 24h, and multi-process
+   HTTP needs a shared `FastMCP(session_state_store=...)`. Flatten the target out of the key and a
+   second `authenticate` silently retargets the first). Call `auth.session_state_persists`
+   before storing and refuse naming the env var — **never report a success the next call cannot
+   find**. Under the fastmcp `<4` pin that guard is dormant (handshake sessions persist); on a 4.x
+   re-upgrade, see §11.
 6. Add a test using the in-memory client.
-7. **Visibility is not authorization, and the two enable APIs are not
-   interchangeable.** `mcp.enable()` / `mcp.disable()` are **server-global**:
-   fine at startup, never in response to one client's request, because they would
-   leak tools across clients. `ctx.enable_components()` is **session-scoped** and
-   is the only one a request may drive. `JMC_HIDE_GATED_UNTIL_AUTH` combines them
-   — disable by tag at startup, reveal per session in `authenticate` — and is off
-   by default, because a hidden tool answers a call by name with "Unknown tool"
-   instead of the refusal that says how to get a token.
-8. **Narrowing the LISTING is allowed; narrowing what a session can REACH is
-   not.** `JMC_TOOL_SEARCH` replaces the catalog with `search_tools` +
-   `call_tool`, and an unlisted tool stays callable by name.
-   `JMC_TOOLBOX=layered` lists `core` plus `toolbox` and holds nine groups until
-   the session asks — which is the mode axis's saving (67%, 41,355 tokens
-   measured) without its defect, because the roster is always readable and the
-   reveal is a call rather than a restart. **A new tool therefore joins a group in
-   `toolbox.GROUPS`**, and `test_every_registered_tool_is_in_exactly_one_group`
-   fails if it does not; put it in `CORE` only if the taught order needs it.
-   Anything pinned in `tool_search.ALWAYS_VISIBLE` is there because a client that
-   cannot see it cannot get in at all.
+7. **Visibility is not authorization.** `mcp.enable()` / `disable()` are server-global — startup only.
+   `ctx.enable_components()` is session-scoped — the only one a request may drive.
+   `JMC_HIDE_GATED_UNTIL_AUTH` (off by default) combines them; a hidden tool answers "Unknown tool"
+   instead of the refusal that explains how to get a token.
+8. **Narrowing the listing is allowed; narrowing what a session can reach is not.** `JMC_TOOL_SEARCH`
+   swaps the catalog for `search_tools` + `call_tool`; `JMC_TOOLBOX=layered` lists `core` + `toolbox`
+   and reveals groups on request. **Every new tool joins a group in `toolbox.GROUPS`**
+   (`test_every_registered_tool_is_in_exactly_one_group`); `CORE` only if the taught order needs it.
+   `tool_search.ALWAYS_VISIBLE` holds what a client must see to get in at all.
 
 ---
 
 ## 6. Testing — layer 1
 
-- **Real data + ground truth.** Real rsIDs and PMIDs; compute expected values from
-  the fixture rather than pasting a count read off a dump. Hardcoding a documented
-  constant is fine; hardcoding a row count is not.
+- **Real data, ground truth.** Real rsIDs and PMIDs; compute expected values from the fixture.
+  Hardcoding a documented constant is fine; a row count read off a dump is not.
 - **Meaningful assertions** — relationships and set equality over `len(df) > 0`.
-- **Never mock the transformation under test.** We test our wrapper against the
-  real upstream packages; only the *network* is excluded, by the offline ceiling.
-- **The suite is hermetic by mechanism, not by discipline.** `conftest`'s autouse
-  `_hermetic_configuration` points `env_file` at a path that cannot exist and clears
-  the ecosystem's variables from `os.environ`, so **forgetting `_env_file=None` is
-  harmless** rather than silently live. `offline_settings()` still forces
-  `offline=True` and is what fixtures use. Do not undo this by removing
-  `env_file=".env"` from `model_config` — the product needs it, and breaking the
-  product to protect the suite is the wrong trade.
-
-  It was a convention until 2026-08-12 and that failed exactly as predicted (`F24`):
-  a bare `Settings()` returned the developer's real polygon token **and**
-  `offline=False`, so a test could reach the network holding a live credential, while
-  passing locally and in CI. **The clear-list is derived from `Settings.model_fields`,
-  never written** — the hand-written first draft missed seven variables inside the same
-  change, `JMC_API_KEY_HEADER` and `JMC_TRANSPORT` among them, and an exported one of
-  those changes what a test asserts as effectively as a token does. Only the four
-  upstream names are hand-maintained, because no field of ours can name them.
-- **A test that means "no credential" must say so.** `api_key=None` is
-  indistinguishable from "not passed" when the reader does
-  `api_key or os.environ.get(...)`. Neutralize with `setenv(VAR, "")`, **not**
-  `delenv` — `load_dotenv(override=False)` skips a key that is merely present. (The
-  autouse fixture above uses `delenv`, which is not an exception: nothing in the suite
-  calls `load_dotenv`, and with the dotenv source neutralized pydantic reads
-  `os.environ` directly, where absent means unset. Inside a *test*, prefer
-  `setenv(VAR, "")` — it runs after the fixture and wins.)
-- **Suspect ordering whenever a test passes alone and fails in the suite.**
-- **Never let a fixture compute its expected value with the code under test.** This is
-  §2's "never fill a value from the same source that checks it", and on 2026-08-22 it was
-  found inside our own suite. `test_compare_published`'s fixture built its manifest with
-  `authored_input_entries` — the newline-normalizing hasher the tool under test was
-  wrongly using — instead of `file_entries`, which is what a real publish writes. So the
-  suite compared a wrong rule against itself, agreed perfectly, and passed while the tool
-  reported 31 of 34 authored CSVs across eight published modules as changed when they were
-  byte-identical. **Ask of a green fixture what you ask of a green check: could this have
-  failed?** Build the expected value the way the *producer* builds it, and if that is not
-  possible, say so in the test rather than reaching for the nearest function that returns
-  the right shape.
-- **A subset or difference assertion needs a DENOMINATOR, and there are exactly three
-  ways to give it one.** `A <= B` and `assert not (A - B)` both pass when `A` is empty,
-  and an enumeration of a *foreign* symbol renders empty when the **import moves** rather
-  than when a name changes — so an upstream restructure reads as *everything upstream
-  declares is accounted for here*, which is the one sentence a roster guard exists to be
-  able to deny. Three protections, and they are equivalent rather than alternatives:
-  an **explicit count** (`assert len(surface) > 25`); an **adjacent exact assertion** over
-  the same set (an `==` or an `in` for a known member, on the line above); or
-  **direction** — a foreign set on the *right* of `<=` fails when it empties, so nothing
-  more is owed. Sweeping for the *shape* (`assert len(...) >=`) misreports the second and
-  third as unprotected: ask *"if the foreign enumeration came back empty, does this still
-  pass?"* of each assertion instead.
-
-  **Floor the inputs, never the answer.** `registry_lag()` returning an empty set is the
-  *good* state, so a floor on its result would fail on success; the floors belong on the
-  two rosters it walks. And **a floor asks whether the enumeration happened, not whether
-  the count is still what it was** — set it well under today's number, or it becomes the
-  hand-kept count §8 warns about.
-
-  **The two shapes a count cannot see are a pair, and they fail in opposite directions.**
-  A denominator that comes from **splitting text** needs the split floored, not the
-  length: assert the marker is present and that the block is neither the whole file nor
-  empty, because a split on a heading that has moved yields a *block* rather than an
-  error and then every name is "present" in it. Its inverse is a **negative assertion over
-  an unestablished haystack** — `assert X not in body` passes when `body` is empty and
-  reports *"X never reached the wire"* about a response carrying nothing. One grows until
-  everything is present, the other shrinks until nothing is absent, and both end with the
-  check succeeding about something it never examined. **So establish the haystack first**:
-  a positive assertion on the line above (`"override rs1801133 clin_sig=" in logged`
-  before `str(module) not in logged`), or for a tool listing, an always-visible name that
-  proves the listing was *narrowed* rather than empty.
-
-  **A search cannot be floored, so anchor it instead.** You cannot count what is outside
-  the search path, and an absence is a well-formed answer to a badly-aimed question —
-  `just-dna-pipelines` lives in a subdirectory of the -lite checkout, so a grep rooted at
-  its `src/` reported two real env vars as undefined (§11). The substitute is a
-  **known-present member**: check the name you are most confident about first, and if
-  *that* comes back missing, the instrument is wrong rather than the subject. This applies
-  to any lookup taking a scope argument, which is most of them, and the scope is the part
-  nobody states.
-- **Never claim a test "would have caught" a bug** without running it against the
-  buggy code and watching it fail.
-- Note `from conftest import ...`, not `from tests.conftest import ...`: a
-  transitive dependency ships a `tests` package that shadows ours.
+- **Never mock the transformation under test.** Only the network is excluded, by the offline ceiling.
+- **The suite is hermetic by mechanism.** `conftest`'s autouse `_hermetic_configuration` points
+  `env_file` at a nonexistent path and clears every variable derived from `Settings.model_fields`
+  (plus four hand-listed upstream names), so a bare `Settings()` can't pick up a live token.
+  `offline_settings()` forces `offline=True`. Don't remove `env_file=".env"` from `model_config` —
+  the product needs it. An upstream library (`just_dna_enricher.locations`) calls `load_dotenv`
+  itself; the fixture neutralizes it.
+- **A test meaning "no credential" must say so**: `setenv(VAR, "")`, not `delenv` —
+  `load_dotenv(override=False)` skips a key that is merely present. (The autouse fixture's `delenv` is
+  not an exception: with dotenv neutralized, absent means unset; inside a test, `setenv` runs after it
+  and wins.)
+- **Suspect ordering** when a test passes alone and fails in the suite.
+- **Never let a fixture compute its expected value with the code under test.** Build it the way the
+  *producer* builds it (e.g. a real publish uses `file_entries`, not the newline-normalizing hasher).
+  Ask of a green fixture: could this have failed?
+- **A subset/difference assertion needs a denominator.** `A <= B` and `not (A - B)` pass when `A` is
+  empty, and a foreign enumeration goes empty when an import moves. Give it one of: an explicit count
+  floor (well under today's number), an adjacent exact assertion on a known member, or put the
+  foreign set on the **right** of `<=`. Floor the inputs, never the answer (an empty result can be the
+  good state). Audit by asking *"if the foreign enumeration came back empty, does this still pass?"*,
+  not by grepping for `len(...) >=`.
+  - **A split on text** needs the split checked: marker present, block neither empty nor the whole file.
+  - **A negative assertion** (`X not in body`) needs the haystack established by a positive assertion
+    first.
+  - **A search can't be floored, so anchor it**: check the name you're most sure of first; if it's
+    missing, the instrument is wrong, not the subject.
+- **Never claim a test "would have caught" a bug** without running it against the buggy code.
+- `from conftest import ...`, not `from tests.conftest import ...` — a dependency ships a `tests`
+  package that shadows ours.
 
 ---
 
 ## 7. Dogfooding — layer 2
 
-Tests prove the code does what it was told. Dogfooding asks whether it is
-**usable, and what is missing**. Both are required.
+Tests prove the code does what it was told; dogfooding asks whether it is **usable, and what is
+missing**. Both are required. Don't verify the tool's answers with a second implementation while
+dogfooding — that is a test.
 
-**Do not verify the tool's answers with a second implementation while
-dogfooding** — that is a test and belongs in the suite. Use the tool, notice the
-friction, write down what was not there.
+- **A missing capability is the result, not an obstacle.** Reaching for an ad-hoc script or raw HTTP
+  call ends the signal. Record the gap; if it blocks the work, build it into the product.
+- **Attack claims, not gaps** — where a docstring promises what the code doesn't do.
+- **Use real data.** Pick probes where the design generalized from one case (if the example shows one,
+  use a real case with two).
+- **Dogfood a finding before reporting it**, and finish each probe as a committed reference example
+  whose README names what it broke on the old behaviour.
+- **Separate "fix it" from "surface it"** before writing code, and say why each repair is wrong for
+  the surfaced ones.
 
-- **A capability the tool LACKS is the result, not an obstacle to route around.**
-  The moment you reach for an ad-hoc script or a raw HTTP call to get past
-  something the product cannot do, the exercise has stopped producing signal.
-  Record the gap; if it blocks the work, build it into the product.
-- **Attack claims, not gaps.** A documented deferral is a decision. What counts is
-  where a docstring or doc *promises* something the code does not do.
-- **Use real data.** No `rs999999999`, no `1e-328`.
-- **Pick the probe where the design generalized from one case** — if the example
-  shows one of something, use a real case with two.
-- **Dogfood a finding before you report it.** Build a real example against the
-  actual code path and show it fails.
-- **Finish each probe as a committed reference example whose README names what it
-  broke**, demonstrating the failure on the *old* behaviour.
-- **Separate "fix it" from "surface it" before writing code**, and say *why each
-  candidate repair is wrong* for the surfaced ones.
-
-Findings carry stable `F#` IDs and **move** between files, never duplicated —
-except one mitigated here but still owed upstream, which legitimately appears in
-two: `docs/dogfooding.md` (open) → `docs/previous_issues.md` (resolved here) /
-`docs/just-dna-format-pending-fixes.md` (blocked upstream).
+Findings carry stable `F#` IDs and **move**, never duplicate: `docs/dogfooding.md` (open) →
+`docs/previous_issues.md` (resolved here) or `docs/just-dna-format-pending-fixes.md` (blocked
+upstream). One mitigated here but still owed upstream may appear in two.
 
 ---
 
 ## 8. Docs and their lifecycle
 
-- **All new markdown goes in `docs/`** — the only exceptions are this file and
-  `README.md`. `docs/` is the single ground truth; this file duplicates only what
-  is needed to *orient*, and every prohibition lives here in full because a
-  `don't` behind a link does not get read.
-- **`docs/ROADMAP.md` is active-only.** Shipped items move to
-  `docs/ROADMAP_HISTORY.md` with their rationale. Nothing is deleted, only relocated.
-- **`docs/CHANGELOG.md` records what shipped**, newest first, including cross-repo
-  integration changes made on our side.
-- **Update this file and the affected `docs/` in the same change as the
-  refactor**, not after. Policy is written first; code complies.
-- **Keep the skill and the tool docstrings in agreement.** If a tool changes what
-  it refuses to do, the skill's claim about that refusal changes with it.
-- **Run the commands yourself** rather than telling the user to run them — except
-  where a command genuinely needs an interactive terminal, which is when you hand
-  over a verbatim line.
-- **Before a PR**, print `git diff <upstream>/main --stat HEAD` and
-  `git log <upstream>/main..HEAD --oneline`, show the output, and wait for approval.
+- **All new markdown goes in `docs/`** (except this file and `README.md`). Every prohibition lives
+  here in full, because a `don't` behind a link doesn't get read.
+- **`docs/ROADMAP.md` is active-only**; shipped items move to `docs/ROADMAP_HISTORY.md` with their
+  rationale. Nothing is deleted, only relocated.
+- **`docs/CHANGELOG.md`** records what shipped, newest first, including cross-repo changes on our side.
+- **Update this file and the affected docs in the same change as the refactor.** Policy first.
+- **Keep skills and tool docstrings in agreement**, especially about what a tool refuses.
+- **Run commands yourself**, except ones needing an interactive terminal.
+- **Before a PR**, show `git diff <upstream>/main --stat HEAD` and
+  `git log <upstream>/main..HEAD --oneline` and wait for approval.
 
 ### Manuscript writing
 
-The paper draft lives in `docs/manuscript/`. Same toolchain as glucose-forecasting:
-EASRP 2026 `template.tex` + `easrp2026.sty`, Typer CLI `uv run manuscript`.
-
-```bash
-uv run manuscript template      # template.tex → template.md + template.pdf
-uv run manuscript manuscript    # manuscript.tex → manuscript.md + manuscript.pdf
-```
-
-Edit `manuscript.tex`, then rebuild both PDF and Markdown. After a `.tex` change,
-always regenerate both — **except where the PDF cannot be built at all, which is
-the case on this host**: `uv run manuscript manuscript --nopdf` (or `--no-pdf`)
-writes the Markdown alone. See §11 for why. The empty template is the section order to follow
-(Introduction, Related work, Method, Results, Discussion, Conclusion) — not the
-retired `just-dna-agents` outline in
-`../just-dna-lite/docs/manuscript/v0.2/paper2-dna-agents.md`, which is inspiration
-only. Papers for related work go in `data/cache/for_manuscript/` (gitignored).
-Process notes are in `docs/manuscript/README.md`.
+Draft in `docs/manuscript/` (EASRP 2026 `template.tex` + `easrp2026.sty`). Edit `manuscript.tex`,
+then `uv run manuscript manuscript` to rebuild `.md` + `.pdf` (`--nopdf` for Markdown only). Section
+order follows the empty template (Introduction, Related work, Method, Results, Discussion,
+Conclusion) — not the retired `paper2-dna-agents.md` outline in -lite, which is inspiration only.
+Related-work papers go in `data/cache/for_manuscript/` (gitignored). Process notes in
+`docs/manuscript/README.md`. Tectonic setup: §11.
 
 ### Upstream findings go to the producer, never into a workaround
 
-We consume `just-dna-format` / `-compiler` / `-enricher` / `-registry` and own
-none of them. **There are two intakes, and a note belongs wherever the fix would
-land:**
+We own none of format / compiler / enricher / registry. **File where the fix would land:**
 
-| The fix would land in | File the `S<n>` in |
+| The fix would land in | File it in |
 |---|---|
-| format, compiler, enricher (one repo) | `../just-dna-format/docs/CONSUMER_SUGGESTIONS.md` |
-| the registry service, its client, or a `just-dna-pipelines` command calling it | `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md` |
-| `just-dna-lite` / `just-dna-pipelines` **itself** — the annotation and consumer side | `../just-dna-lite/docs/CONSUMER_HANDOFF_from_just-module-creator.md`, appended |
+| format, compiler, enricher | `../just-dna-format/docs/CONSUMER_SUGGESTIONS.md` (`S<n>`) |
+| the registry service, its client, or a `just-dna-pipelines` command calling it | `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md` (separate `S<n>` series) |
+| `just-dna-lite` / `just-dna-pipelines` itself | `../just-dna-lite/docs/CONSUMER_HANDOFF_from_just-module-creator.md`, appended as a dated section with inline evidence |
 
-**`../just-dna-marketplace` is a stale *directory* name and nothing more.** The
-project, the package and the service are all `just-dna-registry`; only the path on
-disk kept the old word. Do not call it "the marketplace" in prose — say the
-registry, and refer to the path only when a path is what you mean.
+"Marketplace" is a stale directory name; in prose say **the registry**. The -lite channel is
+unnumbered and has no triage loop: silence or a refusal is a complete answer to record. Its file is
+untracked in their tree; that is fine.
 
-Its `S<n>` numbering is a separate series from the format tree's; both start at
-`S1`. If a note is in the wrong file it may as well not be filed, so decide by
-asking who would change code, not which surface you noticed it through.
+**The format and registry intakes are split**: the inbox holds only unanswered entries; once a
+`**Status —**` reply exists, the entry moves verbatim to `CONSUMER_SUGGESTIONS_HISTORY.md` with an
+index. So:
 
-**The third channel is deliberately unnumbered, and reading it like the other two misleads.**
-`just-dna-lite` has no `CONSUMER_SUGGESTIONS.md` and no triage loop — standing one up in a third
-repo was never ours to do, and nobody there agreed to run it. So there is no `S<n>` to compute, no
-inbox to check for duplicates and nowhere structured for a reply to land: append a **dated
-section** carrying its own evidence inline, and treat silence or *"we are not doing that"* as a
-complete answer to record here. The file is **untracked in their tree**, which is not a defect to
-repair — writing the note is still the whole job, and committing there is still not ours.
-Used 2026-08-20 for the whole `Blanks for just-dna-lite` set, and 2026-08-21 for the missing CLI
-wrapper found while building `module-install-local`.
-
-#### The format tree's intake is split, and the inbox is the empty half
-
-`../just-dna-format/docs/CONSUMER_SUGGESTIONS.md` holds **only what is still
-unanswered**. The moment upstream writes a `**Status —**` reply, the whole entry
-moves — prose byte-for-byte — to
-**`../just-dna-format/docs/CONSUMER_SUGGESTIONS_HISTORY.md`**, whose index table
-gives every `S<n>`, who reported it, the verdict and where it landed. So:
-
-- **An empty inbox means nothing is owed, not that our notes were lost.** As of
-  2026-08-11 every `S<n>` we have filed there is answered, `S1`–`S24`. A note of
-  ours that is no longer in `CONSUMER_SUGGESTIONS.md` has been answered — read the
-  history file's index before concluding anything else.
-- **Never number a new `S<n>` from what the inbox shows.** An empty inbox says
-  nothing about which ids are taken, and ids are never reused — not even for an
-  item answered as a non-issue, because the reply is part of the record. Compute it:
-  `.claude/triage-state.sh --next` in their repo scans the inbox *and* the history
-  file. The inbox states the next id in its own heading too (**`S27`** in the format
-  tree and **`S8`** in the registry's, as of 2026-08-12 — and those move within
-  hours, so run the script: both moved by two on 2026-08-12 alone). Their `CONSUMER_TRIAGE_LOOP.md` is the producer-side
-  runbook and not ours to drive.
-- **"Answered" is not "fixed", and "fixed" is not "released".** Three distinct
-  states, and only the third lets a guard come out:
-  1. *accepted and filed* — a reply exists and the work is an upstream `RMn`, still
-     open. Check `RM_TOC.md`, not the history file, for that half.
-  2. *fixed in tree* — the symbol exists in `../just-dna-format` but the version we
-     install does not have it. **This is the common case and the easy mistake.**
-  3. *released* — on PyPI and in our lockfile.
-- **Verify state 2 against the installed package, never the sibling checkout — and
-  `hasattr` alone does NOT do that.** A mitigation of ours stays until the release
-  carrying the fix is what `uv sync` gives us; dropping one because the upstream tree
-  looks fixed breaks the plugin for everyone installing from PyPI.
-
-  **The recipe used to be `hasattr(hints, "ATTESTATION_BEARING")` and that is not
-  sufficient. Corrected 2026-08-20 after it nearly shipped a false status line.**
-  `uv run` resolves against whichever project you are standing in, so a symbol check
-  chained after a `cd ../just-dna-format` answers about **their working tree**, not our
-  venv. **The version string does not save you** — both said `just-dna-format 0.6.1`
-  while `StudyRow.curator` was `True` in their tree and `False` in ours, because they
-  had added it hours earlier. Same number, opposite answer. So:
+- **An empty inbox means nothing is owed**, not that notes were lost — check the history index.
+- **Never number a new `S<n>` from what you see.** Run `.claude/triage-state.py --next` in the repo
+  you're filing into. Ids are never reused. Their `CONSUMER_TRIAGE_LOOP.md` is the producer's
+  runbook, not ours to drive.
+- **Check for duplicates first**, in the inbox, the history file *and our own `docs/`*. A second
+  reproduction is a corroboration appended to the existing entry.
+- **Three states: answered ≠ fixed in tree ≠ released.** Only "released and in our lockfile" lets a
+  mitigation come out. Check `RM_TOC.md` for accepted-but-open work.
+- **Verify against the installed package, never the sibling checkout.** `uv run` resolves against the
+  project you're standing in, and the version string can match while the symbol differs:
 
   ```bash
   uv run --project /data/sources/just-module-creator python -c "
@@ -1016,878 +537,318 @@ gives every `S<n>`, who reported it, the verdict and where it landed. So:
   print(just_dna_format.__file__)                     # MUST contain .venv/site-packages
   print('curator' in StudyRow.model_fields)"
   ```
-
-  **Print `__file__` beside the answer, every time**, and pass `--project` rather than
-  trusting the shell's cwd. A path under `.venv/lib/.../site-packages/` is the installed
-  package; a path under `/data/sources/just-dna-format/schema/src/` is their source and
-  proves nothing about what our users have.
-- **A refusal is an answer too, and it is load-bearing.** Upstream refused half of
-  `S14` with a reason: the compiler has **no** network branch, so a `--no-ensembl`
-  flag would assert something false. That makes our pin permanent rather than
-  interim, and "closes when upstream renames the flag" was never going to happen.
-  Record a refusal as settled, not as pending.
-
-- **A gap in the docs is a finding too.** If you had to *probe* to learn something —
-  run an experiment, read their source, test a guess — that is a doc bug, and it
-  gets filed with the same urgency as a behavioural one. The next consumer will
-  otherwise run the same experiment. Say how you found it: "we put a `source`
-  column on `pharm_variants.csv` and got `Extra inputs are not permitted`" argues
-  for a fix better than "this is undocumented" does.
-- **File it the moment you find it. Do not batch.** Found it → write the `S<n>`
-  entry → carry on with what you were doing. Not after the guard is built, not
-  after the task closes, not as a tidy set of "field notes" at the end of a work
-  item. Upstream ships fast, and a note that arrives after the release window has
-  closed buys nothing: `S14` (the `resolve_with_ensembl=False` footgun) was found
-  while building the wrapper, guarded against, written up in our README as a
-  *feature*, and filed days later — **0.5.3 shipped in between, and the fix could
-  have been in it.** The delay is the whole cost. A rough note filed today beats a
-  polished one filed next week.
-- **A guard is not a substitute for the note, and never a selling point.** Pinning
-  a flag protects our callers and nobody else's; the defect is still there for the
-  next consumer. If you catch yourself describing a workaround in `README.md` as
-  something this plugin does *for* you, the note was skipped. See §8's prose rule.
-- **Check whether it is already filed first.** Entries are `S<n>`; a second
-  consumer hitting a known one appends a corroboration to that entry rather than
-  opening a new number. Two independent reproductions is itself the signal that
-  raises its priority.
-- **Write the note, and stop there.** **Never commit in that repo**, and never
-  open a PR against it. Writing the note is the whole job.
-- **Track our side too**: `docs/just-dna-format-pending-fixes.md` as an `F<n>` while
-  it is open upstream, and `docs/CHANGELOG.md` if we shipped a mitigation, so
-  nobody re-investigates a finding that looks fixed.
-- **Re-read the upstream verdicts before trusting our own `Status:` lines.** Ours
-  go stale silently — upstream answers in its own tree and nothing notifies us. On
-  2026-08-11 every entry in `docs/just-dna-format-pending-fixes.md` said "open
-  upstream" while all eight had in fact been answered, six of them fixed in tree.
-  The status line has to name the upstream state *and* whether the fix is in the
-  version we install; "open upstream" says neither.
-- **Never work around it silently in the data.** A workaround that leaves a module
-  dishonest is worse than the gap. Say what the limitation is, leave the data
-  truthful, file the note.
+- **A refusal is an answer**, and load-bearing — record it as settled (e.g. `S14` made our
+  `resolve_with_ensembl` pin permanent).
+- **A gap in the docs is a finding.** If you had to probe to learn it, file it with the experiment.
+- **File it the moment you find it. Do not batch.** Upstream ships within hours; a note filed after
+  the release window buys nothing.
+- **A guard is not a substitute for the note**, and never a README selling point.
+- **Write the note and stop.** Never commit there, never open a PR there.
+- **Track our side**: an `F<n>` in `docs/just-dna-format-pending-fixes.md` while open, and the
+  changelog if we shipped a mitigation.
+- **Re-read upstream verdicts before trusting our own `Status:` lines** — they go stale silently. A
+  status names the upstream state *and* whether the fix is in what we install.
+- **Never work around it silently in the data.** Leave the data truthful, state the limit, file it.
 
 ### Prose style
 
-**Three claim-shapes rot silently, and all three were found repeatedly in upstream's docs and in ours
-during the 2026-08-20 audit. Check anything you write against them:**
+**Three claim-shapes rot silently. Check anything you write against them:**
 
-1. **A check is only as wide as the table it reads, and naming a check without naming its scope is how
-   a reader over-trusts it.** Six independent instances: `REDUNDANCY_BEARING` keyed on a bare column
-   name; `check_identifiers` reading `variants.csv` only, so a bin row's `gene` is never checked;
-   `enrich-pgx` never opening `diplotypes.csv`; `stats.genes` from `variants.csv` alone; the
-   missing-sentinel hint being table-level where the compile rule is per-group;
-   `_check_genotype_coverage` running only in `validate_spec`.
-2. **A counted claim in prose rots exactly like a hand-kept list.** *"Seven fact signatures"* (eight),
-   *"six derived sidecars"* (seven), *"four causes"* (five), *"twelve names"* (thirteen). **State the
-   rule and let the reader run the call**; where a number must appear, say what was counted and when.
-3. **An enforcement claim needs its surface named.** *Mandatory*, *refused*, *checked* and *warned* are
-   four different strengths and a hint never fails a build. The canonical case is the `unresolved`
-   sentinel: called mandatory in three upstream places, the compile path refuses a **second** and
-   refuses zero nowhere, and the presence half is an authoring hint scoped to the whole table.
+1. **A check is only as wide as the table it reads.** Name its scope, or readers over-trust it (e.g.
+   `check_identifiers` reads `variants.csv` only).
+2. **A counted claim in prose rots like a hand-kept list.** State the rule and let the reader run the
+   call; if a number must appear, say what was counted and when.
+3. **An enforcement claim needs its surface named.** *Mandatory*, *refused*, *checked* and *warned*
+   are different strengths; a hint never fails a build.
 
-Natural, human prose. Avoid AI tells — em-dash pile-ups, filler transitions,
-marketing voice. Never hallucinate documentation or overpromise an unimplemented
-feature. **`README.md` says what this plugin does, and never doubles as a
-catalogue of upstream defects we guard against** — that belongs in the upstream
-note, in §2's prohibitions, and in `docs/just-dna-format-pending-fixes.md`.
-Telling an *author* "never pass this flag" in the skill or `references/CLI.md` is
-different and correct: they may drive the CLI directly and need to know. **This project must never be described as interpreting a genome, calling
-a genotype, or giving medical advice**: it helps author annotation tables, and the
-consumer supplies the measurement.
+Natural human prose; no em-dash pile-ups, filler transitions or marketing voice. Never overpromise.
+**`README.md` says what this plugin does and is never a catalogue of upstream defects.** Telling an
+author "never pass this flag" in a skill or `references/CLI.md` is different and correct. **Never
+describe this project as interpreting a genome, calling a genotype, or giving medical advice.**
 
 ---
 
 ## 9. Self-correction
 
-When outdated API knowledge causes a real crash or logic failure, fix the code
-**and** update this file (and the affected `docs/`) with the correct pattern, so
-the next agent does not repeat it. The same applies when the user corrects a
-preference: it goes into §10, in their words, with the reason.
+When outdated API knowledge causes a real failure, fix the code **and** update this file and affected
+docs. When the user corrects a preference, it goes into §10 in their words, with the reason.
 
 ### Running two agents across one night: the relay protocol
 
-Used 2026-08-20 for a philosophy audit followed by a skills build, and it worked — no overlap, no
-lost work, and neither agent had to be told what the other was doing. Reuse it rather than reinventing
-it; it costs one file and about forty lines.
+Create `docs/NIGHT-RELAY.md` with a `STATE:` line, the legal transitions, one append-only section per role.
 
-**One file, one writer at a time.** A `docs/NIGHT-RELAY.md` holding a `STATE:` line, the legal
-transitions in order, and one append-only section per role.
+1. **Read `STATE:` first.** Not your starting state → stop, write nothing, report what you found.
+2. **Claim by writing your transition first** (UTC timestamp) and commit immediately.
+3. **A `*-RUNNING` state older than four hours** (measured from the newest history entry, not `SINCE:`)
+   is a dead agent: append a note, move the state back one step, stop. Live agents append proof-of-life.
+4. **Never edit another role's section.**
+5. **On finish, write what the next role needs decided**, including cheaply reversible calls you made.
+   Commit.
 
-1. **Read the `STATE:` line before anything else.** If it is not the state your role starts from,
-   **stop immediately and write nothing** — say which state you found and exit. A wrong-state start is
-   the only failure this prevents, and it is worth the whole protocol.
-2. **Claim by writing your transition first**, with a UTC timestamp, and **commit that immediately**. A
-   claim nobody can see is not a claim.
-3. **A `*-RUNNING` state older than four hours is a dead agent**: append a note, move the state back one
-   step, stop. Do **not** take over its work. **Measure that from the newest history entry, never from
-   `SINCE:`** — `SINCE:` records when the state was claimed and never moves, so a live agent with a
-   long-running subagent reads as dead. A live agent appends **proof-of-life** entries.
-4. **Never edit another role's section.** Append to your own.
-5. **On finish, write what the next role needs *decided*** — not a summary of what you did. Then commit.
+The waiting agent arms a file monitor on `STATE:` (tested on a dummy file first) rather than polling.
 
-Two things that made it work beyond the file itself. **The waiting agent should arm a file monitor on
-the `STATE:` line rather than polling**, and should **test that monitor on a dummy file first** — an
-untested wait is how a night is slept through. And **the handoff should name the decisions the writer
-took that the reader may cheaply reverse**, because an unattended run makes calls that would otherwise
-have been questions.
+---
 
 ## 10. Learned user preferences
 
-*Append-only. One line each, in the user's terms, with the why where it is not obvious.*
+*Append-only (grouped by theme in the 2026-10-05 rewrite). One entry each, in the user's terms, with the why.*
 
-- **"auto-commit grant lingers... you commit and tag as you go."** Granted
-  2026-08-11 and it does **not** expire at the end of a feature: commit and tag
-  without asking. Meaningfully sized commits rather than atomized ones, explicit
-  paths — never `git add -A` — and tags at a version bump, matching the
-  `pyproject.toml` version.
-- **"Your commit permit is bounded by this repo only, no commits to
-  siblings/parents/downstream."** Granted 2026-08-11. Writing an upstream note is
-  the whole job; committing it there never is.
-- **Pushing is never persistent.** "push — in this session only." A push grant
-  covers the session it was given in and nothing after it, so a later session
-  starts from *ask first* again no matter what the tree looks like. Releases and
-  branch management stay the user's throughout.
-- **"I need to have mvp, then pace declines."** Get a working end-to-end thing
-  first and refine after; do not gold-plate the early steps of a long build.
-- **"the fix could have been in 0.5.3 already if it were in the right place.
-  Update your memory to fill in these immediately upon finding, without delaying
-  and writing field notes like this."** Upstream notes are filed at the moment of
-  discovery, never batched. See §8.
-- **"Why is this in our readme instead of upstream's consumer_suggestions? Cleanout
-  readme from parent lib issues, wtf really."** The README describes what this
-  plugin does; a guard against an upstream defect is not a feature to sell.
-- **Never destroy stashes**, even on explicit request. Data loss is the user's to
-  enact.
-- **Never blind-stage** (`git add -A` / `git add .`) — it once committed a `.env`
-  swap file with live tokens.
-- **Do not restate schema lists in prose; ask the tool.** Confirmed when the two
-  authoring takes disagreed: "create-module preference on lists is proper; they
-  may drift."
-- **This is a *new*-module creator — do not carry historical baggage.** 0.4-era
-  quirks never went to production, so a module author has no use for them.
-- **"Idempotent `to_current_state`, so to say."** Sharpened 2026-08-20, and it widens the
-  line above from *do not document old quirks* to *do not carry an era axis at all*:
-  *"this one repo (toolset) doesn't care about legacy in a sense that we only keep
-  upgrade path + state of the art recipes… we only care about the resulting state to
-  meet reqs for a good module. Whether previous state conforms 0.1 0.2 0.3 or other
-  schemas — we don't care."* So: recipes target the **current release only** (0.6 today),
-  with no per-era branch in a tool and no *"under 0.5 this differed"* aside in a skill;
-  **uplift mechanics stay upstream's** — registry and format already carry the minute
-  handling for schemas and renames, so describe it and never shim beside it; and a
-  backwards-compatibility measurement is *their* property to hold, not a result we
-  report. Detecting an input's era is fine — reading the deprecated `sources.csv`
-  spelling so you write back to the file you read is correct — **preserving it is not.**
-  The **upgrade path is real work and is not yet populated**: it gets built from the
-  authoring transcripts, from the moves a real author actually needed, rather than
-  designed against the schema history. Until then, do not invent it.
-- **"Don't say 'broken' to user — say: needs this this and this decision to work in
-  latest."** The voice-and-scope half of the rule above, stated 2026-08-20: *"only cover
-  decisions, auto-correct the evident stuff silently per rulebook (to-populate-later)."*
-  An old module is **out of date, not defective**, and those are different claims about
-  somebody's work — usually the module met the requirements that existed when it was
-  written. So: never *broken* / *invalid* / *fails* about a module being brought forward;
-  reserve failure language for a module wrong on its own terms, like a shifted coordinate
-  or a quote that is not in the paper. The output of a revisit is a **decision list**, not
-  a diff and not a findings dump: if a human must choose, it goes in the list; if nothing
-  must be chosen, it does not appear.
-
-  **This is not an exception to §2's *report, never repair* — the two split on judgement,
-  and the split is the whole rulebook.** Evident and mechanical (a rename, a deprecated
-  spelling, a column that moved) → apply it and say nothing, because no judgement exists
-  to exercise and nothing downstream re-checks it against a source. A **checked or
-  authored** value (a genotype, a `weight`, a `clin_sig`, a conclusion, a
-  `provenance_quote`) → never touch it, put it in the decision list; writing one silently
-  is exactly the redundancy-bearing mistake the design exists to prevent. **That rulebook
-  is TO-POPULATE-LATER and does not exist yet** — until it does, do not settle a boundary
-  case ad hoc, because an auto-applied judgement becomes precedent. When unsure, surface
-  it: over-surfacing is recoverable, a silent wrong write is not.
-- **The two authoring write-ups were independent takes made to reveal different
-  surfaces**, not drafts of one another — so they were unified rather than one
-  chosen over the other.
-- **"For non-skilled users, publish to polygon explicitly, unless they explicitly
-  ask for 'official catalog' or alike. This confuses the crowd and we don't want
-  half-baked test modules on prod, given its immutable registry."** Decided
-  2026-08-11 after an assisted session where a novice's "send it to your site"
-  plainly meant *somewhere my friends can see it* and not *the immutable catalog*.
-  The rule is a rule about the **conversation**, not the argument — `target`
-  already defaults to `test`, so the exposure is an agent volunteering
-  `target="prod"` to be helpful. It lives in `skills/module-publish/SKILL.md` and
-  in `server.INSTRUCTIONS`, and it carries a corollary: prefix the **module** name
-  as well as the namespace on a first rehearsal, because `purge-test-data` matches
-  both halves and a first-timer will not come back to delete litter.
-- **"If you find the module is genuinely good and is underrepresented in official
-  catalog — suggest yourself."** Added 2026-08-11, immediately after the rule above
-  and as its deliberate counterweight: the polygon default is against *assuming*,
-  not against advocating, and a good module nobody publishes helps nobody. Written
-  against **checks rather than impressions**, because an agent asked whether its own
-  work is good will say yes — a prod `registry_search` showing the gap, plus strict
-  validate and compile, produced-not-authored resolution, every PMID from a search
-  result whose title was read, a declared licence, nothing guessed, and a rehearsal
-  read back. `assets/fto_bmi` is the calibration case *against*: it cleared all of
-  that and `registry_search(gene="FTO")` returned `total: 0`, and one locus with no
-  licence and no readme was still not worth an immutable `1.0.0`. **Underrepresented
-  is necessary and nowhere near sufficient** — a stub occupies the search result a
-  real module would have had.
-
-- **"There is no restriction I'd say 5-15 words length is optimum otherwise it looks bloated."**
-  Said 2026-08-21 of `module.description`, after `antonkulaga/cognitive_intelligence`'s card ran to
-  fourteen rows. The norm now lives in `skills/module-tables/references/module_spec.md` and is repeated
-  at the one point an author meets the field, `scaffold_module`'s `next_step`. Two things make it worth
-  keeping here rather than only there. **The user named the absence of a restriction and asked for a
-  norm anyway** — so the repair is prose at the point of writing, not a validator: a length ceiling
-  would refuse a merely verbose spec, refuse it after the prose was written, and make six published
-  modules retroactively invalid, which §10's *decisions, not breakage* rule forbids saying about
-  finished work. And **the length was the symptom rather than the defect**: four of the five reference
-  specs end with the byte-identical methodology sentence, so the field's one job — telling this module
-  apart from the ones beside it in a search result — was being spent on the half that four cards share.
-  `F58`, filed upstream as format-tree `S63`.
-
-- **A machine-located `provenance_quote` is legitimate; the fake was always the unattributed one.**
-  Decided 2026-08-20, reversing the §2 prohibition outright: *"Yes, it is a derived false direction:
-  demolish full force."* The agent reads the article — `fetch_fulltext` hands it over whole — so the
-  reading is real and the old rule only protected a fiction about **who** read it. What is required
-  instead is a per-row *whodunit*: *"request per-row provenance 'whoddunit' for each quote for mixed
-  ai+man tangos and combined authority from upstream (if not yet): example: scientist reads review,
-  agent traverses citations."* Responsibility does not move with it — *"now AI is not a subject of
-  right, so the human author holds the full responsibility, but at least honest highlights of real
-  distribution of roles is 100% better than fake 'I read it all' fingerscrossed confirmation of what
-  never happened to push thru the block; realpolitik so to say."* Filed upstream as `S55` (the
-  attributor: `StudyRow.curator`, mirroring `VariantRow`'s) with `S54` as its evidence. The
-  combined-authority half already exists upstream and we should not re-ask for it: `Contribution.who`
-  is documented as *"a name, handle, or model id"* and `Contribution.kind` already ladders
-  `{human, human_expert, human_certified}` against `{ai}` + `{agent, team, swarm}`.
-- **"Eliminate it entirely; drag away every quote until that doc is empty."** Said 2026-08-20 of
-  `skills/create-module/SKILL.md`, the 1431-line canonical procedure, with *"segment, create new
-  skills, change existing skill scope at your discretion: frame yourself as primary consumer of
-  these."* So the unit of a skill is **the step an agent is on**, not the document a human would write,
-  and the rule that replaces "do not restate the procedure beside its skill" is **one fact, one home**:
-  if two skills need the same rule, one owns it and the other links. A skill growing back toward a
-  monolith is the drift to watch for; the ceiling is 500 lines and the reason is that a file loaded
-  whole to answer any question is a file nobody updates in the right place.
-- **"People want /create-module back... make it a small helper/wrapper skill hinting at relevant
-  sequence of actions agent takes to create module from different stages."** Said 2026-08-21, and it
-  does **not** reverse the entry above — the monolith stays dismantled and the ceiling stays. What it
-  settles is that **the name was load-bearing and the split took it away with the file**: an author
-  arriving with "make me a module" had no door, only a map that told them a door existed somewhere.
-  The shape asked for is *"a flowchart from 101 with different entrypoints at different stages and
-  relevant toolsets/skillsets for these"*, plus *"deduplicate 101 and the rest and point to it"* — so
-  the flowchart **moved out of** `module-101` rather than being copied into a second place, which is
-  one-fact-one-home applied to the router itself. **The generalisation worth keeping: a split that is
-  right internally can still delete the entry point users had.** When it does, the repair is a router
-  at the old name, never the old file. Reversal recipe, if the router turns out to be one hop too
-  many: move the diagram and the entrypoint table back into `module-101`, delete
-  `skills/create-module/` and `commands/create-module.md`, drop the shape test, and restore the counts
-  in `tests/test_skills.py`, `tests/test_plugin_manifest.py` and the Claude manifest description.
-- **"Push to the maximum; defer only items that honestly depend on architectural decisions and
-  questions that came to be after now."** The unattended-run rule, 2026-08-20. A question that already
-  had a written specification is **not** deferrable merely because it was labelled "run §1 first" —
-  decide it, write the reasoning **and a reversal recipe** where it will be read again, and continue.
-  `RM17`'s layer question was settled that way, and its entry in `ROADMAP_HISTORY.md` carries both.
-
-- **"Offline makes sense annotation-time, not author-time."** Stated 2026-08-20, and it settles how
-  much weight `JMC_OFFLINE` may carry in a design argument: *"air-gapped stuff is a very niche
-  usecase, we're handicapping 99.9 in favour of 0.1%. This is not a security tool. Frankly I'd get
-  rid of it altogether and ship an `-offline` version of the plugin as a separate entity if it is
-  ever needed."* The distinction generalises and is worth holding: **offline belongs to the
-  annotation side**, where somebody's genome is being read and privacy is the entire point — that is
-  `just-dna-lite`'s problem. **Authoring is networked by nature**: literature search, rsID
-  resolution, identifier checks and publishing are all network steps and a module cannot be written
-  without them. The flag stays, because it is off by default and the suite's socket ceiling is built
-  on it. What it may **not** do is veto a broad improvement on behalf of a niche one — it did exactly
-  that in `RM23`'s first draft, where it was the lead argument against adopting a 25-source
-  literature library, and the objection that actually stood was the shared NCBI budget. §2's "never
-  let a per-call argument loosen the offline ceiling" is unchanged: it is about not *lying* about the
-  ceiling, never about the ceiling deserving a veto.
-- **Do not let a third-party evaluation turn into NIH.** Same conversation. The reflex to defend our
-  own five literature clients was wrong; the source list is genuinely a bicycle and *"leeching the
-  code is yikes"* — the honest routes are a dependency with attribution or a fork, not copying. What
-  is **not** a bicycle is the gate: one `ServiceGate`, one contact chain, one budget shared with the
-  enricher by passing the same `PacingGate` instance.
-
-- **"The agenda behind hiding 101 — user who needs it doesn't know it needs 101. And one who knows no
-  longer needs it."** Stated 2026-08-28, and it is the *criterion* the seven-command menu encodes
-  rather than a fact about one file. **A command earns its place only if the person who wants it can
-  recognise they want it** — make one, work out what this directory is, find the papers, publish it,
-  decode this message, run it on my genome, open it again. Where recognising the need requires the
-  knowledge the document supplies, a menu entry serves nobody and the answer is an **agent that
-  notices**: `create-module`'s step 0 now has a branch for a question rather than a task, or a wish in
-  the author's own vocabulary with none of ours in it, and it routes to `module-101` to *answer from*
-  before routing anywhere. The same file is double-edged and both edges are real — *"101 is for llm and
-  for LLM to be able to 101 human"* — so its length is not bloat: the analogies and the
-  what-this-cannot-do list exist to be said out loud to somebody who has never seen a module.
-
-- **"Triage comands available to user, it is too puzzling for them to have a dozen... maybe hide 101
-  thing, its 101 for an llm, not the user."** Said 2026-08-28, and it is a rule about the **menu**
-  rather than about the content: the twenty skills all still ship, and thirteen of them simply stopped
-  being things a person is offered. The test for what a user would want is *what did they arrive
-  wanting* — make one, work out what this directory is, find the papers, publish it, decode this
-  message, run it on my genome, open it again — and never *which step is the agent on*, which is what
-  `module-curate` and `module-enrich` answer. Asked for "like 4-8 entry items" and chose seven,
-  explicitly dropping `module-tables` from the eight offered. **Do not helpfully re-promote a guide**:
-  `test_the_command_menu_is_what_a_person_would_ask_for` pins the set by name so that adding one is a
-  decision, and the thing that makes a guide reachable is a router naming it, not a menu entry.
-
-- **"I think it makes sense to upkeep tools/drafting surfaces parity in the plugin. Plugin is
-  currently one and only thing that exposes it userside so if upstream provides stuff, we expose
-  it."** Stated 2026-09-12, after a dogfooding run found 0.7's whole AlphaGenome surface unwrapped
-  while `list_tables` already named its sidecar. **Parity is now the default and abstention is what
-  needs an argument** — the reverse of how the AlphaGenome wrap was reasoned about, where "nobody has
-  exercised it yet" was offered as a reason to withhold `alphagenome check` and is not one. Nothing
-  else reaches a user: upstream ships a library and a CLI, and an author driving the plugin who is
-  told to shell out has been handed the ad-hoc route the product exists to remove.
-
-  **Two objections that are NOT grounds, both mine and both wrong on the day.** *"It would make
-  modules non-commercial"* — acquiring a tool licenses nothing, using it does, and the licence row is
-  per-module and already machine-readable. *"We have not exercised it"* — that argues for testing it,
-  not for hiding it. What abstention does still cover is a surface that is **not a user-side
-  capability at all**: an operator's sweep, a build hook, something whose only caller is a deployment.
-  Say which of those it is, or wrap it.
-
-
-- **"Tools are automation. Minimizing excessive calls from model is favorable."** Said 2026-09-27,
-  approving the start-up token work: a check the server can run on its own — validating saved tokens,
-  importing the environment's token, filling a missing install-id — runs at start and is recorded, so
-  the agent reads an answer instead of spending a call per question. The corollary is the cost side:
-  such a check must not itself multiply requests (one `whoami` answers status *and* name, and an
-  answer under an hour old is not re-asked), and it must never make a decision a person owns.
-
-- **"Making decision != executing it."** Said 2026-09-24 approving `prune_rows` (`F104`), with the
-  condition that its wording not contradict `module-curate`'s *"the trim is a decision no tool makes"*.
-  It does not: the author's keep-list is the decision, and a tool that applies a keep-list it was
-  handed makes none. The general line, worth holding for every future write tool: **a tool may execute
-  any authored decision it is given explicitly; it may not infer one.** The capture-and-verify rule
-  for destroyed content still applies to the execution.
-- **"Enricher's item or ours? Can we get gene if derived sidecars or not? If yes — ours, if none
-  provides it — theirs."** Said 2026-09-24 of filling a missing `gene` for the AlphaGenome pass
-  (`F105`). A usable rule for any derived value a tool of ours wants: **if an existing sidecar already
-  carries it, deriving it is our join; if no sidecar does, producing it is upstream's pass**, and it is
-  filed. With a corollary: *"This makes one sidecar depended on other's outputs, worth reporting to
-  upstream for them to build a graph or something"* — a cross-sidecar dependency is itself a finding
-  (format-tree `S112`).
-
-- **"I want to be able to apply it on a set of genomes I selected, see which results I get, and
-  iteratively improve the module."** Asked 2026-09-26, with two failures named: variants from the
-  papers that none of the genomes carry ("decide if you keep this way or add more"), and a module
-  whose setup looks fine while *"the distribution of scores looks weird"*. Settled by questionnaire
-  the same day, and each answer is a rule now:
-  **two servers, the skill orchestrates** — just-dna-lite ships its own MCP server and this plugin
-  neither proxies it nor depends on it (a proxy would have put a sample-reading client inside a
-  server whose premise is that it reads none); **per-sample rows may flow to the agent** — the
-  owner chose full per-genome genotypes over aggregates-only, so `module-install-local` asks which
-  genomes and quotes what the question needs rather than refusing; **validation is coverage, score
-  shape and join health**, computed on the -lite side where the genomes are. What was not asked and
-  stays true regardless: no sample id or genotype is ever written into a module, because
-  `logs/authoring.log` publishes with no opt-out.
-
-- **"just-dna-lite as MCP is optional: if the user does not ask to run stuff against real VCFs and
-  does not ask to use just-dna-lite, we just use what we already have in just-module-creator."**
-  Stated 2026-09-27. This narrows the 2026-09-26 answer above: the two-server design stands, but the
-  -lite side is **opt-in by the author's request**, not a step the agent proposes after every green
-  compile. So `create-module`'s stage 6, `module-compile`'s next-steps table and
-  `module-install-local` no longer tell the agent to offer a run; they route there only on an ask.
-  The trigger is the author's words (run it on my genome, try it on these VCFs, annotate with it,
-  just-dna-lite), not the agent's judgement that a run would be informative.
-
-- **"It should focus on explainable potential phenotype changes (and if things are not fully clear also
-  give uncertainty estimation) in comparison to wildtype humans."** Stated 2026-09-27, after reading
-  conclusions that described what a gene does and never said whether the reader would, say, taste salt
-  more or less strongly. `module-voice` now requires every conclusion to say what the reader would
-  notice compared with people who carry the most common version (not always the reference genome's:
-  for ABO the reference is O), how big it is, and how sure on the certainty ladder, or that no
-  noticeable difference is known. The gene's job is the supporting sentence, never the substitute.
-
-- **"When we are in plugin development mode we should remove and reinstall it on changes."** Stated
-  2026-09-26, after a skill change could not be tested because the session was still loading 0.20.0
-  from the `dna-seq` git marketplace. A plugin install is a **copy** in `~/.claude/plugins/cache/`, so an
-  edit to this checkout reaches no session until it is reinstalled. On this machine the plugin is now
-  installed from the checkout itself (`just-module-creator@just-dna`, the directory marketplace in
-  `.claude-plugin/marketplace.json`). **Reinstall once per batch, when the edits are done and a test in a
-  new session is next; never per edit.** Reinstalling cannot loop (it copies files and changes none),
-  but it also does not reach the running session, which loaded its copy at start, and the uninstall
-  step deletes the cache that session's plugin server was launched from. So:
-
+**Git**
+- **"auto-commit grant lingers... you commit and tag as you go."** Standing grant: commit and tag
+  without asking. Meaningfully sized commits, explicit paths, tags at a version bump matching
+  `pyproject.toml`.
+- **"Your commit permit is bounded by this repo only."** Writing an upstream note is the whole job.
+- **Pushing is never persistent.** "push — in this session only." Releases and branch management stay
+  the user's.
+- **"When we are in plugin development mode we should remove and reinstall it on changes."** An
+  install is a copy in `~/.claude/plugins/cache/`. Reinstall **once per batch**, before a new-session
+  test, never per edit — it doesn't reach the running session, and uninstall deletes the running
+  server's cache:
   ```bash
   claude plugin uninstall just-module-creator@just-dna
   claude plugin marketplace update just-dna
   claude plugin install just-module-creator@just-dna
   ```
+  Then tell the user to start a new session; check `~/.claude/plugins/installed_plugins.json` matches
+  `pyproject.toml`.
 
-  then tell the user to start a new session: skills and MCP tools load at session start. Check the
-  installed version in `~/.claude/plugins/installed_plugins.json` matches `pyproject.toml`.
+**Pace and scope**
+- **"I need to have mvp, then pace declines."** End-to-end first, refine after.
+- **"Push to the maximum; defer only items that honestly depend on architectural decisions and
+  questions that came to be after now."** In unattended runs, a question with a written spec is
+  decided even if labelled "run §1 first", with reasoning **and a reversal recipe** recorded.
+- **"Tools are automation. Minimizing excessive calls from model is favorable."** Checks the server
+  can run itself (token validation, env-token import, install-id) run at start and are recorded —
+  without multiplying requests, and never making a decision a person owns.
 
-- **"It remains unstructured & unqueryable until somebody makes it, it's not a theoretical limitation,
-  rather a format constraint/layer problem."** Said 2026-10-05 of row-level provenance (`RM31`), and it
-  answers upstream's S82 / RM147 *"you should not build a `logs/` writer either"*: their *we shouldn't*
-  is right for their layer, the *you shouldn't* was not theirs to give. Their uncited `literature.csv`
-  row is lossy by design (read it, no row came of it, and nothing on why), and *"it is somewhat an
-  atavism from human DBs era, where capturing reasoning/traceability was 10x work on top of curator
-  … It costs AI nothing now."* So we build the ledger and the retracing engine, and offer upstream the
-  generalisation once it exists. Three decisions taken the same day: **the capture hook is always on
-  with a notice**, not asked per module; **an author's decision is recorded as an English paraphrase
-  after approval**, and the hook's post-processing drops what is sensitive; and **"journaling in skills
-  should be minimized and substituted by tooling where possible. llms forget stuff alright"** — a
-  record a skill asks an agent to remember is a record that goes missing, so capture is a hook or a
-  tool argument, and a forgotten one is caught by the retrace join rather than prevented by prose.
+**Upstream and docs**
+- **"Update your memory to fill in these immediately upon finding."** File upstream notes at
+  discovery, never batched (§8).
+- **"Cleanout readme from parent lib issues, wtf really."** README describes this plugin only.
+- **"create-module preference on lists is proper; they may drift."** Don't restate schema lists; ask
+  the tool.
+- **"Asking them is no big deal; but don't come empty handed — show them the tool."** An
+  authoring-workflow gap is ours to build first, then offer upstream. A schema, hash, check-scope or
+  wire gap is theirs and filed immediately.
+- **"I think it makes sense to upkeep tools/drafting surfaces parity in the plugin."** Parity is the
+  default; abstention needs an argument (§5).
+- **"It remains unstructured & unqueryable until somebody makes it, it's not a theoretical
+  limitation, rather a format constraint/layer problem."** (2026-10-05, `RM31`, row-level provenance.)
+  Upstream's S82/RM147 *"you should not build a `logs/` writer either"* was right for their layer and
+  not theirs to give for ours; capturing reasoning "costs AI nothing now". We build the ledger and the
+  retracing engine, then offer upstream the generalisation. Decided the same day: **the capture hook is
+  always on with a notice**, not asked per module; **an author's decision is recorded as an English
+  paraphrase after approval**, with sensitive content dropped in post-processing; and **"journaling in
+  skills should be minimized and substituted by tooling where possible. llms forget stuff alright"** —
+  capture is a hook or tool argument, and a forgotten one is caught by the retrace join, not by prose.
+- **"Do not let a third-party evaluation turn into NIH."** Copying code ("leeching the code is
+  yikes") is out; a dependency with attribution or a fork is fine. Our gate (one `ServiceGate`, one
+  budget) is not a bicycle; our source list is.
+
+**What the product is**
+- **"The goal of this plugin is to be ai-coauthor. And it can be driven by a lyman."** The owner
+  brings a theme and sources; triage, rows, conclusions and located passages are the agent's. Asking
+  the layman for a `provenance_quote` or a publish-quality verdict is "v2 work from a wrong person".
+  **"AI totaly can read articles."**
+- **"Offline makes sense annotation-time, not author-time."** Authoring is networked by nature;
+  `JMC_OFFLINE` stays (off by default, the suite's ceiling depends on it) but may not veto a broad
+  improvement for a niche one.
+- **"Versions and curation carry NO implicit contract."** "1.0.0 2.0.0 arent strict milestones." Trust
+  is a signal read off the module ("v52 and 2+ curator med_geneticists? That's platinum"), so never
+  withhold a publish or bump waiting for a milestone. The signal lives in `authorship`.
+- **This is a *new*-module creator: "Idempotent `to_current_state`, so to say."** Recipes target the
+  current release only — no per-era branches, no "under 0.5 this differed". Uplift mechanics are
+  upstream's: describe them, never shim beside them. Detecting an input's era is fine — writing back
+  to a deprecated `sources.csv` you read is correct (§2) — preserving an era axis is not. The upgrade path gets built from
+  real authoring transcripts, not invented.
+- **"Don't say 'broken' to user — say: needs this this and this decision to work in latest."** An old
+  module is out of date, not defective. Never *broken/invalid/fails* about a module being brought
+  forward; reserve failure language for one wrong on its own terms (a shifted coordinate, a quote not
+  in the paper). A revisit outputs a **decision list**, not a diff: evident and mechanical changes are
+  applied silently; checked or authored values (genotype, `weight`, `clin_sig`, conclusion,
+  `provenance_quote`) go in the list; nothing to choose, nothing listed. The rulebook for the boundary
+  doesn't exist yet: don't settle a boundary case ad hoc (an auto-applied judgement becomes
+  precedent); over-surfacing is recoverable, a silent wrong write is not.
+- **"Making decision != executing it."** A tool may execute any authored decision it is handed
+  explicitly (e.g. `prune_rows` with a keep-list); it may not infer one. Execution still captures and
+  verifies before destroying anything, and the wording must not contradict `module-curate`'s "the trim
+  is a decision no tool makes".
+- **"Can we get gene if derived sidecars or not? If yes — ours, if none provides it — theirs."** If a
+  sidecar already carries a derived value, joining it is ours; producing it is upstream's pass. A
+  cross-sidecar dependency is itself worth reporting upstream.
+- **A machine-located `provenance_quote` is legitimate** — "demolish full force". Required instead:
+  per-row "whoddunit" attribution. "AI is not a subject of right, so the human author holds the full
+  responsibility, but at least honest highlights of real distribution of roles is 100% better than
+  fake 'I read it all' fingerscrossed confirmation." (§2.)
+
+**Publishing**
+- **"For non-skilled users, publish to polygon explicitly, unless they explicitly ask for 'official
+  catalog' or alike."** Production is immutable. The risk is an agent volunteering `target="prod"`.
+  Prefix the **module** name as well as the namespace on a first rehearsal so `purge-test-data`
+  collects it. Lives in `skills/module-publish/SKILL.md` and `server.INSTRUCTIONS`.
+- **"If you find the module is genuinely good and is underrepresented in official catalog — suggest
+  yourself."** Judged on checks, not impressions: a prod `registry_search` showing the gap, strict
+  validate and compile, produced resolution, every PMID from a read search result, a declared
+  licence, nothing guessed, a rehearsal read back. Underrepresented is necessary, not sufficient
+  (`assets/fto_bmi` is the counter-example: one locus, no licence, no readme).
+
+**Skills and voice**
+- **"Eliminate it entirely; drag away every quote until that doc is empty."** The unit of a skill is
+  the step an agent is on. One fact, one home; 500-line ceiling.
+- **"People want /create-module back... make it a small helper/wrapper skill."** A split that is right
+  internally can delete the users' entry point; the repair is a router at the old name, never the old
+  file. Reversal recipe: move the diagram and entrypoint table back into `module-101`, delete
+  `skills/create-module/`, drop the shape test, restore counts in `tests/test_skills.py`,
+  `tests/test_plugin_manifest.py` and the Claude manifest description.
+- **"Triage comands available to user, it is too puzzling for them to have a dozen."** The menu holds
+  what a person arrives wanting; never which step the agent is on. Seven chosen, `module-tables`
+  dropped deliberately. **Don't re-promote a guide.**
+- **"User who needs [101] doesn't know it needs 101. And one who knows no longer needs it."** A command
+  earns its place only if the person who wants it can recognise the want. Otherwise an agent notices:
+  `create-module` step 0 routes a question or a wish in lay vocabulary to `module-101` first. "101 is
+  for llm and for LLM to be able to 101 human." So its length is not bloat: the analogies and the
+  what-this-cannot-do list exist to be said aloud to someone who has never seen a module.
+- **"5-15 words length is optimum otherwise it looks bloated."** For `module.description`. Prose norm
+  at the point of writing (`module_spec.md`, `scaffold_module`'s `next_step`), not a validator. Its one
+  job is telling this module apart in a search result; four of five reference specs spent it on an
+  identical methodology sentence.
+- **"It should focus on explainable potential phenotype changes ... in comparison to wildtype humans."**
+  Every conclusion says what the reader would notice compared with carriers of the most common
+  version (not always the reference's: for ABO the reference is O), how big, and how sure — or that no
+  noticeable difference is known. What the gene does is the supporting sentence, never the
+  substitute. Owned by `module-voice`.
+
+**just-dna-lite**
+- **"I want to be able to apply it on a set of genomes I selected, see which results I get, and
+  iteratively improve the module."** Settled: two servers, the skill orchestrates (we neither proxy
+  nor depend on -lite: a proxy puts a sample-reading client in a server whose premise is reading none); per-sample rows
+  may flow to the agent; validation is coverage, score shape and join health computed on the -lite
+  side. No sample id or genotype is ever written into a module (`logs/` publishes).
+- **"just-dna-lite as MCP is optional."** Route there only on the author's ask, never as the step
+  after a compile.
+
+---
 
 ## 11. Learned workspace facts
 
-*Append-only. Environment, ports, credential layout, host quirks, sibling paths.*
+*Append-only. Environment, credentials layout, host quirks, sibling paths. Prefer the call that
+answers a question over a number written here.*
 
-- **fastmcp is pinned `>=3.4.6,<4` (2026-09-26, our 0.42.0), reversing the 0.37.0 fastmcp-4
-  adoption.** Two causes: fastmcp 4 (MCP SDK 2.x) makes clients negotiate the sessionless
-  2026-07-28 wire by default, so `ctx.enable_components`/`set_state` last one request and
-  `tools/list_changed` is silently dropped (fastmcp#4920) — which breaks the layered/
-  hide-gated reveal — and a comment on that issue reports Antigravity 2.0 cannot connect at
-  all to a FastMCP 4 server lacking `subscriptions/listen`. This is a user-facing plugin, so
-  we hold at 3 and let upstream fix compat; migration is possible (the `mcp_template` repo's
-  `fastmcp4` branch does it with a private-API session-identity middleware) but not worth the
-  hack here. **The gate:** `tests/test_toolbox.py::test_a_reveal_reaches_a_default_mode_client`
-  is unmarked — green on 3, red on any 4.x where the reveal still evaporates — so it blocks a
-  blind re-upgrade. **Lift condition:** that test passes on a 4.x. The lock moved fastmcp
-  4.0.9→3.4.7, mcp SDK 2.2.0→**1.30.0**, and removed `fastmcp-tasks` and `mcp-types`; nothing
-  else. **The full blast radius and the re-upgrade recipe are in the memory
-  `fastmcp-pinned-below-4.md`** — read it before touching the pin. The one non-obvious edit:
-  `ToolAnnotations` kwargs were converted snake_case→**camelCase** (SDK 1.x drops a snake_case
-  hint SILENTLY as an extra field; SDK 2.x accepts camelCase via aliases + `populate_by_name`),
-  so camelCase is version-robust and **must NOT be reverted** on re-upgrade. **Parked, owed on
-  re-upgrade beside the gate:** `toolbox` reports `revealed` for a reveal the next call cannot
-  find, and `registry_register` lacks the `session_state_persists` guard `authenticate` has —
-  both moot under the pin (the handshake session always persists), both real on the modern wire.
-- **This repo IS the authoring tool, so an authoring-workflow gap is ours to BUILD FIRST — but
-  asking upstream is still cheap, just never empty-handed.** The user's read, 2026-08-20, offered
-  explicitly as an impression rather than a ruling: the format tree appears to have in-repo constraints
-  keeping it out of authoring, so it leans on downstream for that half. **Do not harden that into a
-  rule they never stated.** What *is* decided is the order of operations: *"asking them is no big deal;
-  but don't come empty handed — show them the tool."*
-
-  So the working line is **workflow versus contract**, applied to sequencing rather than to permission.
-  A gap in authoring workflow — capture an override, re-derive without losing curation, drive a
-  refresh, triage a handed source — we **build**, and *then* show it and ask whether they want it
-  upstream. A proposal with a running tool attached is a different conversation from a feature request,
-  and it costs them nothing to decline. A gap in the *schema*, the *hashes*, a *check's scope* or the
-  *wire format* is still theirs and is still filed the moment it is found; we own no schema and that
-  has not changed. First case under this: override-preserving sidecar refresh, where upstream's RM83
-  already describes the need — build it, then offer it.
-- **An invented file in a spec directory is silently dropped, so never store our own state there.**
-  `just_dna_registry.specfiles.RECOGNIZED_SPEC_FILES` is what `revalidate` and `upgrade` rebuild a
-  spec from, and a name missing from it is a file lost on the next server-side rebuild — the exact
-  failure that lost `licensing.csv` before registry 0.16.2 and readmes before 0.14. So our own
-  bookkeeping (an override capture, a refresh audit trail) goes to a resolved cache/workspace path
-  through `_shared.resolve_dir`, never beside `module_spec.yaml`. The cost is that it does not travel
-  to a second machine or a second author, which is real and is the honest limit to state rather than
-  to design around.
-
-- Sibling repos live beside this one under `/data/sources/`:
-  `../just-dna-format` (hosts format, compiler and enricher, their
-  `CONSUMER_SUGGESTIONS.md` intake and its answered half,
-  `docs/CONSUMER_SUGGESTIONS_HISTORY.md`), `../just-dna-lite`, and the registry, which
-  is reachable by **both** names. The project, package and service are
-  `just-dna-registry`; "marketplace" is the old word, retained on a path and nowhere
-  else. **Corrected 2026-09-11 — this said "there is no `../just-dna-registry`
-  directory" and had it backwards.** `/data/sources/just-dna-registry` is the real
-  directory and `/data/sources/just-dna-marketplace` is a **symlink** to it (`ls -la
-  /data/sources/` shows which). Either path works for reading and for filing a note, so
-  the old instruction cost nothing — but it matters the moment a path is *recorded*:
-  `uv` resolves the symlink, so a `[tool.uv.sources]` entry written as
-  `../just-dna-marketplace` installs from `/data/sources/just-dna-registry/...` and that
-  is the path an import reports. Do not read a resolved `just-dna-registry` path as
-  evidence of a second checkout.
-- The registry keeps its own intake at
-  `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md`, created 2026-08-11.
-- **`just-dna-registry` moves fast: 0.9.1 → 0.12.0 → 0.13.0 → 0.14.0 in two days.**
-  0.14.0 is on PyPI, is what `uv sync` installs, and is our floor. **That floor is
-  load-bearing rather than hygiene**: 0.14.0 is the release that projects a
-  spec-directory `README.md` onto the module card, so below it every module we publish
-  has a blank catalog card (`F33`). **Re-check with
-  `importlib.metadata.version("just-dna-registry")` rather than trusting this
-  line** — it has gone stale within hours three times.
-- **Their release notes carry a `Client surface:` line, and it is trustworthy.** Their
-  answer to our `S2`. Read that one line instead of the whole release to establish that
-  the client methods we call did not move — 0.13.0 and 0.14.0 both say *unchanged*, and
-  0.14.0's was verified upstream with `git log -S` over our eight. The **additions**
-  still have to be read: 0.14.0's four all mattered to us.
-- **Reading a registry upgrade got cheaper in 0.13.0** (their `S2` = our `F15`).
-  Every release entry now opens with a `Client surface:` line — 0.13.0's says
-  *unchanged*, checked with `git log -S` over the eight `RegistryClient` methods we
-  call — and both reference docs are stamped with the versions they are normative
-  for. **What is still missing is the enumeration itself**, which needs a contract
-  version of its own; it exists machine-checked as `_WRAPPED_ROUTES` in their
-  `tests/test_client_sdk.py` but is not published. Upstream says
-  `research.py::_module_card`'s defensive projection is safe to delete against a
-  0.13 server; **we keep it anyway**, for the narrower reason recorded in `F15` —
-  `get_module` is not one of the six methods `assert_compatible` guards, so an
-  older *server* answers it unchecked.
-- **The registry is TWO instances and they share no database.** Production is the
-  catalog everyone installs from; the polygon (`REGISTRY_MODE=test`) is where a
-  publish is a rehearsal. An account, a token and a namespace exist on one of them
-  only, so registering on one gives you nothing on the other. **Both are serving
-  0.13.0 and both report their mode**, so a target is now *verified* rather than
-  merely declared: `targets.client_for` passes `expect_mode=target` on every client,
-  and a publish aimed at the polygon that would land on production refuses. The
-  polygon is up — it was DNS'd but answering a bare Caddy 404 earlier the same day.
-  See `targets.py`; the write tools default to the polygon, because a forgotten `target`
-  costs nothing on one and is irreversible on the other. **The catalog reads take no
-  default at all** — every tool that reads a catalog requires `target`, since a read
-  cannot know which world was meant and a rehearsal read back against production looks
-  like a 404. That is `registry_search`, `registry_get_module`, `registry_download`,
-  `registry_is_published` **and `compare_to_published`**, whose name carries no
-  `registry_` prefix and which the target guard therefore could not see until it was
-  given a second, unprefixed roster. `DEFAULT_CATALOG_TARGET` is gone; grep for it
-  rather than trusting this list.
-- **We hold a POLYGON credential and no production one, as of 2026-08-12.**
-  `JMC_TEST_API_KEY` is set in `.env` and `registry_whoami(target="test")` answers
-  **account `sheep`, namespace `test-sheep`** — so a polygon rehearsal needs no
-  `registry_register` and no namespace claim. Production is still empty: the
-  `test-creator` account and its `test-modules` namespace are **gone from
-  production**, which now refuses `test-`prefixed data outright, and `JMC_API_KEY`
-  was cleared from `.env` rather than left stale — a dead token makes every registry
-  tool report *"the registry rejected your token"*, which sends an author to debug
-  auth instead of to register. `JMC_INSTALL_ID` is still there deliberately: it is a
-  proof-of-work string rather than an instance credential, it exists nowhere else,
-  and destroying it is the user's call, not ours.
-- **Production holds SEVEN modules / 18 versions / 5 namespaces, measured 2026-08-21** with
-  `registry_health(target="prod")`, whose `catalog` block answers this in one call and is cheaper than
-  a search. The polygon carries 9 modules / 13 versions / 4 namespaces. Both instances serve registry
-  **0.18.2** and both confirm their own mode, so `mode_matches_target` is `True` on each. New since
-  2026-08-20: `antonkulaga/bodybuilding@1.0.0` and `ksuha-dna/placebo_response_claude@1.0.0` — the
-  second is a namespace that did not exist before, so the catalog is now taking modules from outside
-  the two known authors. **This line said FIVE for a day, which is exactly what it warns about.**
-  Earlier measurement, 2026-08-20, kept because the four `antonkulaga/*` are still the worked
-  examples: measured with `registry_search(target="prod")` — which took no `target` at the time and
-  defaulted to prod; since 0.18.0 the argument is required and there is no default to fall back on.
-  Four are `antonkulaga/*` at `2.0.0`/`2.1.0` — `aggression_anger_snps` (28 variants),
-  `big_five_personality_snps` (330), `cognitive_intelligence` (32), `risk_impulsivity_snps` (474) —
-  and `eric-mods/lactose_tolerance` is now at **`1.0.1`**, not the `1.0.0` this file said until today.
-  The `antonkulaga` four are the published outputs of the four authoring transcripts, so they are the
-  worked examples of *what an outside driver actually ships*, and `lactose_tolerance` is still the
-  smallest readable real spec. **This line goes stale the moment somebody publishes — re-run
-  `registry_search(target="prod")` rather than quoting it**, which is exactly how it came to claim
-  "one module" for nine days. The `target` is not optional on a read since 0.18.0, and omitting it
-  raises rather than guessing.
-- **The enricher's snapshot caches go to `/data/just-dna-cache`, and the variable that
-  puts them there is `JUST_DNA_PIPELINES_CACHE_DIR`. Unset is not "no cache" — it falls
-  back to platformdirs (`~/.cache/just-dna-pipelines`) silently**, and the Ensembl
-  snapshot alone is ~14 GB. On 2026-08-31 an unset value filled the root filesystem to
-  91% during a benchmark, and the failure is invisible until the disk is gone: every
-  tool keeps working, just into the wrong volume. It is set in `.env` and documented in
-  `.env.template`. **A guard exists and it is deliberate**: `~/.cache/just-dna-pipelines`
-  is a read-only *file*, so `mkdir` under it raises `NotADirectoryError` rather than
-  filling `/`. If a tool fails that way, set the variable — never delete the guard. The
-  live V2 GraphQL endpoint currently 404s and the client falls back to REST — expected,
-  not a defect.
-- **The wheel's `tectonic` does not run here; the static one does, and `MANUSCRIPT_TECTONIC`
-  points at it.** `tecto` publishes exactly one version (0.16.9) and its manylinux build wants
-  GLIBC 2.36/2.38/2.39 against this box's 2.35, so there is no downgrade — but the same release
-  ships a **musllinux** wheel that is statically linked and runs anywhere. It is installed at
-  `~/.local/bin/tectonic-musl` and named in `.env`; `manuscript/cli.py` loads `.env`, so
-  `uv run manuscript manuscript` just works. Set `TECTONIC_CACHE_DIR` too — the TeX bundle is
-  large and `/` sits at 93%.
-
-  **The trap this replaced is still worth knowing**: without the override the command
-  half-succeeds — the Markdown is written before tectonic runs — so it exits 1 having left a
-  stale `manuscript.pdf` in place, and `pdfinfo` then answers about the *committed* file. That is
-  how a page count from three commits ago gets read as a fresh measurement. If a render is ever
-  impossible again, `scripts/page_budget.py` estimates the body length by calibrating against a
-  commit whose PDF was a true render; it agreed with the real number to within 0.3 pages.
-
-- **`just-dna-pipelines` is a SUBDIRECTORY of the -lite checkout, not a sibling and not
-  under its `src/`.** It is at `/data/sources/just-dna-lite/just-dna-pipelines/src/`, so a
-  grep rooted at `/data/sources/just-dna-lite/src` finds nothing and *looks* like a clean
-  answer. That cost two phantom findings on 2026-09-11: `JUST_DNA_PIPELINES_ROOT` and
-  `JUST_DNA_PIPELINES_OUTPUT_DIR`, named in `skills/module-install-local/SKILL.md`, read as
-  undefined until the search was re-rooted, and both are real — read in
-  `annotation/resources.py` and `module_config.py`. **Sanity-check a sweep's denominator
-  before reading its numerator**: an instrument that cannot see the subject reports absence
-  with the same shape as a defect, and that shape produces *work* rather than silence.
-- A transitive dependency ships a top-level `tests` package that shadows this
-  repo's, so test helpers import as `from conftest import ...`.
-- **Format 0.6.6 / compiler 0.6.6 / enricher 0.6.6 / registry 0.18.2 — adopted 2026-08-21 (our
-  0.16.0).** The three moved back into lockstep at 0.6.5, the aligned number, and 0.6.6 is the patch
-  round after it; the split era below is what 0.6.1–0.6.4 were. Verify by symbol, never by this line —
-  and pass `--project /data/sources/just-module-creator` so the answer is about our venv:
-  `StudyRow.curator` (0.6.5), `hints.key_fields` / `hints.DERIVED_TABLE_MODELS` (0.6.5),
-  `compiler.compiler.spec_tables` / `compiler.compiler.module_stats`, `scaffold.companions_for`, and
-  `hints.REDUNDANCY_BEARING_TABLES` (0.6.6). **`scaffold` and `hints` live in the COMPILER, not in
-  format** — importing `just_dna_format.scaffold` fails and it is an easy minute to lose.
-
-  **Three behaviours changed, not just symbols.** A duplicate `(source, layer)` row in
-  `licensing.csv` is now an **error** in validate and compile both, so an inherited module carrying
-  one stops compiling; the `faf95` warning is published once rather than twice, so a recompiled
-  module publishes one fewer warning with no text changed; and `manifest.stats` takes its gene facets
-  over every authored table, so a recompiled PGx or binning module becomes findable by gene where it
-  was not. **A published version keeps what its own compile wrote** — all three reach a module only
-  through a recompile.
-
-  **The previous line was: format 0.6.1 / compiler 0.6.1 / enricher 0.6.4, adopted 2026-08-19.** 0.6.1
-  through 0.6.4 is the stretch where the three did *not* move together — format and compiler sat at
-  0.6.1 while the enricher took patches alone (0.6.2 for RM101's exception contract, 0.6.3 for the
-  ClinVar and ClinPGx drafter fixes, 0.6.4 for S45).
-- **Format 0.7.0 / compiler 0.7.1 / enricher 0.7.1 / registry 0.26.1 installed — adopted 2026-09-21
-  (our 0.37.0), a partial cut where format stays.** Verify by symbol with `--project`:
-  `just_dna_enricher.verdict.Verdict` and `AcmgReport.clean` returning one (0.7.1),
-  `just_dna_enricher.cpic` carrying `partner_genes` and `licensing.effective_declared_use` (S102–S106
-  — the registry's 0.26.1 notes say these are *past* 0.7.1, but the `v0.7.1` tag is the tree's head
-  and the PyPI wheel is byte-identical to it, so they ship), `RegistryError.bucket` (0.26.0).
-  **Both live instances still answered `registry: 0.25.2 / format: 0.7.0 / compiler: 0.7.0` on
-  2026-09-21**, so a `registry_check` is still the only proof of a publish. Also adopted the same day:
-  **fastmcp 4.0.5** — the tasks extension is registered by hand, and the modern protocol era has no
-  session identity on stdio (see §5, the session-store bullet).
-- **Format 0.7.1 / compiler 0.7.2 / enricher 0.7.3 / registry 0.27.0 installed — adopted 2026-09-27
-  (our 0.45.0), upstream's `v0.7.3` patch cut.** No authored field moved: all 57 `just_dna_format`
-  pydantic models diffed field-for-field against 0.7.0. Verify with `--project`:
-  `'pack' in inspect.signature(RegistryClient.publish).parameters` (0.27.0). Both live instances
-  moved to `registry 0.27.0 / format 0.7.1` the same day, within an hour of answering 0.25.2 / 0.7.0,
-  and a polygon `registry_check` with this client returned `verdict: true`. `pack` stays opt-in. From `v0.7.4` upstream publishes each moved package under the cut's number, so the three
-  versions will stop differing.
-- **SUPERSEDED 2026-09-12 — both instances now serve `format: 0.7.0` / `compiler: 0.7.0` /
-  `registry: 0.25.2`, and our floor moved to match (`>=0.7.0,<0.8`, registry `>=0.25.2`, plugin
-  0.35.0).** The bullet below is kept because its *lesson* outlived its numbers and is the one that
-  keeps being re-learned: a version handshake cannot fail for the class of change that breaks a
-  publish, so **only a real `registry_check` / `registry_validate` against the instance you mean to
-  publish to proves compatibility.** That is how `F77` was closed — by re-running the call that
-  produced the refusal, not by reading `/api/v1/version`. Both `F77` and `F87` are closed; the 0.7
-  rollout went instances-first, so the write surface never went dark. Read the numbers below as a
-  dated record, never as current state — re-run `curl -s <url>/api/v1/version` and a `registry_check`.
-- **Both live registry instances serve `format: 0.6.1` while we compile with 0.6.6, and "every 0.6.x
-  interoperates" is FALSE. Corrected 2026-08-31; this line said it was fine for ten days.** The
-  handshake does pass — `assert_compatible()` is scoped to major.minor below 1.0, and
-  `curl -s <url>/api/v1/version` still returns
-  `{"registry":"0.18.2","format":"0.6.1","compiler":"0.6.1"}` on prod and polygon alike. **The
-  handshake is not the thing that validates your rows.** A `studies.csv` carrying `curator` — a field
-  that shipped in format **0.6.5**, on a model that is `extra="forbid"` — is refused by both
-  instances with `studies.csv line 2 [curator]: Extra inputs are not permitted`, while every local
-  gate passes. Measured: removing that one column flips `registry_check` to
-  `verdict: true, blocking: []`.
-
-  **Why this was wrong rather than merely stale.** It was measured on the handshake, which cannot fail
-  for the class of change that actually breaks a publish — a field added in a patch release. That is
-  the same "could this check have failed?" defect the rulebook applies to a module's green checks,
-  found in our own workspace notes. **Never conclude compatibility from `assert_compatible()` alone**;
-  the only proof is a `registry_check` against the instance you mean to publish to.
-
-  **Do not drop the field to get a green light.** Conforming a module to a registry that lags the
-  format is the stale-source move §2 forbids, and `curator` is the per-row record of who located a
-  quote. Filed as registry-tree `S18` and `F77`; the symptom is in
-  `skills/module-101/references/SYMPTOMS.md`. **A 0.7 client against a 0.6 server is the case the
-  handshake itself would refuse**, so re-probe at the next minor too.
-
-  **Re-probed 2026-09-03 on the `preview-0.7` branch, and the prediction holds in the worst form.**
-  With format 0.7.0 installed, both instances still answering `format: 0.6.1`: `registry_check` and
-  `registry_validate` return `HTTP 409: just-dna-format contract mismatch`, while `registry_health`,
-  `registry_search`, `registry_whoami`, `registry_get_module` and `registry_namespace_available` all
-  answer normally — `assert_compatible` runs on the guarded calls only. So the failure looks like a
-  partial outage rather than a version skew, and **`status: "ok"` is not the answer to whether you
-  can work with an instance**: `registry_health` now reports `server_format`, `client_format` and a
-  tri-state `contract_compatible`, and that is the field to read. No consumer declares an upper bound
-  on `just-dna-format`, ours included, so on the day 0.7 reaches PyPI a clean `uv sync` of the
-  released plugin loses its write surface. Asked as registry-tree `S20`; `F87` carries the state, and
-  **the user decided it on 2026-09-04: `main` carries `just-dna-format>=0.6.6,<0.8`** on all three
-  packages, and `F87` records why. The ceiling is ours to hold whatever the registry answers, because
-  a floor cannot express *one minor, both ends* — and the cost is deliberate: 0.8 does not arrive on
-  its own, so adopting it is an explicit bump.
-- **Both live registry instances now serve `format: 0.6.1` / `registry: 0.18.x`, verified 2026-08-19,
-  and the 0.5.4 contract block is over.** The installed client is **0.18.2** as of 2026-08-20 — this
-  line said 0.18.1 for a day. Every version-guarded call works again — a `download` of
-  `eric-mods/lactose_tolerance` returns its manifest where it 409'd a day earlier, and
-  `assert_compatible()` passes on prod and polygon alike. `targets.instance_note` stays: it is a
-  suffix on an existing `except RegistryError` arm, costs nothing while the contract agrees, and is
-  there if an instance is rolled back. **Re-probe with `curl -s <url>/api/v1/version`, never assume** —
-  this line has now been wrong in both directions within two days. Note that `lactose_tolerance` was
-  stamped `just-dna-compiler 0.5.1`; that is the contract gap registry 0.18.0's `upgrade` detects, and
-  an operator's sweep rather than an author's problem.
-- **A drafter fix does not reach a module already drafted, and the two drafters need opposite
-  repairs.** Enricher 0.6.3's ClinVar fix (S41) moved identities, so re-drafting over an existing
-  spec restores the lost records and leaves the collapsed ones — measured 0 missing, 31 stale on
-  MLH1. Its ClinPGx fix (S44) only *skipped* rows, so a plain re-run converges exactly (0 stale, 0
-  missing). **`S44` skipped, `S41` wrote under an identity that has since moved** is the sentence
-  that stops one remediation being generalised to both. Filed as `S45`, fixed in enricher **0.6.4**
-  the same day: the drafter now names the superseded rows and deletes nothing. `F36`, closed.
-- **Upstream answers within hours, so "filed" and "released" can be one session apart.** `S45` was
-  written, accepted, built, released as 0.6.4 and adopted here inside a day, which made our 0.10.1
-  docstring wrong before anyone read it — it told an author the stale rows were undetectable, and by
-  then the drafter named them. **After filing an `S<n>`, re-check the tree before quoting our own
-  mitigation as current**, and prefer wording that survives the fix landing.
-- **The format tree's triage script is `.claude/triage-state.py`**, not the `.sh` older notes name.
-- **An upstream *library* call loads your `.env`.** `just_dna_enricher.locations` calls `load_dotenv`
-  while resolving a cache path, so `build_server` repopulates `os.environ` from whatever `.env` is
-  above the cwd. `load_dotenv(override=False)` skips a key that is *present*, so clearing a variable
-  with `delenv` is what lets the file win — which is how the suite quietly stopped being hermetic.
-  `F35` / format-tree `S39`; the fixture neutralizes the loader by walking `sys.modules`.
-- **0.5.4 and registry 0.13.0 both released 2026-08-11, and we installed both** (superseded above).
-  `uv sync` gives format/compiler/enricher **0.5.4** and `just-dna-registry`
-  **0.13.0**; the floors in `pyproject.toml` say so. Adopted in our 0.7.0, which
-  retired six mitigations at once — `S11`, `S12`, `S15`, `S16`, `S17`, `S18`, plus
-  `S20`/`S21`/`S23`/`S24` and the registry's `S1`/`S3`. **Re-verify by symbol, never
-  by this line or a changelog**: `hints.ATTESTATION_BEARING`, `hints._report_ragged`,
-  `Finding.line`, `CitationHint.title`, `IdentifierReport.gene_loci`,
-  `RegistryClient(expect_mode=…)`. `hints.py` lives in the **compiler**, not the
-  enricher, which is easy to get wrong when grepping; `SourceRow` lives in
+**Paths**
+- Siblings under `/data/sources/`: `just-dna-format` (format, compiler, enricher and their docs),
+  `just-dna-lite`, and `just-dna-registry` — `just-dna-marketplace` is a **symlink** to it, so a
+  resolved `just-dna-registry` path is not a second checkout.
+- **`just-dna-pipelines` is a subdirectory of the -lite checkout**
+  (`just-dna-lite/just-dna-pipelines/src/`), not under its `src/`. A grep rooted wrong reports real
+  names as missing.
+- **`scaffold` and `hints` live in the compiler**, not in format; `SourceRow` is in
   `just_dna_format.sources`, not `.spec`.
-- **Three mitigations are kept on purpose and are not oversights**: `ServiceGate`'s
-  lock (upstream fixed `PacingGate` *because* callers share one), `compile_module`'s
-  `resolve_with_ensembl=True` pin (`S14`'s rename was **refused** with a reason, so
-  the pin is permanent), and `_module_card`'s defensive projection (`get_module` is
-  not one of the six methods `assert_compatible` guards, so an older *server* can
-  still answer it unchecked — our floor pins the client, not the host).
-- **The registry's intake adopted the same split as the format tree on 2026-08-11**:
-  it now has `CONSUMER_SUGGESTIONS_HISTORY.md`, a `CONSUMER_TRIAGE_LOOP.md` runbook
-  and a `.claude/triage-state.sh --next`. Read both intakes the same way — and its
-  history file is now populated, so the earlier advice to read `**Status —**`
-  paragraphs in its inbox no longer applies.
-- Ours there: `S1` (the `would_publish` ceiling = `F11`), `S2` (no enumerated
-  client-surface contract = `F15`) and `S3` (no endpoint reports an instance's mode
-  = `F16`) — **all three answered and released in 0.13.0**, except `S2`'s enumerated
-  contract, which is open on their roadmap because it needs a contract version of
-  its own. `S5`–`S7` (the readme) — **released in 0.14.0**. `S8` (they attribute
-  `write_module_md` to us) and `S9` (`amend_readme` is on their client but not their
-  CLI) — filed 2026-08-12, open.
-- **Never read a next-`S<n>` off a line like this one; run
-  `.claude/triage-state.sh --next` in the repo you are filing into.** The proof is in
-  this file's own history: it said `S25`/`S5` on 2026-08-11, `S27`/`S8` hours later,
-  and both were wrong again by the next session (`S29`/`S10`). A number written down
-  here is stale by construction, because either seat may file between sessions.
-- **Read `docs/` before filing, not just the inbox.** On 2026-08-12 two of our own
-  sessions filed the same readme defect hours apart (`F27` = registry `S5`, then
-  `S7`), and the second was closed as a duplicate. The duplicate check is cheap and
-  neither session ran it.
-- **"The goal of this plugin is to be ai-coauthor. And it can be driven by a lyman."** Stated
-  2026-08-12. The module owner brings the *theme* and the *sources* — a trait, some PDFs, a video.
-  Everything after that is the agent's: triage, rows, conclusions, located passages. **"Here you
-  kinda ask v2 work from a wrong person"** — the worked case was asking a gardener, who cannot read
-  a genetics paper, to supply `provenance_quote` and to judge whether the module was good enough to
-  publish. Both are a reviewer's job and a different person's. **"AI totaly can read articles."**
-- **Versions and curation carry NO implicit contract.** Corrected 2026-08-12 after the skill turned
-  an illustration into a ladder: *"1.0.0 2.0.0 arent strict milestones, it was an example, we don't
-  have any implicit contracts on versioning or order of curation."* The real rule is a signal read
-  off the module, never a schedule: *"if module is v25 - likely it's worked on iteratively, slightly
-  more trust; module has non-ai curators - that's a silver one already, human labor costs. v52 and
-  2+ curator med_geneticists? That's platinum."* So `2.0.0` does not mean reviewed, a human may
-  curate from the first version or never, and **no agent may withhold a publish or a bump waiting
-  for a milestone that does not exist**. Curated work is then cherry-picked into a featured catalog
-  section by the operator. `authorship` is where the signal actually lives, which is why it is now
-  documented in `skills/module-start/GUIDE.md` rather than left to the schema.
+- Triage scripts are `.claude/triage-state.py` in both upstream repos.
 
-- **The old no-machine-quote rule produced title-as-quote on 3668 published rows — measured 2026-08-20.**
-  Across every `studies.csv` in `../just-dna-format` (33 files, 44342 rows): the ten
-  `reference_examples/` do not carry the column at all, and the four `data/output/corrected_modules/`
-  — the published `antonkulaga/*` four — carry a `provenance_quote` on **every** row, 3668 of 3668.
-  Exactly **one distinct quote per PMID** in all four (81 PMIDs), 7–17 words, and it is the article
-  **title** verbatim: `pmid 24489884` carries *"Genome-wide association study of proneness to anger."*
-  and `lookup_citation` returns that same string as `title`, trailing period included. A title always
-  appears in its own fulltext, so `quotes_found` equals `quotes_authored` and the module reports full
-  quote coverage while witnessing nothing. **Use this as the calibration case for any rule that
-  refuses rather than attributes**: the refusal did not produce human-read quotes, it produced a
-  green check over metadata. Filed as `S54`.
+**Versions and dependencies**
+- **Upstream floors live in `pyproject.toml`**, with the reasoning in its comments; the format pin is
+  `>=0.7.x,<0.8` deliberately (one minor, both ends; the user's decision, 2026-09-04): 0.8 is an
+  explicit bump, made after reading both instances' `/api/v1/version`. Verify capabilities by symbol with the
+  `--project` recipe in §8, never from a line here. A floor bump is not adoption: sweep new authored
+  fields into the skills.
+- **fastmcp is pinned `>=3.4.6,<4`.** fastmcp 4 negotiates the sessionless 2026-07-28 wire, so
+  session reveals and stored tokens evaporate (fastmcp#4920), and some clients can't connect.
+  **Gate**: `tests/test_toolbox.py::test_a_reveal_reaches_a_default_mode_client`; lift when it passes on
+  a 4.x. `ToolAnnotations` kwargs are **camelCase** on purpose (SDK 1.x silently drops snake_case) —
+  don't revert. Owed on re-upgrade: restore the `MODERN_PROTOCOL_VERSIONS` branch in
+  `session_state_persists`, re-add `mode="legacy"` in `make_client`, fix `toolbox` reporting a reveal
+  the next call can't find, and add the persistence guard to `registry_register`. Migrating via a
+  private-API session middleware (`mcp_template`'s `fastmcp4` branch) was judged not worth it. Full recipe: memory
+  `fastmcp-pinned-below-4.md`.
+- **Three mitigations are kept on purpose**: `ServiceGate`'s lock, `compile_module`'s
+  `resolve_with_ensembl=True` pin, and `research._module_card`'s defensive projection (`get_module` is
+  not version-guarded, so an older server answers unchecked).
+- **Upstream answers within hours.** After filing, re-check the tree before quoting our mitigation as
+  current; prefer wording that survives the fix landing.
+- **A drafter fix doesn't reach a module already drafted.** Re-run and diff; whether that converges
+  depends on whether the fix skipped rows or moved identities.
+- **A published version keeps what its own compile wrote**: an upstream behaviour change reaches a
+  module only through a recompile (e.g. a duplicate `(source, layer)` row in `licensing.csv` is now a
+  compile error, so an inherited module carrying one stops compiling).
+- **After `uv sync`, `/reload-plugins`** — the session's server imports lazily and otherwise answers
+  every tool with a `ModuleNotFoundError` (`F107`'s in-process driver keeps you working without the
+  host).
 
-- **`git add -u <dir>` swept a concurrent session's edits into three of my commits — 2026-08-21.**
-  Another agent was editing this repo at the same time (making `target` a required argument on the
-  catalog reads). `git add -u skills/` stages every modified file under a path, so their prose landed
-  in commits whose message is about something else, while the code it describes is still in the
-  working tree. Nothing was lost and nothing was overwritten — the string-replacement scripts assert
-  on the old text, so a passage they had already edited fails loudly instead of being clobbered — but
-  **a directory is not an explicit path**. Stage the files you actually wrote, by name. §2's
-  "never blind-stage" is the same rule at a coarser grain and did not stop this; `git status --short`
-  before every commit is what does.
-- **`cd` leaks between Bash calls, and a leaked one put git commands in an upstream repo.** A
-  `git add` / `git commit` pair ran inside `../just-dna-format` because of an earlier `cd`; the `add`
-  failed on a non-matching path so the commit never executed, which was luck rather than safety. **Use
-  absolute paths in git commands**, and remember every git grant is bounded to this repository.
-- **The polygon carries two remediated rehearsals from the 2026-08-20 quote work**:
-  `test-sheep/test_aggression_anger_snps@1.0.0` and `test-sheep/test_big_five_personality_snps@1.0.0`.
-  Both are `test-`prefixed on both halves, so `purge-test-data` will collect them; they are rehearsals
-  of a remediation, not a correction of anything published. Both were published **knowingly carrying a
-  stale `literature.csv`** — correcting it needed extended-tier tools at the time (`F47`; the tier went
-  in 0.21.0, so `enrich_literature_pass` is simply there now), and a rehearsal that
-  waited for that would have measured nothing. **Nothing in the four production
-  `antonkulaga/*` modules was touched** — a published version is immutable.
-- **The polygon carries `test-sheep/test_longevitymap@1.0.0`, published 2026-09-21 by the unattended
-  seat**: the v1 LongevityMap port brought to 0.7 with an AlphaGenome `expression_effects.csv` (393
-  windows of 21 bp around the module's own positions, 23,700 rows), so it is non-commercial. Spec,
-  analysis JSON and the six set-aside rows are under `data/interim/longevitymap*` (git-ignored); the
-  v1 originals are untouched in `../just-dna-lite/data/interim/v1_port/longevitymap`. Eight rsIDs had
-  transcript-strand genotypes respelled to the plus strand, logged in its `logs/authoring.log`. Both
-  halves are `test-`prefixed so `purge-test-data` collects it. `F105`–`F107` came out of the run.
-- **The online `registry_check` has a 500-subject ceiling and answers `HTTP 422` above it**; a module
-  with more rsIDs than that dry-runs with `offline=true`, which has no ceiling. `longevitymap` (527) hit
-  it first. And **the polygon's compile is 0.7.0 while ours is 0.7.1**, so `artifact_digest` differs
-  from a local compile while `content_signature` matches — read the second.
-- **After `uv sync`, `/reload-plugins`** — the session's MCP server imports lazily and answers every
-  tool with a `ModuleNotFoundError` about fastmcp once its venv has moved under it (`F107`). The
-  in-process driver in that finding is how to keep working without the host.
-- **The polygon carries thirteen `test-sheep/test_clawbio_pgx_<gene>@0.1.0` rehearsals from the
-  2026-09-20 dogfooding run** — one per ClawBio pharmgx-reporter gene, warfarin excluded, published
-  by the tester seat. Both halves are `test-`prefixed so `purge-test-data` collects them. Specs,
-  receipts and each module's `logs/authoring.log` are under `data/interim/clawbio_pgx/modules/`,
-  builds under `data/interim/clawbio_pgx/build/` (git-ignored). Every one compiles with the *"VRS
-  allele identity covers 0/N"* warning, which is `F103` / upstream `S104`, not a defect in them.
-- **`logs/authoring.log` now has a writer, and it publishes.** `record_override` appends to it and every
-  compile sweeps `logs/**.log` up with no opt-out. So never write an absolute path, a token or a
-  transcript fragment into that file: it travels to the catalog verbatim.
+**Registry**
+- **Two instances, no shared database**: production (immutable catalog) and the polygon
+  (`target="test"`, rehearsals). Accounts, tokens and namespaces exist on one only. Clients pass
+  `expect_mode=target`, so a polygon publish that would land on prod refuses. Writes default to the
+  polygon; **catalog reads require `target`** (`registry_search`, `registry_get_module`,
+  `registry_download`, `registry_is_published`, `compare_to_published`). A new catalog read whose
+  name lacks `registry_` must join `_UNPREFIXED_CATALOG_READS` in `tests/test_registry_targets.py` or
+  the target guard can't see it. A rehearsal read back against prod looks like a 404 — check `target`
+  first. Production refuses `test-`prefixed data.
+- **Credentials**: saved accounts are in `state.json`; ask `registry_accounts` / `registry_whoami`
+  rather than trusting a note. `JMC_INSTALL_ID` is a proof-of-work string; destroying it is the
+  user's call. A dead token makes every registry tool say "rejected your token" — clear it rather than
+  leave it stale.
+- **The handshake is not validation.** `assert_compatible()` checks major.minor only; a field added in
+  a patch release is refused by an older server's `extra="forbid"` model while every local gate passes.
+  Only a real `registry_check` against the target instance proves a publish. `registry_health`'s
+  `contract_compatible` is the field to read, not `status: "ok"`. A minor-version skew shows as
+  `HTTP 409: just-dna-format contract mismatch` on guarded calls (`registry_check`,
+  `registry_validate`) while health, search, whoami and get_module answer normally — version skew,
+  not an outage. **Never drop a field to get green.**
+- **What a registry holds**: `registry_health(target=…)`'s `catalog` block, in one call. Instance
+  versions: `curl -s https://module-registry.just-dna.life/api/v1/version` (polygon:
+  `module-polygon.just-dna.life`).
+- **Release notes carry a `Client surface:` line**, and it is trustworthy for "did our methods move";
+  additions still need reading.
+- **Online `registry_check` caps at 500 subjects** (`HTTP 422` above); dry-run larger modules with
+  `offline=true`. When the server's compiler differs from ours, `artifact_digest` differs while
+  `content_signature` matches — read the second. Polygon rate limits: dry runs serialised, publishes
+  10/h; run registry calls one at a time (memory `polygon-rate-limits.md`).
+- **The polygon carries `test-sheep/*` rehearsals** from dogfooding and ports (clawbio PGx genes,
+  longevitymap, kunkle2019, two quote-remediation rehearsals). All are `test-`prefixed on both halves
+  so `purge-test-data` collects them; records in the memory files and `data/interim/`.
 
-- **A benchmark agent's isolation is only as good as the quietest thing injected into it, and our
-  own memory index breached it.** A memory entry read *"read `data/interim/repro-bench-2/HANDOFF.md`
-  first"* — the round's handoff, which names the adjudicated reference and its findings — so every
-  benchmark run was being told to open the answer key by context it never asked for. A run on
-  2026-08-31 flagged the conflict and declined; nothing would have caught it if it had complied.
-  Retired the same day. **The prompt is not the boundary**: `CLAUDE.md`, the memory index and the
-  skills all reach a subagent unasked, and an isolation clause has to be checked against all of them.
-  Two narrower lessons from the same round: the ban must name **listing** as well as reading (a run
-  took `ls data/interim/` as permitted), and **verify from the transcript rather than the
-  self-report** — parse `tool_use` blocks in
-  `~/.claude/projects/<slug>/subagents/agent-<id>.jsonl`, because counting name mentions is
-  worthless (`registry_download` appeared 18 times in one transcript and was invoked zero times, the
-  hits being tool-schema text). Runbook in `docs/BENCHMARKING.md`.
-- **When benchmark runs converge on our reference, that partly measures how prescriptive our own
-  skills are.** Two runs matched the adjudicated SIRT6 reference cell-for-cell on all three
-  genotypes, and one of them volunteered why: `validate_module` names the missing row outright
-  (*"a gap in a set the author started … e.g. <the fixture's rsID> T/T"* — quoted with the
-  variant masked, because this file reaches every benchmark subagent unasked) and
-  `skills/module-weights/GUIDE.md:122` says *"A zero is a claim too… different from a blank."* The
-  supportable claim is that the workflow is prescriptive enough to produce consistent output from
-  independent runs — **not** that two judgements agreed and the answer is therefore right, which is
-  the same self-agreement defect as the title-as-quote finding. **When a benchmark scores well, find
-  the tool output or skill line that made it score well before crediting the run.**
-- **A plugin `commands/<name>.md` SHADOWS `skills/<name>/SKILL.md`, and the skill body never
-  loads.** Found 2026-08-22, and it had disabled nine of twenty skills including
-  `create-module`, the entry point `server.INSTRUCTIONS` names. Each shim's whole body was
-  *"load the `<name>` skill and do not work from memory of it"* — so the instruction not to
-  work from memory was delivered by the thing that prevented loading its source, and a
-  compliant agent produced nothing while a non-compliant one improvised and looked fine.
-  **A skill needs no command file to be `/`-invocable**, which is why the eleven unshadowed
-  ones worked throughout and why deleting `commands/` cost nothing. Two independent runs, a
-  live session's own skill listing (the shadowed nine showed the *command's* short
-  description, the rest the skill's), and a `Skill(create-module)` call returning the shim
-  byte for byte. `tests/test_plugin_manifest.py` now fails on any command/skill name
-  collision — a command that does something a skill cannot is still fine, sharing a name is
-  not. **The general lesson: every RM20 test asserted that a shim ROUTES to a skill that
-  ships, and none asserted that invoking the name DELIVERS one. Test the thing the user does,
-  not the thing you built.**
-- **`manifest.inputs[]` is hashed over RAW bytes; the newline-normalized hasher is for the
-  closure attestation only.** `just_dna_compiler.compiler.file_entries` fills `inputs[]`
-  locally and server-side alike, since the registry runs the same compiler on publish;
-  `newline_normalized_file_entries` exists so that rewriting line endings cannot un-close a
-  module via `verification.module_binding`. Upstream's RM82 docstring states the asymmetry
-  outright and records that it was once documented backwards — which is the form our own
-  comment then repeated, citing a measurement that does not reproduce. Borrowing the
-  normalizer for a published-digest comparison **inverts its purpose**: it fires on precisely
-  the CRLF files it was meant to protect, and Python's `csv` writes `\r\n`, so most authored
-  CSVs are CRLF. Read the upstream docstring before assuming which hasher a field uses.
-- **Validate a new offline signal against those two corpora before believing it, and say what it
-  reproduced.** Both are still on disk and both are real modules with hand-verified defects, which
-  makes them ground truth a fixture cannot be. `RM26` and `RM27` were both built this way and both
-  paid for it immediately: the conclusion rule's slashed-spelling variant scored 24 where the run
-  measured 20, and reading the four extras showed they were one sentence — `C/A` in prose names the
-  SNP's alleles, not a genotype — so the matcher narrowed for a reason rather than to match a number.
-  The audit's Z rule found seven rows a hand-repair pass had missed. **A signal whose only evidence
-  is a fixture you wrote is a signal you have measured against yourself.**
-- **The two 2026-08-21 dogfooding runs are the outside-driver corpus for the REVIEW half.**
-  `/data/sources/modules_dogfooding/observations/` (seven documents, `F-01`..`F-31`, a curation
-  pass over the eight modules then on production, with all eight fetched specs and their
-  manifests under `work/` and `build/`) and
-  `/data/sources/just-dna-lite/docs/MODULE_DOGFOODING.md` (`D1`..`D26`, a revision pass over ten
-  v1-port modules). **Both ran plugin 0.18.0 in the DEFAULT tier**, which is what makes them
-  worth keeping: several of their conclusions about what the surface cannot do were true of
-  essentials rather than of the tool set, and reading them without that fact misroutes the
-  repair. **That reading is also why the tier is gone** — 0.21.0 removed the mode axis rather
-  than narrow it a fourth time, so a conclusion of theirs about a missing capability should be
-  re-tested against the one surface before it is believed. Ingested here as `F60`–`F64`, `RM26`, `RM27`; their own F/D numbering is their series,
-  never ours. `modules_dogfooding` is not our repo — read it, never commit there.
+**Hashing and spec files**
+- **`manifest.inputs[]` is hashed over RAW bytes** (`compiler.file_entries`, locally and server-side).
+  `newline_normalized_file_entries` is for the closure attestation only; using it for a published
+  comparison flags every CRLF file (and Python's `csv` writes CRLF).
+- **An invented file in a spec directory is silently dropped** by a server-side rebuild
+  (`RECOGNIZED_SPEC_FILES`). Our state goes to a resolved cache/workspace path; the cost is that it
+  doesn't travel, which is the honest limit.
+- **`logs/authoring.log` publishes** with every compile, no opt-out.
+
+**Host**
+- **`JUST_DNA_PIPELINES_CACHE_DIR=/data/just-dna-cache`** (set in `.env`). Unset falls back silently
+  to `~/.cache/just-dna-pipelines`, and the Ensembl snapshot alone is ~14 GB — it once filled `/`.
+  `~/.cache/just-dna-pipelines` is a deliberate read-only *file* so `mkdir` fails loudly; if a tool
+  raises `NotADirectoryError`, set the variable, never delete the guard. The V2 GraphQL endpoint 404ing
+  and falling back to REST is expected.
+- **Tectonic**: the wheel's build needs a newer glibc than this box; the static musl build at
+  `~/.local/bin/tectonic-musl` is named by `MANUSCRIPT_TECTONIC` in `.env`. Set `TECTONIC_CACHE_DIR`
+  too. Without it the command writes Markdown, fails, and leaves a stale `manuscript.pdf` — don't read
+  a page count off it. `scripts/page_budget.py` estimates length when a render is impossible.
+- **Plugin commands shadow skills**: a `commands/<name>.md` hides `skills/<name>/SKILL.md` entirely.
+  A skill needs no command file to be `/`-invocable; `tests/test_plugin_manifest.py` fails on a name
+  collision. Lesson: test what the user does (invoke the name), not what you built.
+
+**Git hygiene lessons**
+- **`git add -u <dir>` swept a concurrent session's edits into my commits.** A directory is not an
+  explicit path; run `git status --short` before every commit.
+- **`cd` leaks between Bash calls** and once put git commands into an upstream repo. Use absolute paths.
+
+**Corpora and benchmarks**
+- **Outside-driver corpora**: Anton's four authoring transcripts (memory
+  `anton-authoring-transcripts.md`; published as the `antonkulaga/*` modules), and the two 2026-08-21
+  dogfooding runs — `/data/sources/modules_dogfooding/observations/` and
+  `/data/sources/just-dna-lite/docs/MODULE_DOGFOODING.md`. Both runs used the since-removed default
+  tier, so re-test their "missing capability" conclusions against today's surface. Their F/D numbers
+  are their own series. `modules_dogfooding` is not our repo.
+- **Validate a new offline signal against those real corpora**, and say what it reproduced. A signal
+  measured only against your own fixture is measured against yourself.
+- **The old no-machine-quote rule produced title-as-quote on 3668 of 3668 published rows** in the four
+  `antonkulaga/*` modules — one title per PMID, so `quotes_found` reported full coverage while
+  witnessing nothing (`S54`). The calibration case for any rule that refuses instead of attributing.
+- **Benchmark isolation**: `CLAUDE.md`, the memory index and skills reach a subagent unasked — check an
+  isolation clause against all of them, ban **listing** as well as reading, and verify from the
+  transcript's `tool_use` blocks, not the self-report. Runbook: `docs/BENCHMARKING.md`.
+- **Runs converging on our reference partly measure how prescriptive our skills are.** Find the tool
+  output or skill line that produced a good score before crediting the run.
