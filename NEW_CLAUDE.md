@@ -560,7 +560,7 @@ docs. When the user corrects a preference, it goes into §10 in their words, wit
 
 ### Running two agents across one night: the relay protocol
 
-One file, `docs/NIGHT-RELAY.md`: a `STATE:` line, the legal transitions, one append-only section per role.
+Create `docs/NIGHT-RELAY.md` with a `STATE:` line, the legal transitions, one append-only section per role.
 
 1. **Read `STATE:` first.** Not your starting state → stop, write nothing, report what you found.
 2. **Claim by writing your transition first** (UTC timestamp) and commit immediately.
@@ -576,7 +576,7 @@ The waiting agent arms a file monitor on `STATE:` (tested on a dummy file first)
 
 ## 10. Learned user preferences
 
-*Append-only. One entry each, in the user's terms, with the why.*
+*Append-only (grouped by theme in the 2026-10-05 rewrite). One entry each, in the user's terms, with the why.*
 
 **Git**
 - **"auto-commit grant lingers... you commit and tag as you go."** Standing grant: commit and tag
