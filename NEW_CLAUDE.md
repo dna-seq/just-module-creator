@@ -62,7 +62,7 @@ add a guide, link it from a router in the same change.**
 | **The second-pass three** | `module-revise` (which kind of pass, what it invalidates), `module-refresh` (re-running what already ran), `module-diff` (what moved, and the reading that means a source changed its answer). A second pass is the normal case. |
 | **References the stages load** | `module-weights` (the column everyone fills and nobody declares), `module-voice` (how labels, conclusions and descriptions read to a lay reader and a professional; twin of just-dna-lite's `docs/REPORT_VOICE.md`), `module-consumer` (the far side of the seam), `find-evidence` (search, verify a PMID, read a paper, what may be quoted; `references/SUPPLEMENTARY.md` is the retrieval ladder for supplementary tables). |
 | **Sideways doors** | `module-status` (read a spec directory, work out its stage, list the decisions due) and `module-symptom` (decode a message via `SYMPTOMS.md`, and which layer emitted it). Not stages; they route to the stage that owns the work. |
-| `skills/module-install-local/SKILL.md` | Running a compiled module over this machine's genomes via just-dna-lite's MCP server, **only on the author's ask**: `status`, ask which genomes, `install_module` → `start_annotation` → `wait_for_job` → `validate_module`, route each finding back to the stage that owns the cell, re-run. Not a stage, not a publish rehearsal. Manual routes in `references/MANUAL_INSTALL.md`. |
+| `skills/module-install-local/SKILL.md` | Running a compiled module over this machine's genomes via just-dna-lite's MCP server, **only on the author's ask**: `status`, ask which genomes, `install_module` → `start_annotation` → `wait_for_job` → `validate_module`, route each finding back to the stage that owns the cell, re-run on the same genomes. Not a stage, not a publish rehearsal. Manual routes in `references/MANUAL_INSTALL.md`. |
 | `skills/module-tables/GUIDE.md` | Which table and where every file sits: table choice by grain, key axes, composition, the three on-disk shapes, the registry's `derived/` layout. No column list. |
 | `skills/module-tables/references/*.md` | One dossier per table kind (must cover `hints.DERIVED_TABLE_MODELS ∪ draft.DRAFTABLE`), five for the non-table spec files, and `LAYOUT.md`. The schema half lives upstream at `https://just-dna.life/just-dna-compiler/tables/<name>/`; these keep what a model cannot state — who decides which cell, what an edit moves, the symptom when the table lies. **Anchor on symbol names, never `file:line`.** |
 | `skills/module-101/references/SYMPTOMS.md` | Upstream message → cause → action. Read from every stage. |
@@ -72,8 +72,9 @@ add a guide, link it from a router in the same change.**
 
 **One fact, one home.** The old 1431-line `create-module` monolith was dismantled on the owner's
 instruction; the name came back as a router only. If two skills need the same rule, one owns it
-and the other links. The moment the router or a stage skill holds a column value, a warning phrase
-or another stage's judgement call, the monolith is being rebuilt. Skill ceiling: 500 lines.
+and the other links. The moment the router holds a column value, a warning phrase or any judgement
+call — or a stage skill holds another stage's — the monolith is being rebuilt. The lifecycle diagram
+and stage roster moved out of `module-101`; don't copy them back. Skill ceiling: 500 lines.
 
 ---
 
@@ -188,7 +189,9 @@ an honest gap is worse than what it refused (title-as-quote, §11).
   1. Quote **verbatim** and record who located it in `StudyRow.curator` (free text: name, handle or
      model id, row-level because work is mixed — "scientist reads review, agent traverses
      citations"). Nothing checks `curator`; it is for reviewers, paired with `authorship` and the
-     `logs/` entry.
+     `logs/` entry. It is deliberately not a `machine_located` boolean. Combined authority already
+     exists upstream (`Contribution.who` = name/handle/model id; `Contribution.kind` ladders
+     human…human_certified against ai/agent/team/swarm) — don't re-ask for it.
   2. **The human author holds full responsibility regardless.** Attribution is about the real
      distribution of roles, never about moving liability.
   3. Honest attribution beats an empty column.
@@ -307,7 +310,9 @@ nobody's install. Design constraint here, conduct in the skill; never split one 
 
 **A first-run question may not require configuration the author has no reason to have done.** A tool
 may withhold on a condition it can **name and repair** (an unwritable path), never on an unset
-variable — unset is the default location. Cost ceilings are per item.
+variable — unset is the default location ("No regular user sets envs as a first move; that is a dev
+mindset, not users."). Cost ceilings are per item, so a cramped disk declines the expensive offer and
+still takes the cheap one.
 
 **Timestamps: store ISO-8601 UTC, display local.** Never naive `YYYY-MM-DD HH:MM:SS`.
 
@@ -328,7 +333,9 @@ variable — unset is the default location. Cost ceilings are per item.
 - **Contact chain**: `JMC_USER_EMAIL` → `JUST_DNA_CONTACT_EMAIL` → `settings.DEFAULT_CONTACT_EMAIL`.
   The middle step stays inherited: `build_services` passes `email=None` and lets
   `EutilsSettings.__post_init__` read it. **Never read `JUST_DNA_CONTACT_EMAIL` yourself.** Never
-  fabricate an address; the default is the project's own, and `build_services` logs which step
+  fabricate an address. The default is the project's own and exists so no source sits out a call —
+  not to make configuring optional: the address says whose rate-limit budget is spent and who gets
+  abuse reports, so `.env.template` asks for `JMC_USER_EMAIL`. `build_services` logs which step
   answered. `contact_email()` returns `str`, so `if not email:` branches are dead code.
 - **A long tool talks to its caller through `_shared.narrate`, never `ctx.info`.** It uses
   `report_progress` plus stderr, which works on every wire; `ctx.info` raises in a fastmcp-4
@@ -395,7 +402,9 @@ operator's sweep, a build hook, or only a deployment calls it. Say which.
 5. Gated tools are `async def`, take `ctx: Context`, `await resolve_api_key(ctx, settings, target)`,
    return `unauthenticated_result(settings, target)` on `None`, are tagged `registry_write`, and are
    listed in `auth.GATED_TOOLS`. **Session state is FastMCP's own** (`ctx.set_state` / `get_state`
-   under `auth.state_key(target)`; the target stays in the key). Call `auth.session_state_persists`
+   under `auth.state_key(target)`, never a dict of ours: entries expire after 24h, and multi-process
+   HTTP needs a shared `FastMCP(session_state_store=...)`. Flatten the target out of the key and a
+   second `authenticate` silently retargets the first). Call `auth.session_state_persists`
    before storing and refuse naming the env var — **never report a success the next call cannot
    find**. Under the fastmcp `<4` pin that guard is dormant (handshake sessions persist); on a 4.x
    re-upgrade, see §11.
@@ -425,7 +434,9 @@ operator's sweep, a build hook, or only a deployment calls it. Say which.
   the product needs it. An upstream library (`just_dna_enricher.locations`) calls `load_dotenv`
   itself; the fixture neutralizes it.
 - **A test meaning "no credential" must say so**: `setenv(VAR, "")`, not `delenv` —
-  `load_dotenv(override=False)` skips a key that is merely present.
+  `load_dotenv(override=False)` skips a key that is merely present. (The autouse fixture's `delenv` is
+  not an exception: with dotenv neutralized, absent means unset; inside a test, `setenv` runs after it
+  and wins.)
 - **Suspect ordering** when a test passes alone and fails in the suite.
 - **Never let a fixture compute its expected value with the code under test.** Build it the way the
   *producer* builds it (e.g. a real publish uses `file_entries`, not the newline-normalizing hasher).
@@ -434,7 +445,8 @@ operator's sweep, a build hook, or only a deployment calls it. Say which.
   empty, and a foreign enumeration goes empty when an import moves. Give it one of: an explicit count
   floor (well under today's number), an adjacent exact assertion on a known member, or put the
   foreign set on the **right** of `<=`. Floor the inputs, never the answer (an empty result can be the
-  good state).
+  good state). Audit by asking *"if the foreign enumeration came back empty, does this still pass?"*,
+  not by grepping for `len(...) >=`.
   - **A split on text** needs the split checked: marker present, block neither empty nor the whole file.
   - **A negative assertion** (`X not in body`) needs the haystack established by a positive assertion
     first.
@@ -472,7 +484,8 @@ upstream). One mitigated here but still owed upstream may appear in two.
 
 - **All new markdown goes in `docs/`** (except this file and `README.md`). Every prohibition lives
   here in full, because a `don't` behind a link doesn't get read.
-- **`docs/ROADMAP.md` is active-only**; shipped items move to `docs/ROADMAP_HISTORY.md`.
+- **`docs/ROADMAP.md` is active-only**; shipped items move to `docs/ROADMAP_HISTORY.md` with their
+  rationale. Nothing is deleted, only relocated.
 - **`docs/CHANGELOG.md`** records what shipped, newest first, including cross-repo changes on our side.
 - **Update this file and the affected docs in the same change as the refactor.** Policy first.
 - **Keep skills and tool docstrings in agreement**, especially about what a tool refuses.
@@ -485,7 +498,8 @@ upstream). One mitigated here but still owed upstream may appear in two.
 Draft in `docs/manuscript/` (EASRP 2026 `template.tex` + `easrp2026.sty`). Edit `manuscript.tex`,
 then `uv run manuscript manuscript` to rebuild `.md` + `.pdf` (`--nopdf` for Markdown only). Section
 order follows the empty template (Introduction, Related work, Method, Results, Discussion,
-Conclusion). Related-work papers go in `data/cache/for_manuscript/` (gitignored). Process notes in
+Conclusion) — not the retired `paper2-dna-agents.md` outline in -lite, which is inspiration only.
+Related-work papers go in `data/cache/for_manuscript/` (gitignored). Process notes in
 `docs/manuscript/README.md`. Tectonic setup: §11.
 
 ### Upstream findings go to the producer, never into a workaround
@@ -508,7 +522,8 @@ index. So:
 
 - **An empty inbox means nothing is owed**, not that notes were lost — check the history index.
 - **Never number a new `S<n>` from what you see.** Run `.claude/triage-state.py --next` in the repo
-  you're filing into. Ids are never reused.
+  you're filing into. Ids are never reused. Their `CONSUMER_TRIAGE_LOOP.md` is the producer's
+  runbook, not ours to drive.
 - **Check for duplicates first**, in the inbox, the history file *and our own `docs/`*. A second
   reproduction is a corroboration appended to the existing entry.
 - **Three states: answered ≠ fixed in tree ≠ released.** Only "released and in our lockfile" lets a
@@ -601,7 +616,7 @@ The waiting agent arms a file monitor on `STATE:` (tested on a dummy file first)
 - **"I need to have mvp, then pace declines."** End-to-end first, refine after.
 - **"Push to the maximum; defer only items that honestly depend on architectural decisions and
   questions that came to be after now."** In unattended runs, a question with a written spec is
-  decided, with reasoning **and a reversal recipe** recorded.
+  decided even if labelled "run §1 first", with reasoning **and a reversal recipe** recorded.
 - **"Tools are automation. Minimizing excessive calls from model is favorable."** Checks the server
   can run itself (token validation, env-token import, install-id) run at start and are recorded —
   without multiplying requests, and never making a decision a person owns.
@@ -617,6 +632,15 @@ The waiting agent arms a file monitor on `STATE:` (tested on a dummy file first)
   wire gap is theirs and filed immediately.
 - **"I think it makes sense to upkeep tools/drafting surfaces parity in the plugin."** Parity is the
   default; abstention needs an argument (§5).
+- **"It remains unstructured & unqueryable until somebody makes it, it's not a theoretical
+  limitation, rather a format constraint/layer problem."** (2026-10-05, `RM31`, row-level provenance.)
+  Upstream's S82/RM147 *"you should not build a `logs/` writer either"* was right for their layer and
+  not theirs to give for ours; capturing reasoning "costs AI nothing now". We build the ledger and the
+  retracing engine, then offer upstream the generalisation. Decided the same day: **the capture hook is
+  always on with a notice**, not asked per module; **an author's decision is recorded as an English
+  paraphrase after approval**, with sensitive content dropped in post-processing; and **"journaling in
+  skills should be minimized and substituted by tooling where possible. llms forget stuff alright"** —
+  capture is a hook or tool argument, and a forgotten one is caught by the retrace join, not by prose.
 - **"Do not let a third-party evaluation turn into NIH."** Copying code ("leeching the code is
   yikes") is out; a dependency with attribution or a fork is fine. Our gate (one `ServiceGate`, one
   budget) is not a bicycle; our source list is.
@@ -634,15 +658,21 @@ The waiting agent arms a file monitor on `STATE:` (tested on a dummy file first)
   withhold a publish or bump waiting for a milestone. The signal lives in `authorship`.
 - **This is a *new*-module creator: "Idempotent `to_current_state`, so to say."** Recipes target the
   current release only — no per-era branches, no "under 0.5 this differed". Uplift mechanics are
-  upstream's. Detecting an input's era is fine; preserving it is not. The upgrade path gets built from
+  upstream's: describe them, never shim beside them. Detecting an input's era is fine — writing back
+  to a deprecated `sources.csv` you read is correct (§2) — preserving an era axis is not. The upgrade path gets built from
   real authoring transcripts, not invented.
 - **"Don't say 'broken' to user — say: needs this this and this decision to work in latest."** An old
-  module is out of date, not defective. A revisit outputs a **decision list**: evident and mechanical
-  changes are applied silently; checked or authored values (genotype, `weight`, `clin_sig`,
-  conclusion, `provenance_quote`) go in the list. The rulebook for the boundary doesn't exist yet;
-  when unsure, surface.
+  module is out of date, not defective. Never *broken/invalid/fails* about a module being brought
+  forward; reserve failure language for one wrong on its own terms (a shifted coordinate, a quote not
+  in the paper). A revisit outputs a **decision list**, not a diff: evident and mechanical changes are
+  applied silently; checked or authored values (genotype, `weight`, `clin_sig`, conclusion,
+  `provenance_quote`) go in the list; nothing to choose, nothing listed. The rulebook for the boundary
+  doesn't exist yet: don't settle a boundary case ad hoc (an auto-applied judgement becomes
+  precedent); over-surfacing is recoverable, a silent wrong write is not.
 - **"Making decision != executing it."** A tool may execute any authored decision it is handed
-  explicitly (e.g. `prune_rows` with a keep-list); it may not infer one.
+  explicitly (e.g. `prune_rows` with a keep-list); it may not infer one. Execution still captures and
+  verifies before destroying anything, and the wording must not contradict `module-curate`'s "the trim
+  is a decision no tool makes".
 - **"Can we get gene if derived sidecars or not? If yes — ours, if none provides it — theirs."** If a
   sidecar already carries a derived value, joining it is ours; producing it is upstream's pass. A
   cross-sidecar dependency is itself worth reporting upstream.
@@ -676,16 +706,22 @@ The waiting agent arms a file monitor on `STATE:` (tested on a dummy file first)
 - **"User who needs [101] doesn't know it needs 101. And one who knows no longer needs it."** A command
   earns its place only if the person who wants it can recognise the want. Otherwise an agent notices:
   `create-module` step 0 routes a question or a wish in lay vocabulary to `module-101` first. "101 is
-  for llm and for LLM to be able to 101 human."
+  for llm and for LLM to be able to 101 human." So its length is not bloat: the analogies and the
+  what-this-cannot-do list exist to be said aloud to someone who has never seen a module.
 - **"5-15 words length is optimum otherwise it looks bloated."** For `module.description`. Prose norm
-  at the point of writing (`module_spec.md`, `scaffold_module`'s `next_step`), not a validator.
+  at the point of writing (`module_spec.md`, `scaffold_module`'s `next_step`), not a validator. Its one
+  job is telling this module apart in a search result; four of five reference specs spent it on an
+  identical methodology sentence.
 - **"It should focus on explainable potential phenotype changes ... in comparison to wildtype humans."**
   Every conclusion says what the reader would notice compared with carriers of the most common
-  version, how big, and how sure — or that no noticeable difference is known. Owned by `module-voice`.
+  version (not always the reference's: for ABO the reference is O), how big, and how sure — or that no
+  noticeable difference is known. What the gene does is the supporting sentence, never the
+  substitute. Owned by `module-voice`.
 
 **just-dna-lite**
 - **"I want to be able to apply it on a set of genomes I selected, see which results I get, and
-  iteratively improve the module."** Settled: two servers, the skill orchestrates; per-sample rows
+  iteratively improve the module."** Settled: two servers, the skill orchestrates (we neither proxy
+  nor depend on -lite: a proxy puts a sample-reading client in a server whose premise is reading none); per-sample rows
   may flow to the agent; validation is coverage, score shape and join health computed on the -lite
   side. No sample id or genotype is ever written into a module (`logs/` publishes).
 - **"just-dna-lite as MCP is optional."** Route there only on the author's ask, never as the step
@@ -711,7 +747,8 @@ answers a question over a number written here.*
 
 **Versions and dependencies**
 - **Upstream floors live in `pyproject.toml`**, with the reasoning in its comments; the format pin is
-  `>=0.7.x,<0.8` deliberately (one minor, both ends). Verify capabilities by symbol with the
+  `>=0.7.x,<0.8` deliberately (one minor, both ends; the user's decision, 2026-09-04): 0.8 is an
+  explicit bump, made after reading both instances' `/api/v1/version`. Verify capabilities by symbol with the
   `--project` recipe in §8, never from a line here. A floor bump is not adoption: sweep new authored
   fields into the skills.
 - **fastmcp is pinned `>=3.4.6,<4`.** fastmcp 4 negotiates the sessionless 2026-07-28 wire, so
@@ -720,7 +757,8 @@ answers a question over a number written here.*
   a 4.x. `ToolAnnotations` kwargs are **camelCase** on purpose (SDK 1.x silently drops snake_case) —
   don't revert. Owed on re-upgrade: restore the `MODERN_PROTOCOL_VERSIONS` branch in
   `session_state_persists`, re-add `mode="legacy"` in `make_client`, fix `toolbox` reporting a reveal
-  the next call can't find, and add the persistence guard to `registry_register`. Full recipe: memory
+  the next call can't find, and add the persistence guard to `registry_register`. Migrating via a
+  private-API session middleware (`mcp_template`'s `fastmcp4` branch) was judged not worth it. Full recipe: memory
   `fastmcp-pinned-below-4.md`.
 - **Three mitigations are kept on purpose**: `ServiceGate`'s lock, `compile_module`'s
   `resolve_with_ensembl=True` pin, and `research._module_card`'s defensive projection (`get_module` is
@@ -729,16 +767,22 @@ answers a question over a number written here.*
   current; prefer wording that survives the fix landing.
 - **A drafter fix doesn't reach a module already drafted.** Re-run and diff; whether that converges
   depends on whether the fix skipped rows or moved identities.
+- **A published version keeps what its own compile wrote**: an upstream behaviour change reaches a
+  module only through a recompile (e.g. a duplicate `(source, layer)` row in `licensing.csv` is now a
+  compile error, so an inherited module carrying one stops compiling).
 - **After `uv sync`, `/reload-plugins`** — the session's server imports lazily and otherwise answers
-  every tool with a `ModuleNotFoundError`.
+  every tool with a `ModuleNotFoundError` (`F107`'s in-process driver keeps you working without the
+  host).
 
 **Registry**
 - **Two instances, no shared database**: production (immutable catalog) and the polygon
   (`target="test"`, rehearsals). Accounts, tokens and namespaces exist on one only. Clients pass
   `expect_mode=target`, so a polygon publish that would land on prod refuses. Writes default to the
   polygon; **catalog reads require `target`** (`registry_search`, `registry_get_module`,
-  `registry_download`, `registry_is_published`, `compare_to_published`). Production refuses
-  `test-`prefixed data.
+  `registry_download`, `registry_is_published`, `compare_to_published`). A new catalog read whose
+  name lacks `registry_` must join `_UNPREFIXED_CATALOG_READS` in `tests/test_registry_targets.py` or
+  the target guard can't see it. A rehearsal read back against prod looks like a 404 — check `target`
+  first. Production refuses `test-`prefixed data.
 - **Credentials**: saved accounts are in `state.json`; ask `registry_accounts` / `registry_whoami`
   rather than trusting a note. `JMC_INSTALL_ID` is a proof-of-work string; destroying it is the
   user's call. A dead token makes every registry tool say "rejected your token" — clear it rather than
@@ -746,7 +790,10 @@ answers a question over a number written here.*
 - **The handshake is not validation.** `assert_compatible()` checks major.minor only; a field added in
   a patch release is refused by an older server's `extra="forbid"` model while every local gate passes.
   Only a real `registry_check` against the target instance proves a publish. `registry_health`'s
-  `contract_compatible` is the field to read, not `status: "ok"`. **Never drop a field to get green.**
+  `contract_compatible` is the field to read, not `status: "ok"`. A minor-version skew shows as
+  `HTTP 409: just-dna-format contract mismatch` on guarded calls (`registry_check`,
+  `registry_validate`) while health, search, whoami and get_module answer normally — version skew,
+  not an outage. **Never drop a field to get green.**
 - **What a registry holds**: `registry_health(target=…)`'s `catalog` block, in one call. Instance
   versions: `curl -s https://module-registry.just-dna.life/api/v1/version` (polygon:
   `module-polygon.just-dna.life`).
