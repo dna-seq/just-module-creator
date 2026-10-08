@@ -116,7 +116,7 @@ gets rationalised away.
 - **Never run tree operations** beyond what §10 grants. **Never `git stash drop` / `git stash clear`**,
   even on request. **Never `git add -A` / `git add .`** — stage explicit paths.
 - **Every git permission is bounded to THIS repository.** Writing a note into `../just-dna-format`
-  or `../just-dna-marketplace` is how an upstream finding is filed; committing there is never ours.
+  or `../just-dna-registry` is how an upstream finding is filed; committing there is never ours.
   Leaving their tree dirty is the expected outcome.
 
 ### Code
@@ -509,7 +509,7 @@ We own none of format / compiler / enricher / registry. **File where the fix wou
 | The fix would land in | File it in |
 |---|---|
 | format, compiler, enricher | `../just-dna-format/docs/CONSUMER_SUGGESTIONS.md` (`S<n>`) |
-| the registry service, its client, or a `just-dna-pipelines` command calling it | `../just-dna-marketplace/docs/CONSUMER_SUGGESTIONS.md` (separate `S<n>` series) |
+| the registry service, its client, or a `just-dna-pipelines` command calling it | `../just-dna-registry/docs/CONSUMER_SUGGESTIONS.md` (separate `S<n>` series) |
 | `just-dna-lite` / `just-dna-pipelines` itself | `../just-dna-lite/docs/CONSUMER_HANDOFF_from_just-module-creator.md`, appended as a dated section with inline evidence |
 
 "Marketplace" is a stale directory name; in prose say **the registry**. The -lite channel is
