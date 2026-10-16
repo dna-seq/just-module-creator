@@ -1,0 +1,13 @@
+{
+  "enabledPlugins": {
+    "just-module-creator@just-dna": true
+  },
+  "extraKnownMarketplaces": {
+    "just-dna": {
+      "source": {
+        "source": "directory",
+        "path": "./"
+      }
+    }
+  }
+}

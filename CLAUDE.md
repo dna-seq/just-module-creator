@@ -830,6 +830,14 @@ answers a question over a number written here.*
   A skill needs no command file to be `/`-invocable; `tests/test_plugin_manifest.py` fails on a name
   collision. Lesson: test what the user does (invoke the name), not what you built.
 
+- **The plugin is pinned per repository, not in user scope (2026-10-16).** Here, the tracked
+  `.claude/settings.json` enables `just-module-creator@just-dna` from a `directory` marketplace at
+  `"./"`, so sessions here run this checkout; in -lite, its tracked settings enable `@dna-seq` (the
+  released plugin). A relative `directory` path resolves against the repo's main checkout, and a
+  project-declared marketplace is registered **at session start in a trusted folder**, not by
+  `claude plugin install` (which reports "not found in marketplace" until then).
+  `claude plugin marketplace add ./ --scope project` writes an absolute path; never commit that.
+
 **Git hygiene lessons**
 - **`git add -u <dir>` swept a concurrent session's edits into my commits.** A directory is not an
   explicit path; run `git status --short` before every commit.

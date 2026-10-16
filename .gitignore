@@ -8,7 +8,9 @@ __pycache__/
 .python-version
 # C extensions
 *.so
-.claude
+# Per-machine Claude state stays out; the project's plugin pin travels.
+.claude/*
+!.claude/settings.json
 
 # Distribution / packaging
 .Python
