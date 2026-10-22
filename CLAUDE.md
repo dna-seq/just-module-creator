@@ -455,6 +455,10 @@ operator's sweep, a build hook, or only a deployment calls it. Say which.
 - **Never claim a test "would have caught" a bug** without running it against the buggy code.
 - `from conftest import ...`, not `from tests.conftest import ...` — a dependency ships a `tests`
   package that shadows ours.
+- **Never mark a test `@pytest.mark.anyio`.** `asyncio_mode = "auto"` already runs every
+  `async def` test, and the async `client` fixture is pytest-asyncio's: anyio's plugin runs the
+  marked test on a second loop, where the in-memory server's tasks never run, so `call_tool`
+  waits forever with no error (2026-10-22: the full suite hung for hours on the 16 marked tests).
 
 ---
 

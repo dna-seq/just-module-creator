@@ -438,7 +438,6 @@ def test_a_signal_that_could_not_be_computed_is_never_folded_into_the_clear_ones
 # --------------------------------------------------------------------------- #
 # Through the tool
 # --------------------------------------------------------------------------- #
-@pytest.mark.anyio
 async def test_audit_module_is_in_the_default_tier_and_reports_the_three_states(
     client, spec_dir: Path
 ):
@@ -458,7 +457,6 @@ async def test_audit_module_is_in_the_default_tier_and_reports_the_three_states(
     assert any(f.csv == "variants.csv" for f in out.data.fill)
 
 
-@pytest.mark.anyio
 async def test_fill_false_drops_the_counts_and_nothing_else(client, spec_dir: Path):
     (spec_dir / "variants.csv").write_text("rsid,genotype,weight\nrs1801133,T/T,-0.5\n")
     with_fill = await client.call_tool("audit_module", {"spec_dir": str(spec_dir)})

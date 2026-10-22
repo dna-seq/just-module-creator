@@ -15,8 +15,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from just_module_creator.authored_checks import (
     OURS,
     conclusion_genotype_findings,
@@ -138,7 +136,6 @@ def test_it_reads_the_authored_file_rather_than_literature_csv(tmp_path: Path):
 # --------------------------------------------------------------------------- #
 # Wiring: both surfaces report it, and the layer that computed it stays legible
 # --------------------------------------------------------------------------- #
-@pytest.mark.anyio
 async def test_lint_rows_reports_it_and_counts_it_as_a_warning(client):
     text = HEADER + f"rs1042173,24489884,{TITLE},x\nrs2769605,24489884,{TITLE},y\n"
     out = await client.call_tool(
@@ -152,7 +149,6 @@ async def test_lint_rows_reports_it_and_counts_it_as_a_warning(client):
     )
 
 
-@pytest.mark.anyio
 async def test_validate_module_reports_it_beside_upstreams_own_strings(
     client, spec_dir: Path
 ):
@@ -171,7 +167,6 @@ async def test_validate_module_reports_it_beside_upstreams_own_strings(
     )
 
 
-@pytest.mark.anyio
 async def test_an_authored_finding_does_not_change_validity(client, spec_dir: Path):
     """It is a warning about a shape, not a refusal: the compiler would still build this."""
     honest = (
@@ -327,7 +322,6 @@ def test_the_second_rule_is_one_finding_however_many_groups_there_are():
 # --------------------------------------------------------------------------- #
 # Wiring: both surfaces carry the conclusion findings too
 # --------------------------------------------------------------------------- #
-@pytest.mark.anyio
 async def test_lint_rows_carries_the_conclusion_warning_on_variants(client):
     out = await client.call_tool(
         "lint_rows", {"csv_name": "variants.csv", "csv_text": SWAPPED}
@@ -338,7 +332,6 @@ async def test_lint_rows_carries_the_conclusion_warning_on_variants(client):
     assert out.data.warnings >= 1, "the count must include ours"
 
 
-@pytest.mark.anyio
 async def test_validate_module_carries_them_from_variants_csv_too(
     client, spec_dir: Path
 ):

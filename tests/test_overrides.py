@@ -263,7 +263,6 @@ def test_a_field_with_no_archive_answer_stays_unknown_even_with_the_sidecar(modu
 # --------------------------------------------------------------------------- #
 # The tools
 # --------------------------------------------------------------------------- #
-@pytest.mark.anyio
 async def test_record_override_writes_the_file_and_logs_the_move(client, module: Path):
     out = await client.call_tool(
         "record_override",
@@ -287,7 +286,6 @@ async def test_record_override_writes_the_file_and_logs_the_move(client, module:
     assert str(module) not in logged, "the log publishes verbatim — no absolute paths in it"
 
 
-@pytest.mark.anyio
 async def test_the_log_appends_rather_than_replacing(client, module: Path):
     for reason in ("first reason", "second reason"):
         await client.call_tool(
@@ -307,7 +305,6 @@ async def test_the_log_appends_rather_than_replacing(client, module: Path):
     assert "[replaced an earlier record]" in lines[1]
 
 
-@pytest.mark.anyio
 async def test_review_queue_reports_what_it_could_not_decide(client, module: Path):
     await client.call_tool(
         "record_override",
@@ -327,7 +324,6 @@ async def test_review_queue_reports_what_it_could_not_decide(client, module: Pat
     assert out.data.entries[0].mismatch_state == "unknown"
 
 
-@pytest.mark.anyio
 async def test_an_empty_module_has_an_empty_queue(client, module: Path):
     out = await client.call_tool("review_queue", {"spec_dir": str(module)})
     assert out.data.total == 0
@@ -423,7 +419,6 @@ def test_a_field_that_is_not_a_column_name_is_refused_rather_than_written():
         _record(field="clin sig")
 
 
-@pytest.mark.anyio
 async def test_the_queue_holds_a_record_whose_source_has_a_space_in_its_name(
     client, module: Path
 ):
@@ -448,7 +443,6 @@ async def test_the_queue_holds_a_record_whose_source_has_a_space_in_its_name(
     assert out.data.entries[0].mismatch_state == "unknown"
 
 
-@pytest.mark.anyio
 async def test_the_returned_note_describes_the_mode_the_call_actually_used(
     client, module: Path
 ):
@@ -522,7 +516,6 @@ def test_the_only_value_the_queue_shows_for_a_multi_row_variant_can_bind(module:
 # --------------------------------------------------------------------------- #
 # F104 — a table-level move has one honest record, and the queue knows its shape
 # --------------------------------------------------------------------------- #
-@pytest.mark.anyio
 async def test_a_table_trim_is_one_record_with_its_own_verb(client, module: Path):
     """Eleven modules trimmed to a key set were logged as `authored pharm_variants.csv rows=…
     (judged; no value from clinpgx to disagree with)` — a cell verb over a table. The
@@ -554,7 +547,6 @@ async def test_a_table_trim_is_one_record_with_its_own_verb(client, module: Path
     assert queue.entries[0].still_bound is None
 
 
-@pytest.mark.anyio
 async def test_a_table_in_the_row_slot_with_a_cell_field_is_refused(client, module: Path):
     from fastmcp.exceptions import ToolError
 
@@ -574,7 +566,6 @@ async def test_a_table_in_the_row_slot_with_a_cell_field_is_refused(client, modu
     assert "rows" in str(excinfo.value) and "file" in str(excinfo.value)
 
 
-@pytest.mark.anyio
 async def test_a_table_scope_record_does_not_cost_a_strict_validate(client, tmp_path: Path):
     """The tester's thirteen publishes proved this on the polygon; nothing here pinned it."""
     import shutil
