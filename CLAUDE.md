@@ -837,6 +837,16 @@ answers a question over a number written here.*
   project-declared marketplace is registered **at session start in a trusted folder**, not by
   `claude plugin install` (which reports "not found in marketplace" until then).
   `claude plugin marketplace add ./ --scope project` writes an absolute path; never commit that.
+- **Codex reinstall is `codex plugin remove just-module-creator@dna-seq` then `codex plugin add`
+  (2026-10-22)**; the UI has no control for it. Codex installs from git into
+  `~/.codex/plugins/cache/dna-seq/just-module-creator/<version>/`, drops symlinks (`AGENTS.md`
+  arrives missing), and the server's first start builds that copy's `.venv` cold. "connection
+  closed: initialize response" is the process exiting, not a timeout: read the
+  `MCP server stderr (uv)` rows in `~/.codex/logs_2.sqlite`. `tests/test_codex_install.py` drives
+  the reinstall in a throwaway `CODEX_HOME` (skipped without `codex`).
+- **A `.venv` copied onto NTFS by the 2026-10-05 move is dead**: its interpreter links became
+  `IntxLNK` files ("Exec format error") pointing at a since-removed cpython. Move it aside and
+  `uv sync`; `ntfs3` makes real symlinks.
 
 **Git hygiene lessons**
 - **`git add -u <dir>` swept a concurrent session's edits into my commits.** A directory is not an
