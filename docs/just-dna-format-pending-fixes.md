@@ -93,6 +93,35 @@ here by `userconfig.origin` deciding the layer by value rather than by a snapsho
 `test_a_value_an_earlier_loader_brought_in_is_still_attributed_to_its_file`. That mitigation stays
 correct after the fix, so nothing here needs to come out when it lands.
 
+## F118 — `source="authored"` in `resolution.csv` covers two opposite situations (format `S127`)
+
+**Status (2026-10-25):** filed as format-tree `S127`, unanswered. **Not mitigated here, by choice.**
+
+Found while building `data/interim/statin_response` (a CPIC-drafted SLCO1B1 + CYP2C9 module,
+enricher 0.7.3, format 0.7.1, compiler 0.7.2). RM251 works — 117 of 130 rows came back
+`source="cache"` with `ref`, `alts` and a `ga4gh:VA` id, where the pre-fix shape S104 reported was
+0% VRS coverage. The 13 that stayed `authored` are two populations with nothing in the row to tell
+them apart: six have no rsID at all (CPIC publishes a position and no rs-number, so no lookup was
+ever possible), and seven carry a live rsID the Ensembl lane does not know (recent high-numbered
+ids; the snapshot predates the dbSNP build). Both read `source="authored", status="resolved"`,
+empty `ref`/`alts`, and the compile folds them into one VRS-coverage warning.
+
+The remedies are opposite — the first is permanent, the second is "pull a newer lane" — so an agent
+deciding whether a module is finished cannot tell *done* from *refresh your cache* without reading
+`rsid_status` against `ref` row by row, which is what we had to do.
+
+**Corrected the same day, before upstream answered.** The published `verification.json` already
+states the split by name, in `rsid_coordinate_agreement`'s `detail`: it lists the seven rsIDs the
+snapshot has no record for, says *"absent from this snapshot is not absent from Ensembl"*, and names
+the two indels separately. So the information is recorded. What stands is only that it lives in a
+different file from the rows it describes, and the VRS-coverage warning does not point at it. The
+correction is appended to `S127` upstream. **Lesson for us: read the attestation before reporting a
+missing distinction** — `verification.json` is where a check says what it could not compare.
+
+**No guard here.** A heuristic on our side would have to key on "the rsID looks recent", which is
+not a fact the sidecar carries. The module states the split in its README instead; see
+`data/interim/statin_response/README.md`.
+
 ## F113 — `lookup_citation(doi=…)` returns existence and no title (format `S113`)
 
 **Status (2026-09-25):** filed as format-tree `S113`, unanswered. **Mitigated here in 0.41.0**:
