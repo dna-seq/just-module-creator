@@ -1,32 +1,32 @@
 ## Abstract
 
-Genome analysis is an iterative workflow—ask, select data, score, annotate, inspect, and revise—and it is increasingly done inside AI coding assistants rather than fixed graphical interfaces. But general-purpose language models are unreliable when used directly for genomics: they fabricate variant identifiers, misassign effect directions, and attach real PMIDs to the wrong paper. The Just-DNA ecosystem redirects these assistants from generating disposable code to producing structured, versioned data: *genomic annotation modules* where every variant is linked to its genotype, evidence, effect size, and a verbatim passage from the source paper. The output is an editable data artifact, not generated analysis code, and a domain expert can review it in a spreadsheet without specialized tools.
+Genome analysis is an iterative workflow (ask, select data, score, annotate, inspect, and revise), and it is increasingly done inside AI coding assistants rather than in fixed graphical interfaces. But general-purpose language models are unreliable when used directly for genomics: they fabricate variant identifiers, misassign effect directions, and attach real PMIDs to the wrong paper. The Just-DNA ecosystem redirects these assistants from generating disposable code to producing structured, versioned data: *genomic annotation modules* where every variant is linked to its genotype and can carry its evidence, effect size, and a verbatim passage from the source paper. The output is an editable data artifact that a domain expert can review in a spreadsheet without specialized tools.
 
-This paper presents the plugin ecosystem that makes this possible. The authoring plugin, **just-module-creator**, runs inside the AI coding assistants that bioinformaticians and developers already use daily, so module authoring requires no new infrastructure. The underlying toolchain validates authored files against a live schema, checks identifiers against reference databases, and compiles modules into a portable artifact. A shared registry lets independent authors publish, version, and exchange modules—the package-registry pattern applied to genomic annotation knowledge. Once installed, a module can be applied to a genome in under a minute; the annotation consumer, Just-DNA-Lite, is the subject of a companion paper . The software is open-source and available at <https://anonymous.4open.science/r/just-dna-registry> (anonymized for review).
+This paper presents the plugin ecosystem that makes this possible. The authoring plugin, **just-module-creator**, runs inside the AI coding assistants that bioinformaticians and developers already use daily, so module authoring requires no new infrastructure. The underlying toolchain validates authored files against a live schema, checks identifiers against reference databases, and compiles modules into a portable artifact. A shared registry lets independent authors publish, version, and exchange modules—the package-registry pattern applied to genomic annotation knowledge. Once installed, a module can be applied to a genome in about a minute; the annotation consumer, Just-DNA-Lite, is the subject of a companion paper . The software is open-source and available at <https://anonymous.4open.science/r/just-module-creator> (anonymized for review).
 
 # Introduction
 
 Genomic annotation connects variant calls to the knowledge that gives them meaning: trait associations, clinical classifications, effect sizes, and the evidence behind each claim. This knowledge is scattered across papers, databases, and preprints, and it changes as new studies appear. Turning it into something a computational pipeline can use requires structured, validated records with unambiguous variant identifiers, genome-build coordinates, and traceable citations.
 
-Researchers increasingly use AI coding assistants such as Claude Code and Codex for this kind of work. These tools are powerful, but when asked to analyze variants they typically generate a script: code that may fabricate identifiers , attach a real PMID to the wrong paper , reverse an allele, or bypass established filters. Each session may produce slightly different code, and the result must be reviewed for correctness, efficiency, and security before it can be trusted. The output is a one-off answer tied to one session, not a reusable resource.
+Researchers increasingly use AI coding assistants such as Claude Code and Codex for this kind of work. When asked to analyze variants, these tools typically generate a script: code that may fabricate identifiers , attach the wrong PMID to a real paper , cite a source that does not support the claim , reverse an allele, or bypass established filters. Each session may produce slightly different code, and the result must be reviewed for correctness, efficiency, and security before it can be trusted. The output is a one-off answer tied to one session, not a reusable resource.
 
-This paper presents the Just-DNA ecosystem, which gives these same assistants a different job. Instead of generating code, the assistant produces structured data: a *module* of editable CSV tables where each variant is linked to its studies, citations, effect sizes, and supporting passages. The input can be anything the assistant can read, from a single sentence describing a trait to a collection of papers or a summary from another model. Every variant is verified against reference databases such as dbSNP; dedicated checking tools validate gene symbols against HGNC, trait identifiers against ontology services, and flag decisions that require domain expertise. Once compiled to Parquet, Just-DNA-Lite joins the module to a genome . Modules are versioned and shareable: they can be kept locally, rehearsed in a test registry, or published for others to install and use. The same files can also be written or edited entirely by hand.
+This paper presents the Just-DNA ecosystem, which gives these same assistants a different job. Instead of generating code, the assistant produces structured data: a *module* of editable CSV tables where each variant is linked to its studies, citations, effect sizes, and supporting passages. The input can be anything the assistant can read, from a single sentence describing a trait to a collection of papers or a summary from another model. When the module is enriched, and again when the registry publishes it, every variant’s rsID is resolved against Ensembl’s variation records, which carry dbSNP identifiers. Dedicated checking tools validate gene symbols against HGNC, trait identifiers against ontology services, and flag decisions that require domain expertise. Once the module is compiled to machine-readable Parquet files, Just-DNA-Lite joins it to a genome . Modules are versioned and shareable: they can be kept locally, rehearsed in a test registry, or published for others to install and use. The same files can also be written or edited entirely by hand.
 
 This paper makes four contributions:
 
 1.  It describes the module contract shared by manual editors, AI-assisted authoring tools, versioned stores, and the genome-analysis consumer.
 
-2.  It presents `just-module-creator`, an authoring plugin that exposes the public capabilities of `just-dna-format`, `just-dna-compiler`, `just-dna-enricher`, and `just-dna-registry` as typed Model Context Protocol (MCP) tools . The plugin reads the installed schema instead of carrying a copy.
+2.  It presents `just-module-creator`, an authoring plugin that exposes the public capabilities of the ecosystem’s format, compiler, enricher, and registry packages as typed Model Context Protocol (MCP) tools . The plugin reads the installed schema instead of carrying a copy.
 
-3.  It defines how modules move between a local store, a test registry whose publications can be deleted, and the public catalog while preserving provenance and decisions that still require review.
+3.  It defines how modules move between a local store, a test registry whose publications can be deleted, and the public catalog while preserving their provenance and the decisions that still require review.
 
-4.  It defines an evaluation protocol for variant recovery, citation identity, and effect-direction agreement, and reports catalog statistics from the first eight published modules across three independent namespaces.
+4.  It defines an evaluation protocol for variant recall, citation recall, and effect-direction agreement, and reports catalog statistics from the first eight published modules across three independent namespaces.
 
 # Related work
 
 #### Genome annotation and catalogs.
 
-A variant call records what differs between a sample and a reference genome. Annotation adds information about that call, such as its predicted consequence, known clinical classification, reported trait association, or the conclusion assigned to a particular genotype. VEP, ANNOVAR, and OpenCRAVAT/OakVar perform this kind of lookup by joining a callset to established resources . ClinVar and the GWAS Catalog publish records that can supply annotation content , HGMD derives variant–disease associations from the literature through manual review , ClinGen provides expert curation within the ACMG/AMP framework , and ClinPGx consolidates PharmGKB, CPIC and PharmCAT into one pharmacogenomic resource . CIViC crowdsources cancer variant interpretation, anchoring every evidence item to a source publication ; its releases are database-wide rather than installable per-topic units, which makes it a source this ecosystem consumes rather than an alternative to it. The GA4GH Genomic Knowledge Standards define interoperable representations for variant annotations . The problem addressed here begins before the join: selected evidence must be turned into a reviewable, machine-checkable collection that can be distributed and applied consistently.
+A variant call records what differs between a sample and a reference genome. Annotation adds information about that call, such as its predicted consequence, known clinical classification, reported trait association, or the conclusion assigned to a particular genotype. VEP, ANNOVAR, and OpenCRAVAT/OakVar perform this kind of lookup by joining a callset to established resources . ClinVar and the GWAS Catalog publish records that can supply annotation content , HGMD derives variant–disease associations from the literature through manual review , ClinGen provides expert curation within the ACMG/AMP framework , and ClinPGx consolidates PharmGKB, CPIC, and PharmCAT into one pharmacogenomic resource . CIViC crowdsources cancer variant interpretation, anchoring every evidence item to a source publication ; its releases are database-wide rather than installable per-topic units, which makes it a source this ecosystem consumes rather than an alternative to it. The GA4GH Genomic Knowledge Standards define interoperable representations for variant annotations . The problem addressed here begins before the join: selected evidence must be turned into a reviewable, machine-checkable collection that can be distributed and applied consistently.
 
 Table <a href="#tab:comparison" data-reference-type="ref" data-reference="tab:comparison">1</a> narrows the comparison to systems adjacent to the authoring task: annotation engines, extension-based annotation platforms, expert-curated knowledgebases, structured literature extraction, unconstrained model drafting, and `just-module-creator`.
 
@@ -53,45 +53,45 @@ Qualitative comparison of systems adjacent to annotation authoring. The rows hav
 
 #### Biomedical text mining and variant extraction.
 
-Conventional named entity recognition systems such as tmVar3 and PubTator3 have improved gene and variant tagging in biomedical text . LitVar 2 links literature paragraphs with variant records from external databases, accelerating knowledge retrieval . However, these tools are largely limited to entity-level extraction and do not recover relational information such as variant-specific pathogenicity across disease contexts or the experimental evidence supporting a classification. PubMind applies instruction-tuned LLMs to extract variant–disease–pathogenicity associations directly from over 41 million PubMed abstracts and 5.4 million full-text articles, producing a database of approximately 1.3 million unique variants with contextual annotations . These systems demonstrate that LLM-based literature mining can recover structured variant knowledge at scale, but their output is a flat database rather than a versioned, schema-validated module that an annotation consumer can install and apply to a genome.
+Conventional named entity recognition systems such as tmVar3 and PubTator3 have improved gene and variant tagging in biomedical text . LitVar 2 links literature paragraphs with variant records from external databases, accelerating knowledge retrieval . However, as the PubMind authors note, these tools largely stop at tagging entities and do not recover relations such as a variant’s pathogenicity in a particular disease or the experimental evidence behind a classification . PubMind applies instruction-tuned LLMs to extract variant–disease–pathogenicity associations directly from over 41 million PubMed abstracts and 5.4 million full-text articles, producing a database of approximately 1.3 million unique variants with contextual annotations . These systems demonstrate that LLM-based literature mining can recover structured variant knowledge at scale, but their output is a flat database rather than a versioned, schema-validated module that an annotation consumer can install and apply to a genome.
 
 #### Factuality and tool use.
 
-Language models can produce fluent text around a false identifier or citation . Benchmarks on genomic question-answering show that models hallucinate gene names, variant identifiers, and functional annotations . Retrieval-augmented approaches and tool use reduce the need to improvise when a model can call a typed operation instead . The Model Context Protocol provides a standard for connecting models to external tools . Biomedical MCP services can search literature, ontologies, and variant databases. just-module-creator uses the same general approach, then carries the result into module files that the rest of the Just-DNA pipeline can inspect and reuse.
+Language models can produce fluent text that is unfaithful or nonsensical , including references with fabricated or wrong PubMed identifiers . A benchmark of genomic question answering found confident but wrong answers across models and tasks, among them gene name conversion and SNP locations . Retrieval-augmented approaches and tool use reduce the need to improvise when a model can call a typed operation instead . The Model Context Protocol provides a standard for connecting models to external tools . Biomedical MCP services can search literature, ontologies, and variant databases. just-module-creator uses the same general approach, then carries the result into module files that the rest of the Just-DNA pipeline can inspect and reuse.
 
 #### Agent orchestration.
 
-Many scientific-agent systems assign research and review to several model instances . The plugin described here does not require its own orchestration runtime. Claude Code or Codex supplies the agent, while the plugin supplies the tools and the written workflow. This paper evaluates that authoring path, not a particular choice of language model or agent-team topology.
+Multi-agent frameworks such as MetaGPT assign distinct roles to several model instances . The plugin described here does not require its own orchestration runtime. Claude Code or Codex supplies the agent, while the plugin supplies the tools and the written workflow. This paper evaluates that authoring path, not a particular choice of language model or agent-team topology.
 
 # Method
 
 ## The module artifact
 
-At the artifact boundary, a just-dna annotation module is an editable directory. It always contains `module_spec.yaml` and at least one recognized table. The table records the thing being annotated, such as a genotype, a diplotype, or a measured quantity. Evidence and machine-produced sidecars are stored separately. Compilation converts this human-readable directory into machine-readable Parquet files and a content-addressed `manifest.json` . The compiled artifact is what a consumer installs and joins to a genome.
+Before it is compiled, a just-dna annotation module is an editable directory. It always contains `module_spec.yaml` and at least one recognized table. The table records the thing being annotated, such as a genotype, a diplotype, or a measured quantity. Evidence and machine-written sidecars (tables of records derived from reference sources) are stored separately. Compilation converts this human-readable directory into machine-readable Parquet files and a content-addressed `manifest.json` . The compiled artifact is what a consumer installs and joins to a genome.
 
-The authored files are ordinary YAML, CSV, Markdown, and optional image files. A domain expert can open them in a spreadsheet to review and correct an AI draft without special tools. just-module-creator operates on this same directory rather than introducing a separate format for AI-produced content. The module describes how a genotype or measurement should be interpreted if a consumer encounters it. Just-DNA-Lite, or another compatible consumer, supplies the genome or measurement later.
+The authored files are ordinary YAML, CSV, Markdown, and optional image files. A domain expert can open the tables in a spreadsheet to review and correct an AI draft without special tools. just-module-creator operates on this same directory rather than introducing a separate format for AI-produced content. The module describes how a genotype or measurement should be interpreted if a consumer encounters it. Just-DNA-Lite, or another compatible consumer, supplies the genome or measurement later.
 
-The author does not need to supply this directory, or any CSV file, at the start of a session. Figure <a href="#fig:conversation-to-module" data-reference-type="ref" data-reference="fig:conversation-to-module">1</a> shows how a conversation entry—which can range from a trait name to a collection of papers—moves through routing, scaffolding, and review to a compiled module. The `/create-module` router identifies the appropriate entry point and stage.
+The author does not need to supply this directory, or any CSV file, at the start of a session. Figure <a href="#fig:conversation-to-module" data-reference-type="ref" data-reference="fig:conversation-to-module">1</a> shows how a conversation entry, which can range from a trait name to a collection of papers, moves through routing, scaffolding, and review to a compiled module. The `/create-module` router identifies the appropriate entry point and stage.
 
 <figure id="fig:conversation-to-module" data-latex-placement="ht">
 
 <figcaption>From conversation to a usable module. Module files are intermediate artifacts created by the workflow, not required user inputs. Authored claims remain distinct from derived source records inside the editable workspace.</figcaption>
 </figure>
 
-Different claim types—variant associations, study evidence, pharmacogenomic diplotypes, copy-number ranges—belong to separate tables, each with its own schema. The plugin reads column definitions from the installed schema, so an author always sees the version accepted by the current compiler.
+Different claim types (variant associations, study evidence, pharmacogenomic diplotypes, copy-number ranges) belong to separate tables, each with its own schema. The plugin reads column definitions from the installed schema, so an author always sees the version accepted by the current compiler.
 
 ## Architecture and lifecycle
 
-Module authoring and sample analysis remain separate until Just-DNA-Lite joins a compiled module to a local genome. On the authoring path, a person may edit the files directly or use an AI assistant to draft them. Both routes then pass through the same enrichment and compilation steps before the module enters a local or shared store. Figure <a href="#fig:architecture" data-reference-type="ref" data-reference="fig:architecture">2</a> shows the two paths and the boundary between them.
+Module authoring and sample analysis remain separate until Just-DNA-Lite joins a compiled module to a local genome. On the knowledge path, a person may edit the files directly or use an AI assistant to draft them. Both routes then pass through the same enrichment and compilation steps before the module enters a local or shared store. Figure <a href="#fig:architecture" data-reference-type="ref" data-reference="fig:architecture">2</a> shows the knowledge and sample paths and the boundary between them.
 
 <figure id="fig:architecture" data-latex-placement="ht">
 
 <figcaption>The two paths of the Just-DNA ecosystem.</figcaption>
 </figure>
 
-On the sample path (Figure <a href="#fig:architecture" data-reference-type="ref" data-reference="fig:architecture">2</a>), Just-DNA-Lite converts VCF input to Parquet and joins it with compiled modules using DuckDB, producing annotated reports and enriched data that the user can filter. A whole-genome VCF is annotated in under 40 seconds; the companion paper  describes the sample path and polygenic risk score computation in detail.
+On the sample path (Figure <a href="#fig:architecture" data-reference-type="ref" data-reference="fig:architecture">2</a>), Just-DNA-Lite converts VCF input to Parquet and joins it with compiled modules in a streaming Polars join, producing annotated reports and enriched data that the user can filter. With the ten modules of the companion paper’s benchmark, the median time to annotate a whole-genome VCF ranged from 33 to 65 seconds across its four call sets on one workstation. The companion paper  describes the sample path and polygenic risk score computation in detail.
 
-Within `just-module-creator` the language model participates only in the knowledge path: it searches, reads and drafts. VCF filtering, module joins and polygenic scoring remain ordinary software steps with explicit inputs and repeatable code.
+Within `just-module-creator` the language model works on the knowledge path: it searches, reads and drafts. VCF filtering, module joins and polygenic scoring remain ordinary software steps with explicit inputs and repeatable code. One optional command crosses to the sample path: when the author asks, `/module-install-local` has the assistant run a module on genomes held by a local Just-DNA-Lite and read which variants each genome carries. The run goes through Just-DNA-Lite’s own server, and the plugin’s code itself still opens no genome. Those per-genome results then reach the assistant’s model provider.
 
 Table <a href="#tab:packages" data-reference-type="ref" data-reference="tab:packages">2</a> lists each component’s responsibility and boundary.
 
@@ -112,27 +112,27 @@ Responsibilities across the Just-DNA ecosystem.
 
 ## Determinism, evidence, and responsibility
 
-The compiler establishes structural validity and reproducibility: schema conformance, coordinate resolution, and a deterministic content signature . What it does not establish is whether the authored claims agree with the literature. A false association in valid syntax compiles perfectly. Three properties keep the evidence chain auditable.
+The compiler establishes structural validity and reproducibility: schema conformance, coordinate resolution, and a deterministic content signature . It does not establish whether the authored claims agree with the literature: a false association in valid syntax compiles without error. Three properties keep the evidence chain auditable.
 
-First, authored values and their checks are kept independent: a value filled from the source that will later check it makes the check compare the source with itself. The design test is: *could this check have failed?* If not, it measured nothing (Section <a href="#sec:checks" data-reference-type="ref" data-reference="sec:checks">4</a>).
+First, authored values and their checks are kept independent. A value filled from the source that will later check it makes the check compare that source with itself: a quote taken from an article’s title is found in that article’s own text. The design test is: *could this check have failed?* If not, it measured nothing (Section <a href="#sec:checks" data-reference-type="ref" data-reference="sec:checks">4</a>).
 
 Second, disagreements with reference archives are preserved rather than silently resolved. ClinVar may lag a retraction; when the authored value should remain, `record_override` logs the difference and the reason.
 
-Third, a check has three answers, not two: it passed, it failed, or it never ran. The third is recorded as a null, and a null is not a *no*. The identifier check writes an attestation to `verification.json` so a reviewer can tell an empty report from one with no findings.
+Third, a check has three answers: it passed, it failed, or it never ran. The third is recorded as a null, and a null is not a *no*. The identifier check writes an attestation to `verification.json` so a reviewer can tell an empty report from one with no findings.
 
-The assistant may locate a verbatim `provenance_quote` from retrieved full text and follow citations into supplementary tables to find per-variant statistics. A `curator` field records who located each quote—a name or model identifier—so a reviewer can direct scrutiny where it is most needed. Attribution does not transfer responsibility: the human author holds accountability regardless.
+The assistant may locate a verbatim `provenance_quote` from retrieved full text and follow citations into supplementary tables to find per-variant statistics. A `curator` field records who located each quote (a name or model identifier) so a reviewer can direct scrutiny where it is most needed. Attribution does not transfer responsibility: the human author holds accountability regardless.
 
-Curation follows drafting because a drafted row may still carry decisions the source cannot make—genotype, weight interpretation, conclusion wording—and these are surfaced for domain experts rather than resolved silently.
+Curation follows drafting because a drafted row may still carry decisions the source cannot make (genotype, weight interpretation, conclusion wording), and these are surfaced for domain experts rather than resolved silently.
 
 ## Local and shared module stores
 
-A compiled module can reach a consumer through three routes (Figure <a href="#fig:architecture" data-reference-type="ref" data-reference="fig:architecture">2</a>): local installation into a Just-DNA-Lite checkout for testing with a VCF, publication to the test registry for a deletable rehearsal, or publication to the immutable public catalog. The registry runs its own enrichment and strict compilation on publish, so the stored artifact is the one the server produced, not a locally claimed digest. Inclusion in either catalog distributes a module; it is not scientific review, clinical validation, or endorsement.
+A compiled module can reach a consumer through three routes (Figure <a href="#fig:conversation-to-module" data-reference-type="ref" data-reference="fig:conversation-to-module">1</a>): local installation into a Just-DNA-Lite checkout for testing with a VCF, publication to the test registry for a deletable rehearsal, or publication to the immutable public catalog. The registry runs its own enrichment and strict compilation on publish, so the stored artifact is the one the server produced, not a locally claimed digest. Inclusion in either catalog distributes a module; it is not scientific review, clinical validation, or endorsement.
 
 ## Evaluation dimensions
 
-The plugin includes a scorer. It evaluates variant recall over rsID–genotype pairs, citation identity (each PMID must resolve to the intended paper, not merely exist as a valid identifier), and effect-direction agreement. The reference standard is a human curation. Scoring modules against a module the same system authored would measure agreement with itself.
+The plugin’s scorer evaluates variant recall over rsID–genotype pairs, citation recall (whether the run cites the papers the reference cites), and effect-direction agreement. Checking that a PMID names the intended paper is not yet implemented in the scorer. The reference standard is a human adjudication: a bioinformatician merged two earlier runs of the same prompt on the same paper and left the weights blank. Scoring modules against a module the same system authored would measure agreement with itself; the adjudication breaks that circle only in part, because every reference row was first drafted by the system.
 
-Two measurement choices are load-bearing. Recall is reported at two grains, because recovering the right variant with wrong genotypes and recovering half the variants exactly are distinct failures that partial credit averages away. *Decoy rate* replaces precision: a variant absent from one curation may still be correct, whereas a decoy is one an expert designated non-associated.
+Recall is reported at two grains, because recovering the right variant with wrong genotypes and recovering half the variants exactly are distinct failures that partial credit averages away. *Decoy rate* replaces precision: a variant absent from one curation may still be correct, whereas a decoy is one an expert designated non-associated.
 
 <div id="tab:scores">
 
@@ -142,7 +142,7 @@ Two measurement choices are load-bearing. Recall is reported at two grains, beca
 | 2   |        1.00 |        1.00 |       0.00 |            1.00 |      1.00 |
 | 3   |        1.00 |        1.00 |       0.00 |            1.00 |      1.00 |
 
-Three runs of one prompt scored against an expert-curated reference module, plugin version fixed.
+Three runs of one prompt scored against an expert-adjudicated reference module (a merge of two earlier runs), plugin version fixed.
 
 </div>
 
@@ -150,65 +150,67 @@ Table <a href="#tab:scores" data-reference-type="ref" data-reference="tab:score
 
 The one divergence is a significance verdict at $`p \approx 0.07`$, read as *suggestive* by two runs and *not significant* by the third, which an aggregate score would have hidden. Agreement also measures the guidance and not only the runs: the validator names the missing genotype and a written rule states that a zero weight is a claim where a blank is not, so convergence shows the workflow is prescriptive, not that its output is confirmed.
 
-Scoring does not require a reference curation. A module can be evaluated by reading what its cells claim against what they withhold. That reading corrected a prediction of ours: we expected a paper reporting no association test to produce no variant rows, yet one run produced sixty. Each recorded the observed allele but withheld effect direction and statistical significance. The blanks are honest: with no association test, there was nothing to report. Row count is therefore not part of the score; whether the filled cells claim more than the source supports is.
+A module can also be read without a reference curation, by checking what its cells claim against what they withhold. That reading corrected a prediction of ours: we expected a paper reporting no association test to produce no variant rows, yet one run produced sixty. Each recorded the observed allele but withheld effect direction and statistical significance. The blanks are honest: with no association test, there was nothing to report. Row count is therefore not part of the score; whether the filled cells claim more than the source supports is.
 
 # Results
 
-The plugin can be installed from its GitHub repository in a single command (`/install-plugin` in Claude Code, or a repository URL in the Codex plugin marketplace). Once installed, the assistant gains access to 60 typed MCP tools (Appendix <a href="#app:tools" data-reference-type="ref" data-reference="app:tools">9</a>) and 20 skills—written workflow instructions that teach the assistant when to call which tool. In both Claude Code and Codex, skills marked as commands can be invoked directly by typing `/name` in the prompt.
+With the plugin active, the assistant calls typed tools (Appendix <a href="#app:tools" data-reference-type="ref" data-reference="app:tools">9</a>) instead of generating code: enrichment adds coordinates and derived sidecars, compilation validates against the live schema, and the compiled artifact can be published to the registry and immediately applied to a genome. The checks described in Section 3.3 are meant to catch citation misattributions, identifier drift, and schema violations, but an audit exposed a blind spot. The audit read working copies of four catalog modules, authored under an earlier version of the workflow and not the versions published in Table <a href="#tab:catalog" data-reference-type="ref" data-reference="tab:catalog">4</a>. In them, all 3,668 `studies.csv` rows carried the article’s title as their `provenance_quote`, a passage that always matches its own full text and evidences nothing. The quote check had never run on them.
 
-With the plugin active, the assistant calls typed tools instead of generating code (Figure <a href="#fig:conversation-to-module" data-reference-type="ref" data-reference="fig:conversation-to-module">1</a>): enrichment adds coordinates and derived sidecars, compilation validates against the live schema, and the compiled artifact can be published to the registry and immediately applied to a genome. The checks described in Section 3.3 catch citation misattributions, identifier drift, and schema violations in practice—a measurement across 33 published `studies.csv` files (44,342 rows) found 3,668 rows where the `provenance_quote` was the article’s title, a passage that always matches its own full text and evidences nothing.
+The plugin can be installed in two commands, one adding its marketplace and one installing it (`/plugin marketplace add` and `/plugin install` in Claude Code, and the matching `codex plugin` commands in Codex). It needs uv and Python 3.13 or newer. Once installed, the assistant gains access to 60 typed MCP tools (Appendix <a href="#app:tools" data-reference-type="ref" data-reference="app:tools">9</a>) and 20 skills—written workflow instructions that teach the assistant when to call which tool. In both Claude Code and Codex, skills marked as commands can be invoked directly by typing `/name` in the prompt.
 
 ## Command menu
 
-Seven of the 20 skills are user-invocable commands (Table <a href="#tab:skills-commands" data-reference-type="ref" data-reference="tab:skills-commands">15</a>), exposing the workflow through intentions rather than internal stages. `/create-module` is the entry point: it reads where the author is actually standing—a trait, a handed bundle, a directory somebody else left—and routes to the stage that owns the work. The remaining thirteen skills are guides, which a router loads by naming their path when the assistant reaches the corresponding lifecycle stage. A guide is deliberately not matched from its own description: that is what keeps thirteen documents out of every session’s prompt, and it is why a guide nothing links to is unreachable rather than merely quiet.
+Seven of the 20 skills are user-invocable commands (Table <a href="#tab:skills-commands" data-reference-type="ref" data-reference="tab:skills-commands">15</a>), exposing the workflow through intentions rather than internal stages. `/create-module` is the entry point: it reads where the author stands (a trait, a handed bundle, a directory somebody else left) and routes to the stage that owns the work. The remaining thirteen skills are guides, which a router loads by naming their path when the assistant reaches the corresponding lifecycle stage. A guide is deliberately not matched from its own description, which keeps thirteen documents out of every session’s prompt and leaves a guide that nothing links to unreachable rather than merely quiet.
 
 ## Production catalog
 
-At the time of writing, the public catalog holds eight published modules across 19 versions and three independent namespaces. Table <a href="#tab:catalog" data-reference-type="ref" data-reference="tab:catalog">4</a> summarizes the published modules.
+On 31 August 2026, the public catalog held eight published modules across 19 versions and three independent namespaces. Table <a href="#tab:catalog" data-reference-type="ref" data-reference="tab:catalog">4</a> summarizes the published modules.
 
 <div id="tab:catalog">
 
-| Module                  | Variants | Studies | Genes | Versions        |
-|:------------------------|---------:|--------:|------:|:----------------|
-| big_five_personality    |      330 |     390 |   185 | 4               |
-| risk_impulsivity        |      474 |       – |   325 | 1               |
-| cognitive_intelligence  |       32 |       – |    31 | 1               |
-| aggression_anger        |       28 |       – |    22 | 1               |
-| bodybuilding            |       13 |       – |    13 | 1               |
-| placebo_response (v2)   |        3 |       – |     3 | 2               |
-| placebo_response_claude |        3 |       – |     3 | 1               |
-| lactose_tolerance       |        2 |       8 |     1 | 2               |
-| **Total**               |  **885** |         |       | **19 versions** |
+| Module                    | Variants | Studies | Genes | Versions        |
+|:--------------------------|---------:|--------:|------:|:----------------|
+| big_five_personality_snps |      330 |     390 |   185 | 4               |
+| risk_impulsivity_snps     |      474 |     530 |   325 | 3               |
+| cognitive_intelligence    |       32 |      89 |    31 | 3               |
+| aggression_anger_snps     |       28 |      28 |    22 | 4               |
+| bodybuilding              |       13 |      13 |    13 | 1               |
+| placebo_response_research |        3 |       4 |     3 | 1               |
+| placebo_response_claude   |        3 |       9 |     3 | 1               |
+| lactose_tolerance         |        2 |       8 |     1 | 2               |
+| **Total**                 |  **885** |         |       | **19 versions** |
 
-Modules published to the public catalog as of August 2026. All modules target GRCh38 and were compiled with strict resolution.
+Modules published to the public catalog as of 31 August 2026. All modules target GRCh38 and were compiled with strict resolution.
 
 </div>
 
-Two of the three namespaces belong to authors outside the development team, and four of the eight modules are theirs. Module sizes range from 2 to 474 variants. Four versions of `big_five_personality_snps` show that iterative revision works in practice. Two modules on the same trait (`placebo_response` via Codex, `placebo_response_claude` via Claude Code) were created by the same author to compare the two assistants; both compiled against the same schema and are published side by side.
+Two of the three namespaces belong to authors outside the development team, and four of the eight modules are theirs. Module sizes range from 2 to 474 variants. Four versions of `big_five_personality_snps` show that a published module can be revised and republished. Two modules on the same trait (`placebo_response_research` via Codex, `placebo_response_claude` via Claude Code) were created by the same author to compare the two assistants; both compiled against the same schema and are published side by side.
 
 # Discussion
 
 Genomic data is becoming personally accessible, and people already use AI assistants—coding tools such as Claude Code and Codex, or plain chat applications such as ChatGPT—to interpret their results . Restricting this is not viable, so the more effective response is to make the work happen in the open, where domain professionals can review what others publish and the tools enforce structure. A module is visible, reviewable, and correctable; a one-off chat session is none of these.
 
-The safety concern is real but cuts deeper than AI. Candidate-gene studies have failed to replicate , GWAS effect sizes routinely shrink in independent cohorts , direct-to-consumer tests have produced false-positive rates above 40% , and variant reclassifications have led to genetic misdiagnoses . The ecosystem is therefore explicitly research-only: a module that faithfully reflects a study which later fails to replicate is not wrong on its own terms, but a user acting on it may be harmed all the same.
+The safety concern is real and extends beyond AI. Candidate-gene associations with depression have failed to replicate in large samples , and GWAS effect sizes are systematically overestimated at discovery and shrink in replication cohorts . In direct-to-consumer raw data sent for clinical confirmation, 40% of variants were false positives , and misclassified variants have led to genetic misdiagnoses that later reclassification exposed . The ecosystem is therefore explicitly research-only (Appendix <a href="#app:ruo" data-reference-type="ref" data-reference="app:ruo">8</a>): a module that faithfully reflects a study that later fails to replicate is not wrong on its own terms, but a user acting on it may be harmed all the same.
 
-The registry turns individual effort into shared infrastructure, and the plugin’s MCP tools are listed on a public directory so other agent platforms can use them independently. What travels through it is genomic-data-agnostic knowledge: a module carries no individual-level data.
+Through the registry, a module one author publishes can be installed by others. The plugin’s MCP server uses the standard stdio and HTTP transports of the Model Context Protocol, so other agent platforms that support the protocol can call its tools. This work used only Claude Code and Codex. What travels through the registry is genomic-data-agnostic knowledge: a module carries no individual-level data.
 
 #### Limitations.
 
-The module system launched in August 2026. We are developing mechanisms to involve genetic counselors and domain-expert agents in quality evaluation, and to communicate to citizen scientists that many modules reflect early-stage research rather than clinical-grade evidence. Every run scored here used one model through one host, so the results say nothing about model or host sensitivity. Free-text conclusions are not scored at all, and the assistant’s judgement about whether a source supports a claim remains a reviewer’s question. Coordinates are declared rather than translated: `module_spec.yaml` names a `genome_build` and the toolchain refuses to infer one. Liftover belongs to the source or the consumer; the PGS Catalog already distributes per-assembly positions . Runtime benchmarks are in the companion paper .
+The module system launched in August 2026. We are developing mechanisms to involve genetic counselors and domain-expert agents in quality evaluation, and to communicate to citizen scientists that many modules reflect early-stage research rather than clinical-grade evidence. Every run scored here used one model through one host, so the results say nothing about model or host sensitivity. Free-text conclusions are not scored at all, and the assistant’s judgment about whether a source supports a claim remains a reviewer’s question. Coordinates are declared rather than translated, and the compiler is bound to GRCh38. The file `module_spec.yaml` names a `genome_build`; an omitted one is taken to be GRCh38, and a GRCh37 or T2T declaration is recorded while its positions are still resolved as GRCh38. Liftover belongs to the source or the consumer; the PGS Catalog  already distributes scoring files harmonized to GRCh37 and GRCh38 . Runtime benchmarks are in the companion paper .
 
 # Conclusion
 
-Annotation knowledge that lives in a chat session dies with it. The Just-DNA ecosystem gives an AI assistant a different job—producing a versioned, schema-validated module instead of a script—so the work survives review, correction and reuse by someone else. What makes that more than a file format is what a module keeps separate: authored claims stay distinct from derived records, a check that could not run says so, and every published module carries the evidence for its own rows. Eight modules from three namespaces, half of them from authors outside the development team, show the path is functional today.
+Annotation knowledge produced in a chat session is lost when the session ends. In the Just-DNA ecosystem, an AI assistant produces a versioned, schema-validated module instead of a script, so the work survives review, correction, and reuse by someone else. What makes that more than a file format is what a module keeps separate: authored claims stay distinct from derived records, a check that could not run says so, and each row of a published module has a place for the evidence behind it. Eight modules from three namespaces, half of them from authors outside the development team, show the path is functional today.
 
-The software is open-source and intended for research use only.
+The software is open-source and intended for research use only. It installs in two commands in Claude Code or Codex, and a module drafted with it can be reviewed in a spreadsheet and published for others to install.
 
 # Code and data availability
 
 - **just-dna-format, just-dna-compiler, and just-dna-enricher**: <https://anonymous.4open.science/r/just-dna-compiler> (schema, reference compiler, and enricher).
 
-- **just-module-creator**: <https://anonymous.4open.science/r/just-dna-registry> (MCP server, Claude Code and Codex plugin manifests, skills; MIT).
+- **just-module-creator**: <https://anonymous.4open.science/r/just-module-creator> (MCP server, Claude Code and Codex plugin manifests, skills; MIT).
+
+- **just-dna-registry**: <https://anonymous.4open.science/r/just-dna-registry> (registry service and reference client).
 
 - **Just-DNA-Lite**: <https://anonymous.4open.science/r/just-dna-lite> (local VCF processing, annotation, and reporting; described in the companion paper ).
 
@@ -222,11 +224,11 @@ Annotation modules summarize published association findings. They are not clinic
 
 # Plugin surface: tools and skills
 
-A Claude Code or Codex plugin is a bundle of two kinds of asset. **MCP tools** are typed operations the assistant can call—each has a name, typed inputs, and a structured return value. **Skills** are written instructions loaded into the assistant’s context on demand; they teach the workflow that the tools serve, including when to call which tool and what to do with the result.
+A Claude Code or Codex plugin is a bundle of two kinds of asset. **MCP tools** are typed operations the assistant can call. Each has a name, typed inputs, and a structured return value. **Skills** are written instructions loaded into the assistant’s context on demand; they teach the workflow that the tools serve, including when to call which tool and what to do with the result.
 
 ## Tools (60)
 
-The tools are organized into a core set (always listed) and nine optional groups that a session can reveal incrementally via `toolbox`. Table <a href="#tab:tools-core" data-reference-type="ref" data-reference="tab:tools-core">5</a> lists the 18 core and meta tools; Tables <a href="#tab:tools-evidence" data-reference-type="ref" data-reference="tab:tools-evidence">6</a>–<a href="#tab:tools-closing" data-reference-type="ref" data-reference="tab:tools-closing">14</a> list the nine groups. Registry writes require a token obtained through `authenticate`. Literature and enrichment requests share a single pacing gate, including the NCBI budget.
+The tools are organized into a core set and nine optional groups. By default all of them are listed; in an optional layered mode only the core set is listed and a session reveals the other groups through `toolbox`. Table <a href="#tab:tools-core" data-reference-type="ref" data-reference="tab:tools-core">5</a> lists the 18 core and meta tools; Tables <a href="#tab:tools-evidence" data-reference-type="ref" data-reference="tab:tools-evidence">6</a>–<a href="#tab:tools-closing" data-reference-type="ref" data-reference="tab:tools-closing">14</a> list the nine groups. Registry writes require a token obtained through `authenticate`. Requests to each outside service pass through that service’s pacing gate, and the literature search shares its NCBI gate with the enricher, so both spend one NCBI budget.
 
 <div id="tab:tools-core">
 
@@ -359,8 +361,8 @@ Catalog group: read the registry.
 | `registry_claim_namespace` | Claim a publishing namespace (irreversible on production) |
 | `registry_yank` | Stop recommending a version (stays fetchable for pinned users) |
 | `registry_unyank` | Restore a yanked version to listings |
-| `registry_delete_version` | Hard-delete one rehearsed version from the polygon |
-| `registry_delete_module` | Hard-delete all rehearsed versions from the polygon |
+| `registry_delete_version` | Hard-delete one rehearsed version from the test registry |
+| `registry_delete_module` | Hard-delete all rehearsed versions from the test registry |
 
 Publish group: write to the registry (token required).
 
@@ -380,7 +382,7 @@ Closing group: finish and describe.
 
 ## Skills (20)
 
-Skills are markdown documents loaded into the assistant’s context when needed. Seven are **commands**—user-invocable via `/name` in the assistant’s prompt—and thirteen are **guides**, which a router loads by naming their path when the assistant reaches the corresponding stage.
+Skills are Markdown documents loaded into the assistant’s context when needed. Seven are **commands** (Table <a href="#tab:skills-commands" data-reference-type="ref" data-reference="tab:skills-commands">15</a>), which the user invokes by typing `/name` in the assistant’s prompt. The other thirteen are **guides** (Table <a href="#tab:skills-guides" data-reference-type="ref" data-reference="tab:skills-guides">16</a>), which a router loads by naming their path when the assistant reaches the corresponding stage.
 
 <div id="tab:skills-commands">
 
@@ -390,7 +392,7 @@ Skills are markdown documents loaded into the assistant’s context when needed.
 | `/module-status` | Inspect a directory and identify the next decision |
 | `/module-revise` | Begin another pass over an existing module |
 | `/find-evidence` | Find and read evidence for a row |
-| `/module-publish` | Rehearse on the polygon, then publish to the catalog |
+| `/module-publish` | Rehearse on the test registry, then publish to the catalog |
 | `/module-symptom` | Explain a message from the toolchain |
 | `/module-install-local` | Install a compiled module into Just-DNA-Lite locally |
 

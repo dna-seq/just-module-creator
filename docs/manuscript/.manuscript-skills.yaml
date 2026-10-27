@@ -1,0 +1,17 @@
+# Manuscript Skills: choices for this manuscript project.
+schema_version: 1
+manuscripts:
+- manuscript.tex
+- references.bib
+code_roots:
+- ../..
+- ../../../just-dna-lite
+output_dir: reviews
+related_manuscripts:
+- ../../../just-dna-lite/docs/manuscript/v0.6/paper1-just-dna-lite.md
+settings:
+  reports: file
+  edits: conservative
+  peer_review: auto
+  versions: in-place
+  keep: everything

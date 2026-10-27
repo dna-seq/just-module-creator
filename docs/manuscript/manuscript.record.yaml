@@ -1,6 +1,6 @@
 manuscript: manuscript.tex
-updated: '2026-10-19'
-status: Journal priorities confirmed; later evaluation round identified in Git, raw archive recovery pending.
+updated: '2026-10-27'
+status: Whole-manuscript improvement run of 2026-10-26/27 applied 99 recorded edits; 17 author decisions open (journal not chosen; scored round still not recovered).
 priority_provenance:
   paper1: Current author choices are in paper1-just-dna-lite.record.yaml and final October 2026 strategy
     section.
@@ -325,7 +325,7 @@ venue_facts:
     - https://info.arxiv.org/help/license/index.html
     exempt: []
 related_manuscripts:
-- manuscript: ../../../just-dna-lite/docs/manuscript/v0.5/paper1-just-dna-lite.md
+- manuscript: ../../../just-dna-lite/docs/manuscript/v0.6/paper1-just-dna-lite.md
   relationship: Paper1 consumes modules, annotates genomes, computes polygenic scores and reports benchmark
     performance; paper2 authors/evaluates/shares content and does not process samples.
   status: EASRP 2026 entry, no proceedings; not selected, not published and not under review, according
@@ -379,6 +379,19 @@ open_issues:
 - id: fee-route
   summary: Paper2 corresponding author, grant availability and institutional discount applicability unconfirmed.
   status: open
+- id: no-baseline
+  summary: Referees and the Eurotech reviewers agree the plugin is never scored against the same model without it, and the only scored evaluation is three runs on one paper (improvement run 2026-10-27, PR-2, PR-3).
+  status: open
+  route: author-required
+  output: reviews/20261026T154912Z-1fd1e924/manuscript-improve/report.md
+- id: outside-namespaces
+  summary: '"Four of the eight modules" from authors outside the development team fits no split of the catalog''s 5, 2 and 1 modules per namespace; the authors must say which namespaces are outside the team (IC-7).'
+  status: open
+  route: author-required
+- id: scored-round-version
+  summary: Table 3 does not name the plugin version, model, host or paper; the reference is an adjudicated merge of two plugin runs (now stated in the text, IC-2); naming the paper with a bibliography entry is pending (RP-4).
+  status: open
+  route: author-required
 ai_use_case:
   status: actual paper2 assistance account not confirmed
   cli_scenario: Default revision mode illustrates policy burdens; it is not an attestation of what happened
@@ -463,3 +476,9 @@ checks:
   output: ../../../just-dna-lite/docs/manuscript/v0.5/reviews/plugin-smoke/paper2/20261019T203243Z-ce6a0dad/manuscript-integrity-check/report.md
   summary: Preparation scores reproduced. Git identifies a later round, so different scores do not establish
     a manuscript error. Later raw archive not recovered in searched locations; manuscript unchanged.
+- skill: manuscript-improve
+  scope: whole manuscript; integrity, references, reporting, figures, policy fit, three-referee peer review with defence, prose edit, deslop, story with three readers, journal adaptation to what the ladder shares, independent re-check
+  date: '2026-10-27'
+  manuscript_sha256: 2cee64b67799590c52a1c25282fe6cecabe7e8c289f19624975deb2b2060f855
+  output: reviews/20261026T154912Z-1fd1e924/manuscript-improve/report.md
+  summary: 88 problems confirmed (1 blocker, 23 major), 38 fixed by 99 applied edits; corrected version adds 17 proposals; 17 author decisions; referees recommend major revision at BMC Bioinformatics, Application Note or rejection at Bioinformatics; Eurotech reviews 11 of 19 caught in full, 7 in part.
