@@ -51,6 +51,7 @@ from just_dna_registry.specfiles import (
 from mcp.types import ToolAnnotations
 
 from just_module_creator import routing
+from just_module_creator.auth import resolve_api_key
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
     CacheReport,
@@ -478,7 +479,10 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         if not source.is_dir():
             raise ToolError(f"{source} is not a directory.")
 
-        client = client_for(target, settings)
+        # The derived route is bearer-gated: resolve the token the same way the
+        # registry write tools do, or the server answers 401 missing_bearer_token.
+        token = await resolve_api_key(ctx, settings, target, namespace) if ctx else None
+        client = client_for(target, settings, token=token or settings.registry_token(target))
         if ctx:
             await narrate(ctx, f"Deriving {source.name} on {describe(target, settings)}")
             await ctx.report_progress(progress=1, total=3)
@@ -665,7 +669,8 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         if not target_dir.is_dir():
             raise ToolError(f"{target_dir} is not a directory.")
 
-        client = client_for(target, settings)
+        token = await resolve_api_key(ctx, settings, target) if ctx else None
+        client = client_for(target, settings, token=token or settings.registry_token(target))
         if ctx:
             await narrate(ctx, f"Drafting {source} on {describe(target, settings)}")
             await ctx.report_progress(progress=1, total=2)
