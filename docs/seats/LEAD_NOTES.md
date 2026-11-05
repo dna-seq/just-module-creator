@@ -4,8 +4,8 @@ The lead seat's working state, rewritten to the present before a reset (`docs/se
 
 ## Now
 
-Released 0.48.1 (tag `v0.48.1`, 2026-11-05). Unreleased on `main`: F31 and F50 (`5dfb942`, in
-`docs/CHANGELOG.md` under Unreleased); it goes out with the next release, at most one a day. The person went
+Released 0.48.1 (tag `v0.48.1`, 2026-11-05). Unreleased on `main`: F31 and F50 (`5dfb942`, narrowed after a post-merge
+audit in `7a8463e`; in `docs/CHANGELOG.md` under Unreleased); it goes out with the next release, at most one a day. The person went
 away at 05:02Z on 2026-11-05; the first unattended pass is below.
 
 ## Plan states (set 2026-11-05)
@@ -19,7 +19,8 @@ away at 05:02Z on 2026-11-05; the first unattended pass is below.
 
 ## Findings (the tester's inbox)
 
-- Fixed: F31, F50 (`5dfb942`).
+- Fixed: F31, F50 (`5dfb942`, `7a8463e`); F119 found and fixed (`84aa78f`: no test reaches a live `httpx`
+  transport). 0.48.1 shipped without the role's post-merge audit read; F31/F50 had one.
 - F34 (each publish uploads the previous `published.json`): the upload is the registry client's
   `gather_spec_files`, filed upstream long ago as registry `S5`; nothing here to fix.
 - F22 (`published.json` records `owner: null`): needs a call on what "owner" means (namespace owner or the
@@ -28,7 +29,7 @@ away at 05:02Z on 2026-11-05; the first unattended pass is below.
 
 ## To file (unattended)
 
-- Asked the seat-builder for a `plan` watcher for this lead (#agent-chat>seating, 2026-11-05); open.
+- Plan watcher: added on the seat-builder's word (`[seat.lead.watch.plan]`), running.
 - Pyright: clean since the codex-install test narrows its pipes (was 4 errors before this seat).
 
 ## First seating, 2026-11-05
@@ -54,4 +55,11 @@ away at 05:02Z on 2026-11-05; the first unattended pass is below.
 
 ## Open
 
-- Nothing from the first seating.
+- Desk #203 (RM28), #204 (RM31), #205 (RM18): waiting on the person.
+- The tester's probe of 0.48.1's token refusal on the polygon, asked in `#just-module-creator>releases`.
+- The person's `/reload-plugins` here takes the kit's 0.1.130 hooks (the watchdog already runs 0.1.130).
+
+## Downstream
+
+- longevity-loci (its liaison, 2026-11-05) stands on the plugin at 0.48.0, and its first longevitymap v2 module
+  waits on our `<0.8` format cap until the registry serves 0.8. That belongs to the pm's 0.8 scope call.
