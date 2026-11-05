@@ -50,14 +50,14 @@ away at 05:02Z on 2026-11-05; the first unattended pass is below.
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.133 (moved on each announcement, 2026-11-05) (`move-to-tag.py`; the pin is in the untracked
+- **Kit pin**: 0.1.134 (moved on each announcement, 2026-11-05) (`move-to-tag.py`; the pin is in the untracked
   `.claude/settings.local.json`). The person's `/reload-plugins` takes it into this session.
 
 ## Open
 
 - Desk #203 (RM28), #204 (RM31), #205 (RM18): waiting on the person.
 - The tester's probe of 0.48.1's token refusal on the polygon, asked in `#just-module-creator>releases`.
-- The person's `/reload-plugins` here takes the kit's 0.1.133 hooks (the watchdog already runs 0.1.133).
+- The person's `/reload-plugins` here takes the kit's 0.1.134 hooks (the watchdog already runs 0.1.134).
 
 ## Downstream
 
@@ -68,4 +68,4 @@ away at 05:02Z on 2026-11-05; the first unattended pass is below.
   scope is the pm's. 0.8 moves the trio to polars 2 and, once their RM344 lands, duckdb 2. Until we adopt it,
   no `uv lock --upgrade` here: a duckdb 2.0-built `ensembl_variations.duckdb` in the shared cache crashes a
   1.x enricher (their RM344), and a polars change alone moves `artifact.digest`. longevity-loci capped both
-  `<2` until this plugin moves.
+  `<2` until this plugin moves, and asked for a word when we plan it: post it in `#agent-chat>upstream`.
