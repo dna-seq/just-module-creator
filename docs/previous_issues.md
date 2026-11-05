@@ -8,7 +8,7 @@ are not copied.
 
 ## F31 — `fetch_fulltext(pmid=…)` reports "nothing retrieved" for papers whose fulltext it will return by PMCID
 
-**Found:** 2026-08-12, authoring `assets/longevity_2026` · **Severity:** high · **Status:** open
+**Found:** 2026-08-12, authoring `assets/longevity_2026` · **Severity:** high · **Status:** resolved 2026-11-05
 
 The centrepiece paper of that module — the bioRxiv preprint with the *CGAS* functional work, PMID
 `41427385` — came back empty:
@@ -51,13 +51,13 @@ fails with it. Guidance that names a field should not survive that field being e
 
 **Status (2026-09-25): partly addressed.** The `F30` half is fixed: search results carry a clean PMCID (`discovery.pmcid_token`), so a caller holding one can pass it. `discovery.fulltext` still resolves PMID→PMCID through Europe PMC's `lookup` alone. The PMC BioC rung added for `F108` runs only when a PMCID is already known, so `fetch_fulltext(pmid=…)` on a record Europe PMC does not index still returns nothing.
 
-**Resolved 2026-11-05 (unreleased, after 0.48.1).** `discovery.fulltext` now asks PubMed's own `esummary` for the PMCID and DOI whenever Europe PMC's lookup leaves either one out (`discovery._pubmed_ids`), and says which ids PubMed supplied. A Europe PMC lookup that cannot be asked (`LiteratureUnavailable`) is now a warning naming the record UNCHECKED instead of an exception out of the tool, and PubMed is asked instead; a PubMed that cannot be asked is a warning too. Tests: `tests/test_fulltext_pmid_join.py`, on PubMed's real record for PMID 41427385. **Run live on 2026-11-05:** Europe PMC now indexes that PMID (`EXT_ID:41427385 AND SRC:MED`, 1 hit), so the original miss no longer reproduces; but its lookup answered HTTP 503 during the run, and the PubMed join recovered PMC12713140 and the fulltext, where the old code raised.
+**Resolved 2026-11-05 (unreleased, after 0.48.1).** When Europe PMC's lookup leaves the PMCID out, `discovery.fulltext` asks PubMed's own `esummary` (`discovery._pubmed_ids`) and says which ids it supplied. A missing DOI alone costs no request up front: it is filled from PubMed only when nothing was retrieved, the one place it is read. A Europe PMC lookup that cannot be asked (`LiteratureUnavailable`: any HTTP or transport error) is a warning naming the record UNCHECKED instead of an exception out of the tool; a PubMed that cannot be asked, or answers something that is not JSON, is a warning too. Tests: `tests/test_fulltext_pmid_join.py`, on PubMed's real record for PMID 41427385. **Run live on 2026-11-05:** Europe PMC now indexes that PMID (`EXT_ID:41427385 AND SRC:MED`, 1 hit), so the original miss no longer reproduces; its lookup answered HTTP 503 during the run, and the PubMed join recovered PMC12713140 and the fulltext, where the old code raised. A post-merge audit narrowed the first version (a DOI-only PubMed call spent even when the text arrived, and two messages that overclaimed).
 
 ---
 
 ## F50 — "Try the locations below" when there are none, because the fallback needs a DOI the caller did not pass
 
-**Found:** 2026-08-20, chasing an author manuscript by PMCID · **Severity:** low · **Status:** open
+**Found:** 2026-08-20, chasing an author manuscript by PMCID · **Severity:** low · **Status:** resolved 2026-11-05
 
 `fetch_fulltext(pmcid="PMC10508260")` on an embargoed author manuscript returns, correctly,
 `retrieved: false` and `text_source: null` — and this warning:
@@ -79,7 +79,7 @@ already gets one from the same `esummary` response — or say the true thing whe
 the DOI or PMID."* The second costs nothing and never issues a request the caller did not ask for,
 which fits the tier rule better.
 
-**Resolved 2026-11-05 (unreleased, after 0.48.1),** the second candidate fix: the warning says "Try the locations below" only when there are locations; with a DOI and none found it names the DOI and `lookup_open_access`, and with no DOI it says none was looked up and that `lookup_open_access` takes a PMID or PMCID. A PMID-only call now also gets its DOI from PubMed when Europe PMC lacks it (F31). Test: `tests/test_fulltext_pmid_join.py`.
+**Resolved 2026-11-05 (unreleased, after 0.48.1),** the second candidate fix: the warning says "Try the locations below" only when there are locations; with a DOI and none found it names the DOI and `lookup_open_access`; with no DOI it says none was looked up. It no longer points a PMCID-only caller at `lookup_open_access`, which asks no source without a DOI or PMID. A PMID-only call gets its DOI from PubMed when nothing was retrieved (F31). Tests: `tests/test_fulltext_pmid_join.py`, both branches.
 
 ---
 

@@ -16,7 +16,7 @@ from just_dna_enricher.literature import LiteratureUnavailable
 
 from just_module_creator import discovery
 from just_module_creator.discovery import PUBMED, Discovery, fulltext
-from just_module_creator.models import OpenAccessResult
+from just_module_creator.models import OpenAccessLocation, OpenAccessResult
 from just_module_creator.net import ServiceUnavailable, build_services
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets" / "literature"
@@ -81,7 +81,7 @@ def test_a_europe_pmc_miss_is_joined_through_pubmed(monkeypatch) -> None:
     assert epmc.fulltext_asked == [PMCID]
     assert (result.pmcid, result.doi) == (PMCID, DOI)
     assert result.retrieved and result.text_source == "fulltext" and result.text == TEXT
-    said = [f.message for f in result.findings if "PubMed's record supplied" in f.message]
+    said = [f.message for f in result.findings if "PubMed's record of PMID" in f.message]
     assert len(said) == 1 and PMCID in said[0] and DOI in said[0]
 
 
@@ -141,3 +141,38 @@ def test_an_empty_open_access_answer_is_not_called_locations_below(monkeypatch) 
     assert len(nothing) == 1
     assert DOI in nothing[0] and "lookup_open_access" in nothing[0]
     assert "Try the locations below" not in nothing[0]
+
+
+def test_a_missing_doi_costs_no_request_when_the_text_arrives(monkeypatch) -> None:
+    """The DOI is read only when nothing was retrieved, so it is not fetched before."""
+    epmc = _EuropePmc({PMID: {"pmcid": PMCID}})
+    pubmed = _PubMed(ServiceUnavailable(PUBMED, "must not be asked"))
+    result = fulltext(
+        _services(monkeypatch, epmc, pubmed), pmid=PMID, pmcid=None, doi=None, max_chars=None
+    )
+    assert result.text == TEXT
+    assert pubmed.asked == []
+
+
+def test_nothing_retrieved_fills_the_doi_and_names_real_locations(monkeypatch) -> None:
+    """With a PMCID that yields no text, PubMed is asked once, for the DOI the lookup needs."""
+    epmc = _EuropePmc({PMID: {"pmcid": "PMC0000001"}})
+    pubmed = _PubMed(ESUMMARY)
+    asked: list[str | None] = []
+    here = OpenAccessLocation.model_validate({"url": f"https://doi.org/{DOI}"})
+
+    def open_access(*_a, doi=None, **_k):
+        asked.append(doi)
+        return OpenAccessResult(doi=doi, locations=[here])
+
+    monkeypatch.setattr(discovery, "open_access", open_access)
+    monkeypatch.setattr(discovery, "_bioc_fulltext", lambda *_a, **_k: (None, None))
+    result = fulltext(
+        _services(monkeypatch, epmc, pubmed), pmid=PMID, pmcid=None, doi=None, max_chars=None
+    )
+    assert not result.retrieved
+    assert pubmed.asked == ["esummary.fcgi"]
+    assert asked == [DOI] and result.doi == DOI
+    assert result.locations == [here]
+    nothing = [f.message for f in result.findings if f.message.startswith("Nothing was retrieved")]
+    assert len(nothing) == 1 and nothing[0].endswith("Try the locations below.")

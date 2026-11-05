@@ -5,8 +5,8 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
-- **`fetch_fulltext(pmid=…)` joins the PMID to its PMCID and DOI through PubMed when Europe PMC cannot** (F31). Europe PMC's lookup is no longer the only route: a record it lacks, or a lookup that answers 5xx, falls to PubMed's own record, and the result says which ids PubMed supplied. A Europe PMC outage on that lookup used to fail the whole call; it is now a warning naming the record unchecked. Checked live on PMID 41427385 during a Europe PMC 503.
-- **"Try the locations below" only when there are some** (F50). An empty open-access answer names the DOI it asked about; a call with no DOI says nothing was looked up and points at `lookup_open_access`.
+- **`fetch_fulltext(pmid=…)` joins the PMID to its PMCID and DOI through PubMed when Europe PMC cannot** (F31). Europe PMC's lookup is no longer the only route: a record it lacks the PMCID for, or a lookup that cannot be asked, falls to PubMed's own record, and the result says which ids PubMed supplied. A missing DOI is fetched only when nothing was retrieved, where it is used. A Europe PMC outage on that lookup used to fail the whole call; it is now a warning naming the record unchecked. Checked live on PMID 41427385 during a Europe PMC 503.
+- **"Try the locations below" only when there are some** (F50). An empty open-access answer names the DOI it asked about; a call with no DOI says nothing was looked up.
 
 ## [0.48.1] — 2026-11-05
 
