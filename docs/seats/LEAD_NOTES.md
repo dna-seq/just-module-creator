@@ -15,8 +15,7 @@ from this seat.
   tracked `.claude/settings.json` (it only pins the plugin, with no hooks or wakers). Git hooks were the
   samples only.
 - **Watchers**: `watch.desk`, `watch.issues`, `watch.brief` started.
-- **Picture**: asked the admin seat in `#agent-chat>avatars`; set it with `watchdog.py avatar lead --from ID`
-  once the reply comes.
+- **Picture**: a platypus with a DNA strand, set 2026-11-05 from the admin seat's reply.
 - **`CLAUDE.md`**: read-first list names `docs/seats/README.md`; §7 says the tester finds and the lead fixes,
   and that the liaison keeps `docs/just-dna-format-pending-fixes.md`.
 - **Leak gate**: `.leak_words` written (home and scratch paths, host forms of the hostname, the chat server,
@@ -30,4 +29,4 @@ from this seat.
 
 ## Open
 
-- The avatar reply; the wake_from answer.
+- The wake_from answer from longevity-loci/lead.
