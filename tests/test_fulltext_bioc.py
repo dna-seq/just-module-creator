@@ -45,10 +45,17 @@ def test_no_copy_at_pmc_is_an_answer_not_text() -> None:
 
 
 class _EuropePmc:
-    """Europe PMC as it answered for this paper: a record with a PMCID, no fulltext."""
+    """Europe PMC as it answered for this paper: a record with a PMCID and DOI, no fulltext.
+
+    Both ids, as the real record carries them: a record missing either one is joined
+    through PubMed (F31), which these tests do not stub.
+    """
 
     def lookup(self, pmids: list[str]) -> dict:
-        return {p: {"pmcid": "PMC6463297", "abstract": ABSTRACT} for p in pmids}
+        return {
+            p: {"pmcid": "PMC6463297", "doi": "10.1038/s41588-019-0358-2", "abstract": ABSTRACT}
+            for p in pmids
+        }
 
     def fulltext(self, pmcid: str) -> None:
         return None

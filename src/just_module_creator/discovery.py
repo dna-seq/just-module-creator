@@ -40,7 +40,11 @@ from typing import Any
 
 from just_dna_enricher.eutils import DEFAULT_EUTILS_BASE, EutilsSettings
 from just_dna_enricher.licensing import TERMS_BY_SOURCE
-from just_dna_enricher.literature import DEFAULT_EUROPEPMC_BASE, EuropePmcClient
+from just_dna_enricher.literature import (
+    DEFAULT_EUROPEPMC_BASE,
+    EuropePmcClient,
+    LiteratureUnavailable,
+)
 from just_dna_format.spec import DOI_PATTERN
 
 from just_module_creator.models import (
@@ -1438,6 +1442,53 @@ def _bioc_fulltext(services: NetworkServices, pmcid: str) -> tuple[str | None, s
         return None, f"unreadable BioC answer: {type(exc).__name__}"
 
 
+def _pubmed_ids(
+    services: NetworkServices,
+    pmid: str,
+    pmcid: str | None,
+    doi: str | None,
+    findings: list[LintFinding],
+) -> tuple[str | None, str | None]:
+    """Fill a missing PMCID or DOI from PubMed's own record of `pmid`.
+
+    Says which ids PubMed supplied, and says when PubMed could not be asked: an id
+    still missing after that is unchecked, not absent.
+    """
+    try:
+        found = Discovery(services=services).pubmed_summaries([pmid])
+    except ServiceUnavailable as exc:
+        findings.append(
+            LintFinding(
+                level="warning",
+                message=(
+                    f"PubMed could not be asked for PMID {pmid}'s ids ({exc.reason}), so a "
+                    "missing PMCID or DOI is UNCHECKED — not answered no."
+                ),
+            )
+        )
+        return pmcid, doi
+    record = next((c for c in found if c.pmid == pmid), None)
+    supplied: list[str] = []
+    if record and not pmcid and record.pmcid:
+        pmcid = record.pmcid
+        supplied.append(f"PMCID {pmcid}")
+    if record and not doi and record.doi:
+        doi = record.doi
+        supplied.append(f"DOI {doi}")
+    if supplied:
+        kinds = " or ".join(item.split()[0] for item in supplied)
+        findings.append(
+            LintFinding(
+                level="info",
+                message=(
+                    f"Europe PMC's lookup did not give the {kinds} for PMID {pmid}; "
+                    f"PubMed's record supplied {' and '.join(supplied)}."
+                ),
+            )
+        )
+    return pmcid, doi
+
+
 def fulltext(
     services: NetworkServices,
     *,
@@ -1458,9 +1509,26 @@ def fulltext(
     record: dict | None = None
 
     if pmid:
-        record = client.lookup([pmid]).get(pmid)
+        try:
+            record = client.lookup([pmid]).get(pmid)
+        except LiteratureUnavailable as exc:
+            reason = str(exc).splitlines()[0].removeprefix("Europe PMC could not be asked: ")
+            findings.append(
+                LintFinding(
+                    level="warning",
+                    message=(
+                        f"Europe PMC could not be asked ({reason}), so its record for PMID {pmid} "
+                        "is UNCHECKED; PubMed was asked for the PMCID and DOI instead."
+                    ),
+                )
+            )
         pmcid = pmcid or (record or {}).get("pmcid")
         doi = doi or (record or {}).get("doi")
+        if not pmcid or not doi:
+            # Europe PMC's lookup is one join of PMID to PMCID and DOI, and it misses
+            # records PubMed holds both ids for (F31: a preprint-pilot record, keyed
+            # only by its PMCID at Europe PMC when it was found).
+            pmcid, doi = _pubmed_ids(services, pmid, pmcid, doi, findings)
 
     text: str | None = None
     source: str | None = None
@@ -1519,17 +1587,30 @@ def fulltext(
 
     locations: list[OpenAccessLocation] = []
     if not text:
+        if doi:
+            locations = open_access(services, pmid=None, doi=doi, pmcid=None).locations
+        if locations:
+            where = "Try the locations below."
+        elif doi:
+            # F50: the advice named a list the same failure had left empty.
+            where = (
+                f"No open-access location came back for DOI {doi}; `lookup_open_access` "
+                "says which sources answered."
+            )
+        else:
+            where = (
+                "No DOI is known for it, so no open-access location was looked up; "
+                "`lookup_open_access` takes a PMID or PMCID."
+            )
         findings.append(
             LintFinding(
                 level="warning",
                 message=(
                     "Nothing was retrieved. `text_source` is null, which means UNCHECKED — not "
-                    "that the paper has no text. Try the locations below."
+                    f"that the paper has no text. {where}"
                 ),
             )
         )
-        if doi:
-            locations = open_access(services, pmid=None, doi=doi, pmcid=None).locations
 
     return FullTextResult(
         pmid=pmid,
