@@ -435,6 +435,12 @@ operator's sweep, a build hook, or only a deployment calls it. Say which.
   `offline_settings()` forces `offline=True`. Don't remove `env_file=".env"` from `model_config` —
   the product needs it. An upstream library (`just_dna_enricher.locations`) calls `load_dotenv`
   itself; the fixture neutralizes it.
+- **No test reaches a live `httpx` transport.** `offline` is enforced by the tools, not by
+  `HttpService`, so a test calling a `discovery` function directly once fetched from NCBI and passed
+  (F119). The autouse `_no_live_http` raises `LiveNetworkInTest`, a `BaseException` so the code's
+  `except Exception` fallbacks cannot swallow it. Stub the service (`Discovery.service`,
+  `client_for`) or use `httpx.MockTransport`. Its scope is `httpx`: `urllib`, `requests` and child
+  processes are outside it.
 - **A test meaning "no credential" must say so**: `setenv(VAR, "")`, not `delenv` —
   `load_dotenv(override=False)` skips a key that is merely present. (The autouse fixture's `delenv` is
   not an exception: with dotenv neutralized, absent means unset; inside a test, `setenv` runs after it

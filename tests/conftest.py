@@ -17,6 +17,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import httpx
 import pytest
 from fastmcp.client import Client
 from just_dna_compiler import hints as _hints
@@ -137,6 +138,36 @@ def _refuse_dotenv(*args: object, **kwargs: object) -> bool:
     which is the machine the suite is pretending to be.
     """
     return False
+
+
+class LiveNetworkInTest(BaseException):
+    """A test reached a live HTTP transport.
+
+    A BaseException on purpose: the code under test turns an `httpx` failure into an
+    "unavailable" finding through `except Exception`, which would hide the fetch and let
+    the test pass on whatever the fallback says (F119).
+    """
+
+
+@pytest.fixture(autouse=True)
+def _no_live_http(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Refuse every live `httpx` request, at the transport (F119).
+
+    The offline ceiling is enforced by the tools (`offline_for`), not by `HttpService`, so
+    a test calling a `discovery` function directly fetched from NCBI and passed. This
+    closes `httpx` for every test; `httpx.MockTransport` and the in-memory MCP client are
+    unaffected. Its scope is `httpx` only: a library on `urllib` or `requests`, and a
+    child process (`test_codex_install.py`), are outside it.
+    """
+
+    def refuse(self: object, request: httpx.Request) -> httpx.Response:
+        raise LiveNetworkInTest(f"live HTTP from a test: {request.method} {request.url}")
+
+    async def refuse_async(self: object, request: httpx.Request) -> httpx.Response:
+        raise LiveNetworkInTest(f"live HTTP from a test: {request.method} {request.url}")
+
+    monkeypatch.setattr(httpx.HTTPTransport, "handle_request", refuse)
+    monkeypatch.setattr(httpx.AsyncHTTPTransport, "handle_async_request", refuse_async)
 
 
 @pytest.fixture(autouse=True)

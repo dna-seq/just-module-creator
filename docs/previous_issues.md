@@ -6,6 +6,26 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F119 — the suite's offline ceiling stopped at the tools, so a test fetched from NCBI and passed
+
+**Found:** 2026-11-05, by the lead seat while fixing F31 · **Severity:** medium · **Status:** resolved 2026-11-05
+
+`offline_settings()` forces `offline=True`, but `offline` is read by the tools (`_shared.offline_for`), not
+by `net.HttpService`. A test that calls a `discovery` function directly therefore has an open socket. The
+F31 change made `discovery.fulltext` ask PubMed when a Europe PMC record lacks a DOI, and
+`test_fulltext_bioc.py::test_no_copy_at_pmc_falls_to_the_named_abstract`, whose Europe PMC stub carried no
+DOI, fetched PubMed's live `esummary` for PMID 30820047 and passed: a probe printed the finding
+*"PubMed's record supplied DOI 10.1038/s41588-019-0358-2"*. Nothing in the suite could have noticed.
+
+**Resolved** in `tests/conftest.py`: the autouse `_no_live_http` replaces `httpx`'s sync and async
+transports with one that raises `LiveNetworkInTest`, a `BaseException`, because the code under test turns
+an `httpx` failure into an "unavailable" finding through `except Exception` and would have passed on the
+fallback. The whole suite ran green under it (so no other test was fetching), and a throwaway test calling
+`Discovery.pubmed_summaries` directly failed with the URL it tried. The rule is in `CLAUDE.md` §6. Not
+covered: `urllib`, `requests` and child processes (`test_codex_install.py` starts a real server).
+
+---
+
 ## F31 — `fetch_fulltext(pmid=…)` reports "nothing retrieved" for papers whose fulltext it will return by PMCID
 
 **Found:** 2026-08-12, authoring `assets/longevity_2026` · **Severity:** high · **Status:** resolved 2026-11-05
