@@ -34,6 +34,8 @@ summary of a rule drops the qualifier the decision turned on. Delegate finding, 
 3. **[docs/CHANGELOG.md](docs/CHANGELOG.md)** — what shipped, newest first.
 4. **[docs/dogfooding.md](docs/dogfooding.md)** — open findings from real use. Read before touching
    the tool surface.
+5. **[docs/seats/README.md](docs/seats/README.md)** — the standing roles (lead, pm, tester, liaison)
+   a session can take here, and what each owns.
 
 No rule below requires following a link to know what you must not do; links carry positive detail.
 
@@ -477,10 +479,13 @@ dogfooding — that is a test.
   whose README names what it broke on the old behaviour.
 - **Separate "fix it" from "surface it"** before writing code, and say why each repair is wrong for
   the surfaced ones.
+- **The one who finds is not the one who fixes.** The tester seat finds and records; the lead seat
+  fixes (`docs/seats/`). A session holding no seat keeps the same split.
 
 Findings carry stable `F#` IDs and **move**, never duplicate: `docs/dogfooding.md` (open) →
 `docs/previous_issues.md` (resolved here) or `docs/just-dna-format-pending-fixes.md` (blocked
-upstream). One mitigated here but still owed upstream may appear in two.
+upstream). One mitigated here but still owed upstream may appear in two. The liaison seat keeps
+`docs/just-dna-format-pending-fixes.md`; the lead hands it what must be surfaced upstream.
 
 ---
 
@@ -577,19 +582,12 @@ describe this project as interpreting a genome, calling a genotype, or giving me
 When outdated API knowledge causes a real failure, fix the code **and** update this file and affected
 docs. When the user corrects a preference, it goes into §10 in their words, with the reason.
 
-### Running two agents across one night: the relay protocol
+### Running agents across a night
 
-Create `docs/NIGHT-RELAY.md` with a `STATE:` line, the legal transitions, one append-only section per role.
-
-1. **Read `STATE:` first.** Not your starting state → stop, write nothing, report what you found.
-2. **Claim by writing your transition first** (UTC timestamp) and commit immediately.
-3. **A `*-RUNNING` state older than four hours** (measured from the newest history entry, not `SINCE:`)
-   is a dead agent: append a note, move the state back one step, stop. Live agents append proof-of-life.
-4. **Never edit another role's section.**
-5. **On finish, write what the next role needs decided**, including cheaply reversible calls you made.
-   Commit.
-
-The waiting agent arms a file monitor on `STATE:` (tested on a dummy file first) rather than polling.
+The seats kit does this (`docs/seats/`): who holds which role is on the card rack, the watchdog
+delivers and wakes, and the person's absence turns every seat unattended. The hand-run
+`docs/NIGHT-RELAY.md` protocol (a `STATE:` line, claimed transitions, a four-hour dead-agent rule) is
+retired with the seats' arrival (2026-11-05); it is in git history if a run outside the seats needs it.
 
 ---
 
