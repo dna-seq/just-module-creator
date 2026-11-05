@@ -4,8 +4,33 @@ The lead seat's working state, rewritten to the present before a reset (`docs/se
 
 ## Now
 
-Seated 2026-11-05; the first-seating handout is worked (below). The plugin is at 0.48.0; nothing unreleased
-from this seat.
+Released 0.48.1 (tag `v0.48.1`, 2026-11-05). Unreleased on `main`: F31 and F50 (`5dfb942`, in
+`docs/CHANGELOG.md` under Unreleased); it goes out with the next release, at most one a day. The person went
+away at 05:02Z on 2026-11-05; the first unattended pass is below.
+
+## Plan states (set 2026-11-05)
+
+- RM16, RM25: waits until 2026-12-05. RM24: waits until 2027-01-05. Each line says what is looked at then.
+- RM28: blocked on desk #203, yes after a present (the trait-term search tool; a minor).
+- RM31: blocked on desk #204, no default (format's S125 was accepted for their 0.8, so the design's ground moved).
+- RM18: blocked on desk #205 (whether this seat drafts the handout for Anton); owner the person.
+- The "Owed to just-dna-lite" section had been done on 2026-09-26; moved to `ROADMAP_HISTORY.md`.
+- No plan watcher runs for this seat (`classes/lead/plan-watch.py`); asking the seat-builder is on the to-file list.
+
+## Findings (the tester's inbox)
+
+- Fixed: F31, F50 (`5dfb942`).
+- F34 (each publish uploads the previous `published.json`): the upload is the registry client's
+  `gather_spec_files`, filed upstream long ago as registry `S5`; nothing here to fix.
+- F22 (`published.json` records `owner: null`): needs a call on what "owner" means (namespace owner or the
+  account that published) and whether a `whoami` per publish is worth a request on a rate-limited polygon.
+  Next: the account name in the saved account is a no-request answer for a saved token; a session token has none.
+
+## To file (unattended)
+
+- To the seat-builder: a `plan` watcher (`classes/lead/plan-watch.py`) for this lead in `.blueprints.toml`.
+- Pyright has 4 errors in `tests/test_codex_install.py` (Optional access on a subprocess pipe), present before
+  this seat; ours to fix, small.
 
 ## First seating, 2026-11-05
 
@@ -25,7 +50,8 @@ from this seat.
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.129; no release has asked a move yet.
+- **Kit pin**: moved to 0.1.130 on its announcement, 2026-11-05 (`move-to-tag.py`; the pin is in the untracked
+  `.claude/settings.local.json`). The person's `/reload-plugins` takes it into this session.
 
 ## Open
 
