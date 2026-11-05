@@ -24,9 +24,9 @@ from this seat.
 - **Trust register (`docs/TRUST.md`)**: the person declined, 2026-11-05: "no, not now". Not asked again
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
-  to its lead's and liaison's `wake_from`. Open until it answers.
+  to its lead's and liaison's `wake_from`; done there in their cdd95d3.
 - **Kit pin**: 0.1.129; no release has asked a move yet.
 
 ## Open
 
-- The wake_from answer from longevity-loci/lead.
+- Nothing from the first seating.
