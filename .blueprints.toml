@@ -16,6 +16,11 @@ cmd = "sh kit:bin/py.sh kit:classes/desk/watch-answers.py just-module-creator le
 [seat.lead.watch.issues]
 cmd = "sh kit:bin/py.sh kit:drivers/github/watch-issues.py --origin"
 
+# The plan's states (docs/ROADMAP.md): a waits-until date reached, the person's present/away transitions, an
+# unattended item left unbuilt. Added by the lead on the seat-builder's word, 2026-11-05.
+[seat.lead.watch.plan]
+cmd = "sh kit:bin/py.sh kit:classes/lead/plan-watch.py --plan docs/ROADMAP.md"
+
 [seat.lead.zulip]
 pool = "~/.config/agent-seat-blueprints/zulip/pool"
 
