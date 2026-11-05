@@ -51,7 +51,7 @@ from just_dna_registry.specfiles import (
 from mcp.types import ToolAnnotations
 
 from just_module_creator import routing
-from just_module_creator.auth import resolve_api_key
+from just_module_creator.auth import resolve_api_key, unauthenticated_result
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
     CacheReport,
@@ -340,6 +340,19 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
     end the tier axis cost us four times over.
     """
 
+    async def _route_token(
+        ctx: Context | None, target: RegistryTarget, namespace: str | None
+    ) -> str:
+        """The bearer token for `/derived` and `/drafts`, or a refusal saying how to get one."""
+        token = (
+            await resolve_api_key(ctx, settings, target, namespace)
+            if ctx
+            else settings.registry_token(target)
+        )
+        if not token:
+            raise ToolError(unauthenticated_result(settings, target, namespace).message)
+        return token
+
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Which snapshot caches exist, here and there",
@@ -447,7 +460,8 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         `logs/` subtree — which is why it is a tool of its own rather than a flag, and
         why it is aimed with `target`. Nothing is written to any catalog, no identifier is
         claimed and no version is spent; the bearer token is an access bound on
-        licence-gated snapshots, not a publish.
+        licence-gated snapshots, not a publish. Without a token for `target` it refuses
+        before uploading anything.
 
         **`dry_run` defaults to true and reports what installing would displace.** The
         uploaded spec carries your existing sidecars and the server gap-fills rather than
@@ -481,8 +495,10 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
 
         # The derived route is bearer-gated: resolve the token the same way the
         # registry write tools do, or the server answers 401 missing_bearer_token.
-        token = await resolve_api_key(ctx, settings, target, namespace) if ctx else None
-        client = client_for(target, settings, token=token or settings.registry_token(target))
+        # With none, refuse here with the message that says how to get one, before
+        # anything is uploaded.
+        token = await _route_token(ctx, target, namespace)
+        client = client_for(target, settings, token=token)
         if ctx:
             await narrate(ctx, f"Deriving {source.name} on {describe(target, settings)}")
             await ctx.report_progress(progress=1, total=3)
@@ -640,8 +656,9 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
 
         **This UPLOADS your module**, so it is aimed with `target` and is never automatic.
         Nothing reaches a catalog; the token is an access bound on licence-gated
-        snapshots. **Draft into a fresh spec directory**: drafting is append-only, so
-        drafting twice into one tree puts corrected rows beside the ones they supersede,
+        snapshots, and without one for `target` it refuses. **Draft into a fresh spec
+        directory**: drafting is append-only, so drafting twice into one tree puts
+        corrected rows beside the ones they supersede,
         and `already_present` and `differs` are how that shows up. `dry_run` defaults to
         true, which is the documented first move.
 
@@ -669,8 +686,8 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         if not target_dir.is_dir():
             raise ToolError(f"{target_dir} is not a directory.")
 
-        token = await resolve_api_key(ctx, settings, target) if ctx else None
-        client = client_for(target, settings, token=token or settings.registry_token(target))
+        token = await _route_token(ctx, target, None)
+        client = client_for(target, settings, token=token)
         if ctx:
             await narrate(ctx, f"Drafting {source} on {describe(target, settings)}")
             await ctx.report_progress(progress=1, total=2)

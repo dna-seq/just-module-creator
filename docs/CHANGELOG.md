@@ -3,6 +3,17 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [0.48.1] — 2026-11-05
+
+- **`remote_derive` and `remote_draft` send the registry token.** Both routes are bearer-gated on
+  the registry, and without the token the server answered `401 missing_bearer_token` (Anton's fix,
+  `d26f0fb`). The token is resolved the way the registry write tools resolve it, aimed at the call's
+  `target`. With none found, both tools now refuse before uploading anything, with the message that
+  says how to get one (`authenticate`, the header, the environment, `registry_register`), instead of
+  passing the server's bare 401 through. Tested against a stubbed client only; no live call to
+  either instance was made for this release. Neither tool is in `auth.GATED_TOOLS`, so
+  `authenticate`'s list of unlocked tools still leaves them out.
+
 ## [0.48.0] — 2026-09-27
 
 - **The server saves the environment's registry token by itself at start.** A `JMC_TEST_API_KEY` /

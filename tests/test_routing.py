@@ -26,6 +26,7 @@ from just_dna_registry.client import RegistryClient
 
 from just_module_creator import routing
 from just_module_creator.settings import Settings
+from just_module_creator.tools import proxy
 
 
 def test_the_floor_buys_every_proxy_method_this_layer_calls():
@@ -445,7 +446,8 @@ async def test_a_table_the_run_could_not_produce_reaches_the_caller_as_a_questio
 
     monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Stub())
 
-    async with make_client(routed_settings(workspace=str(tmp_path))) as client:
+    settings = routed_settings(test_api_key="mk_poly_stub", workspace=str(tmp_path))
+    async with make_client(settings) as client:
         result = await client.call_tool(
             "remote_derive",
             {"spec_dir": str(tmp_path), "namespace": "test-sheep", "name": "test_lactose"},
@@ -591,7 +593,8 @@ async def test_remote_derive_writes_over_the_deprecated_spelling_not_beside_it(
 
     monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Stub())
 
-    async with make_client(routed_settings(workspace=str(tmp_path))) as client:
+    settings = routed_settings(test_api_key="mk_poly_stub", workspace=str(tmp_path))
+    async with make_client(settings) as client:
         result = await client.call_tool(
             "remote_derive",
             {
@@ -1088,7 +1091,7 @@ async def test_remote_draft_refuses_a_stray_parameter_rather_than_dropping_it(
     monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Fussy())
     (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
 
-    async with make_client(routed_settings()) as client:
+    async with make_client(routed_settings(test_api_key="mk_poly_stub")) as client:
         result = await client.call_tool(
             "remote_draft",
             {
@@ -1121,7 +1124,7 @@ async def test_remote_draft_names_the_lane_a_deployment_lacks(
     monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Unprovisioned())
     (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
 
-    async with make_client(routed_settings()) as client:
+    async with make_client(routed_settings(test_api_key="mk_poly_stub")) as client:
         result = await client.call_tool(
             "remote_draft",
             {"spec_dir": str(tmp_path), "source": "civic"},
@@ -1161,7 +1164,7 @@ async def test_a_draft_archive_writes_only_recognised_spec_files(
     monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Stub())
     (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
 
-    async with make_client(routed_settings()) as client:
+    async with make_client(routed_settings(test_api_key="mk_poly_stub")) as client:
         result = await client.call_tool(
             "remote_draft",
             {"spec_dir": str(tmp_path), "source": "clinvar", "dry_run": False},
@@ -1192,7 +1195,7 @@ async def test_an_archive_with_no_report_counts_zero_and_says_it_did_not_describ
     monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Terse())
     (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
 
-    async with make_client(routed_settings()) as client:
+    async with make_client(routed_settings(test_api_key="mk_poly_stub")) as client:
         result = await client.call_tool(
             "remote_draft", {"spec_dir": str(tmp_path), "source": "clinvar"}
         )
@@ -1201,3 +1204,71 @@ async def test_an_archive_with_no_report_counts_zero_and_says_it_did_not_describ
     assert report.needs_curation == []
     assert report.dry_run is True
     assert report.installed == [], "a dry run writes nothing"
+
+
+# --------------------------------------------------------------------------- #
+# remote_derive / remote_draft: the bearer token (d26f0fb)
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    ("tool", "args"),
+    [
+        ("remote_derive", {"namespace": "test-sheep", "name": "test_lactose"}),
+        ("remote_draft", {"source": "clinvar"}),
+    ],
+)
+async def test_a_remote_route_without_a_token_refuses_before_uploading(
+    monkeypatch, make_client, tmp_path, tool, args
+):
+    """Both routes are bearer-gated on the registry; with no token the server answered a
+    bare 401 `missing_bearer_token`. The refusal is ours now, raised before any client is
+    built, and it names how to get a token on the instance the call was aimed at.
+    """
+    built: list[Any] = []
+    monkeypatch.setattr(proxy, "client_for", lambda *a, **k: built.append(k))
+    (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
+
+    async with make_client(routed_settings(test_api_key="")) as client:
+        result = await client.call_tool(
+            tool, {"spec_dir": str(tmp_path), **args}, raise_on_error=False
+        )
+    text = str(result.content)
+    assert result.is_error
+    assert "authenticate(token, target='test')" in text
+    assert "registry_register" in text
+    assert built == [], "nothing may be uploaded without a token"
+
+
+@pytest.mark.parametrize(
+    ("tool", "args", "method"),
+    [
+        ("remote_derive", {"namespace": "test-sheep", "name": "test_lactose"}, "derived"),
+        ("remote_draft", {"source": "clinvar"}, "draft"),
+    ],
+)
+async def test_a_remote_route_hands_the_polygon_token_to_its_client(
+    monkeypatch, make_client, tmp_path, tool, args, method
+):
+    """The token that reaches the client is the polygon's, for a call aimed at the polygon."""
+    seen: dict[str, Any] = {}
+
+    class _Stop:
+        def __getattr__(self, name):
+            def _call(*_a, **_k):
+                seen["method"] = name
+                raise RuntimeError("stub: stop after the client was built")
+
+            return _call
+
+    def _client_for(target, settings, **kwargs):
+        seen["target"] = target
+        seen["token"] = kwargs.get("token")
+        return _Stop()
+
+    monkeypatch.setattr(proxy, "client_for", _client_for)
+    (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
+
+    async with make_client(
+        routed_settings(test_api_key="mk_poly_stub", api_key="mk_prod_stub")
+    ) as client:
+        await client.call_tool(tool, {"spec_dir": str(tmp_path), **args}, raise_on_error=False)
+    assert seen == {"target": "test", "token": "mk_poly_stub", "method": method}
