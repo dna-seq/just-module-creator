@@ -29,8 +29,7 @@ away at 05:02Z on 2026-11-05; the first unattended pass is below.
 ## To file (unattended)
 
 - To the seat-builder: a `plan` watcher (`classes/lead/plan-watch.py`) for this lead in `.blueprints.toml`.
-- Pyright has 4 errors in `tests/test_codex_install.py` (Optional access on a subprocess pipe), present before
-  this seat; ours to fix, small.
+- Pyright: clean since the codex-install test narrows its pipes (was 4 errors before this seat).
 
 ## First seating, 2026-11-05
 

@@ -84,25 +84,28 @@ class _Wire:
     """Newline-delimited JSON-RPC over a child's stdio, with a deadline on every read."""
 
     def __init__(self, proc: subprocess.Popen[str]) -> None:
+        # Started with all three pipes; a missing one is a broken launch, said here once.
+        assert proc.stdin and proc.stdout and proc.stderr, "the server needs all three pipes"
         self.proc = proc
+        self.stdin, self.stdout, self.stderr = proc.stdin, proc.stdout, proc.stderr
         self.lines: queue.Queue[str] = queue.Queue()
         threading.Thread(target=self._pump, daemon=True).start()
 
     def _pump(self) -> None:
-        for line in self.proc.stdout:
+        for line in self.stdout:
             self.lines.put(line)
         self.lines.put("")
 
     def send(self, message: dict) -> None:
-        self.proc.stdin.write(json.dumps({"jsonrpc": "2.0", **message}) + "\n")
-        self.proc.stdin.flush()
+        self.stdin.write(json.dumps({"jsonrpc": "2.0", **message}) + "\n")
+        self.stdin.flush()
 
     def answer(self, request_id: int, deadline: float) -> dict:
         while True:
             line = self.lines.get(timeout=max(deadline - time.monotonic(), 0.1))
             if not line:
                 raise AssertionError(
-                    f"the server closed stdout before answering: {self.proc.stderr.read()[-1500:]}"
+                    f"the server closed stdout before answering: {self.stderr.read()[-1500:]}"
                 )
             message = json.loads(line)
             if message.get("id") == request_id:
