@@ -1,0 +1,60 @@
+[repo]
+# The repo's channel takes this name too; the seats talk there, in agent-chat and in announcements (D104).
+id = "just-module-creator"
+
+[seat.lead]
+# The person's coding sessions here (docs/seats/LEAD.md): the plugin's code, skills and releases. The tester hands
+# it findings, the liaison an upstream release's ask, the pm a scope. A downstream's liaison (a module repository
+# filing an issue here) and the upstreams' leads (compiler, registry) may wake it.
+wake_from = "just-module-creator/tester just-module-creator/liaison just-module-creator/pm longevity-loci/liaison just-dna-compiler/lead just-dna-registry/lead */secretary"
+
+[seat.lead.watch.desk]
+cmd = "sh kit:bin/py.sh kit:classes/desk/watch-answers.py just-module-creator lead"
+
+# The repository's issues: the plugin keeps no consumer inbox, so its consumers (module repositories, authors) file
+# here, and the lead answers them.
+[seat.lead.watch.issues]
+cmd = "sh kit:bin/py.sh kit:drivers/github/watch-issues.py --origin"
+
+[seat.lead.zulip]
+pool = "~/.config/agent-seat-blueprints/zulip/pool"
+
+[seat.pm]
+# The steer above the code (docs/seats/PM.md): who the plugin serves, the scope of each minor, the manuscript's
+# direction, the research list. It proposes to the lead and writes no code.
+wake_from = "just-module-creator/lead just-module-creator/tester just-module-creator/liaison just-dna-compiler/pm just-dna-registry/pm */secretary"
+
+[seat.pm.watch.desk]
+cmd = "sh kit:bin/py.sh kit:classes/desk/watch-answers.py just-module-creator pm"
+
+[seat.pm.zulip]
+pool = "~/.config/agent-seat-blueprints/zulip/pool"
+
+[seat.tester]
+# The beta tester (docs/seats/TESTER.md): uses the shipped plugin for real module work and records what is missing;
+# fixes nothing. A new release is its next probe.
+wake_from = "just-module-creator/lead just-module-creator/pm just-module-creator/liaison */secretary"
+
+[seat.tester.watch.desk]
+cmd = "sh kit:bin/py.sh kit:classes/desk/watch-answers.py just-module-creator tester"
+
+# A release tag pushed: the shipped surface changed, so the tester probes again.
+[seat.tester.watch.release]
+cmd = "sh kit:drivers/git/watch-remote.sh --tags --tag-pattern '^v[0-9]'"
+
+[seat.tester.zulip]
+pool = "~/.config/agent-seat-blueprints/zulip/pool"
+
+[seat.liaison]
+# What the plugin stands on and does not own (docs/seats/LIAISON.md): the compiler's packages, the registry, the two
+# host clients. The upstreams' leads and liaisons reach it.
+wake_from = "just-module-creator/lead just-module-creator/tester just-module-creator/pm just-dna-compiler/lead just-dna-registry/lead */liaison */upstream-liaison */secretary"
+
+[seat.liaison.watch.desk]
+cmd = "sh kit:bin/py.sh kit:classes/desk/watch-answers.py just-module-creator liaison"
+
+# The upstreams' watchers (kit classes/liaison/watch-upstream.sh) and the weekly dependency bump (nightly.py deps)
+# are added by the seat itself in its first work.
+
+[seat.liaison.zulip]
+pool = "~/.config/agent-seat-blueprints/zulip/pool"
