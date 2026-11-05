@@ -50,16 +50,22 @@ away at 05:02Z on 2026-11-05; the first unattended pass is below.
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.132 (moved on each announcement, 2026-11-05) (`move-to-tag.py`; the pin is in the untracked
+- **Kit pin**: 0.1.133 (moved on each announcement, 2026-11-05) (`move-to-tag.py`; the pin is in the untracked
   `.claude/settings.local.json`). The person's `/reload-plugins` takes it into this session.
 
 ## Open
 
 - Desk #203 (RM28), #204 (RM31), #205 (RM18): waiting on the person.
 - The tester's probe of 0.48.1's token refusal on the polygon, asked in `#just-module-creator>releases`.
-- The person's `/reload-plugins` here takes the kit's 0.1.132 hooks (the watchdog already runs 0.1.132).
+- The person's `/reload-plugins` here takes the kit's 0.1.133 hooks (the watchdog already runs 0.1.133).
 
 ## Downstream
 
 - longevity-loci (its liaison, 2026-11-05) stands on the plugin at 0.48.0, and its first longevitymap v2 module
   waits on our `<0.8` format cap until the registry serves 0.8. That belongs to the pm's 0.8 scope call.
+- **just-dna 0.8.0 is cut (2026-11-05, compiler main e97339a3), not yet on PyPI.** Our `<0.8` ceiling holds
+  until it is published and both instances' `/api/v1/version` serve it (the recipe in `pyproject.toml`); the
+  scope is the pm's. 0.8 moves the trio to polars 2 and, once their RM344 lands, duckdb 2. Until we adopt it,
+  no `uv lock --upgrade` here: a duckdb 2.0-built `ensembl_variations.duckdb` in the shared cache crashes a
+  1.x enricher (their RM344), and a polars change alone moves `artifact.digest`. longevity-loci capped both
+  `<2` until this plugin moves.
