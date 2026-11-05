@@ -9,6 +9,35 @@ here: it is filed upstream as an `S<n>` and tracked in
 
 ---
 
+## Owed to `just-dna-lite` — SHIPPED 2026-09-26 — the blanks, packaged as one document
+
+**Done before it was marked.** The dossiers' `## Blanks for just-dna-lite` sections went to -lite as one
+document, `docs/CONSUMER_HANDOFF_from_just-module-creator.md` in their tree (dated 2026-09-26, led by
+`licensing.csv` as decided), and later sections there carry their answers. The roadmap still listed it as
+not yet packaged; the lead seat moved it here at its first unattended pass, 2026-11-05. The section as it
+stood follows.
+
+### As it stood on the roadmap
+
+Every one of the 24 dossiers carries a `## Blanks for just-dna-lite` section naming, with `path:line`,
+each read site that exists and each that does not. **That set is the hand-off** — it turns "annotation
+is behind the tables" into a list of individually small asks — and it has never been packaged as one.
+
+Lead with `licensing.csv`: it is read properly, with tests, which is what shows the gap is *"nobody
+asked for the other six"* rather than *"the consumer ignores everything"*.
+
+> **Decided 2026-08-20: one document into their `docs/`, and no intake.** `just-dna-lite` has no
+> `CONSUMER_SUGGESTIONS.md` and setting up a third repo's triage process is not ours to do — the
+> split inbox works in the other two because their maintainers run a loop, and nobody has agreed to
+> run one here. The cost is accepted: no numbered series, so a reply has nowhere structured to land
+> and follow-up happens by conversation.
+>
+> **Note the count before quoting it.** `CLAUDE.md` says 24 dossiers; **25** files carry a
+> `## Blanks for just-dna-lite` section, `LAYOUT.md` among them. State the rule and run the grep
+> rather than repeating either number.
+
+---
+
 ## RM30 — SHIPPED 0.31.0, 2026-09-11 — the two-way client
 
 **Shipped as described, with one deliberate residual and one thing that is not ours.** The residual

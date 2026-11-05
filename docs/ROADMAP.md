@@ -16,6 +16,8 @@ something and invites a workaround where a note was owed. A probe belongs in
 
 ## RM28 — nothing finds a trait CURIE, and `lookup_identifier` only verifies one you already hold
 
+**State:** blocked: desk #203, yes after a present · **Owner:** just-module-creator/lead
+
 **Opened 2026-08-31** from `F79`, the one finding of the `a2` benchmark run that is a missing
 capability rather than a defect. Deferred deliberately, with the reason written down rather than the
 work started at the end of a long session.
@@ -43,6 +45,8 @@ obsolete record was the only one that led anywhere, so a search that hides obsol
 hidden the answer. Report the status; never filter on it.
 
 ## RM16 — capture the outrank reason, and write `provenance.json` (absorbs RM14)
+
+**State:** waits until 2026-12-05: whether real `record_override` records exist to ground the grading recommendations on, and whether upstream's RM117 (a check reading a record) moved · **Owner:** just-module-creator/lead
 
 **Severity:** high · **Status:** **the capture shipped 2026-08-20 (night run); the residue below is open** · **Owner:** agent B · **Opened** 2026-08-20
 
@@ -247,6 +251,8 @@ grading recommendations; and `S52`'s answer decides whether a severity change fo
 
 ## RM18 — the four published modules carry decisions only their owner can make
 
+**State:** blocked: desk #205 · **Owner:** the person; the lead drafts the handout on a yes
+
 **Severity:** medium · **Status:** open · **Owner:** **the repo owner, not an agent** · **Opened** 2026-08-20
 
 > **Decided 2026-08-20, and it settles the output form.** *"It's not our item. Its output form is a
@@ -313,6 +319,8 @@ whole file and you have rebuilt the defect under a better name.
 
 ## RM24 — a third-party client cannot be paced by our gate
 
+**State:** waits until 2027-01-05: whether a borrowed client is still on the path; the upstream ask needs the person's yes first · **Owner:** just-module-creator/lead
+
 **Severity:** low · **Status: DEFERRED 2026-08-20** — owner's call, and it stays here rather than
 moving to history because nothing was decided about the substance, only about the timing. Do not open
 the upstream issue without asking again. · **Owner:** unassigned · **Opened** 2026-08-20
@@ -337,6 +345,8 @@ outbound request goes through a `ServiceGate`, while some of them do not.
 ---
 
 ## RM25 — nothing reads a log before it is published, and the catalog is immutable
+
+**State:** waits until 2026-12-05: a second real transcript to calibrate `review_logs` against · **Owner:** just-module-creator/lead
 
 **Severity:** medium · **Status: SHIPPED 2026-08-20** — `logscan.py`, the `review_logs` tool, and a
 warning inside `registry_publish`. Kept open until the calibration has met a second real transcript;
@@ -402,6 +412,8 @@ surprised to see this in the catalog?*
 
 ## RM31 — a row cannot be traced back to the search and the reading that produced it
 
+**State:** blocked: desk #204 · **Owner:** just-module-creator/lead
+
 **Severity:** medium · **Status:** open, designed 2026-10-05, nothing built · **Owner:** unassigned ·
 **Opened** 2026-10-05 · **Upstream:** format-tree `S125` (`F116`) for the transport · **Rationale
 and decisions in prose:** [DESIGN-traceability.md](DESIGN-traceability.md)
@@ -462,24 +474,3 @@ and the decision tool about a day.
 
 **Closes when** a real module authored end to end under the hook retraces every row it can, the
 critic flags the rows it cannot, and `S125` has an answer we have acted on.
-
----
-
-## Owed to `just-dna-lite`, and not yet packaged
-
-Every one of the 24 dossiers carries a `## Blanks for just-dna-lite` section naming, with `path:line`,
-each read site that exists and each that does not. **That set is the hand-off** — it turns "annotation
-is behind the tables" into a list of individually small asks — and it has never been packaged as one.
-
-Lead with `licensing.csv`: it is read properly, with tests, which is what shows the gap is *"nobody
-asked for the other six"* rather than *"the consumer ignores everything"*.
-
-> **Decided 2026-08-20: one document into their `docs/`, and no intake.** `just-dna-lite` has no
-> `CONSUMER_SUGGESTIONS.md` and setting up a third repo's triage process is not ours to do — the
-> split inbox works in the other two because their maintainers run a loop, and nobody has agreed to
-> run one here. The cost is accepted: no numbered series, so a reply has nowhere structured to land
-> and follow-up happens by conversation.
->
-> **Note the count before quoting it.** `CLAUDE.md` says 24 dossiers; **25** files carry a
-> `## Blanks for just-dna-lite` section, `LAYOUT.md` among them. State the rule and run the grep
-> rather than repeating either number.
