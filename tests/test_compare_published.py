@@ -17,17 +17,14 @@ import shutil
 from pathlib import Path
 
 import pytest
+from conftest import REFERENCE_EXAMPLES
 from just_dna_compiler import compiler
 from just_dna_format.manifest import ModuleManifest
 
 from just_module_creator.tools.comparison import _compare_published
 
-REFERENCE = Path("/data/sources/just-dna-format/reference_examples/hfe_hemochromatosis")
+REFERENCE = REFERENCE_EXAMPLES / "hfe_hemochromatosis"
 
-pytestmark = pytest.mark.skipif(
-    not REFERENCE.is_dir(),
-    reason="the sibling format checkout is not present; these cases are measured on its corpus",
-)
 
 
 @pytest.fixture

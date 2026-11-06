@@ -34,6 +34,11 @@ from just_module_creator.server import build_server
 from just_module_creator.settings import Settings
 from just_module_creator.userconfig import CONFIG_FILE_VAR
 
+#: Reference examples the suite measures on, copied from just-dna-format at the tag of the
+#: release we install (``assets/reference_examples/README.md``). Never the sibling checkout:
+#: it moves with upstream's trunk, and on 2026-11-06 it moved to 0.8 and failed five tests.
+REFERENCE_EXAMPLES = Path(__file__).resolve().parent.parent / "assets" / "reference_examples"
+
 #: Variables read by code we do **not** control, so no field on our model names them
 #: and nothing can derive them. Hand-maintained by necessity; a test asserts the three
 #: load-bearing ones are here.

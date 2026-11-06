@@ -441,6 +441,10 @@ operator's sweep, a build hook, or only a deployment calls it. Say which.
   `except Exception` fallbacks cannot swallow it. Stub the service (`Discovery.service`,
   `client_for`) or use `httpx.MockTransport`. Its scope is `httpx`: `urllib`, `requests` and child
   processes are outside it.
+- **No test reads a sibling checkout.** A reference example the suite measures on is copied into
+  `assets/reference_examples/` from the upstream tag of the release `pyproject.toml` installs, and copied
+  again when that floor moves (its `README.md`). The sibling tree follows upstream's trunk: on 2026-11-06 it
+  moved to 0.8 and five tests failed on a column our 0.7 compiler refuses.
 - **A test meaning "no credential" must say so**: `setenv(VAR, "")`, not `delenv` —
   `load_dotenv(override=False)` skips a key that is merely present. (The autouse fixture's `delenv` is
   not an exception: with dotenv neutralized, absent means unset; inside a test, `setenv` runs after it

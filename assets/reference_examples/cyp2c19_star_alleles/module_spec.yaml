@@ -1,0 +1,14 @@
+schema_version: '1.0'
+module:
+  title: CYP2C19 — star alleles and clopidogrel
+  description: CPIC CYP2C19 allele definitions and diplotype -> metabolizer phenotype,
+    plus CPIC's clopidogrel recommendations for the CVI ACS PCI population.
+  report_title: CYP2C19 — star alleles and clopidogrel
+  icon: pills
+  icon_set: fomantic
+  color: '#6435c9'
+  name: cyp2c19_star_alleles
+defaults:
+  curator: ai-module-creator
+  method: literature-review
+genome_build: GRCh38

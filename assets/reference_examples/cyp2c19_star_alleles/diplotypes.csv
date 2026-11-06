@@ -1,0 +1,1191 @@
+gene,haplotype_a,haplotype_b,phenotype,conclusion,drug,recommendation_strength
+CYP2C19,*10,*10,Likely Intermediate Metabolizer,CYP2C19 *10/*10: Likely Intermediate Metabolizer,,
+CYP2C19,*10,*11,Likely Intermediate Metabolizer,CYP2C19 *10/*11: Likely Intermediate Metabolizer,,
+CYP2C19,*10,*12,Indeterminate,CYP2C19 *10/*12: Indeterminate,,
+CYP2C19,*10,*13,Likely Intermediate Metabolizer,CYP2C19 *10/*13: Likely Intermediate Metabolizer,,
+CYP2C19,*10,*14,Indeterminate,CYP2C19 *10/*14: Indeterminate,,
+CYP2C19,*10,*15,Likely Intermediate Metabolizer,CYP2C19 *10/*15: Likely Intermediate Metabolizer,,
+CYP2C19,*10,*16,Likely Intermediate Metabolizer,CYP2C19 *10/*16: Likely Intermediate Metabolizer,,
+CYP2C19,*10,*17,Likely Intermediate Metabolizer,CYP2C19 *10/*17: Likely Intermediate Metabolizer,,
+CYP2C19,*10,*18,Likely Intermediate Metabolizer,CYP2C19 *10/*18: Likely Intermediate Metabolizer,,
+CYP2C19,*10,*19,Likely Intermediate Metabolizer,CYP2C19 *10/*19: Likely Intermediate Metabolizer,,
+CYP2C19,*10,*22,Likely Poor Metabolizer,CYP2C19 *10/*22: Likely Poor Metabolizer,,
+CYP2C19,*10,*23,Indeterminate,CYP2C19 *10/*23: Indeterminate,,
+CYP2C19,*10,*24,Likely Poor Metabolizer,CYP2C19 *10/*24: Likely Poor Metabolizer,,
+CYP2C19,*10,*25,Likely Intermediate Metabolizer,CYP2C19 *10/*25: Likely Intermediate Metabolizer,,
+CYP2C19,*10,*26,Likely Intermediate Metabolizer,CYP2C19 *10/*26: Likely Intermediate Metabolizer,,
+CYP2C19,*10,*28,Likely Intermediate Metabolizer,CYP2C19 *10/*28: Likely Intermediate Metabolizer,,
+CYP2C19,*10,*29,Indeterminate,CYP2C19 *10/*29: Indeterminate,,
+CYP2C19,*10,*30,Indeterminate,CYP2C19 *10/*30: Indeterminate,,
+CYP2C19,*10,*31,Indeterminate,CYP2C19 *10/*31: Indeterminate,,
+CYP2C19,*10,*32,Indeterminate,CYP2C19 *10/*32: Indeterminate,,
+CYP2C19,*10,*33,Indeterminate,CYP2C19 *10/*33: Indeterminate,,
+CYP2C19,*10,*34,Indeterminate,CYP2C19 *10/*34: Indeterminate,,
+CYP2C19,*10,*35,Likely Poor Metabolizer,CYP2C19 *10/*35: Likely Poor Metabolizer,,
+CYP2C19,*10,*38,Likely Intermediate Metabolizer,CYP2C19 *10/*38: Likely Intermediate Metabolizer,,
+CYP2C19,*10,*39,Indeterminate,CYP2C19 *10/*39: Indeterminate,,
+CYP2C19,*1,*1,Normal Metabolizer,CYP2C19 *1/*1: Normal Metabolizer,,
+CYP2C19,*1,*10,Likely Intermediate Metabolizer,CYP2C19 *1/*10: Likely Intermediate Metabolizer,,
+CYP2C19,*1,*11,Normal Metabolizer,CYP2C19 *1/*11: Normal Metabolizer,,
+CYP2C19,*11,*11,Normal Metabolizer,CYP2C19 *11/*11: Normal Metabolizer,,
+CYP2C19,*11,*12,Indeterminate,CYP2C19 *11/*12: Indeterminate,,
+CYP2C19,*11,*13,Normal Metabolizer,CYP2C19 *11/*13: Normal Metabolizer,,
+CYP2C19,*11,*14,Indeterminate,CYP2C19 *11/*14: Indeterminate,,
+CYP2C19,*11,*15,Normal Metabolizer,CYP2C19 *11/*15: Normal Metabolizer,,
+CYP2C19,*11,*16,Likely Intermediate Metabolizer,CYP2C19 *11/*16: Likely Intermediate Metabolizer,,
+CYP2C19,*11,*17,Rapid Metabolizer,CYP2C19 *11/*17: Rapid Metabolizer,,
+CYP2C19,*11,*18,Normal Metabolizer,CYP2C19 *11/*18: Normal Metabolizer,,
+CYP2C19,*11,*19,Likely Intermediate Metabolizer,CYP2C19 *11/*19: Likely Intermediate Metabolizer,,
+CYP2C19,*1,*12,Indeterminate,CYP2C19 *1/*12: Indeterminate,,
+CYP2C19,*11,*22,Intermediate Metabolizer,CYP2C19 *11/*22: Intermediate Metabolizer,,
+CYP2C19,*11,*23,Indeterminate,CYP2C19 *11/*23: Indeterminate,,
+CYP2C19,*11,*24,Intermediate Metabolizer,CYP2C19 *11/*24: Intermediate Metabolizer,,
+CYP2C19,*11,*25,Likely Intermediate Metabolizer,CYP2C19 *11/*25: Likely Intermediate Metabolizer,,
+CYP2C19,*11,*26,Likely Intermediate Metabolizer,CYP2C19 *11/*26: Likely Intermediate Metabolizer,,
+CYP2C19,*11,*28,Normal Metabolizer,CYP2C19 *11/*28: Normal Metabolizer,,
+CYP2C19,*11,*29,Indeterminate,CYP2C19 *11/*29: Indeterminate,,
+CYP2C19,*1,*13,Normal Metabolizer,CYP2C19 *1/*13: Normal Metabolizer,,
+CYP2C19,*11,*30,Indeterminate,CYP2C19 *11/*30: Indeterminate,,
+CYP2C19,*11,*31,Indeterminate,CYP2C19 *11/*31: Indeterminate,,
+CYP2C19,*11,*32,Indeterminate,CYP2C19 *11/*32: Indeterminate,,
+CYP2C19,*11,*33,Indeterminate,CYP2C19 *11/*33: Indeterminate,,
+CYP2C19,*11,*34,Indeterminate,CYP2C19 *11/*34: Indeterminate,,
+CYP2C19,*11,*35,Intermediate Metabolizer,CYP2C19 *11/*35: Intermediate Metabolizer,,
+CYP2C19,*11,*38,Normal Metabolizer,CYP2C19 *11/*38: Normal Metabolizer,,
+CYP2C19,*11,*39,Indeterminate,CYP2C19 *11/*39: Indeterminate,,
+CYP2C19,*1,*14,Indeterminate,CYP2C19 *1/*14: Indeterminate,,
+CYP2C19,*1,*15,Normal Metabolizer,CYP2C19 *1/*15: Normal Metabolizer,,
+CYP2C19,*1,*16,Likely Intermediate Metabolizer,CYP2C19 *1/*16: Likely Intermediate Metabolizer,,
+CYP2C19,*1,*17,Rapid Metabolizer,CYP2C19 *1/*17: Rapid Metabolizer,,
+CYP2C19,*1,*18,Normal Metabolizer,CYP2C19 *1/*18: Normal Metabolizer,,
+CYP2C19,*1,*19,Likely Intermediate Metabolizer,CYP2C19 *1/*19: Likely Intermediate Metabolizer,,
+CYP2C19,*1,*2,Intermediate Metabolizer,CYP2C19 *1/*2: Intermediate Metabolizer,,
+CYP2C19,*12,*12,Indeterminate,CYP2C19 *12/*12: Indeterminate,,
+CYP2C19,*12,*13,Indeterminate,CYP2C19 *12/*13: Indeterminate,,
+CYP2C19,*12,*14,Indeterminate,CYP2C19 *12/*14: Indeterminate,,
+CYP2C19,*12,*15,Indeterminate,CYP2C19 *12/*15: Indeterminate,,
+CYP2C19,*12,*16,Indeterminate,CYP2C19 *12/*16: Indeterminate,,
+CYP2C19,*12,*17,Indeterminate,CYP2C19 *12/*17: Indeterminate,,
+CYP2C19,*12,*18,Indeterminate,CYP2C19 *12/*18: Indeterminate,,
+CYP2C19,*12,*19,Indeterminate,CYP2C19 *12/*19: Indeterminate,,
+CYP2C19,*1,*22,Intermediate Metabolizer,CYP2C19 *1/*22: Intermediate Metabolizer,,
+CYP2C19,*12,*22,Indeterminate,CYP2C19 *12/*22: Indeterminate,,
+CYP2C19,*12,*23,Indeterminate,CYP2C19 *12/*23: Indeterminate,,
+CYP2C19,*12,*24,Indeterminate,CYP2C19 *12/*24: Indeterminate,,
+CYP2C19,*12,*25,Indeterminate,CYP2C19 *12/*25: Indeterminate,,
+CYP2C19,*12,*26,Indeterminate,CYP2C19 *12/*26: Indeterminate,,
+CYP2C19,*12,*28,Indeterminate,CYP2C19 *12/*28: Indeterminate,,
+CYP2C19,*12,*29,Indeterminate,CYP2C19 *12/*29: Indeterminate,,
+CYP2C19,*1,*23,Indeterminate,CYP2C19 *1/*23: Indeterminate,,
+CYP2C19,*12,*30,Indeterminate,CYP2C19 *12/*30: Indeterminate,,
+CYP2C19,*12,*31,Indeterminate,CYP2C19 *12/*31: Indeterminate,,
+CYP2C19,*12,*32,Indeterminate,CYP2C19 *12/*32: Indeterminate,,
+CYP2C19,*12,*33,Indeterminate,CYP2C19 *12/*33: Indeterminate,,
+CYP2C19,*12,*34,Indeterminate,CYP2C19 *12/*34: Indeterminate,,
+CYP2C19,*12,*35,Indeterminate,CYP2C19 *12/*35: Indeterminate,,
+CYP2C19,*12,*38,Indeterminate,CYP2C19 *12/*38: Indeterminate,,
+CYP2C19,*12,*39,Indeterminate,CYP2C19 *12/*39: Indeterminate,,
+CYP2C19,*1,*24,Intermediate Metabolizer,CYP2C19 *1/*24: Intermediate Metabolizer,,
+CYP2C19,*1,*25,Likely Intermediate Metabolizer,CYP2C19 *1/*25: Likely Intermediate Metabolizer,,
+CYP2C19,*1,*26,Likely Intermediate Metabolizer,CYP2C19 *1/*26: Likely Intermediate Metabolizer,,
+CYP2C19,*1,*28,Normal Metabolizer,CYP2C19 *1/*28: Normal Metabolizer,,
+CYP2C19,*1,*29,Indeterminate,CYP2C19 *1/*29: Indeterminate,,
+CYP2C19,*1,*3,Intermediate Metabolizer,CYP2C19 *1/*3: Intermediate Metabolizer,,
+CYP2C19,*1,*30,Indeterminate,CYP2C19 *1/*30: Indeterminate,,
+CYP2C19,*1,*31,Indeterminate,CYP2C19 *1/*31: Indeterminate,,
+CYP2C19,*13,*13,Normal Metabolizer,CYP2C19 *13/*13: Normal Metabolizer,,
+CYP2C19,*13,*14,Indeterminate,CYP2C19 *13/*14: Indeterminate,,
+CYP2C19,*13,*15,Normal Metabolizer,CYP2C19 *13/*15: Normal Metabolizer,,
+CYP2C19,*13,*16,Likely Intermediate Metabolizer,CYP2C19 *13/*16: Likely Intermediate Metabolizer,,
+CYP2C19,*13,*17,Rapid Metabolizer,CYP2C19 *13/*17: Rapid Metabolizer,,
+CYP2C19,*13,*18,Normal Metabolizer,CYP2C19 *13/*18: Normal Metabolizer,,
+CYP2C19,*13,*19,Likely Intermediate Metabolizer,CYP2C19 *13/*19: Likely Intermediate Metabolizer,,
+CYP2C19,*1,*32,Indeterminate,CYP2C19 *1/*32: Indeterminate,,
+CYP2C19,*13,*22,Intermediate Metabolizer,CYP2C19 *13/*22: Intermediate Metabolizer,,
+CYP2C19,*13,*23,Indeterminate,CYP2C19 *13/*23: Indeterminate,,
+CYP2C19,*13,*24,Intermediate Metabolizer,CYP2C19 *13/*24: Intermediate Metabolizer,,
+CYP2C19,*13,*25,Likely Intermediate Metabolizer,CYP2C19 *13/*25: Likely Intermediate Metabolizer,,
+CYP2C19,*13,*26,Likely Intermediate Metabolizer,CYP2C19 *13/*26: Likely Intermediate Metabolizer,,
+CYP2C19,*13,*28,Normal Metabolizer,CYP2C19 *13/*28: Normal Metabolizer,,
+CYP2C19,*13,*29,Indeterminate,CYP2C19 *13/*29: Indeterminate,,
+CYP2C19,*1,*33,Indeterminate,CYP2C19 *1/*33: Indeterminate,,
+CYP2C19,*13,*30,Indeterminate,CYP2C19 *13/*30: Indeterminate,,
+CYP2C19,*13,*31,Indeterminate,CYP2C19 *13/*31: Indeterminate,,
+CYP2C19,*13,*32,Indeterminate,CYP2C19 *13/*32: Indeterminate,,
+CYP2C19,*13,*33,Indeterminate,CYP2C19 *13/*33: Indeterminate,,
+CYP2C19,*13,*34,Indeterminate,CYP2C19 *13/*34: Indeterminate,,
+CYP2C19,*13,*35,Intermediate Metabolizer,CYP2C19 *13/*35: Intermediate Metabolizer,,
+CYP2C19,*13,*38,Normal Metabolizer,CYP2C19 *13/*38: Normal Metabolizer,,
+CYP2C19,*13,*39,Indeterminate,CYP2C19 *13/*39: Indeterminate,,
+CYP2C19,*1,*34,Indeterminate,CYP2C19 *1/*34: Indeterminate,,
+CYP2C19,*1,*35,Intermediate Metabolizer,CYP2C19 *1/*35: Intermediate Metabolizer,,
+CYP2C19,*1,*38,Normal Metabolizer,CYP2C19 *1/*38: Normal Metabolizer,,
+CYP2C19,*1,*39,Indeterminate,CYP2C19 *1/*39: Indeterminate,,
+CYP2C19,*1,*4,Intermediate Metabolizer,CYP2C19 *1/*4: Intermediate Metabolizer,,
+CYP2C19,*14,*14,Indeterminate,CYP2C19 *14/*14: Indeterminate,,
+CYP2C19,*14,*15,Indeterminate,CYP2C19 *14/*15: Indeterminate,,
+CYP2C19,*14,*16,Indeterminate,CYP2C19 *14/*16: Indeterminate,,
+CYP2C19,*14,*17,Indeterminate,CYP2C19 *14/*17: Indeterminate,,
+CYP2C19,*14,*18,Indeterminate,CYP2C19 *14/*18: Indeterminate,,
+CYP2C19,*14,*19,Indeterminate,CYP2C19 *14/*19: Indeterminate,,
+CYP2C19,*14,*22,Indeterminate,CYP2C19 *14/*22: Indeterminate,,
+CYP2C19,*14,*23,Indeterminate,CYP2C19 *14/*23: Indeterminate,,
+CYP2C19,*14,*24,Indeterminate,CYP2C19 *14/*24: Indeterminate,,
+CYP2C19,*14,*25,Indeterminate,CYP2C19 *14/*25: Indeterminate,,
+CYP2C19,*14,*26,Indeterminate,CYP2C19 *14/*26: Indeterminate,,
+CYP2C19,*14,*28,Indeterminate,CYP2C19 *14/*28: Indeterminate,,
+CYP2C19,*14,*29,Indeterminate,CYP2C19 *14/*29: Indeterminate,,
+CYP2C19,*14,*30,Indeterminate,CYP2C19 *14/*30: Indeterminate,,
+CYP2C19,*14,*31,Indeterminate,CYP2C19 *14/*31: Indeterminate,,
+CYP2C19,*14,*32,Indeterminate,CYP2C19 *14/*32: Indeterminate,,
+CYP2C19,*14,*33,Indeterminate,CYP2C19 *14/*33: Indeterminate,,
+CYP2C19,*14,*34,Indeterminate,CYP2C19 *14/*34: Indeterminate,,
+CYP2C19,*14,*35,Indeterminate,CYP2C19 *14/*35: Indeterminate,,
+CYP2C19,*14,*38,Indeterminate,CYP2C19 *14/*38: Indeterminate,,
+CYP2C19,*14,*39,Indeterminate,CYP2C19 *14/*39: Indeterminate,,
+CYP2C19,*1,*5,Intermediate Metabolizer,CYP2C19 *1/*5: Intermediate Metabolizer,,
+CYP2C19,*15,*15,Normal Metabolizer,CYP2C19 *15/*15: Normal Metabolizer,,
+CYP2C19,*15,*16,Likely Intermediate Metabolizer,CYP2C19 *15/*16: Likely Intermediate Metabolizer,,
+CYP2C19,*15,*17,Rapid Metabolizer,CYP2C19 *15/*17: Rapid Metabolizer,,
+CYP2C19,*15,*18,Normal Metabolizer,CYP2C19 *15/*18: Normal Metabolizer,,
+CYP2C19,*15,*19,Likely Intermediate Metabolizer,CYP2C19 *15/*19: Likely Intermediate Metabolizer,,
+CYP2C19,*15,*22,Intermediate Metabolizer,CYP2C19 *15/*22: Intermediate Metabolizer,,
+CYP2C19,*15,*23,Indeterminate,CYP2C19 *15/*23: Indeterminate,,
+CYP2C19,*15,*24,Intermediate Metabolizer,CYP2C19 *15/*24: Intermediate Metabolizer,,
+CYP2C19,*15,*25,Likely Intermediate Metabolizer,CYP2C19 *15/*25: Likely Intermediate Metabolizer,,
+CYP2C19,*15,*26,Likely Intermediate Metabolizer,CYP2C19 *15/*26: Likely Intermediate Metabolizer,,
+CYP2C19,*15,*28,Normal Metabolizer,CYP2C19 *15/*28: Normal Metabolizer,,
+CYP2C19,*15,*29,Indeterminate,CYP2C19 *15/*29: Indeterminate,,
+CYP2C19,*15,*30,Indeterminate,CYP2C19 *15/*30: Indeterminate,,
+CYP2C19,*15,*31,Indeterminate,CYP2C19 *15/*31: Indeterminate,,
+CYP2C19,*15,*32,Indeterminate,CYP2C19 *15/*32: Indeterminate,,
+CYP2C19,*15,*33,Indeterminate,CYP2C19 *15/*33: Indeterminate,,
+CYP2C19,*15,*34,Indeterminate,CYP2C19 *15/*34: Indeterminate,,
+CYP2C19,*15,*35,Intermediate Metabolizer,CYP2C19 *15/*35: Intermediate Metabolizer,,
+CYP2C19,*15,*38,Normal Metabolizer,CYP2C19 *15/*38: Normal Metabolizer,,
+CYP2C19,*15,*39,Indeterminate,CYP2C19 *15/*39: Indeterminate,,
+CYP2C19,*1,*6,Intermediate Metabolizer,CYP2C19 *1/*6: Intermediate Metabolizer,,
+CYP2C19,*16,*16,Likely Intermediate Metabolizer,CYP2C19 *16/*16: Likely Intermediate Metabolizer,,
+CYP2C19,*16,*17,Likely Intermediate Metabolizer,CYP2C19 *16/*17: Likely Intermediate Metabolizer,,
+CYP2C19,*16,*18,Likely Intermediate Metabolizer,CYP2C19 *16/*18: Likely Intermediate Metabolizer,,
+CYP2C19,*16,*19,Likely Intermediate Metabolizer,CYP2C19 *16/*19: Likely Intermediate Metabolizer,,
+CYP2C19,*16,*22,Likely Poor Metabolizer,CYP2C19 *16/*22: Likely Poor Metabolizer,,
+CYP2C19,*16,*23,Indeterminate,CYP2C19 *16/*23: Indeterminate,,
+CYP2C19,*16,*24,Likely Poor Metabolizer,CYP2C19 *16/*24: Likely Poor Metabolizer,,
+CYP2C19,*16,*25,Likely Intermediate Metabolizer,CYP2C19 *16/*25: Likely Intermediate Metabolizer,,
+CYP2C19,*16,*26,Likely Intermediate Metabolizer,CYP2C19 *16/*26: Likely Intermediate Metabolizer,,
+CYP2C19,*16,*28,Likely Intermediate Metabolizer,CYP2C19 *16/*28: Likely Intermediate Metabolizer,,
+CYP2C19,*16,*29,Indeterminate,CYP2C19 *16/*29: Indeterminate,,
+CYP2C19,*16,*30,Indeterminate,CYP2C19 *16/*30: Indeterminate,,
+CYP2C19,*16,*31,Indeterminate,CYP2C19 *16/*31: Indeterminate,,
+CYP2C19,*16,*32,Indeterminate,CYP2C19 *16/*32: Indeterminate,,
+CYP2C19,*16,*33,Indeterminate,CYP2C19 *16/*33: Indeterminate,,
+CYP2C19,*16,*34,Indeterminate,CYP2C19 *16/*34: Indeterminate,,
+CYP2C19,*16,*35,Likely Poor Metabolizer,CYP2C19 *16/*35: Likely Poor Metabolizer,,
+CYP2C19,*16,*38,Likely Intermediate Metabolizer,CYP2C19 *16/*38: Likely Intermediate Metabolizer,,
+CYP2C19,*16,*39,Indeterminate,CYP2C19 *16/*39: Indeterminate,,
+CYP2C19,*1,*7,Intermediate Metabolizer,CYP2C19 *1/*7: Intermediate Metabolizer,,
+CYP2C19,*17,*17,Ultrarapid Metabolizer,CYP2C19 *17/*17: Ultrarapid Metabolizer,,
+CYP2C19,*17,*18,Rapid Metabolizer,CYP2C19 *17/*18: Rapid Metabolizer,,
+CYP2C19,*17,*19,Likely Intermediate Metabolizer,CYP2C19 *17/*19: Likely Intermediate Metabolizer,,
+CYP2C19,*17,*22,Intermediate Metabolizer,CYP2C19 *17/*22: Intermediate Metabolizer,,
+CYP2C19,*17,*23,Indeterminate,CYP2C19 *17/*23: Indeterminate,,
+CYP2C19,*17,*24,Intermediate Metabolizer,CYP2C19 *17/*24: Intermediate Metabolizer,,
+CYP2C19,*17,*25,Likely Intermediate Metabolizer,CYP2C19 *17/*25: Likely Intermediate Metabolizer,,
+CYP2C19,*17,*26,Likely Intermediate Metabolizer,CYP2C19 *17/*26: Likely Intermediate Metabolizer,,
+CYP2C19,*17,*28,Rapid Metabolizer,CYP2C19 *17/*28: Rapid Metabolizer,,
+CYP2C19,*17,*29,Indeterminate,CYP2C19 *17/*29: Indeterminate,,
+CYP2C19,*17,*30,Indeterminate,CYP2C19 *17/*30: Indeterminate,,
+CYP2C19,*17,*31,Indeterminate,CYP2C19 *17/*31: Indeterminate,,
+CYP2C19,*17,*32,Indeterminate,CYP2C19 *17/*32: Indeterminate,,
+CYP2C19,*17,*33,Indeterminate,CYP2C19 *17/*33: Indeterminate,,
+CYP2C19,*17,*34,Indeterminate,CYP2C19 *17/*34: Indeterminate,,
+CYP2C19,*17,*35,Intermediate Metabolizer,CYP2C19 *17/*35: Intermediate Metabolizer,,
+CYP2C19,*17,*38,Rapid Metabolizer,CYP2C19 *17/*38: Rapid Metabolizer,,
+CYP2C19,*17,*39,Indeterminate,CYP2C19 *17/*39: Indeterminate,,
+CYP2C19,*1,*8,Intermediate Metabolizer,CYP2C19 *1/*8: Intermediate Metabolizer,,
+CYP2C19,*18,*18,Normal Metabolizer,CYP2C19 *18/*18: Normal Metabolizer,,
+CYP2C19,*18,*19,Likely Intermediate Metabolizer,CYP2C19 *18/*19: Likely Intermediate Metabolizer,,
+CYP2C19,*18,*22,Intermediate Metabolizer,CYP2C19 *18/*22: Intermediate Metabolizer,,
+CYP2C19,*18,*23,Indeterminate,CYP2C19 *18/*23: Indeterminate,,
+CYP2C19,*18,*24,Intermediate Metabolizer,CYP2C19 *18/*24: Intermediate Metabolizer,,
+CYP2C19,*18,*25,Likely Intermediate Metabolizer,CYP2C19 *18/*25: Likely Intermediate Metabolizer,,
+CYP2C19,*18,*26,Likely Intermediate Metabolizer,CYP2C19 *18/*26: Likely Intermediate Metabolizer,,
+CYP2C19,*18,*28,Normal Metabolizer,CYP2C19 *18/*28: Normal Metabolizer,,
+CYP2C19,*18,*29,Indeterminate,CYP2C19 *18/*29: Indeterminate,,
+CYP2C19,*18,*30,Indeterminate,CYP2C19 *18/*30: Indeterminate,,
+CYP2C19,*18,*31,Indeterminate,CYP2C19 *18/*31: Indeterminate,,
+CYP2C19,*18,*32,Indeterminate,CYP2C19 *18/*32: Indeterminate,,
+CYP2C19,*18,*33,Indeterminate,CYP2C19 *18/*33: Indeterminate,,
+CYP2C19,*18,*34,Indeterminate,CYP2C19 *18/*34: Indeterminate,,
+CYP2C19,*18,*35,Intermediate Metabolizer,CYP2C19 *18/*35: Intermediate Metabolizer,,
+CYP2C19,*18,*38,Normal Metabolizer,CYP2C19 *18/*38: Normal Metabolizer,,
+CYP2C19,*18,*39,Indeterminate,CYP2C19 *18/*39: Indeterminate,,
+CYP2C19,*1,*9,Likely Intermediate Metabolizer,CYP2C19 *1/*9: Likely Intermediate Metabolizer,,
+CYP2C19,*19,*19,Likely Intermediate Metabolizer,CYP2C19 *19/*19: Likely Intermediate Metabolizer,,
+CYP2C19,*19,*22,Likely Poor Metabolizer,CYP2C19 *19/*22: Likely Poor Metabolizer,,
+CYP2C19,*19,*23,Indeterminate,CYP2C19 *19/*23: Indeterminate,,
+CYP2C19,*19,*24,Likely Poor Metabolizer,CYP2C19 *19/*24: Likely Poor Metabolizer,,
+CYP2C19,*19,*25,Likely Intermediate Metabolizer,CYP2C19 *19/*25: Likely Intermediate Metabolizer,,
+CYP2C19,*19,*26,Likely Intermediate Metabolizer,CYP2C19 *19/*26: Likely Intermediate Metabolizer,,
+CYP2C19,*19,*28,Likely Intermediate Metabolizer,CYP2C19 *19/*28: Likely Intermediate Metabolizer,,
+CYP2C19,*19,*29,Indeterminate,CYP2C19 *19/*29: Indeterminate,,
+CYP2C19,*19,*30,Indeterminate,CYP2C19 *19/*30: Indeterminate,,
+CYP2C19,*19,*31,Indeterminate,CYP2C19 *19/*31: Indeterminate,,
+CYP2C19,*19,*32,Indeterminate,CYP2C19 *19/*32: Indeterminate,,
+CYP2C19,*19,*33,Indeterminate,CYP2C19 *19/*33: Indeterminate,,
+CYP2C19,*19,*34,Indeterminate,CYP2C19 *19/*34: Indeterminate,,
+CYP2C19,*19,*35,Likely Poor Metabolizer,CYP2C19 *19/*35: Likely Poor Metabolizer,,
+CYP2C19,*19,*38,Likely Intermediate Metabolizer,CYP2C19 *19/*38: Likely Intermediate Metabolizer,,
+CYP2C19,*19,*39,Indeterminate,CYP2C19 *19/*39: Indeterminate,,
+CYP2C19,*10,*2,Likely Poor Metabolizer,CYP2C19 *2/*10: Likely Poor Metabolizer,,
+CYP2C19,*11,*2,Intermediate Metabolizer,CYP2C19 *2/*11: Intermediate Metabolizer,,
+CYP2C19,*12,*2,Indeterminate,CYP2C19 *2/*12: Indeterminate,,
+CYP2C19,*13,*2,Intermediate Metabolizer,CYP2C19 *2/*13: Intermediate Metabolizer,,
+CYP2C19,*14,*2,Indeterminate,CYP2C19 *2/*14: Indeterminate,,
+CYP2C19,*15,*2,Intermediate Metabolizer,CYP2C19 *2/*15: Intermediate Metabolizer,,
+CYP2C19,*16,*2,Likely Poor Metabolizer,CYP2C19 *2/*16: Likely Poor Metabolizer,,
+CYP2C19,*17,*2,Intermediate Metabolizer,CYP2C19 *2/*17: Intermediate Metabolizer,,
+CYP2C19,*18,*2,Intermediate Metabolizer,CYP2C19 *2/*18: Intermediate Metabolizer,,
+CYP2C19,*19,*2,Likely Poor Metabolizer,CYP2C19 *2/*19: Likely Poor Metabolizer,,
+CYP2C19,*2,*2,Poor Metabolizer,CYP2C19 *2/*2: Poor Metabolizer,,
+CYP2C19,*2,*22,Poor Metabolizer,CYP2C19 *2/*22: Poor Metabolizer,,
+CYP2C19,*22,*22,Poor Metabolizer,CYP2C19 *22/*22: Poor Metabolizer,,
+CYP2C19,*22,*23,Indeterminate,CYP2C19 *22/*23: Indeterminate,,
+CYP2C19,*22,*24,Poor Metabolizer,CYP2C19 *22/*24: Poor Metabolizer,,
+CYP2C19,*22,*25,Likely Poor Metabolizer,CYP2C19 *22/*25: Likely Poor Metabolizer,,
+CYP2C19,*22,*26,Likely Poor Metabolizer,CYP2C19 *22/*26: Likely Poor Metabolizer,,
+CYP2C19,*22,*28,Intermediate Metabolizer,CYP2C19 *22/*28: Intermediate Metabolizer,,
+CYP2C19,*22,*29,Indeterminate,CYP2C19 *22/*29: Indeterminate,,
+CYP2C19,*2,*23,Indeterminate,CYP2C19 *2/*23: Indeterminate,,
+CYP2C19,*22,*30,Indeterminate,CYP2C19 *22/*30: Indeterminate,,
+CYP2C19,*22,*31,Indeterminate,CYP2C19 *22/*31: Indeterminate,,
+CYP2C19,*22,*32,Indeterminate,CYP2C19 *22/*32: Indeterminate,,
+CYP2C19,*22,*33,Indeterminate,CYP2C19 *22/*33: Indeterminate,,
+CYP2C19,*22,*34,Indeterminate,CYP2C19 *22/*34: Indeterminate,,
+CYP2C19,*22,*35,Poor Metabolizer,CYP2C19 *22/*35: Poor Metabolizer,,
+CYP2C19,*22,*38,Intermediate Metabolizer,CYP2C19 *22/*38: Intermediate Metabolizer,,
+CYP2C19,*22,*39,Indeterminate,CYP2C19 *22/*39: Indeterminate,,
+CYP2C19,*2,*24,Poor Metabolizer,CYP2C19 *2/*24: Poor Metabolizer,,
+CYP2C19,*2,*25,Likely Poor Metabolizer,CYP2C19 *2/*25: Likely Poor Metabolizer,,
+CYP2C19,*2,*26,Likely Poor Metabolizer,CYP2C19 *2/*26: Likely Poor Metabolizer,,
+CYP2C19,*2,*28,Intermediate Metabolizer,CYP2C19 *2/*28: Intermediate Metabolizer,,
+CYP2C19,*2,*29,Indeterminate,CYP2C19 *2/*29: Indeterminate,,
+CYP2C19,*2,*3,Poor Metabolizer,CYP2C19 *2/*3: Poor Metabolizer,,
+CYP2C19,*2,*30,Indeterminate,CYP2C19 *2/*30: Indeterminate,,
+CYP2C19,*2,*31,Indeterminate,CYP2C19 *2/*31: Indeterminate,,
+CYP2C19,*2,*32,Indeterminate,CYP2C19 *2/*32: Indeterminate,,
+CYP2C19,*23,*23,Indeterminate,CYP2C19 *23/*23: Indeterminate,,
+CYP2C19,*23,*24,Indeterminate,CYP2C19 *23/*24: Indeterminate,,
+CYP2C19,*23,*25,Indeterminate,CYP2C19 *23/*25: Indeterminate,,
+CYP2C19,*23,*26,Indeterminate,CYP2C19 *23/*26: Indeterminate,,
+CYP2C19,*23,*28,Indeterminate,CYP2C19 *23/*28: Indeterminate,,
+CYP2C19,*23,*29,Indeterminate,CYP2C19 *23/*29: Indeterminate,,
+CYP2C19,*2,*33,Indeterminate,CYP2C19 *2/*33: Indeterminate,,
+CYP2C19,*23,*30,Indeterminate,CYP2C19 *23/*30: Indeterminate,,
+CYP2C19,*23,*31,Indeterminate,CYP2C19 *23/*31: Indeterminate,,
+CYP2C19,*23,*32,Indeterminate,CYP2C19 *23/*32: Indeterminate,,
+CYP2C19,*23,*33,Indeterminate,CYP2C19 *23/*33: Indeterminate,,
+CYP2C19,*23,*34,Indeterminate,CYP2C19 *23/*34: Indeterminate,,
+CYP2C19,*23,*35,Indeterminate,CYP2C19 *23/*35: Indeterminate,,
+CYP2C19,*23,*38,Indeterminate,CYP2C19 *23/*38: Indeterminate,,
+CYP2C19,*23,*39,Indeterminate,CYP2C19 *23/*39: Indeterminate,,
+CYP2C19,*2,*34,Indeterminate,CYP2C19 *2/*34: Indeterminate,,
+CYP2C19,*2,*35,Poor Metabolizer,CYP2C19 *2/*35: Poor Metabolizer,,
+CYP2C19,*2,*38,Intermediate Metabolizer,CYP2C19 *2/*38: Intermediate Metabolizer,,
+CYP2C19,*2,*39,Indeterminate,CYP2C19 *2/*39: Indeterminate,,
+CYP2C19,*2,*4,Poor Metabolizer,CYP2C19 *2/*4: Poor Metabolizer,,
+CYP2C19,*24,*24,Poor Metabolizer,CYP2C19 *24/*24: Poor Metabolizer,,
+CYP2C19,*24,*25,Likely Poor Metabolizer,CYP2C19 *24/*25: Likely Poor Metabolizer,,
+CYP2C19,*24,*26,Likely Poor Metabolizer,CYP2C19 *24/*26: Likely Poor Metabolizer,,
+CYP2C19,*24,*28,Intermediate Metabolizer,CYP2C19 *24/*28: Intermediate Metabolizer,,
+CYP2C19,*24,*29,Indeterminate,CYP2C19 *24/*29: Indeterminate,,
+CYP2C19,*24,*30,Indeterminate,CYP2C19 *24/*30: Indeterminate,,
+CYP2C19,*24,*31,Indeterminate,CYP2C19 *24/*31: Indeterminate,,
+CYP2C19,*24,*32,Indeterminate,CYP2C19 *24/*32: Indeterminate,,
+CYP2C19,*24,*33,Indeterminate,CYP2C19 *24/*33: Indeterminate,,
+CYP2C19,*24,*34,Indeterminate,CYP2C19 *24/*34: Indeterminate,,
+CYP2C19,*24,*35,Poor Metabolizer,CYP2C19 *24/*35: Poor Metabolizer,,
+CYP2C19,*24,*38,Intermediate Metabolizer,CYP2C19 *24/*38: Intermediate Metabolizer,,
+CYP2C19,*24,*39,Indeterminate,CYP2C19 *24/*39: Indeterminate,,
+CYP2C19,*2,*5,Poor Metabolizer,CYP2C19 *2/*5: Poor Metabolizer,,
+CYP2C19,*25,*25,Likely Intermediate Metabolizer,CYP2C19 *25/*25: Likely Intermediate Metabolizer,,
+CYP2C19,*25,*26,Likely Intermediate Metabolizer,CYP2C19 *25/*26: Likely Intermediate Metabolizer,,
+CYP2C19,*25,*28,Likely Intermediate Metabolizer,CYP2C19 *25/*28: Likely Intermediate Metabolizer,,
+CYP2C19,*25,*29,Indeterminate,CYP2C19 *25/*29: Indeterminate,,
+CYP2C19,*25,*30,Indeterminate,CYP2C19 *25/*30: Indeterminate,,
+CYP2C19,*25,*31,Indeterminate,CYP2C19 *25/*31: Indeterminate,,
+CYP2C19,*25,*32,Indeterminate,CYP2C19 *25/*32: Indeterminate,,
+CYP2C19,*25,*33,Indeterminate,CYP2C19 *25/*33: Indeterminate,,
+CYP2C19,*25,*34,Indeterminate,CYP2C19 *25/*34: Indeterminate,,
+CYP2C19,*25,*35,Likely Poor Metabolizer,CYP2C19 *25/*35: Likely Poor Metabolizer,,
+CYP2C19,*25,*38,Likely Intermediate Metabolizer,CYP2C19 *25/*38: Likely Intermediate Metabolizer,,
+CYP2C19,*25,*39,Indeterminate,CYP2C19 *25/*39: Indeterminate,,
+CYP2C19,*2,*6,Poor Metabolizer,CYP2C19 *2/*6: Poor Metabolizer,,
+CYP2C19,*26,*26,Likely Intermediate Metabolizer,CYP2C19 *26/*26: Likely Intermediate Metabolizer,,
+CYP2C19,*26,*28,Likely Intermediate Metabolizer,CYP2C19 *26/*28: Likely Intermediate Metabolizer,,
+CYP2C19,*26,*29,Indeterminate,CYP2C19 *26/*29: Indeterminate,,
+CYP2C19,*26,*30,Indeterminate,CYP2C19 *26/*30: Indeterminate,,
+CYP2C19,*26,*31,Indeterminate,CYP2C19 *26/*31: Indeterminate,,
+CYP2C19,*26,*32,Indeterminate,CYP2C19 *26/*32: Indeterminate,,
+CYP2C19,*26,*33,Indeterminate,CYP2C19 *26/*33: Indeterminate,,
+CYP2C19,*26,*34,Indeterminate,CYP2C19 *26/*34: Indeterminate,,
+CYP2C19,*26,*35,Likely Poor Metabolizer,CYP2C19 *26/*35: Likely Poor Metabolizer,,
+CYP2C19,*26,*38,Likely Intermediate Metabolizer,CYP2C19 *26/*38: Likely Intermediate Metabolizer,,
+CYP2C19,*26,*39,Indeterminate,CYP2C19 *26/*39: Indeterminate,,
+CYP2C19,*2,*7,Poor Metabolizer,CYP2C19 *2/*7: Poor Metabolizer,,
+CYP2C19,*2,*8,Poor Metabolizer,CYP2C19 *2/*8: Poor Metabolizer,,
+CYP2C19,*28,*28,Normal Metabolizer,CYP2C19 *28/*28: Normal Metabolizer,,
+CYP2C19,*28,*29,Indeterminate,CYP2C19 *28/*29: Indeterminate,,
+CYP2C19,*28,*30,Indeterminate,CYP2C19 *28/*30: Indeterminate,,
+CYP2C19,*28,*31,Indeterminate,CYP2C19 *28/*31: Indeterminate,,
+CYP2C19,*28,*32,Indeterminate,CYP2C19 *28/*32: Indeterminate,,
+CYP2C19,*28,*33,Indeterminate,CYP2C19 *28/*33: Indeterminate,,
+CYP2C19,*28,*34,Indeterminate,CYP2C19 *28/*34: Indeterminate,,
+CYP2C19,*28,*35,Intermediate Metabolizer,CYP2C19 *28/*35: Intermediate Metabolizer,,
+CYP2C19,*28,*38,Normal Metabolizer,CYP2C19 *28/*38: Normal Metabolizer,,
+CYP2C19,*28,*39,Indeterminate,CYP2C19 *28/*39: Indeterminate,,
+CYP2C19,*2,*9,Likely Poor Metabolizer,CYP2C19 *2/*9: Likely Poor Metabolizer,,
+CYP2C19,*29,*29,Indeterminate,CYP2C19 *29/*29: Indeterminate,,
+CYP2C19,*29,*30,Indeterminate,CYP2C19 *29/*30: Indeterminate,,
+CYP2C19,*29,*31,Indeterminate,CYP2C19 *29/*31: Indeterminate,,
+CYP2C19,*29,*32,Indeterminate,CYP2C19 *29/*32: Indeterminate,,
+CYP2C19,*29,*33,Indeterminate,CYP2C19 *29/*33: Indeterminate,,
+CYP2C19,*29,*34,Indeterminate,CYP2C19 *29/*34: Indeterminate,,
+CYP2C19,*29,*35,Indeterminate,CYP2C19 *29/*35: Indeterminate,,
+CYP2C19,*29,*38,Indeterminate,CYP2C19 *29/*38: Indeterminate,,
+CYP2C19,*29,*39,Indeterminate,CYP2C19 *29/*39: Indeterminate,,
+CYP2C19,*30,*30,Indeterminate,CYP2C19 *30/*30: Indeterminate,,
+CYP2C19,*30,*31,Indeterminate,CYP2C19 *30/*31: Indeterminate,,
+CYP2C19,*30,*32,Indeterminate,CYP2C19 *30/*32: Indeterminate,,
+CYP2C19,*30,*33,Indeterminate,CYP2C19 *30/*33: Indeterminate,,
+CYP2C19,*30,*34,Indeterminate,CYP2C19 *30/*34: Indeterminate,,
+CYP2C19,*30,*35,Indeterminate,CYP2C19 *30/*35: Indeterminate,,
+CYP2C19,*30,*38,Indeterminate,CYP2C19 *30/*38: Indeterminate,,
+CYP2C19,*30,*39,Indeterminate,CYP2C19 *30/*39: Indeterminate,,
+CYP2C19,*10,*3,Likely Poor Metabolizer,CYP2C19 *3/*10: Likely Poor Metabolizer,,
+CYP2C19,*11,*3,Intermediate Metabolizer,CYP2C19 *3/*11: Intermediate Metabolizer,,
+CYP2C19,*12,*3,Indeterminate,CYP2C19 *3/*12: Indeterminate,,
+CYP2C19,*13,*3,Intermediate Metabolizer,CYP2C19 *3/*13: Intermediate Metabolizer,,
+CYP2C19,*31,*31,Indeterminate,CYP2C19 *31/*31: Indeterminate,,
+CYP2C19,*31,*32,Indeterminate,CYP2C19 *31/*32: Indeterminate,,
+CYP2C19,*31,*33,Indeterminate,CYP2C19 *31/*33: Indeterminate,,
+CYP2C19,*31,*34,Indeterminate,CYP2C19 *31/*34: Indeterminate,,
+CYP2C19,*31,*35,Indeterminate,CYP2C19 *31/*35: Indeterminate,,
+CYP2C19,*31,*38,Indeterminate,CYP2C19 *31/*38: Indeterminate,,
+CYP2C19,*31,*39,Indeterminate,CYP2C19 *31/*39: Indeterminate,,
+CYP2C19,*14,*3,Indeterminate,CYP2C19 *3/*14: Indeterminate,,
+CYP2C19,*15,*3,Intermediate Metabolizer,CYP2C19 *3/*15: Intermediate Metabolizer,,
+CYP2C19,*16,*3,Likely Poor Metabolizer,CYP2C19 *3/*16: Likely Poor Metabolizer,,
+CYP2C19,*17,*3,Intermediate Metabolizer,CYP2C19 *3/*17: Intermediate Metabolizer,,
+CYP2C19,*18,*3,Intermediate Metabolizer,CYP2C19 *3/*18: Intermediate Metabolizer,,
+CYP2C19,*19,*3,Likely Poor Metabolizer,CYP2C19 *3/*19: Likely Poor Metabolizer,,
+CYP2C19,*22,*3,Poor Metabolizer,CYP2C19 *3/*22: Poor Metabolizer,,
+CYP2C19,*23,*3,Indeterminate,CYP2C19 *3/*23: Indeterminate,,
+CYP2C19,*32,*32,Indeterminate,CYP2C19 *32/*32: Indeterminate,,
+CYP2C19,*32,*33,Indeterminate,CYP2C19 *32/*33: Indeterminate,,
+CYP2C19,*32,*34,Indeterminate,CYP2C19 *32/*34: Indeterminate,,
+CYP2C19,*32,*35,Indeterminate,CYP2C19 *32/*35: Indeterminate,,
+CYP2C19,*32,*38,Indeterminate,CYP2C19 *32/*38: Indeterminate,,
+CYP2C19,*32,*39,Indeterminate,CYP2C19 *32/*39: Indeterminate,,
+CYP2C19,*24,*3,Poor Metabolizer,CYP2C19 *3/*24: Poor Metabolizer,,
+CYP2C19,*25,*3,Likely Poor Metabolizer,CYP2C19 *3/*25: Likely Poor Metabolizer,,
+CYP2C19,*26,*3,Likely Poor Metabolizer,CYP2C19 *3/*26: Likely Poor Metabolizer,,
+CYP2C19,*28,*3,Intermediate Metabolizer,CYP2C19 *3/*28: Intermediate Metabolizer,,
+CYP2C19,*29,*3,Indeterminate,CYP2C19 *3/*29: Indeterminate,,
+CYP2C19,*3,*3,Poor Metabolizer,CYP2C19 *3/*3: Poor Metabolizer,,
+CYP2C19,*3,*30,Indeterminate,CYP2C19 *3/*30: Indeterminate,,
+CYP2C19,*3,*31,Indeterminate,CYP2C19 *3/*31: Indeterminate,,
+CYP2C19,*3,*32,Indeterminate,CYP2C19 *3/*32: Indeterminate,,
+CYP2C19,*3,*33,Indeterminate,CYP2C19 *3/*33: Indeterminate,,
+CYP2C19,*33,*33,Indeterminate,CYP2C19 *33/*33: Indeterminate,,
+CYP2C19,*33,*34,Indeterminate,CYP2C19 *33/*34: Indeterminate,,
+CYP2C19,*33,*35,Indeterminate,CYP2C19 *33/*35: Indeterminate,,
+CYP2C19,*33,*38,Indeterminate,CYP2C19 *33/*38: Indeterminate,,
+CYP2C19,*33,*39,Indeterminate,CYP2C19 *33/*39: Indeterminate,,
+CYP2C19,*3,*34,Indeterminate,CYP2C19 *3/*34: Indeterminate,,
+CYP2C19,*3,*35,Poor Metabolizer,CYP2C19 *3/*35: Poor Metabolizer,,
+CYP2C19,*3,*38,Intermediate Metabolizer,CYP2C19 *3/*38: Intermediate Metabolizer,,
+CYP2C19,*3,*39,Indeterminate,CYP2C19 *3/*39: Indeterminate,,
+CYP2C19,*3,*4,Poor Metabolizer,CYP2C19 *3/*4: Poor Metabolizer,,
+CYP2C19,*34,*34,Indeterminate,CYP2C19 *34/*34: Indeterminate,,
+CYP2C19,*34,*35,Indeterminate,CYP2C19 *34/*35: Indeterminate,,
+CYP2C19,*34,*38,Indeterminate,CYP2C19 *34/*38: Indeterminate,,
+CYP2C19,*34,*39,Indeterminate,CYP2C19 *34/*39: Indeterminate,,
+CYP2C19,*3,*5,Poor Metabolizer,CYP2C19 *3/*5: Poor Metabolizer,,
+CYP2C19,*35,*35,Poor Metabolizer,CYP2C19 *35/*35: Poor Metabolizer,,
+CYP2C19,*35,*38,Intermediate Metabolizer,CYP2C19 *35/*38: Intermediate Metabolizer,,
+CYP2C19,*35,*39,Indeterminate,CYP2C19 *35/*39: Indeterminate,,
+CYP2C19,*3,*6,Poor Metabolizer,CYP2C19 *3/*6: Poor Metabolizer,,
+CYP2C19,*3,*7,Poor Metabolizer,CYP2C19 *3/*7: Poor Metabolizer,,
+CYP2C19,*3,*8,Poor Metabolizer,CYP2C19 *3/*8: Poor Metabolizer,,
+CYP2C19,*38,*38,Normal Metabolizer,CYP2C19 *38/*38: Normal Metabolizer,,
+CYP2C19,*38,*39,Indeterminate,CYP2C19 *38/*39: Indeterminate,,
+CYP2C19,*3,*9,Likely Poor Metabolizer,CYP2C19 *3/*9: Likely Poor Metabolizer,,
+CYP2C19,*39,*39,Indeterminate,CYP2C19 *39/*39: Indeterminate,,
+CYP2C19,*10,*4,Likely Poor Metabolizer,CYP2C19 *4/*10: Likely Poor Metabolizer,,
+CYP2C19,*11,*4,Intermediate Metabolizer,CYP2C19 *4/*11: Intermediate Metabolizer,,
+CYP2C19,*12,*4,Indeterminate,CYP2C19 *4/*12: Indeterminate,,
+CYP2C19,*13,*4,Intermediate Metabolizer,CYP2C19 *4/*13: Intermediate Metabolizer,,
+CYP2C19,*14,*4,Indeterminate,CYP2C19 *4/*14: Indeterminate,,
+CYP2C19,*15,*4,Intermediate Metabolizer,CYP2C19 *4/*15: Intermediate Metabolizer,,
+CYP2C19,*16,*4,Likely Poor Metabolizer,CYP2C19 *4/*16: Likely Poor Metabolizer,,
+CYP2C19,*17,*4,Intermediate Metabolizer,CYP2C19 *4/*17: Intermediate Metabolizer,,
+CYP2C19,*18,*4,Intermediate Metabolizer,CYP2C19 *4/*18: Intermediate Metabolizer,,
+CYP2C19,*19,*4,Likely Poor Metabolizer,CYP2C19 *4/*19: Likely Poor Metabolizer,,
+CYP2C19,*22,*4,Poor Metabolizer,CYP2C19 *4/*22: Poor Metabolizer,,
+CYP2C19,*23,*4,Indeterminate,CYP2C19 *4/*23: Indeterminate,,
+CYP2C19,*24,*4,Poor Metabolizer,CYP2C19 *4/*24: Poor Metabolizer,,
+CYP2C19,*25,*4,Likely Poor Metabolizer,CYP2C19 *4/*25: Likely Poor Metabolizer,,
+CYP2C19,*26,*4,Likely Poor Metabolizer,CYP2C19 *4/*26: Likely Poor Metabolizer,,
+CYP2C19,*28,*4,Intermediate Metabolizer,CYP2C19 *4/*28: Intermediate Metabolizer,,
+CYP2C19,*29,*4,Indeterminate,CYP2C19 *4/*29: Indeterminate,,
+CYP2C19,*30,*4,Indeterminate,CYP2C19 *4/*30: Indeterminate,,
+CYP2C19,*31,*4,Indeterminate,CYP2C19 *4/*31: Indeterminate,,
+CYP2C19,*32,*4,Indeterminate,CYP2C19 *4/*32: Indeterminate,,
+CYP2C19,*33,*4,Indeterminate,CYP2C19 *4/*33: Indeterminate,,
+CYP2C19,*34,*4,Indeterminate,CYP2C19 *4/*34: Indeterminate,,
+CYP2C19,*35,*4,Poor Metabolizer,CYP2C19 *4/*35: Poor Metabolizer,,
+CYP2C19,*38,*4,Intermediate Metabolizer,CYP2C19 *4/*38: Intermediate Metabolizer,,
+CYP2C19,*39,*4,Indeterminate,CYP2C19 *4/*39: Indeterminate,,
+CYP2C19,*4,*4,Poor Metabolizer,CYP2C19 *4/*4: Poor Metabolizer,,
+CYP2C19,*4,*5,Poor Metabolizer,CYP2C19 *4/*5: Poor Metabolizer,,
+CYP2C19,*4,*6,Poor Metabolizer,CYP2C19 *4/*6: Poor Metabolizer,,
+CYP2C19,*4,*7,Poor Metabolizer,CYP2C19 *4/*7: Poor Metabolizer,,
+CYP2C19,*4,*8,Poor Metabolizer,CYP2C19 *4/*8: Poor Metabolizer,,
+CYP2C19,*4,*9,Likely Poor Metabolizer,CYP2C19 *4/*9: Likely Poor Metabolizer,,
+CYP2C19,*10,*5,Likely Poor Metabolizer,CYP2C19 *5/*10: Likely Poor Metabolizer,,
+CYP2C19,*11,*5,Intermediate Metabolizer,CYP2C19 *5/*11: Intermediate Metabolizer,,
+CYP2C19,*12,*5,Indeterminate,CYP2C19 *5/*12: Indeterminate,,
+CYP2C19,*13,*5,Intermediate Metabolizer,CYP2C19 *5/*13: Intermediate Metabolizer,,
+CYP2C19,*14,*5,Indeterminate,CYP2C19 *5/*14: Indeterminate,,
+CYP2C19,*15,*5,Intermediate Metabolizer,CYP2C19 *5/*15: Intermediate Metabolizer,,
+CYP2C19,*16,*5,Likely Poor Metabolizer,CYP2C19 *5/*16: Likely Poor Metabolizer,,
+CYP2C19,*17,*5,Intermediate Metabolizer,CYP2C19 *5/*17: Intermediate Metabolizer,,
+CYP2C19,*18,*5,Intermediate Metabolizer,CYP2C19 *5/*18: Intermediate Metabolizer,,
+CYP2C19,*19,*5,Likely Poor Metabolizer,CYP2C19 *5/*19: Likely Poor Metabolizer,,
+CYP2C19,*22,*5,Poor Metabolizer,CYP2C19 *5/*22: Poor Metabolizer,,
+CYP2C19,*23,*5,Indeterminate,CYP2C19 *5/*23: Indeterminate,,
+CYP2C19,*24,*5,Poor Metabolizer,CYP2C19 *5/*24: Poor Metabolizer,,
+CYP2C19,*25,*5,Likely Poor Metabolizer,CYP2C19 *5/*25: Likely Poor Metabolizer,,
+CYP2C19,*26,*5,Likely Poor Metabolizer,CYP2C19 *5/*26: Likely Poor Metabolizer,,
+CYP2C19,*28,*5,Intermediate Metabolizer,CYP2C19 *5/*28: Intermediate Metabolizer,,
+CYP2C19,*29,*5,Indeterminate,CYP2C19 *5/*29: Indeterminate,,
+CYP2C19,*30,*5,Indeterminate,CYP2C19 *5/*30: Indeterminate,,
+CYP2C19,*31,*5,Indeterminate,CYP2C19 *5/*31: Indeterminate,,
+CYP2C19,*32,*5,Indeterminate,CYP2C19 *5/*32: Indeterminate,,
+CYP2C19,*33,*5,Indeterminate,CYP2C19 *5/*33: Indeterminate,,
+CYP2C19,*34,*5,Indeterminate,CYP2C19 *5/*34: Indeterminate,,
+CYP2C19,*35,*5,Poor Metabolizer,CYP2C19 *5/*35: Poor Metabolizer,,
+CYP2C19,*38,*5,Intermediate Metabolizer,CYP2C19 *5/*38: Intermediate Metabolizer,,
+CYP2C19,*39,*5,Indeterminate,CYP2C19 *5/*39: Indeterminate,,
+CYP2C19,*5,*5,Poor Metabolizer,CYP2C19 *5/*5: Poor Metabolizer,,
+CYP2C19,*5,*6,Poor Metabolizer,CYP2C19 *5/*6: Poor Metabolizer,,
+CYP2C19,*5,*7,Poor Metabolizer,CYP2C19 *5/*7: Poor Metabolizer,,
+CYP2C19,*5,*8,Poor Metabolizer,CYP2C19 *5/*8: Poor Metabolizer,,
+CYP2C19,*5,*9,Likely Poor Metabolizer,CYP2C19 *5/*9: Likely Poor Metabolizer,,
+CYP2C19,*10,*6,Likely Poor Metabolizer,CYP2C19 *6/*10: Likely Poor Metabolizer,,
+CYP2C19,*11,*6,Intermediate Metabolizer,CYP2C19 *6/*11: Intermediate Metabolizer,,
+CYP2C19,*12,*6,Indeterminate,CYP2C19 *6/*12: Indeterminate,,
+CYP2C19,*13,*6,Intermediate Metabolizer,CYP2C19 *6/*13: Intermediate Metabolizer,,
+CYP2C19,*14,*6,Indeterminate,CYP2C19 *6/*14: Indeterminate,,
+CYP2C19,*15,*6,Intermediate Metabolizer,CYP2C19 *6/*15: Intermediate Metabolizer,,
+CYP2C19,*16,*6,Likely Poor Metabolizer,CYP2C19 *6/*16: Likely Poor Metabolizer,,
+CYP2C19,*17,*6,Intermediate Metabolizer,CYP2C19 *6/*17: Intermediate Metabolizer,,
+CYP2C19,*18,*6,Intermediate Metabolizer,CYP2C19 *6/*18: Intermediate Metabolizer,,
+CYP2C19,*19,*6,Likely Poor Metabolizer,CYP2C19 *6/*19: Likely Poor Metabolizer,,
+CYP2C19,*22,*6,Poor Metabolizer,CYP2C19 *6/*22: Poor Metabolizer,,
+CYP2C19,*23,*6,Indeterminate,CYP2C19 *6/*23: Indeterminate,,
+CYP2C19,*24,*6,Poor Metabolizer,CYP2C19 *6/*24: Poor Metabolizer,,
+CYP2C19,*25,*6,Likely Poor Metabolizer,CYP2C19 *6/*25: Likely Poor Metabolizer,,
+CYP2C19,*26,*6,Likely Poor Metabolizer,CYP2C19 *6/*26: Likely Poor Metabolizer,,
+CYP2C19,*28,*6,Intermediate Metabolizer,CYP2C19 *6/*28: Intermediate Metabolizer,,
+CYP2C19,*29,*6,Indeterminate,CYP2C19 *6/*29: Indeterminate,,
+CYP2C19,*30,*6,Indeterminate,CYP2C19 *6/*30: Indeterminate,,
+CYP2C19,*31,*6,Indeterminate,CYP2C19 *6/*31: Indeterminate,,
+CYP2C19,*32,*6,Indeterminate,CYP2C19 *6/*32: Indeterminate,,
+CYP2C19,*33,*6,Indeterminate,CYP2C19 *6/*33: Indeterminate,,
+CYP2C19,*34,*6,Indeterminate,CYP2C19 *6/*34: Indeterminate,,
+CYP2C19,*35,*6,Poor Metabolizer,CYP2C19 *6/*35: Poor Metabolizer,,
+CYP2C19,*38,*6,Intermediate Metabolizer,CYP2C19 *6/*38: Intermediate Metabolizer,,
+CYP2C19,*39,*6,Indeterminate,CYP2C19 *6/*39: Indeterminate,,
+CYP2C19,*6,*6,Poor Metabolizer,CYP2C19 *6/*6: Poor Metabolizer,,
+CYP2C19,*6,*7,Poor Metabolizer,CYP2C19 *6/*7: Poor Metabolizer,,
+CYP2C19,*6,*8,Poor Metabolizer,CYP2C19 *6/*8: Poor Metabolizer,,
+CYP2C19,*6,*9,Likely Poor Metabolizer,CYP2C19 *6/*9: Likely Poor Metabolizer,,
+CYP2C19,*10,*7,Likely Poor Metabolizer,CYP2C19 *7/*10: Likely Poor Metabolizer,,
+CYP2C19,*11,*7,Intermediate Metabolizer,CYP2C19 *7/*11: Intermediate Metabolizer,,
+CYP2C19,*12,*7,Indeterminate,CYP2C19 *7/*12: Indeterminate,,
+CYP2C19,*13,*7,Intermediate Metabolizer,CYP2C19 *7/*13: Intermediate Metabolizer,,
+CYP2C19,*14,*7,Indeterminate,CYP2C19 *7/*14: Indeterminate,,
+CYP2C19,*15,*7,Intermediate Metabolizer,CYP2C19 *7/*15: Intermediate Metabolizer,,
+CYP2C19,*16,*7,Likely Poor Metabolizer,CYP2C19 *7/*16: Likely Poor Metabolizer,,
+CYP2C19,*17,*7,Intermediate Metabolizer,CYP2C19 *7/*17: Intermediate Metabolizer,,
+CYP2C19,*18,*7,Intermediate Metabolizer,CYP2C19 *7/*18: Intermediate Metabolizer,,
+CYP2C19,*19,*7,Likely Poor Metabolizer,CYP2C19 *7/*19: Likely Poor Metabolizer,,
+CYP2C19,*22,*7,Poor Metabolizer,CYP2C19 *7/*22: Poor Metabolizer,,
+CYP2C19,*23,*7,Indeterminate,CYP2C19 *7/*23: Indeterminate,,
+CYP2C19,*24,*7,Poor Metabolizer,CYP2C19 *7/*24: Poor Metabolizer,,
+CYP2C19,*25,*7,Likely Poor Metabolizer,CYP2C19 *7/*25: Likely Poor Metabolizer,,
+CYP2C19,*26,*7,Likely Poor Metabolizer,CYP2C19 *7/*26: Likely Poor Metabolizer,,
+CYP2C19,*28,*7,Intermediate Metabolizer,CYP2C19 *7/*28: Intermediate Metabolizer,,
+CYP2C19,*29,*7,Indeterminate,CYP2C19 *7/*29: Indeterminate,,
+CYP2C19,*30,*7,Indeterminate,CYP2C19 *7/*30: Indeterminate,,
+CYP2C19,*31,*7,Indeterminate,CYP2C19 *7/*31: Indeterminate,,
+CYP2C19,*32,*7,Indeterminate,CYP2C19 *7/*32: Indeterminate,,
+CYP2C19,*33,*7,Indeterminate,CYP2C19 *7/*33: Indeterminate,,
+CYP2C19,*34,*7,Indeterminate,CYP2C19 *7/*34: Indeterminate,,
+CYP2C19,*35,*7,Poor Metabolizer,CYP2C19 *7/*35: Poor Metabolizer,,
+CYP2C19,*38,*7,Intermediate Metabolizer,CYP2C19 *7/*38: Intermediate Metabolizer,,
+CYP2C19,*39,*7,Indeterminate,CYP2C19 *7/*39: Indeterminate,,
+CYP2C19,*7,*7,Poor Metabolizer,CYP2C19 *7/*7: Poor Metabolizer,,
+CYP2C19,*7,*8,Poor Metabolizer,CYP2C19 *7/*8: Poor Metabolizer,,
+CYP2C19,*7,*9,Likely Poor Metabolizer,CYP2C19 *7/*9: Likely Poor Metabolizer,,
+CYP2C19,*10,*8,Likely Poor Metabolizer,CYP2C19 *8/*10: Likely Poor Metabolizer,,
+CYP2C19,*11,*8,Intermediate Metabolizer,CYP2C19 *8/*11: Intermediate Metabolizer,,
+CYP2C19,*12,*8,Indeterminate,CYP2C19 *8/*12: Indeterminate,,
+CYP2C19,*13,*8,Intermediate Metabolizer,CYP2C19 *8/*13: Intermediate Metabolizer,,
+CYP2C19,*14,*8,Indeterminate,CYP2C19 *8/*14: Indeterminate,,
+CYP2C19,*15,*8,Intermediate Metabolizer,CYP2C19 *8/*15: Intermediate Metabolizer,,
+CYP2C19,*16,*8,Likely Poor Metabolizer,CYP2C19 *8/*16: Likely Poor Metabolizer,,
+CYP2C19,*17,*8,Intermediate Metabolizer,CYP2C19 *8/*17: Intermediate Metabolizer,,
+CYP2C19,*18,*8,Intermediate Metabolizer,CYP2C19 *8/*18: Intermediate Metabolizer,,
+CYP2C19,*19,*8,Likely Poor Metabolizer,CYP2C19 *8/*19: Likely Poor Metabolizer,,
+CYP2C19,*22,*8,Poor Metabolizer,CYP2C19 *8/*22: Poor Metabolizer,,
+CYP2C19,*23,*8,Indeterminate,CYP2C19 *8/*23: Indeterminate,,
+CYP2C19,*24,*8,Poor Metabolizer,CYP2C19 *8/*24: Poor Metabolizer,,
+CYP2C19,*25,*8,Likely Poor Metabolizer,CYP2C19 *8/*25: Likely Poor Metabolizer,,
+CYP2C19,*26,*8,Likely Poor Metabolizer,CYP2C19 *8/*26: Likely Poor Metabolizer,,
+CYP2C19,*28,*8,Intermediate Metabolizer,CYP2C19 *8/*28: Intermediate Metabolizer,,
+CYP2C19,*29,*8,Indeterminate,CYP2C19 *8/*29: Indeterminate,,
+CYP2C19,*30,*8,Indeterminate,CYP2C19 *8/*30: Indeterminate,,
+CYP2C19,*31,*8,Indeterminate,CYP2C19 *8/*31: Indeterminate,,
+CYP2C19,*32,*8,Indeterminate,CYP2C19 *8/*32: Indeterminate,,
+CYP2C19,*33,*8,Indeterminate,CYP2C19 *8/*33: Indeterminate,,
+CYP2C19,*34,*8,Indeterminate,CYP2C19 *8/*34: Indeterminate,,
+CYP2C19,*35,*8,Poor Metabolizer,CYP2C19 *8/*35: Poor Metabolizer,,
+CYP2C19,*38,*8,Intermediate Metabolizer,CYP2C19 *8/*38: Intermediate Metabolizer,,
+CYP2C19,*39,*8,Indeterminate,CYP2C19 *8/*39: Indeterminate,,
+CYP2C19,*8,*8,Poor Metabolizer,CYP2C19 *8/*8: Poor Metabolizer,,
+CYP2C19,*8,*9,Likely Poor Metabolizer,CYP2C19 *8/*9: Likely Poor Metabolizer,,
+CYP2C19,*10,*9,Likely Intermediate Metabolizer,CYP2C19 *9/*10: Likely Intermediate Metabolizer,,
+CYP2C19,*11,*9,Likely Intermediate Metabolizer,CYP2C19 *9/*11: Likely Intermediate Metabolizer,,
+CYP2C19,*12,*9,Indeterminate,CYP2C19 *9/*12: Indeterminate,,
+CYP2C19,*13,*9,Likely Intermediate Metabolizer,CYP2C19 *9/*13: Likely Intermediate Metabolizer,,
+CYP2C19,*14,*9,Indeterminate,CYP2C19 *9/*14: Indeterminate,,
+CYP2C19,*15,*9,Likely Intermediate Metabolizer,CYP2C19 *9/*15: Likely Intermediate Metabolizer,,
+CYP2C19,*16,*9,Likely Intermediate Metabolizer,CYP2C19 *9/*16: Likely Intermediate Metabolizer,,
+CYP2C19,*17,*9,Likely Intermediate Metabolizer,CYP2C19 *9/*17: Likely Intermediate Metabolizer,,
+CYP2C19,*18,*9,Likely Intermediate Metabolizer,CYP2C19 *9/*18: Likely Intermediate Metabolizer,,
+CYP2C19,*19,*9,Likely Intermediate Metabolizer,CYP2C19 *9/*19: Likely Intermediate Metabolizer,,
+CYP2C19,*22,*9,Likely Poor Metabolizer,CYP2C19 *9/*22: Likely Poor Metabolizer,,
+CYP2C19,*23,*9,Indeterminate,CYP2C19 *9/*23: Indeterminate,,
+CYP2C19,*24,*9,Likely Poor Metabolizer,CYP2C19 *9/*24: Likely Poor Metabolizer,,
+CYP2C19,*25,*9,Likely Intermediate Metabolizer,CYP2C19 *9/*25: Likely Intermediate Metabolizer,,
+CYP2C19,*26,*9,Likely Intermediate Metabolizer,CYP2C19 *9/*26: Likely Intermediate Metabolizer,,
+CYP2C19,*28,*9,Likely Intermediate Metabolizer,CYP2C19 *9/*28: Likely Intermediate Metabolizer,,
+CYP2C19,*29,*9,Indeterminate,CYP2C19 *9/*29: Indeterminate,,
+CYP2C19,*30,*9,Indeterminate,CYP2C19 *9/*30: Indeterminate,,
+CYP2C19,*31,*9,Indeterminate,CYP2C19 *9/*31: Indeterminate,,
+CYP2C19,*32,*9,Indeterminate,CYP2C19 *9/*32: Indeterminate,,
+CYP2C19,*33,*9,Indeterminate,CYP2C19 *9/*33: Indeterminate,,
+CYP2C19,*34,*9,Indeterminate,CYP2C19 *9/*34: Indeterminate,,
+CYP2C19,*35,*9,Likely Poor Metabolizer,CYP2C19 *9/*35: Likely Poor Metabolizer,,
+CYP2C19,*38,*9,Likely Intermediate Metabolizer,CYP2C19 *9/*38: Likely Intermediate Metabolizer,,
+CYP2C19,*39,*9,Indeterminate,CYP2C19 *9/*39: Indeterminate,,
+CYP2C19,*9,*9,Likely Intermediate Metabolizer,CYP2C19 *9/*9: Likely Intermediate Metabolizer,,
+CYP2C19,*10,*10,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*11,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*12,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*10,*13,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*14,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*10,*15,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*16,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*17,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*18,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*19,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*22,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*23,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*10,*24,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*25,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*26,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*28,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*10,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*10,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*10,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*10,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*10,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*10,*35,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*38,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*1,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*1,*10,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*1,*11,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*11,*11,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*11,*12,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*11,*13,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*11,*14,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*11,*15,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*11,*16,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*11,*17,Rapid Metabolizer,"Normal or increased clopidogrel active metabolite formation; normal or lower on-treatment platelet reactivity; no association with higher bleeding risk If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*11,*18,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*11,*19,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*1,*12,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*11,*22,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*11,*23,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*11,*24,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*11,*25,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*11,*26,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*11,*28,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*11,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*13,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*11,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*11,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*11,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*11,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*11,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*11,*35,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*11,*38,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*11,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*14,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*15,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*1,*16,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*1,*17,Rapid Metabolizer,"Normal or increased clopidogrel active metabolite formation; normal or lower on-treatment platelet reactivity; no association with higher bleeding risk If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*1,*18,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*1,*19,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*1,*2,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*12,*12,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*13,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*14,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*15,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*16,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*17,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*18,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*19,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*22,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*12,*22,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*23,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*24,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*25,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*26,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*28,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*23,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*35,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*38,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*12,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*24,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*1,*25,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*1,*26,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*1,*28,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*1,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*3,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*1,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*13,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*13,*14,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*15,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*13,*16,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*13,*17,Rapid Metabolizer,"Normal or increased clopidogrel active metabolite formation; normal or lower on-treatment platelet reactivity; no association with higher bleeding risk If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*13,*18,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*13,*19,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*1,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*22,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*13,*23,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*24,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*13,*25,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*13,*26,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*13,*28,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*13,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*35,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*13,*38,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*13,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*35,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*1,*38,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*1,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*4,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*14,*14,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*15,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*16,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*17,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*18,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*19,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*22,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*23,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*24,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*25,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*26,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*28,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*35,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*38,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*5,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*15,*15,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*15,*16,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*15,*17,Rapid Metabolizer,"Normal or increased clopidogrel active metabolite formation; normal or lower on-treatment platelet reactivity; no association with higher bleeding risk If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*15,*18,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*15,*19,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*15,*22,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*15,*23,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*15,*24,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*15,*25,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*15,*26,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*15,*28,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*15,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*15,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*15,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*15,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*15,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*15,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*15,*35,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*15,*38,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*15,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*6,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*16,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*17,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*18,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*19,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*22,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*23,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*16,*24,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*25,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*26,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*28,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*16,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*16,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*16,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*16,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*16,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*16,*35,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*38,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*7,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*17,*17,Ultrarapid Metabolizer,"Increased clopidogrel active metabolite formation; lower on-treatment platelet reactivity; no association with higher bleeding risk If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*17,*18,Rapid Metabolizer,"Normal or increased clopidogrel active metabolite formation; normal or lower on-treatment platelet reactivity; no association with higher bleeding risk If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*17,*19,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*17,*22,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*17,*23,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*17,*24,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*17,*25,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*17,*26,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*17,*28,Rapid Metabolizer,"Normal or increased clopidogrel active metabolite formation; normal or lower on-treatment platelet reactivity; no association with higher bleeding risk If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*17,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*17,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*17,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*17,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*17,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*17,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*17,*35,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*17,*38,Rapid Metabolizer,"Normal or increased clopidogrel active metabolite formation; normal or lower on-treatment platelet reactivity; no association with higher bleeding risk If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*17,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*8,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*18,*18,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*18,*19,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*18,*22,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*18,*23,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*18,*24,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*18,*25,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*18,*26,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*18,*28,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*18,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*18,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*18,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*18,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*18,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*18,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*18,*35,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*18,*38,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*18,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*1,*9,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*19,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*22,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*23,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*19,*24,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*25,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*26,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*28,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*19,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*19,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*19,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*19,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*19,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*19,*35,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*38,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*10,*2,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*11,*2,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*12,*2,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*2,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*14,*2,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*15,*2,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*2,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*17,*2,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*18,*2,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*2,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*2,*2,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*2,*22,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*22,*22,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*22,*23,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*22,*24,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*22,*25,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*22,*26,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*22,*28,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*22,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*2,*23,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*22,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*22,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*22,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*22,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*22,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*22,*35,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*22,*38,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*22,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*2,*24,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*2,*25,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*2,*26,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*2,*28,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*2,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*2,*3,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*2,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*2,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*2,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*23,*23,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*23,*24,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*23,*25,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*23,*26,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*23,*28,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*23,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*2,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*23,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*23,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*23,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*23,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*23,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*23,*35,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*23,*38,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*23,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*2,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*2,*35,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*2,*38,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*2,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*2,*4,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*24,*24,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*24,*25,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*24,*26,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*24,*28,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*24,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*24,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*24,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*24,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*24,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*24,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*24,*35,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*24,*38,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*24,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*2,*5,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*25,*25,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*25,*26,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*25,*28,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*25,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*25,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*25,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*25,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*25,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*25,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*25,*35,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*25,*38,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*25,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*2,*6,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*26,*26,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*26,*28,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*26,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*26,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*26,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*26,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*26,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*26,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*26,*35,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*26,*38,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*26,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*2,*7,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*2,*8,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*28,*28,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*28,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*28,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*28,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*28,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*28,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*28,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*28,*35,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*28,*38,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*28,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*2,*9,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*29,*29,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*29,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*29,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*29,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*29,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*29,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*29,*35,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*29,*38,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*29,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*30,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*30,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*30,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*30,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*30,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*30,*35,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*30,*38,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*30,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*10,*3,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*11,*3,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*12,*3,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*3,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*31,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*31,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*31,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*31,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*31,*35,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*31,*38,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*31,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*14,*3,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*15,*3,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*3,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*17,*3,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*18,*3,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*3,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*22,*3,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*23,*3,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*32,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*32,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*32,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*32,*35,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*32,*38,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*32,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*24,*3,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*25,*3,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*26,*3,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*28,*3,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*29,*3,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*3,*3,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*3,*30,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*3,*31,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*3,*32,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*3,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*33,*33,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*33,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*33,*35,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*33,*38,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*33,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*3,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*3,*35,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*3,*38,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*3,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*3,*4,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*34,*34,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*34,*35,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*34,*38,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*34,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*3,*5,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*35,*35,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*35,*38,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*35,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*3,*6,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*3,*7,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*3,*8,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*38,*38,Normal Metabolizer,"Normal clopidogrel active metabolite formation; normal on-treatment platelet reactivity If considering clopidogrel, use at standard dose (75 mg/day)",clopidogrel,strong
+CYP2C19,*38,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*3,*9,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*39,*39,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*10,*4,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*11,*4,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*12,*4,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*4,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*14,*4,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*15,*4,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*4,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*17,*4,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*18,*4,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*4,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*22,*4,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*23,*4,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*24,*4,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*25,*4,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*26,*4,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*28,*4,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*29,*4,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*30,*4,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*31,*4,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*32,*4,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*33,*4,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*34,*4,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*35,*4,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*38,*4,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*39,*4,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*4,*4,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*4,*5,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*4,*6,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*4,*7,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*4,*8,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*4,*9,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*5,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*11,*5,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*12,*5,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*5,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*14,*5,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*15,*5,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*5,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*17,*5,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*18,*5,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*5,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*22,*5,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*23,*5,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*24,*5,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*25,*5,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*26,*5,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*28,*5,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*29,*5,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*30,*5,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*31,*5,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*32,*5,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*33,*5,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*34,*5,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*35,*5,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*38,*5,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*39,*5,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*5,*5,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*5,*6,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*5,*7,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*5,*8,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*5,*9,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*6,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*11,*6,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*12,*6,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*6,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*14,*6,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*15,*6,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*6,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*17,*6,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*18,*6,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*6,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*22,*6,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*23,*6,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*24,*6,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*25,*6,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*26,*6,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*28,*6,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*29,*6,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*30,*6,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*31,*6,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*32,*6,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*33,*6,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*34,*6,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*35,*6,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*38,*6,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*39,*6,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*6,*6,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*6,*7,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*6,*8,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*6,*9,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*7,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*11,*7,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*12,*7,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*7,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*14,*7,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*15,*7,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*7,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*17,*7,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*18,*7,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*7,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*22,*7,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*23,*7,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*24,*7,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*25,*7,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*26,*7,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*28,*7,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*29,*7,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*30,*7,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*31,*7,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*32,*7,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*33,*7,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*34,*7,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*35,*7,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*38,*7,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*39,*7,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*7,*7,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*7,*8,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*7,*9,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*8,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*11,*8,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*12,*8,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*8,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*14,*8,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*15,*8,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*8,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*17,*8,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*18,*8,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*8,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*22,*8,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*23,*8,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*24,*8,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*25,*8,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*26,*8,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*28,*8,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*29,*8,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*30,*8,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*31,*8,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*32,*8,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*33,*8,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*34,*8,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*35,*8,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*38,*8,Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose (75 mg) clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*39,*8,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*8,*8,Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*8,*9,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*10,*9,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*11,*9,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*12,*9,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*13,*9,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*14,*9,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*15,*9,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*16,*9,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*17,*9,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*18,*9,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*19,*9,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*22,*9,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*23,*9,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*24,*9,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*25,*9,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*26,*9,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*28,*9,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*29,*9,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*30,*9,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*31,*9,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*32,*9,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*33,*9,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*34,*9,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*35,*9,Likely Poor Metabolizer,Significantly reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid clopidogrel if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*38,*9,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong
+CYP2C19,*39,*9,Indeterminate,n/a No recommendation,clopidogrel,no_recommendation
+CYP2C19,*9,*9,Likely Intermediate Metabolizer,Reduced clopidogrel active metabolite formation; increased on-treatment platelet reactivity; increased risk for adverse cardiac and cerebrovascular events Avoid standard dose clopidogrel (75 mg) if possible. Use prasugrel or ticagrelor at standard dose if no contraindication.,clopidogrel,strong

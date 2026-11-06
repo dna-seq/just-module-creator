@@ -11,9 +11,11 @@ for it are the vocabulary used below.
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import pytest
+from conftest import REFERENCE_EXAMPLES
 from just_dna_format.manifest import ProvenanceDoc, ProvenanceItem
 
 from just_module_creator import overrides
@@ -568,13 +570,8 @@ async def test_a_table_in_the_row_slot_with_a_cell_field_is_refused(client, modu
 
 async def test_a_table_scope_record_does_not_cost_a_strict_validate(client, tmp_path: Path):
     """The tester's thirteen publishes proved this on the polygon; nothing here pinned it."""
-    import shutil
-
-    reference = Path("/data/sources/just-dna-format/reference_examples/hfe_hemochromatosis")
-    if not reference.is_dir():
-        pytest.skip("the sibling format checkout is not present")
     spec = tmp_path / "spec"
-    shutil.copytree(reference, spec)
+    shutil.copytree(REFERENCE_EXAMPLES / "hfe_hemochromatosis", spec)
     await client.call_tool(
         "record_override",
         {

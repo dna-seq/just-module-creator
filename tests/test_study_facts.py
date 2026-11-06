@@ -15,14 +15,10 @@ import shutil
 from pathlib import Path
 
 import pytest
-from conftest import offline_settings
+from conftest import REFERENCE_EXAMPLES, offline_settings
 
-REFERENCE = Path("/data/sources/just-dna-format/reference_examples/hfe_hemochromatosis")
+REFERENCE = REFERENCE_EXAMPLES / "hfe_hemochromatosis"
 
-pytestmark = pytest.mark.skipif(
-    not REFERENCE.is_dir(),
-    reason="the sibling format checkout is not present; this case is measured on its corpus",
-)
 
 
 @pytest.fixture

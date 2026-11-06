@@ -1,0 +1,23 @@
+schema_version: '1.0'
+module:
+  title: HFE haemochromatosis (type 1)
+  description: Pathogenic and likely-pathogenic HFE alleles from ClinVar (2★ and above),
+    with the zygosity each finding is about decided by a curator.
+  report_title: HFE haemochromatosis (type 1)
+  icon: heartbeat
+  icon_set: fomantic
+  color: '#00b5ad'
+  name: hfe_hemochromatosis
+weighting:
+  scale: none — this module authors no weights; every `weight` cell is empty
+  method: clinical zygosity call from ClinVar's 2★-and-above assertions, not a graded score
+  note: >-
+    Read gwas_effects.parquet instead of inventing a weight from these rows, and read it per trait:
+    the Catalog holds 186 published associations for rs1800562 alone, across 62 EFO traits and 12
+    distinct effect units — including "SD units", "SD" and "s.d." as three spellings of one unit, and
+    138 rows whose unit is the uninformative "unit". 42 of them name no effect allele at all and
+    cannot be weighted in any direction. Nothing in that set is poolable into a single score.
+defaults:
+  curator: ai-module-creator
+  method: literature-review
+genome_build: GRCh38

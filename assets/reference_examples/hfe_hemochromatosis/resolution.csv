@@ -1,0 +1,13 @@
+variant_key,rsid,chrom,start,ref,alts,genome_build,locus_index,vrs_id,vrs_spec,caid,source,status,rsid_alternates,rsid_current,rsid_status,fetched_at
+ga4gh:VA.__fXj0w0NCSkOLYF79GvSLtpDji99L42,rs773443949,6,26091590,G,T,GRCh38,0,ga4gh:VA.__fXj0w0NCSkOLYF79GvSLtpDji99L42,2.0,,clinvar,resolved,,,,
+ga4gh:VA.erVyPbOjT6XW4S62PzxGQaBFP251DKVD,rs773443949,6,26091590,G,A,GRCh38,0,ga4gh:VA.erVyPbOjT6XW4S62PzxGQaBFP251DKVD,2.0,,clinvar,resolved,,,,
+rs111033563,rs111033563,6,26092916,A,C,GRCh38,0,ga4gh:VA.xVLzUemERonMzQ-FrioyfL1HpA--v4jC,2.0,,clinvar,resolved,,,,
+rs1199530060,rs1199530060,6,26094198,GGCACTACGTCTTA,G,GRCh38,0,,,,clinvar,resolved,,,,
+rs1256311452,rs1256311452,6,26092828,A,T,GRCh38,0,ga4gh:VA.rIVnOJOB3onV0yr-ZWGxY4Yw6mBazC1b,2.0,,clinvar,resolved,,,,
+rs1800562,rs1800562,6,26092913,G,A,GRCh38,0,ga4gh:VA.3NcuOjDzc_lG5L6RhPJdabcVEfsg69r4,2.0,,clinvar,resolved,,,,
+rs199916850,rs199916850,6,26091521,T,C,GRCh38,0,ga4gh:VA.xzv0zhfqpSD0inxsdz8X0DoTg9cZD9OB,2.0,,clinvar,resolved,,,,
+rs573745685,rs573745685,6,26093233,G,A,GRCh38,0,ga4gh:VA.J_NC9xXe-KQnzUlcFTzhyyygCx-nNKbF,2.0,,clinvar,resolved,,,,
+rs749553271,rs749553271,6,26092960,G,T,GRCh38,0,ga4gh:VA.oSpuRyKLvKJV4p5MXo5F4EE9CHaXaEHQ,2.0,,clinvar,resolved,,,,
+rs759524388,rs759524388,6,26090975,C,T,GRCh38,0,ga4gh:VA.aRJkx5R6IuOxsho3YhmfLcWL0zKByjmM,2.0,,clinvar,resolved,,,,
+rs765804978,rs765804978,6,26091518,ACC,A,GRCh38,0,,,,clinvar,resolved,,,,
+rs776994377,rs776994377,6,26087518,T,C,GRCh38,0,ga4gh:VA.Xgmlil5QQGS_i_ziolU4lY7OxhGKiAvc,2.0,,clinvar,resolved,,,,

@@ -14,18 +14,16 @@ import shutil
 from pathlib import Path
 
 import pytest
-from conftest import offline_settings
+from conftest import REFERENCE_EXAMPLES, offline_settings
 from fastmcp.exceptions import ToolError
 
 from just_module_creator.tools.checks import NOT_APPLICABLE
 
-REFERENCE = Path("/data/sources/just-dna-format/reference_examples/hfe_hemochromatosis")
+REFERENCE = REFERENCE_EXAMPLES / "hfe_hemochromatosis"
 
 
 @pytest.fixture
 def spec(tmp_path: Path) -> Path:
-    if not REFERENCE.is_dir():
-        pytest.skip("the sibling format checkout is not present")
     target = tmp_path / "spec"
     shutil.copytree(REFERENCE, target)
     return target
@@ -473,13 +471,11 @@ def test_every_enricher_check_command_has_a_tool_or_a_written_reason() -> None:
 # --------------------------------------------------------------------------- #
 # F101: the two PGx cross-checks, wrapped
 # --------------------------------------------------------------------------- #
-PGX_REFERENCE = Path("/data/sources/just-dna-format/reference_examples/cyp2c19_star_alleles")
+PGX_REFERENCE = REFERENCE_EXAMPLES / "cyp2c19_star_alleles"
 
 
 @pytest.fixture
 def pgx_spec(tmp_path: Path) -> Path:
-    if not PGX_REFERENCE.is_dir():
-        pytest.skip("the sibling format checkout is not present")
     target = tmp_path / "pgx"
     shutil.copytree(PGX_REFERENCE, target)
     return target
