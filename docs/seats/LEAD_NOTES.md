@@ -4,9 +4,11 @@ The lead seat's working state, rewritten to the present before a reset (`docs/se
 
 ## Now
 
-Released 0.48.1 (tag `v0.48.1`, 2026-11-05). Unreleased on `main`: F31 and F50 (`5dfb942`, narrowed after a post-merge
-audit in `7a8463e`; in `docs/CHANGELOG.md` under Unreleased); it goes out with the next release, at most one a day. The person went
-away at 05:02Z on 2026-11-05; the first unattended pass is below.
+Released 0.48.2 (tag `v0.48.2`, `b2f4622`, 2026-11-06): F31, F50, F119, and the suite's reference examples
+copied into `assets/reference_examples/` from just-dna-format `v0.7.3` (`496f658`; the sibling checkout's move
+to 0.8 had failed five tests the morning of the release). Announced in `#just-module-creator>releases` for the
+tester's probe; daily line posted 2026-11-06. Nothing unreleased on `main`. The person went away at 05:02Z on
+2026-11-05.
 
 ## Plan states (set 2026-11-05)
 
@@ -19,8 +21,8 @@ away at 05:02Z on 2026-11-05; the first unattended pass is below.
 
 ## Findings (the tester's inbox)
 
-- Fixed: F31, F50 (`5dfb942`, `7a8463e`); F119 found and fixed (`84aa78f`: no test reaches a live `httpx`
-  transport). 0.48.1 shipped without the role's post-merge audit read; F31/F50 had one.
+- Fixed and released in 0.48.2: F31, F50 (`5dfb942`, `7a8463e`); F119 (`84aa78f`: no test reaches a live
+  `httpx` transport). The tester's probe of F31/F50 asked in `#just-module-creator>releases`.
 - F34 (each publish uploads the previous `published.json`): the upload is the registry client's
   `gather_spec_files`, filed upstream long ago as registry `S5`; nothing here to fix.
 - F22 (`published.json` records `owner: null`): needs a call on what "owner" means (namespace owner or the
@@ -50,14 +52,14 @@ away at 05:02Z on 2026-11-05; the first unattended pass is below.
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.136 (moved on each announcement, 2026-11-05) (`move-to-tag.py`; the pin is in the untracked
+- **Kit pin**: 0.1.137 (moved on each announcement, 2026-11-05) (`move-to-tag.py`; the pin is in the untracked
   `.claude/settings.local.json`). The person's `/reload-plugins` takes it into this session.
 
 ## Open
 
 - Desk #203 (RM28), #204 (RM31), #205 (RM18): waiting on the person.
 - The tester's probe of 0.48.1's token refusal on the polygon, asked in `#just-module-creator>releases`.
-- The person's `/reload-plugins` here takes the kit's 0.1.136 hooks (the watchdog already runs 0.1.136).
+- The person's `/reload-plugins` here takes the kit's 0.1.137 hooks (the watchdog already runs 0.1.137).
 
 ## Downstream
 
@@ -69,4 +71,5 @@ away at 05:02Z on 2026-11-05; the first unattended pass is below.
   scope is the pm's. 0.8 moves the trio to polars 2 and, once their RM344 lands, duckdb 2. Until we adopt it,
   no `uv lock --upgrade` here: a duckdb 2.0-built `ensembl_variations.duckdb` in the shared cache crashes a
   1.x enricher (their RM344), and a polars change alone moves `artifact.digest`. longevity-loci capped both
-  `<2` until this plugin moves, and asked for a word when we plan it: post it in `#agent-chat>upstream`.
+  `<2` until this plugin moves. At that move, copy `assets/reference_examples/` again from the adopted tag
+  (its README). longevity-loci asked for a word when we plan it: post it in `#agent-chat>upstream`.
