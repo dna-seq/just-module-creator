@@ -22,7 +22,7 @@ clone, where its seats commit: read it, never fetch or write there.
 registry instances serve 0.8 (`/api/v1/version`). polars and duckdb are capped `<2` in the lock beside it
 (`c361614`) until that move.
 
-**Read to: `v0.8.0`** (tag `e97339a`, on PyPI 2026-11-05), through `docs/INTEGRATION_0_8.md` as it stands on
+**Read to: `v0.8.1`** (its release entry, below); `v0.8.0` (tag `e97339a`, on PyPI 2026-11-05), through `docs/INTEGRATION_0_8.md` as it stands on
 their `main` at `911a2fd` (2026-11-07), which postdates the `0.8` branch head `edf2661`. Read for the adoption map
 below, not entry by entry through the changelog: the integration file is the release's own per-consumer
 reading, and its § 3 block for this plugin is answered here.
@@ -35,13 +35,19 @@ reading, and its § 3 block for this plugin is answered here.
   time.
 - **`v0.8.0`'s changelog, entry by entry**, for what the integration file does not name (the registry liaison
   read it at the cut; ask before repeating it).
-- **0.8.1**: cut on their `main` (enricher 0.8.1 only, not on PyPI on 2026-11-07, the registry liaison). RM400 stops
-  live Ensembl REST writing patch and alt-contig loci, so a `--rederive` under it drops them. Read at its tag and
-  publish; the 0.8 adoption should floor the enricher at it if it is out by then. Two more in it, from the
-  compiler's triage answering the registry's S134 (2026-11-07): RM398 makes dbSNP a third placement witness
-  (`resolution.csv` rows may name `dbsnp`, `sources.csv` gains a `dbsnp` resolution row, and a run with
-  `verify_rsids=False` counts those indels as not asked), which map item 2 and the licensing readers must take;
-  RM403's retry lines log at WARNING on `just_dna_enricher.net`, so a count of logged warnings rises in an outage.
+- **`v0.8.1`, read by its release entry** (tag `6330f90`, recut 2026-11-07 15:33 UTC; not on PyPI at 16:40 UTC,
+  the enricher's latest there is 0.8.0). Enricher 0.8.1 only; format and compiler stay 0.8.0, so no recompile and
+  no release record. No new field, table, parameter, public function or warning code. What reaches us:
+  - **RM400**: live Ensembl REST no longer writes loci on GRCh38 patch and alt contigs, and `--rederive` leaves
+    recorded ones out instead of reporting `lost_allele`. The 0.8 adoption floors the enricher at 0.8.1.
+  - **RM398**: the third placement witness is dbSNP's own record (from the merge check's `esummary`, no new
+    request): new `resolution.csv` rows name `dbsnp` as `placement_witness` where they named `ensembl`, and
+    `sources.csv` gains a `dbsnp` row. Map item 2 and the licensing readers take both. A run with
+    `verify_rsids=False` counts those indels as not asked (the compiler's triage, answering the registry's S134).
+  - **RM403**: every retry logs a WARNING on `just_dna_enricher.net`, so a count of logged warnings rises during
+    an outage; a give-up names its attempts and seconds.
+  - RM401 (20 rsIDs per live Ensembl request), RM407 (an indel's VRS mint reads the reference once per locus),
+    RM397 (wheel packaging): nothing for us.
 
 ## What the plugin uses
 

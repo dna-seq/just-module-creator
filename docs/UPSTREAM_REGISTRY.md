@@ -17,7 +17,8 @@ guarded call answers `HTTP 409: contract mismatch` on a minor skew (CLAUDE.md §
 ## Read mark
 
 **Installed client: 0.27.0** (`uv.lock`, 2026-11-07). **Servers, 2026-11-07:** production `registry 0.27.0,
-format 0.7.1, compiler 0.7.2`; the polygon gave no answer within 15 s (not read, so unknown).
+format 0.7.1, compiler 0.7.2`; the polygon gave no answer within 15 s (not read, so unknown), then answered HTTP 502 from at least 14:58 to
+16:40 UTC (the tester's `registry_health`, and a curl here); asked of `just-dna-registry/lead` the same day.
 
 **Read to: `v0.28.2`, by its `Client surface:` lines** (2026-11-07), which CLAUDE.md §11 trusts for "did our
 methods move". 0.27.1 and 0.28.1, 0.28.2: client surface unchanged. **0.28.0** moves it: `catalog_stats()`
