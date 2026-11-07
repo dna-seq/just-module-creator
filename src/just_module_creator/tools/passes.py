@@ -187,8 +187,12 @@ _FLAG_TO_ARG = {
 # (F100, measured 2026-09-20 on a fresh three-kind PGx scaffold; upstream half is S103).
 # `spec_genome_build` says "pass genome_build= explicitly", and no drafter here — nor
 # upstream's `draft_gene` — takes one: the build is read from the spec, so the only
-# repair is the spec. `draft.merge_rows` refuses a table that does not validate, and a
-# scaffold stub is `<<REPLACE>>` in every required cell.
+# repair is the spec. `draft.append_rows` refuses a table that does not validate, and a
+# scaffold stub is `<<REPLACE>>` in every required cell. Since compiler 0.7.1 (S103) that
+# refusal has its own wording ("still carries the scaffold's template row … cannot be
+# keyed"), names the deletion itself, and offers `--kind`, a CLI flag: the key is the
+# placeholder plus "cannot be keyed", which both wordings share (F125), and the test feeds
+# `_translate` the compiler's own refusal rather than a copy of it.
 _SPEC_PLACEHOLDER_REMEDY = (
     "No tool here takes a genome_build argument: the build is read from module_spec.yaml, "
     "so the repair is the spec itself. Replace the <<REPLACE>> in the field it names and "
@@ -196,7 +200,8 @@ _SPEC_PLACEHOLDER_REMEDY = (
 )
 _STUB_ROW_REMEDY = (
     "That row is the scaffold's stub. A drafter creates and fills the table, so delete the "
-    "stub row (keep the header line), or scaffold that kind with rows=0, and re-run."
+    "stub row (keep the header line) and re-run. On this surface, scaffolding \"without "
+    "`--kind`\" is `scaffold_module(kinds=[...], rows=0)`: the table's header and no stub row."
 )
 
 
@@ -211,7 +216,7 @@ def _translate(message: str) -> str:
         )
     if "<<REPLACE>>" in message and "cannot read the module's genome_build" in message:
         out = f"{out}\n\n{_SPEC_PLACEHOLDER_REMEDY}"
-    if "<<REPLACE>>" in message and "does not validate, so a draft cannot be keyed" in message:
+    if "<<REPLACE>>" in message and "cannot be keyed" in message:
         out = f"{out}\n\n{_STUB_ROW_REMEDY}"
     return out
 

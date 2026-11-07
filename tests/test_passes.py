@@ -17,6 +17,7 @@ from pathlib import Path
 import pytest
 from conftest import offline_settings
 from fastmcp.exceptions import ToolError
+from just_dna_compiler.draft import DraftError, append_rows, stub_template
 
 from just_module_creator.expression import ROW_STATUSES, module_sites, plan_windows, report_rows
 from just_module_creator.models import DraftResult
@@ -1282,15 +1283,22 @@ async def test_a_drafter_on_a_placeholder_spec_points_at_the_spec_not_at_an_argu
     assert "No tool here takes a genome_build argument" in message
 
 
-def test_the_stub_row_refusal_is_translated_into_the_scaffold_repair() -> None:
-    message = (
-        "existing haplotypes.csv does not validate, so a draft cannot be keyed against it: "
-        "haplotypes.csv line 2 []: Value error, unreplaced template placeholder '<<REPLACE>>' "
-        "in HaplotypeRow row: allele, haplotype_name, rsid."
-    )
+def test_the_stub_row_refusal_is_translated_into_the_scaffold_repair(tmp_path: Path) -> None:
+    """F125: the refusal comes from the compiler itself, never from a copy of its text.
+
+    The old test fed `_translate` a hand-written copy of the pre-0.7.1 wording, so it
+    kept passing after upstream reworded the refusal and the repair stopped firing.
+    The stub is written by the scaffold's own producer (`draft.stub_template`).
+    """
+    (tmp_path / "haplotypes.csv").write_text(stub_template("haplotypes.csv", rows=1))
+    with pytest.raises(DraftError) as excinfo:
+        append_rows(tmp_path, "haplotypes.csv", [], dry_run=True)
+    message = str(excinfo.value)
+    assert "<<REPLACE>>" in message, "the refusal no longer quotes the placeholder"
+
     translated = _translate(message)
-    assert message in translated
-    assert "rows=0" in translated
+    assert translated.startswith(message), "upstream's text survives verbatim, ours is appended"
+    assert "scaffold_module(kinds=[...], rows=0)" in translated
     assert "keep the header" in translated
 
 

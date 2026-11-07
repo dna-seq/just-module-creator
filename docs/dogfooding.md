@@ -57,29 +57,25 @@ note from August belongs with it: the result echoes the install-id back even whe
 or the saved account, which writes an existing secret into the transcript. `install_id_origin` without the value
 says everything the caller needs.
 
-## F125 — F100's repair text never fires since upstream reworded the refusal it keys on, and its test still passes
+## F132 — upstream text that names a CLI command reaches the agent with no mapping to this surface
 
-**Found:** 2026-11-07, re-probing F100 on 0.48.2 (enricher 0.7.3) · **Severity:** low · **Status:** open.
-**Second instance, same day** (HTT probe): `validate_module` and `compile_module` pass on the closure warning's
+**Found:** 2026-11-07 by the tester as F125's second instance (HTT probe); split out by the lead 2026-11-08 ·
+**Severity:** low · **Status:** open, `unattended` (the lead's)
+
+`validate_module` and `compile_module` pass on the closure warning's
 *"Run `just-dna-compiler close <spec-dir>`"* where this surface has `close_module`. Any upstream text that names a
 CLI command reaches the agent unmapped, not only the drafters' flags.
 
-F100's fix appends this surface's repair to two upstream refusals, keyed on their wording
-(`tools/passes.py`, `_translate`). The stub-row key is *"does not validate, so a draft cannot be keyed"*. A
-fresh three-kind scaffold with default rows, then `draft_from_cpic(gene="TPMT", dry_run=true)`, now answers:
-
-> *existing haplotypes.csv still carries the scaffold's template row (line 2), so a draft cannot be keyed
-> against it. Delete that row … or scaffold without `--kind haplotypes.csv` when a drafter will write the
-> table.*
-
-Upstream's own text names the deletion (good), but its alternative is a CLI flag, and `_STUB_ROW_REMEDY`
-(*"or scaffold that kind with rows=0"*) is never appended, because the key no longer matches. `--kind` is not
-in `_FLAG_TO_ARG` either, so nothing maps it. `tests/test_passes.py` (around line 1287) feeds `_translate` a
-hand-written copy of the **old** message, so it passes against a refusal that no longer exists. This is the
-"could this have failed?" shape §6 warns about: the fixture's expected input comes from our memory of
-upstream's text, not from upstream. Low, because the deletion upstream names works. The taught route holds:
-`scaffold_module(rows=0)` then `draft_from_cpic` drafted 93/49/1225 rows with the spec's titles still
-`<<REPLACE>>`, and the `genome_build` half of F100 is gone with S103.
+Measured 2026-11-08 on the installed 0.7 packages: about twenty distinct `just-dna-compiler …` /
+`just-dna-enricher …` commands are quoted in upstream message text, most of them lane builds
+(`clinvar build`, `pubmind build`, `strchive build`, …) whose equivalent here is `provision_caches(lanes=[…])`,
+plus `close`, `compile`, `enrich`. F100's `_translate` maps three drafter flags; nothing maps a command, and
+nothing touches `to_findings`. Shape of the fix: one CLI-command-to-tool map in `src/`, guarded by a test that
+enumerates upstream's typer commands (both directions, as
+`test_every_enricher_check_command_has_a_tool_or_a_written_reason` does), applied where upstream text crosses
+(`to_findings`, the drafters' warnings, `_translate`) as our own field beside the verbatim message, never
+spliced into it: a `source="upstream"` message must stay upstream's. A structured remedy key from upstream would
+replace the map's text matching; that ask is the liaison's to weigh.
 
 ## F122 — `fetch_fulltext(doi=…)` reports nothing retrieved for a paper it returns whole by PMID
 
