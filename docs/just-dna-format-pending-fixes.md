@@ -83,6 +83,8 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
+| F130 | S136 | filed 2026-11-07 | open upstream |
+| F131 | S137 | filed 2026-11-07 | open upstream |
 | F127 | S135 | RM253 | 0.8.0 only |
 | F115 | S124 | RM301 | 0.8.0 only |
 | F118 | S127 | (b); RM340 | 0.8.0 only |
@@ -106,6 +108,26 @@ its history.
 | F67 | S74 | shipped `load_spec` | in our lock; `load_spec` can replace our `yaml.safe_load` (lead) |
 | F99 | S101 | doc fixed | upstream docs, nothing to install |
 | F54 | S58 | RM122 | open upstream, parked |
+
+## F130 — the repeat-count warnings name `RUC`/`CIRUC` over a declared `source_field=FORMAT/REPCN` (format `S136`)
+
+**State: filed 2026-11-07 by the liaison, on the tester's report; open upstream. Reproduced on compiler 0.7.2
+and 0.8.0, unchanged on their `main` at `8e64c0c`. No mitigation:** the warnings pass through.
+
+On `assets/htt_cag_repeats` (`validate_module`, strict), every bin declares `source_field=FORMAT/REPCN`,
+`source_element=largest` (ExpansionHunter, a whole number), yet two warnings reason about VCF `RUC`
+(a Float) and `CIRUC`: `binning._VCF_MEASURE_FIELDS` keys on `measure_kind` alone and never reads
+`source_field`. The fractional warning does not apply to an integer field; the spanning one does in substance
+(ExpansionHunter reports `REPCI`) but names a field the author does not use.
+
+## F131 — `bins_ungrounded` says "no bin pmid" when one bin carries one (format `S137`)
+
+**State: filed 2026-11-07 by the liaison, on the tester's report; open upstream. Reproduced on compiler 0.7.2
+and 0.8.0, unchanged on their `main` at `8e64c0c`. No mitigation.**
+
+Same module, no `studies.csv`, the `36-39` bin carries `pmid=27335115`: *"3 of 4 bin(s) state a threshold and
+the module records no grounding evidence at all (no studies.csv rows, no bin pmid)"*. The count is right; the
+clause is fixed text written for the all-ungrounded case, so here it is false.
 
 ## F127 — a CPIC draft's skipped-allele warning names `TA(8)` on a gene that has none (format `S135`)
 
