@@ -56,7 +56,7 @@ class _PubMed:
         return httpx.Response(200, text=self.answer)
 
 
-def _services(monkeypatch, epmc: _EuropePmc, pubmed: _PubMed):
+def _services(monkeypatch, epmc: _EuropePmc, pubmed: _PubMed | _PubMedByPath):
     services = build_services(offline_settings())
     services.lookup_clients.europepmc = epmc  # type: ignore[assignment]
     real = Discovery.service
