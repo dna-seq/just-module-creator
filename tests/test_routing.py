@@ -1231,9 +1231,12 @@ async def test_a_remote_route_without_a_token_refuses_before_uploading(
         result = await client.call_tool(
             tool, {"spec_dir": str(tmp_path), **args}, raise_on_error=False
         )
-    text = str(result.content)
+    # The text itself, not `str(result.content)`: a repr escapes `'` once the message
+    # also carries `"` (F123 added `registry_accounts(action="add", ...)`).
+    text = " ".join(getattr(part, "text", "") for part in result.content)
     assert result.is_error
     assert "authenticate(token, target='test')" in text
+    assert 'registry_accounts(action="add", target=\'test\'' in text
     assert "registry_register" in text
     assert built == [], "nothing may be uploaded without a token"
 
