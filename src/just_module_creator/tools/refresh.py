@@ -141,6 +141,7 @@ from pydantic import BaseModel
 
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
+    UPSTREAM,
     LintFinding,
     SidecarConflict,
     SidecarRefreshReport,
@@ -1299,7 +1300,7 @@ _NOTE = (
 
 def _as_errors(messages: Sequence[str]) -> list[LintFinding]:
     """Upstream's parse errors as findings, `level` kept at what they are."""
-    return [LintFinding(level="error", message=str(m)) for m in messages]
+    return [LintFinding(source=UPSTREAM, level="error", message=str(m)) for m in messages]
 
 
 def _restore(capture: Path | None, read_from: Path | None, fresh_path: Path) -> bool:

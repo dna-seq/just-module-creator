@@ -16,7 +16,7 @@ from just_dna_enricher.literature import LiteratureUnavailable
 
 from just_module_creator import discovery
 from just_module_creator.discovery import PUBMED, Discovery, fulltext
-from just_module_creator.models import OpenAccessLocation, OpenAccessResult
+from just_module_creator.models import OURS, OpenAccessLocation, OpenAccessResult
 from just_module_creator.net import ServiceUnavailable, build_services
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets" / "literature"
@@ -83,6 +83,7 @@ def test_a_europe_pmc_miss_is_joined_through_pubmed(monkeypatch) -> None:
     assert result.retrieved and result.text_source == "fulltext" and result.text == TEXT
     said = [f.message for f in result.findings if "PubMed's record of PMID" in f.message]
     assert len(said) == 1 and PMCID in said[0] and DOI in said[0]
+    assert {f.source for f in result.findings} == {OURS}  # F120: the join is ours
 
 
 def test_pubmed_is_not_asked_when_europe_pmc_answered_both(monkeypatch) -> None:
@@ -122,6 +123,7 @@ def test_both_unreachable_is_unchecked_and_names_no_locations(monkeypatch) -> No
     assert len(nothing) == 1
     assert "No DOI is known" in nothing[0]
     assert "Try the locations below" not in nothing[0]
+    assert len(messages) >= 3 and {f.source for f in result.findings} == {OURS}  # F120
 
 
 def test_an_empty_open_access_answer_is_not_called_locations_below(monkeypatch) -> None:

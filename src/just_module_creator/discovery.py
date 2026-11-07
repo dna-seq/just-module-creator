@@ -48,6 +48,7 @@ from just_dna_enricher.literature import (
 from just_dna_format.spec import DOI_PATTERN
 
 from just_module_creator.models import (
+    OURS,
     CitationGraph,
     FullTextResult,
     LintAlteration,
@@ -1145,6 +1146,7 @@ def _lookup_by_pmid(discovery: Discovery, pmids: list[str]) -> LiteratureSearchR
             ],
             findings=[
                 LintFinding(
+                    source=OURS,
                     level="warning",
                     message=(
                         "PubMed could not answer, so NONE of these ids was checked. An empty "
@@ -1158,6 +1160,7 @@ def _lookup_by_pmid(discovery: Discovery, pmids: list[str]) -> LiteratureSearchR
     missing = [p for p in pmids if p not in returned]
     findings = [
         LintFinding(
+            source=OURS,
             level="info",
             message=(
                 "Compare each title against the paper you meant. A PMID that exists but names a "
@@ -1168,6 +1171,7 @@ def _lookup_by_pmid(discovery: Discovery, pmids: list[str]) -> LiteratureSearchR
     if missing:
         findings.append(
             LintFinding(
+                source=OURS,
                 level="error",
                 message=(
                     f"PubMed returned no record for: {', '.join(missing)}. Do not write these "
@@ -1194,6 +1198,7 @@ def _search_findings(
     if unanswered:
         findings.append(
             LintFinding(
+                source=OURS,
                 level="warning",
                 message=(
                     f"These sources could not answer: {', '.join(unanswered)}. Their part of the "
@@ -1226,10 +1231,11 @@ def _search_findings(
                 f"{without_pmid} carry no PMID and cannot ground one (pmid is required), though "
                 "they may still inform a hedged conclusion."
             )
-        findings.append(LintFinding(level="warning", message=" ".join(parts)))
+        findings.append(LintFinding(source=OURS, level="warning", message=" ".join(parts)))
     if papers:
         findings.append(
             LintFinding(
+                source=OURS,
                 level="info",
                 message=(
                     "Titles and abstracts are for you to read. No passage was extracted and no "
@@ -1299,6 +1305,7 @@ def open_access(
                 statuses.append(SourceStatus(source=EUROPEPMC, queried=True, results=0))
                 findings.append(
                     LintFinding(
+                        source=OURS,
                         level="info",
                         message=(
                             "Europe PMC has no record for this id. It omits ids it does not know "
@@ -1330,6 +1337,7 @@ def open_access(
             )
             findings.append(
                 LintFinding(
+                    source=OURS,
                     level="warning",
                     message=(
                         f"Unpaywall did not answer ({exc.reason}). Open-access status here is "
@@ -1352,6 +1360,7 @@ def open_access(
     if any(loc.license is None for loc in [*locations, *([best] if best else [])]):
         findings.append(
             LintFinding(
+                source=OURS,
                 level="warning",
                 message=(
                     "At least one location has no licence recorded — typically bronze open "
@@ -1461,6 +1470,7 @@ def _pubmed_ids(
         reason = exc.reason if isinstance(exc, ServiceUnavailable) else "unreadable answer"
         findings.append(
             LintFinding(
+                source=OURS,
                 level="warning",
                 message=(
                     f"PubMed could not be asked for PMID {pmid}'s ids ({reason}), so a "
@@ -1480,6 +1490,7 @@ def _pubmed_ids(
     if supplied:
         findings.append(
             LintFinding(
+                source=OURS,
                 level="info",
                 message=(
                     f"PubMed's record of PMID {pmid} supplied {' and '.join(supplied)}, "
@@ -1506,7 +1517,7 @@ def fulltext(
     like an empty paper.
     """
     client = services.lookup_clients.europepmc or EuropePmcClient()
-    findings = [LintFinding(level="info", message=_NO_PASSAGE_NOTE)]
+    findings = [LintFinding(source=OURS, level="info", message=_NO_PASSAGE_NOTE)]
     record: dict | None = None
     asked_pubmed = False
 
@@ -1517,6 +1528,7 @@ def fulltext(
             reason = str(exc).splitlines()[0].removeprefix("Europe PMC could not be asked: ")
             findings.append(
                 LintFinding(
+                    source=OURS,
                     level="warning",
                     message=(
                         f"Europe PMC could not be asked ({reason}), so its record for PMID {pmid} "
@@ -1548,6 +1560,7 @@ def fulltext(
             source = PMC_BIOC
             findings.append(
                 LintFinding(
+                    source=OURS,
                     level="info",
                     message=(
                         "Europe PMC returned no fulltext, so this is PMC's BioC copy of the "
@@ -1559,6 +1572,7 @@ def fulltext(
         elif bioc_failure:
             findings.append(
                 LintFinding(
+                    source=OURS,
                     level="warning",
                     message=(
                         f"PMC BioC could not be asked ({bioc_failure}), so whether PMC holds "
@@ -1575,6 +1589,7 @@ def fulltext(
         source = "abstract"
         findings.append(
             LintFinding(
+                source=OURS,
                 level="warning",
                 message=(
                     "Fulltext was not retrievable, so this is the ABSTRACT. A claim you cannot "
@@ -1607,6 +1622,7 @@ def fulltext(
             where = "No DOI is known for it, so no open-access location was looked up."
         findings.append(
             LintFinding(
+                source=OURS,
                 level="warning",
                 message=(
                     "Nothing was retrieved. `text_source` is null, which means UNCHECKED — not "

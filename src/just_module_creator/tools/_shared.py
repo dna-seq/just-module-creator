@@ -25,6 +25,7 @@ from fastmcp.exceptions import ToolError
 from just_dna_format.vocab import VALID_DECLARED_USE
 
 from just_module_creator.models import (
+    UPSTREAM,
     LintAlteration,
     LintFinding,
     PublishedVersion,
@@ -133,6 +134,7 @@ def to_findings(items: Any) -> list[LintFinding]:
     for f in items or []:
         out.append(
             LintFinding(
+                source=UPSTREAM,
                 row=getattr(f, "row", None),
                 column=getattr(f, "column", None),
                 level=getattr(f, "level", "info"),

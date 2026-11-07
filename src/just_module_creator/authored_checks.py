@@ -22,9 +22,7 @@ from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 
-from just_module_creator.models import LintFinding
-
-OURS = "just-module-creator"
+from just_module_creator.models import OURS, LintFinding
 
 #: Rows carrying fewer than this many quotes for one PMID say nothing either way:
 #: a module that cites a paper once, or twice, has no shape to detect.

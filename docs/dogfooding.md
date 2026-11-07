@@ -48,27 +48,6 @@ Candidate repairs, none applied, each with its cost:
 - **The kit retries a failed server at resume** (`reload --mcp` from the resume hook). This repairs it for every
   repo, so it belongs on the kit's issues if it is wanted.
 
-## F120 — every finding the literature tools compute says it is the compiler's own
-
-**Found:** 2026-11-07, rechecking F31 on `fetch_fulltext` (0.48.2) · **Severity:** low · **Status:** open
-
-`LintFinding.source` says what it is for: *"`upstream` for the compiler's own, carried across
-field-for-field, or `just-module-creator` for one this authoring layer computed itself. Read it before
-quoting a finding as the compiler's."* `fetch_fulltext(pmid="42990418")` returned *"PubMed's record of PMID
-42990418 supplied PMCID PMC13733956 and DOI …, which Europe PMC's answer did not carry"* with
-`"source": "upstream"`. That join is this plugin's own code (`discovery.py`, F31's fix), and no compiler took
-part in the call.
-
-It is not one message. `source` defaults to `"upstream"` (`models.py`, `LintFinding`), and none of the 17
-`LintFinding(...)` calls in `discovery.py` set it. So every outage notice, the no-passage note, the PubMed join
-and the "nothing was retrieved" warning reach the agent labelled as the compiler's. That is counted by AST on
-0.48.2: `authored_checks.py` and `research.py` set it on every call, and one call each in `_shared` and
-`refresh` also omit it (not read). The harm is the one the field exists to prevent: an agent told to weigh
-upstream findings differently treats a network notice from our layer as compiler policy. A default that
-names the most authoritative layer is the wrong default. Whether the fix is labelling the 17 calls or flipping
-the default is the lead's call; flipping it moves every `to_findings` pass-through, so a test should pin
-both producers.
-
 ## F86 — LitVar2 is the rsID↔CAID bridge we lack, and it is DEFERRED to upstream's 0.7
 
 **Not a defect. A probed capability, parked deliberately on 2026-09-01** so the notes are not

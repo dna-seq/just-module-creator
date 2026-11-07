@@ -6,6 +6,37 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F120 — every finding the literature tools compute says it is the compiler's own
+
+**Found:** 2026-11-07, rechecking F31 on `fetch_fulltext` (0.48.2) · **Severity:** low · **Status:** resolved 2026-11-07
+
+`LintFinding.source` says what it is for: *"`upstream` for the compiler's own, carried across
+field-for-field, or `just-module-creator` for one this authoring layer computed itself. Read it before
+quoting a finding as the compiler's."* `fetch_fulltext(pmid="42990418")` returned *"PubMed's record of PMID
+42990418 supplied PMCID PMC13733956 and DOI …, which Europe PMC's answer did not carry"* with
+`"source": "upstream"`. That join is this plugin's own code (`discovery.py`, F31's fix), and no compiler took
+part in the call.
+
+It is not one message. `source` defaults to `"upstream"` (`models.py`, `LintFinding`), and none of the 17
+`LintFinding(...)` calls in `discovery.py` set it. So every outage notice, the no-passage note, the PubMed join
+and the "nothing was retrieved" warning reach the agent labelled as the compiler's. That is counted by AST on
+0.48.2: `authored_checks.py` and `research.py` set it on every call, and one call each in `_shared` and
+`refresh` also omit it (not read). The harm is the one the field exists to prevent: an agent told to weigh
+upstream findings differently treats a network notice from our layer as compiler policy. A default that
+names the most authoritative layer is the wrong default. Whether the fix is labelling the 17 calls or flipping
+the default is the lead's call; flipping it moves every `to_findings` pass-through, so a test should pin
+both producers.
+
+**Resolved** by taking the default away: `LintFinding.source` is now required, with `models.OURS` and
+`models.UPSTREAM` as the two labels. The 17 calls in `discovery.py` say `OURS`; `_shared.to_findings` and
+`refresh._as_errors`, which carry upstream's own findings and parse errors, say `UPSTREAM`. A finding that
+names no layer is refused when it is built, and pyright reports a missing `source` before a test runs.
+`tests/test_finding_source.py` pins both producers and the refusal; two assertions in
+`tests/test_fulltext_pmid_join.py` (every finding of a PubMed join, and of a call with both services
+down, says `OURS`) fail on the 0.48.2 source and pass now.
+
+---
+
 ## F119 — the suite's offline ceiling stopped at the tools, so a test fetched from NCBI and passed
 
 **Found:** 2026-11-05, by the lead seat while fixing F31 · **Severity:** medium · **Status:** resolved 2026-11-05

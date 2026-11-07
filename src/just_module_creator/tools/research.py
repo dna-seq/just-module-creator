@@ -45,7 +45,6 @@ from just_dna_registry.version import VersionInfo, compatibility_error
 from mcp.types import ToolAnnotations
 
 from just_module_creator import alleles, routing, supplementary
-from just_module_creator.authored_checks import OURS
 from just_module_creator.discovery import (
     DEFAULT_EUROPEPMC_BASE,
     crossref_work,
@@ -55,6 +54,7 @@ from just_module_creator.discovery import (
 )
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
+    OURS,
     AlleleIdentity,
     AlleleIdentityReport,
     CitationLookup,

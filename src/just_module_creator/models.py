@@ -580,6 +580,12 @@ class ScaffoldResult(BaseModel):
     next_step: str = Field(description="What the author must do next.")
 
 
+#: ``LintFinding.source`` for a finding this authoring layer computed itself.
+OURS = "just-module-creator"
+#: ``LintFinding.source`` for the compiler's or enricher's own finding, carried across as-is.
+UPSTREAM = "upstream"
+
+
 class LintFinding(BaseModel):
     """One finding from a lint pass. ``level`` is load-bearing — read it."""
 
@@ -588,7 +594,6 @@ class LintFinding(BaseModel):
     level: str = Field(description="error | warning | info.")
     message: str = Field(description="What was found.")
     source: str = Field(
-        default="upstream",
         description=(
             "Which layer computed this finding: `upstream` for the compiler's own, carried "
             "across field-for-field, or `just-module-creator` for one this authoring layer "
@@ -596,6 +601,8 @@ class LintFinding(BaseModel):
             "have different reach, and an authoring-layer finding does not block a compile "
             "the way an upstream `error` does."
         ),
+        # No default (F120): a default named the compiler, and seventeen findings our own
+        # literature code computed went out under it. Every producer now says which it is.
     )
     line: int | None = Field(
         default=None,
