@@ -59,8 +59,20 @@ wake_from = "just-module-creator/lead just-module-creator/tester just-module-cre
 [seat.liaison.watch.desk]
 cmd = "sh kit:bin/py.sh kit:classes/desk/watch-answers.py just-module-creator liaison"
 
-# The upstreams' watchers (kit classes/liaison/watch-upstream.sh) and the weekly dependency bump (nightly.py deps)
-# are added by the seat itself in its first work.
+# The upstreams' watchers (kit classes/liaison/watch-upstream.sh), each reading its line in the liaison state file
+# for its clone and branch; releases by their tags. The compiler's line is the registry liaison's (shared, reused,
+# never edited); the registry's is this seat's. The two hosts have no clone: their versions are read at each start
+# (docs/UPSTREAM_HOSTS.md).
+[seat.liaison.watch.compiler]
+cmd = "sh kit:classes/liaison/watch-upstream.sh just-dna-compiler --tags"
+
+[seat.liaison.watch.registry]
+cmd = "sh kit:classes/liaison/watch-upstream.sh just-dna-registry --tags"
+
+# The weekly dependency bump (the kit's liaison role, "The dependency bump"): said due once a week while the
+# person is away, on this seat's own day. polars and duckdb are capped below 2 in pyproject.toml until 0.8.
+[seat.liaison.watch.nightly]
+cmd = "sh kit:bin/py.sh kit:classes/base/nightly.py deps"
 
 [seat.liaison.zulip]
 pool = "~/.config/agent-seat-blueprints/zulip/pool"
