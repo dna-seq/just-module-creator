@@ -181,6 +181,23 @@ Small, and each belongs to the second agent rather than upstream:
 
 ## In flight
 
+**2026-11-07: recheck of 0.48.0–0.48.2 on the shipped plugin (v0.48.2, in the host), part done.**
+
+| claim | result |
+|---|---|
+| F31: `fetch_fulltext(pmid)` joins through PubMed | **holds**: the developer's case 41427385, and an independent one, 42990418 (a bioRxiv preprint in PMC). Both retrieved, and both name the ids PubMed supplied. Two publisher-OA papers (42988005, 42979923) got their DOI from PubMed the same way. 42967576 was answered by Europe PMC directly, so no PubMed note appeared, which is correct. |
+| F50: "Try the locations below" only when there are some | positive branch **holds** (42988005, 42979923: one real location each). Empty branch **not yet hit**: 11788828 fell back to the abstract. Next: a paywalled PMID whose abstract also fails, or a DOI-only call with no OA copy. |
+| 0.48.0: env token saved at start; skip a check answered `valid` under 1 h | **not exercisable here**: `sheep` has been saved since 2026-09-27, and the start-up check recorded `unreachable` (polygon HTTP 502). Forgetting the account to re-test it is not worth the risk. |
+| 0.48.1: `remote_derive`/`remote_draft` send the token, refuse without one | **waits on the polygon**, which answers 502 (since ≤14:58 UTC; the liaison raised it with the registry lead). The no-token refusal is reachable on `target="prod"`, which has no account here. Run that next, on `assets/fto_bmi`. |
+| F119 | suite-only; nothing to probe from the surface. |
+| F100/F101 (never re-probed by this seat) | still to do. |
+
+Found on the way: **F120** (literature-tool findings labelled `upstream`) and **F121** (simultaneous seat
+restarts lose the server; reproduced twice). Both are in `dogfooding.md`. The way back from F121 inside a
+session is `watchdog.sh reload --mcp` (kit v0.1.141), which types `/mcp reconnect all` once the session is idle.
+
+**Then:** the HTT CAG binning module below, scaffold → compile → a polygon rehearsal.
+
 **`assets/fto_bmi/` — done through the rehearsal.** Authored, enriched, strict-compiled, and published
 to `test-sheep/fto_bmi@1.0.0` on the polygon; server-side recompile reproduced our digest. **Two things
 remain open on it:**
