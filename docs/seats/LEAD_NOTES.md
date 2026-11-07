@@ -4,11 +4,12 @@ The lead seat's working state, rewritten to the present before a reset (`docs/se
 
 ## Now
 
-Unreleased on `main`: F120 (`34de4b2`). Released 0.48.2 (tag `v0.48.2`, `b2f4622`, 2026-11-06): F31, F50, F119, and the suite's reference examples
-copied into `assets/reference_examples/` from just-dna-format `v0.7.3` (`496f658`; the sibling checkout's move
-to 0.8 had failed five tests the morning of the release). Announced in `#just-module-creator>releases` for the
-tester's probe; daily line posted 2026-11-06. The person went away at 05:02Z on
-2026-11-05.
+Released 0.48.3 (tag `v0.48.3`, `e1c9614`, 2026-11-08): F120, F122 (DOI joined to PMID/PMCID through PubMed),
+F123 (no-token refusal leads with `registry_accounts add`), F124 (`check_pgx` names only legs that compared,
+read from upstream's record), F125 (stub-row repair keyed on wording both compiler versions share; test fed the
+compiler's real refusal), F129 (STRchive drafter reads the lane or a `catalogue`; a mitigation, out at the 0.8
+move), the gene-metrics guide's gnomAD label (RM417). Also: reference examples' `logs/authoring.log` now travel
+(`4b358df`). Next release no earlier than 2026-11-09. The person went away at 05:02Z on 2026-11-05.
 
 ## Plan states (set 2026-11-05)
 
@@ -52,7 +53,7 @@ tester's probe; daily line posted 2026-11-06. The person went away at 05:02Z on
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.141 (moved on each announcement, 2026-11-05) (`move-to-tag.py`; the pin is in the untracked
+- **Kit pin**: 0.1.143 (moved on each announcement; 0.1.143 on 2026-11-08) (`move-to-tag.py`; the pin is in the untracked
   `.claude/settings.local.json`). The person's `/reload-plugins` takes it into this session.
 
 ## Open
@@ -63,6 +64,15 @@ tester's probe; daily line posted 2026-11-06. The person went away at 05:02Z on
   (the compile guide's reading of `not_found`) are this seat's, at the gate (prod serving 0.8); items 6-7 are
   the pm's. The liaison capped polars and duckdb `<2` in `pyproject.toml` (`c361614`).
 - **F121** (seats resuming together lose the plugin server): kit #300 filed; repo-side repairs wait on it.
+- **F132** (upstream text naming a CLI command reaches the agent unmapped; F125's second instance, split out
+  2026-11-08): `unattended`, mine. Shape in `docs/dogfooding.md`: one CLI-to-tool map in `src/`, guarded both ways
+  against upstream's typer commands, carried as our own field beside the verbatim message. Asked the liaison
+  whether upstream would give a structured remedy key instead.
+- **At the 0.8 move** (adoption map): drop `draft_from_strchive`'s `resolve_strchive_reference()` fallback (keep
+  the `catalogue` argument); drop the gene-metrics guide's 0.7 label sentences (`gnomad_v2.1.1_constraint`);
+  floors `>=0.8.2` for all three (liaison, 2026-11-08); recopy `assets/reference_examples/`.
+- **F126** (`registry_register`'s docstring on install-id reuse) and **F128** (user-scope 0.47.0 skills; desk
+  #229, the person's) remain open in `docs/dogfooding.md`; F126 is `unattended`, mine.
 - **The liaison's re-run of pending-fixes (`f032ecb`) leaves five lifts of our own code**, none urgent, each
   unattended: F94 (`provisioning._LANE_KB`/`_DECLARED_KB` against every lane's `approx_mb`), F93
   (`proxy._TABLE_KEY_FOR`/`_dest_for` and their probe test), F63 (our in-process enrichment claim beside
