@@ -14,6 +14,32 @@ is usable, and what is missing.
 
 ---
 
+## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
+
+**Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the
+diff) · **Status:** open
+
+CLAUDE.md §11: *"the tracked `.claude/settings.json` enables `just-module-creator@just-dna` from a `directory`
+marketplace at `"./"`, so sessions here run this checkout."* That holds for the MCP server: its process is
+`uv run --no-dev --project /data/sources/just-module-creator …`, and it announces v0.48.2. It does not hold for
+the skills. `Skill("just-module-creator:create-module")` loaded
+`~/.claude/plugins/cache/dna-seq/just-module-creator/0.47.0/skills/create-module/SKILL.md`. The cause is that
+`~/.claude/settings.json` also enables `just-module-creator@dna-seq` in **user** scope, which
+`installed_plugins.json` records as 0.47.0, beside two local/project entries for -lite (0.43.0, 0.48.0). Two
+plugins with one name are both on, and the host took the skills from one and the server from the other.
+
+Today the two skill trees differ in one paragraph: `module-publish/SKILL.md`'s line that 0.48.0's server saves
+the environment's token at start. So a seat here reads skills one release behind the server it is testing.
+After the next skill change, the tester probes a tool against instructions that no longer describe it, and
+the lead's edits to `skills/` never reach the sessions in this clone. The two-installs hazard is the one memory
+`local-marketplace-copy-is-not-live` records.
+
+Not ours to fix in code, and not the tester's to change: the user-scope enable is the person's setting.
+Candidates: disable `@dna-seq` in user scope and enable it per project where the released plugin is wanted
+(-lite already does); or say in §11 that the skill half is not pinned. A guard could check
+`Skill`'s base directory against the server's version at start, but nothing in the plugin sees which copy the
+host loaded skills from, so that is a host gap rather than ours.
+
 ## F126 — `registry_register` says it grinds a new install-id when omitted; it reuses the environment's or the saved one first
 
 **Found:** 2026-08-11 as an unfiled note (live: the result said `install_id_origin: "environment"`); checked
