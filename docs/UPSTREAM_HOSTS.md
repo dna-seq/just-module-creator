@@ -13,7 +13,13 @@ and a version past the mark is read from the host's release notes against the li
 
 - **Claude Code 2.1.319** (2026-11-07, the version running this seat). No release before it is read: the mark
   starts here, fast-forwarded (the kit's base, "A mark may be fast-forwarded").
-- **Codex `codex-cli` 0.166.0** (2026-11-07). The same.
+- **Codex `codex-cli` 0.167.0** (read 2026-11-07 from its release notes, `rust-v0.167.0`, 2026-11-06; the mark started
+  at 0.166.0 the same day). Nothing for us. Lines read against the list below: tool names and annotation hints now
+  reach MCP approval metadata (#58161; our `ToolAnnotations` are camelCase, so they arrive); per-chat leases on
+  shared MCP connections (#57978), which is the session lifetime `auth.session_state_persists` relies on, so the
+  first symptom to look for is a reveal or a stored token that a second chat cannot find; plugin configuration
+  gains app settings (#58428), unused here. No change to `${PLUGIN_ROOT}` substitution, `cwd`, skill discovery
+  or the MCP protocol versions.
 
 ## What the plugin uses
 

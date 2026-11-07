@@ -18,8 +18,7 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. The hosts have
 
 ## Half read
 
-- `docs/UPSTREAM_REGISTRY.md` backlog: 0.27.1 to 0.28.2 entry by entry (only client-surface lines read).
-- The polygon's `/api/v1/version` did not answer on 2026-11-07; read it again.
+- The polygon's `/api/v1/version`: HTTP 502 from 14:58 to at least 19:54 UTC, 2026-11-07; read it again.
 
 ## Waiting on others
 
