@@ -43,7 +43,7 @@ reading, and its § 3 block for this plugin is answered here.
     `gnomad_v2.1.1_constraint` while the API served gnomAD 4.1.1 or later; from 0.8.2 they are
     `gnomad_api_constraint`. `skills/module-tables/references/gene_metrics.md` (lines 190, 325, 480) reads the
     label as true and explains the BRCA1 difference between snapshot and API rows as v4.1 against v2.1.1, which
-    it is not. Handed to the lead, 2026-11-08. Relabelling a module means deleting `gene_metrics.csv` and
+    it is not. Corrected by the lead in 0.48.3 (`d99089a`). Relabelling a module means deleting `gene_metrics.csv` and
     enriching again, which moves its fact hash.
   - RM410 (the constraint snapshot moves to gnomAD 4.1.2 once published; 4.1 rows are kept on a re-run), RM416
     (`--pin` on a lane that cannot take one stops the run), RM408 (Open Targets pulls, ~5.5 GB), RM411, RM413:
@@ -158,7 +158,8 @@ Sorted hardest first. *Touches* names our code or skill; *cost* is an estimate f
 9. **Fixed what we worked around** (0.8.0 only, the pending-fixes table): F115, F118, F113, F108, F105, F116,
    F127, and RM382 for F85. Also F129 (`docs/dogfooding.md`, the tester, 2026-11-07, high): on 0.7.3
    `draft_repeat_loci` skips when handed no catalogue and does not resolve the provisioned STRchive lane, so
-   `draft_from_strchive` cannot draft; RM395 fixes it in 0.8.0. Whether to mitigate before the move is the lead's. Each mitigation comes out only once the pinned release passes its reproduction.
+   `draft_from_strchive` cannot draft; RM395 fixes it in 0.8.0. Mitigated by the lead in 0.48.3 (`02b8ce7`: our wrapper
+   passes `resolve_strchive_reference()`); the mitigation comes out with the move. Each mitigation comes out only once the pinned release passes its reproduction.
 10. **`artifact.digest` moves on every recompile** (§ 1.11, `toolchain_differs` between polars 1 and 2): a
     published module compared by digest reads as changed. `compare_to_published` (`tools/comparison.py`) already
     compares by `content_signature`; what it may add is `compilation.toolchain` beside a moved digest, so an author
