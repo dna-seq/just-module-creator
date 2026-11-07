@@ -14,6 +14,61 @@ is usable, and what is missing.
 
 ---
 
+## F121 — when the seats restart together, every one of them starts without the plugin, and stays without it
+
+**Found:** 2026-11-07, by the tester seat, twice in one day · **Severity:** medium · **Status:** open, a
+surface item: each repair below is a decision.
+
+The plugin runs from this checkout, and every seat session starts its own server with
+`uv run --no-dev --project . just-module-creator stdio`. Claude Code gives a server 30 s to answer
+`initialize`. When the machine is quiet, the server answers in 7.7 s. Measured at 14:40 UTC: the sync
+check takes 0.03 s, `import just_module_creator.server` 2.2 s, and `build_server()` 2.4 s. That is about
+4× headroom, and both real restarts used all of it:
+
+- **13:51 UTC**: every repo's sessions and watchdogs restarted at once (the kit's pin moved to v0.1.140).
+  The liaison's server timed out (`a85b4db8`). The tester's session started at 13:58 and never tried: it has
+  no connect log at all, because the host keys a cached failure to the project.
+- **16:22 UTC**, after a reboot (kernel 7.2.12 → 7.2.15): the lead (`a8d51777`), the tester (`4d89cf0e`) and
+  the liaison (`a85b4db8`) resumed within two seconds of each other. All three of this server's connects
+  timed out at 30 s, on a cold page cache with three imports of the toolchain running at once.
+
+The host message says *"retries automatically in 15 min"*, and no retry was logged in 46 min. A session cannot
+type `/mcp`, so until v0.1.141 of the seats kit (`watchdog.sh reload --mcp`) the person was the only way back.
+The cost is a whole unattended stretch spent by every seat without the product, which is exactly when the seats
+are meant to work. The logs are under
+`~/.cache/claude-cli-nodejs/-data-sources-just-module-creator/mcp-logs-plugin-just-module-creator-just-module-creator/`.
+They record the host's side only: no server stderr, so where the 30 s went is not recorded.
+
+Candidate repairs, none applied, each with its cost:
+- **Raise `MCP_TIMEOUT`** in the clone's tracked settings. This is one line. It hides a start that has become
+  slow, and it is the person's setting, not ours.
+- **Answer `initialize` before importing the toolchain** (lazy imports behind the listing). This wins the race
+  under any load, but the tool listing is generated from the live models, so the listing itself would still
+  wait. It also sits against the "never an inline import" rule (§2), so it needs a decision first.
+- **The kit retries a failed server at resume** (`reload --mcp` from the resume hook). This repairs it for every
+  repo, so it belongs on the kit's issues if it is wanted.
+
+## F120 — every finding the literature tools compute says it is the compiler's own
+
+**Found:** 2026-11-07, rechecking F31 on `fetch_fulltext` (0.48.2) · **Severity:** low · **Status:** open
+
+`LintFinding.source` says what it is for: *"`upstream` for the compiler's own, carried across
+field-for-field, or `just-module-creator` for one this authoring layer computed itself. Read it before
+quoting a finding as the compiler's."* `fetch_fulltext(pmid="42990418")` returned *"PubMed's record of PMID
+42990418 supplied PMCID PMC13733956 and DOI …, which Europe PMC's answer did not carry"* with
+`"source": "upstream"`. That join is this plugin's own code (`discovery.py`, F31's fix), and no compiler took
+part in the call.
+
+It is not one message. `source` defaults to `"upstream"` (`models.py`, `LintFinding`), and none of the 17
+`LintFinding(...)` calls in `discovery.py` set it. So every outage notice, the no-passage note, the PubMed join
+and the "nothing was retrieved" warning reach the agent labelled as the compiler's. That is counted by AST on
+0.48.2: `authored_checks.py` and `research.py` set it on every call, and one call each in `_shared` and
+`refresh` also omit it (not read). The harm is the one the field exists to prevent: an agent told to weigh
+upstream findings differently treats a network notice from our layer as compiler policy. A default that
+names the most authoritative layer is the wrong default. Whether the fix is labelling the 17 calls or flipping
+the default is the lead's call; flipping it moves every `to_findings` pass-through, so a test should pin
+both producers.
+
 ## F86 — LitVar2 is the rsID↔CAID bridge we lack, and it is DEFERRED to upstream's 0.7
 
 **Not a defect. A probed capability, parked deliberately on 2026-09-01** so the notes are not
