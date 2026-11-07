@@ -83,6 +83,7 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
+| F127 | S135 | filed 2026-11-07 | open upstream |
 | F115 | S124 | RM301 | 0.8.0 only |
 | F118 | S127 | (b); RM340 | 0.8.0 only |
 | F113 | S113 | RM262, RM263 | 0.8.0 only |
@@ -105,6 +106,18 @@ its history.
 | F67 | S74 | shipped `load_spec` | in our lock; `load_spec` can replace our `yaml.safe_load` (lead) |
 | F99 | S101 | doc fixed | upstream docs, nothing to install |
 | F54 | S58 | RM122 | open upstream, parked |
+
+## F127 — a CPIC draft's skipped-allele warning names `TA(8)` on a gene that has none (format `S135`)
+
+**State: filed 2026-11-07 by the liaison, on the tester's report; open upstream. Low, wording only. No
+mitigation, and none is right:** the warning passes through verbatim.
+
+`draft_from_cpic(gene="TPMT")` on enricher 0.7.3 warns that three defining alleles were skipped as *"a
+deletion/insertion or repeat notation (`DELTCT`, `INSCGGG`, `TA(8)`)"*, then lists the real ones (`*1=DEL`,
+`*42=INST`, `*47=DELAAGT`). The parenthesis is the fixed example list in the `"notation"` reason of
+`just_dna_enricher/cpic.py`, still on their `main` at `f5d7170`, so a TPMT draft reads as though TPMT carried
+UGT1A1's `*28` repeat. Asked for: drop the examples, or mark them as examples. Close when an enricher release
+without them is in our lock.
 
 ## F115 — constructing an enricher client exports the working directory's whole `.env` (format `S124`)
 
