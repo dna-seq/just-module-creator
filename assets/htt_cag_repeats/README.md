@@ -30,7 +30,7 @@ Authored by hand and logged in `logs/authoring.log`. This module is a probe, not
 - **F128**: the session ran this checkout's server with the released 0.47.0's skills.
 - **F125, second instance**: the closure warning names `just-dna-compiler close` where this surface has
   `close_module`.
-- **Compiler, handed to the liaison**: two warnings reason about `RUC`/`CIRUC`, though every bin declares
+- **Compiler, filed upstream as format `S136` and `S137`** (both reproduce on compiler 0.8.0): two warnings reason about `RUC`/`CIRUC`, though every bin declares
   `source_field: FORMAT/REPCN`, and the tiling one is listed as `actionable`, advising `measure_tiling:
   continuous` for a whole-number count. The `bins_ungrounded` text says "no bin pmid" while one bin carries one.
 
