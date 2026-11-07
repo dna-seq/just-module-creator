@@ -52,14 +52,22 @@ tester's probe; daily line posted 2026-11-06. Nothing unreleased on `main`. The 
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.140 (moved on each announcement, 2026-11-05) (`move-to-tag.py`; the pin is in the untracked
+- **Kit pin**: 0.1.141 (moved on each announcement, 2026-11-05) (`move-to-tag.py`; the pin is in the untracked
   `.claude/settings.local.json`). The person's `/reload-plugins` takes it into this session.
 
 ## Open
 
+- **The tester and the liaison are seated (2026-11-07).** The tester is rechecking 0.48.0-0.48.2 (F31, F50,
+  `remote_derive`/`remote_draft` live on the polygon). The liaison's 0.8 adoption map is in
+  `docs/UPSTREAM_COMPILER.md` ("The 0.8 adoption map", `44a2880`); item 1 (the floors and the trio move) and item 2
+  (the compile guide's reading of `not_found`) are this seat's, at the gate (prod serving 0.8); items 6-7 are
+  the pm's. The liaison capped polars and duckdb `<2` in `pyproject.toml` (`c361614`).
+- **Push of `main` held for the person**: the liaison's seat-table commit `09404dc` (its watchers) is outside its
+  grant and it asked the person; a fast-forward push of mine would carry it, so lead commits stay local until
+  they say.
 - Desk #203 (RM28), #204 (RM31), #205 (RM18): waiting on the person.
 - The tester's probe of 0.48.1's token refusal on the polygon, asked in `#just-module-creator>releases`.
-- The person's `/reload-plugins` here takes the kit's 0.1.140 hooks (the watchdog already runs 0.1.140).
+- The person's `/reload-plugins` here takes the kit's 0.1.141 hooks (the watchdog already runs 0.1.141).
 
 ## Downstream
 
