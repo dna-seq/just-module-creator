@@ -72,6 +72,40 @@ the installed packages, not the sibling checkouts** — which is the check this 
 exists to force, and the reason its status lines name both halves.
 
 
+**Against 0.8.0 (the liaison, 2026-11-07).** Each format-side entry's upstream item, read from the
+compiler's `RM_TOC_*` status lines on their `main` at `911a2fd`, against what `uv.lock` installs (format
+0.7.1, compiler 0.7.2, enricher 0.7.3; capped `<0.8`). *In our lock* means the fix is released and installed,
+so the entry is a candidate to move to `previous_issues.md` once its reproduction passes on the installed
+package (CLAUDE.md §8; not yet re-run for any row here). *0.8.0 only* means released and not installed: the
+mitigation stays until the 0.8 adoption. The registry-side entries (F87, F88, F92) are read in
+`docs/UPSTREAM_REGISTRY.md`. This table is the liaison's reading on that day; each entry's own text keeps
+its history.
+
+| Entry | Upstream | Fix | Where it is |
+|---|---|---|---|
+| F115 | S124 | RM301 | 0.8.0 only |
+| F118 | S127 | (b); RM340 | 0.8.0 only |
+| F113 | S113 | RM262, RM263 | 0.8.0 only |
+| F108 | S110 | RM257, RM258 | 0.8.0 only |
+| F105 | S112 | RM259 | 0.8.0 only |
+| F116 | S125 | RM337, RM338 | 0.8.0 only |
+| F85 | S85 | RM154; RM382 reverses part | RM154 in our lock; RM382 0.8.0 only (entry rewritten) |
+| F94 | S97 | RM229 | in our lock (0.7.0) |
+| F93 | S96 | RM224 | in our lock (0.7.0) |
+| F89 | S87 | RM180 | in our lock (0.7.0) |
+| F90 | S88 | RM183 | in our lock (0.7.0) |
+| F91 | S89 | RM184 | in our lock (0.7.0) |
+| F63 | S66 | RM128 | in our lock (0.7.0) |
+| F112 | S67, S68 | shipped; RM131 | in our lock (0.7.0) |
+| F59 | S64 | justified; RM133 | in our lock (0.7.0) |
+| F98 | S100 | RM234, RM235 | in our lock (0.7 line) |
+| F53 | S57 | RM121 | in our lock (0.6.6) |
+| F55 | S59 | RM123 | in our lock (0.6.6) |
+| F58 | S63 | shipped | in our lock |
+| F67 | S74 | shipped `load_spec` | in our lock |
+| F99 | S101 | doc fixed | upstream docs, nothing to install |
+| F54 | S58 | RM122 | open upstream, parked |
+
 ## F115 — constructing an enricher client exports the working directory's whole `.env` (format `S124`)
 
 **Status (2026-09-27):** **fixed in tree, not released** — format-tree `S124`, answered as their
@@ -571,10 +605,24 @@ authoring step in any skill, because teaching an author to write a file a re-pub
 them to lose work. `describe_table` answers it — an agent that asks gets the truth — and nothing routes
 to it.
 
-## F85 — an unresolvable rsID reports `not_found` whoever asked, and the warning names the wrong reason (upstream `S85`, fixed in tree, uncut)
+## F85 — an unresolvable rsID reports `not_found` whoever asked, and the warning names the wrong reason (upstream `S85`; `RM154` in our lock, partly reversed in 0.8.0 by `RM382`)
 
-**State: accepted both halves, shipped in the upstream tree as `RM154`, and NOT in a cut release —
-`0.7.0` is uncut, we install `0.6.6`.** So the mitigation stays until `uv sync` carries it. Filed and
+**State (the liaison, 2026-11-07).** `RM154` shipped in 0.7.0 and is in what we install: enricher 0.7.3's
+`EnrichmentResult` carries `allele_mismatches` (checked against the installed package). Under 0.7 the row
+still stays `not_found`, so the `SYMPTOMS.md` reading below is right for the release we lock.
+
+**0.8.0 reverses S85's "the row stays" for an rsID-only subject** (format `INTEGRATION_0_8` § 1.36, its
+§ 3 asks this correction of us). When every link answered and none could host the authored genotype, a
+0.8 enricher writes **no** `resolution.csv` row: the evidence is `EnrichmentResult.allele_mismatches[*].links`
+and the strict refusal's phrase, and a later link that can host the genotype writes its own row, named in
+`superseded_answers[*].placed_by`. A missing row then means either *answered and rejected* or *could not
+ask*; `allele_mismatches` against `unreachable_rsids` / `unconsulted_rsids` tells them apart. A
+`not_found` row means only that the link has no record of the rsID. So at the 0.8 adoption the
+`SYMPTOMS.md` entry and the compile guide's reading of `not_found` change with the pin (the lead's, listed
+in `docs/UPSTREAM_COMPILER.md`'s adoption map); until then they stay.
+
+**State on 2026-08-31, kept as the record:** accepted both halves, shipped in the upstream tree as `RM154`, and NOT in a cut release —
+`0.7.0` is uncut, we install `0.6.6`. So the mitigation stays until `uv sync` carries it. Filed and
 answered on 2026-08-31, inside the hour.
 
 **What we reported.** `enrich` writes `status: not_found`, `source: ensembl` for an rsID the source
