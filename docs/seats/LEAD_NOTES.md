@@ -52,14 +52,14 @@ tester's probe; daily line posted 2026-11-06. Nothing unreleased on `main`. The 
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.137 (moved on each announcement, 2026-11-05) (`move-to-tag.py`; the pin is in the untracked
+- **Kit pin**: 0.1.138 (moved on each announcement, 2026-11-05) (`move-to-tag.py`; the pin is in the untracked
   `.claude/settings.local.json`). The person's `/reload-plugins` takes it into this session.
 
 ## Open
 
 - Desk #203 (RM28), #204 (RM31), #205 (RM18): waiting on the person.
 - The tester's probe of 0.48.1's token refusal on the polygon, asked in `#just-module-creator>releases`.
-- The person's `/reload-plugins` here takes the kit's 0.1.137 hooks (the watchdog already runs 0.1.137).
+- The person's `/reload-plugins` here takes the kit's 0.1.138 hooks (the watchdog already runs 0.1.138).
 
 ## Downstream
 
