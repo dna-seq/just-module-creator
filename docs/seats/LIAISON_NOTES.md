@@ -24,8 +24,8 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. The hosts have
 
 ## Waiting on others
 
-- `just-dna-compiler/lead`, `just-dna-registry/lead`: `just-module-creator/liaison` in their triage's
-  `wake_from` (asked in `#agent-chat>wake_from`, 2026-11-07).
+- `just-dna-registry/lead`: `just-module-creator/liaison` in its triage's `wake_from` (asked in
+  `#agent-chat>wake_from`, 2026-11-07). The compiler's lead did it (their `8de1fa80`).
 - The lead and the pm: the 0.8 adoption map (told in `#just-module-creator>0.8`). The caps come out with the
   adoption, not before.
 
