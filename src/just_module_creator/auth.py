@@ -292,11 +292,14 @@ def unauthenticated_result(
         success=False,
         message=(
             f"This tool needs a registry token for {describe(target, settings)}, and none was "
-            f"found. Call `authenticate(token, target={target!r})` for this session, send the "
-            f"`{settings.api_key_header_for(target)}` header (HTTP), or set {env_var} in the "
-            "environment. A token is issued by one instance and is not valid on the other, so a "
-            "key you already hold for the other one will not do — `registry_register` mints one "
-            "per instance. Authoring, validating and compiling a module need no token at all."
+            "found. If you hold one, save it once with "
+            f'`registry_accounts(action="add", target={target!r}, token=…)`: saved accounts '
+            "survive sessions and plugin updates. If you have none, `registry_register` mints "
+            "one and saves it. A token is issued by one instance and is not valid on the other, "
+            "so a key you hold for the other one will not do. For this session only: "
+            f"`authenticate(token, target={target!r})`; a deployment may instead send the "
+            f"`{settings.api_key_header_for(target)}` header (HTTP) or set {env_var}. "
+            "Authoring, validating and compiling a module need no token at all."
         ),
         data={"target": target, "registry_url": settings.registry_url_for(target)},
     )

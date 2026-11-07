@@ -96,21 +96,6 @@ publisher page. Whichever id the author has decides whether they get the text, a
 would have worked. Europe PMC's search (`DOI:` field) and NCBI's id converter both answer DOI → PMID/PMCID.
 Whether to join on the way in, or to say "try it by PMID" in the warning, is the lead's call.
 
-## F123 — the no-token refusal points at a session-only token or the environment, not at the saved accounts
-
-**Found:** 2026-11-07, `remote_derive(target="prod")` with no prod account (0.48.1's claim, which holds) ·
-**Severity:** low · **Status:** open
-
-0.47.0 made `state.json` the place tokens live (*"Any number of registry accounts per instance … so they
-survive plugin updates on every host"*, through `registry_accounts`). The refusal still says: *"Call
-`authenticate(token, target='prod')` for this session, send the `X-Registry-Token` header (HTTP), or set
-JMC_API_KEY / REGISTRY_TOKEN in the environment … `registry_register` mints one per instance."* An author who
-already holds a prod token and follows it gets either a token gone by the next session or an environment
-variable, which is the "dev mindset, not users" route §4 warns against. `registry_accounts(action="add",
-token=…)` is the durable route, and it is not named. `registry_register` saves what it mints, so that half is
-fine. The same text is probably shared with the gated write tools (`unauthenticated_result`). Not read; check
-before fixing in one place.
-
 ## F121 — when the seats restart together, every one of them starts without the plugin, and stays without it
 
 **Found:** 2026-11-07, by the tester seat, twice in one day · **Severity:** medium · **Status:** open, a

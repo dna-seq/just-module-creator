@@ -200,6 +200,11 @@ def test_the_unauthenticated_message_names_the_instance_and_its_variable():
 
     assert "JMC_API_KEY" in prod.message and DEFAULT_REGISTRY_URL in prod.message
     assert "JMC_TEST_API_KEY" in test.message and DEFAULT_POLYGON_URL in test.message
+    # F123: the durable route leads; the session-only and environment routes follow it.
+    for refusal, target in ((prod, "prod"), (test, "test")):
+        durable = refusal.message.index(f'registry_accounts(action="add", target={target!r}')
+        assert durable < refusal.message.index("authenticate(token")
+        assert durable < refusal.message.index("JMC_")
     assert prod.data == {"target": "prod", "registry_url": DEFAULT_REGISTRY_URL}
     assert test.data == {"target": "test", "registry_url": DEFAULT_POLYGON_URL}
 
