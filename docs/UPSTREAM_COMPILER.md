@@ -37,7 +37,11 @@ reading, and its § 3 block for this plugin is answered here.
   read it at the cut; ask before repeating it).
 - **0.8.1**: cut on their `main` (enricher 0.8.1 only, not on PyPI on 2026-11-07, the registry liaison). RM400 stops
   live Ensembl REST writing patch and alt-contig loci, so a `--rederive` under it drops them. Read at its tag and
-  publish; the 0.8 adoption should floor the enricher at it if it is out by then.
+  publish; the 0.8 adoption should floor the enricher at it if it is out by then. Two more in it, from the
+  compiler's triage answering the registry's S134 (2026-11-07): RM398 makes dbSNP a third placement witness
+  (`resolution.csv` rows may name `dbsnp`, `sources.csv` gains a `dbsnp` resolution row, and a run with
+  `verify_rsids=False` counts those indels as not asked), which map item 2 and the licensing readers must take;
+  RM403's retry lines log at WARNING on `just_dna_enricher.net`, so a count of logged warnings rises in an outage.
 
 ## What the plugin uses
 
