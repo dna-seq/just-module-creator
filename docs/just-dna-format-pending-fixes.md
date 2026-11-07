@@ -83,8 +83,8 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
-| F130 | S136 | filed 2026-11-07 | open upstream |
-| F131 | S137 | filed 2026-11-07 | open upstream |
+| F130 | S136 | RM414 | fixed in tree, next patch |
+| F131 | S137 | RM415 | fixed in tree, next patch |
 | F127 | S135 | RM253 | 0.8.0 only |
 | F115 | S124 | RM301 | 0.8.0 only |
 | F118 | S127 | (b); RM340 | 0.8.0 only |
@@ -111,8 +111,11 @@ its history.
 
 ## F130 — the repeat-count warnings name `RUC`/`CIRUC` over a declared `source_field=FORMAT/REPCN` (format `S136`)
 
-**State: filed 2026-11-07 by the liaison, on the tester's report; open upstream. Reproduced on compiler 0.7.2
-and 0.8.0, unchanged on their `main` at `8e64c0c`. No mitigation:** the warnings pass through.
+**State: answered and fixed in tree the same hour (RM414, their `89610c38`), not released; ships with their
+next patch, which reaches us only with the 0.8 adoption.** When every bin names a `source_field` that is not
+VCF's own, both warnings name that field; the fractional one says the format cannot type it and keeps VCF 4.4's
+typing of `RUC` beside it. Codes and published phrases unchanged. Filed 2026-11-07 by the liaison, on the
+tester's report; reproduced on compiler 0.7.2 and 0.8.0. No mitigation: the warnings pass through.
 
 On `assets/htt_cag_repeats` (`validate_module`, strict), every bin declares `source_field=FORMAT/REPCN`,
 `source_element=largest` (ExpansionHunter, a whole number), yet two warnings reason about VCF `RUC`
@@ -122,8 +125,10 @@ On `assets/htt_cag_repeats` (`validate_module`, strict), every bin declares `sou
 
 ## F131 — `bins_ungrounded` says "no bin pmid" when one bin carries one (format `S137`)
 
-**State: filed 2026-11-07 by the liaison, on the tester's report; open upstream. Reproduced on compiler 0.7.2
-and 0.8.0, unchanged on their `main` at `8e64c0c`. No mitigation.**
+**State: answered and fixed in tree the same hour (RM415, their `89610c38`), not released; ships with their
+next patch.** The clause is chosen by whether any bin cites: here *"3 of 4 … carry no grounding evidence of
+their own (…; 1 other bin(s) do cite one)"*. Filed 2026-11-07 by the liaison, on the tester's report. No
+mitigation.
 
 Same module, no `studies.csv`, the `36-39` bin carries `pmid=27335115`: *"3 of 4 bin(s) state a threshold and
 the module records no grounding evidence at all (no studies.csv rows, no bin pmid)"*. The count is right; the
