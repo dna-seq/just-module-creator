@@ -75,8 +75,8 @@ exists to force, and the reason its status lines name both halves.
 **Against 0.8.0 (the liaison, 2026-11-07).** Each format-side entry's upstream item, read from the
 compiler's `RM_TOC_*` status lines on their `main` at `911a2fd`, against what `uv.lock` installs (format
 0.7.1, compiler 0.7.2, enricher 0.7.3; capped `<0.8`). *In our lock* means the fix is released and installed,
-so the entry is a candidate to move to `previous_issues.md` once its reproduction passes on the installed
-package (CLAUDE.md §8; not yet re-run for any row here). *0.8.0 only* means released and not installed: the
+so the entry is a candidate to close once its reproduction passes on the installed package (CLAUDE.md §8);
+each row was re-run on 2026-11-07 and says what of ours can come out, and whose that is. *0.8.0 only* means released and not installed: the
 mitigation stays until the 0.8 adoption. The registry-side entries (F87, F88, F92) are read in
 `docs/UPSTREAM_REGISTRY.md`. This table is the liaison's reading on that day; each entry's own text keeps
 its history.
@@ -96,13 +96,13 @@ its history.
 | F90 | S88 | RM183 | in our lock (0.7.0); reproduction passes 2026-11-07, nothing to remove |
 | F91 | S89 | RM184 | in our lock (0.7.0); reproduction passes 2026-11-07, nothing to remove |
 | F63 | S66 | RM128 | in our lock (0.7.0); call sites verified 2026-11-07, our claim's fate is the lead's |
-| F112 | S67, S68 | shipped; RM131 | in our lock (0.7.0) |
-| F59 | S64 | justified; RM133 | in our lock (0.7.0) |
-| F98 | S100 | RM234, RM235 | in our lock (0.7 line) |
-| F53 | S57 | RM121 | in our lock (0.6.6) |
-| F55 | S59 | RM123 | in our lock (0.6.6) |
-| F58 | S63 | shipped | in our lock |
-| F67 | S74 | shipped `load_spec` | in our lock |
+| F112 | S67, S68 | shipped; RM131 | in our lock (0.7.0); adopted, nothing to remove |
+| F59 | S64 | justified; RM133 | in our lock (0.7.0); registry client's `set_short_description` not wrapped here (lead) |
+| F98 | S100 | RM234, RM235 | in our lock (0.7 line); adopted, nothing to remove |
+| F53 | S57 | RM121 | in our lock (0.6.6); passes, nothing to remove |
+| F55 | S59 | RM123 | in our lock (0.6.6); nothing of ours to lift |
+| F58 | S63 | shipped | in our lock; passes, nothing to remove |
+| F67 | S74 | shipped `load_spec` | in our lock; `load_spec` can replace our `yaml.safe_load` (lead) |
 | F99 | S101 | doc fixed | upstream docs, nothing to install |
 | F54 | S58 | RM122 | open upstream, parked |
 
@@ -672,6 +672,8 @@ against the sibling checkout.
 
 ## F53 — a module without `variants.csv` cannot be found by gene (upstream `S57`)
 
+**Reproduced 2026-11-07 (the liaison), on the installed packages** (format 0.7.1, compiler 0.7.2, enricher 0.7.3, registry client 0.27.0): `compiler.module_stats` exists. Nothing to remove: the prose guard stays for `pgs`-led modules and for modules published before 0.6.6, both stated above.
+
 **Status: CLOSED 2026-08-21 — released in compiler 0.6.6 as their `RM121`, installed, and adopted
 here.** They answered the question the note asked — `stats` describes the **module**, and `Stats`'s own
 docstring already said "derived from the spec", so it was an unimplemented sentence rather than a
@@ -726,6 +728,8 @@ bins mean, because prose is the only path to a reader right now. **Do not promis
 heteroplasmy module will produce a report today.**
 
 ## F55 — three attestations record a check that could not have failed (upstream `S59`)
+
+**Read 2026-11-07 (the liaison):** released in 0.6.6, and nothing of ours mitigates it, so there is nothing to lift; not re-run.
 
 **Status: TWO OF THREE released in 0.6.6 as their `RM123`; the third did not reproduce.**
 
@@ -1942,6 +1946,8 @@ by `uv sync`.
 
 ## F58 — the three required `ModuleInfo` fields carry no `Field(description=…)` (upstream `S63`)
 
+**Reproduced 2026-11-07 (the liaison), on the installed packages** (format 0.7.1, compiler 0.7.2, enricher 0.7.3, registry client 0.27.0): `ModuleInfo.title`, `description` and `report_title` each carry a field description. Nothing to remove.
+
 **Status: filed 2026-08-21 against format 0.6.6, open. Our side is mitigated and does not wait on it.**
 
 **Status (2026-09-25): released and installed.** In format 0.7.0 (`__file__` under
@@ -1983,6 +1989,8 @@ ours comes out then — the point-of-write repetition is still worth having, bec
 description does not reach an agent replacing a `<<REPLACE>>` in a YAML file.
 
 ## F59 — display metadata is inside the attestation binding (format `S64`, registry `S16`)
+
+**Reproduced 2026-11-07 (the liaison), on the installed packages** (format 0.7.1, compiler 0.7.2, enricher 0.7.3, registry client 0.27.0): the binding question was answered and closed upstream (RM133: the binding stays, do not re-propose), and the fix arrived on the registry side as a module-level subtitle stored beside the module: `RegistryClient.set_short_description(namespace, name, short_description)`, at most 120 characters, `None` clears, no version and no closure spent. **The plugin wraps `amend_readme` and not this**, so rewording a published subtitle still reads here as costing a version. Handed to the lead, 2026-11-07, as a registry write-surface gap.
 
 **Status: filed 2026-08-21 against format/compiler 0.6.6 and registry 0.18.2, both open. Nothing of ours
 can mitigate it — the field, the binding and the card all sit upstream.**
@@ -2095,6 +2103,8 @@ it does not make the write atomic. Those three are upstream's and are what `S66`
 
 ## F67 — `ModuleSpecConfig` is public and nothing public produces one (format `S74`)
 
+**Reproduced 2026-11-07 (the liaison), on the installed packages** (format 0.7.1, compiler 0.7.2, enricher 0.7.3, registry client 0.27.0): **the compiler now has a public loader**, `just_dna_compiler.compiler.load_spec(path, *, authority_keys=None) -> ModuleSpecConfig`, so the mitigation (`compare.py` and `audit.py` calling `yaml.safe_load`, and the `pyyaml` dependency declared for them) can be replaced. Whether `audit.read_spec` should take a loader that may refuse a half-written spec, where it now reads three keys from anything parseable, is the lead's call; handed to the lead, 2026-11-07.
+
 **Status: filed 2026-08-24 against format / compiler 0.6.6, open. Mitigated here by parsing the file
 ourselves, which is not a workaround so much as the only route.**
 
@@ -2116,6 +2126,8 @@ into it is what §2 forbids outright, so the mitigation is to not need it. The h
 shape goes through `validate_module`, which has it.
 
 ## F112 — the warning surface cannot be read on the module that needs it most (format `S67`, `S68`)
+
+**Reproduced 2026-11-07 (the liaison), on the installed packages** (format 0.7.1, compiler 0.7.2, enricher 0.7.3, registry client 0.27.0): RM131 shipped in 0.7: the result models carry `carried` and `warnings_summary` beside `warnings` (`just_dna_compiler.models`, with a validator that their counts agree), and `tools/authoring.py` already reads `warnings_summary`. Nothing of ours to remove; 0.8 retires one code and adds others (the adoption map, item 5).
 
 *Numbered `F64` until 2026-09-25, when the clash with `dogfooding.md`'s earlier `F64` (the
 HuggingFace channel) was found; this one was renumbered because it was filed second.*
@@ -2277,6 +2289,8 @@ upstream: it only bites a source checkout, a released wheel carries the bindings
 remedy is one line. Worth a remedy sentence in the error if the cost is ever re-measured.
 
 ## F98 — three enricher check commands had no tool here, and one of them checks a table we write (format `S100` beside it)
+
+**Reproduced 2026-11-07 (the liaison), on the installed packages** (format 0.7.1, compiler 0.7.2, enricher 0.7.3, registry client 0.27.0): adopted here in 0.37.0 and `check_acmg` (`tools/checks.py`) is registered. Nothing to remove.
 
 **State: fixed here in 0.35.0.** `check_acmg`, `check_repeat_bands` and
 `check_literature_coverage` now exist as tools, in a new `catalogue_checks` toolbox group.
