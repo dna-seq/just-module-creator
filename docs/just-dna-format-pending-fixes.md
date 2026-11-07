@@ -90,7 +90,7 @@ its history.
 | F105 | S112 | RM259 | 0.8.0 only |
 | F116 | S125 | RM337, RM338 | 0.8.0 only |
 | F85 | S85 | RM154; RM382 reverses part | RM154 in our lock; RM382 0.8.0 only (entry rewritten) |
-| F94 | S97 | RM229 | in our lock (0.7.0) |
+| F94 | S97 | RM229 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
 | F93 | S96 | RM224 | in our lock (0.7.0) |
 | F89 | S87 | RM180 | in our lock (0.7.0) |
 | F90 | S88 | RM183 | in our lock (0.7.0) |
@@ -199,7 +199,17 @@ query hints, with the Atlas attributing the gene, plus a declared sidecar depend
 
 ## F94 — no lane declares its size, so an offer had to `du` a provisioned box to price one (format `S97`)
 
-**State: ANSWERED AND FIXED IN THE UPSTREAM TREE WITHIN THE HOUR — STATE 2, so our table stays.**
+**State on 2026-11-07 (the liaison): released and in our lock, reproduction passes; the code removal is the
+lead's.** On the installed enricher 0.7.3 (`.venv/.../site-packages`, the floor `>=0.7.3`), every one of the 15
+`CACHE_LANES` declares `approx_mb` and `caches.provisioning_closure` exists, so `_kb_for` already answers from
+the lane for every lane object and `_LANE_KB` / `_DECLARED_KB` answer only the by-name path (a parent named by
+another lane), which `CACHE_LANES[name]` could answer instead. Two readings for whoever removes them: a small
+lane now prices at `1` MB ("at most a megabyte", upstream's rounding) where our table said 13 KB, which moots
+the three-decimal comment beside it; and `alphagenome_avi` declares 30000 MB, the built snapshot, where our
+`_DECLARED_KB` and `_OFFER_CEILING_MB` comment say 88.5 GB, the source artifact an operator fetches to build
+it. Both sit above the 20 GB ceiling, so the offer does not move.
+
+**State before: ANSWERED AND FIXED IN THE UPSTREAM TREE WITHIN THE HOUR — STATE 2, so our table stays.**
 Filed 2026-09-11 while building `provision_caches`; `CacheLane` gained **`approx_mb: int | None`**
 and the module gained **`provisioning_closure(lane)`** the same afternoon, both in the 0.7 source
 tree. Neither is in a release, and `main` installs from PyPI where the whole `just_dna_enricher.caches`
