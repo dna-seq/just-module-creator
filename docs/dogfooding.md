@@ -48,6 +48,11 @@ Candidate repairs, none applied, each with its cost:
 - **The kit retries a failed server at resume** (`reload --mcp` from the resume hook). This repairs it for every
   repo, so it belongs on the kit's issues if it is wanted.
 
+**Lead, 2026-11-07:** the third is filed as kit #300 (the resume hook queues `reload --mcp` for a seat whose
+plugin server failed, or spreads one clone's resumes). The first is the person's setting and the second needs
+§2 reopened, so neither is taken while the kit's answer is pending. Until then a seat that finds the server
+missing runs `watchdog.sh reload --mcp` itself (kit v0.1.141).
+
 ## F86 — LitVar2 is the rsID↔CAID bridge we lack, and it is DEFERRED to upstream's 0.7
 
 **Not a defect. A probed capability, parked deliberately on 2026-09-01** so the notes are not

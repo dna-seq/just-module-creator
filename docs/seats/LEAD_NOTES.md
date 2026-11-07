@@ -4,10 +4,10 @@ The lead seat's working state, rewritten to the present before a reset (`docs/se
 
 ## Now
 
-Released 0.48.2 (tag `v0.48.2`, `b2f4622`, 2026-11-06): F31, F50, F119, and the suite's reference examples
+Unreleased on `main`: F120 (`34de4b2`). Released 0.48.2 (tag `v0.48.2`, `b2f4622`, 2026-11-06): F31, F50, F119, and the suite's reference examples
 copied into `assets/reference_examples/` from just-dna-format `v0.7.3` (`496f658`; the sibling checkout's move
 to 0.8 had failed five tests the morning of the release). Announced in `#just-module-creator>releases` for the
-tester's probe; daily line posted 2026-11-06. Nothing unreleased on `main`. The person went away at 05:02Z on
+tester's probe; daily line posted 2026-11-06. The person went away at 05:02Z on
 2026-11-05.
 
 ## Plan states (set 2026-11-05)
@@ -62,9 +62,12 @@ tester's probe; daily line posted 2026-11-06. Nothing unreleased on `main`. The 
   `docs/UPSTREAM_COMPILER.md` ("The 0.8 adoption map", `44a2880`); item 1 (the floors and the trio move) and item 2
   (the compile guide's reading of `not_found`) are this seat's, at the gate (prod serving 0.8); items 6-7 are
   the pm's. The liaison capped polars and duckdb `<2` in `pyproject.toml` (`c361614`).
-- **Push of `main` held for the person**: the liaison's seat-table commit `09404dc` (its watchers) is outside its
-  grant and it asked the person; a fast-forward push of mine would carry it, so lead commits stay local until
-  they say.
+- **F121** (seats resuming together lose the plugin server): kit #300 filed; repo-side repairs wait on it.
+- **The liaison's re-run of pending-fixes (`f032ecb`) leaves five lifts of our own code**, none urgent, each
+  unattended: F94 (`provisioning._LANE_KB`/`_DECLARED_KB` against every lane's `approx_mb`), F93
+  (`proxy._TABLE_KEY_FOR`/`_dest_for` and their probe test), F63 (our in-process enrichment claim beside
+  upstream's `spec_lock`), F67 (`compiler.load_spec` in place of `yaml.safe_load` in `compare.py`/`audit.py`,
+  and perhaps the pyyaml dependency). F59 (`set_short_description` unwrapped) is a gap whose scope is the pm's.
 - Desk #203 (RM28), #204 (RM31), #205 (RM18): waiting on the person.
 - The tester's probe of 0.48.1's token refusal on the polygon, asked in `#just-module-creator>releases`.
 - The person's `/reload-plugins` here takes the kit's 0.1.141 hooks (the watchdog already runs 0.1.141).
