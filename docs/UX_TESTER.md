@@ -25,44 +25,23 @@ Two rules do most of the work here:
 Attack claims, not gaps. A documented deferral is a decision; what counts is where a
 docstring or doc *promises* something the code does not do.
 
-## Credentials — polygon: yes. Production: still none.
+## Credentials — polygon: yes. Production: none.
 
-**Changed 2026-08-11.** You now hold a **polygon** account: `sheep`, registered with the *existing*
-`JMC_INSTALL_ID` (the result reported `install_id_origin: "environment"`, so no new id was ground and
-the old one still identifies you), token saved in `.env` as `JMC_TEST_API_KEY`. The namespace
-**`test-sheep` is claimed.** Production is untouched — no account, no token, nothing claimed — and the
-paragraphs below about it are all still current.
+**As of 2026-11-07**, read with `registry_accounts(action="list")`, which is the call to make rather than
+trusting this line. There is one saved account: `sheep` on the polygon (`target="test"`), namespace
+`test-sheep` claimed, the default for that instance. It lives in the plugin's `state.json` (0.47.0+), not in
+`.env`. `JMC_TEST_API_KEY` and `JMC_INSTALL_ID` in `.env` are the fallback that the 0.48.0 start-up import
+copied in. **Production: no account, no token, nothing claimed.** A prod call refuses before sending anything,
+and that refusal is the 0.48.1 behaviour probed today.
 
-State only. **How to obtain and save a token is the skill's job**, not this file's:
-`skills/module-publish/SKILL.md` covers registering, what the two secrets are, and why
-the install-id has to be kept. Read it there; do not restate it here, or the two drift.
+The install-id is a proof-of-work string and the account's only recovery path; it exists nowhere else.
+Destroying it is the person's call, never this seat's. How to obtain and save a token is
+`skills/module-publish/SKILL.md`'s job. Read it there, don't restate it here.
 
-**The `test-creator` account and its `test-modules` namespace are gone from production**
-(2026-08-11). Production now refuses `test-`prefixed data outright, so that account could
-not exist there again under that name even if you re-registered. Its token has been
-**cleared from `.env`** rather than left in place: a dead token makes every registry tool
-fail as *"the registry rejected your token"*, which sends you to debug auth instead of
-telling you the truth, which is that you have no account.
-
-**There are two instances now and they share no database** — an account, a token and a
-namespace live on one of them only. So starting again means registering on whichever one
-you are aiming at:
-
-| | production | the polygon |
-|---|---|---|
-| what it is | the catalog everyone installs from | the rehearsal instance |
-| `test-` names | `422 test_data_on_prod` | accepted |
-| deleting a bad publish | impossible | `registry_delete_version` |
-| token env var | `JMC_API_KEY` (**still cleared**) | `JMC_TEST_API_KEY` — **set 2026-08-11**, account `sheep` |
-
-**Rehearse on the polygon.** A production publish is immutable *and* claims its authored
-data by a content hash that `yank` does not release, so one botched publish burns the
-version number and the right to publish that data under any other name.
-
-`JMC_INSTALL_ID` is **still in `.env` and was deliberately left there.** It is a
-proof-of-work string, not a credential for a specific instance, and it exists nowhere else
-— clearing it would be unrecoverable for a value that costs a second to reuse and may
-still be worth registering with. If you want it gone, say so; it is not mine to destroy.
+**Two instances, no shared database**: an account, a token and a namespace live on one only. Production
+refuses `test-` data, a publish there is immutable, and its content claim survives `yank`. The polygon's
+publishes are deletable. **This seat publishes to the polygon only** (its priming), and the module name
+is `test_`-prefixed as well as the namespace, so `purge-test-data` collects it.
 
 ## What has been established
 
