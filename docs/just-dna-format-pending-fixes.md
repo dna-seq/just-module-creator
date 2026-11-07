@@ -91,11 +91,11 @@ its history.
 | F116 | S125 | RM337, RM338 | 0.8.0 only |
 | F85 | S85 | RM154; RM382 reverses part | RM154 in our lock; RM382 0.8.0 only (entry rewritten) |
 | F94 | S97 | RM229 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
-| F93 | S96 | RM224 | in our lock (0.7.0) |
-| F89 | S87 | RM180 | in our lock (0.7.0) |
-| F90 | S88 | RM183 | in our lock (0.7.0) |
-| F91 | S89 | RM184 | in our lock (0.7.0) |
-| F63 | S66 | RM128 | in our lock (0.7.0) |
+| F93 | S96 | RM224 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
+| F89 | S87 | RM180 | in our lock (0.7.0); reproduction passes 2026-11-07, nothing to remove |
+| F90 | S88 | RM183 | in our lock (0.7.0); reproduction passes 2026-11-07, nothing to remove |
+| F91 | S89 | RM184 | in our lock (0.7.0); reproduction passes 2026-11-07, nothing to remove |
+| F63 | S66 | RM128 | in our lock (0.7.0); call sites verified 2026-11-07, our claim's fate is the lead's |
 | F112 | S67, S68 | shipped; RM131 | in our lock (0.7.0) |
 | F59 | S64 | justified; RM133 | in our lock (0.7.0) |
 | F98 | S100 | RM234, RM235 | in our lock (0.7 line) |
@@ -239,6 +239,8 @@ both sides of it.
 
 ## F93 — `sidecar_write_path` follows the file you read only if you ask by the table key (format `S96`)
 
+**Reproduced 2026-11-07 (the liaison), on the installed packages** (`.venv/.../site-packages`; format 0.7.1, compiler 0.7.2, enricher 0.7.3): `layout.sidecar_spellings` answers `('sources.csv', 'licensing.csv')` for either name, `layout.sidecar_key` exists, and in a directory holding `sources.csv`, `sidecar_write_path` returns `sources.csv` for both arguments. The fix is released and in our lock: `_TABLE_KEY_FOR`, `_dest_for` (`tools/proxy.py`) and the probe test in `tests/test_routing.py` can come out, which is the lead's.
+
 **State: FIXED HERE; ANSWERED AND FIXED IN THE UPSTREAM TREE THE SAME HOUR — STATE 2, so the
 mitigation stays.** Accepted as their **RM224** and shipped in the uncut 0.7.0:
 `sidecar_spellings(name)` now normalises through a filename → key map published as
@@ -315,6 +317,8 @@ test fails and says the shim is redundant, which is the only trigger to delete i
 
 ## F89 — an overlay `reason` is inside `content_signature`, so fixing a typo mints a new content identity (format `S87`)
 
+**Reproduced 2026-11-07 (the liaison), on the installed packages** (`.venv/.../site-packages`; format 0.7.1, compiler 0.7.2, enricher 0.7.3): `base.content_identity_exclusions(OverrideRow)` is `{decided_at, decided_by, reason}`. Nothing of ours to remove.
+
 **State: CLOSED the same day. Accepted, decided with the maintainer and shipped in the uncut 0.7.0 as
 `RM180`, verified against our own install — `f4a9b14` when filed, `9b615cd` when re-measured.** Filed
 and answered inside the hour, which is the ordinary upstream cadence and the reason this file's status
@@ -372,6 +376,8 @@ distinguishing the value cell from the provenance cells.
 
 ## F90 — `needs_recompile` crashed on an unstamped compiler version (format `S88`, fixed same day)
 
+**Reproduced 2026-11-07 (the liaison), on the installed packages** (`.venv/.../site-packages`; format 0.7.1, compiler 0.7.2, enricher 0.7.3): `release_records.needs_recompile(None, '0.7.2')` and `('', '0.7.2')` both return the unknown arm (every axis `None`, `complete=False`). Nothing of ours to remove; the adoption question below stays open.
+
 **State: CLOSED. Filed 2026-09-03, shipped in the uncut 0.7.0 as `RM183`, verified against our
 install.** `Compilation.compiler_version` is `str | None`, so a manifest that stamped nothing is
 well-formed and round-trips through `read_manifest` — and `needs_recompile(None, current)` raised
@@ -388,6 +394,8 @@ derivation for *does this artifact need recompiling*, but nothing of ours asks t
 and adding a surface to answer it is a design decision rather than a sweep.
 
 ## F91 — `CACHE_LANES` published every attribute of a lane except the variable that steers it (format `S89`, fixed same day)
+
+**Reproduced 2026-11-07 (the liaison), on the installed packages** (`.venv/.../site-packages`; format 0.7.1, compiler 0.7.2, enricher 0.7.3): every lane's `env_var` is a non-empty `str`. Adopted already; nothing to remove.
 
 **State: CLOSED. Filed 2026-09-03, shipped in the uncut 0.7.0 as `RM184`, adopted here.** All three
 notes filed into the format tree from `preview-0.7` were answered inside a day, and the format inbox
@@ -2048,6 +2056,8 @@ and a release `uv sync` installs carries it. The `short_description` half closes
 field exists with its bound *and* the registry's card reads it.
 
 ## F63 — an interrupted enrichment persists nothing, and its terminal write is unlocked (format `S66`)
+
+**Reproduced 2026-11-07 (the liaison), on the installed packages** (`.venv/.../site-packages`; format 0.7.1, compiler 0.7.2, enricher 0.7.3): `enrich()` takes `transaction.spec_lock` over the spec directory, stages answers in `ResolutionJournal` and writes through `layout.atomic_writer` (read in the installed `enrich.py`; no kill-and-resume run made). Our in-process claim (`tools/passes.py`, `_ENRICHMENTS_IN_FLIGHT`) now duplicates the flock for one process and keeps its clearer refusal; whether it stays is the lead's call.
 
 **Status: filed 2026-08-22 against enricher 0.6.6, open. Mitigated here, and the mitigation is
 narrower than the fix.**
