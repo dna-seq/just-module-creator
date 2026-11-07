@@ -6,6 +6,40 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F124 — `check_pgx` reports "compared against cpic, pharmvar and none differs" on a run whose CPIC leg compared nothing
+
+**Found:** 2026-11-07, re-probing F101 on 0.48.2, scratch copy of the ClawBio CYP2C19 module
+(`data/interim/clawbio_pgx/modules/cyp2c19`) · **Severity:** medium · **Status:** resolved 2026-11-08
+
+The docstring: *"a module drafted from CPIC is compared against its own source on that leg, which upstream
+names (`tautology`) rather than counting as agreement."* The same call's warning says so: *"cpic: … every
+authored function_status still hashes to what the drafter wrote — so each is a copy of the value it would be
+compared against."* And upstream's attestation in `verification.json` records the check as
+`"source": "pharmvar"` alone. Our own summary then says:
+
+> `"next_step": "5 authored function(s) compared against cpic, pharmvar and none differs."`
+
+`checks.py` builds that list from `sorted(result.routes)`, and `routes` names every leg that *answered*
+(`{"pharmvar": "snapshot", "cpic": "snapshot"}`), including one that answered with a copy. So the one sentence
+a layman reads turns "your CPIC values were not checked, because they came from CPIC" into "verified against
+CPIC". That is the vacuous check §2 names, written by our layer on top of an upstream result that got it right.
+`next_step` is the only field that says it. The fix is to name only the legs that compared, and to say which one
+was a copy. Whether that list comes from the warnings or from a field upstream should expose is the lead's call.
+The second "none differs" (`checks.py`, `check_clinpgx`) wasn't reached: this module has no
+`pharm_variants.csv`, and that branch answered `not_checked: "nothing_to_check"` correctly.
+
+F101's own claims hold: 5 compared, PharmVar and CPIC both from snapshots, `attested: true`, the same
+numbers the fix was measured on.
+
+**Resolved** by reading which legs compared from upstream's own record, not from `routes`: `pgx._attest` sets
+the `allele_function` record's `source` exactly when one authority compared and leaves it `None` when both did,
+and keeps a tautological leg out of it. `checks._legs_that_compared` reads that field (never the warning's
+wording, F125's trap); `next_step` names only those legs, and a leg in `routes` but not among them is called
+*"answered with a copy, not a comparison"*. The conflict branch names the sources the conflicts carry.
+`tests/test_checks.py::test_pgx_check_calls_a_copied_leg_a_copy_and_not_a_comparison` builds the copy the way
+the drafter does (the licence row's `dataset` plus upstream's `stamp_draft_digest`) and fails on the old code
+with *"34 authored function(s) compared against cpic, pharmvar and none differs."*
+
 ## F120 — every finding the literature tools compute says it is the compiler's own
 
 **Found:** 2026-11-07, rechecking F31 on `fetch_fulltext` (0.48.2) · **Severity:** low · **Status:** resolved 2026-11-07

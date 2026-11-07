@@ -214,8 +214,8 @@ def _attest(records: list, target: Path) -> tuple[bool, str | None]:
     return True, None
 
 
-def _recorded(target: Path, check: str) -> bool:
-    """Whether `verification.json` now carries a record for `check`.
+def _record(target: Path, check: str) -> dict | None:
+    """The record `verification.json` now carries for `check`, or `None`.
 
     The two PGx passes attest themselves — `pgx._attest` and `clinpgx._attest` write
     the file on `write=True` — so the wrapper must not write a second record. What it
@@ -225,12 +225,36 @@ def _recorded(target: Path, check: str) -> bool:
     """
     path = target / "verification.json"
     if not path.exists():
-        return False
+        return None
     try:
         document = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return False
-    return any(r.get("check") == check for r in document.get("records", []) if isinstance(r, dict))
+        return None
+    return next(
+        (r for r in document.get("records", []) if isinstance(r, dict) and r.get("check") == check),
+        None,
+    )
+
+
+def _recorded(target: Path, check: str) -> bool:
+    """Whether `verification.json` now carries a record for `check` (see `_record`)."""
+    return _record(target, check) is not None
+
+
+def _legs_that_compared(record: dict | None, routes: dict[str, str]) -> list[str]:
+    """The PGx legs that put a comparison, as upstream's own record states them (F124).
+
+    `routes` names every leg that *answered*, and that includes a leg upstream found
+    tautological: the module's values were drafted from the very release it read, so
+    it answered with a copy and compared nothing. Upstream keeps that leg out of its
+    record, whose `source` is set exactly when one authority compared (`pgx._attest`'s
+    documented contract) and is `None` when both did. Read from the record's field, not
+    from the warning's wording, which is the F125 trap.
+    """
+    if record is None or record.get("skipped"):
+        return []
+    source = record.get("source")
+    return [source] if source else sorted(routes)
 
 
 def _by_gene(verdicts: object) -> list[AcmgVerdictRow]:
@@ -794,7 +818,8 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
         A difference is reported and never applied: the two authorities disagree with
         each other, and a module drafted from CPIC is compared against its own source
         on that leg, which upstream names (`tautology`) rather than counting as
-        agreement. Read `compared` as the denominator and `routes` for who answered.
+        agreement. Read `compared` as the denominator and `routes` for who answered;
+        `next_step` names only the legs that compared and calls a copy a copy.
 
         **`use` is required**: both sources carry a no-sale clause, so `unstated` skips
         them and `commercial` is refused. Each leg reads a built snapshot first and
@@ -831,7 +856,15 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
             )
             for c in result.conflicts
         ]
-        answered = sorted(result.routes)
+        record = _record(target, "allele_function")
+        compared_legs = _legs_that_compared(record, result.routes)
+        copies = sorted(set(result.routes) - set(compared_legs))
+        copy_note = (
+            f" {', '.join(copies)} answered with a copy, not a comparison: this module's "
+            "values were drafted from that same release (see `warnings`)."
+            if copies
+            else ""
+        )
         return PgxCheckReport(
             spec_dir=str(target),
             compared=result.compared,
@@ -842,14 +875,16 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
             warnings=list(result.warnings),
             licence_rows=len(result.rows),
             declared_use=result.declared_use,
-            attested=_recorded(target, "allele_function"),
+            attested=record is not None,
             next_step=(
-                f"{len(conflicts)} allele function(s) differ from {', '.join(answered)}. "
+                f"{len(conflicts)} allele function(s) differ from "
+                f"{', '.join(sorted({c.source for c in conflicts}))}. "
                 "Neither side is authoritative: check both, and change a cell only on "
                 "evidence that outranks the source — `record_override` keeps the reason."
+                + copy_note
                 if conflicts
                 else f"{result.compared} authored function(s) compared against "
-                f"{', '.join(answered)} and none differs."
+                f"{', '.join(compared_legs)} and none differs." + copy_note
                 if result.compared
                 else "Nothing was compared — read `skipped`, `skipped_offline` and "
                 "`warnings`. An empty conflicts list here is not agreement."

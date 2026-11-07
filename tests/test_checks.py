@@ -16,7 +16,12 @@ from pathlib import Path
 import pytest
 from conftest import REFERENCE_EXAMPLES, offline_settings
 from fastmcp.exceptions import ToolError
+from just_dna_enricher import pgx as upstream_pgx
+from just_dna_enricher.cpic import CpicAllele, CpicSnapshotClient
+from just_dna_enricher.drafting import stamp_draft_digest
+from just_dna_enricher.pharmvar import PharmVarAllele, PharmVarSnapshotClient
 
+from just_module_creator.tools import checks
 from just_module_creator.tools.checks import NOT_APPLICABLE
 
 REFERENCE = REFERENCE_EXAMPLES / "hfe_hemochromatosis"
@@ -532,11 +537,6 @@ async def test_pgx_check_carries_a_conflict_field_for_field(
     upstream's real code. A snapshot subclass is used because `offline` admits a
     snapshot client and refuses a live one by type.
     """
-    from just_dna_enricher import pgx as upstream_pgx
-    from just_dna_enricher.cpic import CpicAllele, CpicSnapshotClient
-
-    from just_module_creator.tools import checks
-
     class Disagreeing(CpicSnapshotClient):
         def __init__(self) -> None:  # no parquet behind it
             self.release = {"dataset": "cpic_snapshot_test"}
@@ -571,6 +571,73 @@ async def test_pgx_check_carries_a_conflict_field_for_field(
     assert report.attested is True
     assert report.licence_rows >= 1
     assert "record_override" in report.next_step
+
+
+async def test_pgx_check_calls_a_copied_leg_a_copy_and_not_a_comparison(
+    make_client, pgx_spec: Path, monkeypatch
+) -> None:
+    """F124: a CPIC-drafted module's CPIC leg answers with a copy, and `next_step` says so.
+
+    The tautology is built the way the drafter builds it: the licence row names the
+    release the leg reads, and upstream's own `stamp_draft_digest` records the digest.
+    Both clients agree with every authored value. PharmVar compares; CPIC cannot. The
+    old sentence named both as "compared against cpic, pharmvar".
+    """
+    release = "cpic_snapshot_test"
+    licensing = pgx_spec / "licensing.csv"
+    text = licensing.read_text(encoding="utf-8")
+    assert ",non_commercial,,2026" in text, "the reference licence row moved"
+    licensing.write_text(text.replace(",non_commercial,,2026", f",non_commercial,{release},2026"))
+    assert stamp_draft_digest(pgx_spec, "cpic", "annotation", error=RuntimeError)
+
+    authored = [
+        line.split(",")
+        for line in (pgx_spec / "allele_function.csv").read_text().splitlines()[1:]
+    ]
+    assert len(authored) >= 3
+
+    class AgreeingCpic(CpicSnapshotClient):
+        def __init__(self) -> None:  # no parquet behind it
+            self.release = {"dataset": release}
+
+        def alleles_for_gene(self, gene: str) -> list[CpicAllele]:
+            return [CpicAllele(gene=g, allele=a, function_status=f) for g, a, f in authored]
+
+        def close(self) -> None:
+            return None
+
+    class AgreeingPharmVar(PharmVarSnapshotClient):
+        def __init__(self) -> None:
+            self.release = {"dataset": "pharmvar_snapshot_test"}
+
+        def alleles_for_gene(self, gene: str) -> list[PharmVarAllele]:
+            return [PharmVarAllele(gene=g, allele=a, function=f) for g, a, f in authored]
+
+        def close(self) -> None:
+            return None
+
+    real = upstream_pgx.enrich_pgx
+
+    def with_fakes(spec_dir, **kwargs):
+        return real(
+            spec_dir, cpic_client=AgreeingCpic(), pharmvar_client=AgreeingPharmVar(), **kwargs
+        )
+
+    monkeypatch.setattr(checks, "enrich_pgx", with_fakes)
+    async with make_client(offline_settings()) as client:
+        report = (
+            await client.call_tool(
+                "check_pgx", {"spec_dir": str(pgx_spec), "use": "non_commercial"}
+            )
+        ).data
+
+    # Both legs answered — the field this sentence used to be built from.
+    assert set(report.routes) == {"cpic", "pharmvar"}
+    assert report.compared >= 3
+    assert report.conflicts == []
+    assert any(w.startswith("cpic:") for w in report.warnings), "upstream did not see the copy"
+    assert "compared against pharmvar and none differs" in report.next_step
+    assert "cpic answered with a copy" in report.next_step
 
 
 async def test_clinpgx_check_on_a_module_with_no_pharm_table_says_nothing_to_check(

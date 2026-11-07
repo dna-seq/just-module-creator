@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`check_pgx` no longer calls a copy a comparison** (F124). On a module drafted from CPIC, its summary said *"compared against cpic, pharmvar and none differs"* while upstream had found the CPIC leg could not disagree: the values were drafted from the release it read. The summary now names only the legs that compared, from upstream's own record, and says which leg answered with a copy.
 - **A finding the literature tools compute now says it is this plugin's** (F120). `fetch_fulltext`'s outage notices, the PubMed join and the "nothing was retrieved" warning went out with `source: "upstream"`, the compiler's label, because the field defaulted to it. `source` now has no default, so every producer names its layer.
 
 ## [0.48.2] — 2026-11-06
