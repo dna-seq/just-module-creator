@@ -44,7 +44,7 @@ wake_from = "just-module-creator/lead just-module-creator/pm just-module-creator
 cmd = "sh kit:bin/py.sh kit:classes/desk/watch-answers.py just-module-creator tester"
 
 # A release tag pushed: the shipped surface changed, so the tester probes again. `--any-tagger`:
-# the lead and the person tag under this clone's own identity, which the watcher otherwise skips (kit #287).
+# kept for kits below v0.1.139, where a tag under this clone's own identity was skipped (kit #287, #290).
 [seat.tester.watch.release]
 cmd = "sh kit:drivers/git/watch-remote.sh --tags --tag-pattern '^v[0-9]' --any-tagger"
 
