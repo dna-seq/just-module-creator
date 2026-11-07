@@ -5,8 +5,9 @@ The liaison seat's working state, rewritten to the present before a reset (`docs
 ## Now
 
 First seating 2026-11-07 (the seat-builder's handout and first work). Commits: `c361614` (polars, duckdb `<2` in
-the lock), `09404dc` (watchers), `44a2880` (three ledgers, F85, the pending-fixes table against 0.8.0). Pushed:
-not yet; `09404dc` is the seat table, which the grant does not name, so the push waits on the person's word.
+the lock), `09404dc` (watchers), `44a2880` (three ledgers, F85, the pending-fixes table against 0.8.0). Pushed
+2026-11-07 on the person's word ("push granted", this session only), with the tester's and the lead's commits
+between. Later ledger commits: `a9eee8c`, `b5be9c4` (v0.8.1 read), `2d8b3a5` (the polygon's 502).
 
 ## Watchers
 
