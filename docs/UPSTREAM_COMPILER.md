@@ -143,7 +143,7 @@ Sorted hardest first. *Touches* names our code or skill; *cost* is an estimate f
    needs a tool or a written reason in the pending-fixes file. *Cost*: per pass, an hour or two.
 8. **Lever: `enrich --rederive`** against our `refresh_sidecar` (the register above).
 9. **Fixed what we worked around** (0.8.0 only, the pending-fixes table): F115, F118, F113, F108, F105, F116,
-   and RM382 for F85. Each mitigation comes out only once the pinned release passes its reproduction.
+   F127, and RM382 for F85. Each mitigation comes out only once the pinned release passes its reproduction.
 10. **`artifact.digest` moves on every recompile** (§ 1.11, `toolchain_differs` between polars 1 and 2): a
     published module compared by digest reads as changed. `compare_to_published` (`tools/comparison.py`) already
     compares by `content_signature`; what it may add is `compilation.toolchain` beside a moved digest, so an author

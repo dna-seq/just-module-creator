@@ -83,7 +83,7 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
-| F127 | S135 | filed 2026-11-07 | open upstream |
+| F127 | S135 | RM253 | 0.8.0 only |
 | F115 | S124 | RM301 | 0.8.0 only |
 | F118 | S127 | (b); RM340 | 0.8.0 only |
 | F113 | S113 | RM262, RM263 | 0.8.0 only |
@@ -109,13 +109,18 @@ its history.
 
 ## F127 — a CPIC draft's skipped-allele warning names `TA(8)` on a gene that has none (format `S135`)
 
-**State: filed 2026-11-07 by the liaison, on the tester's report; open upstream. Low, wording only. No
-mitigation, and none is right:** the warning passes through verbatim.
+**State: answered the same hour: already fixed in 0.8.0 (RM253), not in our lock.** The 0.8 drafter spells
+DEL/INS/repeat notations as VCF-anchored indels and each skip line names only that run's alleles; reproduced
+upstream on 0.8.1, `draft --gene TPMT` warns once (the bare `*1=DEL`) and drafts `*42` and `*47`. **Our filing
+was wrong on one point:** the `DELTCT`/`INSCGGG`/`TA(8)` found on their `main` at `f5d7170` sit in a code
+comment and a docstring, never a warning; we grepped the string rather than reading the path that emits it.
+Closes with the 0.8 adoption (map item 9). Filed 2026-11-07 by the liaison, on the tester's report; low,
+wording only, no mitigation.
 
 `draft_from_cpic(gene="TPMT")` on enricher 0.7.3 warns that three defining alleles were skipped as *"a
 deletion/insertion or repeat notation (`DELTCT`, `INSCGGG`, `TA(8)`)"*, then lists the real ones (`*1=DEL`,
 `*42=INST`, `*47=DELAAGT`). The parenthesis is the fixed example list in the `"notation"` reason of
-`just_dna_enricher/cpic.py`, still on their `main` at `f5d7170`, so a TPMT draft reads as though TPMT carried
+`just_dna_enricher/cpic.py` (0.7.3), so a TPMT draft reads as though TPMT carried
 UGT1A1's `*28` repeat. Asked for: drop the examples, or mark them as examples. Close when an enricher release
 without them is in our lock.
 
