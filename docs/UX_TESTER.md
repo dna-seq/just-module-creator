@@ -123,7 +123,16 @@ Found on the way: **F120** (fixed on main by the lead, 34de4b2, unreleased) and 
 restarts lose the server; reproduced twice). Both are in `dogfooding.md`. The way back from F121 inside a
 session is `watchdog.sh reload --mcp` (kit v0.1.141), which types `/mcp reconnect all` once the session is idle.
 
-**Then:** the HTT CAG binning module below, scaffold → compile → a polygon rehearsal.
+**HTT CAG binning module: done to a strict compile (e7f2424), the rehearsal waits on the polygon.** The
+README of `assets/htt_cag_repeats/` is the write-up. The plugin's own `todo` holds the rehearsal step.
+F128 (skills from the released 0.47.0) is on the person's desk as #229; until it is answered, read the
+checkout's `skills/` by hand. Two compiler findings went to the liaison: the RUC/CIRUC warnings ignore
+`source_field`, and `bins_ungrounded` says "no bin pmid" while one bin carries one.
+
+**Next probes, in order:** (1) the polygon leg of 0.48.1 and the HTT rehearsal, when the polygon answers;
+(2) a module authored from nothing through the front door by a layman, as the handout's fallback; (3) the
+list in `dogfooding.md`'s "Probes not yet run" (`enrich_expression_effects` live, a module with two of
+something).
 
 **`assets/fto_bmi/` — done through the rehearsal.** Authored, enriched, strict-compiled, and published
 to `test-sheep/fto_bmi@1.0.0` on the polygon; server-side recompile reproduced our digest. **Two things
@@ -140,48 +149,6 @@ remain open on it:**
 
 The namespace `test-sheep` is left claimed — it *is* `test-`prefixed, so the operator's sweep collects
 it, and there is no unclaim operation anyway.
-
-`assets/htt_cag_repeats/` — scaffolded, **not yet authored**. `module_spec.yaml` still
-carries `<<REPLACE>>` in title/description/report_title, and `repeat_alleles.csv` holds
-the two generated stub rows.
-
-The intent is the probe `dogfooding.md` lists as outstanding: a binning module taken
-scaffold → validate → compile → publish, which would close both remaining probe entries
-at once.
-
-**The publish half needs re-planning.** It was written against a single instance and a
-`test-modules` namespace on production, and neither exists now — the account is gone and
-production refuses `test-` names. The publish now goes to the **polygon**
-(`target="test"`), which is the better probe anyway: it is deletable, so the run can be
-repeated, and it exercises the two-target surface that shipped after this plan was
-written. Register on the polygon first; nothing carries over from the old account.
-
-The rows to author are real HTT CAG bins, already linted clean (0 errors, 0 warnings)
-in an earlier probe:
-
-| min | max | direction | meaning |
-|---|---|---|---|
-| — | 26 | neutral | normal |
-| 27 | 35 | neutral | intermediate; may expand on paternal transmission |
-| 36 | 39 | risk | reduced penetrance |
-| 40 | — | risk | full penetrance |
-
-plus the `unresolved: true` sentinel row, which the scaffold generates for you.
-
-Two things that matter when writing them:
-
-- **Integer bins must not touch.** `repeat_count` and `copy_number` are contiguous
-  already, so a shared endpoint is a real overlap and is refused — `[27,35]` then
-  `[36,39]`. The dense kinds (`allele_fraction`, `prs_percentile`) are the opposite and
-  must touch. Getting this backwards is the trap the probe was chosen to test.
-- **Quote every free-text cell.** `conclusion` values contain commas, and an unquoted one
-  produces a validation error naming a different column entirely (F14).
-
-What held up well and does not need re-probing: the coverage check reports a genuine hole
-and correctly invents none between adjacent integers 26 and 27; the missing-sentinel
-warning states the contract outright; `literature_search` reproduced F6 faithfully
-(Semantic Scholar and preprints 429, reported as *unchecked, not empty*) and withheld
-every DOI as redundancy-bearing.
 
 ## Standing constraints
 
