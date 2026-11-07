@@ -1,3 +1,6 @@
-measure_kind,measure_min,measure_max,direction,clin_sig,phenotype,trait_efo_id,conclusion,unresolved,source_field,gene,repeat_unit
-repeat_count,,,,,,,<<REPLACE>>,false,,<<REPLACE>>,<<REPLACE>>
-repeat_count,,,,,,,<<REPLACE>>,true,,<<REPLACE>>,<<REPLACE>>
+measure_kind,measure_min,measure_max,direction,clin_sig,phenotype,trait_efo_id,conclusion,unresolved,source_field,source_element,pmid,gene,repeat_unit
+repeat_count,,26,neutral,benign,Huntington disease,,"A typical HTT repeat length, the same as most people carry: no raised chance of Huntington disease from this gene.",false,FORMAT/REPCN,largest,,HTT,CAG
+repeat_count,27,35,neutral,,Huntington disease,,"An intermediate length: no Huntington disease is expected in you, but the repeat can lengthen when passed on, more often from a father, and may reach the disease range in a child.",false,FORMAT/REPCN,largest,,HTT,CAG
+repeat_count,36,39,risk,pathogenic,Huntington disease,,"A reduced-penetrance length: some people with it develop Huntington disease, usually later in life, and many never do. About 1 in 400 people in the general population carry a length of 36 or more.",false,FORMAT/REPCN,largest,27335115,HTT,CAG
+repeat_count,40,,risk,pathogenic,Huntington disease,,"A fully penetrant length: Huntington disease is expected to develop over a normal lifespan, earlier the longer the repeat.",false,FORMAT/REPCN,largest,,HTT,CAG
+repeat_count,,,unknown,,Huntington disease,,"The HTT repeat was not measured, so nothing can be said about it.",true,FORMAT/REPCN,largest,,HTT,CAG

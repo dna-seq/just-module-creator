@@ -1,12 +1,12 @@
 schema_version: '1.0'
 module:
-  title: <<REPLACE>>
-  description: <<REPLACE>>
-  report_title: <<REPLACE>>
+  title: HTT CAG repeat length (Huntington disease)
+  description: Huntington disease risk band from the HTT CAG repeat length
+  report_title: HTT CAG repeat bands
   icon: database
   icon_set: fomantic
   color: '#6435c9'
-  name: htt_cag_repeats
+  name: test_htt_cag_repeats
 defaults:
   curator: ai-module-creator
   method: literature-review

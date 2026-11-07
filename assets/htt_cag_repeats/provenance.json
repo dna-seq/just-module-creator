@@ -1,0 +1,11 @@
+{
+  "generator": "just-module-creator",
+  "items": [
+    {
+      "variant_key": "repeat_alleles.csv",
+      "rationale": "draft_from_strchive could not draft on this toolchain (F129), so the bins are the standard diagnostic ranges authored by hand. Only the 36-39 bin carries a PMID (Kay 2016, 27335115, whose abstract states 36-39 as reduced penetrance); the other boundaries were not found in any text retrieved this session, so their pmid is left empty rather than cited unread. [jmc field=rows value_sha256=4a765d30fe0a source=authored recorded=2026-11-07T20:18:24Z by=claude-opus-5-5 (just-module-creator tester seat)]",
+      "human_reviewed": false,
+      "outranks": {}
+    }
+  ]
+}

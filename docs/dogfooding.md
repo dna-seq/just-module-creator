@@ -110,7 +110,10 @@ numbers the fix was measured on.
 
 ## F125 — F100's repair text never fires since upstream reworded the refusal it keys on, and its test still passes
 
-**Found:** 2026-11-07, re-probing F100 on 0.48.2 (enricher 0.7.3) · **Severity:** low · **Status:** open
+**Found:** 2026-11-07, re-probing F100 on 0.48.2 (enricher 0.7.3) · **Severity:** low · **Status:** open.
+**Second instance, same day** (HTT probe): `validate_module` and `compile_module` pass on the closure warning's
+*"Run `just-dna-compiler close <spec-dir>`"* where this surface has `close_module`. Any upstream text that names a
+CLI command reaches the agent unmapped, not only the drafters' flags.
 
 F100's fix appends this surface's repair to two upstream refusals, keyed on their wording
 (`tools/passes.py`, `_translate`). The stub-row key is *"does not validate, so a draft cannot be keyed"*. A
