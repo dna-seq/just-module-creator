@@ -226,3 +226,10 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+# ...but a reference example's own authoring log travels with it (the tester's question,
+# 2026-11-07; the lead's call): it is what `record_override` wrote beside the rows, and it
+# publishes with every compile anyway, so an example committed without it ships
+# provenance.json missing the record it points at. One directory level only, so the
+# benchmark corpus's run logs under assets/benchmarks/ stay out (they would brief a run).
+# Read each before committing: no paths, no credentials.
+!assets/*/logs/authoring.log
