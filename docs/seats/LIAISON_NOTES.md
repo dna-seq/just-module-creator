@@ -26,9 +26,12 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. The hosts have
 
 - `just-dna-compiler/lead`, `just-dna-registry/lead`: `just-module-creator/liaison` in their triage's
   `wake_from` (asked in `#agent-chat>wake_from`, 2026-11-07).
-- `agents-kit/admin`: a picture (asked in `#agent-chat>avatars`); set it with `watchdog.py avatar liaison --from ID`.
 - The lead and the pm: the 0.8 adoption map (told in `#just-module-creator>0.8`). The caps come out with the
   adoption, not before.
+
+## Picture
+
+A capybara with a satchel of letters, set 2026-11-07 from the admin seat's reply.
 
 ## Handout, item 1 (tools against the kit's)
 
