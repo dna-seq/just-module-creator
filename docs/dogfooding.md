@@ -14,6 +14,52 @@ is usable, and what is missing.
 
 ---
 
+## F124 — `check_pgx` reports "compared against cpic, pharmvar and none differs" on a run whose CPIC leg compared nothing
+
+**Found:** 2026-11-07, re-probing F101 on 0.48.2, scratch copy of the ClawBio CYP2C19 module
+(`data/interim/clawbio_pgx/modules/cyp2c19`) · **Severity:** medium · **Status:** open
+
+The docstring: *"a module drafted from CPIC is compared against its own source on that leg, which upstream
+names (`tautology`) rather than counting as agreement."* The same call's warning says so: *"cpic: … every
+authored function_status still hashes to what the drafter wrote — so each is a copy of the value it would be
+compared against."* And upstream's attestation in `verification.json` records the check as
+`"source": "pharmvar"` alone. Our own summary then says:
+
+> `"next_step": "5 authored function(s) compared against cpic, pharmvar and none differs."`
+
+`checks.py` builds that list from `sorted(result.routes)`, and `routes` names every leg that *answered*
+(`{"pharmvar": "snapshot", "cpic": "snapshot"}`), including one that answered with a copy. So the one sentence
+a layman reads turns "your CPIC values were not checked, because they came from CPIC" into "verified against
+CPIC". That is the vacuous check §2 names, written by our layer on top of an upstream result that got it right.
+`next_step` is the only field that says it. The fix is to name only the legs that compared, and to say which one
+was a copy. Whether that list comes from the warnings or from a field upstream should expose is the lead's call.
+The second "none differs" (`checks.py`, `check_clinpgx`) wasn't reached: this module has no
+`pharm_variants.csv`, and that branch answered `not_checked: "nothing_to_check"` correctly.
+
+F101's own claims hold: 5 compared, PharmVar and CPIC both from snapshots, `attested: true`, the same
+numbers the fix was measured on.
+
+## F125 — F100's repair text never fires since upstream reworded the refusal it keys on, and its test still passes
+
+**Found:** 2026-11-07, re-probing F100 on 0.48.2 (enricher 0.7.3) · **Severity:** low · **Status:** open
+
+F100's fix appends this surface's repair to two upstream refusals, keyed on their wording
+(`tools/passes.py`, `_translate`). The stub-row key is *"does not validate, so a draft cannot be keyed"*. A
+fresh three-kind scaffold with default rows, then `draft_from_cpic(gene="TPMT", dry_run=true)`, now answers:
+
+> *existing haplotypes.csv still carries the scaffold's template row (line 2), so a draft cannot be keyed
+> against it. Delete that row … or scaffold without `--kind haplotypes.csv` when a drafter will write the
+> table.*
+
+Upstream's own text names the deletion (good), but its alternative is a CLI flag, and `_STUB_ROW_REMEDY`
+(*"or scaffold that kind with rows=0"*) is never appended, because the key no longer matches. `--kind` is not
+in `_FLAG_TO_ARG` either, so nothing maps it. `tests/test_passes.py` (around line 1287) feeds `_translate` a
+hand-written copy of the **old** message, so it passes against a refusal that no longer exists. This is the
+"could this have failed?" shape §6 warns about: the fixture's expected input comes from our memory of
+upstream's text, not from upstream. Low, because the deletion upstream names works. The taught route holds:
+`scaffold_module(rows=0)` then `draft_from_cpic` drafted 93/49/1225 rows with the spec's titles still
+`<<REPLACE>>`, and the `genome_build` half of F100 is gone with S103.
+
 ## F122 — `fetch_fulltext(doi=…)` reports nothing retrieved for a paper it returns whole by PMID
 
 **Found:** 2026-11-07, rechecking F31/F50 on 0.48.2 · **Severity:** low · **Status:** open
