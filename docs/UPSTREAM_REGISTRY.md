@@ -22,11 +22,13 @@ format 0.7.1, compiler 0.7.2`; the polygon gave no answer within 15 s (not read,
 person's), still 502 at 17:0x UTC, and it has asked the person. Registry 0.28.3 (enricher 0.8.1) is being cut; the
 polygon gets it at the next deploy.
 
-**Read to: `v0.28.2`, by its `Client surface:` lines** (2026-11-07), which CLAUDE.md §11 trusts for "did our
+**Read to: `v0.28.3`, by its `Client surface:` lines** (2026-11-07), which CLAUDE.md §11 trusts for "did our
 methods move". 0.27.1 and 0.28.1, 0.28.2: client surface unchanged. **0.28.0** moves it: `catalog_stats()`
 makes one request to the new `GET /stats`; `publish()` gains `recover_within=600.0` (a publish whose response
 was lost may return the version that landed instead of raising, after waiting up to that long); `whoami()` gains
-`site_admin`; account merge and rename methods are new. 0.28.x requires `just-dna-format>=0.8.0`, so our
+`site_admin`; account merge and rename methods are new. **0.28.3** (2026-11-07): client surface unchanged; new
+admin-only `runs`, `run`, `run_log` (upgrade logs over REST), nothing for us. It floors enricher `>=0.8.1`, as our
+map item 1 does, and `upgrade --online` now asks dbSNP (RM398's `dbsnp` witness rows reach republished modules). 0.28.x requires `just-dna-format>=0.8.0`, so our
 `<0.8` cap holds us at 0.27.x until the 0.8 adoption (`docs/UPSTREAM_COMPILER.md`, map item 1).
 
 ## Backlog
