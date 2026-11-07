@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **The gene-metrics guide no longer reads the live gnomAD API's label as v2.1.1.** On the 0.7 line those rows say `gnomad_v2.1.1_constraint`, but the API serves gnomAD 4.1.1 or later (upstream RM417, relabelled `gnomad_api_constraint` in compiler 0.8.2). The guide had explained BRCA1's snapshot-versus-API difference as v4.1 against v2.1.1.
 - **`fetch_fulltext(doi=…)` finds what a PMID would** (F122). A DOI given alone is joined to its PMID and PMCID through PubMed, checked to carry that same DOI, and fetched by them. A paper returned whole by PMID used to come back empty by its DOI.
 - **The no-token refusal names the saved-account route first** (F123): `registry_accounts(action="add", …)` for a token you hold, `registry_register` for none. `authenticate` is named as this session only.
 - **A drafter refused over a scaffold's stub row names this plugin's repair again** (F125). Upstream reworded that refusal in 0.7.1 and the appended repair stopped firing; it now names `scaffold_module(kinds=[...], rows=0)` in place of upstream's CLI flag.
