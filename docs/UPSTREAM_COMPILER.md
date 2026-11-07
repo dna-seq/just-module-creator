@@ -35,8 +35,9 @@ reading, and its § 3 block for this plugin is answered here.
   time.
 - **`v0.8.0`'s changelog, entry by entry**, for what the integration file does not name (the registry liaison
   read it at the cut; ask before repeating it).
-- **The next patch on their `main` (0.8.1)**: RM400, RM401, RM403 built by their triage (the registry's ledger,
-  2026-11-07). Read at its tag; nothing here waits on it while we stay on 0.7.
+- **0.8.1**: cut on their `main` (enricher 0.8.1 only, not on PyPI on 2026-11-07, the registry liaison). RM400 stops
+  live Ensembl REST writing patch and alt-contig loci, so a `--rederive` under it drops them. Read at its tag and
+  publish; the 0.8 adoption should floor the enricher at it if it is out by then.
 
 ## What the plugin uses
 
@@ -104,11 +105,18 @@ Sorted hardest first. *Touches* names our code or skill; *cost* is an estimate f
    `module-refresh`, `module-tables/references/resolution.md`. *The two corrections § 3 asks of us*: F85 in the
    pending-fixes file (done by the liaison, 2026-11-07) and the compile guide's reading of `not_found` (the
    lead's, at the pin). *Cost*: half a day.
-3. **Breaks us: the shared Ensembl cache moves, once per machine** (§ 1.29, 14.5 GB,
-   `just-dna-enricher cache pull --only ensembl`). Every just-dna tool on this machine reads
-   `/data/just-dna-cache`; a cache holding both releases resolves to nothing. The duckdb-2 hazard (RM344) is the
-   same cache. Coordinate with longevity-loci's liaison and the registry's before pulling. *Touches*
-   `skills/module-start/GUIDE.md` (the cache offer) and `provisioning.py`'s lane pricing. *Cost*: one pull plus a re-run.
+3. **The shared Ensembl cache has already moved on this machine** (§ 1.29). `/data/just-dna-cache/ensembl_variations`
+   holds the split snapshot (`just-dna-seq/ensembl_variations_split`) since 2026-11-04 22:38, the old one kept
+   beside it as `ensembl_variations.pre-0.8` (the registry liaison, 2026-11-07). **Probed against our enricher
+   0.7.3, 2026-11-07:** `resolver.lookup_loci` reads the split cache and gives the same loci and alleles as the old
+   one for ten rsIDs (`rs4988235`, `rs1801133`, `rs429358`, `rs7412`, `rs1799945`, `rs1800562`, `rs4244285`,
+   `rs12248560`, `rs2231142`, and the indel `rs113993960`); `lane_status` reports the lane `present`, and
+   0.7.3's `_provision_snapshot` returns early on intact parquets, so it does not pull the old repo
+   (`just-dna-seq/ensembl_variations`) on top. It would, file by file, for a parquet whose footer is corrupt: that
+   is the one way a 0.7 tool here mixes the cache. Not probed: positional (coordinate → rsID) lookups, and
+   multi-ALT indels, which the split snapshot writes ALT by ALT (§ 1.35). The duckdb-2 hazard (RM344) is the
+   same cache and is held off by our `<2` cap. At adoption: nothing to pull here; another machine pulls once.
+   *Touches* `skills/module-start/GUIDE.md` (the cache offer) and `provisioning.py`'s lane pricing.
 4. **Breaks us: new refusals in `validate` and `compile`** (§ 2 surface 13: `rsid_placements_disagree` under
    strict, half-stated pairs, HLA grammar, a DOI in `pmid`). `validate_spec` now refuses wherever the compile
    would (§ 1.23). *Touches* `tools/authoring.py`'s compile and validate wrappers, `SYMPTOMS.md`. Match by code,
