@@ -17,7 +17,8 @@ is usable, and what is missing.
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
 
 **Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the
-diff) · **Status:** open
+diff) · **Status:** open; the user-scope setting is the person's, asked on the desk as #229 (default: leave it,
+and the tester reads the checkout's `skills/` by hand)
 
 CLAUDE.md §11: *"the tracked `.claude/settings.json` enables `just-module-creator@just-dna` from a `directory`
 marketplace at `"./"`, so sessions here run this checkout."* That holds for the MCP server: its process is
