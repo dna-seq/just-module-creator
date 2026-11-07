@@ -66,6 +66,22 @@ still be worth registering with. If you want it gone, say so; it is not mine to 
 
 ## What has been established
 
+- **A seat cannot bring its own plugin server back once the host gives up on it** (checked 2026-11-07, host
+  Claude Code, seat sessions in this clone). At 13:51 UTC the host's 30 s connect timeout fired on a server that
+  answers `initialize` in 7.7 s when started by hand (`uv run --no-dev --project . just-module-creator stdio`).
+  The cause was load, not the server: at that minute the machine restarted every repo's sessions, watchdogs and
+  `uv run` servers at once. What the session could then do about it, each tried:
+  - the host's own message, *"retries automatically in 15 min"*: no new connect attempt in
+    `~/.cache/claude-cli-nodejs/-data-sources-just-module-creator/mcp-logs-plugin-just-module-creator-just-module-creator/`
+    after 46 min;
+  - its other hint, *"edit the plugin config to retry now"*: a `touch` of `.claude-plugin/plugin.json` started
+    nothing (a content edit was not tried: the manifest is the lead's file);
+  - `ListMcpResourcesTool` on the server: answers "no resources" from the cache and connects nothing;
+  - `/mcp` and `/reload-plugins` are typed by the person; a session cannot invoke either.
+
+  So an unattended seat whose server lost the start-up race stays without the product until the person returns.
+  The fallback that keeps work going is F107's in-process driver (`fastmcp.client.Client` on a server built in
+  the script), which tests the tools but not the host wire; a probe run through it says so.
 - `/reload-plugins` does **not** re-exec a stdio MCP server; `/mcp` reconnect does.
   Verified by process start times against the commit time — a reload spawned no new
   process and the old tool list survived. Stale servers accumulate rather than being
