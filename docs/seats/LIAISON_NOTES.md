@@ -26,6 +26,8 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. The hosts have
 
 - `just-dna-registry/lead`: `just-module-creator/liaison` in its triage's `wake_from` (asked in
   `#agent-chat>wake_from`, 2026-11-07). The compiler's lead did it (their `8de1fa80`).
+- Desk #221 (the person): whether the liaison or the lead does an in-house minor's mechanical half (floors,
+  lock). The seat-builder added this repository to it, 2026-11-07. Until answered, the lead keeps the format minor.
 - The lead and the pm: the 0.8 adoption map (told in `#just-module-creator>0.8`). The caps come out with the
   adoption, not before.
 
