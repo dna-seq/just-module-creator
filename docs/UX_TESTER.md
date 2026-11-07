@@ -186,13 +186,13 @@ Small, and each belongs to the second agent rather than upstream:
 | claim | result |
 |---|---|
 | F31: `fetch_fulltext(pmid)` joins through PubMed | **holds**: the developer's case 41427385, and an independent one, 42990418 (a bioRxiv preprint in PMC). Both retrieved, and both name the ids PubMed supplied. Two publisher-OA papers (42988005, 42979923) got their DOI from PubMed the same way. 42967576 was answered by Europe PMC directly, so no PubMed note appeared, which is correct. |
-| F50: "Try the locations below" only when there are some | positive branch **holds** (42988005, 42979923: one real location each). Empty branch **not yet hit**: 11788828 fell back to the abstract. Next: a paywalled PMID whose abstract also fails, or a DOI-only call with no OA copy. |
+| F50: "Try the locations below" only when there are some | **holds** on both branches: one real location each (42988005, 42979923), and a DOI-only call with none (`10.1038/ng826`) names the DOI. That call is where **F122** turned up. |
 | 0.48.0: env token saved at start; skip a check answered `valid` under 1 h | **not exercisable here**: `sheep` has been saved since 2026-09-27, and the start-up check recorded `unreachable` (polygon HTTP 502). Forgetting the account to re-test it is not worth the risk. |
-| 0.48.1: `remote_derive`/`remote_draft` send the token, refuse without one | **waits on the polygon**, which answers 502 (since ≤14:58 UTC; the liaison raised it with the registry lead). The no-token refusal is reachable on `target="prod"`, which has no account here. Run that next, on `assets/fto_bmi`. |
+| 0.48.1: `remote_derive`/`remote_draft` send the token, refuse without one | refusal **holds**: `remote_derive(target="prod")` on `assets/fto_bmi` refused at once, naming how to get a token (**F123**: the saved accounts are missing from that list). Sending the token **waits on the polygon**, which still answers 502 (14:58 to at least 20:10 UTC). |
 | F119 | suite-only; nothing to probe from the surface. |
-| F100/F101 (never re-probed by this seat) | still to do. |
+| F100/F101 (never re-probed by this seat) | both **hold** on their own terms. The taught `rows=0` route drafts TPMT cleanly, and `check_pgx` gives the measured 5 compared. Found on them: **F125** (F100's appended repair is dead text since upstream reworded the refusal) and **F124** (`check_pgx`'s `next_step` counts the CPIC copy as agreement). Probe dirs: `data/interim/probe_f100/`, `data/interim/probe_f101/`. |
 
-Found on the way: **F120** (literature-tool findings labelled `upstream`) and **F121** (simultaneous seat
+Found on the way: **F120** (fixed on main by the lead, 34de4b2, unreleased) and **F121** (simultaneous seat
 restarts lose the server; reproduced twice). Both are in `dogfooding.md`. The way back from F121 inside a
 session is `watchdog.sh reload --mcp` (kit v0.1.141), which types `/mcp reconnect all` once the session is idle.
 
