@@ -117,6 +117,17 @@ manuscript = "manuscript.cli:app"
 requires = ["uv_build>=0.8.15,<0.9.0"]
 build-backend = "uv_build"
 
+[tool.uv]
+# Caps on two packages we never import, held in the lock until the just-dna 0.8 adoption decides them
+# (the liaison, 2026-11-07). A constraint, not a dependency: polars and duckdb reach us through the
+# compiler and the enricher, whose 0.7 releases floor them (polars>=1.42.0, duckdb>=1.1.0) with no ceiling,
+# so the weekly `uv lock --upgrade` would take polars 2 and duckdb 2.
+#  - polars 2 moves `artifact.digest` on a recompile with no content change (format's INTEGRATION_0_8 § 1.11).
+#  - duckdb 2 writes an `ensembl_variations.duckdb` into the shared cache that a duckdb-1 enricher crashes
+#    on (format's RM344); every just-dna tool on this machine reads that cache.
+# Lift both with the 0.8 adoption, after reading docs/UPSTREAM_COMPILER.md's map.
+constraint-dependencies = ["polars<2", "duckdb<2"]
+
 # Second root module: the EASRP manuscript CLI lives at src/manuscript/,
 # same layout as glucose-forecasting. uv_build defaults to one module named
 # after the project; the list is what ships both.
