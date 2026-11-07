@@ -95,68 +95,16 @@ is `test_`-prefixed as well as the namespace, so `purge-test-data` collects it.
   wrote. It also carried *"S1–S18 are answered; S19 is filed and open"*, which was a
   counted claim about a moving corpus — exactly what the rule two lines up forbids.
 
-## Filed this session
+## History
 
-| id | where | what |
-|---|---|---|
-| F12 | `dogfooding.md` → now shipped | No way to create an account from the tool surface. **Fixed by the second agent** — `registry_register` mints the token in-surface. |
-| F13 | `dogfooding.md` → now shipped | No pre-flight before an irreversible namespace claim. **Fixed** — `registry_namespace_available`. |
-| F14 / S18 | **shipped in 0.5.4 → `previous_issues.md`-adjacent; closed in `pending-fixes.md`** | `hints.inspect_rows` zips header names positionally without comparing field counts, so an unquoted comma in a free-text cell shifts every later column and the error is reported against a column the author wrote correctly. `Finding.row` is 0-based where the compiler uses 1-based `line N`. Left unmitigated here on purpose: `lint_rows` is a deliberate pass-through. **Both halves released in 0.5.4** — `_report_ragged` names the ragged row first, and `Finding.line` now carries the editor line, which `to_findings` passes through without deriving it. |
-| S19 | upstream | A binning table has nowhere to record evidence. `studies.csv` keys on `rsid`/`chrom` only and is required iff `variants.csv` exists, so a `repeat_alleles.csv` row cannot be grounded and compiles green asserting a clinical threshold with no citation. |
-
-### The assisted session — a novice user, an LLM-written source (same day)
-
-Run in a different shape: the user role-played a non-specialist who brought a Gemini summary of two
-YouTube genetics lectures and asked for a module. **That shape found more than solo probing did**, because
-triaging a machine-written source exercises the lookup tools against claims that are *plausibly* wrong
-rather than absent. Worth repeating deliberately. Reference example: `assets/fto_bmi/`, whose README is
-the write-up.
-
-| id | where | what |
-|---|---|---|
-| **S20** / F17 | **shipped in 0.5.4** → closed in `pending-fixes.md` | **high.** A failed live-Ensembl request is reported as `loci: []` + *"live Ensembl has no GRCh38 locus for it either"* — a definite negative. Same call, minutes apart: `rs6567160` and `rs13010010` both no-locus, then both resolved. `resolve_rsid` swallows transport errors into an empty list, so `if not loci:` cannot tell the two apart; the only trace is `checked` *lacking* `ensembl-rest`. **`loci: []` is the fingerprint of a fabricated rsID**, so flaky egress makes real variants look invented — it misfiled two genuine SNPs mid-triage. F17 left unmitigated on purpose; both candidate wrappers argued wrong in the note — **and the fix vindicated that**: `checked` now records the source on the answered-empty path too, so the `"ensembl-rest" not in checked` inference would have silently inverted the day 0.5.4 landed. Filed, fixed and released inside a day. |
-| F18 | `dogfooding.md` | The skill's "a green pre-flight should mean a green compile" is false pre-`resolution.csv`: strict validate returned valid with **zero** findings at all three levels, strict compile refused. Compile gate itself is fine, which is why it is medium. |
-| F19 | `dogfooding.md` | Nine essentials tools missing → the stdio process was 3h older than HEAD. **Nothing on the surface reports the server's version**, so this was indistinguishable from "the skill documents a tool that does not exist" without `ps` + `git log` + a grep. Suggested fix: append the version to `server.INSTRUCTIONS`, not a `server_info` tool — instructions are always in context, a tool has to be called by someone who already suspects the problem. |
-| **S21** / F20 | **both halves shipped** → `previous_issues.md` | `sources.csv` is the one sidecar a human must hand-write; `list_tables` advertises it and `describe_table`/`get_template` reject the name, and `authoring_reference()` omits `SourceRow` entirely. Columns had to be read from `model_fields`. Two separate defects — fixing upstream will not fix ours. **Both done in 0.5.4**: `sources.csv` is in `DRAFTABLE` upstream, and our hardcoded sidecar literal is gone, which it had to be — with upstream's half alone it appeared as a table kind *and* as a do-not-hand-author sidecar. |
-| **S23** / F21 | **shipped in 0.5.4** → `previous_issues.md` | The `sources.csv` rule is **inverted**: the pubmed/europepmc rows draw *"declares 2 source(s) no table in this module uses"*, and deleting the file entirely warns about **nothing**. Compliance is warned, omission is silent — and the tidy fix is to delete provenance. **Inverted correctly in 0.5.4**, re-verified on the asset's real rows: compliance silent, omission warns. Skill text corrected. |
-| F22 | `dogfooding.md` | low. `published.json` — the receipt we tell the author to commit — records `owner: null`, though the claim and `registry_get_module` both know `sheep`. |
-| **S22** | upstream | Longshot, filed at the user's direction as low priority: literature reports hg19, modules must be GRCh38, no supported path. Argued **out from under RM15** (that is `❌ — 1.0` and is about supporting another build; this is a one-way authoring-time conversion) and argued that **rsID recovery beats liftover** — liftover is only reachable when there is no rsID, i.e. exactly when its output cannot be cross-checked. |
-
-**What held up, and is not worth re-probing:** every refusal fired (`lookup_variant`'s withheld
-coordinates, every DOI, `check_identifiers` reporting without writing); the strict compile gate refused
-the unresolved module and named the remedy; `artifact_digest` reproduced exactly across a local
-recompile *and* the registry server's independent one; Semantic Scholar 429'd all session and was
-reported `results: null` rather than `0` (F6 earning its keep in the same session S20 fused the same
-distinction).
-
-## Observations not yet filed
-
-Small, and each belongs to the second agent rather than upstream:
-
-- **`registry_register`'s docstring says "Omit `install_id` and one is ground for you."** It grinds only
-  when the environment has none — `auth.py:141` reads `settings.install_id` first and reports
-  `install_id_origin: "environment"`. The imprecision costs both ways: an agent either pastes a live
-  secret into a transcript to be safe, or avoids the call for fear of orphaning the existing account. One
-  clause fixes it.
-- **`registry_register` echoes the install-id back even when it came from the environment.** The caller
-  already has it in `.env`, so returning the value only writes an existing secret into the transcript.
-  Returning `install_id_origin` without the value would be strictly better in that branch.
-
-- ~~**`authenticate`'s docstring is stale.**~~ **Fixed** in `6ad1898` — it now points at
-  `registry_register` and says a token is needed only to publish.
-- ~~**`plugin.json` says `0.2.0`; `pyproject.toml` says `0.3.0`.**~~ **Fixed** in `a1f50a2`,
-  with `tests/test_plugin_manifest.py` failing on any future mismatch.
-- ~~**The essentials tier cannot verify a trait CURIE.**~~ **Fixed in 0.4.0** — this one
-  turned out to be the visible corner of a wrong tier rule, and the tier was widened
-  rather than the single tool moved. Essentials now runs the whole workflow: the
-  identifier checks, `enrich_module`, `fetch_fulltext`, `lookup_open_access`,
-  `authoring_reference`, the integrity pair and `registry_get_module`. Extended kept
-  only what a corpus sizes — and in **0.21.0 it went too**, after the same defect shipped
-  three more times. There is one surface now, so a probe that finds a tool missing is
-  reading an old install rather than a narrow tier.
-- ~~**The README documents installing the plugin and not reloading it.**~~ **Fixed** —
-  README now has "Reloading after a change" and "Switching mode", including the trap that
-  `.env` cannot switch a plugin-launched server.
+The August 2026 rounds (F12–F22, S18–S23, the `assets/fto_bmi/` assisted session) are all filed:
+`previous_issues.md`, `just-dna-format-pending-fixes.md`, and `assets/fto_bmi/README.md` for the write-up. The
+tables that used to sit here are in git (`git log -p -- docs/UX_TESTER.md`, before 2026-11-07). The last two
+unfiled notes from then became **F126** on 2026-11-07. **What held up then and needs no re-probe:** every
+refusal fired; the strict compile refused an unresolved module and named the remedy; `artifact_digest`
+reproduced across a local recompile and the registry's own; an unanswered source was reported `null`, not `0`.
+**The shape worth repeating:** a layman bringing a machine-written source. It exercised the lookups against
+claims that were plausibly wrong, and it found more than solo probing.
 
 ## In flight
 
