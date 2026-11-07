@@ -33,10 +33,33 @@ map item 1 does, and `upgrade --online` now asks dbSNP (RM398's `dbsnp` witness 
 
 ## Backlog
 
-- **0.27.1 to 0.28.2, entry by entry** (only the client-surface lines are read). 0.27.1's server entries touch
-  what `registry_check` reports (`/check?identifiers=true` on a module without `variants.csv`, a strict
-  `/check` on another assembly's rows, a refused publish over a withheld indel): read against the
-  `module-publish` skill's reading of a verdict before the deploy reaches the polygon.
+Nothing open: 0.27.1 to 0.28.3 read entry by entry, 2026-11-07 (below).
+
+## Read entry by entry, 2026-11-07
+
+- **0.27.1** (in our lock's reach, a server release): nothing for us. Its `/check` changes (the identifier pass
+  on a module without `variants.csv`, `would_publish_module_level: false` for a strict refusal over another
+  assembly's rows, the re-run hint on a refused publish over a withheld indel, the dataset-release probe off by
+  default) pass through `registry_check`'s projection unchanged, and no skill keys on the readings they change.
+- **0.28.1, 0.28.2, 0.28.3**: operator commands (`upgrade --jobs`, `prune-runs`, `replay-upgrade`,
+  `warm-caches`, `drop-caches`, run logs over REST), `?gene=`/`?category=` matching the current version.
+  Nothing for us.
+- **0.28.0, for the 0.8 adoption** (0.28 requires format 0.8, so none of it reaches us before). Fields a
+  `/check` or a version list gains, which `registry_check`'s projection (`tools/registry.py`,
+  `PublishPreflight`) and `compare_to_published` should carry rather than drop:
+  - the four withheld-placement cases, `unanchored_rsids` (transient, the one a re-run fixes),
+    `non_nucleotide_rsids`, `reference_rejected_loci`, `placement.withheld`, and the `placement` / `spelling`
+    objects;
+  - `retired` beside every unreachable-source list (HTTP 410: upgrade the server's enricher, not re-run);
+  - `allele_mismatches` (the rsID is known and the genotype does not sit on it, or fits the other strand),
+    the registry's side of F85;
+  - `pgx.recorded_use` (a leg that ran under the module's own declared use);
+  - the identifier check's `trait_tables_not_read`, `gene_tables_not_read`, `unreadable_tables`, `pgs_ids`,
+    `stale_pgs`, `pgs_not_checked` (the PGS Catalog accession check now runs);
+  - per version, `toolchain` and `digest_moved_by_toolchain` (map item 10 in `docs/UPSTREAM_COMPILER.md`);
+    per verification check, `agreement_is_evidence` with its witness fields.
+  Also: strict findings move to `errors` only (format RM359); the subtitle `set_short_description` takes 240
+  characters, up from 0.27's 120 (F59); `publish(recover_within=600.0)` (read mark above).
 
 ## What the plugin uses
 

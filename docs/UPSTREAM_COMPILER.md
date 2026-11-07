@@ -107,7 +107,8 @@ Sorted hardest first. *Touches* names our code or skill; *cost* is an estimate f
    reference examples copied again from `v0.8.0` (`assets/reference_examples/README.md`). *Touches*
    `pyproject.toml`, `uv.lock`, `assets/reference_examples/`. *Cost*: 1 to 2 hours with
    the suite. Registry 0.28.0's client changes `publish()` (`recover_within=600.0`: a lost response may now
-   return the version that landed instead of raising) — read against `registry_publish` (`tools/registry.py`).
+   return the version that landed instead of raising) — read against `registry_publish` (`tools/registry.py`); the `/check` fields 0.28.0 adds
+   go into `registry_check`'s projection (`docs/UPSTREAM_REGISTRY.md`, "Read entry by entry").
 2. **Breaks us: every 0.7-shaped `resolution.csv` reading.** Seven new optional columns (§ 1.18, 1.19, 1.31,
    1.32, 1.38), a 0.7 `ResolutionRow` refuses a 0.8 table; keys lose `:None` (§ 1.26); a rejected answer leaves
    no row (§ 1.36). *Touches* `tools/refresh.py`, `tools/passes.py`, `models.py` (the `not_found` readings), and
