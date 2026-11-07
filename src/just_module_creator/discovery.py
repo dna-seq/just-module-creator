@@ -1501,6 +1501,46 @@ def _pubmed_ids(
     return pmcid, doi
 
 
+def _doi_ids(
+    services: NetworkServices, doi: str, findings: list[LintFinding]
+) -> tuple[str | None, str | None]:
+    """The PMID and PMCID of the PubMed record carrying `doi`, or `(None, None)`.
+
+    F122: a paper fetched whole by PMID came back empty by its DOI, because only the
+    PMID route joins ids. PubMed's `[doi]` field answers the other direction, and
+    the record is taken only when its own DOI is the one asked: existence never
+    settles identity. One `esearch` plus one `esummary`, on the shared NCBI budget.
+    """
+    try:
+        found = Discovery(services=services).pubmed(f'"{doi}"[doi]', 2)
+    except (ServiceUnavailable, ValueError) as exc:
+        reason = exc.reason if isinstance(exc, ServiceUnavailable) else "unreadable answer"
+        findings.append(
+            LintFinding(
+                source=OURS,
+                level="warning",
+                message=(
+                    f"PubMed could not be asked which record carries DOI {doi} ({reason}), so "
+                    "whether a PMID would reach this paper's text is UNCHECKED."
+                ),
+            )
+        )
+        return None, None
+    wanted = doi_token(doi)
+    record = next((c for c in found if c.pmid and doi_token(c.doi) == wanted), None)
+    if record is None:
+        return None, None
+    ids = f"PMID {record.pmid}" + (f" and PMCID {record.pmcid}" if record.pmcid else "")
+    findings.append(
+        LintFinding(
+            source=OURS,
+            level="info",
+            message=f"PubMed's record for DOI {doi} is {ids}; the text was looked up by those.",
+        )
+    )
+    return record.pmid, record.pmcid
+
+
 def fulltext(
     services: NetworkServices,
     *,
@@ -1521,6 +1561,10 @@ def fulltext(
     record: dict | None = None
     asked_pubmed = False
 
+    if doi and not pmid and not pmcid:
+        pmid, pmcid = _doi_ids(services, doi, findings)
+        asked_pubmed = True
+
     if pmid:
         try:
             record = client.lookup([pmid]).get(pmid)
@@ -1538,7 +1582,7 @@ def fulltext(
             )
         pmcid = pmcid or (record or {}).get("pmcid")
         doi = doi or (record or {}).get("doi")
-        if not pmcid:
+        if not pmcid and not asked_pubmed:
             # Europe PMC's lookup is one join of PMID to PMCID and DOI, and it misses
             # records PubMed holds both ids for (F31: a preprint-pilot record, keyed
             # only by its PMCID at Europe PMC when it was found). The DOI alone is

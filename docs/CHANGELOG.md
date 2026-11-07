@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`fetch_fulltext(doi=…)` finds what a PMID would** (F122). A DOI given alone is joined to its PMID and PMCID through PubMed, checked to carry that same DOI, and fetched by them. A paper returned whole by PMID used to come back empty by its DOI.
 - **The no-token refusal names the saved-account route first** (F123): `registry_accounts(action="add", …)` for a token you hold, `registry_register` for none. `authenticate` is named as this session only.
 - **A drafter refused over a scaffold's stub row names this plugin's repair again** (F125). Upstream reworded that refusal in 0.7.1 and the appended repair stopped firing; it now names `scaffold_module(kinds=[...], rows=0)` in place of upstream's CLI flag.
 - **`draft_from_strchive` drafts again** (F129). On enricher 0.7.3 it drafted nothing on any machine: it never looked for the STRchive lane that `provision_caches` builds. It now uses that lane, or a new `catalogue` argument. `check_repeat_bands(catalogue=…)` also accepts a bare `STRchive-loci.json` now, as its description always said; before, it refused anything but a directory.

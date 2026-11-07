@@ -1009,7 +1009,8 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         copy when Europe PMC has none, tables included), `abstract` (named as
         a substitute, never passed off as the article), or `null` — which means
         **nothing was retrieved**, not that the paper has no text. An abstract
-        *miss* is not a verdict: the claim may still be in the paper.
+        *miss* is not a verdict: the claim may still be in the paper. A `doi` given
+        alone is joined to its PMID and PMCID through PubMed first.
         """
         _require_network("Fulltext retrieval")
         if not (pmid or pmcid or doi):

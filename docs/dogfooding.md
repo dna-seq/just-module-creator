@@ -77,25 +77,6 @@ enumerates upstream's typer commands (both directions, as
 spliced into it: a `source="upstream"` message must stay upstream's. A structured remedy key from upstream would
 replace the map's text matching; that ask is the liaison's to weigh.
 
-## F122 — `fetch_fulltext(doi=…)` reports nothing retrieved for a paper it returns whole by PMID
-
-**Found:** 2026-11-07, rechecking F31/F50 on 0.48.2 · **Severity:** low · **Status:** open
-
-F31's fix joins a PMID to its PMCID and DOI through PubMed. Nothing joins a DOI the other way. Run live:
-
-| call | `text_source` | what came back |
-|---|---|---|
-| `fetch_fulltext(pmid="42990418")` | `fulltext` | the bioRxiv preprint, PMC13733956, via the PubMed join |
-| `fetch_fulltext(doi="10.64898/2026.10.26.761951")`, the same paper | `null` | *"Nothing was retrieved … Try the locations below"*, plus the bioRxiv PDF |
-| `fetch_fulltext(pmid="11788828")` | `abstract` | Enattah 2002's abstract |
-| `fetch_fulltext(doi="10.1038/ng826")`, the same paper | `null` | *"No open-access location came back for DOI 10.1038/ng826"* |
-
-The messages are honest: `null` is called UNCHECKED, and F50's empty branch now names the DOI. So this is a gap,
-not a broken claim. It bites where a DOI is all an author holds: a reference list, a supplementary file, a
-publisher page. Whichever id the author has decides whether they get the text, and nothing says that a PMID
-would have worked. Europe PMC's search (`DOI:` field) and NCBI's id converter both answer DOI → PMID/PMCID.
-Whether to join on the way in, or to say "try it by PMID" in the warning, is the lead's call.
-
 ## F121 — when the seats restart together, every one of them starts without the plugin, and stays without it
 
 **Found:** 2026-11-07, by the tester seat, twice in one day · **Severity:** medium · **Status:** open, a

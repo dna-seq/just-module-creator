@@ -178,3 +178,68 @@ def test_nothing_retrieved_fills_the_doi_and_names_real_locations(monkeypatch) -
     assert result.locations == [here]
     nothing = [f.message for f in result.findings if f.message.startswith("Nothing was retrieved")]
     assert len(nothing) == 1 and nothing[0].endswith("Try the locations below.")
+
+
+# --------------------------------------------------------------------------- #
+# F122: a DOI is joined to its PMID and PMCID the way a PMID is joined to its DOI
+# --------------------------------------------------------------------------- #
+class _PubMedByPath:
+    """`esearch` answers with the PMID it was given; `esummary` with the real record."""
+
+    def __init__(self, idlist: list[str]) -> None:
+        self.idlist = idlist
+        self.asked: list[tuple[str, str | None]] = []
+
+    def get(self, path: str, params=None) -> httpx.Response:
+        self.asked.append((path, (params or {}).get("term")))
+        if path == "esearch.fcgi":
+            return httpx.Response(200, json={"esearchresult": {"idlist": self.idlist}})
+        return httpx.Response(200, text=ESUMMARY)
+
+
+def test_a_doi_alone_reaches_the_text_a_pmid_would(monkeypatch) -> None:
+    """F122: `fetch_fulltext(doi=…)` came back empty for a paper it returned whole by PMID."""
+    epmc, pubmed = _EuropePmc({}), _PubMedByPath([PMID])
+    result = fulltext(
+        _services(monkeypatch, epmc, pubmed), pmid=None, pmcid=None, doi=DOI, max_chars=None
+    )
+    assert pubmed.asked == [("esearch.fcgi", f'"{DOI}"[doi]'), ("esummary.fcgi", None)]
+    assert (result.pmid, result.pmcid) == (PMID, PMCID)
+    assert result.retrieved and result.text_source == "fulltext" and result.text == TEXT
+    said = [f.message for f in result.findings if f.message.startswith("PubMed's record for DOI")]
+    assert len(said) == 1 and PMID in said[0] and PMCID in said[0]
+    assert {f.source for f in result.findings} == {OURS}
+
+
+def test_a_record_whose_doi_is_not_the_one_asked_is_not_taken(monkeypatch) -> None:
+    """Existence never settles identity: PubMed's hit must carry the DOI that was asked."""
+    other = "10.1038/ng826"
+    assert other not in ESUMMARY
+    monkeypatch.setattr(
+        discovery, "open_access", lambda *_a, **_k: OpenAccessResult(doi=other, locations=[])
+    )
+    epmc, pubmed = _EuropePmc({}), _PubMedByPath([PMID])
+    result = fulltext(
+        _services(monkeypatch, epmc, pubmed), pmid=None, pmcid=None, doi=other, max_chars=None
+    )
+    assert [path for path, _ in pubmed.asked] == ["esearch.fcgi", "esummary.fcgi"]
+    assert result.pmid is None and result.pmcid is None and not result.retrieved
+    assert epmc.fulltext_asked == []
+
+
+def test_an_unreachable_pubmed_leaves_the_doi_route_unchecked(monkeypatch) -> None:
+    monkeypatch.setattr(
+        discovery, "open_access", lambda *_a, **_k: OpenAccessResult(doi=DOI, locations=[])
+    )
+    epmc = _EuropePmc({})
+    result = fulltext(
+        _services(monkeypatch, epmc, _PubMed(ServiceUnavailable(PUBMED, "HTTP 503"))),
+        pmid=None,
+        pmcid=None,
+        doi=DOI,
+        max_chars=None,
+    )
+    messages = [f.message for f in result.findings]
+    assert not result.retrieved
+    warned = [m for m in messages if "which record carries DOI" in m]
+    assert len(warned) == 1 and "HTTP 503" in warned[0] and "UNCHECKED" in warned[0]

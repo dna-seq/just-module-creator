@@ -6,6 +6,33 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F122 — `fetch_fulltext(doi=…)` reports nothing retrieved for a paper it returns whole by PMID
+
+**Found:** 2026-11-07, rechecking F31/F50 on 0.48.2 · **Severity:** low · **Status:** resolved 2026-11-08
+
+F31's fix joins a PMID to its PMCID and DOI through PubMed. Nothing joins a DOI the other way. Run live:
+
+| call | `text_source` | what came back |
+|---|---|---|
+| `fetch_fulltext(pmid="42990418")` | `fulltext` | the bioRxiv preprint, PMC13733956, via the PubMed join |
+| `fetch_fulltext(doi="10.64898/2026.10.26.761951")`, the same paper | `null` | *"Nothing was retrieved … Try the locations below"*, plus the bioRxiv PDF |
+| `fetch_fulltext(pmid="11788828")` | `abstract` | Enattah 2002's abstract |
+| `fetch_fulltext(doi="10.1038/ng826")`, the same paper | `null` | *"No open-access location came back for DOI 10.1038/ng826"* |
+
+The messages are honest: `null` is called UNCHECKED, and F50's empty branch now names the DOI. So this is a gap,
+not a broken claim. It bites where a DOI is all an author holds: a reference list, a supplementary file, a
+publisher page. Whichever id the author has decides whether they get the text, and nothing says that a PMID
+would have worked. Europe PMC's search (`DOI:` field) and NCBI's id converter both answer DOI → PMID/PMCID.
+Whether to join on the way in, or to say "try it by PMID" in the warning, is the lead's call.
+
+**Resolved** by joining on the way in. `discovery._doi_ids`: a call with a DOI and neither a PMID nor a PMCID
+asks PubMed's `[doi]` field (one `esearch`, one `esummary`, on the shared NCBI budget), takes the record only
+when its own DOI is the one asked, and then runs as a PMID call; a finding says which ids PubMed gave. PubMed
+unreachable is a warning calling the PMID route UNCHECKED. PubMed rather than Europe PMC's `DOI:` search
+because F31's join already reads PubMed's `esummary` and its parser. Three tests in
+`tests/test_fulltext_pmid_join.py` (the join, a record carrying a different DOI, PubMed down), all failing on the
+old code. Not re-run live: that is the tester's probe.
+
 ## F123 — the no-token refusal points at a session-only token or the environment, not at the saved accounts
 
 **Found:** 2026-11-07, `remote_derive(target="prod")` with no prod account (0.48.1's claim, which holds) ·
