@@ -29,10 +29,10 @@ reading, and its § 3 block for this plugin is answered here.
 
 ## Backlog
 
-- **0.7.0 to 0.7.3, read for levers.** 0.7 was adopted for what broke us (CLAUDE.md §11), not read for what it
-  fixed of ours. The pending-fixes table "Against 0.8.0" lists fourteen entries whose fix is *in our lock*: each
-  closes once its reproduction passes on the installed package. Next slice: those reproductions, one entry at a
-  time.
+- **0.7.0 to 0.7.3, read for levers: done 2026-11-07.** The fourteen pending-fixes entries whose fix is *in our
+  lock* were re-run on the installed packages; each now says what of ours can come out and whose that is. Handed to
+  the lead: F94 and F93 (fallbacks to delete), F63 (our in-process claim beside upstream's flock), F59 (the registry
+  client's `set_short_description`, unwrapped), F67 (`compiler.load_spec` in place of our `yaml.safe_load`).
 - **`v0.8.0`'s changelog, entry by entry**, for what the integration file does not name (the registry liaison
   read it at the cut; ask before repeating it).
 - **`v0.8.1`, read by its release entry** (tag `6330f90`, recut 2026-11-07 15:33 UTC; not on PyPI at 16:40 UTC,
