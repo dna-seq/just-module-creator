@@ -22,7 +22,7 @@ clone, where its seats commit: read it, never fetch or write there.
 registry instances serve 0.8 (`/api/v1/version`). polars and duckdb are capped `<2` in the lock beside it
 (`c361614`) until that move.
 
-**Read to: `v0.8.1`** (its release entry, below); `v0.8.0` (tag `e97339a`, on PyPI 2026-11-05), through `docs/INTEGRATION_0_8.md` as it stands on
+**Read to: `v0.8.2`** (its release entry, below; on PyPI 2026-11-08); `v0.8.0` (tag `e97339a`, on PyPI 2026-11-05), through `docs/INTEGRATION_0_8.md` as it stands on
 their `main` at `911a2fd` (2026-11-07), which postdates the `0.8` branch head `edf2661`. Read for the adoption map
 below, not entry by entry through the changelog: the integration file is the release's own per-consumer
 reading, and its § 3 block for this plugin is answered here.
@@ -35,6 +35,19 @@ reading, and its § 3 block for this plugin is answered here.
   client's `set_short_description`, unwrapped), F67 (`compiler.load_spec` in place of our `yaml.safe_load`).
 - **`v0.8.0`'s changelog, entry by entry**, for what the integration file does not name (the registry liaison
   read it at the cut; ask before repeating it).
+- **`v0.8.2`, read by its release entry** (tag `b98f7e9`, 2026-11-07; compiler 0.8.2 on PyPI 2026-11-08). All three
+  packages move; no public name, field, table, flag or warning code; no recompile needed. The 0.8 adoption floors
+  all three at `>=0.8.2`. What reaches us:
+  - **RM414, RM415**: F130 and F131 (S136, S137) are released here.
+  - **RM417, and it is true of our 0.7.3 lock too**: gene-metrics rows from the live gnomAD API were labelled
+    `gnomad_v2.1.1_constraint` while the API served gnomAD 4.1.1 or later; from 0.8.2 they are
+    `gnomad_api_constraint`. `skills/module-tables/references/gene_metrics.md` (lines 190, 325, 480) reads the
+    label as true and explains the BRCA1 difference between snapshot and API rows as v4.1 against v2.1.1, which
+    it is not. Handed to the lead, 2026-11-08. Relabelling a module means deleting `gene_metrics.csv` and
+    enriching again, which moves its fact hash.
+  - RM410 (the constraint snapshot moves to gnomAD 4.1.2 once published; 4.1 rows are kept on a re-run), RM416
+    (`--pin` on a lane that cannot take one stops the run), RM408 (Open Targets pulls, ~5.5 GB), RM411, RM413:
+    read against `provisioning.py`'s lane pricing at the adoption, nothing now.
 - **`v0.8.1`, read by its release entry** (tag `6330f90`, recut 2026-11-07 15:33 UTC; not on PyPI at 16:40 UTC,
   the enricher's latest there is 0.8.0). Enricher 0.8.1 only; format and compiler stay 0.8.0, so no recompile and
   no release record. No new field, table, parameter, public function or warning code. What reaches us:
