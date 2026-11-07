@@ -397,6 +397,31 @@ async def test_repeat_bands_on_a_module_with_no_repeat_table_says_which_tool_wri
     assert not (spec_dir / "verification.json").exists()
 
 
+async def test_repeat_bands_takes_a_bare_catalogue_file_as_its_docstring_says(
+    make_client, tmp_path: Path
+) -> None:
+    """`catalogue` names a built snapshot *or* a `STRchive-loci.json`; the file was refused.
+
+    Found beside F129: the argument went through `resolve_dir`, which refuses
+    anything that is not a directory. The HTT probe's bins against the real HTT record.
+    """
+    spec_dir = tmp_path / "htt"
+    shutil.copytree(Path(__file__).resolve().parent.parent / "assets" / "htt_cag_repeats", spec_dir)
+    catalogue = tmp_path / "STRchive-loci.json"
+    catalogue.write_bytes(
+        (Path(__file__).resolve().parent.parent / "assets" / "strchive_htt" / "STRchive-loci.json")
+        .read_bytes()
+    )
+    async with make_client(offline_settings()) as client:
+        report = (
+            await client.call_tool(
+                "check_repeat_bands", {"spec_dir": str(spec_dir), "catalogue": str(catalogue)}
+            )
+        ).data
+
+    assert report.compared, report.next_step
+
+
 async def test_the_offline_ceiling_reaches_the_two_catalogue_checks_that_leave(
     make_client, spec: Path
 ) -> None:

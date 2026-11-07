@@ -90,7 +90,12 @@ from just_module_creator.models import (
     RepeatBandReport,
 )
 from just_module_creator.settings import Settings
-from just_module_creator.tools._shared import normalize_declared_use, offline_for, resolve_dir
+from just_module_creator.tools._shared import (
+    normalize_declared_use,
+    offline_for,
+    resolve_dir,
+    resolve_source,
+)
 
 log = get_logger()
 
@@ -647,7 +652,7 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
                 ),
             )
 
-        source = resolve_dir(catalogue, settings) if catalogue else None
+        source = resolve_source(catalogue, settings) if catalogue else None
         try:
             # `write=True` is upstream's own attestation, written where the check ran.
             result = await run_sync(

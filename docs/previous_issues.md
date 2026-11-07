@@ -6,6 +6,42 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F129 — `draft_from_strchive` drafts nothing on any machine: the lane is provisioned, the drafter is never told where
+
+**Found:** 2026-11-07, HTT probe, stage 2 · **Severity:** high: the only binning drafter is dead, and its
+docstring calls itself the guard against drafting HTT into `variants.csv` · **Status:** resolved here 2026-11-08 (a mitigation). **Fixed upstream in
+enricher 0.8.0** (their RM395, `3a5be0bf`, 2026-11-05). It reaches us when the `<0.8` pin moves; until then,
+on 0.7.3, the tool cannot work.
+
+`draft_from_strchive(spec_dir="assets/htt_cag_repeats", genes=["HTT"], use="non_commercial", dry_run=true)`:
+
+> *"No STRchive catalogue was provisioned, so nothing was drafted from it. Build one with `just-dna-enricher
+> strchive build --release <tag>`, or pass a downloaded STRchive-loci.json."* and `next_step`: *"… for these
+> sources it is usually a cache lane that has not been provisioned yet."*
+
+`provision_caches(lanes=["strchive"])` in the same minute: `"state": "present"`, `"release": "strchive_v2.26.0"`,
+`measured_mb: 0.478`, under `/data/just-dna-cache/strchive/`. So the message is false on this machine, and both of
+its remedies are unreachable from here: `build` is done already, and the tool has no argument to pass a file.
+
+The cause: upstream 0.7.3's `draft_repeat_loci(…, catalogue=None)` skips when `catalogue is None` and never
+resolves the provisioned lane. Its sibling `check_repeat_bands` does, through
+`just_dna_enricher.strchive.resolve_strchive_reference` (public on 0.7.3). Our wrapper (`tools/passes.py`,
+`draft_from_strchive`) passes no `catalogue` and exposes none, where our `check_repeat_bands` exposes one. Two
+repairs, the lead's to choose: pass `resolve_strchive_reference()` (a mitigation that comes out at 0.8), and/or
+add a `catalogue` argument for parity with the check. Either way the `next_step` sentence should stop reading
+"usually not provisioned" over a lane `provision_caches` reports present. The probe carries on with hand-authored
+bins, which was its original plan; the drafter's contested-threshold findings are what it loses.
+
+**Resolved** with both repairs. `draft_from_strchive` takes a `catalogue` argument, as `check_repeat_bands`
+does, and without one passes upstream's own `locations.resolve_strchive_reference()`, which finds the lane
+`provision_caches` builds. That fallback is the mitigation and comes out at the 0.8 move (adoption map item 9);
+the argument stays. With no lane and no `catalogue`, the result's findings name
+`provision_caches(lanes=["strchive"])`, since upstream's warning names a CLI command. Beside it: both tools'
+`catalogue` went through `resolve_dir`, which refuses a file, so `check_repeat_bands`'s documented "or a
+`STRchive-loci.json`" never worked; both now use `_shared.resolve_source`. Tests in `tests/test_passes.py`
+(lane, explicit file, no lane) and `tests/test_checks.py` (bare file) run on `assets/strchive_htt/`, STRchive's
+real HTT record; all four fail on the old code.
+
 ## F124 — `check_pgx` reports "compared against cpic, pharmvar and none differs" on a run whose CPIC leg compared nothing
 
 **Found:** 2026-11-07, re-probing F101 on 0.48.2, scratch copy of the ClawBio CYP2C19 module

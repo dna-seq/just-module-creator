@@ -88,6 +88,18 @@ def resolve_dir(raw: str, settings: Settings, *, must_exist: bool = True) -> Pat
     return path
 
 
+def resolve_source(raw: str, settings: Settings) -> Path:
+    """A user-supplied file *or* directory, under `resolve_dir`'s containment.
+
+    For an argument that names a snapshot either way, such as a built STRchive
+    directory or a bare `STRchive-loci.json`: `resolve_dir` refuses the file.
+    """
+    path = resolve_dir(raw, settings, must_exist=False)
+    if not path.exists():
+        raise ToolError(f"{path} does not exist.")
+    return path
+
+
 def normalize_declared_use(use: str) -> str:
     """The one spelling rule for a licence declaration, shared by every caller.
 

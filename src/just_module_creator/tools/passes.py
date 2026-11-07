@@ -86,6 +86,7 @@ from just_dna_enricher.licensing import (
     check_declared_use,
 )
 from just_dna_enricher.literature import LiteratureEnrichmentError, enrich_literature
+from just_dna_enricher.locations import resolve_strchive_reference
 from just_dna_enricher.mitomap_draft import (
     MitomapDraftError,
     draft_panel_from_mitomap_miss,
@@ -126,6 +127,7 @@ from just_module_creator.tools._shared import (
     normalize_declared_use,
     offline_for,
     resolve_dir,
+    resolve_source,
 )
 
 log = get_logger()
@@ -1560,6 +1562,12 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
             findings=findings,
         )
 
+    # F129: enricher 0.7.3's `draft_repeat_loci` skips on `catalogue=None` and never looks
+    # for the provisioned lane, so on every machine this drafter drafted nothing while
+    # `provision_caches` reported the lane present. Fixed upstream in 0.8.0 (RM395). The
+    # `resolve_strchive_reference()` fallback below is the mitigation and comes out at the
+    # 0.8 move (adoption map item 9); the `catalogue` argument stays, for parity with
+    # `check_repeat_bands`. `load_dotenv_file=False`: `userconfig.load_env` already ran.
     @mcp.tool(
         task=True,
         annotations=ToolAnnotations(
@@ -1574,6 +1582,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         genes: list[str],
         use: str,
         dry_run: bool = False,
+        catalogue: str | None = None,
         ctx: Context | None = None,
     ) -> DraftResult:
         """Draft `repeat_alleles.csv` — repeat-expansion bands — from STRchive.
@@ -1593,21 +1602,37 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         `fractional_ref_copies` and `with_locus_structure` come back on the result:
         a fractional reference count means the locus does not divide evenly into its
         repeat unit, which is a real property of the locus and not a rounding error.
+
+        `catalogue` points at a built STRchive snapshot or a `STRchive-loci.json`; omitted,
+        the `strchive` lane `provision_caches` builds is used.
         """
         declared = _check_use(use)
         target = resolve_dir(spec_dir, settings)
+        source = (
+            resolve_source(catalogue, settings)
+            if catalogue
+            else resolve_strchive_reference(load_dotenv_file=False)
+        )
         if ctx:
             await narrate(ctx, f"Drafting repeat loci for {', '.join(genes)} into {target.name}")
             await ctx.report_progress(progress=1, total=2)
         try:
             result = await run_sync(
                 lambda: draft_repeat_loci(
-                    target, tuple(genes), declared_use=declared, dry_run=dry_run
+                    target, tuple(genes), catalogue=source, declared_use=declared, dry_run=dry_run
                 )
             )
         except StrchiveDraftError as exc:
             raise ToolError(str(exc)) from exc
-        findings = [
+        findings = (
+            [
+                "No `strchive` lane on this machine and no `catalogue` given: "
+                '`provision_caches(lanes=["strchive"])` builds the lane.'
+            ]
+            if source is None
+            else []
+        )
+        findings += [
             f"{locus}: published thresholds disagree ({why})"
             for locus, why in getattr(result, "contested", []) or []
         ]

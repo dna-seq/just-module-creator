@@ -1,0 +1,120 @@
+[
+  {
+    "id": "HD_HTT",
+    "disease_id": "HD",
+    "gene": "HTT",
+    "evidence": [
+      "Definitive"
+    ],
+    "chrom": "chr4",
+    "start_hg38": 3074876,
+    "stop_hg38": 3074933,
+    "start_hg19": 3076603,
+    "stop_hg19": 3076660,
+    "start_t2t": 3073603,
+    "stop_t2t": 3073687,
+    "disease": "Huntington disease",
+    "inheritance": [
+      "AD"
+    ],
+    "association_type": [
+      "Mendelian",
+      "Risk"
+    ],
+    "prevalence": "1/10000",
+    "age_onset": "Typical: 35-44 [@genereviews:NBK1305]; Range: 1-85 [@pmid:39441074; @pmid:21171977].",
+    "age_onset_min": 1.0,
+    "age_onset_max": 85.0,
+    "typ_age_onset_min": 35.0,
+    "typ_age_onset_max": 44.0,
+    "mechanism": "GoF/LoF",
+    "year": "1993 [@pmid:8458085]",
+    "location_in_gene": "Coding Exon 1",
+    "gene_strand": "+",
+    "reference_motif_reference_orientation": [
+      "CAG"
+    ],
+    "pathogenic_motif_reference_orientation": [
+      "CAG"
+    ],
+    "benign_motif_reference_orientation": [],
+    "unknown_motif_reference_orientation": [],
+    "interruption_reference_orientation": [
+      "CAA"
+    ],
+    "pathogenic_motif_gene_orientation": [
+      "CAG"
+    ],
+    "benign_motif_gene_orientation": [],
+    "unknown_motif_gene_orientation": [],
+    "interruption_gene_orientation": [
+      "CAA"
+    ],
+    "locus_structure": [
+      {
+        "motif": "CAG",
+        "count": null,
+        "type": "pathogenic_repeat"
+      },
+      {
+        "motif": "CAACAG",
+        "count": 1,
+        "type": "interruption"
+      },
+      {
+        "motif": "CCG",
+        "count": 12,
+        "type": "flank_repeat"
+      }
+    ],
+    "benign_min": 6,
+    "benign_max": 26,
+    "intermediate_min": 27,
+    "intermediate_max": 35,
+    "pathogenic_min": 36,
+    "pathogenic_max": 250,
+    "motif_len": 3,
+    "ref_copies": 21.3,
+    "novel": "ref",
+    "gard": [
+      "6677"
+    ],
+    "genereviews": [
+      "NBK1305"
+    ],
+    "malacard": [
+      "HNT016"
+    ],
+    "medgen": [
+      "5654"
+    ],
+    "mondo": [
+      "0007739"
+    ],
+    "omim": [
+      "143100"
+    ],
+    "orphanet": [
+      "399"
+    ],
+    "gnomad": [
+      "HTT"
+    ],
+    "stripy": [
+      "HTT"
+    ],
+    "tr_atlas": [
+      "TR40017",
+      "TR40018"
+    ],
+    "webstr_hg38": [
+      "4701738",
+      "86468",
+      "86467"
+    ],
+    "webstr_hg19": [
+      "Expansion_HD/HTT"
+    ],
+    "disease_tags": []
+  }
+]

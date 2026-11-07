@@ -1521,3 +1521,76 @@ async def test_a_rows_run_with_nothing_to_ask_claims_nothing(make_client, tmp_pa
     assert body["row_status"]["no_gene"] == 1
     assert any("No window was planned" in w for w in body["warnings"])
     assert "Nothing to ask" in body["next_step"]
+
+
+# --------------------------------------------------------------------------- #
+# F129: the STRchive drafter finds the provisioned lane, or takes a catalogue
+# --------------------------------------------------------------------------- #
+STRCHIVE_HTT = Path(__file__).resolve().parent.parent / "assets" / "strchive_htt"
+
+
+def _strchive_spec(tmp_path: Path) -> Path:
+    spec_dir = tmp_path / "spec"
+    spec_dir.mkdir()
+    (spec_dir / "module_spec.yaml").write_text("schema_version: '1.0'\n")
+    return spec_dir
+
+
+async def _draft_htt(make_client, spec_dir: Path, **extra) -> DraftResult:
+    async with make_client(offline_settings()) as client:
+        return (
+            await client.call_tool(
+                "draft_from_strchive",
+                {"spec_dir": str(spec_dir), "genes": ["HTT"], "use": "non_commercial",
+                 "dry_run": True, **extra},
+            )
+        ).data
+
+
+async def test_strchive_drafter_reads_the_provisioned_lane(
+    make_client, tmp_path: Path, monkeypatch
+) -> None:
+    """F129: with the `strchive` lane built and no `catalogue`, HTT is drafted.
+
+    On enricher 0.7.3 the drafter skipped here with "No STRchive catalogue was
+    provisioned" while `provision_caches` reported the lane present.
+    """
+    lane = tmp_path / "cache" / "strchive"
+    lane.mkdir(parents=True)
+    (lane / "STRchive-loci.json").write_bytes((STRCHIVE_HTT / "STRchive-loci.json").read_bytes())
+    monkeypatch.setenv("JUST_DNA_PIPELINES_CACHE_DIR", str(tmp_path / "cache"))
+    monkeypatch.setenv("JUST_DNA_STRCHIVE_CACHE", "")
+
+    result = await _draft_htt(make_client, _strchive_spec(tmp_path))
+
+    assert result.skipped is False, result.warnings
+    assert [(t.csv, t.added) for t in result.tables] == [("repeat_alleles.csv", 1)]
+
+
+async def test_strchive_drafter_takes_an_explicit_catalogue(
+    make_client, tmp_path: Path, monkeypatch
+) -> None:
+    """The `catalogue` argument, as `check_repeat_bands` has it: a bare `STRchive-loci.json`."""
+    monkeypatch.setenv("JUST_DNA_PIPELINES_CACHE_DIR", str(tmp_path / "empty-cache"))
+    monkeypatch.setenv("JUST_DNA_STRCHIVE_CACHE", "")
+    catalogue = tmp_path / "STRchive-loci.json"
+    catalogue.write_bytes((STRCHIVE_HTT / "STRchive-loci.json").read_bytes())
+
+    result = await _draft_htt(make_client, _strchive_spec(tmp_path), catalogue=str(catalogue))
+
+    assert result.skipped is False, result.warnings
+    assert [(t.csv, t.added) for t in result.tables] == [("repeat_alleles.csv", 1)]
+
+
+async def test_strchive_drafter_with_no_lane_names_the_tool_that_builds_one(
+    make_client, tmp_path: Path, monkeypatch
+) -> None:
+    """No lane and no `catalogue`: a skip whose repair is this surface's, not the CLI's."""
+    monkeypatch.setenv("JUST_DNA_PIPELINES_CACHE_DIR", str(tmp_path / "empty-cache"))
+    monkeypatch.setenv("JUST_DNA_STRCHIVE_CACHE", "")
+
+    result = await _draft_htt(make_client, _strchive_spec(tmp_path))
+
+    assert result.skipped is True
+    assert result.tables == [] or all(t.added == 0 for t in result.tables)
+    assert any("provision_caches" in f for f in result.source_findings)
