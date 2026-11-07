@@ -70,7 +70,18 @@ still be worth registering with. If you want it gone, say so; it is not mine to 
   Claude Code, seat sessions in this clone). At 13:51 UTC the host's 30 s connect timeout fired on a server that
   answers `initialize` in 7.7 s when started by hand (`uv run --no-dev --project . just-module-creator stdio`).
   The cause was load, not the server: at that minute the machine restarted every repo's sessions, watchdogs and
-  `uv run` servers at once. What the session could then do about it, each tried:
+  `uv run` servers at once (the kit's pin moving to v0.1.140; 15-minute load average still 13.7 at 14:39 UTC).
+  What the logs show:
+  - the start that timed out was the **liaison's** session (`a85b4db8`, 13:51:04–13:51:34 UTC); the host log
+    holds only its own lines, no server stderr, so where those 30 s went is not recorded anywhere;
+  - **the tester's session (13:58) never tried**: it has no log file for this server at all. The host keyed the
+    cached failure to the project, so one session's lost race left every later session in the repo without
+    the product;
+  - the same burst gave prepare-annotations' 0.47.0 copy a 12 s connect at 13:49, so 30 s is within reach;
+  - normal-load costs, measured 14:40 UTC: `uv run`'s sync check 0.03 s, `import just_module_creator.server`
+    2.2 s, `build_server()` 2.4 s, a full start to the `initialize` answer 7.7 s. The headroom is about 4×.
+
+  What the session could then do about it, each tried:
   - the host's own message, *"retries automatically in 15 min"*: no new connect attempt in
     `~/.cache/claude-cli-nodejs/-data-sources-just-module-creator/mcp-logs-plugin-just-module-creator-just-module-creator/`
     after 46 min;
