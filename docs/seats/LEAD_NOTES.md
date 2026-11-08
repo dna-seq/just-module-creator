@@ -53,7 +53,7 @@ move), the gene-metrics guide's gnomAD label (RM417). Also: reference examples' 
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.143 (moved on each announcement; 0.1.143 on 2026-11-08) (`move-to-tag.py`; the pin is in the untracked
+- **Kit pin**: 0.1.144 (moved on each announcement; 0.1.144 on 2026-11-08) (`move-to-tag.py`; the pin is in the untracked
   `.claude/settings.local.json`). The person's `/reload-plugins` takes it into this session.
 
 ## Open
