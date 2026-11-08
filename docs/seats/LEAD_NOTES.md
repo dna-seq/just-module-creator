@@ -54,7 +54,8 @@ move), the gene-metrics guide's gnomAD label (RM417). Also: reference examples' 
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
 - **Kit pin**: 0.1.144 (moved on each announcement; 0.1.144 on 2026-11-08) (`move-to-tag.py`; the pin is in the untracked
-  `.claude/settings.local.json`). The person's `/reload-plugins` takes it into this session.
+  `.claude/settings.local.json`). Taking it into this session is mine: `watchdog.sh reload`, then end the turn,
+  and the kit's typer types `/reload-plugins` (the "left for the person" line `move-to-tag.py` prints is wrong, kit #306).
 
 ## Open
 
@@ -80,7 +81,6 @@ move), the gene-metrics guide's gnomAD label (RM417). Also: reference examples' 
   and perhaps the pyyaml dependency). F59 (`set_short_description` unwrapped) is a gap whose scope is the pm's.
 - Desk #203 (RM28), #204 (RM31), #205 (RM18): waiting on the person.
 - The tester's probe of 0.48.1's token refusal on the polygon, asked in `#just-module-creator>releases`.
-- The person's `/reload-plugins` here takes the kit's 0.1.141 hooks (the watchdog already runs 0.1.141).
 
 ## Downstream
 
