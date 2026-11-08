@@ -615,3 +615,54 @@ than null, and the compiler counts only nulls as unchecked. Our tool reports the
 which is right. The published record doesn't match it, and only `abstract_only_count: 1` beside it
 says why. Nothing to change on our side. `module-publish`'s read-back step is where an author would
 notice, so if upstream keeps the shape, add one sentence there.
+
+## F133 — `fetch_fulltext` by DOI or by PMCID retrieves nothing where the same paper's PMID retrieves the text
+
+**Found:** 2026-11-08 by the tester, rechecking F122 on the shipped 0.48.3 · **Severity:** medium ·
+**Status:** open
+
+F122's join works: `fetch_fulltext(doi="10.64898/2026.10.26.761951")` now names PubMed's record, *"PMID 42990418
+and PMCID PMC13733956; the text was looked up by those."* But that call answers `retrieved: false`, and so does
+`fetch_fulltext(pmcid="PMC13733956")`. `fetch_fulltext(pmid="42990418")`, run between them on the same server,
+answers `text_source: "fulltext"` over the same PMCID. Reproduced three times by DOI, twice by PMCID, 17:2x UTC.
+The plain library call `EuropePmcClient().fulltext("PMC13733956")` from this checkout's venv returned 2697
+characters at the same time, so Europe PMC was serving it. Neither failing call reports a BioC failure, so both
+rungs came back empty without a reason.
+
+So the message claims a lookup "by those" ids that did not reach the text the PMID route reaches, and an agent
+holding only a DOI (the F122 case) still gets nothing for a paper in PMC. The cause isn't traced: in
+`discovery.fulltext` the three routes all call `client.fulltext(pmcid)` with what reads as the same string. The
+visible difference is that only the PMID route calls `client.lookup([pmid])` first. A test that runs the DOI
+route through to `client.fulltext` with a stub that answers only the right accession would pin it.
+
+## F134 — `draft_from_strchive` promises bands; upstream drafts none by design, and its `next_step` names the wrong cells
+
+**Found:** 2026-11-08 by the tester, rechecking F129 on the shipped 0.48.3 · **Severity:** medium ·
+**Status:** open
+
+F129 is fixed: a fresh `rows=0` scaffold drafts HTT from the provisioned lane (`candidates: 1`, licence row
+`strchive_v2.26.0`). The row it writes is `measure_kind=repeat_count`, `trait_efo_id=MONDO_0007739`, `gene=HTT`,
+`repeat_unit=CAG`, `conclusion=<<REPLACE>>`, with `measure_min`, `measure_max`, `measure_tiling`, `direction`,
+`clin_sig` and `pmid` empty. That is upstream's deliberate design. The enricher's `strchive_draft.py` docstring
+says *"Never drafted: the bands"*, because STRchive is a band coarser than the corpus at FMR1's premutation
+threshold and its `pathogenic_max` would invent a ceiling HTT leaves open. The bands are checked instead
+(`check_repeat_bands`).
+
+Our surface says otherwise:
+
+- The tool docstring says *"the rows are ranges (normal / intermediate / pathogenic) rather than `variants.csv`
+  entries"* and *"the only drafter here that writes a BINNING table"*. It writes one identity row per locus,
+  with no range.
+- The `next_step` says *"Curate the stubbed cells — genotype, state, weight, conclusion are yours"*. That is the
+  variant tables' vocabulary. `repeat_alleles.csv` has no genotype or weight column. The cells actually left
+  for the author are the bands, which means splitting the row into one per band, plus direction, clin_sig and
+  pmid. `check_repeat_bands`, the tool that compares those bands with STRchive, isn't named.
+
+An author who takes the docstring at its word expects bands and gets a locus. The fix is our text: say "one
+identity row per locus, the bands are yours", name `check_repeat_bands`, and give the binning table its own
+`next_step`.
+
+Small, same probe: `scaffold_module(kinds=["repeat_alleles"], rows=0)` wrote a sentinel row
+(`unresolved=true`, `gene` and `repeat_unit` set to `<<REPLACE>>`), not the "header-only table" its docstring
+promises for `rows=0`. The drafter appended past it without refusing, so nothing broke. Either the docstring
+names the sentinel exception or the scaffold leaves the row out.

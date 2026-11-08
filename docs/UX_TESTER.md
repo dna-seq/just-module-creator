@@ -72,6 +72,13 @@ is `test_`-prefixed as well as the namespace, so `purge-test-data` collects it.
   So an unattended seat whose server lost the start-up race stays without the product until the person returns.
   The fallback that keeps work going is F107's in-process driver (`fastmcp.client.Client` on a server built in
   the script), which tests the tools but not the host wire; a probe run through it says so.
+- **`/mcp reconnect all` retries only the servers that failed; a connected one keeps running old code**
+  (2026-11-08 08:20 UTC). The kit typed it for 0.48.3, the host answered "Reconnected 4 of 22", and this
+  session's server was still the 19:38 process (v0.48.2) with no new line in its connect log. The kit's typer
+  types only that fixed text. What does work: kill the session's own server child (the python under its
+  `uv run`; it **ignores SIGTERM**, so `kill -KILL`), the host marks it failed, then
+  `watchdog.sh reload --mcp`. Find the child by the session's pid (`$PPID` of a Bash call) as the `uv run`'s
+  parent; never another session's.
 - `/reload-plugins` does **not** re-exec a stdio MCP server; `/mcp` reconnect does.
   Verified by process start times against the commit time — a reload spawned no new
   process and the old tool list survived. Stale servers accumulate rather than being
@@ -107,6 +114,19 @@ reproduced across a local recompile and the registry's own; an unanswered source
 claims that were plausibly wrong, and it found more than solo probing.
 
 ## In flight
+
+**2026-11-08: recheck of 0.48.3 on the shipped plugin (v0.48.3 in the host, server started 09:24 CET).**
+
+| claim | result |
+|---|---|
+| F122: a DOI alone joins to its PMID | **holds** on both DOIs (bioRxiv `10.64898/2026.10.26.761951` → 42990418/PMC13733956; `10.1038/ng826` → 11788828, abstract). The joined call still **retrieves nothing** for the PMC paper the PMID route reads whole: **F133**. |
+| F123: the no-token refusal names saved accounts | **holds**: `remote_derive(target="prod")` leads with `registry_accounts(action="add", …)`. |
+| F124: `check_pgx` calls the CPIC leg a copy | **holds**: "5 compared against pharmvar … cpic answered with a copy, not a comparison". |
+| F125: the stub-row refusal ends in this surface's repair | **holds** on `probe_f100/tpmt_default`: `scaffold_module(kinds=[...], rows=0)`. |
+| F129: `draft_from_strchive` drafts HTT | **holds** (1 locus row, MIT licence row). The row has no bands, by upstream design, and our docstring promises them: **F134**. |
+| F120: findings labelled by source | **holds**: every `fetch_fulltext` finding above says `just-module-creator`. |
+
+The polygon still answers HTTP 502 (17:3x UTC), so the 0.48.1 token-sending leg and the HTT rehearsal wait.
 
 **2026-11-07: recheck of 0.48.0–0.48.2 on the shipped plugin (v0.48.2, in the host), part done.**
 
