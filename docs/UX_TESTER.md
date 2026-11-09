@@ -128,6 +128,17 @@ claims that were plausibly wrong, and it found more than solo probing.
 
 The polygon still answers HTTP 502 (17:3x UTC), so the 0.48.1 token-sending leg and the HTT rehearsal wait.
 
+**2026-11-09: layman probe, MTHFR from a handed AI summary, in progress.** Work dir
+`data/interim/probe_layman_mthfr/` (gitignored); its `TRIAGE.md` holds each claim's verdict and quote. Done:
+catalog search (no MTHFR module in prod; `thrombophilia` lists related loci, unread), lookups, scaffold, the
+rsid-only triage rows, enrich, gene-locus check (caught the planted MTRR rsID only after enrich: **F135**),
+row drop logged, both primaries read. **F136** (`lookup_variant` size and cold start) came up on the way. Found
+by reading, not handed: van der Put 1998 says 677CT + 1298AC together resemble 677TT, while 1298CC alone
+does not. `module-tables` routes that to `haplotypes.csv` + `diplotypes.csv` (HFE compound-het example), which is
+the "module with two of something" probe. **Next:** read `diplotypes.md`/`haplotypes.md`, re-scaffold with those
+kinds, author the two variants' rows and the compound-het diplotype, strict validate and compile, then the
+README write-up as a reference example.
+
 **2026-11-07: recheck of 0.48.0–0.48.2 on the shipped plugin (v0.48.2, in the host), part done.**
 
 | claim | result |
