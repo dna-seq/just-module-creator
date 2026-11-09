@@ -158,7 +158,7 @@ the call returns, on scratch copies under `data/interim/recheck_0484/` and the e
 | F137 | holds once the test is right: `sidecar_rows_nothing_authors` names rs429358 in `resolution.csv`. My first try left the rsID in `studies.csv`, which counts as authored, and the audit correctly said clear |
 | F138 | holds: a stale `verification.json` reads `not_computed` with upstream's reason, and diplotype directions are read |
 | F139 | holds: on `assets/mthfr_folate`, `checks_older_than_the_last_edit` names 5 checks from 02:38 |
-| F140 | holds in the descriptions only: the IRX3-only result still reads `gene_not_at_locus` and says nothing inline |
+| F140 | holds in the descriptions only: the IRX3-only result still reads `gene_not_at_locus` and says nothing inline. The lead has since put it in the result's `next_step` (on main, unreleased): **recheck at the next release** on `data/interim/probe_atlas_fto/fto_irx3` |
 | F141 | holds: the dry run calls its 26 s a floor, and `seconds_elapsed` and `slowest_window_seconds` are on the result |
 | F142 | holds: the ranked list's next step names its 2 opposite-sign rows and says why |
 
