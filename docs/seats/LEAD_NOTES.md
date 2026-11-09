@@ -11,6 +11,15 @@ compiler's real refusal), F129 (STRchive drafter reads the lane or a `catalogue`
 move), the gene-metrics guide's gnomAD label (RM417). Also: reference examples' `logs/authoring.log` now travel
 (`4b358df`). Next release no earlier than 2026-11-09. The person went away at 05:02Z on 2026-11-05.
 
+Unreleased on main: F134 (`62fffd5`: the STRchive drafter says loci, not bands; its contested finding fixed)
+and F133 (`7c188be`: an empty fetch with a known PMCID says to call again; Europe PMC 500s at random). The
+F134 removal from `dogfooding.md` rode in the tester's `fec268e` (it committed that file by path mid-move).
+Queued from the tester's layman probe, all `unattended`, mine: F135 (triage's gene-locus check has no input in
+the taught order), F136 (`lookup_variant` doubles PubMind records; slow first call), F137 our half (an audit
+signal for sidecar rows no authored table names; the compiler half is the liaison's S138), F138 (audit reads a
+stale `verification.json`; skips `diplotypes.csv` directions). F139 (re-attestation re-signs checks it did not
+re-run, high) is upstream's writer, the liaison's to file; ours is whether to guard it meanwhile.
+
 ## Plan states (set 2026-11-05)
 
 - RM16, RM25: waits until 2026-12-05. RM24: waits until 2027-01-05. Each line says what is looked at then.
@@ -71,7 +80,8 @@ move), the gene-metrics guide's gnomAD label (RM417). Also: reference examples' 
   whether upstream would give a structured remedy key instead.
 - **At the 0.8 move** (adoption map): drop `draft_from_strchive`'s `resolve_strchive_reference()` fallback (keep
   the `catalogue` argument); drop the gene-metrics guide's 0.7 label sentences (`gnomad_v2.1.1_constraint`);
-  floors `>=0.8.2` for all three (liaison, 2026-11-08); recopy `assets/reference_examples/`.
+  floors `>=0.8.2` for all three (liaison, 2026-11-08); recopy `assets/reference_examples/`; replace F133's
+  "call again" sentence in `discovery.fulltext` with 0.8's `fetch_fulltext`, which names an outage as one.
 - **F126** (`registry_register`'s docstring on install-id reuse) and **F128** (user-scope 0.47.0 skills; desk
   #229, the person's) remain open in `docs/dogfooding.md`; F126 is `unattended`, mine.
 - **The liaison's re-run of pending-fixes (`f032ecb`) leaves five lifts of our own code**, none urgent, each
