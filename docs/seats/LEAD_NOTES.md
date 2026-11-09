@@ -11,20 +11,15 @@ compiler's real refusal), F129 (STRchive drafter reads the lane or a `catalogue`
 move), the gene-metrics guide's gnomAD label (RM417). Also: reference examples' `logs/authoring.log` now travel
 (`4b358df`). Next release no earlier than 2026-11-09. The person went away at 05:02Z on 2026-11-05.
 
-Unreleased on main: F134 (`62fffd5`: the STRchive drafter says loci, not bands; its contested finding fixed)
-and F133 (`7c188be`: an empty fetch with a known PMCID says to call again; Europe PMC 500s at random). The
-F134 removal from `dogfooding.md` rode in the tester's `fec268e` (it committed that file by path mid-move).
-Queued from the tester's layman probe, all `unattended`, mine: F135 (triage's gene-locus check has no input in
-the taught order), F136 (`lookup_variant` doubles PubMind records; slow first call), F137 our half (an audit
-signal for sidecar rows no authored table names; the compiler half is the liaison's S138), F138 (audit reads a
-stale `verification.json`; skips `diplotypes.csv` directions). F139 (re-attestation re-signs checks it did not
-re-run, high): upstream's writer, filed as S139 and answered as RM423 (patch half: drop carried records when the
-binding moved; minor half: a per-record binding). Ours, `unattended`: the audit signal reading a record older than
-the newest authoring edit as not current, which upstream called sound. F137's upstream half is S138 → RM422 (a
-`derived_row_orphan` arm over `resolution.csv`, a patch); our offline signal stays ours. From the first live Atlas run (`assets/fto_bmi_atlas`), also mine,
-`unattended`: F140 (medium: `top_expression_effects`' `gene_not_at_locus` reads what the sidecar holds as a fact about
-the model; `rows=true` asks only a row's own gene, and nothing says a distal target needs the interval form) and F141
-(low: the dry run's per-window time estimate is a constant; measured 4 s to 3 min on one window).
+Unreleased on main, each test run against 0.48.3's code and failing there: F134 (`62fffd5`), F133 (`7c188be`),
+F142 (`d71d81e`, expression size vs direction), F136 (`d8d693c`, PubMind withheld collapsed), F135 (`a924b2d`,
+check_identifiers' `next_step` when the gene/chromosome comparison skips), F138 (`4860572`, audit reads a stale
+attestation as not computed; diplotypes; refresh says "you removed it"), F137 our half (`83d5f85`, signal
+`sidecar_rows_nothing_authors`), F139 our half (`22a3856`, signal `checks_older_than_the_last_edit`). 904 tests.
+Upstream halves: S138/RM422 (F137), S139/RM423 (F139), S140/RM425 (F142), S141 (F135's message), all the liaison's.
+Still open, mine, `unattended`: F140 (medium: `top_expression_effects`' `gene_not_at_locus` reads what the sidecar
+holds as a fact about the model; `rows=true` asks only a row's own gene), F141 (low: the dry run's per-window time is
+a constant). Release 0.48.4 allowed from 2026-11-09.
 
 ## Plan states (set 2026-11-05)
 
