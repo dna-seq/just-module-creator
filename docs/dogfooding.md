@@ -304,9 +304,10 @@ Recorded so the gaps in *this* file are visible too, per the completeness rule.
   has been exercised by the seat that found it: scaffold with `rows=0` → `draft_from_cpic` on a fresh
   spec, and `check_pgx` / `check_clinpgx` on one of the ClawBio modules under
   `data/interim/clawbio_pgx/modules/`. Needs a fresh session or a `/mcp` reconnect.
-- **Run `enrich_expression_effects(rows=true)` against the live Atlas** (`F105`, 2026-09-24). The
-  window loop is tested with the upstream call replaced; a real run on a small module is the missing
-  half.
+- ~~**Run `enrich_expression_effects(rows=true)` against the live Atlas** (`F105`, 2026-09-24).~~ Run
+  2026-11-09 on `fto_bmi`, plugin 0.48.3: the pass worked, wrote and licensed as documented, and produced
+  F140 and F141. Reference example: `assets/fto_bmi_atlas`. Not yet run: a multi-window plan (more
+  than one gene, neighbours merged), which is where F141's cost would show.
 - **Author a real module end to end and publish it.** Everything up to
   `compile_module` has been exercised on a real spec; `enrich_module` and
   `registry_publish` have not ([RM4](ROADMAP.md)). This probe would also hit F1
@@ -741,3 +742,67 @@ Shape of a fix, upstream: a carried record keeps the hash it was computed over, 
 record as stale per check. Ours meanwhile: `audit_module` could flag records whose `checked_at` predates the
 file's newest authoring edit (logs/authoring.log has the times), and a check that no longer applies should
 remove its own record rather than leave it.
+
+## F140 — `top_expression_effects` reads "the Atlas does not score this gene here" off whatever the sidecar happens to hold
+
+**Found:** 2026-11-09 by the tester, Atlas probe (`assets/fto_bmi_atlas`) · **Severity:** medium · **Status:** open
+
+`module_rows_only=true` gives every authored row a status. `expression.report_rows` sets `gene_not_at_locus` when
+the sidecar has rows at the position but none for the row's `gene`. Its docstring, and the field's description in
+`models.py`, read that as a fact about the model: *"the row's `gene` label is not one the Atlas scores there (a
+`LOC…` symbol, an antisense transcript, a gene on another chromosome)"*. What it actually reports is which gene
+the author queried.
+
+On rs1421085 (row gene FTO), three copies of `assets/fto_bmi` gave three answers:
+
+| sidecar holds | status of the two non-reference rows |
+|---|---|
+| a `gene="IRX3"` interval query only | `gene_not_at_locus: 2` |
+| `rows=true` only (FTO) | `scored: 2` |
+| both, merged | `scored: 2` |
+
+The first reading tells the author the Atlas has no FTO prediction at 16:53767042. It has one: the second copy
+wrote it (−0.0026, 314 of 371 tracks). An author who believes the status drops a question the model can answer.
+
+The query that triggers this is the one the pass exists for. The docstring says *"the distal ones are usually
+what the query was for"*, and rs1421085's mechanism is distal (Claussnitzer 2015, PMID 26287746: IRX3 and IRX5,
+about 516 kb away). However, `rows=true` asks about each row's own `gene` and nothing else. Reaching IRX3 takes the
+interval form with `gene`, `chrom`, `start` and `end` filled in by hand, and neither the `rows` path's text nor
+its `next_step` mentions that.
+
+Two fixes look possible.
+
+- **The status:** split the cause the classifier cannot see. "The sidecar holds other genes here, and this one
+  was never asked" differs from "this gene was asked and the Atlas returned nothing for it". Only the second
+  supports the docstring's reading. Whether a gene was asked is not recorded anywhere today.
+- **The `rows` path:** let the author name extra genes per row, or say in the `rows` docstring and the
+  `next_step` that a distal target needs the interval form.
+
+## F141 — the Atlas pass's dry-run cost is a constant two seconds a window, and the real calls took up to three minutes
+
+**Found:** 2026-11-09 by the tester, Atlas probe (`assets/fto_bmi_atlas`) · **Severity:** low · **Status:** open
+
+The dry run's "about N s at ~2 s each" is `planned * 2` (`tools/passes.py`), not a measurement. The docstring
+says a 4 kb window "takes seconds". These are five live calls on one 21 bp window of 63 candidates, timed from
+the host's log:
+
+| call | took |
+|---|---|
+| `rows=true` (FTO), first | 3 min 2 s |
+| `rows=true` (FTO), a fresh copy | 4 s |
+| `gene="IRX3"`, interval, first | 1 min 5 s |
+| `gene="IRX3"`, interval, a fresh copy | 2 min 45 s |
+| `gene="IRX3"`, interval, merged into the FTO copy | 9 s |
+
+Every repeat wrote identical rows, apart from `fetched_at`. The host moved two of the calls to the background at
+120 s.
+
+- **Not "first call per gene":** the second IRX3 call was slower than the first.
+- **The cause is not known.** The server's narration doesn't reach the host's log after startup, so nothing here
+  shows where the time went, and upstream latency is a guess. After F133, this seat does not name a cause from
+  five calls.
+- **What the author sees:** a plan for 377 windows (longevitymap) says about 12 minutes. If some windows take
+  minutes, it is hours, and the result carries no elapsed time to correct the next estimate.
+
+Shape of a fix: report the measured time per window in the result, and word the dry run's figure as the best
+case.

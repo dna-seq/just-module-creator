@@ -1,0 +1,17 @@
+schema_version: '1.0'
+module:
+  title: FTO adiposity predisposition (rs1421085)
+  description: One well-characterised FTO variant whose C allele shifts developing
+    fat cells from thermogenic beige toward energy-storing white, reported as a small
+    predisposition to higher body mass. A predisposition, not a diagnosis, and not
+    medical advice.
+  report_title: FTO and body weight
+  icon: database
+  icon_set: fomantic
+  color: '#6435c9'
+  name: fto_bmi
+  version: '1.0.0'
+defaults:
+  curator: ai-module-creator
+  method: literature-review
+genome_build: GRCh38
