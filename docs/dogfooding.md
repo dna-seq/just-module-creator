@@ -617,37 +617,6 @@ which is right. The published record doesn't match it, and only `abstract_only_c
 says why. Nothing to change on our side. `module-publish`'s read-back step is where an author would
 notice, so if upstream keeps the shape, add one sentence there.
 
-## F139 — a re-attestation re-signs checks it did not re-run, so an old check's verdict is stamped onto new bytes
-
-**Found:** 2026-11-09 by the tester, layman probe · **Severity:** high · **Status:** open; the writer is
-upstream's (enricher 0.7.3), to be filed through the liaison
-
-`verification.json` holds one record per check with its own `checked_at`, under one `module_hash` and one
-signature for the whole file. On the probe spec dir:
-
-1. 02:38 UTC, `check_identifiers` over 3 triage rows writes `gene_locus_agreement: subjects 3, findings 1
-   (rs1801394/MTHFR)`.
-2. The author drops rs1801394, then removes `variants.csv` for haplotypes + diplotypes. `validate_module` now
-   calls the file stale (*"computed over different module bytes"*). That is correct.
-3. 02:45 UTC, `enrich_module` writes the file again: `module_hash` = the **current** bytes, a fresh signature,
-   and its own records re-run. `gene_locus_agreement` is carried over unchanged (`checked_at` 02:38,
-   `subjects: 3`).
-4. `compile_module(strict)` no longer warns of staleness. It reports *"verification.json records 1 finding(s)
-   … gene_locus_agreement (1 of 3)"* as `carried` (no edit clears it), and it will publish that finding for a
-   module whose tables no longer name rs1801394. `check_identifiers` now refuses to re-attest (*"no
-   variants.csv — the check does not apply … no verification.json was created"*), so nothing on the surface
-   can retire the record.
-
-That direction publishes a false finding. The other direction is the dangerous one: a clean `gene_locus_agreement`
-(or trait, PGS, CIViC record) from an earlier pass is re-signed over rows added after it ran. The manifest then
-attests a check that never saw those rows, and the file's `module_hash` says it did. Per-record `checked_at`
-survives, but nothing compares it, and the signature covers the file.
-
-Shape of a fix, upstream: a carried record keeps the hash it was computed over, and the compiler reads such a
-record as stale per check. Ours meanwhile: `audit_module` could flag records whose `checked_at` predates the
-file's newest authoring edit (logs/authoring.log has the times), and a check that no longer applies should
-remove its own record rather than leave it.
-
 ## F140 — `top_expression_effects` reads "the Atlas does not score this gene here" off whatever the sidecar happens to hold
 
 **Found:** 2026-11-09 by the tester, Atlas probe (`assets/fto_bmi_atlas`) · **Severity:** medium · **Status:** open

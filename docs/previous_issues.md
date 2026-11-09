@@ -6,6 +6,48 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F139 — a re-attestation re-signs checks it did not re-run, so an old check's verdict is stamped onto new bytes
+
+**Found:** 2026-11-09 by the tester, layman probe · **Severity:** high · **Status:** our half resolved 2026-11-09; the writer is
+upstream's (enricher 0.7.3), filed as S139 and answered as RM423 (patch half + minor half)
+
+`verification.json` holds one record per check with its own `checked_at`, under one `module_hash` and one
+signature for the whole file. On the probe spec dir:
+
+1. 02:38 UTC, `check_identifiers` over 3 triage rows writes `gene_locus_agreement: subjects 3, findings 1
+   (rs1801394/MTHFR)`.
+2. The author drops rs1801394, then removes `variants.csv` for haplotypes + diplotypes. `validate_module` now
+   calls the file stale (*"computed over different module bytes"*). That is correct.
+3. 02:45 UTC, `enrich_module` writes the file again: `module_hash` = the **current** bytes, a fresh signature,
+   and its own records re-run. `gene_locus_agreement` is carried over unchanged (`checked_at` 02:38,
+   `subjects: 3`).
+4. `compile_module(strict)` no longer warns of staleness. It reports *"verification.json records 1 finding(s)
+   … gene_locus_agreement (1 of 3)"* as `carried` (no edit clears it), and it will publish that finding for a
+   module whose tables no longer name rs1801394. `check_identifiers` now refuses to re-attest (*"no
+   variants.csv — the check does not apply … no verification.json was created"*), so nothing on the surface
+   can retire the record.
+
+That direction publishes a false finding. The other direction is the dangerous one: a clean `gene_locus_agreement`
+(or trait, PGS, CIViC record) from an earlier pass is re-signed over rows added after it ran. The manifest then
+attests a check that never saw those rows, and the file's `module_hash` says it did. Per-record `checked_at`
+survives, but nothing compares it, and the signature covers the file.
+
+Shape of a fix, upstream: a carried record keeps the hash it was computed over, and the compiler reads such a
+record as stale per check. Ours meanwhile: `audit_module` could flag records whose `checked_at` predates the
+file's newest authoring edit (logs/authoring.log has the times), and a check that no longer applies should
+remove its own record rather than leave it.
+
+**Resolution (ours):** a new audit signal, `checks_older_than_the_last_edit`, compares each record's `checked_at`
+with the newest dated line in `logs/authoring.log` and lists the checks that ran before it. It is `not_computed`
+when there is no `verification.json`, when the attestation does not bind these bytes (the compiler drops it then),
+or when the log has no dated line; a `clear` says that hand edits no tool logged are outside what it can see. Not
+done here: removing a record when its check stops applying, which is the writer's (RM423).
+
+Measured: it decides on `assets/mthfr_folate` (the probe's own case: five checks at 02:38, last logged edit 02:49) and
+on three sirt6 benchmark runs whose logged edits came 40 s to 4 min after the checks; 7 corpus modules are clear and
+the rest have no attestation or no dated log line. Tests: three in `tests/test_audit.py`, all failing on 0.48.3's
+code.
+
 ## F137 — remove a table and its sidecars keep the removed rows; validate, compile and audit all stay quiet, and the manifest attests them
 
 **Found:** 2026-11-09 by the tester, layman probe · **Severity:** medium · **Status:** resolved here 2026-11-09; the compile warning is upstream's RM422 (S138)

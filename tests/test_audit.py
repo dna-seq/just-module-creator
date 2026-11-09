@@ -234,6 +234,50 @@ def test_an_attestation_over_other_bytes_is_not_computed_rather_than_decided(mod
     assert "computed over different module bytes" in signal.why_not, "upstream's own reason"
 
 
+def _log(spec: Path, *stamps: str) -> None:
+    (spec / "logs").mkdir(exist_ok=True)
+    (spec / "logs" / "authoring.log").write_text(
+        "".join(
+            f"{s} authored rs1801133 weight='1' (judged) by=tester human_reviewed=false\n"
+            for s in stamps
+        )
+    )
+
+
+def test_a_check_recorded_before_the_last_logged_edit_is_a_decision(module: Path):
+    """F139: a bound file can carry a verdict from before the rows changed.
+
+    The tester's probe: `gene_locus_agreement` checked at 02:38, rows edited after, the
+    file re-signed at 02:45 with that record carried unchanged.
+    """
+    _log(module, "2026-08-21T18:00:00Z", "2026-08-21T19:30:00Z")
+    _verification(module, {"check": "gene_locus_agreement", "subjects": 3, "findings": 1})
+
+    signal = audit.checks_older_than_the_last_edit(module)
+    assert signal.state == "decide"
+    assert "1 recorded check(s) ran before the newest logged edit (2026-08-21T19:30:00Z)" in (
+        signal.headline
+    )
+    assert (
+        signal.detail[0] == "gene_locus_agreement: checked 2026-08-21T18:05:15Z, over 3 subject(s)"
+    )
+
+
+def test_checks_after_every_logged_edit_are_clear_and_say_what_they_cannot_see(module: Path):
+    _log(module, "2026-08-21T18:00:00Z")
+    _verification(module, {"check": "gene_locus_agreement", "subjects": 3, "findings": 0})
+    signal = audit.checks_older_than_the_last_edit(module)
+    assert signal.state == "clear"
+    assert "unlogged hand edits are outside what this can see" in signal.headline
+
+
+def test_no_authoring_log_is_not_computed(module: Path):
+    _verification(module, {"check": "gene_locus_agreement", "subjects": 3, "findings": 0})
+    signal = audit.checks_older_than_the_last_edit(module)
+    assert signal.state == "not_computed"
+    assert "logs/authoring.log" in (signal.why_not or "")
+
+
 def test_the_absent_roster_is_stated_rather_than_invented(module: Path):
     """We own no list of what should have run, and saying so beats guessing one."""
     _verification(module, {"check": "gene_symbol_currency", "subjects": 22, "findings": 0})
@@ -570,8 +614,6 @@ async def test_audit_module_is_in_the_default_tier_and_reports_the_three_states(
 async def test_fill_false_drops_the_counts_and_nothing_else(client, spec_dir: Path):
     (spec_dir / "variants.csv").write_text("rsid,genotype,weight\nrs1801133,T/T,-0.5\n")
     with_fill = await client.call_tool("audit_module", {"spec_dir": str(spec_dir)})
-    without = await client.call_tool(
-        "audit_module", {"spec_dir": str(spec_dir), "fill": False}
-    )
+    without = await client.call_tool("audit_module", {"spec_dir": str(spec_dir), "fill": False})
     assert with_fill.data.fill and without.data.fill == []
     assert [s.name for s in with_fill.data.decisions] == [s.name for s in without.data.decisions]
