@@ -1,0 +1,13 @@
+schema_version: '1.0'
+module:
+  title: MTHFR folate processing
+  description: Common MTHFR variants and the homocysteine level they shift
+  report_title: MTHFR and folate
+  icon: database
+  icon_set: fomantic
+  color: '#6435c9'
+  name: test_mthfr_folate
+defaults:
+  curator: ai-module-creator
+  method: literature-review
+genome_build: GRCh38

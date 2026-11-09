@@ -1,0 +1,23 @@
+{
+  "generator": "just-module-creator",
+  "items": [
+    {
+      "variant_key": "diplotypes.csv",
+      "rationale": "Without the cis row an unphased 677CT+1298AC call silently gets the in-trans reading. Stating the cis case makes the compiler report the two as indistinguishable without phase, so an unphased consumer withholds. No paper read describes the cis arrangement; its conclusion says so. [jmc field=rows value_sha256=7a61926bc1a1 source=module-tables diplotypes guidance (hfe_compound_het pattern) recorded=2026-11-09T02:49:16Z by=tester seat (Claude Opus 5.5), layman probe]",
+      "human_reviewed": false,
+      "outranks": {}
+    },
+    {
+      "variant_key": "variants.csv",
+      "rationale": "The paper's finding is about a pair across two variants (677CT with 1298AC in trans resembles 677TT). A per-variant genotype table cannot state that, so the module is a diplotype module and keeps no variants.csv. [jmc field=file value_sha256=5784bd7c3dc2 source=van der Put 1998 (PMID 9545395) recorded=2026-11-09T02:41:56Z by=tester seat (Claude Opus 5.5), layman probe]",
+      "human_reviewed": false,
+      "outranks": {}
+    },
+    {
+      "variant_key": "variants.csv",
+      "rationale": "The summary called rs1801394 an MTHFR variant; check_identifiers places it on chromosome 5 while MTHFR is on chromosome 1 (the rsID is MTRR's A66G). A module about MTHFR takes no row from a claim whose gene is wrong. [jmc field=rows value_sha256=350fd6520605 source=handed AI summary recorded=2026-11-09T02:39:55Z by=tester seat (Claude Opus 5.5), layman probe]",
+      "human_reviewed": false,
+      "outranks": {}
+    }
+  ]
+}

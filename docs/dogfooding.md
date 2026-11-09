@@ -635,38 +635,6 @@ holding only a DOI (the F122 case) still gets nothing for a paper in PMC. The ca
 visible difference is that only the PMID route calls `client.lookup([pmid])` first. A test that runs the DOI
 route through to `client.fulltext` with a stub that answers only the right accession would pin it.
 
-## F134 — `draft_from_strchive` promises bands; upstream drafts none by design, and its `next_step` names the wrong cells
-
-**Found:** 2026-11-08 by the tester, rechecking F129 on the shipped 0.48.3 · **Severity:** medium ·
-**Status:** open
-
-F129 is fixed: a fresh `rows=0` scaffold drafts HTT from the provisioned lane (`candidates: 1`, licence row
-`strchive_v2.26.0`). The row it writes is `measure_kind=repeat_count`, `trait_efo_id=MONDO_0007739`, `gene=HTT`,
-`repeat_unit=CAG`, `conclusion=<<REPLACE>>`, with `measure_min`, `measure_max`, `measure_tiling`, `direction`,
-`clin_sig` and `pmid` empty. That is upstream's deliberate design. The enricher's `strchive_draft.py` docstring
-says *"Never drafted: the bands"*, because STRchive is a band coarser than the corpus at FMR1's premutation
-threshold and its `pathogenic_max` would invent a ceiling HTT leaves open. The bands are checked instead
-(`check_repeat_bands`).
-
-Our surface says otherwise:
-
-- The tool docstring says *"the rows are ranges (normal / intermediate / pathogenic) rather than `variants.csv`
-  entries"* and *"the only drafter here that writes a BINNING table"*. It writes one identity row per locus,
-  with no range.
-- The `next_step` says *"Curate the stubbed cells — genotype, state, weight, conclusion are yours"*. That is the
-  variant tables' vocabulary. `repeat_alleles.csv` has no genotype or weight column. The cells actually left
-  for the author are the bands, which means splitting the row into one per band, plus direction, clin_sig and
-  pmid. `check_repeat_bands`, the tool that compares those bands with STRchive, isn't named.
-
-An author who takes the docstring at its word expects bands and gets a locus. The fix is our text: say "one
-identity row per locus, the bands are yours", name `check_repeat_bands`, and give the binning table its own
-`next_step`.
-
-Small, same probe: `scaffold_module(kinds=["repeat_alleles"], rows=0)` wrote a sentinel row
-(`unresolved=true`, `gene` and `repeat_unit` set to `<<REPLACE>>`), not the "header-only table" its docstring
-promises for `rows=0`. The drafter appended past it without refusing, so nothing broke. Either the docstring
-names the sentinel exception or the scaffold leaves the row out.
-
 ## F135 — triage's gene-on-the-wrong-chromosome check cannot run in the order `module-start` teaches
 
 **Found:** 2026-11-09 by the tester, layman probe (`data/interim/probe_layman_mthfr/`) · **Severity:** medium ·
@@ -708,7 +676,7 @@ after **2 min 43 s** each, all `answered_by: local`. One more call on the warm s
 first-call cost looks like the snapshots being opened, not per-call work, but nothing in the answer or the
 docstring warns that the first lookup is slow, and the host moved all three to the background at 120 s.
 
-## F137 — remove a table and its sidecars keep the removed rows; validate, compile and audit all stay quiet, and they publish
+## F137 — remove a table and its sidecars keep the removed rows; validate, compile and audit all stay quiet, and the manifest attests them
 
 **Found:** 2026-11-09 by the tester, layman probe · **Severity:** medium · **Status:** open
 
@@ -719,8 +687,12 @@ because the finding is a two-variant pair (`haplotypes.csv` + `diplotypes.csv`).
 rsIDs, including rs1801394 on chromosome 5, plus `clin_sig_concordance.csv` and `clin_sig_authority_calls.csv`.
 
 `validate_module(strict)` passed with no word about it. `compile_module(strict)` passed and hashed that
-`resolution.csv` into `manifest.derived`, so a publish uploads a resolution row for a variant no table names, the
-one the author dropped as a generated claim. `audit_module` didn't see it either. `enrich_module`'s note does
+`resolution.csv` into `manifest.derived` and `resolution_signature`. No parquet carried rs1801394: the
+orphan-present and orphan-removed compiles had the same `artifact_digest` (`9427a3f9…`) and `content_signature`
+(`62794c0c…`), and only `resolution_signature` and the `derived` hash moved. So the artifact's data is clean,
+but the manifest attests a resolution table that names a variant the author dropped as a generated claim. A
+spec-dir upload (`registry_publish`, `remote_derive`) would carry the file. That last part is unverified,
+because the polygon has answered 502 throughout. `audit_module` didn't see it either. `enrich_module`'s note does
 say *"To regenerate resolution.csv after changing the spec you must DELETE it first, or stale rows persist
 silently"*. That covers a re-run, but nothing tells an author who **removed** rows or a table that the derived
 files now carry subjects nothing authored. The pass that wrote them is the only party that could know.
@@ -728,7 +700,9 @@ files now carry subjects nothing authored. The pass that wrote them is the only 
 This is computable offline: a sidecar row whose subject (`variant_key`/`rsid`) appears in no authored table. It
 is an audit signal (ours, `audit.py`), and arguably a compiler warning (upstream's, for the liaison to weigh).
 The repair has to be `refresh_sidecar`, which captures before it deletes, never a silent prune. Reproduce:
-`data/interim/probe_layman_mthfr/test_mthfr_folate/` as left on 2026-11-09.
+scaffold `variants.csv` with three rsid-only rows, run `enrich_module`, delete one row (or the table), then
+`validate_module` and `compile_module`. Both stay quiet and `resolution.csv` keeps the row. The probe dir no
+longer shows it, because `refresh_sidecar` was run there (below).
 
 ## F138 — `audit_module` reads a stale `verification.json` as current, and never reads `diplotypes.csv`'s directions
 

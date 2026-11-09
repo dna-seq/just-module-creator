@@ -1,0 +1,154 @@
+{
+  "module_hash": "sha256:62003024dac70c1bdbeaaabc23daf3f4b0718c9969f68758c68b8bf492076253",
+  "signature": "sha256:f49162247f3aab47e06fffeae4eddcfd4a4775d6f970cc569adb5a762d80356a",
+  "difficulty": 20,
+  "nonce": 54392,
+  "producer": "just-dna-enricher 0.7.3",
+  "produced_at": "2026-11-09T02:49:23Z",
+  "closure": null,
+  "records": [
+    {
+      "check": "clinical_significance",
+      "subjects": 0,
+      "findings": 0,
+      "skipped": null,
+      "detail": null,
+      "source": "clinvar",
+      "release": "clinvar_2026-11-01",
+      "checked_at": "2026-11-09T02:49:23Z",
+      "producer": "just-dna-enricher 0.7.3"
+    },
+    {
+      "check": "dataset_currency",
+      "subjects": 0,
+      "findings": 0,
+      "skipped": "nothing_to_check",
+      "detail": "the module records no release, so it makes no claim about where its rows came from",
+      "source": null,
+      "release": null,
+      "checked_at": "2026-11-09T02:49:23Z",
+      "producer": "just-dna-enricher 0.7.3"
+    },
+    {
+      "check": "evidence_status_currency",
+      "subjects": 0,
+      "findings": 0,
+      "skipped": "nothing_to_check",
+      "detail": "this module records no citation drafted from CIViC's API, so there is no recorded curation status to re-ask about",
+      "source": "civic",
+      "release": null,
+      "checked_at": "2026-11-09T02:49:23Z",
+      "producer": "just-dna-enricher 0.7.3"
+    },
+    {
+      "check": "gene_locus_agreement",
+      "subjects": 3,
+      "findings": 1,
+      "skipped": null,
+      "detail": "1 of 3 comparable row(s) pair a gene with a variant on another chromosome: rs1801394/MTHFR",
+      "source": "hgnc",
+      "release": null,
+      "checked_at": "2026-11-09T02:38:49Z",
+      "producer": "just-dna-enricher 0.7.3"
+    },
+    {
+      "check": "gene_symbol_currency",
+      "subjects": 1,
+      "findings": 0,
+      "skipped": null,
+      "detail": "every one of 1 authored gene symbol(s) is HGNC-approved",
+      "source": "hgnc",
+      "release": null,
+      "checked_at": "2026-11-09T02:38:49Z",
+      "producer": "just-dna-enricher 0.7.3"
+    },
+    {
+      "check": "genome_build_agreement",
+      "subjects": 0,
+      "findings": 0,
+      "skipped": "nothing_to_check",
+      "detail": "no authored ref disagreed with the reference, so no row needed a build diagnosis",
+      "source": "ensembl-grch37",
+      "release": null,
+      "checked_at": "2026-11-09T02:49:23Z",
+      "producer": "just-dna-enricher 0.7.3"
+    },
+    {
+      "check": "pgs_accession_currency",
+      "subjects": 0,
+      "findings": 0,
+      "skipped": "not_requested",
+      "detail": "--no-pgs",
+      "source": "pgs_catalog",
+      "release": null,
+      "checked_at": "2026-11-09T02:38:49Z",
+      "producer": "just-dna-enricher 0.7.3"
+    },
+    {
+      "check": "pgs_metadata_agreement",
+      "subjects": 0,
+      "findings": 0,
+      "skipped": "not_requested",
+      "detail": "--no-pgs: the comparison reads the score records, which were not fetched",
+      "source": "pgs_catalog",
+      "release": null,
+      "checked_at": "2026-11-09T02:38:49Z",
+      "producer": "just-dna-enricher 0.7.3"
+    },
+    {
+      "check": "published_refutation",
+      "subjects": 0,
+      "findings": 0,
+      "skipped": null,
+      "detail": "no authored direction sits beside a published refutation (basis accepted)",
+      "source": "civic",
+      "release": "civic_01-Nov-2026",
+      "checked_at": "2026-11-09T02:49:23Z",
+      "producer": "just-dna-enricher 0.7.3"
+    },
+    {
+      "check": "reference_allele",
+      "subjects": 2,
+      "findings": 0,
+      "skipped": null,
+      "detail": null,
+      "source": "seqrepo",
+      "release": null,
+      "checked_at": "2026-11-09T02:49:23Z",
+      "producer": "just-dna-enricher 0.7.3"
+    },
+    {
+      "check": "rsid_coordinate_agreement",
+      "subjects": 0,
+      "findings": 0,
+      "skipped": "nothing_to_check",
+      "detail": "no row authors both an rsID and a coordinate, so the module makes no pair claim to compare — this is not a comparison that found nothing",
+      "source": "ensembl",
+      "release": null,
+      "checked_at": "2026-11-09T02:49:23Z",
+      "producer": "just-dna-enricher 0.7.3"
+    },
+    {
+      "check": "rsid_currency",
+      "subjects": 2,
+      "findings": 0,
+      "skipped": null,
+      "detail": null,
+      "source": "dbsnp",
+      "release": null,
+      "checked_at": "2026-11-09T02:49:23Z",
+      "producer": "just-dna-enricher 0.7.3"
+    },
+    {
+      "check": "trait_currency",
+      "subjects": 0,
+      "findings": 0,
+      "skipped": "not_requested",
+      "detail": "--no-traits",
+      "source": "ols4",
+      "release": null,
+      "checked_at": "2026-11-09T02:38:49Z",
+      "producer": "just-dna-enricher 0.7.3"
+    }
+  ]
+}

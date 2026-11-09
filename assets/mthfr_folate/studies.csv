@@ -1,0 +1,3 @@
+rsid,pmid,conclusion,provenance_quote,curator
+rs1801133,7647779,Homozygosity for 677T raises plasma homocysteine.,individuals homozygous for the mutation have significantly elevated plasma homocysteine levels,Claude Opus 5.5 (tester seat)
+rs1801131,9545395,1298C lowers MTHFR activity without raising homocysteine; 677CT plus 1298AC resembles 677TT.,combined heterozygosity for both MTHFR mutations results in similar features as observed in homozygotes for the 677(C-->T) mutation,Claude Opus 5.5 (tester seat)
