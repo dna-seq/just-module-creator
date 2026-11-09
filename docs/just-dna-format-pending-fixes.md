@@ -83,6 +83,7 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
+| F142 | S140 | | filed 2026-11-09, unanswered |
 | F139 | S139 | RM423 | answered, open (patch half + minor half) |
 | F137 | S138 | RM422 | answered, open (patch) |
 | F130 | S136 | RM414 | 0.8.2 only |
@@ -124,6 +125,17 @@ On `assets/htt_cag_repeats` (`validate_module`, strict), every bin declares `sou
 (a Float) and `CIRUC`: `binning._VCF_MEASURE_FIELDS` keys on `measure_kind` alone and never reads
 `source_field`. The fractional warning does not apply to an integer field; the spanning one does in substance
 (ExpansionHunter reports `REPCI`) but names a field the author does not use.
+
+## F142 — `ExpressionEffectRow.effect_size` is described as an aggregate; it is one track's value (format `S140`)
+
+**State: filed 2026-11-09 by the liaison, on the tester's report; unanswered.** Low, wording only. Our half
+(one sentence in `enrich_expression_effects` and `top_expression_effects`, and a `next_step` when a returned row
+disagrees) is in `docs/dogfooding.md` F142, the lead's.
+
+The field's description (format 0.7.1 and their `main`) says *"aggregated over the scorer's tissue tracks"*. The
+enricher's `_summarise` keeps the single strongest track with its sign and takes the majority sign for
+`effect_direction`, as its docstring and their `docs/SCHEMAS.md` say; so the two disagree in about one row in six
+of the tester's Atlas runs (128 of 819, 24 of 126), and the values are right.
 
 ## F139 — `record_verification` re-signs records of checks it did not re-run over new authored bytes (format `S139`)
 
