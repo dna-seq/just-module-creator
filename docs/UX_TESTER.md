@@ -135,6 +135,13 @@ before naming a route as the cause, repeat the control as often as the failing c
 produces route-shaped patterns.** F133 (now a "call again" warning) and F134 are fixed on main, unreleased:
 recheck both at the next release.
 
+**The Atlas probe ran on 2026-11-09** (0.48.3, `ALPHAGENOME_API_KEY` from `.env`; polygon still 502). Work happens on
+copies under `data/interim/probe_atlas_fto/`, because every call makes the directory non-commercial. F140 and F141
+are in `dogfooding.md`, the reference example is `assets/fto_bmi_atlas`, and the lead has been told. I applied
+F133's lesson: each timing was repeated, and no cause is named. Timings come from the host's log
+(`~/.cache/claude-cli-nodejs/<project>/mcp-logs-plugin-*/`, the "completed in" lines); that log keeps the
+server's stderr only from startup. Still to probe: a multi-window `rows=true` plan.
+
 **2026-11-09: layman probe, MTHFR from a planted AI summary: done to a strict compile.** The write-up is
 `assets/mthfr_folate/README.md`; the scratch work is `data/interim/probe_layman_mthfr/` (gitignored). It also
 covered the "module with two of something" probe: a two-variant diplotype module with a cis twin, where the
