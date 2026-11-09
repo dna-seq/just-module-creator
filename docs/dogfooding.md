@@ -666,3 +666,44 @@ Small, same probe: `scaffold_module(kinds=["repeat_alleles"], rows=0)` wrote a s
 (`unresolved=true`, `gene` and `repeat_unit` set to `<<REPLACE>>`), not the "header-only table" its docstring
 promises for `rows=0`. The drafter appended past it without refusing, so nothing broke. Either the docstring
 names the sentinel exception or the scaffold leaves the row out.
+
+## F135 — triage's gene-on-the-wrong-chromosome check cannot run in the order `module-start` teaches
+
+**Found:** 2026-11-09 by the tester, layman probe (`data/interim/probe_layman_mthfr/`) · **Severity:** medium ·
+**Status:** open
+
+`module-start`'s triage puts "**The tell for a generated claim is a real gene name beside an invented rsID**" at
+step 2: *"`check_identifiers` answers it: read `gene_locus_conflicts`"*. Its step 0 sets the safe default for
+any handed source, rows authored with an **rsID only**. The probe followed both. A machine-written summary named
+`MTHFR A66G (rs1801394)`, whose rsID is real but in MTRR on chromosome 5. On three rsid-only triage rows,
+`check_identifiers` answered `gene_locus_conflicts: []` with `gene_locus_check_skipped: "no coordinates authored
+and no resolution.csv beside the spec"`. After `enrich_module` (1 min 49 s, rows resolved from the cache) the
+same call caught it: *"rs1801394 is on chromosome 5, but HGNC puts MTHFR on chromosome 1"*.
+
+So the check works, but at the step that names it there is nothing for it to read. The skill's own rule saves
+an attentive agent (*"If `gene_locus_check_skipped` is non-null the comparison never ran"*). Neither the skip
+reason nor step 2 says what produces the missing input, and the router's order (curate, then enrich) puts
+`resolution.csv` two stages after triage. A layman's agent that reads "skipped" as "nothing to see" carries the
+generated pairing into curation. Shape of a fix, the lead's call: the skip reason names `enrich_module` (or a
+`lookup_variant` per rsID) as the way to get coordinates, and step 2 says to enrich the triage rows first.
+Alternatively, `check_identifiers` resolves rsid-only rows' chromosomes itself from the local Ensembl lane,
+which `lookup_variant` already reads.
+
+The conflict message also guesses the wrong half: *"a real symbol beside an invented rsID"*, when here both are
+real and the rsID belongs to another gene. Naming the gene the rsID does sit in would settle it in one line.
+
+## F136 — `lookup_variant` prints every PubMind record twice, and its first call takes minutes
+
+**Found:** 2026-11-09 by the tester, layman probe · **Severity:** low · **Status:** open
+
+On `rs1801131` the answer lists 29 PubMind records twice, once in full under `pubmind` and once as `withheld`
+advisories, each with the same redundancy note. That is about 15 kB, where the verdict (ClinVar's call, the
+locus, and one warning that PubMind disagrees with itself) is a few hundred characters. `check_identifiers`
+already settled this shape: verdict first, roster behind `detail=true`. The `withheld` entries for PubMind could
+collapse to one entry with a count, as `literature_search` does for DOIs ("Withheld for the reason given on the
+first withheld row").
+
+Timing, from the host's log: three `lookup_variant` calls issued together on a fresh server finished together
+after **2 min 43 s** each, all `answered_by: local`. One more call on the warm server took **9 s**. The
+first-call cost looks like the snapshots being opened, not per-call work, but nothing in the answer or the
+docstring warns that the first lookup is slow, and the host moved all three to the background at 120 s.
