@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`audit_module` names derived rows for variants nothing authors any more** (F137). A sidecar row, such as a `resolution.csv` row for a variant the author dropped, is kept by merge-not-clobber and published by the next compile. The new `sidecar_rows_nothing_authors` signal lists them per sidecar and points to `refresh_sidecar`.
 - **`audit_module` no longer decides on a stale attestation, and reads diplotypes' directions** (F138). `checks_that_never_ran` checks the attestation the way the compiler does and reports `not_computed` with upstream's reason when it no longer binds the module. `directional_claims_without_studies` reads `diplotypes.csv` module-level instead of skipping a diplotype module. `refresh_sidecar` says when a dropped row's subject is one the author removed, rather than the source having changed its answer.
 - **A skipped gene/chromosome comparison says how to unblock it** (F135). Triage authors rows by rsID only, and `check_identifiers` reads a row's chromosome from `chrom` or `resolution.csv`, so at triage it skipped. Its new `next_step` says to run `enrich_module` first, and `module-start` step 2 says so too.
 - **`lookup_variant` states PubMind's withheld call once** (F136). Upstream withholds one `clin_sig` per PubMind record with the same reason; the first is kept verbatim and the rest collapse into it with a count and a tally of the calls, while every record stays in `pubmind`. The docstring says the first call on a fresh server can take minutes.

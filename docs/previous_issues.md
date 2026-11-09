@@ -6,6 +6,47 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F137 — remove a table and its sidecars keep the removed rows; validate, compile and audit all stay quiet, and the manifest attests them
+
+**Found:** 2026-11-09 by the tester, layman probe · **Severity:** medium · **Status:** resolved here 2026-11-09; the compile warning is upstream's RM422 (S138)
+
+The probe triaged three handed rsIDs in `variants.csv` and ran `enrich_module`, then dropped one (rs1801394, the
+MTRR variant the summary had called MTHFR's). After reading the papers it removed `variants.csv` altogether,
+because the finding is a two-variant pair (`haplotypes.csv` + `diplotypes.csv`). Both moves were logged with
+`record_override`. The spec dir still held what the triage enrich wrote: `resolution.csv` with **all three**
+rsIDs, including rs1801394 on chromosome 5, plus `clin_sig_concordance.csv` and `clin_sig_authority_calls.csv`.
+
+`validate_module(strict)` passed with no word about it. `compile_module(strict)` passed and hashed that
+`resolution.csv` into `manifest.derived` and `resolution_signature`. No parquet carried rs1801394: the
+orphan-present and orphan-removed compiles had the same `artifact_digest` (`9427a3f9…`) and `content_signature`
+(`62794c0c…`), and only `resolution_signature` and the `derived` hash moved. So the artifact's data is clean,
+but the manifest attests a resolution table that names a variant the author dropped as a generated claim. A
+spec-dir upload (`registry_publish`, `remote_derive`) would carry the file. That last part is unverified,
+because the polygon has answered 502 throughout. `audit_module` didn't see it either. `enrich_module`'s note does
+say *"To regenerate resolution.csv after changing the spec you must DELETE it first, or stale rows persist
+silently"*. That covers a re-run, but nothing tells an author who **removed** rows or a table that the derived
+files now carry subjects nothing authored. The pass that wrote them is the only party that could know.
+
+This is computable offline: a sidecar row whose subject (`variant_key`/`rsid`) appears in no authored table. It
+is an audit signal (ours, `audit.py`), and arguably a compiler warning (upstream's, for the liaison to weigh).
+The repair has to be `refresh_sidecar`, which captures before it deletes, never a silent prune. Reproduce:
+scaffold `variants.csv` with three rsid-only rows, run `enrich_module`, delete one row (or the table), then
+`validate_module` and `compile_module`. Both stay quiet and `resolution.csv` keeps the row. The probe dir no
+longer shows it, because `refresh_sidecar` was run there (below).
+
+**Resolution (ours):** a new audit signal, `sidecar_rows_nothing_authors`, lists derived rows naming a variant no
+authored table names, per sidecar, and routes the repair to `refresh_sidecar`. It reads every variant-keyed sidecar in
+upstream's roster (`FACT_CSVS` plus `resolution.csv`) except `expression_effects.csv`, whose rows cover the whole
+queried window by design, and `sources.csv`, which is authored. A row counts as still named if its `variant_key`,
+`rsid` or `(chrom, start)` appears in any authored table, or in a `resolution.csv` row for an authored variant (an
+rsID-only row has its place only there); a row with no variant identity is never reported. `refresh_sidecar`'s F138
+"removed by the author" reading uses the same matcher (`audit.unauthored`).
+
+Measured: all 14 modules under `assets/` are clear. On `modules_dogfooding` one of 8 decides: `risk_impulsivity_snps`
+has 109 `frequencies.csv` rows at places no authored table and no resolution row names (e.g. 5:81887293). Without
+the resolution bridge it was 235, the extra 126 being rsID-only authored variants. Tests: three in `tests/test_audit.py`;
+the dropped-variant one fails on 0.48.3's code.
+
 ## F138 — `audit_module` reads a stale `verification.json` as current, and never reads `diplotypes.csv`'s directions
 
 **Found:** 2026-11-09 by the tester, layman probe · **Severity:** low · **Status:** resolved 2026-11-09
@@ -42,7 +83,7 @@ source changed its mind.
    none is a decision. With `variants.csv` present its per-variant verdict stands and the headline adds the
    diplotype clause.
 3. `refresh_sidecar` counts the withheld rows whose every identity (merge-key values, `rsid`, `(chrom, start)`)
-   is absent from every authored table (`refresh.named_nowhere`, new `no_longer_authored`), and says those were
+   is absent from every authored table (`audit.unauthored`, shared with F137's signal; new `no_longer_authored`), and says those were
    removed by the author, not withdrawn by the source; the matching is generous so the claim errs toward silence.
 
 The audit's test helper now writes real attestations through upstream's `attest` at a lowered difficulty; the old

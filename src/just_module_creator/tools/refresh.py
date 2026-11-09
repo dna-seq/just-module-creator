@@ -86,7 +86,7 @@ from typing import Any
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
-from just_dna_compiler import draft, hints
+from just_dna_compiler import hints
 from just_dna_compiler.compiler import load_csv_rows
 from just_dna_enricher.assertions import ClinicalAssertionError, enrich_clinical_assertions
 from just_dna_enricher.clingen import ClinGenError, ClinGenUnavailable, enrich_dosage_sensitivity
@@ -135,11 +135,11 @@ from just_dna_format.layout import (
 from just_dna_format.literature import LITERATURE_FACT_FIELDS, LiteratureRow
 from just_dna_format.resolution import RESOLUTION_FACT_FIELDS, ResolutionRow
 from just_dna_format.vocab import VALID_DECLARED_USE
-from just_dna_format.vrs import normalize_chrom
 from just_dna_registry.specfiles import FACT_CSVS, LICENSING_CSV, RESOLUTION_CSV, SOURCES_CSV
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel
 
+from just_module_creator.audit import unauthored
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
     UPSTREAM,
@@ -1163,7 +1163,7 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
         # second is told apart here, generously: any identity of the row found in any
         # authored table counts as still named, so the claim is made only when nothing
         # matches.
-        unnamed = named_nowhere(target, withheld)
+        unnamed = [withheld[i] for i in unauthored(target, [row.cells for row in withheld])]
 
         # ------------------------------------------------------------------ #
         # 4. Reapply the provable set, and put the file back where it lived.
@@ -1401,58 +1401,6 @@ def _next_step(
         )
     parts.append("Then re-run validate_module and compile_module — the sidecar changed.")
     return " ".join(parts)
-
-
-def _authored_identities(spec_dir: Path) -> tuple[set[str], set[tuple[str, str]]]:
-    """Every cell value of the authored tables, and every `(chrom, start)` they name.
-
-    The authored roster is upstream's (`draft.DRAFTABLE`). Read as text, lowercased, so a
-    sidecar row's subject (an rsID, a gene, a PMID, a variant key) can be looked up
-    without knowing which table or column would name it.
-    """
-    values: set[str] = set()
-    places: set[tuple[str, str]] = set()
-    for name in sorted(draft.DRAFTABLE):
-        path = spec_dir / name
-        if not path.is_file():
-            continue
-        with path.open(newline="") as handle:
-            for row in csv.DictReader(handle):
-                values.update((v or "").strip().lower() for v in row.values() if isinstance(v, str))
-                chrom = normalize_chrom((row.get("chrom") or "").strip() or None)
-                start = (row.get("start") or "").strip()
-                if chrom and start:
-                    places.add((chrom, start))
-    values.discard("")
-    return values, places
-
-
-def named_nowhere(spec_dir: Path, rows: Sequence[SidecarRow]) -> list[SidecarRow]:
-    """The rows whose every identity is absent from every authored table (F138).
-
-    A row's identities are its merge-key values, its `rsid` and its `(chrom, start)`.
-    Any one of them found anywhere counts as still named, which errs toward silence: a
-    false "you removed it" would tell an author the source is fine when it withdrew a
-    row.
-    """
-    if not rows:
-        return []
-    values, places = _authored_identities(spec_dir)
-    out: list[SidecarRow] = []
-    for row in rows:
-        keys = json.loads(row.subject) if row.subject else {}
-        ids = {str(v).strip().lower() for v in keys.values() if v not in (None, "")}
-        rsid = (row.cells.get("rsid") or "").strip().lower()
-        if rsid:
-            ids.add(rsid)
-        chrom = normalize_chrom((row.cells.get("chrom") or "").strip() or None)
-        start = (row.cells.get("start") or "").strip()
-        if ids & values or (chrom and start and (chrom, start) in places):
-            continue
-        if not ids and not (chrom and start):
-            continue
-        out.append(row)
-    return out
 
 
 #: The public roster this module must cover, for the test that pins it. Derived

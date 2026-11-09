@@ -471,6 +471,47 @@ def test_a_variant_verdict_carries_the_diplotype_clause(module: Path):
     assert "2 leaning diplotypes.csv row(s)" in signal.headline
 
 
+_RESOLUTION = (
+    "variant_key,rsid,chrom,start,ref,alts,genome_build,locus_index,source,status\n"
+    "rs1801133,rs1801133,1,11796321,G,A,GRCh38,0,ensembl,resolved\n"
+    "rs1801131,rs1801131,1,11794419,T,G,GRCh38,0,ensembl,resolved\n"
+    "rs1801394,rs1801394,5,7870860,A,G,GRCh38,0,ensembl,resolved\n"
+)
+
+
+def test_a_resolution_row_for_a_dropped_variant_is_a_decision(module: Path):
+    """F137, the tester's probe: rs1801394 (MTRR) dropped from the tables, kept in resolution."""
+    (module / "variants.csv").write_text(
+        "rsid,genotype,weight,state,conclusion\n"
+        "rs1801133,A/A,1,risk,Reduced MTHFR activity\n"
+        "rs1801131,G/G,0.5,risk,Mildly reduced MTHFR activity\n"
+    )
+    (module / "resolution.csv").write_text(_RESOLUTION)
+    signal = audit.sidecar_rows_nothing_authors(module)
+    assert signal.state == "decide"
+    assert signal.headline == "1 derived row(s) name a variant no authored table names"
+    assert signal.detail[0] == "resolution.csv: rs1801394"
+
+
+def test_every_resolved_variant_authored_is_clear(module: Path):
+    (module / "variants.csv").write_text(
+        "rsid,genotype,weight\nrs1801133,A/A,1\nrs1801131,G/G,0.5\nrs1801394,G/G,0.2\n"
+    )
+    (module / "resolution.csv").write_text(_RESOLUTION)
+    assert audit.sidecar_rows_nothing_authors(module).state == "clear"
+
+
+def test_the_atlas_window_is_not_read_as_leftovers(module: Path):
+    """`expression_effects.csv` answers for every variant in the window, by design."""
+    (module / "variants.csv").write_text("rsid,genotype,weight\nrs1421085,C/C,1\n")
+    (module / "expression_effects.csv").write_text(
+        "variant_key,rsid,chrom,start,ref,alt,gene\nk1,,16,53767042,T,C,IRX3\n"
+    )
+    signal = audit.sidecar_rows_nothing_authors(module)
+    assert signal.state == "clear"
+    assert "no variant-keyed derived sidecar" in signal.headline
+
+
 def test_no_variants_table_is_not_computed_rather_than_clear(module: Path):
     signal = audit.directional_claims_without_studies(module)
     assert signal.state == "not_computed"

@@ -617,34 +617,6 @@ which is right. The published record doesn't match it, and only `abstract_only_c
 says why. Nothing to change on our side. `module-publish`'s read-back step is where an author would
 notice, so if upstream keeps the shape, add one sentence there.
 
-## F137 — remove a table and its sidecars keep the removed rows; validate, compile and audit all stay quiet, and the manifest attests them
-
-**Found:** 2026-11-09 by the tester, layman probe · **Severity:** medium · **Status:** open
-
-The probe triaged three handed rsIDs in `variants.csv` and ran `enrich_module`, then dropped one (rs1801394, the
-MTRR variant the summary had called MTHFR's). After reading the papers it removed `variants.csv` altogether,
-because the finding is a two-variant pair (`haplotypes.csv` + `diplotypes.csv`). Both moves were logged with
-`record_override`. The spec dir still held what the triage enrich wrote: `resolution.csv` with **all three**
-rsIDs, including rs1801394 on chromosome 5, plus `clin_sig_concordance.csv` and `clin_sig_authority_calls.csv`.
-
-`validate_module(strict)` passed with no word about it. `compile_module(strict)` passed and hashed that
-`resolution.csv` into `manifest.derived` and `resolution_signature`. No parquet carried rs1801394: the
-orphan-present and orphan-removed compiles had the same `artifact_digest` (`9427a3f9…`) and `content_signature`
-(`62794c0c…`), and only `resolution_signature` and the `derived` hash moved. So the artifact's data is clean,
-but the manifest attests a resolution table that names a variant the author dropped as a generated claim. A
-spec-dir upload (`registry_publish`, `remote_derive`) would carry the file. That last part is unverified,
-because the polygon has answered 502 throughout. `audit_module` didn't see it either. `enrich_module`'s note does
-say *"To regenerate resolution.csv after changing the spec you must DELETE it first, or stale rows persist
-silently"*. That covers a re-run, but nothing tells an author who **removed** rows or a table that the derived
-files now carry subjects nothing authored. The pass that wrote them is the only party that could know.
-
-This is computable offline: a sidecar row whose subject (`variant_key`/`rsid`) appears in no authored table. It
-is an audit signal (ours, `audit.py`), and arguably a compiler warning (upstream's, for the liaison to weigh).
-The repair has to be `refresh_sidecar`, which captures before it deletes, never a silent prune. Reproduce:
-scaffold `variants.csv` with three rsid-only rows, run `enrich_module`, delete one row (or the table), then
-`validate_module` and `compile_module`. Both stay quiet and `resolution.csv` keeps the row. The probe dir no
-longer shows it, because `refresh_sidecar` was run there (below).
-
 ## F139 — a re-attestation re-signs checks it did not re-run, so an old check's verdict is stamped onto new bytes
 
 **Found:** 2026-11-09 by the tester, layman probe · **Severity:** high · **Status:** open; the writer is

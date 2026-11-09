@@ -43,8 +43,10 @@ import yaml
 from just_dna_compiler import draft
 from just_dna_compiler.compiler import authored_input_entries
 from just_dna_enricher.verification import read_verification
+from just_dna_format.layout import SidecarCollision, resolve_sidecar
 from just_dna_format.verification import attestation_failure, module_binding
 from just_dna_format.vrs import normalize_chrom
+from just_dna_registry.specfiles import FACT_CSVS, RESOLUTION_CSV, SOURCES_CSV
 
 from just_module_creator.models import AuditSignal, ColumnFill
 
@@ -72,6 +74,7 @@ COLUMNS_READ = frozenset(
         "rsid",
         "chrom",
         "start",
+        "variant_key",
     }
 )
 
@@ -678,6 +681,125 @@ def column_fill(spec_dir: Path) -> list[ColumnFill]:
 
 #: Every signal, in the order a reader should meet them. A list rather than a
 #: registry: adding one is adding a line here, and nothing dispatches by name.
+#: The derived sidecars whose rows name a variant the authored tables should name too.
+#: `expression_effects.csv` is left out on purpose: the Atlas pass answers for every
+#: scored variant in the queried window, so its rows naming unauthored variants is the
+#: point of the query, not a leftover. `sources.csv` is the authored licence table. The
+#: rest is upstream's roster.
+_VARIANT_SIDECARS = tuple(
+    sorted((set(FACT_CSVS) | {RESOLUTION_CSV}) - {"expression_effects.csv", SOURCES_CSV})
+)
+
+
+def _authored_identities(spec_dir: Path) -> tuple[set[str], set[tuple[str, str]]]:
+    """Every variant identity the authored tables name: rsIDs and keys, and places.
+
+    The authored roster is upstream's (`draft.DRAFTABLE`). Every cell is taken, lowercased,
+    so a key in any column counts; that over-matches, which errs toward silence.
+    """
+    values: set[str] = set()
+    places: set[tuple[str, str]] = set()
+    for name in sorted(draft.DRAFTABLE):
+        path = spec_dir / name
+        if not path.is_file():
+            continue
+        for row in read_rows(path):
+            values.update((v or "").strip().lower() for v in row.values() if isinstance(v, str))
+            chrom = normalize_chrom((row.get("chrom") or "").strip() or None)
+            start = (row.get("start") or "").strip()
+            if chrom and start:
+                places.add((chrom, start))
+    values.discard("")
+    # An rsID-only authored row has its place only through resolution, and a coordinate-
+    # keyed sidecar (frequencies) names it by that place: so a resolution row for an
+    # authored variant lends the authored set its key and place. Measured on a corpus
+    # module, where 235 frequency rows read as unauthored without it.
+    try:
+        resolution = resolve_sidecar(spec_dir, RESOLUTION_CSV)
+    except SidecarCollision:
+        resolution = None
+    if resolution is not None and resolution.is_file():
+        for row in read_rows(resolution):
+            keys = {(row.get(c) or "").strip().lower() for c in ("variant_key", "rsid")} - {""}
+            if keys & values:
+                values.update(keys)
+                chrom = normalize_chrom((row.get("chrom") or "").strip() or None)
+                start = (row.get("start") or "").strip()
+                if chrom and start:
+                    places.add((chrom, start))
+    return values, places
+
+
+def unauthored(spec_dir: Path, rows: Sequence[Mapping[str, str | None]]) -> list[int]:
+    """Indexes of the sidecar rows naming a variant no authored table names (F137, F138).
+
+    A row's identities are its `variant_key`, its `rsid` and its `(chrom, start)`; any one
+    found in any authored table counts as still named, and a row carrying none of them
+    (a gene- or assertion-keyed row) is never reported, because nothing here could tell.
+    """
+    if not rows:
+        return []
+    values, places = _authored_identities(spec_dir)
+    out: list[int] = []
+    for index, row in enumerate(rows):
+        ids = {(row.get(column) or "").strip().lower() for column in ("variant_key", "rsid")} - {""}
+        chrom = normalize_chrom((row.get("chrom") or "").strip() or None)
+        start = (row.get("start") or "").strip()
+        place = (chrom, start) if chrom and start else None
+        if not ids and place is None:
+            continue
+        if ids & values or (place is not None and place in places):
+            continue
+        out.append(index)
+    return out
+
+
+def sidecar_rows_nothing_authors(spec_dir: Path) -> AuditSignal:
+    """Derived rows for a variant the author no longer names anywhere (F137).
+
+    Sidecars merge rather than clobber, so a row the triage pass wrote for a variant
+    later dropped (or a table later removed) stays, and a compile hashes it into
+    `manifest.derived` and publishes the file. Upstream's compile warning for
+    `resolution.csv` is their RM422; this is the offline signal, and the repair is
+    `refresh_sidecar`, which captures before it deletes.
+    """
+    name = "sidecar_rows_nothing_authors"
+    present: dict[str, Path] = {}
+    for sidecar in _VARIANT_SIDECARS:
+        try:
+            path = resolve_sidecar(spec_dir, sidecar)
+        except SidecarCollision as exc:
+            return _blocked(name, str(exc))
+        if path is not None and path.is_file():
+            present[sidecar] = path
+    if not present:
+        return _clear(name, "no variant-keyed derived sidecar is here")
+    if not any((spec_dir / table).is_file() for table in draft.DRAFTABLE):
+        return _blocked(name, "no authored table is here to compare the sidecars against")
+    found: dict[str, list[str]] = {}
+    for sidecar, path in present.items():
+        rows = read_rows(path)
+        for index in unauthored(spec_dir, rows):
+            row = rows[index]
+            found.setdefault(sidecar, []).append(
+                (row.get("rsid") or row.get("variant_key") or "").strip()
+                or f"{(row.get('chrom') or '?').strip()}:{(row.get('start') or '?').strip()}"
+            )
+    if not found:
+        return _clear(name, f"every variant in {_listed(present)} is named by an authored table")
+    total = sum(len(v) for v in found.values())
+    return _decide(
+        name,
+        f"{total} derived row(s) name a variant no authored table names",
+        [f"{sidecar}: {_listed(names)}" for sidecar, names in sorted(found.items())]
+        + [
+            "a compile hashes these files into the manifest and a spec upload carries them. If "
+            "you removed the variants, refresh_sidecar re-derives each file from what you author "
+            "now, capturing the old one first; if you mean to keep them, author the variants.",
+        ],
+    )
+
+
 SIGNALS = (
     weight_scale,
     checks_that_never_ran,
@@ -685,6 +807,7 @@ SIGNALS = (
     effect_size_is_its_own_z,
     clinical_claims_without_studies,
     directional_claims_without_studies,
+    sidecar_rows_nothing_authors,
 )
 
 
