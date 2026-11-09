@@ -55,6 +55,11 @@ is the author's judgement. Nothing in `variants.csv` was changed.
   above took 30 to 90 times that, and the host moved two of them to the background at 120 s. What made them
   slow is not known; the identical repeats show that it varies from run to run.
 
+- **F142.** In 24 of this sidecar's 126 rows, the sign of `effect_size` contradicts `effect_direction`; one is
+  16:53767047 A>T, +0.0044, `decrease`. The enricher intends this: the size is the single strongest tissue track,
+  and the direction is the majority vote. But format's description of `effect_size` calls it an aggregate, and
+  neither of our tools says so.
+
 ## Reproduce
 
 These calls need `ALPHAGENOME_API_KEY`, and each one makes the target directory non-commercial. Work on a
