@@ -83,6 +83,7 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
+| F135 | S141 | | filed 2026-11-09, unanswered |
 | F142 | S140 | RM425 | answered, open (patch) |
 | F139 | S139 | RM423 | answered, open (patch half + minor half) |
 | F137 | S138 | RM422 | answered, open (patch) |
@@ -125,6 +126,17 @@ On `assets/htt_cag_repeats` (`validate_module`, strict), every bin declares `sou
 (a Float) and `CIRUC`: `binning._VCF_MEASURE_FIELDS` keys on `measure_kind` alone and never reads
 `source_field`. The fractional warning does not apply to an integer field; the spanning one does in substance
 (ExpansionHunter reports `REPCI`) but names a field the author does not use.
+
+## F135 — `GeneLocusConflict`'s message guesses the rsID is the invented half (format `S141`)
+
+**State: filed 2026-11-09 by the liaison, on the lead's hand-off; unanswered.** Low, wording only. Our half is
+resolved (`docs/previous_issues.md` F135, `a924b2d`): `check_identifiers` names `enrich_module` when the
+comparison is skipped.
+
+`GeneLocusConflict.__str__` (enricher 0.7.3 and their `main`) ends *"a real symbol beside an invented rsID is
+what a machine-written summary produces"*. On the probe's rs1801394 both halves were real: the rsID is MTRR's, on
+chromosome 5, and the summary paired it with MTHFR. Asked for: a message naming both cases, and where a sidecar
+on disk already names the gene the variant sits in, that gene.
 
 ## F142 — `ExpressionEffectRow.effect_size` is described as an aggregate; it is one track's value (format `S140`)
 
