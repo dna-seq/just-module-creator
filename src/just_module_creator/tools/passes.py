@@ -37,6 +37,7 @@ whole task on it, which is what the flag did.
 from __future__ import annotations
 
 import csv
+import time
 from collections import Counter
 from collections.abc import Sequence
 from datetime import UTC, datetime
@@ -1717,12 +1718,12 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         gene filter is a requirement and not an optimisation. **`rows=true` aims the pass
         at the module instead**: windows are planned from variants.csv × resolution.csv,
         grouped by each row's own `gene` and chromosome, neighbours within 100 bp merged,
-        ~21 bp each, and queried one after another at about two seconds a window
-        (longevitymap: 377 windows for 1033 rows). `gene`, `chrom`, `start`, `end` are
-        ignored, and only each row's own `gene` is asked: a distal target takes the
-        interval form. `row_status` then says per row whether it was scored; rows with
-        no `gene` are reported, never given one. `dry_run` returns the plan and asks
-        nothing.
+        ~21 bp each, and queried one after another: about two seconds a window at best,
+        and single windows have taken minutes (longevitymap: 377 windows for 1033 rows).
+        `gene`, `chrom`, `start`, `end` are ignored, and only each row's own `gene` is
+        asked: a distal target takes the interval form. `row_status` then says per row
+        whether it was scored; rows with no `gene` are reported, never given one.
+        `dry_run` returns the plan and asks nothing.
 
         **This makes the module non-commercial and there is no way to run it otherwise.**
         AlphaGenome **Atlas** output is non-commercial-only, so `use` defaults to
@@ -2065,11 +2066,15 @@ async def _expression_for_rows(
     datasets: set[str] = set()
     ran = 0
     failed = False
+    # F141: measured, because the plan's figure is a best case. One 21 bp window took
+    # from 4 s to 3 min across five calls, with no cause known.
+    durations: list[float] = []
     if not dry_run:
         for gene, chrom, start, end in windows:
             if ctx:
                 await narrate(ctx, f"Window {ran + 1}/{planned}: {gene} {chrom}:{start}-{end}")
                 await ctx.report_progress(progress=ran, total=planned)
+            began = time.monotonic()
             try:
                 result = await run_sync(
                     lambda g=gene, c=chrom, s=start, e=end: enrich_expression(
@@ -2085,6 +2090,7 @@ async def _expression_for_rows(
                     )
                 )
             except ExpressionUnavailable as exc:
+                durations.append(time.monotonic() - began)
                 warnings += [
                     f"{gene} {chrom}:{start}-{end}: {exc}",
                     "The Atlas is unreachable "
@@ -2093,6 +2099,7 @@ async def _expression_for_rows(
                 failed = True
                 break
             except ExpressionError as exc:
+                durations.append(time.monotonic() - began)
                 warnings += [
                     f"{gene} {chrom}:{start}-{end}: {exc}",
                     "Stopped at this window: a "
@@ -2101,6 +2108,7 @@ async def _expression_for_rows(
                 ]
                 failed = True
                 break
+            durations.append(time.monotonic() - began)
             ran += 1
             candidates += result.candidates or 0
             written += result.written or 0
@@ -2135,6 +2143,8 @@ async def _expression_for_rows(
         dry_run=dry_run,
         windows=planned,
         windows_run=ran,
+        seconds_elapsed=round(sum(durations), 1) if durations else None,
+        slowest_window_seconds=round(max(durations), 1) if durations else None,
         row_status={status: report.status.get(status, 0) for status in ROW_STATUSES},
         row_examples=report.examples,
         licence_note=(
@@ -2150,8 +2160,10 @@ async def _expression_for_rows(
             "Nothing to ask the Atlas for. Read row_status: a row needs a gene, a coordinate "
             "(enrich_module fills resolution.csv) and a genotype with a non-reference allele."
             if not planned
-            else f"Plan only: {planned} window(s), about {planned * 2} s at ~2 s each. Drop "
-            "dry_run to run it."
+            else f"Plan only: {planned} window(s). At best about {planned * 2} s (~2 s a window "
+            "when the Atlas answers promptly); single windows have taken minutes, so this is a "
+            "floor, not an estimate. The run reports seconds_elapsed and slowest_window_seconds. "
+            "Drop dry_run to run it."
             if dry_run
             else "Read the scored rows with top_expression_effects(module_rows_only=true). A "
             "predicted direction is not a clinical direction: a variants.csv role written from "

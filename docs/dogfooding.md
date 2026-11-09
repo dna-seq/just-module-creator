@@ -616,36 +616,3 @@ than null, and the compiler counts only nulls as unchecked. Our tool reports the
 which is right. The published record doesn't match it, and only `abstract_only_count: 1` beside it
 says why. Nothing to change on our side. `module-publish`'s read-back step is where an author would
 notice, so if upstream keeps the shape, add one sentence there.
-
-## F141 — the Atlas pass's dry-run cost is a constant two seconds a window, and the real calls took up to three minutes
-
-**Found:** 2026-11-09 by the tester, Atlas probe (`assets/fto_bmi_atlas`) · **Severity:** low · **Status:** open
-
-The dry run's "about N s at ~2 s each" is `planned * 2` (`tools/passes.py`), not a measurement. The docstring
-says a 4 kb window "takes seconds". These are five live calls on one 21 bp window of 63 candidates, timed from
-the host's log:
-
-| call | took |
-|---|---|
-| `rows=true` (FTO), first | 3 min 2 s |
-| `rows=true` (FTO), a fresh copy | 4 s |
-| `gene="IRX3"`, interval, first | 1 min 5 s |
-| `gene="IRX3"`, interval, a fresh copy | 2 min 45 s |
-| `gene="IRX3"`, interval, merged into the FTO copy | 9 s |
-
-Every repeat wrote identical rows, apart from `fetched_at`. The host moved two of the calls to the background at
-120 s.
-
-- **Not "first call per gene":** the second IRX3 call was slower than the first.
-- **The cause is not known.** The server's narration doesn't reach the host's log after startup, so nothing here
-  shows where the time went, and upstream latency is a guess. After F133, this seat does not name a cause from
-  five calls.
-- **What the author sees:** a plan for 377 windows (longevitymap) says about 12 minutes. If some windows take
-  minutes, it is hours, and the result carries no elapsed time to correct the next estimate.
-
-Shape of a fix: report the measured time per window in the result, and word the dry run's figure as the best
-case.
-
-**Later the same day:** `rows=true` on `longevity_2026` planned 13 windows at "about 26 s". Two runs on fresh
-copies took 11 s and 14 s and wrote identical rows. The estimate held there. The slow calls above are
-intermittent, so the case for the fix is "the figure is not a measurement", not "the figure is always wrong".

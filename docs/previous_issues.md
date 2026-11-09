@@ -6,6 +6,45 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F141 — the Atlas pass's dry-run cost is a constant two seconds a window, and the real calls took up to three minutes
+
+**Found:** 2026-11-09 by the tester, Atlas probe (`assets/fto_bmi_atlas`) · **Severity:** low · **Status:** resolved 2026-11-09 (reported, not explained)
+
+The dry run's "about N s at ~2 s each" is `planned * 2` (`tools/passes.py`), not a measurement. The docstring
+says a 4 kb window "takes seconds". These are five live calls on one 21 bp window of 63 candidates, timed from
+the host's log:
+
+| call | took |
+|---|---|
+| `rows=true` (FTO), first | 3 min 2 s |
+| `rows=true` (FTO), a fresh copy | 4 s |
+| `gene="IRX3"`, interval, first | 1 min 5 s |
+| `gene="IRX3"`, interval, a fresh copy | 2 min 45 s |
+| `gene="IRX3"`, interval, merged into the FTO copy | 9 s |
+
+Every repeat wrote identical rows, apart from `fetched_at`. The host moved two of the calls to the background at
+120 s.
+
+- **Not "first call per gene":** the second IRX3 call was slower than the first.
+- **The cause is not known.** The server's narration doesn't reach the host's log after startup, so nothing here
+  shows where the time went, and upstream latency is a guess. After F133, this seat does not name a cause from
+  five calls.
+- **What the author sees:** a plan for 377 windows (longevitymap) says about 12 minutes. If some windows take
+  minutes, it is hours, and the result carries no elapsed time to correct the next estimate.
+
+Shape of a fix: report the measured time per window in the result, and word the dry run's figure as the best
+case.
+
+**Later the same day:** `rows=true` on `longevity_2026` planned 13 windows at "about 26 s". Two runs on fresh
+copies took 11 s and 14 s and wrote identical rows. The estimate held there. The slow calls above are
+intermittent, so the case for the fix is "the figure is not a measurement", not "the figure is always wrong".
+
+**Resolution:** the `rows` path now times each window and returns `seconds_elapsed` and `slowest_window_seconds`.
+The dry run's figure is worded as a floor ("at best about N s … single windows have taken minutes, so this is a
+floor, not an estimate"), and the docstring says the same. The cause of the slow windows is still unknown and is not
+guessed at here. Tests: `test_the_rows_path_reports_the_time_it_measured` and the extended
+`test_a_rows_dry_run_is_a_plan_and_asks_nothing`, both failing on 0.48.3's code.
+
 ## F140 — `top_expression_effects` reads "the Atlas does not score this gene here" off whatever the sidecar happens to hold
 
 **Found:** 2026-11-09 by the tester, Atlas probe (`assets/fto_bmi_atlas`) · **Severity:** medium · **Status:** resolved 2026-11-09 (the wording; the split is not)

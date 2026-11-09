@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **The Atlas `rows` pass reports the time it took** (F141): `seconds_elapsed` and `slowest_window_seconds`, and the dry run calls its ~2 s a window a floor, since single windows have taken minutes.
 - **`gene_not_at_locus` no longer claims the Atlas lacks a gene** (F140). It reports what the sidecar holds, and the row's own gene may never have been asked; the `rows=true` path now says it asks each row's own gene only and that a distal target takes the interval form.
 - **`audit_module` names recorded checks older than the last logged edit** (F139). A later pass re-signs `verification.json` with records of checks it did not re-run, so a bound file can carry a verdict from before the rows changed (upstream's RM423 fixes the writer). The new `checks_older_than_the_last_edit` signal dates each record against `logs/authoring.log`.
 - **`audit_module` names derived rows for variants nothing authors any more** (F137). A sidecar row, such as a `resolution.csv` row for a variant the author dropped, is kept by merge-not-clobber and published by the next compile. The new `sidecar_rows_nothing_authors` signal lists them per sidecar and points to `refresh_sidecar`.

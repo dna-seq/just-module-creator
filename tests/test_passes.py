@@ -12,6 +12,7 @@ import contextlib
 import csv
 import json
 import re
+import time
 from pathlib import Path
 
 import pytest
@@ -1494,6 +1495,9 @@ async def test_a_rows_dry_run_is_a_plan_and_asks_nothing(make_client, rows_spec,
     assert body["windows"] == 3 and body["windows_run"] == 0
     assert body["written"] is None
     assert body["row_status"]["scored"] == 1
+    # F141: the plan's figure is a floor, and a dry run measures nothing.
+    assert "this is a floor, not an estimate" in body["next_step"]
+    assert body["seconds_elapsed"] is None and body["slowest_window_seconds"] is None
 
 
 async def test_a_rows_run_queries_each_window_and_stops_at_a_failure(
@@ -1546,6 +1550,30 @@ async def test_the_rows_path_says_a_distal_target_takes_the_interval_form(
         "This asked each row's own gene only; a distal target gene takes the interval form "
         "(gene, chrom, start, end)."
     )
+
+
+async def test_the_rows_path_reports_the_time_it_measured(make_client, rows_spec, monkeypatch):
+    """F141: one 21 bp window took from 4 s to 3 min; the plan said ~2 s."""
+    calls: list[str] = []
+
+    class _Result:
+        candidates, written, withheld, warnings, dataset = 3, 3, {}, [], "ds"
+
+    def _fake(_target, gene, **_k):
+        calls.append(gene)
+        if len(calls) == 2:
+            time.sleep(0.2)
+        return _Result()
+
+    monkeypatch.setattr(passes, "enrich_expression", _fake)
+    async with make_client(_online_settings()) as client:
+        out = await client.call_tool(
+            "enrich_expression_effects", {"spec_dir": str(rows_spec), "rows": True}
+        )
+    body = json.loads(out.content[0].text)
+    assert len(calls) == body["windows_run"] == 3
+    assert body["slowest_window_seconds"] >= 0.2
+    assert body["seconds_elapsed"] >= body["slowest_window_seconds"]
 
 
 async def test_without_rows_a_gene_is_still_required(make_client, tmp_path):

@@ -3304,6 +3304,20 @@ class ExpressionReport(BaseModel):
             "the run stopped there; zero on a dry run."
         ),
     )
+    seconds_elapsed: float | None = Field(
+        default=None,
+        description=(
+            "With `rows=true`: wall-clock seconds the windows took, measured. Null on a dry run "
+            "or when no window was asked."
+        ),
+    )
+    slowest_window_seconds: float | None = Field(
+        default=None,
+        description=(
+            "With `rows=true`: the slowest single window, measured. The plan's ~2 s a window is "
+            "a best case; one window has taken minutes."
+        ),
+    )
     row_status: dict[str, int] | None = Field(
         default=None,
         description=(
