@@ -4,22 +4,17 @@ The lead seat's working state, rewritten to the present before a reset (`docs/se
 
 ## Now
 
-Released 0.48.3 (tag `v0.48.3`, `e1c9614`, 2026-11-08): F120, F122 (DOI joined to PMID/PMCID through PubMed),
-F123 (no-token refusal leads with `registry_accounts add`), F124 (`check_pgx` names only legs that compared,
-read from upstream's record), F125 (stub-row repair keyed on wording both compiler versions share; test fed the
-compiler's real refusal), F129 (STRchive drafter reads the lane or a `catalogue`; a mitigation, out at the 0.8
-move), the gene-metrics guide's gnomAD label (RM417). Also: reference examples' `logs/authoring.log` now travel
-(`4b358df`). Next release no earlier than 2026-11-09. The person went away at 05:02Z on 2026-11-05.
+Released 0.48.4 (tag `v0.48.4`, `08161cb`, 2026-11-09): F133, F134, F135, F136, F137 (our half: audit signal
+`sidecar_rows_nothing_authors`), F138, F139 (our half: audit signal `checks_older_than_the_last_edit`), F140, F141,
+F142. Every new test was run against 0.48.3's code and failed there; 906 pass. Announced in
+`#just-module-creator>releases` for the tester's recheck. Next release no earlier than 2026-11-10. The person went
+away at 05:02Z on 2026-11-05.
 
-Unreleased on main, each test run against 0.48.3's code and failing there: F134 (`62fffd5`), F133 (`7c188be`),
-F142 (`d71d81e`, expression size vs direction), F136 (`d8d693c`, PubMind withheld collapsed), F135 (`a924b2d`,
-check_identifiers' `next_step` when the gene/chromosome comparison skips), F138 (`4860572`, audit reads a stale
-attestation as not computed; diplotypes; refresh says "you removed it"), F137 our half (`83d5f85`, signal
-`sidecar_rows_nothing_authors`), F139 our half (`22a3856`, signal `checks_older_than_the_last_edit`). 904 tests.
-Upstream halves: S138/RM422 (F137), S139/RM423 (F139), S140/RM425 (F142), S141 (F135's message), all the liaison's.
-Still open, mine, `unattended`: F140 (medium: `top_expression_effects`' `gene_not_at_locus` reads what the sidecar
-holds as a fact about the model; `rows=true` asks only a row's own gene), F141 (low: the dry run's per-window time is
-a constant). Release 0.48.4 allowed from 2026-11-09.
+Upstream halves, all the liaison's: S138/RM422 (F137's compile warning), S139/RM423 (F139's writer), S140/RM425
+(F142's field description), S141 (F135's conflict message). When RM423 ships in what we install, our
+`checks_older_than_the_last_edit` stays (it dates records; theirs drops them) unless their per-record binding makes
+it redundant: re-read then. Not done on purpose: F140's split of never-asked from asked-and-empty (no record of the
+queries exists); F141's cause (unknown).
 
 ## Plan states (set 2026-11-05)
 
