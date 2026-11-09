@@ -5,6 +5,8 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+## [0.48.4] — 2026-11-09
+
 - **The Atlas `rows` pass reports the time it took** (F141): `seconds_elapsed` and `slowest_window_seconds`, and the dry run calls its ~2 s a window a floor, since single windows have taken minutes.
 - **`gene_not_at_locus` no longer claims the Atlas lacks a gene** (F140). It reports what the sidecar holds, and the row's own gene may never have been asked; the `rows=true` path now says it asks each row's own gene only and that a distal target takes the interval form.
 - **`audit_module` names recorded checks older than the last logged edit** (F139). A later pass re-signs `verification.json` with records of checks it did not re-run, so a bound file can carry a verdict from before the rows changed (upstream's RM423 fixes the writer). The new `checks_older_than_the_last_edit` signal dates each record against `logs/authoring.log`.
@@ -15,6 +17,7 @@ on our side, so agents in sibling repos are not surprised.
 - **The expression tools say why a row's size and direction can split** (F142). `effect_size` is the single strongest tissue track and `effect_direction` the majority across tracks, so a row can read +0.024 with `decrease`; both docstrings say so, and `top_expression_effects` explains it when a returned row splits.
 - **An empty `fetch_fulltext` with a known PMCID says to call again** (F133). Europe PMC refuses some fulltext requests with HTTP 500 at random (half of them for one article on 2026-11-09), and the installed enricher reports that the same as no copy, so the same paper came back whole on one call and empty on the next, by DOI, PMCID or PMID alike. The warning now says so.
 - **`draft_from_strchive` says what it drafts: one row per locus, no bands** (F134). Its description promised ranges; upstream drafts the locus and leaves the bands to the author by design. Its next step now says to split the row into bands and run `check_repeat_bands`, not to fill a genotype and weight the table does not have. Its contested-locus finding called a gene and motif claimed by two catalogue loci a threshold dispute; it now says what upstream meant.
+
 ## [0.48.3] — 2026-11-08
 
 - **The gene-metrics guide no longer reads the live gnomAD API's label as v2.1.1.** On the 0.7 line those rows say `gnomad_v2.1.1_constraint`, but the API serves gnomAD 4.1.1 or later (upstream RM417, relabelled `gnomad_api_constraint` in compiler 0.8.2). The guide had explained BRCA1's snapshot-versus-API difference as v4.1 against v2.1.1.
