@@ -707,3 +707,41 @@ Timing, from the host's log: three `lookup_variant` calls issued together on a f
 after **2 min 43 s** each, all `answered_by: local`. One more call on the warm server took **9 s**. The
 first-call cost looks like the snapshots being opened, not per-call work, but nothing in the answer or the
 docstring warns that the first lookup is slow, and the host moved all three to the background at 120 s.
+
+## F137 — remove a table and its sidecars keep the removed rows; validate, compile and audit all stay quiet, and they publish
+
+**Found:** 2026-11-09 by the tester, layman probe · **Severity:** medium · **Status:** open
+
+The probe triaged three handed rsIDs in `variants.csv` and ran `enrich_module`, then dropped one (rs1801394, the
+MTRR variant the summary had called MTHFR's). After reading the papers it removed `variants.csv` altogether,
+because the finding is a two-variant pair (`haplotypes.csv` + `diplotypes.csv`). Both moves were logged with
+`record_override`. The spec dir still held what the triage enrich wrote: `resolution.csv` with **all three**
+rsIDs, including rs1801394 on chromosome 5, plus `clin_sig_concordance.csv` and `clin_sig_authority_calls.csv`.
+
+`validate_module(strict)` passed with no word about it. `compile_module(strict)` passed and hashed that
+`resolution.csv` into `manifest.derived`, so a publish uploads a resolution row for a variant no table names, the
+one the author dropped as a generated claim. `audit_module` didn't see it either. `enrich_module`'s note does
+say *"To regenerate resolution.csv after changing the spec you must DELETE it first, or stale rows persist
+silently"*. That covers a re-run, but nothing tells an author who **removed** rows or a table that the derived
+files now carry subjects nothing authored. The pass that wrote them is the only party that could know.
+
+This is computable offline: a sidecar row whose subject (`variant_key`/`rsid`) appears in no authored table. It
+is an audit signal (ours, `audit.py`), and arguably a compiler warning (upstream's, for the liaison to weigh).
+The repair has to be `refresh_sidecar`, which captures before it deletes, never a silent prune. Reproduce:
+`data/interim/probe_layman_mthfr/test_mthfr_folate/` as left on 2026-11-09.
+
+## F138 — `audit_module` reads a stale `verification.json` as current, and never reads `diplotypes.csv`'s directions
+
+**Found:** 2026-11-09 by the tester, layman probe · **Severity:** low · **Status:** open
+
+On the same spec dir, `validate_module` and `compile_module` both say *"verification.json is stale: the
+attestation was computed over different module bytes … nothing here describes the rows being compiled"*.
+`audit_module`'s `checks_that_never_ran` reads that same file and reports *"9 of 13 recorded check(s) compared
+nothing"* as a decision about this module, with no mention that the records describe bytes that no longer
+exist. The fix is to check the attestation's digest first, as the compiler does, and report the signal
+`not_computed` (why: stale) rather than `decide`.
+
+Second, `directional_claims_without_studies` answers *"variants.csv is not here, so no row could be read"*,
+while `diplotypes.csv` carries `direction=risk` on two rows. `clinical_claims_without_studies` already reads
+diplotypes (*"activity_phenotype.csv, copynumbers.csv, diplotypes.csv, …"*), so the directional signal is the
+narrower of the two for no stated reason. For a diplotype module it is always `not_computed`.
