@@ -83,7 +83,7 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
-| F142 | S140 | | filed 2026-11-09, unanswered |
+| F142 | S140 | RM425 | answered, open (patch) |
 | F139 | S139 | RM423 | answered, open (patch half + minor half) |
 | F137 | S138 | RM422 | answered, open (patch) |
 | F130 | S136 | RM414 | 0.8.2 only |
@@ -128,7 +128,8 @@ On `assets/htt_cag_repeats` (`validate_module`, strict), every bin declares `sou
 
 ## F142 — `ExpressionEffectRow.effect_size` is described as an aggregate; it is one track's value (format `S140`)
 
-**State: filed 2026-11-09 by the liaison, on the tester's report; unanswered.** Low, wording only. Our half
+**State: answered the same hour: RM425, a patch, wording only.** Filed 2026-11-09 by the liaison, on the
+tester's report. Our half
 (one sentence in `enrich_expression_effects` and `top_expression_effects`, and a `next_step` when a returned row
 disagrees) is in `docs/dogfooding.md` F142, the lead's.
 
