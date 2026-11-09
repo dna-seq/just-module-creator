@@ -745,3 +745,44 @@ Second, `directional_claims_without_studies` answers *"variants.csv is not here,
 while `diplotypes.csv` carries `direction=risk` on two rows. `clinical_claims_without_studies` already reads
 diplotypes (*"activity_phenotype.csv, copynumbers.csv, diplotypes.csv, …"*), so the directional signal is the
 narrower of the two for no stated reason. For a diplotype module it is always `not_computed`.
+
+**F137, the repair route, on the same spec dir.** `refresh_sidecar(sidecar="resolution.csv")` is the right tool
+here, and it worked: capture verified, 3 rows → 2, rs1801394 left in the capture as `only_in_capture`, nothing
+put back. But it reads the result the wrong way. Its `next_step` says *"The fact signature MOVED. If nothing was
+reapplied and nothing conflicts, that is the source having changed its answer"*, and its warning says nothing
+proves *"a human wrote them rather than the source having withdrawn them"*. Ensembl withdrew nothing: the
+**author** removed the subject from every table. The canary has three causes, not two: the source moved, the
+author edited a cell, or the author removed the subject. It can tell the third apart, because the subject is
+absent from every authored table, and should say so. Otherwise an author who just dropped a row reads that the
+source changed its mind.
+
+## F139 — a re-attestation re-signs checks it did not re-run, so an old check's verdict is stamped onto new bytes
+
+**Found:** 2026-11-09 by the tester, layman probe · **Severity:** high · **Status:** open; the writer is
+upstream's (enricher 0.7.3), to be filed through the liaison
+
+`verification.json` holds one record per check with its own `checked_at`, under one `module_hash` and one
+signature for the whole file. On the probe spec dir:
+
+1. 02:38 UTC, `check_identifiers` over 3 triage rows writes `gene_locus_agreement: subjects 3, findings 1
+   (rs1801394/MTHFR)`.
+2. The author drops rs1801394, then removes `variants.csv` for haplotypes + diplotypes. `validate_module` now
+   calls the file stale (*"computed over different module bytes"*). That is correct.
+3. 02:45 UTC, `enrich_module` writes the file again: `module_hash` = the **current** bytes, a fresh signature,
+   and its own records re-run. `gene_locus_agreement` is carried over unchanged (`checked_at` 02:38,
+   `subjects: 3`).
+4. `compile_module(strict)` no longer warns of staleness. It reports *"verification.json records 1 finding(s)
+   … gene_locus_agreement (1 of 3)"* as `carried` (no edit clears it), and it will publish that finding for a
+   module whose tables no longer name rs1801394. `check_identifiers` now refuses to re-attest (*"no
+   variants.csv — the check does not apply … no verification.json was created"*), so nothing on the surface
+   can retire the record.
+
+That direction publishes a false finding. The other direction is the dangerous one: a clean `gene_locus_agreement`
+(or trait, PGS, CIViC record) from an earlier pass is re-signed over rows added after it ran. The manifest then
+attests a check that never saw those rows, and the file's `module_hash` says it did. Per-record `checked_at`
+survives, but nothing compares it, and the signature covers the file.
+
+Shape of a fix, upstream: a carried record keeps the hash it was computed over, and the compiler reads such a
+record as stale per check. Ours meanwhile: `audit_module` could flag records whose `checked_at` predates the
+file's newest authoring edit (logs/authoring.log has the times), and a check that no longer applies should
+remove its own record rather than leave it.
