@@ -691,7 +691,7 @@ async def test_a_row_for_a_subject_the_author_removed_is_named_as_removed(
 async def test_a_row_whose_subject_is_still_authored_is_not_called_removed(
     make_client, online, spec_dir, tmp_path, monkeypatch
 ) -> None:
-    """The same row, with rs1801133 still in variants.csv: that one the source may have withdrawn."""
+    """The same row with rs1801133 still in variants.csv: the source may have withdrawn it."""
     with (spec_dir / "variants.csv").open("a") as handle:
         handle.write("rs1801133,A/A,0.5,risk,Reduced MTHFR activity,MTHFR\n")
     original = spec_dir / "resolution.csv"
