@@ -83,7 +83,7 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
-| F135 | S141 | | filed 2026-11-09, unanswered |
+| F135 | S141 | RM426 | answered, open (patch + minor) |
 | F142 | S140 | RM425 | answered, open (patch) |
 | F139 | S139 | RM423 | answered, open (patch half + minor half) |
 | F137 | S138 | RM422 | answered, open (patch) |
@@ -129,7 +129,9 @@ On `assets/htt_cag_repeats` (`validate_module`, strict), every bin declares `sou
 
 ## F135 — `GeneLocusConflict`'s message guesses the rsID is the invented half (format `S141`)
 
-**State: filed 2026-11-09 by the liaison, on the lead's hand-off; unanswered.** Low, wording only. Our half is
+**State: answered the same hour: RM426, with their pm to size.** Naming both readings is a patch; naming the
+gene the rsID sits in (read from `consequences.csv` when its pass ran; `resolution.csv` carries no gene) needs a new
+field on the public `GeneLocusConflict`, so a minor. Filed 2026-11-09 by the liaison, on the lead's hand-off. Our half is
 resolved (`docs/previous_issues.md` F135, `a924b2d`): `check_identifiers` names `enrich_module` when the
 comparison is skipped.
 
