@@ -142,7 +142,9 @@ F133's lesson: each timing was repeated, and no cause is named. Timings come fro
 (`~/.cache/claude-cli-nodejs/<project>/mcp-logs-plugin-*/`, the "completed in" lines); that log keeps the
 server's stderr only from startup. The multi-window run (`longevity_2026`, 13 windows, 11 to 14 s) produced F142:
 `effect_size` is one track's signed extreme and `effect_direction` is the majority vote, so their signs disagree in
-128 of 819 rows. The upstream half (format's field description) went to the liaison.
+128 of 819 rows. The upstream half (format's field description) went to the liaison. Upstream took it as RM425
+(a wording patch). Our half is on main as d71d81e, unreleased. **At the next release, recheck F133, F134 and F142's
+wording** in `enrich_expression_effects` and `top_expression_effects`.
 
 **2026-11-09: layman probe, MTHFR from a planted AI summary: done to a strict compile.** The write-up is
 `assets/mthfr_folate/README.md`; the scratch work is `data/interim/probe_layman_mthfr/` (gitignored). It also
