@@ -128,6 +128,13 @@ claims that were plausibly wrong, and it found more than solo probing.
 
 The polygon still answers HTTP 502 (17:3x UTC), so the 0.48.1 token-sending leg and the HTT rehearsal wait.
 
+**F133 was misdiagnosed by this seat** (the lead, 7c188be): the cause wasn't the DOI/PMCID route. Europe PMC's
+`fullTextXML` answered HTTP 500 on 5 of 10 plain requests for the same PMCID, and enricher 0.7.3 folds a 500 into
+`None`. My "3 by DOI, 2 by PMCID, PMID works" pattern was chance, against one direct control call. **Lesson:
+before naming a route as the cause, repeat the control as often as the failing call, because a flaky upstream
+produces route-shaped patterns.** F133 (now a "call again" warning) and F134 are fixed on main, unreleased:
+recheck both at the next release.
+
 **2026-11-09: layman probe, MTHFR from a planted AI summary: done to a strict compile.** The write-up is
 `assets/mthfr_folate/README.md`; the scratch work is `data/interim/probe_layman_mthfr/` (gitignored). It also
 covered the "module with two of something" probe: a two-variant diplotype module with a cis twin, where the
