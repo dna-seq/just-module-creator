@@ -3320,7 +3320,14 @@ class RankedExpressionEffect(BaseModel):
         ),
     )
     gene: str = Field(description="The gene AlphaGenome attributed the effect to, its symbol.")
-    effect_size: float | None = None
+    effect_size: float | None = Field(
+        default=None,
+        description=(
+            "The single strongest tissue track's value, its sign kept; `effect_direction` is the "
+            "majority sign across tracks, so the two can point opposite ways, and that is the "
+            "enricher's meaning, not a broken row."
+        ),
+    )
     effect_direction: str | None = Field(
         default=None,
         description=(

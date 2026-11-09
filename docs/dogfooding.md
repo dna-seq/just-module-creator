@@ -810,35 +810,3 @@ case.
 **Later the same day:** `rows=true` on `longevity_2026` planned 13 windows at "about 26 s". Two runs on fresh
 copies took 11 s and 14 s and wrote identical rows. The estimate held there. The slow calls above are
 intermittent, so the case for the fix is "the figure is not a measurement", not "the figure is always wrong".
-
-## F142 — one in six Atlas rows has an `effect_size` whose sign contradicts its `effect_direction`, and nothing the author reads says why
-
-**Found:** 2026-11-09 by the tester, Atlas probe on `longevity_2026` · **Severity:** low · **Status:** open; the
-field's description is upstream's (format 0.7.1), filed as S140 by the liaison (eb7bde5)
-
-| sidecar | rows | `effect_size > 0` with `decrease`, or `< 0` with `increase` |
-|---|---|---|
-| `rows=true` on `longevity_2026` | 819 | 128 |
-| `fto_bmi`, FTO + IRX3 | 126 | 24 |
-
-`top_expression_effects(module_rows_only=true)` returned two of them among its 13 rows:
-
-- APOE 19:44908822 C>T, +0.024, `decrease`, 212 of 371 tracks
-- SLC27A3 1:153778173 C>T, +0.019, `decrease`, 269 of 371 tracks
-
-**The values are as the enricher means them.** `just_dna_enricher.expression._summarise` (0.7.3) documents it:
-`effect_size` is the single strongest tissue track keeping its sign, `effect_direction` is the majority sign across
-tracks, and *"that disagreement is real"*. In every disagreeing row the majority was 50.4 % to 90.6 %.
-
-Two places describe it otherwise, or not at all:
-
-- **Upstream:** `ExpressionEffectRow.effect_size`'s description (format 0.7.1, and the trunk today) says *"the
-  magnitude, aggregated over the scorer's tissue tracks"*. It is one track's value, not an aggregate.
-- **Ours:** `enrich_expression_effects` says it records *"which way the variant moves that gene's predicted
-  expression"*. `top_expression_effects` ranks by `|effect_size|` and prints both fields side by side, and neither
-  says that the size comes from one tissue while the direction is a vote.
-  - An author who reads +0.024 / decrease sees a broken row.
-  - An author who ranks by size is ranking by each variant's single most extreme tissue.
-
-Shape of a fix: one sentence in both docstrings, and in the result's `next_step` when a returned row disagrees.
-Upstream: correct the field description.

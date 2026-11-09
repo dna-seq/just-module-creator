@@ -1703,10 +1703,12 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
     ) -> ExpressionReport:
         """Record AlphaGenome's predicted per-gene expression effects for an interval.
 
-        One row per `(variant, gene)`: which way the variant moves that gene's predicted
-        expression, how many of the tissue tracks agree on the sign, and how far it sits
-        from the gene. It answers for **every scored variant in the window**, not just
-        the ones your module authors — the distal ones are usually what the query was for.
+        One row per `(variant, gene)`: which way most tissue tracks move that gene's
+        predicted expression (`effect_direction`), how many agree on that sign, the single
+        strongest track's value (`effect_size`, sign kept, so it can point the other way),
+        and how far the variant sits from the gene. It answers for **every scored variant in
+        the window**, not just the ones your module authors — the distal ones are usually
+        what the query was for.
 
         **CORPUS-SIZED, and the corpus is the interval rather than your rows.** A whole
         gene plus its attribution flanks is ~3.1M SNVs, about **47 minutes**; the cost is
@@ -1897,6 +1899,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         ~12,000 rows and a gene-wide one millions. This is how an author finds the handful
         worth reading without paging through them: sorted by `|effect_size|`, filtered by
         track consensus, magnitude, gene, and optionally to variants inside the gene span.
+        `effect_size` is each variant's single strongest tissue track and `effect_direction`
+        the majority sign, so the ranking orders by the most extreme tissue, and a row can
+        read +0.02 with `decrease`.
 
         `module_rows_only=true` answers *which of MY variants does the model call
         disruptive*: it keeps only predictions for a `variants.csv` row's own gene and
@@ -1985,6 +1990,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
                 )
             )
         ranked.sort(key=lambda pair: pair[0], reverse=True)
+        returned = [effect for _, effect in ranked[:limit]]
         return ExpressionRanking(
             spec_dir=str(target),
             total_rows=len(raw),
@@ -1999,14 +2005,40 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
                 else None
             ),
             row_examples=rows.examples if rows is not None else {},
-            effects=[effect for _, effect in ranked[:limit]],
+            effects=returned,
             next_step=(
-                "A large predicted effect is a reason to READ the variant, not a role to assign "
+                _sign_disagreement(returned)
+                + "A large predicted effect is a reason to READ the variant, not a role to assign "
                 "it. Check whether an rsID already describes it with lookup_variant, and if you "
                 "author a row from one of these, its direction is your judgement rather than "
                 "AlphaGenome's — say so in the conclusion and log it with record_override."
             ),
         )
+
+
+def _sign_disagreement(effects: list[RankedExpressionEffect]) -> str:
+    """F142: say why a returned row's size and direction point opposite ways, when one does.
+
+    The enricher keeps the strongest track's signed value as `effect_size` and takes the
+    majority sign as `effect_direction`, so the disagreement is real, not a defect.
+    """
+    disagreeing = [
+        e
+        for e in effects
+        if e.effect_size is not None
+        and (
+            (e.effect_size > 0 and e.effect_direction == "decrease")
+            or (e.effect_size < 0 and e.effect_direction == "increase")
+        )
+    ]
+    if not disagreeing:
+        return ""
+    return (
+        f"{len(disagreeing)} returned row(s) carry an effect_size whose sign differs from "
+        "effect_direction: the size is the single strongest tissue track and the direction is "
+        "the majority across tracks, so both are as the enricher means them. Quote the "
+        "direction with tracks_agreeing/tracks_total. "
+    )
 
 
 async def _expression_for_rows(

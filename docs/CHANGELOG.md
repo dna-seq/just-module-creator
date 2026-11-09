@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **The expression tools say why a row's size and direction can split** (F142). `effect_size` is the single strongest tissue track and `effect_direction` the majority across tracks, so a row can read +0.024 with `decrease`; both docstrings say so, and `top_expression_effects` explains it when a returned row splits.
 - **An empty `fetch_fulltext` with a known PMCID says to call again** (F133). Europe PMC refuses some fulltext requests with HTTP 500 at random (half of them for one article on 2026-11-09), and the installed enricher reports that the same as no copy, so the same paper came back whole on one call and empty on the next, by DOI, PMCID or PMID alike. The warning now says so.
 - **`draft_from_strchive` says what it drafts: one row per locus, no bands** (F134). Its description promised ranges; upstream drafts the locus and leaves the bands to the author by design. Its next step now says to split the row into bands and run `check_repeat_bands`, not to fill a genotype and weight the table does not have. Its contested-locus finding called a gene and motif claimed by two catalogue loci a threshold dispute; it now says what upstream meant.
 ## [0.48.3] — 2026-11-08

@@ -1209,6 +1209,37 @@ async def test_consensus_and_in_gene_filters_narrow_without_reordering(make_clie
     assert body["total_rows"] == 4, "the denominator is the file, not the filtered set"
 
 
+async def test_a_row_whose_size_and_direction_disagree_is_explained(make_client, tmp_path):
+    """F142: the size is the strongest track, the direction the majority; say so when they split.
+
+    The APOE row is the tester's, from the longevity_2026 Atlas run: +0.024 with `decrease`,
+    212 of 371 tracks.
+    """
+    spec = tmp_path / "spec"
+    spec.mkdir()
+    (spec / "module_spec.yaml").write_text("schema_version: '1.0'\nmodule:\n  name: m\n")
+    _effects(
+        spec,
+        "k1,,19,44908822,C,T,APOE,ENSG1,0.024,RNA_SEQ,,decrease,212,371,0,ds,alphagenome_atlas,resolved,t\n"
+        "k2,,19,44919171,A,T,APOC1,ENSG2,-1.6926,RNA_SEQ,,decrease,371,371,0,ds,alphagenome_atlas,resolved,t\n",
+    )
+    async with make_client(offline_settings()) as client:
+        out = await client.call_tool("top_expression_effects", {"spec_dir": str(spec)})
+    body = json.loads(out.content[0].text)
+    assert body["returned"] == 2
+    assert body["next_step"].startswith("1 returned row(s) carry an effect_size whose sign differs")
+    assert "majority across tracks" in body["next_step"]
+
+
+async def test_agreeing_rows_get_no_disagreement_sentence(make_client, effects_spec):
+    async with make_client(offline_settings()) as client:
+        out = await client.call_tool("top_expression_effects", {"spec_dir": str(effects_spec)})
+    body = json.loads(out.content[0].text)
+    assert body["returned"] == 4
+    assert body["next_step"].startswith("A large predicted effect is a reason to READ")
+    assert "sign differs" not in body["next_step"]
+
+
 async def test_no_sidecar_says_nothing_to_rank_rather_than_no_effect(make_client, tmp_path):
     spec = tmp_path / "empty"
     spec.mkdir()
