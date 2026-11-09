@@ -83,6 +83,7 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
+| F139 | S139 | | filed 2026-11-09, unanswered |
 | F137 | S138 | | filed 2026-11-09, unanswered |
 | F130 | S136 | RM414 | 0.8.2 only |
 | F131 | S137 | RM415 | 0.8.2 only |
@@ -124,6 +125,20 @@ On `assets/htt_cag_repeats` (`validate_module`, strict), every bin declares `sou
 `source_field`. The fractional warning does not apply to an integer field; the spanning one does in substance
 (ExpansionHunter reports `REPCI`) but names a field the author does not use.
 
+## F139 — `record_verification` re-signs records of checks it did not re-run over new authored bytes (format `S139`)
+
+**State: filed 2026-11-09 by the liaison, on the tester's report (high); unanswered.** Our half (an audit
+signal reading a record older than the newest authoring edit as not current) is in `docs/dogfooding.md` F139,
+the lead's.
+
+Reproduced on enricher 0.7.3 and 0.8.2 with a script over a copy of `assets/fto_bmi`: a `gene_locus_agreement`
+record written, a `variants.csv` row added, a second check recorded. The file's `module_hash` is then the
+current bytes and the old record rides along with its old `checked_at`; validate raises no staleness and
+reports its finding as the module's. The cause, read in the code: `merge_records` keeps records for checks
+absent from the run whatever `existing_still_binds` says, and `attest` signs them under the new binding,
+while the closure beside them is dropped in the same case. Asked for: drop carried records when the binding
+moved (interim), or a per-record binding read per check (the fix).
+
 ## F137 — a `resolution.csv` row for a variant the author removed compiles silently and publishes (format `S138`)
 
 **State: filed 2026-11-09 by the liaison, on the tester's report; unanswered.** The upstream half only: the
@@ -133,7 +148,9 @@ Reproduced on compiler 0.7.2 (installed) and 0.8.2, `compile --strict`, both exi
 tables name rs1801133 and rs1801131, beside a `resolution.csv` that also places rs1801394 (5:7870860 A>G,
 GRCh38), the variant the author dropped. No warning names it, and `manifest.derived` lists `resolution.csv`, so
 a publish ships it. `git log v0.8.2..origin/main -- compiler/src` was empty on the day, so trunk is the same.
-Asked for: a warning per sidecar naming the rows whose subject no authored table names. The `clin_sig_*`
+The row never reaches a parquet (the tester measured equal `artifact_digest` and `content_signature` with and
+without it); what ships is the sidecar file. Asked for: a warning per sidecar naming the rows whose subject no
+authored table names. The `clin_sig_*`
 sidecars raise the same question; the probe's were header-only, so it is unreproduced there.
 
 ## F131 — `bins_ungrounded` says "no bin pmid" when one bin carries one (format `S137`)
