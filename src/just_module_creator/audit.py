@@ -41,7 +41,9 @@ from typing import Any
 
 import yaml
 from just_dna_compiler import draft
+from just_dna_compiler.compiler import authored_input_entries
 from just_dna_enricher.verification import read_verification
+from just_dna_format.verification import attestation_failure, module_binding
 from just_dna_format.vrs import normalize_chrom
 
 from just_module_creator.models import AuditSignal, ColumnFill
@@ -50,6 +52,7 @@ SPEC_YAML = "module_spec.yaml"
 VERIFICATION_JSON = "verification.json"
 STUDIES = "studies.csv"
 VARIANTS = "variants.csv"
+DIPLOTYPES = "diplotypes.csv"
 
 #: Every column this module reads by name. Not generated and it cannot be: a schema
 #: says what columns exist, never which one a question is about. The guard is a test
@@ -248,6 +251,17 @@ def checks_that_never_ran(spec_dir: Path) -> AuditSignal:
         doc = read_verification(path)
     except (ValueError, OSError) as exc:
         return _blocked(name, f"{VERIFICATION_JSON} could not be read: {exc}")
+    # F138: the compiler drops an attestation that no longer binds these bytes, so its
+    # records describe a module that is not here. Read the same way the compiler reads
+    # it (upstream's public binding over the authored inputs, and its own reason), and
+    # report the signal not computed rather than decide on another module's records.
+    stale = attestation_failure(doc, module_binding(authored_input_entries(spec_dir)))
+    if stale is not None:
+        return _blocked(
+            name,
+            f"{VERIFICATION_JSON} does not describe these bytes, so its records say nothing "
+            f"about this module: {stale}",
+        )
     records = list(doc.records)
     if not records:
         return _decide(name, f"{VERIFICATION_JSON} carries no records at all")
@@ -514,15 +528,55 @@ def directional_claims_without_studies(spec_dir: Path) -> AuditSignal:
 
     Two scoping choices, both stated rather than left to be discovered:
 
-    * **`variants.csv` only, and the headline says so.** `diplotypes.csv` also carries
-      `direction`, and it keys on a haplotype pair with no variant identity to join a
-      study row against — so it is out of scope because it is unjoinable, not because
-      it is uninteresting.
+    * **Per variant in `variants.csv`; module-level in `diplotypes.csv`.** A diplotype
+      row keys on a haplotype pair and `StudyRow` names no gene or haplotype, so no
+      study row can be joined to one. Its leaning rows are read the way the sibling
+      reads clinical calls (a `studies.csv` with rows clears them, said as
+      module-level), and before F138 they were not read at all, so a diplotype module
+      was always `not_computed`.
     * **Per variant, not per module.** The sibling clears as soon as `studies.csv` has
       any row at all, which passes a thousand-row module carrying one citation. This
       asks whether *this row's own variant* is named by some study, which is the
       question an author actually has to answer.
     """
+    name = "directional_claims_without_studies"
+    variants = _variant_leaning(spec_dir)
+    table = spec_dir / DIPLOTYPES
+    diplotypes = _leaning(read_rows(table)) if table.is_file() else []
+    if not diplotypes:
+        return variants
+    cited = (spec_dir / STUDIES).is_file() and bool(read_rows(spec_dir / STUDIES))
+    clause = (
+        f"{len(diplotypes)} leaning {DIPLOTYPES} row(s) read module-level only (a haplotype pair "
+        f"has no variant identity a {STUDIES} row can name), "
+        + (f"beside a {STUDIES} with rows" if cited else f"with no {STUDIES} row behind them")
+    )
+    if variants.state == "not_computed" or (variants.state == "clear" and not cited):
+        if cited:
+            return _clear(name, clause)
+        return _decide(
+            name,
+            clause,
+            [
+                "an uncited direction is a decision to state rather than a default to inherit: "
+                "cite the guideline or paper in studies.csv, or say so in the rows' conclusion.",
+                *([f"{VARIANTS}: {variants.why_not}"] if variants.why_not else []),
+            ],
+        )
+    return variants.model_copy(update={"headline": f"{variants.headline}; {clause}"})
+
+
+def _leaning(rows: Sequence[Mapping[str, str | None]]) -> list[Mapping[str, str | None]]:
+    return [
+        row
+        for row in rows
+        if (row.get("direction") or "").strip().lower() in _DIRECTIONAL
+        or (row.get("state") or "").strip().lower() in _DIRECTIONAL
+    ]
+
+
+def _variant_leaning(spec_dir: Path) -> AuditSignal:
+    """The per-variant half of `directional_claims_without_studies`, over `variants.csv`."""
     name = "directional_claims_without_studies"
     path = spec_dir / VARIANTS
     if not path.is_file():
@@ -531,12 +585,7 @@ def directional_claims_without_studies(spec_dir: Path) -> AuditSignal:
     if not rows:
         return _blocked(name, f"{VARIANTS} carries no rows")
 
-    leaning = [
-        row
-        for row in rows
-        if (row.get("direction") or "").strip().lower() in _DIRECTIONAL
-        or (row.get("state") or "").strip().lower() in _DIRECTIONAL
-    ]
+    leaning = _leaning(rows)
     if not leaning:
         return _clear(name, f"no {VARIANTS} row leans risk or protective")
 

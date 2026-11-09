@@ -660,6 +660,57 @@ async def test_a_row_whose_source_proves_nothing_is_withheld_not_reapplied(
     assert data.capture is not None and Path(data.capture).parent.is_dir()
 
 
+async def test_a_row_for_a_subject_the_author_removed_is_named_as_removed(
+    make_client, online, spec_dir, tmp_path, monkeypatch
+) -> None:
+    """F138: the author dropped rs1801133 from every table; the source withdrew nothing.
+
+    The tester's case was rs1801394 left in `resolution.csv` after the variant was
+    removed. Read as "the source changed its answer", an author who just dropped a row
+    is told the source moved.
+    """
+    original = spec_dir / "resolution.csv"
+    write_csv(original, [ENSEMBL_ROW, MANUAL_ROW | {"source": "ensembl"}])
+    patch_resolution_pass(monkeypatch, fake_pass([ENSEMBL_ROW]))
+
+    async with make_client(online) as client:
+        data = (
+            await client.call_tool(
+                "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
+            )
+        ).data
+
+    assert [row.cells["rsid"] for row in data.withheld] == ["rs1801133"]
+    assert data.no_longer_authored == 1
+    assert "you removed it, and the source withdrew nothing" in data.next_step
+    assert "at least partly for those removed subjects" in data.next_step
+    assert any("no authored table names any more" in w for w in data.warnings)
+    assert not any("nothing proves a human wrote" in w for w in data.warnings)
+
+
+async def test_a_row_whose_subject_is_still_authored_is_not_called_removed(
+    make_client, online, spec_dir, tmp_path, monkeypatch
+) -> None:
+    """The same row, with rs1801133 still in variants.csv: that one the source may have withdrawn."""
+    with (spec_dir / "variants.csv").open("a") as handle:
+        handle.write("rs1801133,A/A,0.5,risk,Reduced MTHFR activity,MTHFR\n")
+    original = spec_dir / "resolution.csv"
+    write_csv(original, [ENSEMBL_ROW, MANUAL_ROW | {"source": "ensembl"}])
+    patch_resolution_pass(monkeypatch, fake_pass([ENSEMBL_ROW]))
+
+    async with make_client(online) as client:
+        data = (
+            await client.call_tool(
+                "refresh_sidecar", {"spec_dir": str(spec_dir), "sidecar": "resolution.csv"}
+            )
+        ).data
+
+    assert [row.cells["rsid"] for row in data.withheld] == ["rs1801133"]
+    assert data.no_longer_authored == 0
+    assert "you removed it" not in data.next_step
+    assert any("nothing proves a human wrote" in w for w in data.warnings)
+
+
 async def test_a_derived_layout_is_not_migrated_by_a_refresh(
     make_client, online, spec_dir, tmp_path, monkeypatch
 ) -> None:

@@ -6,6 +6,49 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F138 — `audit_module` reads a stale `verification.json` as current, and never reads `diplotypes.csv`'s directions
+
+**Found:** 2026-11-09 by the tester, layman probe · **Severity:** low · **Status:** resolved 2026-11-09
+
+On the same spec dir, `validate_module` and `compile_module` both say *"verification.json is stale: the
+attestation was computed over different module bytes … nothing here describes the rows being compiled"*.
+`audit_module`'s `checks_that_never_ran` reads that same file and reports *"9 of 13 recorded check(s) compared
+nothing"* as a decision about this module, with no mention that the records describe bytes that no longer
+exist. The fix is to check the attestation's digest first, as the compiler does, and report the signal
+`not_computed` (why: stale) rather than `decide`.
+
+Second, `directional_claims_without_studies` answers *"variants.csv is not here, so no row could be read"*,
+while `diplotypes.csv` carries `direction=risk` on two rows. `clinical_claims_without_studies` already reads
+diplotypes (*"activity_phenotype.csv, copynumbers.csv, diplotypes.csv, …"*), so the directional signal is the
+narrower of the two for no stated reason. For a diplotype module it is always `not_computed`.
+
+**F137, the repair route, on the same spec dir.** `refresh_sidecar(sidecar="resolution.csv")` is the right tool
+here, and it worked: capture verified, 3 rows → 2, rs1801394 left in the capture as `only_in_capture`, nothing
+put back. But it reads the result the wrong way. Its `next_step` says *"The fact signature MOVED. If nothing was
+reapplied and nothing conflicts, that is the source having changed its answer"*, and its warning says nothing
+proves *"a human wrote them rather than the source having withdrawn them"*. Ensembl withdrew nothing: the
+**author** removed the subject from every table. The canary has three causes, not two: the source moved, the
+author edited a cell, or the author removed the subject. It can tell the third apart, because the subject is
+absent from every authored table, and should say so. Otherwise an author who just dropped a row reads that the
+source changed its mind.
+
+**Resolution:** all three parts.
+
+1. `checks_that_never_ran` reads the attestation the way the compiler does: upstream's public
+   `attestation_failure(doc, module_binding(authored_input_entries(spec_dir)))`. A failure (stale bytes, a
+   re-signed record set, a short proof-of-work) is `not_computed`, carrying upstream's reason.
+2. `directional_claims_without_studies` reads `diplotypes.csv`'s leaning rows module-level (`StudyRow` names no
+   gene or haplotype, so no per-row join exists): a `studies.csv` with rows clears them, said as module-level;
+   none is a decision. With `variants.csv` present its per-variant verdict stands and the headline adds the
+   diplotype clause.
+3. `refresh_sidecar` counts the withheld rows whose every identity (merge-key values, `rsid`, `(chrom, start)`)
+   is absent from every authored table (`refresh.named_nowhere`, new `no_longer_authored`), and says those were
+   removed by the author, not withdrawn by the source; the matching is generous so the claim errs toward silence.
+
+The audit's test helper now writes real attestations through upstream's `attest` at a lowered difficulty; the old
+one wrote a made-up hash, which this fix would read as stale. Tests: `test_an_attestation_over_other_bytes_is_not_computed_rather_than_decided`,
+three diplotype tests in `tests/test_audit.py`, and two in `tests/test_refresh.py`; all six fail on 0.48.3's code.
+
 ## F135 — triage's gene-on-the-wrong-chromosome check cannot run in the order `module-start` teaches
 
 **Found:** 2026-11-09 by the tester, layman probe (`data/interim/probe_layman_mthfr/`) · **Severity:** medium ·

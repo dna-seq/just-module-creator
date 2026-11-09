@@ -86,7 +86,7 @@ from typing import Any
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
-from just_dna_compiler import hints
+from just_dna_compiler import draft, hints
 from just_dna_compiler.compiler import load_csv_rows
 from just_dna_enricher.assertions import ClinicalAssertionError, enrich_clinical_assertions
 from just_dna_enricher.clingen import ClinGenError, ClinGenUnavailable, enrich_dosage_sensitivity
@@ -135,6 +135,7 @@ from just_dna_format.layout import (
 from just_dna_format.literature import LITERATURE_FACT_FIELDS, LiteratureRow
 from just_dna_format.resolution import RESOLUTION_FACT_FIELDS, ResolutionRow
 from just_dna_format.vocab import VALID_DECLARED_USE
+from just_dna_format.vrs import normalize_chrom
 from just_dna_registry.specfiles import FACT_CSVS, LICENSING_CSV, RESOLUTION_CSV, SOURCES_CSV
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel
@@ -1157,6 +1158,12 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
 
         reapplied = [row for row in only_capture if row.source_proves_authored]
         withheld = [row for row in only_capture if not row.source_proves_authored]
+        # F138: a row can be missing from the fresh derivation because the source
+        # withdrew it, or because the author no longer names its subject anywhere. The
+        # second is told apart here, generously: any identity of the row found in any
+        # authored table counts as still named, so the claim is made only when nothing
+        # matches.
+        unnamed = named_nowhere(target, withheld)
 
         # ------------------------------------------------------------------ #
         # 4. Reapply the provable set, and put the file back where it lived.
@@ -1211,10 +1218,16 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
                     "from two data points, so this is yours to decide.",
                 ),
                 (
-                    len(withheld),
+                    len(withheld) - len(unnamed),
                     "row(s) present only in your copy were NOT put back, because their `source` is "
                     "a value the fresh derivation also writes — so nothing proves a human wrote "
                     "them rather than the source having withdrawn them. They are in the capture.",
+                ),
+                (
+                    len(unnamed),
+                    "row(s) present only in your copy name a subject no authored table names any "
+                    "more, so the author removed it and the source withdrew nothing. They were "
+                    "left out, which is what this refresh is for; they are in the capture.",
                 ),
                 (
                     len(only_fresh),
@@ -1265,10 +1278,13 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
             conflicts=conflicts[:MAX_LISTED],
             reapplied=reapplied[:MAX_LISTED],
             withheld=withheld[:MAX_LISTED],
+            no_longer_authored=len(unnamed),
             listing_truncated=truncated,
             findings=_as_errors(after_errors),
             warnings=warnings,
-            next_step=_next_step(moved, conflicts, reapplied, captured is None),
+            next_step=_next_step(
+                moved, conflicts, reapplied, captured is None, removed=len(unnamed)
+            ),
         )
 
 
@@ -1342,6 +1358,8 @@ def _next_step(
     conflicts: Sequence[SidecarConflict],
     reapplied: Sequence[SidecarRow],
     fresh_start: bool,
+    *,
+    removed: int = 0,
 ) -> str:
     """What to do with this result, in the order it matters."""
     if fresh_start:
@@ -1355,7 +1373,19 @@ def _next_step(
             f"Read the {len(conflicts)} conflict(s) first — they are the only thing here that "
             "needs a decision, and nothing was changed on either side."
         )
-    if moved is True:
+    if removed:
+        parts.append(
+            f"{removed} captured row(s) name a subject no authored table names any more: you "
+            "removed it, and the source withdrew nothing. The fresh table leaves them out, as it "
+            "should."
+        )
+    if moved is True and removed:
+        parts.append(
+            "The fact signature MOVED, at least partly for those removed subjects. Anything "
+            "else that moved, with nothing reapplied and nothing conflicting, is the source "
+            "having changed its answer."
+        )
+    elif moved is True:
         parts.append(
             "The fact signature MOVED. If nothing was reapplied and nothing conflicts, that is "
             "the source having changed its answer, which is the whole point of running this."
@@ -1371,6 +1401,58 @@ def _next_step(
         )
     parts.append("Then re-run validate_module and compile_module — the sidecar changed.")
     return " ".join(parts)
+
+
+def _authored_identities(spec_dir: Path) -> tuple[set[str], set[tuple[str, str]]]:
+    """Every cell value of the authored tables, and every `(chrom, start)` they name.
+
+    The authored roster is upstream's (`draft.DRAFTABLE`). Read as text, lowercased, so a
+    sidecar row's subject (an rsID, a gene, a PMID, a variant key) can be looked up
+    without knowing which table or column would name it.
+    """
+    values: set[str] = set()
+    places: set[tuple[str, str]] = set()
+    for name in sorted(draft.DRAFTABLE):
+        path = spec_dir / name
+        if not path.is_file():
+            continue
+        with path.open(newline="") as handle:
+            for row in csv.DictReader(handle):
+                values.update((v or "").strip().lower() for v in row.values() if isinstance(v, str))
+                chrom = normalize_chrom((row.get("chrom") or "").strip() or None)
+                start = (row.get("start") or "").strip()
+                if chrom and start:
+                    places.add((chrom, start))
+    values.discard("")
+    return values, places
+
+
+def named_nowhere(spec_dir: Path, rows: Sequence[SidecarRow]) -> list[SidecarRow]:
+    """The rows whose every identity is absent from every authored table (F138).
+
+    A row's identities are its merge-key values, its `rsid` and its `(chrom, start)`.
+    Any one of them found anywhere counts as still named, which errs toward silence: a
+    false "you removed it" would tell an author the source is fine when it withdrew a
+    row.
+    """
+    if not rows:
+        return []
+    values, places = _authored_identities(spec_dir)
+    out: list[SidecarRow] = []
+    for row in rows:
+        keys = json.loads(row.subject) if row.subject else {}
+        ids = {str(v).strip().lower() for v in keys.values() if v not in (None, "")}
+        rsid = (row.cells.get("rsid") or "").strip().lower()
+        if rsid:
+            ids.add(rsid)
+        chrom = normalize_chrom((row.cells.get("chrom") or "").strip() or None)
+        start = (row.cells.get("start") or "").strip()
+        if ids & values or (chrom and start and (chrom, start) in places):
+            continue
+        if not ids and not (chrom and start):
+            continue
+        out.append(row)
+    return out
 
 
 #: The public roster this module must cover, for the test that pins it. Derived

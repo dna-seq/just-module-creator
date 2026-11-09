@@ -645,32 +645,6 @@ scaffold `variants.csv` with three rsid-only rows, run `enrich_module`, delete o
 `validate_module` and `compile_module`. Both stay quiet and `resolution.csv` keeps the row. The probe dir no
 longer shows it, because `refresh_sidecar` was run there (below).
 
-## F138 — `audit_module` reads a stale `verification.json` as current, and never reads `diplotypes.csv`'s directions
-
-**Found:** 2026-11-09 by the tester, layman probe · **Severity:** low · **Status:** open
-
-On the same spec dir, `validate_module` and `compile_module` both say *"verification.json is stale: the
-attestation was computed over different module bytes … nothing here describes the rows being compiled"*.
-`audit_module`'s `checks_that_never_ran` reads that same file and reports *"9 of 13 recorded check(s) compared
-nothing"* as a decision about this module, with no mention that the records describe bytes that no longer
-exist. The fix is to check the attestation's digest first, as the compiler does, and report the signal
-`not_computed` (why: stale) rather than `decide`.
-
-Second, `directional_claims_without_studies` answers *"variants.csv is not here, so no row could be read"*,
-while `diplotypes.csv` carries `direction=risk` on two rows. `clinical_claims_without_studies` already reads
-diplotypes (*"activity_phenotype.csv, copynumbers.csv, diplotypes.csv, …"*), so the directional signal is the
-narrower of the two for no stated reason. For a diplotype module it is always `not_computed`.
-
-**F137, the repair route, on the same spec dir.** `refresh_sidecar(sidecar="resolution.csv")` is the right tool
-here, and it worked: capture verified, 3 rows → 2, rs1801394 left in the capture as `only_in_capture`, nothing
-put back. But it reads the result the wrong way. Its `next_step` says *"The fact signature MOVED. If nothing was
-reapplied and nothing conflicts, that is the source having changed its answer"*, and its warning says nothing
-proves *"a human wrote them rather than the source having withdrawn them"*. Ensembl withdrew nothing: the
-**author** removed the subject from every table. The canary has three causes, not two: the source moved, the
-author edited a cell, or the author removed the subject. It can tell the third apart, because the subject is
-absent from every authored table, and should say so. Otherwise an author who just dropped a row reads that the
-source changed its mind.
-
 ## F139 — a re-attestation re-signs checks it did not re-run, so an old check's verdict is stamped onto new bytes
 
 **Found:** 2026-11-09 by the tester, layman probe · **Severity:** high · **Status:** open; the writer is

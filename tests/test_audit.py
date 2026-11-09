@@ -13,11 +13,13 @@ not be computed is never folded into the ones that computed clean. That folding 
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
+import just_dna_format.verification as upstream_verification
 import pytest
 from just_dna_compiler import draft
+from just_dna_compiler.compiler import authored_input_entries
+from just_dna_format.manifest import VerificationRecord
 
 from just_module_creator import audit
 
@@ -44,32 +46,44 @@ def _studies(spec: Path, rows, measure: str = "beta") -> None:
     )
 
 
+#: Lowered for the suite: `attest` mines a proof-of-work at this difficulty, and
+#: `attestation_failure` reads the constant at call time, so the two agree.
+_TEST_DIFFICULTY = 4
+
+
+@pytest.fixture(autouse=True)
+def _cheap_proof_of_work(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(upstream_verification, "VERIFICATION_DIFFICULTY_BITS", _TEST_DIFFICULTY)
+
+
 def _verification(spec: Path, *records: dict) -> None:
-    (spec / "verification.json").write_text(
-        json.dumps(
-            {
-                "module_hash": "sha256:" + "0" * 64,
-                "signature": "sha256:" + "1" * 64,
-                "difficulty": 20,
-                "nonce": 1,
-                "producer": "just-dna-enricher 0.6.6",
-                "produced_at": "2026-08-21T18:08:39Z",
-                "records": [
-                    {
-                        "check": r["check"],
-                        "subjects": r.get("subjects", 0),
-                        "findings": r.get("findings", 0),
-                        "skipped": r.get("skipped"),
-                        "detail": r.get("detail"),
-                        "source": r.get("source", "clinvar"),
-                        "release": None,
-                        "checked_at": "2026-08-21T18:05:15Z",
-                    }
-                    for r in records
-                ],
-            }
+    """A real attestation over the spec's bytes as they are now (F138).
+
+    Before F138 this wrote a made-up `module_hash`, which the compiler reads as stale;
+    the audit now reads it the same way, so every record here is bound for real.
+    Write the authored files first: anything written after this makes it stale.
+    """
+    built = [
+        VerificationRecord(
+            check=r["check"],
+            subjects=r.get("subjects", 0),
+            findings=r.get("findings", 0),
+            skipped=r.get("skipped"),
+            detail=r.get("detail"),
+            source=r.get("source", "clinvar"),
+            release=None,
+            checked_at="2026-08-21T18:05:15Z",
         )
+        for r in records
+    ]
+    doc = upstream_verification.attest(
+        built,
+        upstream_verification.module_binding(authored_input_entries(spec)),
+        producer="just-dna-enricher 0.6.6",
+        produced_at="2026-08-21T18:08:39Z",
+        difficulty=_TEST_DIFFICULTY,
     )
+    upstream_verification.write_verification(doc, spec / "verification.json")
 
 
 @pytest.fixture
@@ -201,6 +215,23 @@ def test_a_skip_is_reported_with_upstreams_own_reason_verbatim(module: Path):
     assert signal.state == "decide"
     assert "none of them silently, 1 saying why" in signal.headline
     assert any("offline" in line for line in signal.detail)
+
+
+def test_an_attestation_over_other_bytes_is_not_computed_rather_than_decided(module: Path):
+    """F138: the compiler drops a stale attestation, so its records describe no module here.
+
+    The tester's probe: validate and compile said stale while this signal reported "9 of
+    13 recorded check(s) compared nothing" as a decision about the current rows.
+    """
+    _verification(module, {"check": "clinical_significance", "subjects": 0, "findings": 0})
+    assert audit.checks_that_never_ran(module).state == "decide", "bound: the record is read"
+    (module / "variants.csv").write_text("rsid,genotype,weight\nrs1801133,A/A,1\n")
+
+    signal = audit.checks_that_never_ran(module)
+    assert signal.state == "not_computed"
+    assert signal.why_not is not None
+    assert "does not describe these bytes" in signal.why_not
+    assert "computed over different module bytes" in signal.why_not, "upstream's own reason"
 
 
 def test_the_absent_roster_is_stated_rather_than_invented(module: Path):
@@ -400,6 +431,44 @@ def test_unknown_and_contested_are_not_leans_that_need_a_paper(module: Path):
         "rs7412,C/T,,neutral,Sources disagree,contested\n"
     )
     assert audit.directional_claims_without_studies(module).state == "clear"
+
+
+_DIPLOTYPES = (
+    "gene,haplotype_a,haplotype_b,phenotype,direction,conclusion\n"
+    "CYP2C19,*2,*2,Poor Metabolizer,risk,Reduced clopidogrel activation\n"
+    "CYP2C19,*1,*2,Intermediate Metabolizer,risk,Reduced clopidogrel activation\n"
+    "CYP2C19,*1,*1,Normal Metabolizer,neutral,Typical activation\n"
+)
+
+
+def test_leaning_diplotypes_with_no_study_are_a_decision_not_a_skip(module: Path):
+    """F138: a diplotype module was always `not_computed`, read only through variants.csv."""
+    (module / "diplotypes.csv").write_text(_DIPLOTYPES)
+    signal = audit.directional_claims_without_studies(module)
+    assert signal.state == "decide"
+    assert signal.headline.startswith("2 leaning diplotypes.csv row(s) read module-level only")
+    assert "with no studies.csv row behind them" in signal.headline
+    assert any("variants.csv is not here" in line for line in signal.detail)
+
+
+def test_leaning_diplotypes_beside_studies_clear_module_level(module: Path):
+    (module / "diplotypes.csv").write_text(_DIPLOTYPES)
+    _studies(module, REAL_BETAS)
+    signal = audit.directional_claims_without_studies(module)
+    assert signal.state == "clear"
+    assert "module-level only" in signal.headline
+    assert "beside a studies.csv with rows" in signal.headline
+
+
+def test_a_variant_verdict_carries_the_diplotype_clause(module: Path):
+    (module / "diplotypes.csv").write_text(_DIPLOTYPES)
+    (module / "variants.csv").write_text(
+        "rsid,genotype,weight,state,conclusion\nrs4244285,A/A,-1,risk,Poor metabolizer\n"
+    )
+    signal = audit.directional_claims_without_studies(module)
+    assert signal.state == "decide", "the variant row is uncited, which is the verdict"
+    assert "1 of 1 joinable variants.csv row(s)" in signal.headline
+    assert "2 leaning diplotypes.csv row(s)" in signal.headline
 
 
 def test_no_variants_table_is_not_computed_rather_than_clear(module: Path):

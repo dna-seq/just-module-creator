@@ -2457,6 +2457,14 @@ class SidecarRefreshReport(BaseModel):
             "source may simply have withdrawn the row. They are in the capture if you want them."
         ),
     )
+    no_longer_authored: int = Field(
+        default=0,
+        description=(
+            "Of `withheld`, the rows whose subject no authored table names any more: the "
+            "author removed it, the source withdrew nothing. Counted generously toward zero: "
+            "any identity found in any authored table counts as still named."
+        ),
+    )
     listing_truncated: bool = Field(
         default=False,
         description=(
