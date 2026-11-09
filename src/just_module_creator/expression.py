@@ -174,11 +174,13 @@ def _effect_index(path: Path) -> tuple[set[tuple[str, int, str, str]], set[tuple
 def report_rows(spec_dir: Path, *, example_cap: int = 10) -> RowReport:
     """One status per authored row, against the sidecar as it now stands.
 
-    `gene_not_at_locus` is the case the longevitymap planner had to rediscover: the
-    model answered at that position, but for other genes — the row's `gene` label is
-    not one the Atlas scores there (a `LOC…` symbol, an antisense transcript, a gene
-    on another chromosome). `not_scored` means nothing answered at the position at
-    all: never queried, outside the window, or withheld upstream.
+    `gene_not_at_locus` means the sidecar holds predictions at that position for other
+    genes only. It is a fact about the sidecar, not the model (F140): the row's gene
+    may never have been asked (an interval query names one gene), or it was asked and
+    the Atlas scores no such gene there (a `LOC…` symbol, an antisense transcript).
+    Nothing records which genes were asked, so the two cannot be told apart here.
+    `not_scored` means nothing in the sidecar at the position at all: never queried,
+    outside the window, or withheld upstream.
     """
     keys, positions = _effect_index(spec_dir / "expression_effects.csv")
     report = RowReport()

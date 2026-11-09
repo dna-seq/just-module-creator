@@ -1523,6 +1523,31 @@ async def test_a_rows_run_queries_each_window_and_stops_at_a_failure(
     assert any("F95" in w for w in body["warnings"])
 
 
+async def test_the_rows_path_says_a_distal_target_takes_the_interval_form(
+    make_client, rows_spec, monkeypatch
+):
+    """F140: `rows=true` asks each row's own gene only, and rs1421085's target is IRX3.
+
+    Nothing on that path said so, and a sidecar holding only another gene's query made
+    the row read `gene_not_at_locus`, as if the Atlas had no answer for its own gene.
+    """
+
+    class _Result:
+        candidates, written, withheld, warnings, dataset = 3, 3, {}, [], "ds"
+
+    monkeypatch.setattr(passes, "enrich_expression", lambda *_a, **_k: _Result())
+    async with make_client(_online_settings()) as client:
+        out = await client.call_tool(
+            "enrich_expression_effects", {"spec_dir": str(rows_spec), "rows": True}
+        )
+    body = json.loads(out.content[0].text)
+    assert body["windows_run"] == body["windows"] == 3
+    assert body["next_step"].endswith(
+        "This asked each row's own gene only; a distal target gene takes the interval form "
+        "(gene, chrom, start, end)."
+    )
+
+
 async def test_without_rows_a_gene_is_still_required(make_client, tmp_path):
     spec = tmp_path / "spec"
     spec.mkdir()
@@ -1580,8 +1605,13 @@ async def _draft_htt(make_client, spec_dir: Path, **extra) -> DraftResult:
         return (
             await client.call_tool(
                 "draft_from_strchive",
-                {"spec_dir": str(spec_dir), "genes": ["HTT"], "use": "non_commercial",
-                 "dry_run": True, **extra},
+                {
+                    "spec_dir": str(spec_dir),
+                    "genes": ["HTT"],
+                    "use": "non_commercial",
+                    "dry_run": True,
+                    **extra,
+                },
             )
         ).data
 
@@ -1681,16 +1711,24 @@ async def test_strchive_next_step_names_the_bands_and_their_check(
     async with make_client(offline_settings()) as client:
         await client.call_tool(
             "scaffold_module",
-            {"spec_dir": str(spec_dir), "name": "htt_probe", "kinds": ["repeat_alleles.csv"],
-             "rows": 0},
+            {
+                "spec_dir": str(spec_dir),
+                "name": "htt_probe",
+                "kinds": ["repeat_alleles.csv"],
+                "rows": 0,
+            },
         )
         scaffolded = list(csv.DictReader((spec_dir / "repeat_alleles.csv").open()))
         assert [r["unresolved"] for r in scaffolded] == ["true"]
         result = (
             await client.call_tool(
                 "draft_from_strchive",
-                {"spec_dir": str(spec_dir), "genes": ["HTT"], "use": "non_commercial",
-                 "catalogue": str(catalogue)},
+                {
+                    "spec_dir": str(spec_dir),
+                    "genes": ["HTT"],
+                    "use": "non_commercial",
+                    "catalogue": str(catalogue),
+                },
             )
         ).data
 

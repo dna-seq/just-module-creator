@@ -617,41 +617,6 @@ which is right. The published record doesn't match it, and only `abstract_only_c
 says why. Nothing to change on our side. `module-publish`'s read-back step is where an author would
 notice, so if upstream keeps the shape, add one sentence there.
 
-## F140 — `top_expression_effects` reads "the Atlas does not score this gene here" off whatever the sidecar happens to hold
-
-**Found:** 2026-11-09 by the tester, Atlas probe (`assets/fto_bmi_atlas`) · **Severity:** medium · **Status:** open
-
-`module_rows_only=true` gives every authored row a status. `expression.report_rows` sets `gene_not_at_locus` when
-the sidecar has rows at the position but none for the row's `gene`. Its docstring, and the field's description in
-`models.py`, read that as a fact about the model: *"the row's `gene` label is not one the Atlas scores there (a
-`LOC…` symbol, an antisense transcript, a gene on another chromosome)"*. What it actually reports is which gene
-the author queried.
-
-On rs1421085 (row gene FTO), three copies of `assets/fto_bmi` gave three answers:
-
-| sidecar holds | status of the two non-reference rows |
-|---|---|
-| a `gene="IRX3"` interval query only | `gene_not_at_locus: 2` |
-| `rows=true` only (FTO) | `scored: 2` |
-| both, merged | `scored: 2` |
-
-The first reading tells the author the Atlas has no FTO prediction at 16:53767042. It has one: the second copy
-wrote it (−0.0026, 314 of 371 tracks). An author who believes the status drops a question the model can answer.
-
-The query that triggers this is the one the pass exists for. The docstring says *"the distal ones are usually
-what the query was for"*, and rs1421085's mechanism is distal (Claussnitzer 2015, PMID 26287746: IRX3 and IRX5,
-about 516 kb away). However, `rows=true` asks about each row's own `gene` and nothing else. Reaching IRX3 takes the
-interval form with `gene`, `chrom`, `start` and `end` filled in by hand, and neither the `rows` path's text nor
-its `next_step` mentions that.
-
-Two fixes look possible.
-
-- **The status:** split the cause the classifier cannot see. "The sidecar holds other genes here, and this one
-  was never asked" differs from "this gene was asked and the Atlas returned nothing for it". Only the second
-  supports the docstring's reading. Whether a gene was asked is not recorded anywhere today.
-- **The `rows` path:** let the author name extra genes per row, or say in the `rows` docstring and the
-  `next_step` that a distal target needs the interval form.
-
 ## F141 — the Atlas pass's dry-run cost is a constant two seconds a window, and the real calls took up to three minutes
 
 **Found:** 2026-11-09 by the tester, Atlas probe (`assets/fto_bmi_atlas`) · **Severity:** low · **Status:** open

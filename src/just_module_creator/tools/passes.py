@@ -1719,9 +1719,10 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         grouped by each row's own `gene` and chromosome, neighbours within 100 bp merged,
         ~21 bp each, and queried one after another at about two seconds a window
         (longevitymap: 377 windows for 1033 rows). `gene`, `chrom`, `start`, `end` are
-        ignored. `row_status` then says per row whether it was
-        scored; rows with no `gene` are reported, never given one. `dry_run` returns the
-        plan and asks nothing.
+        ignored, and only each row's own `gene` is asked: a distal target takes the
+        interval form. `row_status` then says per row whether it was scored; rows with
+        no `gene` are reported, never given one. `dry_run` returns the plan and asks
+        nothing.
 
         **This makes the module non-commercial and there is no way to run it otherwise.**
         AlphaGenome **Atlas** output is non-commercial-only, so `use` defaults to
@@ -2154,7 +2155,8 @@ async def _expression_for_rows(
             if dry_run
             else "Read the scored rows with top_expression_effects(module_rows_only=true). A "
             "predicted direction is not a clinical direction: a variants.csv role written from "
-            "one is an authored judgement that needs record_override."
+            "one is an authored judgement that needs record_override. This asked each row's own "
+            "gene only; a distal target gene takes the interval form (gene, chrom, start, end)."
         ),
     )
 

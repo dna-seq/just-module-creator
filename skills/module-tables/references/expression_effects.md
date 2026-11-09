@@ -170,9 +170,13 @@ audit_module(spec_dir)                              # directional_claims_without
 **For a module that already exists, start from its rows, not from a gene** (`F105`, `F106`).
 `rows=True` plans one small window per cluster of the module's own positions, keyed on each row's own
 `gene`, and `module_rows_only=True` keeps only the predictions for that gene and the genotype's
-non-reference allele. Read `row_status` before the effects: `gene_not_at_locus` means the row's `gene`
-label is not one the Atlas scores there, `no_gene` means the row has none — and supplying one from a
-reference is an authored value, so it is a decision to surface, not a gap the tool fills. Count
+non-reference allele. Read `row_status` before the effects: `gene_not_at_locus` means the sidecar holds
+other genes at that position and not the row's own. That says what was asked, not what the Atlas scores: after
+an interval query for one gene, every other gene's rows read this way. Run `rows=True` to ask the row's own gene
+before concluding the Atlas has nothing for it. `no_gene` means the row has none, and supplying one from a
+reference is an authored value, so it is a decision to surface, not a gap the tool fills. **`rows=True` asks
+only each row's own `gene`**: a distal target (rs1421085's IRX3, about 500 kb from FTO) takes the interval form,
+with `gene`, `chrom`, `start` and `end` named. Count
 `direction_counts`, not the sign of `effect_size`: the direction is the track-majority sign and the
 two disagree on some rows.
 

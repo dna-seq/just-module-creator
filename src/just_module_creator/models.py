@@ -3398,8 +3398,10 @@ class ExpressionRanking(BaseModel):
         description=(
             "With `module_rows_only`: one status per variants.csv row, summing to the rows read. "
             "`scored` — a prediction for the row's own gene and effect allele; "
-            "`gene_not_at_locus` — the model answered there for other genes only; `not_scored` — "
-            "nothing at that position (not queried, or withheld); `reference_only` — the genotype "
+            "`gene_not_at_locus` — the sidecar holds other genes there only, which is not a "
+            "fact about the model: the row's gene may never have been asked (an interval query "
+            "names one gene; rows=true asks it); `not_scored` — nothing at that position (not "
+            "queried, or withheld); `reference_only` — the genotype "
             "has no non-reference allele to score; `no_reference` — placed, but no reference "
             "allele is known, so the effect allele is unknown; `no_gene` / `unresolved` — no "
             "gene or no coordinate to ask with; `unreadable` — rows variants.csv validation "

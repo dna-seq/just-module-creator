@@ -6,6 +6,50 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F140 — `top_expression_effects` reads "the Atlas does not score this gene here" off whatever the sidecar happens to hold
+
+**Found:** 2026-11-09 by the tester, Atlas probe (`assets/fto_bmi_atlas`) · **Severity:** medium · **Status:** resolved 2026-11-09 (the wording; the split is not)
+
+`module_rows_only=true` gives every authored row a status. `expression.report_rows` sets `gene_not_at_locus` when
+the sidecar has rows at the position but none for the row's `gene`. Its docstring, and the field's description in
+`models.py`, read that as a fact about the model: *"the row's `gene` label is not one the Atlas scores there (a
+`LOC…` symbol, an antisense transcript, a gene on another chromosome)"*. What it actually reports is which gene
+the author queried.
+
+On rs1421085 (row gene FTO), three copies of `assets/fto_bmi` gave three answers:
+
+| sidecar holds | status of the two non-reference rows |
+|---|---|
+| a `gene="IRX3"` interval query only | `gene_not_at_locus: 2` |
+| `rows=true` only (FTO) | `scored: 2` |
+| both, merged | `scored: 2` |
+
+The first reading tells the author the Atlas has no FTO prediction at 16:53767042. It has one: the second copy
+wrote it (−0.0026, 314 of 371 tracks). An author who believes the status drops a question the model can answer.
+
+The query that triggers this is the one the pass exists for. The docstring says *"the distal ones are usually
+what the query was for"*, and rs1421085's mechanism is distal (Claussnitzer 2015, PMID 26287746: IRX3 and IRX5,
+about 516 kb away). However, `rows=true` asks about each row's own `gene` and nothing else. Reaching IRX3 takes the
+interval form with `gene`, `chrom`, `start` and `end` filled in by hand, and neither the `rows` path's text nor
+its `next_step` mentions that.
+
+Two fixes look possible.
+
+- **The status:** split the cause the classifier cannot see. "The sidecar holds other genes here, and this one
+  was never asked" differs from "this gene was asked and the Atlas returned nothing for it". Only the second
+  supports the docstring's reading. Whether a gene was asked is not recorded anywhere today.
+- **The `rows` path:** let the author name extra genes per row, or say in the `rows` docstring and the
+  `next_step` that a distal target needs the interval form.
+
+**Resolution:** the wording, in all three places (`expression.report_rows`, `ExpressionRanking.row_status`'s
+description, `module-tables/references/expression_effects.md`): `gene_not_at_locus` now says the sidecar holds other
+genes at that position, that this is not a fact about the model, and that the row's gene may never have been asked.
+The guide says to run `rows=True` before concluding. The `rows` path's docstring and `next_step` now say it asks each
+row's own gene only, and that a distal target takes the interval form. Not done: splitting the status into "never
+asked" and "asked, nothing returned", because nothing records which genes were asked; that needs a record of the
+queries, and the sidecar's columns are upstream's. Test: `test_the_rows_path_says_a_distal_target_takes_the_interval_form`
+(fails on 0.48.3's code).
+
 ## F139 — a re-attestation re-signs checks it did not re-run, so an old check's verdict is stamped onto new bytes
 
 **Found:** 2026-11-09 by the tester, layman probe · **Severity:** high · **Status:** our half resolved 2026-11-09; the writer is
