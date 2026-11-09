@@ -83,8 +83,9 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
-| F130 | S136 | RM414 | fixed in tree, next patch |
-| F131 | S137 | RM415 | fixed in tree, next patch |
+| F137 | S138 | | filed 2026-11-09, unanswered |
+| F130 | S136 | RM414 | 0.8.2 only |
+| F131 | S137 | RM415 | 0.8.2 only |
 | F127 | S135 | RM253 | 0.8.0 only |
 | F115 | S124 | RM301 | 0.8.0 only |
 | F118 | S127 | (b); RM340 | 0.8.0 only |
@@ -122,6 +123,18 @@ On `assets/htt_cag_repeats` (`validate_module`, strict), every bin declares `sou
 (a Float) and `CIRUC`: `binning._VCF_MEASURE_FIELDS` keys on `measure_kind` alone and never reads
 `source_field`. The fractional warning does not apply to an integer field; the spanning one does in substance
 (ExpansionHunter reports `REPCI`) but names a field the author does not use.
+
+## F137 — a `resolution.csv` row for a variant the author removed compiles silently and publishes (format `S138`)
+
+**State: filed 2026-11-09 by the liaison, on the tester's report; unanswered.** The upstream half only: the
+offline audit signal and the `refresh_sidecar` route are ours, in `docs/dogfooding.md` F137, the lead's.
+
+Reproduced on compiler 0.7.2 (installed) and 0.8.2, `compile --strict`, both exit 0: a spec whose authored
+tables name rs1801133 and rs1801131, beside a `resolution.csv` that also places rs1801394 (5:7870860 A>G,
+GRCh38), the variant the author dropped. No warning names it, and `manifest.derived` lists `resolution.csv`, so
+a publish ships it. `git log v0.8.2..origin/main -- compiler/src` was empty on the day, so trunk is the same.
+Asked for: a warning per sidecar naming the rows whose subject no authored table names. The `clin_sig_*`
+sidecars raise the same question; the probe's were header-only, so it is unreproduced there.
 
 ## F131 — `bins_ungrounded` says "no bin pmid" when one bin carries one (format `S137`)
 
