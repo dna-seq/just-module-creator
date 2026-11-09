@@ -144,8 +144,7 @@ on disk already names the gene the variant sits in, that gene.
 
 **State: answered the same hour: RM425, a patch, wording only.** Filed 2026-11-09 by the liaison, on the
 tester's report. Our half
-(one sentence in `enrich_expression_effects` and `top_expression_effects`, and a `next_step` when a returned row
-disagrees) is in `docs/dogfooding.md` F142, the lead's.
+(the same sentence in `enrich_expression_effects` and `top_expression_effects`) shipped in 0.48.4.
 
 The field's description (format 0.7.1 and their `main`) says *"aggregated over the scorer's tissue tracks"*. The
 enricher's `_summarise` keeps the single strongest track with its sign and takes the majority sign for
@@ -156,9 +155,9 @@ of the tester's Atlas runs (128 of 819, 24 of 126), and the values are right.
 
 **State: answered the same hour: RM423, high, with their pm to size.** Candidate 1 (drop carried records when the
 binding moved, logged) is the patch half; a per-record binding is a minor. They call our interim (a record older
-than the newest authoring edit read as not current) sound. Filed 2026-11-09 by the liaison, on the tester's report. Our half (an audit
-signal reading a record older than the newest authoring edit as not current) is in `docs/dogfooding.md` F139,
-the lead's.
+than the newest authoring edit read as not current) sound. Filed 2026-11-09 by the liaison, on the tester's report. **Our mitigation
+shipped in 0.48.4:** `audit_module`'s `checks_older_than_the_last_edit` (`docs/previous_issues.md` F139). It is a
+heuristic over our own log; whether it comes out once RM423 is in our lock is the lead's call.
 
 Reproduced on enricher 0.7.3 and 0.8.2 with a script over a copy of `assets/fto_bmi`: a `gene_locus_agreement`
 record written, a `variants.csv` row added, a second check recorded. The file's `module_hash` is then the
@@ -173,8 +172,10 @@ moved (interim), or a per-record binding read per check (the fix).
 **State: answered the same hour: RM422, a patch, with their pm to size.** One more arm of the existing
 `derived_row_orphan` warning, over `resolution.csv`, in both modes; the subject set is every authored table.
 The `clin_sig_*` pair already has its arm, reading `variants.csv` only by design, which is why our probe (no
-`variants.csv`) could not show it. Filed 2026-11-09 by the liaison, on the tester's report. The upstream half only: the
-offline audit signal and the `refresh_sidecar` route are ours, in `docs/dogfooding.md` F137, the lead's.
+`variants.csv`) could not show it. Filed 2026-11-09 by the liaison, on the tester's report. The upstream half only. **Our
+mitigation shipped in 0.48.4:** `audit_module`'s `sidecar_rows_nothing_authors` signal and `refresh_sidecar`'s
+`no_longer_authored` (`docs/previous_issues.md` F137, F138). It stays after RM422 lands: the audit is offline and
+names the repair.
 
 Reproduced on compiler 0.7.2 (installed) and 0.8.2, `compile --strict`, both exit 0: a spec whose authored
 tables name rs1801133 and rs1801131, beside a `resolution.csv` that also places rs1801394 (5:7870860 A>G,
