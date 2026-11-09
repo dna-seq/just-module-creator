@@ -146,6 +146,26 @@ server's stderr only from startup. The multi-window run (`longevity_2026`, 13 wi
 (a wording patch). Our half is on main as d71d81e, unreleased. **At the next release, recheck F133, F134, F135 (a924b2d: `check_identifiers` names `enrich_module` when it skips), F138 (4860572, `audit_module` on `assets/mthfr_folate`) and F142's
 wording** in `enrich_expression_effects` and `top_expression_effects`.
 
+**0.48.4 recheck, 2026-11-09 (server restarted 10:17 local time, via SIGKILL and `reload --mcp`).** Each fix was checked through what
+the call returns, on scratch copies under `data/interim/recheck_0484/` and the earlier probe directories:
+
+| finding | result |
+|---|---|
+| F133 | not exercised: Europe PMC answered 3 of 3 for PMC13733956, so the "call again" path never fired |
+| F134 | holds: `draft_from_strchive` says one row per locus, then split into bands and run `check_repeat_bands` |
+| F135 | holds: on rsID-only rows, `check_identifiers`' next step names `enrich_module`, then `refresh_sidecar` |
+| F136 | holds: the 28 repeated PubMind advisories collapse into one with a count. The cold call still took 3 min 34 s, which the description now warns about |
+| F137 | holds once the test is right: `sidecar_rows_nothing_authors` names rs429358 in `resolution.csv`. My first try left the rsID in `studies.csv`, which counts as authored, and the audit correctly said clear |
+| F138 | holds: a stale `verification.json` reads `not_computed` with upstream's reason, and diplotype directions are read |
+| F139 | holds: on `assets/mthfr_folate`, `checks_older_than_the_last_edit` names 5 checks from 02:38 |
+| F140 | holds in the descriptions only: the IRX3-only result still reads `gene_not_at_locus` and says nothing inline |
+| F141 | holds: the dry run calls its 26 s a floor, and `seconds_elapsed` and `slowest_window_seconds` are on the result |
+| F142 | holds: the ranked list's next step names its 2 opposite-sign rows and says why |
+
+**The host keeps the tool descriptions from its first connection.** After the server restart, ToolSearch still
+returned 0.48.3's descriptions, and the source has the new ones. A fix that is only in a description can't be
+rechecked in a reconnected session: read the source, or recheck from a fresh session.
+
 **2026-11-09: layman probe, MTHFR from a planted AI summary: done to a strict compile.** The write-up is
 `assets/mthfr_folate/README.md`; the scratch work is `data/interim/probe_layman_mthfr/` (gitignored). It also
 covered the "module with two of something" probe: a two-variant diplotype module with a cis twin, where the
