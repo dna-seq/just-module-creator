@@ -1664,13 +1664,26 @@ def fulltext(
             )
         else:
             where = "No DOI is known for it, so no open-access location was looked up."
+        retry = ""
+        if pmcid:
+            # F133: Europe PMC answers `fullTextXML` with HTTP 500 on and off (measured
+            # 2026-11-09: 5 of 10 requests for one article, 4 of 5 for another), and
+            # enricher 0.7's `fulltext` returns `None` for a 500 and a 404 alike. 0.8's
+            # `fetch_fulltext` tells them apart (their RM258); this sentence comes out at
+            # the 0.8 move, when an outage can be named as one.
+            retry = (
+                f"Europe PMC returned no text for {pmcid}, and the installed enricher "
+                "reports a refused request the same as an absent copy: Europe PMC refuses "
+                "some requests at random, so call again before taking the text as "
+                "unavailable. "
+            )
         findings.append(
             LintFinding(
                 source=OURS,
                 level="warning",
                 message=(
                     "Nothing was retrieved. `text_source` is null, which means UNCHECKED — not "
-                    f"that the paper has no text. {where}"
+                    f"that the paper has no text. {retry}{where}"
                 ),
             )
         )

@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **An empty `fetch_fulltext` with a known PMCID says to call again** (F133). Europe PMC refuses some fulltext requests with HTTP 500 at random (half of them for one article on 2026-11-09), and the installed enricher reports that the same as no copy, so the same paper came back whole on one call and empty on the next, by DOI, PMCID or PMID alike. The warning now says so.
 - **`draft_from_strchive` says what it drafts: one row per locus, no bands** (F134). Its description promised ranges; upstream drafts the locus and leaves the bands to the author by design. Its next step now says to split the row into bands and run `check_repeat_bands`, not to fill a genotype and weight the table does not have. Its contested-locus finding called a gene and motif claimed by two catalogue loci a threshold dispute; it now says what upstream meant.
 ## [0.48.3] — 2026-11-08
 

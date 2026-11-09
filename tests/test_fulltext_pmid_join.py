@@ -243,3 +243,40 @@ def test_an_unreachable_pubmed_leaves_the_doi_route_unchecked(monkeypatch) -> No
     assert not result.retrieved
     warned = [m for m in messages if "which record carries DOI" in m]
     assert len(warned) == 1 and "HTTP 503" in warned[0] and "UNCHECKED" in warned[0]
+
+
+# --------------------------------------------------------------------------- #
+# F133: a known PMCID that yields nothing is worth asking again, and says so
+# --------------------------------------------------------------------------- #
+def test_a_known_pmcid_with_no_text_says_to_call_again(monkeypatch) -> None:
+    """Europe PMC refuses some `fullTextXML` requests with HTTP 500, and enricher 0.7's
+    `fulltext` answers `None` for that and for an absent copy alike, so the same call
+    retrieves the article on one try and nothing on the next."""
+    epmc = _EuropePmc({})
+    monkeypatch.setattr(discovery, "_bioc_fulltext", lambda *_a, **_k: (None, None))
+    result = fulltext(
+        _services(monkeypatch, epmc, _PubMed(ServiceUnavailable(PUBMED, "must not be asked"))),
+        pmid=None,
+        pmcid="PMC0000001",
+        doi=None,
+        max_chars=None,
+    )
+    assert not result.retrieved and epmc.fulltext_asked == ["PMC0000001"]
+    nothing = [f.message for f in result.findings if f.message.startswith("Nothing was retrieved")]
+    assert len(nothing) == 1
+    assert "PMC0000001" in nothing[0] and "call again" in nothing[0]
+    assert nothing[0].endswith("no open-access location was looked up.")
+
+
+def test_no_pmcid_does_not_suggest_calling_again(monkeypatch) -> None:
+    """With no PMCID, nothing was asked of Europe PMC's fulltext, so a retry buys nothing."""
+    result = fulltext(
+        _services(monkeypatch, _EuropePmc({}), _PubMed(ServiceUnavailable(PUBMED, "HTTP 503"))),
+        pmid=PMID,
+        pmcid=None,
+        doi=None,
+        max_chars=None,
+    )
+    nothing = [f.message for f in result.findings if f.message.startswith("Nothing was retrieved")]
+    assert len(nothing) == 1 and "No DOI is known" in nothing[0]
+    assert "call again" not in nothing[0]

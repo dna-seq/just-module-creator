@@ -6,6 +6,41 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F133 — `fetch_fulltext` by DOI or by PMCID retrieves nothing where the same paper's PMID retrieves the text
+
+**Found:** 2026-11-08 by the tester, rechecking F122 on the shipped 0.48.3 · **Severity:** medium ·
+**Status:** resolved 2026-11-09
+
+F122's join works: `fetch_fulltext(doi="10.64898/2026.10.26.761951")` now names PubMed's record, *"PMID 42990418
+and PMCID PMC13733956; the text was looked up by those."* But that call answers `retrieved: false`, and so does
+`fetch_fulltext(pmcid="PMC13733956")`. `fetch_fulltext(pmid="42990418")`, run between them on the same server,
+answers `text_source: "fulltext"` over the same PMCID. Reproduced three times by DOI, twice by PMCID, 17:2x UTC.
+The plain library call `EuropePmcClient().fulltext("PMC13733956")` from this checkout's venv returned 2697
+characters at the same time, so Europe PMC was serving it. Neither failing call reports a BioC failure, so both
+rungs came back empty without a reason.
+
+So the message claims a lookup "by those" ids that did not reach the text the PMID route reaches, and an agent
+holding only a DOI (the F122 case) still gets nothing for a paper in PMC. The cause isn't traced: in
+`discovery.fulltext` the three routes all call `client.fulltext(pmcid)` with what reads as the same string. The
+visible difference is that only the PMID route calls `client.lookup([pmid])` first. A test that runs the DOI
+route through to `client.fulltext` with a stub that answers only the right accession would pin it.
+
+**Traced 2026-11-09: not the route.** Run in-process, all three routes: on one run the PMID route came back
+empty and the PMCID route whole, on the next all three empty. Europe PMC's `fullTextXML` answered HTTP 500 to
+5 of 10 plain requests for PMC13733956 and 4 of 5 for an unrelated article (PMC3531190), and enricher 0.7.3's
+`EuropePmcClient.fulltext` returns `None` for a 500 as for a 404. PMC's BioC rung then answers "No result can
+be found" for this preprint (not in its open-access subset), which is a real "no copy", so no BioC failure
+was reported either. Which route succeeded was which request Europe PMC happened to answer.
+
+**Resolved** here as far as the installed enricher allows. The "Nothing was retrieved" warning, when a PMCID
+was known, now says Europe PMC returned no text for it, that the installed enricher reports a refused request
+the same as an absent copy, and to call again before taking the text as unavailable
+(`discovery.fulltext`). Upstream already split the two in 0.8.0 (`fetch_fulltext`, their RM258, from our
+`S110`); at the 0.8 move this sentence gives way to naming the outage. The F122 finding's "looked up by
+those" stays: the lookup did run by those ids. Tests: `tests/test_fulltext_pmid_join.py::
+test_a_known_pmcid_with_no_text_says_to_call_again` (fails on 0.48.3's code) and
+`::test_no_pmcid_does_not_suggest_calling_again`.
+
 ## F134 — `draft_from_strchive` promises bands; upstream drafts none by design, and its `next_step` names the wrong cells
 
 **Found:** 2026-11-08 by the tester, rechecking F129 on the shipped 0.48.3 · **Severity:** medium ·
