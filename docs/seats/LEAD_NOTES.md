@@ -18,7 +18,10 @@ Queued from the tester's layman probe, all `unattended`, mine: F135 (triage's ge
 the taught order), F136 (`lookup_variant` doubles PubMind records; slow first call), F137 our half (an audit
 signal for sidecar rows no authored table names; the compiler half is the liaison's S138), F138 (audit reads a
 stale `verification.json`; skips `diplotypes.csv` directions). F139 (re-attestation re-signs checks it did not
-re-run, high) is upstream's writer, the liaison's to file; ours is whether to guard it meanwhile.
+re-run, high): upstream's writer, filed as S139 and answered as RM423 (patch half: drop carried records when the
+binding moved; minor half: a per-record binding). Ours, `unattended`: the audit signal reading a record older than
+the newest authoring edit as not current, which upstream called sound. F137's upstream half is S138 → RM422 (a
+`derived_row_orphan` arm over `resolution.csv`, a patch); our offline signal stays ours.
 
 ## Plan states (set 2026-11-05)
 
@@ -62,7 +65,7 @@ re-run, high) is upstream's writer, the liaison's to file; ours is whether to gu
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.144 (moved on each announcement; 0.1.144 on 2026-11-08) (`move-to-tag.py`; the pin is in the untracked
+- **Kit pin**: 0.1.146 (moved on each announcement; 0.1.146 on 2026-11-09) (`move-to-tag.py`; the pin is in the untracked
   `.claude/settings.local.json`). Taking it into this session is mine: `watchdog.sh reload`, then end the turn,
   and the kit's typer types `/reload-plugins` (the "left for the person" line `move-to-tag.py` prints is wrong, kit #306).
 
