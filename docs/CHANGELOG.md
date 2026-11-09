@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **A skipped gene/chromosome comparison says how to unblock it** (F135). Triage authors rows by rsID only, and `check_identifiers` reads a row's chromosome from `chrom` or `resolution.csv`, so at triage it skipped. Its new `next_step` says to run `enrich_module` first, and `module-start` step 2 says so too.
 - **`lookup_variant` states PubMind's withheld call once** (F136). Upstream withholds one `clin_sig` per PubMind record with the same reason; the first is kept verbatim and the rest collapse into it with a count and a tally of the calls, while every record stays in `pubmind`. The docstring says the first call on a fresh server can take minutes.
 - **The expression tools say why a row's size and direction can split** (F142). `effect_size` is the single strongest tissue track and `effect_direction` the majority across tracks, so a row can read +0.024 with `decrease`; both docstrings say so, and `top_expression_effects` explains it when a returned row splits.
 - **An empty `fetch_fulltext` with a known PMCID says to call again** (F133). Europe PMC refuses some fulltext requests with HTTP 500 at random (half of them for one article on 2026-11-09), and the installed enricher reports that the same as no copy, so the same paper came back whole on one call and empty on the next, by DOI, PMCID or PMID alike. The warning now says so.

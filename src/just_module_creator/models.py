@@ -1232,6 +1232,13 @@ class IdentifierReport(BaseModel):
             "whatever was answered before it stopped is kept rather than discarded."
         ),
     )
+    next_step: str | None = Field(
+        default=None,
+        description=(
+            "Set when the gene/chromosome comparison did not run: what gives it the chromosome "
+            "it reads. Null when the comparison ran."
+        ),
+    )
 
 
 # --------------------------------------------------------------------------- #

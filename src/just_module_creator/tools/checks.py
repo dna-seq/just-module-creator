@@ -107,6 +107,19 @@ NOT_APPLICABLE = (
     "verification.json was created"
 )
 
+#: F135: what unblocks a skipped gene/chromosome comparison. Upstream reads a row's
+#: chromosome from an authored `chrom` or from `resolution.csv` and fetches none itself,
+#: so an rsID-only row, the triage default, has none until resolution exists. Keyed on
+#: the skip being set, never on its wording, which is upstream's to change.
+_GENE_LOCUS_UNBLOCK = (
+    "The gene/chromosome comparison did not run (gene_locus_check_skipped says why). It "
+    "reads each row's chromosome from an authored chrom or from resolution.csv, and an "
+    "rsID-only row has neither until it is resolved: run enrich_module, which writes "
+    "resolution.csv from the rsIDs, then call check_identifiers again. If you later drop "
+    "rows, refresh_sidecar('resolution.csv') so the dropped ones do not ride along. A "
+    "resolution.csv that is present but unreadable needs fixing first."
+)
+
 
 #: The states that mean "this identifier is current". Everything else is flagged —
 #: including `unchecked`, a trait whose prefix this check cannot resolve, because a
@@ -456,6 +469,7 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
         )
 
         pgs = _pgs_statuses(report)
+        skipped = getattr(report, "gene_loci_not_checked", None)
         stale = [
             f"{s.kind} {s.identifier}: {s.state}" + (f" -> {s.current}" if s.current else "")
             for s in genes + traits + pgs
@@ -474,7 +488,7 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
             # chromosome each half claims and what to do about it. Reformatting it
             # here would put a second wording in front of one finding.
             gene_locus_conflicts=[str(c) for c in getattr(report, "gene_loci", []) or []],
-            gene_locus_check_skipped=getattr(report, "gene_loci_not_checked", None),
+            gene_locus_check_skipped=skipped,
             pgs_tally=_tally(pgs, asked=check_pgs),
             pgs=pgs if detail else [s for s in pgs if _flagged(s)],
             pgs_drift=_pgs_drift_lines(report),
@@ -488,6 +502,7 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
             attested=attested,
             attestation_note=note,
             detail=detail,
+            next_step=_GENE_LOCUS_UNBLOCK if skipped and check_genes else None,
         )
 
     # ----------------------------------------------------------------------- #

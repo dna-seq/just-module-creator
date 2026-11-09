@@ -6,6 +6,41 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F135 — triage's gene-on-the-wrong-chromosome check cannot run in the order `module-start` teaches
+
+**Found:** 2026-11-09 by the tester, layman probe (`data/interim/probe_layman_mthfr/`) · **Severity:** medium ·
+**Status:** resolved here 2026-11-09; the conflict message's wording is upstream's
+
+`module-start`'s triage puts "**The tell for a generated claim is a real gene name beside an invented rsID**" at
+step 2: *"`check_identifiers` answers it: read `gene_locus_conflicts`"*. Its step 0 sets the safe default for
+any handed source, rows authored with an **rsID only**. The probe followed both. A machine-written summary named
+`MTHFR A66G (rs1801394)`, whose rsID is real but in MTRR on chromosome 5. On three rsid-only triage rows,
+`check_identifiers` answered `gene_locus_conflicts: []` with `gene_locus_check_skipped: "no coordinates authored
+and no resolution.csv beside the spec"`. After `enrich_module` (1 min 49 s, rows resolved from the cache) the
+same call caught it: *"rs1801394 is on chromosome 5, but HGNC puts MTHFR on chromosome 1"*.
+
+So the check works, but at the step that names it there is nothing for it to read. The skill's own rule saves
+an attentive agent (*"If `gene_locus_check_skipped` is non-null the comparison never ran"*). Neither the skip
+reason nor step 2 says what produces the missing input, and the router's order (curate, then enrich) puts
+`resolution.csv` two stages after triage. A layman's agent that reads "skipped" as "nothing to see" carries the
+generated pairing into curation. Shape of a fix, the lead's call: the skip reason names `enrich_module` (or a
+`lookup_variant` per rsID) as the way to get coordinates, and step 2 says to enrich the triage rows first.
+Alternatively, `check_identifiers` resolves rsid-only rows' chromosomes itself from the local Ensembl lane,
+which `lookup_variant` already reads.
+
+The conflict message also guesses the wrong half: *"a real symbol beside an invented rsID"*, when here both are
+real and the rsID belongs to another gene. Naming the gene the rsID does sit in would settle it in one line.
+
+**Resolution (ours):** `check_identifiers` now returns a `next_step` whenever the gene/chromosome comparison was
+skipped (`checks._GENE_LOCUS_UNBLOCK`, keyed on the skip being set, never on upstream's wording): the comparison
+reads an authored `chrom` or `resolution.csv`, so run `enrich_module` and call again, and `refresh_sidecar` the
+resolution later if rows are dropped (F137's shape). `module-start` step 2 says to enrich the triage rows before the
+comparison. Not done: resolving chromosomes inside the check, because upstream's `_variant_chromosomes` declines to
+fetch by design (a currency check must not depend on a resolver), and the check is theirs. The message guessing the
+wrong half ("an invented rsID" where the rsID was real and in MTRR) is upstream's sentence
+(`GeneLocusConflict.__str__`), handed to the liaison. Tests: `test_a_skipped_gene_locus_comparison_names_what_gives_it_a_chromosome`
+and `test_a_comparison_that_ran_has_no_unblocking_step` (both fail on 0.48.3's code).
+
 ## F136 — `lookup_variant` prints every PubMind record twice, and its first call takes minutes
 
 **Found:** 2026-11-09 by the tester, layman probe · **Severity:** low · **Status:** resolved 2026-11-09

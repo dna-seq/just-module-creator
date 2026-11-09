@@ -295,6 +295,40 @@ async def test_a_state_that_means_the_check_did_not_run_is_never_counted_clean(c
     assert [t.state for t in data.traits] == ["unchecked"]
 
 
+async def test_a_skipped_gene_locus_comparison_names_what_gives_it_a_chromosome(
+    checked, spec_dir, monkeypatch
+):
+    """F135: triage's rsID-only rows give the comparison nothing to read.
+
+    The skip reason is upstream's and is carried verbatim; `next_step` is ours and says
+    that `enrich_module` writes the `resolution.csv` the comparison reads. The reason is
+    the tester's, from the layman probe's three rsID-only rows.
+    """
+    open_client, _ = checked
+    report = _upstream_report()
+    reason = "no coordinates authored and no resolution.csv beside the spec"
+    report.gene_loci_not_checked = reason
+    monkeypatch.setattr(checks, "_check_identifiers", lambda **_: report)
+    async with open_client() as client:
+        data = (await client.call_tool("check_identifiers", {"spec_dir": str(spec_dir)})).data
+
+    assert data.gene_locus_check_skipped == reason
+    assert data.gene_locus_conflicts == []
+    assert data.next_step is not None
+    assert "run enrich_module, which writes resolution.csv" in data.next_step
+    assert "refresh_sidecar('resolution.csv')" in data.next_step
+
+
+async def test_a_comparison_that_ran_has_no_unblocking_step(checked, spec_dir):
+    open_client, calls = checked
+    async with open_client() as client:
+        data = (await client.call_tool("check_identifiers", {"spec_dir": str(spec_dir)})).data
+
+    assert calls, "the stub answered"
+    assert data.gene_locus_check_skipped is None
+    assert data.next_step is None
+
+
 async def test_detail_returns_the_roster_unchanged(checked, spec_dir):
     """`detail=true` is today's answer: every record, clean ones included."""
     open_client, _ = checked

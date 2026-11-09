@@ -148,6 +148,11 @@ them to fail.** A real run of this procedure turned **seven** offered rsIDs into
    answers it: read `gene_locus_conflicts`. **Read it even when `stale` is empty** — the symbol is
    approved and the number resolves, so only the *relationship* is false and no per-identifier check
    sees it. If `gene_locus_check_skipped` is non-null the comparison never ran, which is not a pass.
+   **With step 0's rsID-only rows it has nothing to read yet**: it takes each row's chromosome from an
+   authored `chrom` or from `resolution.csv`, so run `enrich_module` on the triage rows first (it writes
+   `resolution.csv` from the rsIDs), then `check_identifiers`. Its `next_step` says the same when it
+   skips. Rows you drop later leave their `resolution.csv` rows behind until
+   `refresh_sidecar('resolution.csv')`.
 3. **Does the pairing appear in any paper?** `literature_search(rsid=…, gene=…)`. Zero results from
    sources that *answered* is strong evidence; read `sources` first, because a source that could not
    answer reports `results: null` and a miss is not an absence.
