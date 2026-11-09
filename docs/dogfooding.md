@@ -814,7 +814,7 @@ intermittent, so the case for the fix is "the figure is not a measurement", not 
 ## F142 — one in six Atlas rows has an `effect_size` whose sign contradicts its `effect_direction`, and nothing the author reads says why
 
 **Found:** 2026-11-09 by the tester, Atlas probe on `longevity_2026` · **Severity:** low · **Status:** open; the
-field's description is upstream's (format 0.7.1), to be filed through the liaison
+field's description is upstream's (format 0.7.1), filed as S140 by the liaison (eb7bde5)
 
 | sidecar | rows | `effect_size > 0` with `decrease`, or `< 0` with `increase` |
 |---|---|---|
