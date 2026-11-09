@@ -6,6 +6,29 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F136 — `lookup_variant` prints every PubMind record twice, and its first call takes minutes
+
+**Found:** 2026-11-09 by the tester, layman probe · **Severity:** low · **Status:** resolved 2026-11-09
+
+On `rs1801131` the answer lists 29 PubMind records twice, once in full under `pubmind` and once as `withheld`
+advisories, each with the same redundancy note. That is about 15 kB, where the verdict (ClinVar's call, the
+locus, and one warning that PubMind disagrees with itself) is a few hundred characters. `check_identifiers`
+already settled this shape: verdict first, roster behind `detail=true`. The `withheld` entries for PubMind could
+collapse to one entry with a count, as `literature_search` does for DOIs ("Withheld for the reason given on the
+first withheld row").
+
+Timing, from the host's log: three `lookup_variant` calls issued together on a fresh server finished together
+after **2 min 43 s** each, all `answered_by: local`. One more call on the warm server took **9 s**. The
+first-call cost looks like the snapshots being opened, not per-call work, but nothing in the answer or the
+docstring warns that the first lookup is slow, and the host moved all three to the background at 120 s.
+
+**Resolution:** `lookup_variant` keeps the first PubMind `clin_sig` advisory verbatim and collapses the rest into
+it: its note gains the count and the calls across all of them (`research._collapse_pubmind`), and every record stays
+whole in `pubmind`. The docstring now says the first call on a fresh server opens the snapshots and has taken
+minutes. The `pubmind` roster is not moved behind a `detail` switch: upstream reports every PVID by design, and the
+duplication was the part that cost. Tests: `tests/test_lookup_variant_pubmind.py` (the collapse test fails on
+0.48.3's code).
+
 ## F142 — one in six Atlas rows has an `effect_size` whose sign contradicts its `effect_direction`, and nothing the author reads says why
 
 **Found:** 2026-11-09 by the tester, Atlas probe on `longevity_2026` · **Severity:** low · **Status:** resolved here 2026-11-09;

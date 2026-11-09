@@ -29,6 +29,7 @@ qualified by an exception.
 
 from __future__ import annotations
 
+from collections import Counter
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -62,6 +63,7 @@ from just_module_creator.models import (
     FullTextResult,
     IdentifierStatus,
     InstanceHealth,
+    LintAlteration,
     LintFinding,
     LiteratureSearchResult,
     NamespaceAvailability,
@@ -176,6 +178,39 @@ def _search_next_step(*, total: int, group: str | None, namespace: str | None) -
     return "These are the matches under this filter."
 
 
+def _collapse_pubmind(withheld: list[LintAlteration]) -> list[LintAlteration]:
+    """F136: one withheld `clin_sig` for PubMind, however many records it holds.
+
+    Upstream writes one advisory per PubMind record, each repeating the same reason, and
+    every record is already whole in `pubmind`; on rs1801131 that was 29 of them, about
+    15 kB around a verdict of a few hundred characters. The first advisory is kept
+    verbatim (its refusal and note are upstream's), and its note gains the count and
+    the calls of the rest, the way `literature_search` states a repeated DOI refusal once.
+    """
+    pubmind = [a for a in withheld if a.source == "pubmind" and a.column == "clin_sig"]
+    if len(pubmind) < 2:
+        return withheld
+    calls = Counter(a.after for a in pubmind)
+    tally = ", ".join(f"{call} ({n})" for call, n in sorted(calls.items()))
+    first = pubmind[0].model_copy(
+        update={
+            "note": (
+                f"{pubmind[0].note} [{len(pubmind) - 1} more PubMind advisories withheld for "
+                f"the same reason are collapsed into this one; calls across all "
+                f"{len(pubmind)}: {tally}. Every record, with its PVID, confidence and "
+                "derivation, is in `pubmind`.]"
+            )
+        }
+    )
+    out: list[LintAlteration] = []
+    for a in withheld:
+        if a is pubmind[0]:
+            out.append(first)
+        elif not (a.source == "pubmind" and a.column == "clin_sig"):
+            out.append(a)
+    return out
+
+
 def register_research(mcp: FastMCP, settings: Settings, services: NetworkServices) -> None:
     """Register the always-on read-only lookup tools.
 
@@ -229,7 +264,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         `frequencies=true` for gnomAD populations, and note that under `offline=true` an
         empty result means unchecked, not absent. **`route` says who answered** — a
         missing snapshot lane sends the question to a registry that holds one, and
-        `local_online_after_registry_miss` means no snapshot served it at all.
+        `local_online_after_registry_miss` means no snapshot served it at all. The first
+        call on a fresh server opens the local snapshots and has taken minutes; later
+        calls take seconds.
         """
         if not rsid and not (chrom and start):
             raise ToolError("Provide either rsid, or chrom and start.")
@@ -326,7 +363,7 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             vrs_id=fields["vrs_id"],
             ambiguous=fields["ambiguous"],
             findings=to_findings(getattr(hint, "findings", [])),
-            withheld=to_alterations(getattr(hint, "alterations", [])),
+            withheld=_collapse_pubmind(to_alterations(getattr(hint, "alterations", []))),
             checked=fields["checked"],
             offline=eff_offline,
             route=RouteInfo(**route.as_dict()),

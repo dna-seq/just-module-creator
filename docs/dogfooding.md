@@ -642,22 +642,6 @@ which `lookup_variant` already reads.
 The conflict message also guesses the wrong half: *"a real symbol beside an invented rsID"*, when here both are
 real and the rsID belongs to another gene. Naming the gene the rsID does sit in would settle it in one line.
 
-## F136 — `lookup_variant` prints every PubMind record twice, and its first call takes minutes
-
-**Found:** 2026-11-09 by the tester, layman probe · **Severity:** low · **Status:** open
-
-On `rs1801131` the answer lists 29 PubMind records twice, once in full under `pubmind` and once as `withheld`
-advisories, each with the same redundancy note. That is about 15 kB, where the verdict (ClinVar's call, the
-locus, and one warning that PubMind disagrees with itself) is a few hundred characters. `check_identifiers`
-already settled this shape: verdict first, roster behind `detail=true`. The `withheld` entries for PubMind could
-collapse to one entry with a count, as `literature_search` does for DOIs ("Withheld for the reason given on the
-first withheld row").
-
-Timing, from the host's log: three `lookup_variant` calls issued together on a fresh server finished together
-after **2 min 43 s** each, all `answered_by: local`. One more call on the warm server took **9 s**. The
-first-call cost looks like the snapshots being opened, not per-call work, but nothing in the answer or the
-docstring warns that the first lookup is slow, and the host moved all three to the background at 120 s.
-
 ## F137 — remove a table and its sidecars keep the removed rows; validate, compile and audit all stay quiet, and the manifest attests them
 
 **Found:** 2026-11-09 by the tester, layman probe · **Severity:** medium · **Status:** open
