@@ -6,6 +6,51 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F134 — `draft_from_strchive` promises bands; upstream drafts none by design, and its `next_step` names the wrong cells
+
+**Found:** 2026-11-08 by the tester, rechecking F129 on the shipped 0.48.3 · **Severity:** medium ·
+**Status:** resolved 2026-11-09
+
+F129 is fixed: a fresh `rows=0` scaffold drafts HTT from the provisioned lane (`candidates: 1`, licence row
+`strchive_v2.26.0`). The row it writes is `measure_kind=repeat_count`, `trait_efo_id=MONDO_0007739`, `gene=HTT`,
+`repeat_unit=CAG`, `conclusion=<<REPLACE>>`, with `measure_min`, `measure_max`, `measure_tiling`, `direction`,
+`clin_sig` and `pmid` empty. That is upstream's deliberate design. The enricher's `strchive_draft.py` docstring
+says *"Never drafted: the bands"*, because STRchive is a band coarser than the corpus at FMR1's premutation
+threshold and its `pathogenic_max` would invent a ceiling HTT leaves open. The bands are checked instead
+(`check_repeat_bands`).
+
+Our surface says otherwise:
+
+- The tool docstring says *"the rows are ranges (normal / intermediate / pathogenic) rather than `variants.csv`
+  entries"* and *"the only drafter here that writes a BINNING table"*. It writes one identity row per locus,
+  with no range.
+- The `next_step` says *"Curate the stubbed cells — genotype, state, weight, conclusion are yours"*. That is the
+  variant tables' vocabulary. `repeat_alleles.csv` has no genotype or weight column. The cells actually left
+  for the author are the bands, which means splitting the row into one per band, plus direction, clin_sig and
+  pmid. `check_repeat_bands`, the tool that compares those bands with STRchive, isn't named.
+
+An author who takes the docstring at its word expects bands and gets a locus. The fix is our text: say "one
+identity row per locus, the bands are yours", name `check_repeat_bands`, and give the binning table its own
+`next_step`.
+
+Small, same probe: `scaffold_module(kinds=["repeat_alleles"], rows=0)` wrote a sentinel row
+(`unresolved=true`, `gene` and `repeat_unit` set to `<<REPLACE>>`), not the "header-only table" its docstring
+promises for `rows=0`. The drafter appended past it without refusing, so nothing broke. Either the docstring
+names the sentinel exception or the scaffold leaves the row out.
+
+**Resolved** in our text, as the finding proposed. `draft_from_strchive`'s docstring now says it writes one
+identity row per locus and never the bands, by upstream's design, and that `check_repeat_bands` compares the
+bands an author splits the row into. A written STRchive draft gets its own `next_step` in `passes._draft_result`:
+split the row into one per band, fill each band's cells (`describe_table` names them), then
+`check_repeat_bands` and `lint_rows`. Found while fixing it: the contested-locus finding read upstream's
+`contested` as `(locus, why)` and printed *"HTT: published thresholds disagree (CAG)"*; upstream's `contested`
+is the `(gene, motif)` keys several catalogue loci claim, withheld undrafted. The finding now says that, and so
+does `skills/module-draft/GUIDE.md`; `skills/module-check/GUIDE.md` no longer says the drafter produced bands.
+The `rows=0` sentinel is upstream's contract (`stub_template` adds the `unresolved` row every binning table
+must carry), so `scaffold_module`'s docstring now names it. Tests:
+`tests/test_passes.py::test_strchive_contested_finding_names_the_claimed_key_not_a_threshold_dispute` and
+`::test_strchive_next_step_names_the_bands_and_their_check`, both failing on 0.48.3's code.
+
 ## F122 — `fetch_fulltext(doi=…)` reports nothing retrieved for a paper it returns whole by PMID
 
 **Found:** 2026-11-07, rechecking F31/F50 on 0.48.2 · **Severity:** low · **Status:** resolved 2026-11-08

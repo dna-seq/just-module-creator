@@ -376,6 +376,16 @@ def _draft_result(
         )
     elif dry_run:
         next_step = "Preview only, nothing written. Re-run with dry_run=false to apply."
+    elif source == "strchive":
+        # A binning table has no genotype or weight, and its drafter leaves the bands out
+        # by design (F134), so the variant tables' next step names cells it does not have.
+        next_step = (
+            "Each drafted row is one locus with its bands left blank. Split it into one row "
+            "per band, fill each band's range and its interpretive cells "
+            "(describe_table('repeat_alleles.csv') names them) and the conclusion, then run "
+            "check_repeat_bands to compare your bands with STRchive's, and lint_rows before "
+            "validating."
+        )
     else:
         next_step = (
             "Curate the stubbed cells — genotype, state, weight, conclusion are yours — then "
@@ -1590,23 +1600,25 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         catalogue: str | None = None,
         ctx: Context | None = None,
     ) -> DraftResult:
-        """Draft `repeat_alleles.csv` — repeat-expansion bands — from STRchive.
+        """Draft `repeat_alleles.csv` from STRchive: one row per locus, with no bands.
 
-        **MIT-licensed, and the only drafter here that writes a BINNING table.** A repeat
-        locus is not a variant with a genotype: the subject is a *count* with thresholds,
-        so the rows are ranges (normal / intermediate / pathogenic) rather than
-        `variants.csv` entries. `list_tables` is the router if that distinction is new;
-        drafting HTT or FMR1 into `variants.csv` is the mistake this tool exists to stop.
+        **MIT-licensed, and the only drafter here whose table is a BINNING table.** A
+        repeat locus is a *count* with thresholds, not a variant with a genotype;
+        drafting HTT or FMR1 into `variants.csv` is the mistake this tool exists to stop,
+        and `list_tables` is the router if that distinction is new.
 
-        **`source_findings` carries the contested loci**, and they are the point. Published
-        thresholds for the same repeat disagree between sources more often than for almost
-        anything else in the format, and STRchive records where. A contested boundary is a
-        decision for a pilot, not a number to copy — and a bin whose threshold no paper
-        grounds is reported at compile time as `bins_ungrounded`.
+        **It writes the locus, never its bands.** Each row carries the gene, the motif,
+        the trait id and the measure kind, with `conclusion` left as `<<REPLACE>>`. The
+        bands (each range, and its direction, clinical significance and paper) are left
+        out by upstream's design: STRchive's bands are coarser than curated modules at
+        some thresholds and would close a ceiling a module leaves open. Splitting the row
+        into one per band is the author's, and `check_repeat_bands` then compares those
+        bands with STRchive's.
 
-        `fractional_ref_copies` and `with_locus_structure` come back on the result:
-        a fractional reference count means the locus does not divide evenly into its
-        repeat unit, which is a real property of the locus and not a rounding error.
+        **`source_findings` names the contested loci**: a gene and motif that several
+        catalogue loci claim, left undrafted rather than chosen by file order. `withheld`
+        counts every locus not drafted, by reason. A fractional reference copy count means
+        the locus does not divide evenly into its repeat unit: a property of the locus.
 
         `catalogue` points at a built STRchive snapshot or a `STRchive-loci.json`; omitted,
         the `strchive` lane `provision_caches` builds is used.
@@ -1637,9 +1649,13 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
             if source is None
             else []
         )
+        # Upstream's `contested` is `(gene, motif)` keys several catalogue loci claim, each
+        # withheld (`withheld["contested_key"]`). It is not a threshold dispute; F134 found
+        # this text reading it as one.
         findings += [
-            f"{locus}: published thresholds disagree ({why})"
-            for locus, why in getattr(result, "contested", []) or []
+            f"{gene}/{motif}: several STRchive loci claim this gene and motif, so none was "
+            "drafted for it; which locus a row means is the author's to decide."
+            for gene, motif in getattr(result, "contested", []) or []
         ]
         fractional = getattr(result, "fractional_ref_copies", 0)
         if fractional:

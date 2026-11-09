@@ -71,8 +71,9 @@ check_clinpgx(spec_dir="spec", use="non_commercial")  # pharm_variants.csv evide
 
 **Every one of these writes `verification.json` and none writes an authored cell.** `check_acmg` takes
 `sf_list` where you built a snapshot; omit it and a provisioned lane is used. `check_repeat_bands`
-is the one to run whenever `draft_from_strchive` wrote the table — it checks the bands that drafter
-produced against the same catalogue, and it makes no network request of its own. The two PGx checks
+is the one to run whenever `draft_from_strchive` wrote the table — that drafter writes loci and leaves
+the bands to you, and this checks the bands you wrote against the same catalogue, with no network
+request of its own. The two PGx checks
 pair the two PGx drafters the same way, and **`use` is required on both**: every PGx source carries a
 no-sale clause, so `unstated` skips the leg and `commercial` is refused. `check_pgx` also writes a
 `licensing.csv` row per source it consulted — a source you checked against is a source the module

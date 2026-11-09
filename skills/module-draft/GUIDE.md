@@ -29,7 +29,7 @@ draft_from_clinpgx(...)     # a corpus sizes it, and inject-only: build the snap
 draft_from_civic(...)       # CC0 curated clinical evidence — and it records REFUTATIONS
 draft_from_mitomap(...)     # mtDNA, and the only source for it
 draft_from_pubmind(...)     # machine-extracted literature calls — see the warning below
-draft_from_strchive(...)    # repeat bands → repeat_alleles.csv, NOT variants.csv
+draft_from_strchive(...)    # repeat loci → repeat_alleles.csv, NOT variants.csv; bands are yours
 ```
 
 **One per published source upstream ships, and that is deliberate**: this plugin is the only
@@ -39,11 +39,13 @@ unwrapped provider.
 
 Three of them carry a caveat you should read before the row counts:
 
-- **`draft_from_strchive` writes a BINNING table.** A repeat locus is a count with thresholds, not a
-  variant with a genotype. Drafting HTT or FMR1 into `variants.csv` is the mistake it exists to
-  prevent. Its `source_findings` names the **contested** loci — published thresholds for the same
-  repeat disagree more often here than almost anywhere in the format, and a contested boundary is a
-  pilot's decision, not a number to copy.
+- **`draft_from_strchive` writes a BINNING table, and only its loci.** A repeat locus is a count with
+  thresholds, not a variant with a genotype. Drafting HTT or FMR1 into `variants.csv` is the mistake it
+  exists to prevent. Each drafted row is one locus with its bands blank, by upstream's design: you split
+  it into one row per band, and `check_repeat_bands` compares those bands with STRchive's. Published
+  thresholds for one repeat disagree more often here than almost anywhere in the format, so a boundary
+  is a pilot's decision, not a number to copy. Its `source_findings` names the **contested** loci: a
+  gene and motif several catalogue loci claim, left undrafted.
 - **`draft_from_civic` records refutations beside the claims they refute.** A variant whose accepted
   claim sits next to a refuting one is what `direction=contested` is for. Nothing is auto-resolved.
 - **`draft_from_pubmind` always skips today, and that is upstream's gate rather than your mistake.**

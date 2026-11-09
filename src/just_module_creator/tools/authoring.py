@@ -796,7 +796,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         whole. Say what this module distinguishes — methodology belongs in `weighting:`,
         `authorship:` and `README.md`. `rows=0` writes a header-only table: use it, or
         leave the kind out, for a table a `draft_from_*` tool will fill, because a
-        drafter refuses a table whose stub row still carries `<<REPLACE>>`.
+        drafter refuses a table whose stub row still carries `<<REPLACE>>`. A binning
+        table (`repeat_alleles.csv`) keeps the one `unresolved=true` row every binning
+        table must carry even at `rows=0`; drafters append past it.
         """
         target = resolve_dir(spec_dir, settings, must_exist=False)
         for kind in kinds or []:

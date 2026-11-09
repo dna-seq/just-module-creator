@@ -1602,3 +1602,70 @@ async def test_strchive_drafter_with_no_lane_names_the_tool_that_builds_one(
     assert result.skipped is True
     assert result.tables == [] or all(t.added == 0 for t in result.tables)
     assert any("provision_caches" in f for f in result.source_findings)
+
+
+# --------------------------------------------------------------------------- #
+# F134: the STRchive drafter writes loci, never bands, and says so
+# --------------------------------------------------------------------------- #
+async def test_strchive_contested_finding_names_the_claimed_key_not_a_threshold_dispute(
+    make_client, tmp_path: Path, monkeypatch
+) -> None:
+    """Upstream's `contested` is a `(gene, motif)` several loci claim, withheld.
+
+    Two catalogue loci for HTT's CAG (the fixture's record and a copy under a second
+    id) make one contested key. The finding used to read it as a threshold dispute,
+    "HTT: published thresholds disagree (CAG)".
+    """
+    monkeypatch.setenv("JUST_DNA_PIPELINES_CACHE_DIR", str(tmp_path / "empty-cache"))
+    monkeypatch.setenv("JUST_DNA_STRCHIVE_CACHE", "")
+    records = json.loads((STRCHIVE_HTT / "STRchive-loci.json").read_text())
+    assert [r["gene"] for r in records] == ["HTT"]
+    records.append({**records[0], "id": "HD_HTT_SECOND"})
+    catalogue = tmp_path / "STRchive-loci.json"
+    catalogue.write_text(json.dumps(records))
+
+    result = await _draft_htt(make_client, _strchive_spec(tmp_path), catalogue=str(catalogue))
+
+    assert result.candidates == 2
+    assert result.withheld.get("contested_key") == 2
+    contested = [f for f in result.source_findings if f.startswith("HTT/")]
+    assert len(contested) == 1, result.source_findings
+    assert "several STRchive loci claim this gene and motif" in contested[0]
+    assert not any("thresholds disagree" in f for f in result.source_findings)
+
+
+async def test_strchive_next_step_names_the_bands_and_their_check(
+    make_client, tmp_path: Path, monkeypatch
+) -> None:
+    """F134: a written draft's next step is the binning table's, not the variant tables'.
+
+    Drafted onto a `rows=0` scaffold, which for a binning table keeps the `unresolved`
+    row; the drafter appends past it, as `scaffold_module`'s docstring says.
+    """
+    monkeypatch.setenv("JUST_DNA_PIPELINES_CACHE_DIR", str(tmp_path / "empty-cache"))
+    monkeypatch.setenv("JUST_DNA_STRCHIVE_CACHE", "")
+    catalogue = tmp_path / "STRchive-loci.json"
+    catalogue.write_bytes((STRCHIVE_HTT / "STRchive-loci.json").read_bytes())
+    spec_dir = tmp_path / "spec"
+    async with make_client(offline_settings()) as client:
+        await client.call_tool(
+            "scaffold_module",
+            {"spec_dir": str(spec_dir), "name": "htt_probe", "kinds": ["repeat_alleles.csv"],
+             "rows": 0},
+        )
+        scaffolded = list(csv.DictReader((spec_dir / "repeat_alleles.csv").open()))
+        assert [r["unresolved"] for r in scaffolded] == ["true"]
+        result = (
+            await client.call_tool(
+                "draft_from_strchive",
+                {"spec_dir": str(spec_dir), "genes": ["HTT"], "use": "non_commercial",
+                 "catalogue": str(catalogue)},
+            )
+        ).data
+
+    assert [(t.csv, t.added) for t in result.tables] == [("repeat_alleles.csv", 1)]
+    drafted = list(csv.DictReader((spec_dir / "repeat_alleles.csv").open()))
+    assert [r["gene"] for r in drafted if r["unresolved"] != "true"] == ["HTT"]
+    assert "check_repeat_bands" in result.next_step
+    assert "one row per band" in result.next_step
+    assert "genotype" not in result.next_step and "weight" not in result.next_step

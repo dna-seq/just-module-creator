@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`draft_from_strchive` says what it drafts: one row per locus, no bands** (F134). Its description promised ranges; upstream drafts the locus and leaves the bands to the author by design. Its next step now says to split the row into bands and run `check_repeat_bands`, not to fill a genotype and weight the table does not have. Its contested-locus finding called a gene and motif claimed by two catalogue loci a threshold dispute; it now says what upstream meant.
 ## [0.48.3] — 2026-11-08
 
 - **The gene-metrics guide no longer reads the live gnomAD API's label as v2.1.1.** On the 0.7 line those rows say `gnomad_v2.1.1_constraint`, but the API serves gnomAD 4.1.1 or later (upstream RM417, relabelled `gnomad_api_constraint` in compiler 0.8.2). The guide had explained BRCA1's snapshot-versus-API difference as v4.1 against v2.1.1.
