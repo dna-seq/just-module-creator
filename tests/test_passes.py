@@ -1473,12 +1473,27 @@ async def test_module_rows_only_keeps_the_rows_own_gene_and_allele(make_client, 
     assert body["row_status"]["gene_not_at_locus"] == 1
 
 
+async def test_gene_not_at_locus_is_read_out_in_the_call_result(make_client, rows_spec):
+    """F140, tester's recheck: a host kept the old field descriptions across a restart,
+    so the reading of `gene_not_at_locus` has to arrive in the result itself."""
+    async with make_client(offline_settings()) as client:
+        out = await client.call_tool(
+            "top_expression_effects", {"spec_dir": str(rows_spec), "module_rows_only": True}
+        )
+    body = json.loads(out.content[0].text)
+    assert body["row_status"]["gene_not_at_locus"] == 1
+    example = body["row_examples"]["gene_not_at_locus"][0]
+    assert f"1 authored row(s) read gene_not_at_locus ({example})" in body["next_step"]
+    assert "rows=true asks each row's own gene" in body["next_step"]
+
+
 async def test_without_the_filter_there_is_no_row_status(make_client, rows_spec):
     async with make_client(offline_settings()) as client:
         out = await client.call_tool("top_expression_effects", {"spec_dir": str(rows_spec)})
     body = json.loads(out.content[0].text)
     assert body["row_status"] is None
     assert body["direction_counts"] == {"decrease": 1, "increase": 2, "unknown": 1}
+    assert body["next_step"] and "gene_not_at_locus" not in body["next_step"]
 
 
 async def test_a_rows_dry_run_is_a_plan_and_asks_nothing(make_client, rows_spec, monkeypatch):

@@ -89,6 +89,8 @@ asked" and "asked, nothing returned", because nothing records which genes were a
 queries, and the sidecar's columns are upstream's. Test: `test_the_rows_path_says_a_distal_target_takes_the_interval_form`
 (fails on 0.48.3's code).
 
+**Recheck of 0.48.4 (tester, 2026-11-09):** the wording holds in the descriptions, but a host kept the old tool descriptions across a server restart, so an agent could still read the old meaning. `top_expression_effects` now puts the reading in the call result too: when any row is `gene_not_at_locus`, `next_step` opens with the count, the example rows, and that `rows=true` asks each row's own gene. Test: `test_gene_not_at_locus_is_read_out_in_the_call_result` (fails on 0.48.4's code).
+
 ## F139 — a re-attestation re-signs checks it did not re-run, so an old check's verdict is stamped onto new bytes
 
 **Found:** 2026-11-09 by the tester, layman probe · **Severity:** high · **Status:** our half resolved 2026-11-09; the writer is

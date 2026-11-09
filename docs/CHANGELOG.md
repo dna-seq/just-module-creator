@@ -5,6 +5,8 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`top_expression_effects` explains `gene_not_at_locus` in its result** (F140, tester's recheck): when a row has that status, `next_step` says the sidecar holds other genes there, that the row's own gene may never have been asked, and that `rows=true` asks it. Before, the field descriptions said so, and a host can keep stale copies of those.
+
 ## [0.48.4] — 2026-11-09
 
 - **The Atlas `rows` pass reports the time it took** (F141): `seconds_elapsed` and `slowest_window_seconds`, and the dry run calls its ~2 s a window a floor, since single windows have taken minutes.

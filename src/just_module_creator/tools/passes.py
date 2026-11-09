@@ -104,6 +104,7 @@ from mcp.types import ToolAnnotations
 
 from just_module_creator.expression import (
     ROW_STATUSES,
+    RowReport,
     effect_key,
     module_sites,
     plan_windows,
@@ -2009,13 +2010,32 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
             row_examples=rows.examples if rows is not None else {},
             effects=returned,
             next_step=(
-                _sign_disagreement(returned)
+                _gene_not_at_locus(rows)
+                + _sign_disagreement(returned)
                 + "A large predicted effect is a reason to READ the variant, not a role to assign "
                 "it. Check whether an rsID already describes it with lookup_variant, and if you "
                 "author a row from one of these, its direction is your judgement rather than "
                 "AlphaGenome's — say so in the conclusion and log it with record_override."
             ),
         )
+
+
+def _gene_not_at_locus(rows: RowReport | None) -> str:
+    """F140, on the wire: what `gene_not_at_locus` does and does not say, when a row has it.
+
+    The field descriptions carry the same reading, but a host can keep a stale copy of
+    them across a server restart; the call result is what an agent reads fresh.
+    """
+    count = rows.status.get("gene_not_at_locus", 0) if rows is not None else 0
+    if not count:
+        return ""
+    examples = ", ".join(rows.examples.get("gene_not_at_locus", [])) if rows else ""
+    return (
+        f"{count} authored row(s) read gene_not_at_locus ({examples}): the sidecar holds "
+        "predictions at that position for other genes only. That is not the Atlas finding no "
+        "effect on the row's own gene, which may never have been asked; "
+        "enrich_expression_effects with rows=true asks each row's own gene. "
+    )
 
 
 def _sign_disagreement(effects: list[RankedExpressionEffect]) -> str:
