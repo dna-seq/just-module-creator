@@ -21,6 +21,7 @@ out. 918 pass, ruff/pyright clean; polygon `registry_health` contract_compatible
 authored tables and passes, the pm's scope), 10 (`compilation.toolchain` beside a moved digest), item 3's cache
 offer text, the RM420 `cache pull` (operator's), re-reading F139's `checks_older_than_the_last_edit` against
 RM423. main stays 0.7 until production serves 0.8; then merge (not rebase) and release.
+2026-11-11, unattended: items 4-5 done (`bbcabfb`: symptom entries titled by warning code, with a test against the live vocabulary; validate described as the compile's own pre-flight; the retired QUAL advice out). Item 9 (`7ff1fdc`): F113's Crossref read out (0.8 names the DOI's work and offers its PMID as an advisory); F108's BioC rung kept, since 0.8's `extract_bioc_text` flattens tables; F115, F116 (0.8 still refuses `.jsonl` logs), F118, F127, F105 have nothing to take out. Item 3: nothing to change (the split snapshot is 14.2 GB against the offer's 14 GB). Item 10 declined: neither compare tool reads `artifact.digest`, so there is no moved digest to explain. Merge note: main's `hint citation` caveat (`313f62e`, true on 0.7) conflicts with the branch's 0.8 wording; take the branch's.
 Tester's probe at 113150c (2026-11-10): HTT/MTHFR strict and polygon `registry_check` true, allele_mismatches holds; F145 (false missing-lane sentence) fixed as `8ac4c82`. **The merge also waits on F146**: enricher 0.8.3 sends GWAS v2 `size=1000`, the API caps at 500 and answers 400, so `enrich_gwas_effects` fails on every module under 0.8. Upstream's to fix (liaison files it); no workaround here, and the branch's "page size 1000" budget wording follows their fix. F133's outage arm not exercised live (Europe PMC up).
 
 **main's [Unreleased], 2026-11-11**: F144 (`4f0085a`, the contract-skew note on the proxy routes) and F146's our half (`3664412`, the GWAS 410 says the v1 API is retired). The Catalog's v1 retirement means the shipped GWAS pass fails on every module; it returns only with an enricher on v2: a 0.7.4 off v0.7.3 carrying RM354 + RM428 (upstream's ask 4, put to the person by their pm and lead) or our 0.8 merge once production serves 0.8 and RM428 is released. `unattended`: the patch release waits for one of those today, so the day's one release carries the pass back rather than a message about its absence; with neither by the evening, release 0.48.6 with what is there.
@@ -89,7 +90,7 @@ queries exists); F141's cause (unknown).
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.170 (moved on each announcement; 0.1.170 on 2026-11-10) (`move-to-tag.py`; the pin is in the untracked
+- **Kit pin**: 0.1.171 (moved on each announcement; 0.1.171 on 2026-11-11) (`move-to-tag.py`; the pin is in the untracked
   `.claude/settings.local.json`). Taking it into this session is mine: `watchdog.sh reload`, then end the turn,
   and the kit's typer types `/reload-plugins` (the "left for the person" line `move-to-tag.py` prints is wrong, kit #306).
 
