@@ -83,7 +83,7 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
-| F132 | S142 | — | filed 2026-11-10, unanswered |
+| F132 | S142 | RM427 | answered, open (patch + minor) |
 | F135 | S141 | RM426 | answered, open (patch + minor) |
 | F142 | S140 | RM425 | answered, open (patch) |
 | F139 | S139 | RM423 | answered, open (patch half + minor half) |
@@ -130,15 +130,20 @@ On `assets/htt_cag_repeats` (`validate_module`, strict), every bin declares `sou
 
 ## F132 — the ClinVar-pass skip names `clinvar pull`, which no command registers; and a remedy key (format `S142`)
 
-**State: filed 2026-11-10 by the liaison, on the lead's hand-off; unanswered.** Our half is resolved
-(`docs/previous_issues.md` F132, `58ea0dc`, shipped in 0.48.5). `cli_map.on_this_surface` maps every
-command the two typer apps register and returns nothing for `clinvar pull`, so an agent gets no tool pointer
-rather than a wrong one.
+**State: answered the same hour: RM427. Asks 1 and 2 are a patch, ask 3 a minor for their pm.** Filed
+2026-11-10 by the liaison, on the lead's hand-off. Our half is resolved (`docs/previous_issues.md` F132, `58ea0dc`,
+shipped in 0.48.5): `cli_map.on_this_surface` maps every command the two typer apps register and returns nothing
+for `clinvar pull`. Triage: keep it abstaining until RM427 ships.
+
+**Our walk missed a second site.** The CLI's own skip line moved to `cli/pass_commands.py` on 0.8.2 and still says
+*"provision one with `clinvar pull`"*, unprefixed, so a walk keyed on `just-dna-*` could not see it. Their guard
+walks unprefixed spans too. **On ask 3, the validate/compile channel already has a key:** RM131's warning codes,
+one per remediation, are in format 0.7.1's `vocab.VALID_WARNING_CODES` (`module_not_closed` among them), so that
+channel can map by code today. The gap the minor would close is the enricher's log lines, which carry no code.
 
 `assertions.py`'s no-snapshot skip says *"Provision one with `just-dna-enricher clinvar pull`"* on enricher 0.7.3,
-0.8.2 and their `main`. On 0.8.2 `clinvar` has `build`, `publish` and `citations`, and the fetch is `cache pull`. A
-walk of every quoted `just-dna-* …` command in the 0.8.2 sources against both command trees found no other
-unregistered one. Asked for: (1) the wording, (2) that walk as a guard test in their tree, and (3) weighed rather
+0.8.2 and their `main`. On 0.8.2 `clinvar` has `build`, `publish` and `citations`, and the fetch is `cache pull`. Our
+walk of every quoted `just-dna-* …` command in the 0.8.2 sources found no other prefixed one. Asked for: (1) the wording, (2) that walk as a guard test in their tree, and (3) weighed rather
 than pressed: a structured `remedy` key on `hints.Finding` and the validate/compile warnings, so our map stops
 reading their text. We also named the reason against (3): most remedies are log text that never becomes a
 `Finding`.
