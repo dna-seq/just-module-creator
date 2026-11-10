@@ -114,6 +114,20 @@ its history.
 | F99 | S101 | doc fixed | upstream docs, nothing to install |
 | F54 | S58 | RM122 | open upstream, parked |
 
+## F143 — a namespace cannot be renamed; `rename_account` renames the handle only (registry `S28`)
+
+**State: filed 2026-11-10 by the lead, unanswered.** The person asked to move the polygon namespace `test-sheep`
+(44 rehearsal versions) to a new `test-`-prefixed name. The registry client 0.28.5 offers `rename_account`,
+`admin_rename_account` and `merge_accounts`, and nothing that names a namespace: its docstring says the old handle
+stays reserved and "nothing published changes identity", and the lead's dry run listed every version still under
+`test-sheep/`. Nothing was applied. Asked for: a namespace rename or transfer with an alias for the old name, a
+dry run and a per-version report, or, if a published `namespace/name` is deliberately fixed, saying so in the
+docstring and CLI help. No mitigation of ours; a tool follows once upstream has the call.
+
+**Parity gap beside it (ours, not upstream's):** the 0.28 client's `rename_account`, `merge_accounts` and
+`create_org_namespace` have no tool here. 0.28 needs format 0.8, so they belong to the `adopt-0.8` branch's list
+(the lead's).
+
 ## F130 — the repeat-count warnings name `RUC`/`CIRUC` over a declared `source_field=FORMAT/REPCN` (format `S136`)
 
 **State: answered and fixed in tree the same hour (RM414, their `89610c38`), not released; ships with their

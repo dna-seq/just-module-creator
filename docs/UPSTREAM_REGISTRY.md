@@ -31,6 +31,8 @@ admin-only `runs`, `run`, `run_log` (upgrade logs over REST), nothing for us. **
 map item 1 does, and `upgrade --online` now asks dbSNP (RM398's `dbsnp` witness rows reach republished modules). 0.28.x requires `just-dna-format>=0.8.0`, so our
 `<0.8` cap holds us at 0.27.x until the 0.8 adoption (`docs/UPSTREAM_COMPILER.md`, map item 1).
 
+**Filed:** `S28` (F143, the lead, 2026-11-10): no namespace rename; `rename_account` moves the handle only. Unanswered.
+
 ## Backlog
 
 Nothing open: 0.27.1 to 0.28.3 read entry by entry, 2026-11-07 (below); 0.28.4 read whole, 2026-11-09, and 0.28.5, 2026-11-10 (above).
