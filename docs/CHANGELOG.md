@@ -5,7 +5,6 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
-- **The `hint citation` mapping says where it differs**: upstream text naming `just-dna-enricher hint citation` now points at `lookup_citation` with the caveat that, given a DOI alone, it returns the title and deliberately no PMID (a PMID read off the DOI's own record would make the DOI cross-check agree with itself), and says to find the PMID with `literature_search` and confirm it.
 - **`enrich_gwas_effects` says the GWAS Catalog retired the API it reads** (F146, our half): the Catalog now answers the v1 REST API with HTTP 410, so the pass fails on every module under just-dna 0.7. The result keeps upstream's "returned 410" and adds that retrying or editing the spec will not help, and that the pass returns with an enricher release on the v2 API (upstream's RM428).
 - **`remote_derive` and `remote_draft` say a contract skew is the instance's** (F144): a 409 `just-dna-format contract mismatch` now carries the same note every other registry tool gives, instead of advice about 503 and 422 that sent the author to their spec.
 
