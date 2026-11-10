@@ -14,6 +14,31 @@ is usable, and what is missing.
 
 ---
 
+## F146 — under enricher 0.8.3, `enrich_gwas_effects` fails on every module: the GWAS Catalog v2 search refuses a page of 1000
+
+**Found:** 2026-11-10 22:53 UTC, branch adopt-0.8 at 113150c (enricher 0.8.3), in-process driver ·
+**Severity:** high on the 0.8 branch (the pass cannot run at all), none on main (0.7 reads v1) ·
+**Status:** upstream's (enricher), handed to the liaison at once; not ours to work around.
+
+`enrich_gwas_effects(use="non_commercial")` on a copy of `assets/fto_bmi` (one rsID, rs1421085):
+`success: false`, `rows: null`, warning `GWAS Catalog returned 400 for
+https://www.ebi.ac.uk/gwas/rest/api/v2/associations?rs_id=rs1421085&size=1000`.
+
+The page size is the cause. `just_dna_enricher/gwas.py` has `_PAGE_SIZE = 1000` and sends it as `size`.
+The same request by hand:
+
+| `size` | HTTP |
+|---|---|
+| 100, 200, 500 | 200 (`size=500` returns all 223 associations of rs1421085 on one page) |
+| 501, 999, 1000 | 400 `Bad Request` |
+
+Upstream's trunk has the same constant (checked in `../just-dna-format/enricher/src/just_dna_enricher/gwas.py`,
+same evening). Our result reports the failure honestly (`success: false`, the URL in `warnings`). Nothing to
+change on our side, except that the branch's commit 5b7684e describes a pass that cannot run until the
+enricher is fixed.
+
+---
+
 ## F145 — on the adopt-0.8 branch, `draft_from_strchive` says "No `strchive` lane on this machine" after drafting from that lane
 
 **Found:** 2026-11-10, branch adopt-0.8 at 113150c (format 0.8.3), in-process driver, not the host wire ·
