@@ -162,6 +162,15 @@ the call returns, on scratch copies under `data/interim/recheck_0484/` and the e
 | F141 | holds: the dry run calls its 26 s a floor, and `seconds_elapsed` and `slowest_window_seconds` are on the result |
 | F142 | holds: the ranked list's next step names its 2 opposite-sign rows and says why |
 
+**0.48.5 recheck, 2026-11-10 (server restarted via SIGKILL and `reload --mcp`).** Scratch copies under
+`data/interim/recheck_0485/`:
+
+| finding | result |
+|---|---|
+| F132 | holds: `validate_module` on an unclosed copy of `assets/fto_bmi` returns `on_this_surface` naming `close_module` beside the closure warning, which still says `just-dna-compiler close` |
+| F126 | holds in the source (`auth.py`): the docstring gives the order `JMC_INSTALL_ID`, then the saved account, then a fresh grind, and `_echoed` withholds a reused id. ToolSearch still shows the old description (host cache), and no live register was run |
+| F140 | holds in the result: on `data/interim/probe_atlas_fto/fto_irx3` the `next_step` opens "2 authored row(s) read gene_not_at_locus (rs1421085)" and names `rows=true` |
+
 **The host keeps the tool descriptions from its first connection.** After the server restart, ToolSearch still
 returned 0.48.3's descriptions, and the source has the new ones. A fix that is only in a description can't be
 rechecked in a reconnected session: read the source, or recheck from a fresh session.
