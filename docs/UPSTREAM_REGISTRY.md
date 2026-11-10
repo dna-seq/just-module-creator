@@ -22,20 +22,20 @@ format 0.7.1, compiler 0.7.2`; the polygon gave no answer within 15 s (not read,
 person's), still 502 at 17:0x UTC, and it has asked the person; still 502 at 02:37 UTC on 2026-11-09 and at 20:50 UTC on 2026-11-10 (production answers, 0.27.0). **Back at 21:22 UTC on 2026-11-10, serving `registry 0.28.5, format 0.8.0, compiler 0.8.0`** (the person redeployed it): main's 0.7 client now gets the minor-skew 409 on the polygon's guarded calls (`registry_check`, `registry_validate`, publish), while production still serves 0.7.1. The `adopt-0.8` branch matches the polygon. Registry 0.28.3 (enricher 0.8.1) is being cut; the
 polygon gets it at the next deploy.
 
-**Read to: `v0.28.5`, by its `Client surface:` lines** (2026-11-10), which CLAUDE.md §11 trusts for "did our
+**Read to: `v0.28.6`, by its `Client surface:` lines** (2026-11-11), which CLAUDE.md §11 trusts for "did our
 methods move". 0.27.1 and 0.28.1, 0.28.2: client surface unchanged. **0.28.0** moves it: `catalog_stats()`
 makes one request to the new `GET /stats`; `publish()` gains `recover_within=600.0` (a publish whose response
 was lost may return the version that landed instead of raising, after waiting up to that long); `whoami()` gains
 `site_admin`; account merge and rename methods are new. **0.28.3** (2026-11-07): client surface unchanged; new
-admin-only `runs`, `run`, `run_log` (upgrade logs over REST), nothing for us. **0.28.4** (2026-11-07, tagged 2026-11-09): client surface unchanged; `warm-caches`/`drop-caches` name each lane's readers, `warm-caches --proxy`/`--exclude`, and `REGISTRY_LOG_FILE` (the server's own log, added after the polygon's 502 left nothing to read). Operator only; the `/caches` API's `read_here`, which `registry_caches` passes on, is unchanged. **0.28.5** (2026-11-09, tagged 2026-11-10): client surface unchanged; `CacheLaneStatus` gains `readers`, and `read_here` is true exactly when a lane has one, so five more lanes (`pubmind`, `civic`, `clinvar_gkm`, `strchive`, `mitomap_miss`) read as used here. `registry_caches` passes the field through and nothing of ours branches on it. 0.28.4 floors enricher `>=0.8.1`, as our
+admin-only `runs`, `run`, `run_log` (upgrade logs over REST), nothing for us. **0.28.4** (2026-11-07, tagged 2026-11-09): client surface unchanged; `warm-caches`/`drop-caches` name each lane's readers, `warm-caches --proxy`/`--exclude`, and `REGISTRY_LOG_FILE` (the server's own log, added after the polygon's 502 left nothing to read). Operator only; the `/caches` API's `read_here`, which `registry_caches` passes on, is unchanged. **0.28.5** (2026-11-09, tagged 2026-11-10): client surface unchanged; `CacheLaneStatus` gains `readers`, and `read_here` is true exactly when a lane has one, so five more lanes (`pubmind`, `civic`, `clinvar_gkm`, `strchive`, `mitomap_miss`) read as used here. `registry_caches` passes the field through and nothing of ours branches on it. **0.28.6** (2026-11-10): client surface unchanged; all three upstream tiers floored at 0.8.3 (its dbSNP check no longer serializes an online publish, `warm-caches --apply` follows the hub's lane releases), `drop-caches` finds partial lanes, and an uploaded `verification.json` bound to other bytes keeps none of its records past server enrichment (RM423). The S28 docstrings ship here. Nothing for us before the 0.8 adoption; the adopt-0.8 branch floors the registry at 0.28.5, which 0.28.6 need not move. 0.28.4 floors enricher `>=0.8.1`, as our
 map item 1 does, and `upgrade --online` now asks dbSNP (RM398's `dbsnp` witness rows reach republished modules). 0.28.x requires `just-dna-format>=0.8.0`, so our
 `<0.8` cap holds us at 0.27.x until the 0.8 adoption (`docs/UPSTREAM_COMPILER.md`, map item 1).
 
-**Filed:** `S28` (F143, the lead, 2026-11-10): no namespace rename; `rename_account` moves the handle only. Declined by design (a published identity); docs fixed after 0.28.6.
+**Filed:** `S28` (F143, the lead, 2026-11-10): no namespace rename; `rename_account` moves the handle only. Declined by design (a published identity); docs shipped in 0.28.6.
 
 ## Backlog
 
-Nothing open: 0.27.1 to 0.28.3 read entry by entry, 2026-11-07 (below); 0.28.4 read whole, 2026-11-09, and 0.28.5, 2026-11-10 (above).
+Nothing open: 0.27.1 to 0.28.3 read entry by entry, 2026-11-07 (below); 0.28.4 read whole, 2026-11-09, 0.28.5, 2026-11-10, and 0.28.6, 2026-11-11 (above).
 
 ## Read entry by entry, 2026-11-07
 
