@@ -1,9 +1,8 @@
 # Reference examples, copied from just-dna-format
 
 `hfe_hemochromatosis/` and `cyp2c19_star_alleles/` are just-dna-format's own reference examples, copied
-unchanged from its tag `v0.7.3` (identical there to `v0.7.2` and to its trunk up to the 0.8 re-derivation),
-the release of the packages this plugin installs. The suite measures `compare_modules`, the checks,
-`study_facts` and `record_override` on them.
+unchanged from its tag `v0.8.3`, the release of the packages this plugin installs. The suite measures
+`compare_modules`, the checks, `study_facts` and `record_override` on them.
 
 They are copied rather than read from a sibling checkout because that checkout follows upstream's trunk:
 on 2026-11-06 it re-derived these examples in the 0.8 format, and our installed 0.7 compiler refused the

@@ -330,12 +330,14 @@ def test_every_estimate_names_a_lane_that_exists():
 
 
 def test_a_row_carries_the_producers_own_sentence_for_a_lane_with_no_route(monkeypatch, tmp_path):
-    """Ensembl is built by just-dna-pipelines, and saying so is better than saying nothing."""
+    """Ensembl is built by another repository's pipeline, and saying so beats saying nothing."""
     _empty_box(monkeypatch, tmp_path, free_mb=8_000.0)
     plan = provisioning.plan(settings=offline_settings())
 
+    unbuilt = next(lane.unbuilt for lane in routing.CACHE_LANES if lane.name == "ensembl")
+    assert unbuilt, "upstream's ensembl lane no longer says who builds it"
     ensembl = next(r for r in plan.lanes if r.lane == "ensembl")
-    assert ensembl.caution and "just-dna-pipelines" in ensembl.caution
+    assert ensembl.caution and unbuilt in ensembl.caution
     alphagenome = next(r for r in plan.lanes if r.lane == "alphagenome_avi")
     assert alphagenome.caution and "sign-in" in alphagenome.caution
     assert "alphagenome_avi" not in plan.full_lanes

@@ -1,0 +1,5 @@
+variant_key,genotype,authority,status,clin_sig,clin_sig_raw,confidence,confidence_unit,dataset,checked_at
+rs1800562,A/A,clinvar,recorded,pathogenic,"Pathogenic/Pathogenic,_low_penetrance|risk_factor",2,review_stars,clinvar_2026-06-27,2026-11-05T00:23:31Z
+rs1800562,A/A,pubmind,recorded,conflicting,Benign|Conflicting|Uncertain significance,,,pubmind_ca224ebf5ef3,2026-11-05T00:23:31Z
+rs1800562,A/G,clinvar,recorded,pathogenic,"Pathogenic/Pathogenic,_low_penetrance|risk_factor",2,review_stars,clinvar_2026-06-27,2026-11-05T00:23:31Z
+rs1800562,A/G,pubmind,recorded,conflicting,Benign|Conflicting|Uncertain significance,,,pubmind_ca224ebf5ef3,2026-11-05T00:23:31Z

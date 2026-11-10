@@ -214,7 +214,7 @@ filed for 1.0 and is **blocked** there, because `reverse` cannot re-emit the doc
   is the denominator. `subjects=0` with `skipped=null` means *the check ran and had nothing in scope*.
   That is not the same statement as `skipped` being set, and they can never occupy one value
   (`manifest.py`).
-- **`skipped`** — closed vocabulary, `vocab.VALID_VERIFICATION_SKIPS` (`vocab.py`), 8 members.
+- **`skipped`** — closed vocabulary, `vocab.VALID_VERIFICATION_SKIPS` (`vocab.py`); ask it for the members.
   Closed for a second reason beyond spelling: "backfill triage branches on *why*, so prose here would
   relocate the substring matching rather than end it". `not_requested` (a caller's choice) and
   `offline` (a capability the run lacked) "are different facts about the same absence and must not be

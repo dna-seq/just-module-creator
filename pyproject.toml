@@ -42,22 +42,26 @@ dependencies = [
     # day the deployment moved, which is why a floor bump is adoption here and not
     # hygiene.
     #
-    # **The `<0.8` ceiling is unchanged and is still the S20 decision.** It is about
-    # the registry rather than about us: a floor cannot express "one minor, both ends",
-    # so the upper bound is ours to hold whoever ships it. It costs the obvious thing
-    # and the cost is deliberate — 0.8 does not arrive here on its own, so adopting it
-    # is an explicit bump, run the same way this one was: read `/api/v1/version` off
-    # both instances first and move the floor to what they serve.
+    # **0.8 is adopted here (branch `adopt-0.8`, 2026-11-10), and the ceiling is again
+    # one minor, both ends.** A floor cannot express "one minor, both ends", so the
+    # upper bound is ours to hold whoever ships it, and 0.9 does not arrive on its own:
+    # adopting it is an explicit bump, read off both instances first and the floor
+    # moved to what they serve.
     #
     #   curl -s https://module-registry.just-dna.life/api/v1/version
     #   curl -s https://module-polygon.just-dna.life/api/v1/version
     #
+    # 0.8.3 rather than 0.8.0: the compiler 0.8.3 requires format `>=0.8.3`, and it is
+    # the release the suite and the polygon rehearsal ran against. Until production
+    # serves 0.8 too, this branch publishes to the polygon only: production answers a
+    # 0.8 client's guarded calls with `HTTP 409: just-dna-format contract mismatch`.
+    #
     # The 0.6.x floor reasoning this replaces is not lost, only subsumed: 0.6.2's
     # exception contract and 0.6.3/0.6.4's `multi_allelic_rsids` collapse (upstream
     # S41/S45, our F36) are all below 0.7.0. `docs/CHANGELOG.md` at 0.16.0 carries it.
-    "just-dna-compiler>=0.7.2,<0.8",
-    "just-dna-format>=0.7.1,<0.8",
-    "just-dna-enricher[atlas]>=0.7.3,<0.8",
+    "just-dna-compiler>=0.8.3,<0.9",
+    "just-dna-format>=0.8.3,<0.9",
+    "just-dna-enricher[atlas]>=0.8.3,<0.9",
     # 0.25.2 is the first PUBLISHED client carrying the whole caching-proxy surface —
     # `cache_status`, `derived`, `draft`, the six `hint_*` methods and
     # `models.api.VariantHintReport`. Verified against the wheel rather than a sibling
@@ -80,7 +84,9 @@ dependencies = [
     # 0.27.0 (2026-09-27) adds `publish(pack=True)`, which `registry_publish` wraps.
     # Both live instances served registry 0.27.0 / format 0.7.1 by that evening, and a
     # `registry_check` of assets/fto_bmi against the polygon came back `verdict: true`.
-    "just-dna-registry>=0.27.0",
+    # 0.28 is the first client on format 0.8 (it requires `>=0.8.0`), so it moves with
+    # the trio in one step; 0.28.0's `publish()` gains `recover_within`.
+    "just-dna-registry>=0.28.5",
     "python-dotenv>=1.2.2",
     # Declared, not leaned on transitively: net.py calls httpx directly for the
     # literature sources, and a transitive pin is not a contract.
@@ -120,14 +126,14 @@ requires = ["uv_build>=0.8.15,<0.9.0"]
 build-backend = "uv_build"
 
 [tool.uv]
-# Caps on two packages we never import, held in the lock until the just-dna 0.8 adoption decides them
-# (the liaison, 2026-11-07). A constraint, not a dependency: polars and duckdb reach us through the
-# compiler and the enricher, whose 0.7 releases floor them (polars>=1.42.0, duckdb>=1.1.0) with no ceiling,
-# so the weekly `uv lock --upgrade` would take polars 2 and duckdb 2.
+# Caps on two packages we never import, kept through the 0.8 adoption by decision (the lead, 2026-11-10). A
+# constraint, not a dependency: polars and duckdb reach us through the compiler and the enricher, whose 0.8.3
+# releases floor them (polars>=1.42.0, duckdb>=1.1.0) with no ceiling, so `uv lock --upgrade` would take
+# polars 2 and duckdb 2. 0.8.3 runs on both 1.x, so the caps cost nothing here and keep two hazards off:
 #  - polars 2 moves `artifact.digest` on a recompile with no content change (format's INTEGRATION_0_8 § 1.11).
 #  - duckdb 2 writes an `ensembl_variations.duckdb` into the shared cache that a duckdb-1 enricher crashes
-#    on (format's RM344); every just-dna tool on this machine reads that cache.
-# Lift both with the 0.8 adoption, after reading docs/UPSTREAM_COMPILER.md's map.
+#    on (format's RM344); every just-dna tool on this machine reads that cache, 0.7 ones included.
+# Lift them once nothing on this machine reads the shared cache with duckdb 1.
 constraint-dependencies = ["polars<2", "duckdb<2"]
 
 # Second root module: the EASRP manuscript CLI lives at src/manuscript/,

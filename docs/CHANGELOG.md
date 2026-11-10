@@ -5,6 +5,10 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+On the `adopt-0.8` branch, built ahead of production's 0.8 deploy on the person's word (2026-11-10); the polygon serves 0.8.
+
+- **just-dna 0.8 adopted**: format, compiler and enricher `>=0.8.3,<0.9`, `just-dna-registry>=0.28.5`. 0.8.3 rather than 0.8.0 because the 0.8.3 compiler requires format 0.8.3. polars and duckdb stay capped `<2` by decision, since 0.8.3 runs on both 1.x and every 0.7 tool on a machine shares the Ensembl cache a duckdb-2 enricher would rewrite. The reference examples are recopied from upstream's `v0.8.3`. Until production serves 0.8, publish to the polygon only: production refuses a 0.8 client's guarded calls with `HTTP 409`.
+
 ## [0.48.5] — 2026-11-10
 
 - **Upstream text that names a CLI command now says which tool does it here** (F132): `validate_module`, `compile_module`, the drafters and every upstream lint finding carry `on_this_surface`, so the closure warning's `just-dna-compiler close` arrives with `close_module` beside it. The map covers every command upstream registers, mapped or abstained from with a reason, and a test holds it to upstream's own command list.

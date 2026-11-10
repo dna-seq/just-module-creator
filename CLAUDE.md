@@ -759,8 +759,9 @@ answers a question over a number written here.*
 
 **Versions and dependencies**
 - **Upstream floors live in `pyproject.toml`**, with the reasoning in its comments; the format pin is
-  `>=0.7.x,<0.8` deliberately (one minor, both ends; the user's decision, 2026-09-04): 0.8 is an
-  explicit bump, made after reading both instances' `/api/v1/version`. Verify capabilities by symbol with the
+  `>=0.8.x,<0.9` deliberately (one minor, both ends; the user's decision, 2026-09-04): the next minor is
+  an explicit bump, made after reading both instances' `/api/v1/version`. 0.8 was built ahead of
+  production on the user's word (2026-11-10: "pre-build the 0.8 branch", with the polygon on 0.8). Verify capabilities by symbol with the
   `--project` recipe in §8, never from a line here. A floor bump is not adoption: sweep new authored
   fields into the skills.
 - **fastmcp is pinned `>=3.4.6,<4`.** fastmcp 4 negotiates the sessionless 2026-07-28 wire, so

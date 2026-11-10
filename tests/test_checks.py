@@ -20,6 +20,7 @@ from just_dna_enricher import pgx as upstream_pgx
 from just_dna_enricher.cpic import CpicAllele, CpicSnapshotClient
 from just_dna_enricher.drafting import stamp_draft_digest
 from just_dna_enricher.pharmvar import PharmVarAllele, PharmVarSnapshotClient
+from just_dna_format.snapshot import SnapshotRelease
 
 from just_module_creator.tools import checks
 from just_module_creator.tools.checks import NOT_APPLICABLE
@@ -598,7 +599,7 @@ async def test_pgx_check_carries_a_conflict_field_for_field(
     """
     class Disagreeing(CpicSnapshotClient):
         def __init__(self) -> None:  # no parquet behind it
-            self.release = {"dataset": "cpic_snapshot_test"}
+            self.release = SnapshotRelease(dataset="cpic_snapshot_test")
 
         def alleles_for_gene(self, gene: str) -> list[CpicAllele]:
             return [CpicAllele(gene="CYP2C19", allele="*2", function_status="increased_function")]
@@ -657,7 +658,7 @@ async def test_pgx_check_calls_a_copied_leg_a_copy_and_not_a_comparison(
 
     class AgreeingCpic(CpicSnapshotClient):
         def __init__(self) -> None:  # no parquet behind it
-            self.release = {"dataset": release}
+            self.release = SnapshotRelease(dataset=release)
 
         def alleles_for_gene(self, gene: str) -> list[CpicAllele]:
             return [CpicAllele(gene=g, allele=a, function_status=f) for g, a, f in authored]
@@ -667,7 +668,7 @@ async def test_pgx_check_calls_a_copied_leg_a_copy_and_not_a_comparison(
 
     class AgreeingPharmVar(PharmVarSnapshotClient):
         def __init__(self) -> None:
-            self.release = {"dataset": "pharmvar_snapshot_test"}
+            self.release = SnapshotRelease(dataset="pharmvar_snapshot_test")
 
         def alleles_for_gene(self, gene: str) -> list[PharmVarAllele]:
             return [PharmVarAllele(gene=g, allele=a, function=f) for g, a, f in authored]

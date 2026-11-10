@@ -104,12 +104,15 @@ def test_the_deprecated_spelling_is_the_same_table(pair):
     about the data moved.
     """
     left, right = pair
+    with (left / "sources.csv").open(newline="") as handle:
+        authored = len(list(csv.DictReader(handle)))
+    assert authored > 1, "the fixture's licence table is empty: the copy moved"
     (right / "sources.csv").rename(right / "licensing.csv")
     report = _compare(left, right, 12, 2)
     licensing = _table(report, "licensing.csv")
     assert licensing.presence == "both"
     assert (licensing.spelling_left, licensing.spelling_right) == ("sources.csv", "licensing.csv")
-    assert licensing.unchanged == 2
+    assert licensing.unchanged == authored
 
 
 def test_a_licence_edit_moves_no_content_signature_and_says_so(pair):
