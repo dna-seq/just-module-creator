@@ -67,8 +67,8 @@ that is internally consistent, compiles green, and asserts the opposite of the l
 
 **Where the machine-held number goes instead:** `gwas_effects.csv`, **beside** the authored column, with
 its own `effect_unit`, its own study and its own p-value. `enrich_gwas_effects` fills it
-— budget `1 + 2N` requests per variant, measured at **382 for one real module**, which is why the
-tool says so in its own description and why `--no-study-facts` exists. Reading that table is how you *justify* a weight; it is not
+— a request per page of associations for each variant plus one per distinct study they name (175
+for rs1800562), which is why the tool says so in its own description. Reading that table is how you *justify* a weight; it is not
 where the weight lives.
 
 ## Declare the scale

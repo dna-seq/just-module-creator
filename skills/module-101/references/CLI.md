@@ -104,7 +104,7 @@ kind, so the compile succeeds and writes a module whose every row has no `chrom`
 | `check-identifiers <dir>` | trait CURIEs (OLS4), gene symbols (HGNC). `--no-traits`, `--no-genes`. Writes no authored cell — but it **does** record that the question was put, into `verification.json`, unconditionally |
 | `gene-validity <dir>` | → `gene_validity.csv` from ClinGen / GenCC |
 | `assertions <dir>` | → `clinical_assertions.csv` from ClinVar |
-| `gwas <dir>` | → `gwas_effects.csv` from the GWAS Catalog. It deliberately does **not** fill `weight`. Budget is `1 + 2N` requests per variant — measured at 382 for one real module — so `--no-study-facts` before you script it |
+| `gwas <dir>` | → `gwas_effects.csv` from the GWAS Catalog. It deliberately does **not** fill `weight`. Budget is a request per page of associations for each variant plus one per distinct study they name; `--no-study-facts` drops the study requests |
 | `hint recover` | which rs-number GRCh37 dbSNP records at an hg19/GRCh37 coordinate. Reports, never fills |
 | `check-acmg <dir>` | `acmg_sf` vs the ACMG SF list. `--sf-list` (strongly preferred), `--offline`, `--url`. Records the question like `check-identifiers` |
 | `pgx <dir>` | `function_status` vs PharmVar + CPIC. `--no-pharmvar`, `--no-cpic`, `--use`. Wrapped as `check_pgx`, without `--strict`, which upstream stores and never reads |

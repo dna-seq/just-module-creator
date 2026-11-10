@@ -290,8 +290,8 @@ so gating it would be a cycle.
 **What is left of that line is a warning, and it is worth reading.** The rows marked *a corpus sizes
 it* run work sized by how much the world has published rather than by what you named: a citation
 graph, a whole-source PGx draft, a pass that rewrites every row. `enrich_gwas_effects` is the sharp
-end — `1 + 2N` requests for a variant with N published associations, measured at 382 for one real
-module. Each tool says this in its own description, so read the description before firing one off on
+end — a request per page of associations for each variant plus one per distinct study they name,
+175 studies for rs1800562's 186 associations. Each tool says this in its own description, so read the description before firing one off on
 a large module. Nothing refuses; the budget is yours to weigh.
 
 `refresh_sidecar` inherits that split through its argument rather than through the tool: re-deriving

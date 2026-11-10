@@ -101,7 +101,7 @@ is registered on every start, and the expensive ones say so in their own descrip
 | `compare_modules` | bounded | no | two spec directories, three grains, rows grouped by the set of columns that changed. No write path, no verdict on which side is right, and it never pairs rows whose key changed |
 | `refresh_sidecar` | bounded, except `literature.csv` / `gwas_effects.csv` | no | capture, verify, delete, re-derive, reapply what is provably authored, report the rest. Refuses offline and refuses `licensing.csv` |
 | `describe_machine_table` | bounded | no | the live columns of the machine-written tables, and what a hand-written cell there costs |
-| `enrich_gwas_effects` | corpus-sized | no | the GWAS Catalog's published effect sizes, **beside** `weight` and never into it. `1 + 2N` requests per variant — the corpus of published associations sizes it |
+| `enrich_gwas_effects` | corpus-sized | no | the GWAS Catalog's published effect sizes, **beside** `weight` and never into it. a request per page of associations for each variant plus one per distinct study — the corpus of published associations sizes it |
 | `reverse_module`, `registry_download` | bounded | no | get somebody else's published module onto disk — bounded by the one version you named |
 | `registry_validate`, `registry_check` | gated | **yes** | would this publish — server-side, spending no version number. `check` is the full dry run |
 | `registry_whoami`, `registry_claim_namespace`, `registry_publish` | gated | **yes** | registry writes; publish records the stamped identity in `published.json` |
@@ -174,8 +174,8 @@ launched.
 
 **The cost the tier was protecting is real and is now prose.** A handful of tools are sized by a
 *corpus* rather than by what the caller named — `paper_citations`, the PGx drafters, the bulk fact
-passes, and `enrich_gwas_effects` at `1 + 2N` requests per variant, measured at 382 for one real
-module. Each says so in its own description, and
+passes, and `enrich_gwas_effects` at a request per page of associations for each variant plus one
+per distinct study they name. Each says so in its own description, and
 `tests/test_surface_and_auth.py::test_the_corpus_sized_tools_say_what_they_cost` fails if one stops
 saying it. A caller can weigh that against what they are doing; a flag read at server start cannot.
 

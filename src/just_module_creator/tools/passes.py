@@ -27,10 +27,10 @@ which is why they share a module with the bulk passes below.
 were the extended tier until 0.21.0, on a cost argument that is still true and is
 now stated where the caller reads it rather than enforced by hiding the tool: a
 fact pass rewrites many rows at once instead of answering about the one thing you
-named, and `enrich_gwas_effects` is the sharpest version — its budget is `1 + 2N`
-requests for a variant with N published associations, measured at **382 requests
-for one real module**, sized by how much has been published rather than by
-anything the caller named. Say that in the docstring; do not spend a session's
+named, and `enrich_gwas_effects` is the sharpest version — a request per page of
+associations for each variant plus one per distinct study they name (175 studies
+for rs1800562's 186 associations), sized by how much has been published rather
+than by anything the caller named. Say that in the docstring; do not spend a session's
 whole task on it, which is what the flag did.
 """
 
@@ -1190,16 +1190,17 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         escalates *after* the write, so a strict failure leaves everything `best_effort`
         would have written while a fetch failure mid-pass writes nothing.
 
-        The budget is `1 + 2N` requests per variant, since pmid, trait, ancestry and
-        study accession sit behind `_links` — measured at 382 for one real module
-        against somebody else's rate limit. `study_facts=false` cuts that to one request
-        per variant, and the cut is **sticky**: the merge is keyed on `association_id`,
-        so a later run with study facts on skips those rows rather than backfilling
-        them, and only deleting the file re-derives them. `offline=true` is a no-op, not
-        a failure. `use` is recorded on the licence row and gates nothing — EMBL-EBI
-        names no licence, so `commercial_use` is written **unknown**, which is not
-        permission: the terms of the thousands of publications the Catalog summarizes
-        are not settled by its terms page.
+        The budget is a request per page of up to 1000 associations for each variant,
+        plus one per distinct study they name for its ancestry (175 studies for
+        rs1800562's 186 associations), against somebody else's rate limit. pmid, trait
+        and study accession come with the association. `study_facts=false` drops the
+        ancestry requests, and the cut is **sticky**: the merge is keyed on
+        `association_id`, so a later run with study facts on skips those rows rather
+        than backfilling their ancestry, and only deleting the file re-derives them.
+        `offline=true` is a no-op, not a failure. `use` is recorded on the licence row
+        and gates nothing — EMBL-EBI names no licence, so `commercial_use` is written
+        **unknown**, which is not permission: the terms of the thousands of publications
+        the Catalog summarizes are not settled by its terms page.
 
         **No thin path: `remote_derive` does not run this.** It is one of the opt-in
         check passes that route deliberately skips — egress spent on a verdict rather
@@ -1220,11 +1221,12 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
             await ctx.report_progress(progress=1, total=2)
 
         # ONE arm, and `GwasNotFound` deliberately does not get its own. It is a subclass of
-        # `GwasError`, so an arm for it would have to come first — but it cannot arrive here:
-        # `associations_for` catches the Catalog's 404 and returns the empty ANSWER, which the
-        # pass records as a `not_found` row, and `follow` catches it so an association whose
-        # study record moved keeps null study facts instead of sinking the pass. An except arm
-        # for a type that never arrives is worse than none: it reads as if it did.
+        # `GwasError` and means the same thing here: on the v2 search a 404 is a wrong path,
+        # never "no associations" (the empty answer is a 200 saying zero, recorded as a
+        # `not_found` row), so it fails the pass like any request that got no answer. `follow`
+        # still catches it, so a study whose ancestry moved keeps a null ancestry instead of
+        # sinking the pass. `GwasRetired` (a 410) is a `GwasError` too, and its message names
+        # the retirement.
         # `tests/test_passes.py::test_no_except_arm_is_shadowed_by_an_earlier_one` is what stops
         # a second arm from being added parent-first.
         try:
@@ -1309,10 +1311,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
             )
         if not study_facts:
             warnings.append(
-                "study_facts was off, so pmid, trait, trait_efo_id, ancestry and study_accession "
-                "are null on every row this run wrote. The merge is keyed on association_id, so a "
-                "later run with study facts on will SKIP these rows rather than backfill them — "
-                "delete gwas_effects.csv to re-derive them."
+                "study_facts was off, so ancestry is null on every row this run wrote. The merge "
+                "is keyed on association_id, so a later run with study facts on will SKIP these "
+                "rows rather than backfill them — delete gwas_effects.csv to re-derive them."
             )
 
         return GwasReport(

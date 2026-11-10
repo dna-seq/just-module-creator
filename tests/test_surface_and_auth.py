@@ -57,8 +57,8 @@ AUTHORING_LOOP = {
 
 # Bounded by a CORPUS rather than by what the caller named. That was the whole
 # content of the extended tier, and the cost measurement behind it still stands:
-# `enrich_gwas_effects` spends `1 + 2N` requests for a variant with N published
-# associations, measured at 382 for one real module.
+# `enrich_gwas_effects` spends a request per page of associations for each variant
+# plus one per distinct study they name: 175 studies for rs1800562's 186 associations.
 #
 # What changed in 0.21.0 is who is told. Hiding a tool never made its pass
 # cheaper; it made the tool invisible to exactly the sessions that needed it, and

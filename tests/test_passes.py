@@ -19,6 +19,7 @@ import pytest
 from conftest import offline_settings
 from fastmcp.exceptions import ToolError
 from just_dna_compiler.draft import DraftError, append_rows, stub_template
+from just_dna_enricher.gwas import DEFAULT_GWAS_ENDPOINT
 
 from just_module_creator.expression import ROW_STATUSES, module_sites, plan_windows, report_rows
 from just_module_creator.models import DraftResult
@@ -544,69 +545,85 @@ async def test_an_outage_is_reported_apart_from_a_data_failure(monkeypatch, clie
 
 # ── the GWAS Catalog pass (RM12) ─────────────────────────────────────────────────────
 #
-# The payload shape is the real one the REST API returns, taken from upstream's own
-# recorded fixtures and re-keyed onto `rs4988235`, the rsID the `spec_dir` fixture
-# authors. The client is injected, so these run the real fetching-free parsing, merging
-# and writing code with no network and no sleeping — the offline ceiling still holds
-# because an injected transport is not egress.
+# The payload shape is the real one REST API v2 returns, taken from upstream's own
+# recorded fixtures (`enricher/tests/test_gwas.py` at v0.8.3, recorded 2026-11-04 for
+# rs4149056) and re-keyed onto `rs4988235`, the rsID the `spec_dir` fixture authors. The
+# client is injected, so these run the real fetching-free parsing, merging and writing
+# code with no network and no sleeping — the offline ceiling still holds because an
+# injected transport is not egress.
+
+
+def _gwas_links(association_id: int) -> dict:
+    base = f"{DEFAULT_GWAS_ENDPOINT}/associations/{association_id}"
+    return {
+        "self": {"href": base},
+        "loci": {"href": f"{base}/loci"},
+        "snp": {"href": f"{DEFAULT_GWAS_ENDPOINT}/single-nucleotide-polymorphisms/rs4988235"},
+    }
+
 
 _GWAS_NAMED_ALLELE = {
-    "associationId": "13069",
-    "betaNum": 0.05,
-    "betaUnit": "umol/l",
-    "betaDirection": "increase",
+    "association_id": 13069,
+    "risk_frequency": "0.15",
+    "pvalue_mantissa": 7,
+    "pvalue_exponent": -13,
     "range": "[0.03-0.07]",
-    "riskFrequency": "0.15",
-    "pvalue": 7.0e-13,
-    "loci": [{"strongestRiskAlleles": [{"riskAlleleName": "rs4988235-A"}]}],
-    "_links": {
-        "study": {"href": "https://example.test/studies/GCST000001"},
-        "efoTraits": {"href": "https://example.test/traits/13069"},
-    },
+    "beta": "0.05 umol/l increase",
+    "p_value": 7e-13,
+    "efo_traits": [{"efo_id": "EFO_0004570", "efo_trait": "bilirubin measurement"}],
+    "accession_id": "GCST000386",
+    "pubmed_id": "19414484",
+    "snp_effect_allele": ["rs4988235-A"],
+    "_links": _gwas_links(13069),
 }
 
 #: The Catalog really writes `rs…-?` when a study never established which allele carries the
 #: effect, and `unit` when the beta's scale is not stated. Both are kept verbatim upstream.
 _GWAS_UNKNOWN_ALLELE = {
-    "associationId": "55421052",
-    "betaNum": 0.3017178,
-    "betaUnit": "unit",
-    "betaDirection": "increase",
-    "standardError": 0.0467972,
-    "riskFrequency": "NR",
-    "pvalue": 1.0e-10,
-    "loci": [{"strongestRiskAlleles": [{"riskAlleleName": "rs4988235-?"}]}],
-    "_links": {
-        "study": {"href": "https://example.test/studies/GCST000001"},
-        "efoTraits": {"href": "https://example.test/traits/55421052"},
-    },
+    "association_id": 55421052,
+    "risk_frequency": "NR",
+    "pvalue_mantissa": 1,
+    "pvalue_exponent": -10,
+    "range": "[0.21-0.39]",
+    "beta": "0.3017178 unit increase",
+    "p_value": 1e-10,
+    "efo_traits": [
+        {"efo_id": "EFO_0010370", "efo_trait": "lysophosphatidylethanolamine 20:4 measurement"}
+    ],
+    "accession_id": "GCST009391",
+    "pubmed_id": "23823483",
+    "snp_effect_allele": ["rs4988235-?"],
+    "_links": _gwas_links(55421052),
 }
 
-#: `pvalue: 0.0` is what the Catalog publishes past float64's subnormal boundary. Six of these
-#: sit in `reference_examples/hfe_hemochromatosis`, which is why strict refuses a shipped module.
+#: `p_value: 0.0` is what the Catalog publishes past float64's subnormal boundary; v2 keeps the
+#: curated mantissa/exponent beside it (association 119912762, recorded upstream), so the
+#: verbatim string says `3e-493` while the queryable number is withheld.
 _GWAS_UNDERFLOW = {
-    "associationId": "64192738",
-    "betaNum": 0.1253,
-    "betaUnit": "unit",
-    "betaDirection": "increase",
-    "pvalue": 0.0,
-    "loci": [{"strongestRiskAlleles": [{"riskAlleleName": "rs4988235-A"}]}],
-    "_links": {"study": {"href": "https://example.test/studies/GCST000001"}},
+    **_GWAS_NAMED_ALLELE,
+    "association_id": 119912762,
+    "pvalue_mantissa": 3,
+    "pvalue_exponent": -493,
+    "p_value": 0.0,
+    "_links": _gwas_links(119912762),
 }
 
-_GWAS_STUDY = {
-    "accessionId": "GCST000001",
-    "publicationInfo": {"pubmedId": 11788828},
-    "ancestries": [{"ancestralGroups": [{"ancestralGroup": "European"}]}],
-}
 
-_GWAS_TRAITS = {
-    "https://example.test/traits/13069": {
-        "_embedded": {"efoTraits": [{"trait": "Lactase persistence", "shortForm": "EFO_0004570"}]}
-    },
-    "https://example.test/traits/55421052": {
-        "_embedded": {"efoTraits": [{"trait": "Milk consumption", "shortForm": "EFO_0009999"}]}
-    },
+def _gwas_ancestries(*groups: str) -> dict:
+    """The `/studies/<accession>/ancestries` shape, one initial-stage entry."""
+    return {
+        "_embedded": {
+            "ancestries": [
+                {"type": "initial", "ancestral_groups": [{"ancestral_group": g} for g in groups]}
+            ]
+        }
+    }
+
+
+#: Real ancestries for the two studies, 2026-11-04 (upstream's recording).
+_GWAS_ANCESTRIES = {
+    f"{DEFAULT_GWAS_ENDPOINT}/studies/GCST000386/ancestries": _gwas_ancestries("Other"),
+    f"{DEFAULT_GWAS_ENDPOINT}/studies/GCST009391/ancestries": _gwas_ancestries("European"),
 }
 
 
@@ -617,15 +634,19 @@ class FakeGwasClient:
         self.associations = list(associations)
         self.calls: list[str] = []
 
-    def associations_for(self, rsid: str) -> list[dict]:
+    def release(self) -> str | None:
+        raise AssertionError("the tests pin `dataset`, so the release is never asked")
+
+    def association_pages(self, rsid: str) -> list[list[dict]]:
         self.calls.append(f"assoc:{rsid}")
-        return list(self.associations)
+        return [[dict(a) for a in self.associations]]
+
+    def study_ancestries_url(self, accession: str) -> str:
+        return f"{DEFAULT_GWAS_ENDPOINT}/studies/{accession}/ancestries"
 
     def follow(self, url: str) -> dict:
         self.calls.append(url)
-        if "studies" in url:
-            return dict(_GWAS_STUDY)
-        return dict(_GWAS_TRAITS.get(url, {}))
+        return dict(_GWAS_ANCESTRIES.get(url, {}))
 
     def close(self) -> None:
         raise AssertionError("the pass must not close a client it did not create")
@@ -682,13 +703,12 @@ async def test_a_published_effect_is_reported_and_never_becomes_a_weight(
     # fake served IS a request issued: `_LinkCache` reaches the transport only on a miss, so a
     # cache hit never appears here and `requests_made` is exactly what the fake was asked.
     served_follows = [c for c in gwas_client.calls if not c.startswith("assoc:")]
-    attempted_follows = sum(len(a["_links"]) for a in (_GWAS_NAMED_ALLELE, _GWAS_UNKNOWN_ALLELE))
-    assert data.requests_made == len(gwas_client.calls) == 1 + len(served_follows)
-    assert data.requests_saved == attempted_follows - len(served_follows)
-    # `1 + 2N`: N associations for the one variant queried, each naming a study and a trait. The
-    # two share a study, so the cache pays exactly once here — on a real module it paid nothing.
-    assert attempted_follows == 2 * len([_GWAS_NAMED_ALLELE, _GWAS_UNKNOWN_ALLELE])
-    assert data.requests_saved == 1
+    studies = {a["accession_id"] for a in (_GWAS_NAMED_ALLELE, _GWAS_UNKNOWN_ALLELE)}
+    assert len(studies) == 2, "the fixture's two associations name two studies"
+    # One page for the one variant queried, plus one ancestry request per distinct study.
+    assert data.requests_made == len(gwas_client.calls) == 1 + len(studies)
+    assert sorted(served_follows) == sorted(_GWAS_ANCESTRIES)
+    assert data.requests_saved == 0
 
     # `weight` is authored and stays authored: nothing this pass ran touched variants.csv.
     assert "1.2" in (spec_dir / "variants.csv").read_text()
@@ -729,9 +749,9 @@ async def test_the_gwas_strict_ladder_escalates_on_the_catalogs_shape_after_writ
     written = spec_dir / "gwas_effects.csv"
     assert written.is_file()
     rows = list(csv.DictReader(written.read_text().splitlines()))
-    assert [r["association_id"] for r in rows] == ["64192738"]
-    # The number is withheld and the source's own string is kept — the row is not lost.
-    assert rows[0]["p_value"] == "0.0"
+    assert [r["association_id"] for r in rows] == ["119912762"]
+    # The number is withheld and the curated string is kept — the row is not lost.
+    assert rows[0]["p_value"] == "3e-493"
     assert rows[0]["p_value_num"] == ""
 
     # Same input, best_effort: the count is reported and the pass completes.
@@ -774,7 +794,7 @@ async def test_study_facts_off_says_the_nulls_it_leaves_are_permanent(
 
     The merge key is `association_id` alone, so a later run with study facts on skips these
     rows rather than backfilling them. Asserted rather than described: the second run leaves
-    `pmid` empty, and only deleting the file recovers it.
+    `ancestry` empty, and only deleting the file recovers it.
     """
     gwas_client = FakeGwasClient([_GWAS_NAMED_ALLELE])
     _inject_gwas_client(monkeypatch, gwas_client)
@@ -784,21 +804,24 @@ async def test_study_facts_off_says_the_nulls_it_leaves_are_permanent(
     )
     assert thin.data.success is True
     assert thin.data.study_facts is False
-    # One request for the variant and no `_links` follows at all.
+    # One request for the variant and no ancestry request at all.
     assert thin.data.requests_made == 1
     assert gwas_client.calls == ["assoc:rs4988235"]
     assert any("will SKIP these rows" in w for w in thin.data.warnings)
 
     written = spec_dir / "gwas_effects.csv"
-    assert list(csv.DictReader(written.read_text().splitlines()))[0]["pmid"] == ""
+    first = list(csv.DictReader(written.read_text().splitlines()))[0]
+    # The pmid comes with the association on v2; the ancestry is what the cut leaves out.
+    assert first["pmid"] == _GWAS_NAMED_ALLELE["pubmed_id"]
+    assert first["ancestry"] == ""
 
     # Re-running with study facts on does NOT backfill: the association id is already there.
     await client.call_tool("enrich_gwas_effects", {"spec_dir": str(spec_dir), "study_facts": True})
-    assert list(csv.DictReader(written.read_text().splitlines()))[0]["pmid"] == ""
+    assert list(csv.DictReader(written.read_text().splitlines()))[0]["ancestry"] == ""
 
     written.unlink()
     await client.call_tool("enrich_gwas_effects", {"spec_dir": str(spec_dir), "study_facts": True})
-    assert list(csv.DictReader(written.read_text().splitlines()))[0]["pmid"] == "11788828"
+    assert list(csv.DictReader(written.read_text().splitlines()))[0]["ancestry"] == "Other"
 
 
 # --------------------------------------------------------------------------- #
@@ -1064,6 +1087,7 @@ async def test_a_not_found_row_is_not_counted_as_resolved(
         "fields double-count the same subject"
     )
     assert len(report.unresolved) == 2
+
 
 
 # --------------------------------------------------------------------------- #

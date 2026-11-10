@@ -62,8 +62,8 @@ division as everywhere else — the module is the knowledge, the reader brings t
   reads, across every row at once — so the module's size, not the call, sets the cost.
 - **Published effect sizes.** `enrich_gwas_effects` records what the GWAS Catalog published for your
   rsIDs into `gwas_effects.csv` — one row per **association**, not per variant. The corpus of
-  published associations sizes it: `1 + 2N` requests per variant, measured at 382 for one real
-  module. It does not fill `weight` and nothing on it could: a published
+  published associations sizes it: a request per page of associations for each variant plus one
+  per distinct study they name (175 for rs1800562). It does not fill `weight` and nothing on it could: a published
   beta belongs to its own study's scale, many associations name no effect allele at all, and the tool
   reports both counts so that is readable rather than assumed.
 

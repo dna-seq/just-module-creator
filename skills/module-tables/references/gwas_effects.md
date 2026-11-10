@@ -92,8 +92,8 @@ writing them is not a check filling its own answer. The refusal that matters run
   MODULE_LIFECYCLE § Stage 3 names `weight`/`direction`/`effect_size` among the cells no tool fills,
   and every check in the tier reports rather than repairs. A null `weight` means *the author has not
   modelled this*, not *nobody has computed this yet*.
-- **Never copy `pmid` into `studies.csv` and call it evidence.** The PMID here arrived from a `_links`
-  follow, so nobody has read that paper yet — go and read it. Since `RM15` (2026-08-20) you may quote
+- **Never copy `pmid` into `studies.csv` and call it evidence.** The PMID here arrived on the Catalog's
+  association record, so nobody has read that paper yet — go and read it. Since `RM15` (2026-08-20) you may quote
   a passage from a fulltext you fetched; what you may not do is move an id across and let the row
   imply an evidence review that never happened. Read the article, quote the passage that supports
   **this row's** claim, and never the title.
@@ -128,7 +128,7 @@ byte-identical digest (`sha256:6c6e103d…`), so every "MOVED" below is the edit
    re-curated effect size is a different fact); and **`rsid`, which inverts
    `CLINICAL_ASSERTION_FACT_FIELDS`** — there the archive returns no rsID so the column comes from
    the module's own `resolution.csv`, here the Catalog is *queried by* it and echoes it back inside
-   `riskAlleleName`, so it is part of what the source said (`integrity.py`).
+   `snp_effect_allele`, so it is part of what the source said (`integrity.py`).
 2. **Inside `artifact.digest`? Yes.** So a provenance-only cell no signature sees still moves the
    digest, because the parquet bytes differ — measured with a single `fetched_at` edit. **Row order
    does too**, and that is the one that surprises people: the fact hash sorts, the parquet does not
@@ -177,14 +177,16 @@ Ask the live model for the full list (below). These are the ones that get misrea
   uninformative `unit`**, because "these betas are on unknown and possibly different scales" is the
   fact a consumer must have. Null for an `OR`, which is dimensionless. Inside the fact hash.
 - **`effect_allele`** — the allele `effect_size` is stated relative to, parsed out of
-  `riskAlleleName` (`rs4149056-C` → `C`). **Null when the source wrote `-?`** — a fact, not a gap.
-- **`effect_direction`** — the Catalog's `betaDirection`, `increase|decrease`
+  `snp_effect_allele` (`rs4149056-C` → `C`). **Null when the source wrote `-?`** — a fact, not a gap.
+- **`effect_direction`** — the direction word ending the Catalog's composite `beta` string
+  (`"0.05 umol/l increase"`), `increase|decrease`
   (`vocab.VALID_EFFECT_DIRECTIONS`, closed). About the **measured trait**.
   `VariantRow.direction` is `protective|risk|neutral|unknown`, a clinical judgement. Increasing HDL
   and increasing LDL are both `increase`.
 - **`effect_measure`** — `OR` or `beta` in practice, **open** vocabulary
-  (`vocab.RECOMMENDED_EFFECT_MEASURES`). Mapped from two mutually exclusive Catalog keys
-  (`orPerCopyNum`, `betaNum`), so it is exact rather than the download TSV's one ambiguous column.
+  (`vocab.RECOMMENDED_EFFECT_MEASURES`). Mapped from two mutually exclusive Catalog fields
+  (`or_per_copy_num`, the composite `beta` string), so it is exact rather than the download TSV's one
+  ambiguous column. A `beta` string outside the grammar is withheld whole and counted.
 - **`p_value` vs `p_value_num`** — the string is verbatim; the number is `gt=0, le=1` and is
   **withheld** on an underflow. Three-valued: a null `p_value_num` beside a non-null `p_value` means
   *the Catalog published a p-value this column cannot hold*, not *no p-value*.
@@ -218,18 +220,18 @@ Ordered by how likely a first-timer is to hit them.
    the effect. Real evidence; **unusable as a weight in any direction**. Kept and counted rather than
    filtered, so that neither dropping them nor keeping them can happen by accident
    (`with_effect_allele` = 153, `without_effect_allele` = 42 in the manifest — measured).
-5. **The request budget is `1 + 2N` per variant and the cache does not save you.** `pmid`,
-   `study_accession`, `ancestry`, `trait` and `trait_efo_id` all sit behind `_links`. `_LinkCache`
-   was built expecting associations to share studies; on this module it saved **nothing** — **382
-   requests, 0 hits**, because rs1800562's associations name **175 distinct study accessions** across
-   186 rows (measured off the CSV). `--no-study-facts` drops it to one request per variant and keeps
-   the effects, losing pmid/trait/ancestry. Decide before you script it: the largest bundle in the
-   real submitted corpus carries **177 rsIDs**.
-6. **A 404 is the empty answer, not an outage.** The Catalog holds only variants with a published
-   genome-wide association, so it 404s on a rare clinical one. `GwasNotFound` keeps that typed and
-   `associations_for` converts it into a `not_found` row. The first version of this pass read it as a
-   transport failure and **died on the first variant of the first real module it met** — 9 of
-   `hfe`'s 10 rsIDs are in that state. Do not "fix" a `not_found` row by deleting it.
+5. **The request budget is a page per variant plus a study per distinct study, and studies rarely
+   repeat.** `pmid`, `study_accession`, `trait` and `trait_efo_id` come with the association; only
+   `ancestry` is a request of its own, one per distinct study, cached. rs1800562's associations name
+   **175 distinct study accessions** across 186 rows (measured off the CSV), so the cache saves
+   almost nothing. `--no-study-facts` drops the ancestry requests and keeps everything else. Decide
+   before you script it: the largest bundle in the real submitted corpus carries **177 rsIDs**.
+6. **The empty answer is a 200 that says zero, and a 404 is not an answer.** The Catalog holds only
+   variants with a published genome-wide association; for any other it answers 200 with
+   `page.totalElements: 0`, which the pass writes as a `not_found` row — 9 of `hfe`'s 10 rsIDs are in
+   that state. Do not "fix" a `not_found` row by deleting it. A 404 on the search means a wrong
+   path, so it fails the pass rather than write a confident negative about a variant nobody could
+   ask about.
 7. **`pvalue: 0.0` is a real Catalog underflow, and the row survives it.** Past float64's subnormal
    boundary the Catalog publishes exactly `0.0`; `p_value_num` refuses it (correctly — that is not a
    probability), the verbatim string is kept and the **row stays**. Six of them on `hfe`; the fix
@@ -302,9 +304,8 @@ Ordered by how likely a first-timer is to hit them.
 - **`enrich_gwas` IS wrapped now — this bullet said otherwise and was right when written.** Closed as
   our RM12 on 2026-08-20: `enrich_gwas_effects` in `tools/passes.py`, registered in
   `register_bulk_passes`. It needed `JMC_MODE=extended` until 0.21.0 removed the tier; the cost that
-  put it there is unchanged and now stated in its own description — budget is `1 + 2N` requests per
-  variant because pmid/trait/ancestry/study_accession all sit behind `_links`, measured at **382
-  requests and 0 cache hits** on one real module. The CLI route still works and is the fallback on an
+  put it there is unchanged and now stated in its own description — a request per page of
+  associations for each variant plus one per distinct study for its ancestry. The CLI route still works and is the fallback on an
   older build:
   `uv run just-dna-enricher gwas <spec-dir> [--no-study-facts] [--use …]`. Also
   note `list_tables().sidecars` (`tools/authoring.py`) lists only four sidecars and omits the

@@ -377,8 +377,8 @@ ROSTER: dict[str, Sidecar] = {
         ),
     ),
     "gwas_effects.csv": Sidecar(
-        # `1 + 2N` requests for a variant with N published associations,
-        # measured at 382 for one real module.
+        # A request per page of associations for each variant, plus one per distinct
+        # study they name (175 for rs1800562's 186 associations).
         corpus_sized=True,
         csv="gwas_effects.csv",
         model=GwasEffectRow,

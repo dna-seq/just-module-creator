@@ -42,8 +42,8 @@ attempt is a repair rather than a second loss.
 
 **Two names cost far more than the rest, and nothing stops you.** A sidecar whose pass is sized by
 how much the world has published, rather than by the rows you wrote: `literature.csv` searches per
-variant across the corpus, and `gwas_effects.csv` costs `1 + 2N` requests per variant, measured at
-382 for one real module. Naming one of those warns and proceeds. Everything else,
+variant across the corpus, and `gwas_effects.csv` costs a request per page of associations for each
+variant plus one per distinct study they name (175 for rs1800562). Naming one of those warns and proceeds. Everything else,
 `resolution.csv` included, is bounded by the rows you wrote.
 
 **Five honest limits, because a tool that hid them would be worse than the manual route:**

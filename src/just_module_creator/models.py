@@ -2172,10 +2172,9 @@ class GwasReport(BaseModel):
     requests_made: int | None = Field(
         default=None,
         description=(
-            "Requests actually issued against EBI. The budget is `1 + 2N` per variant with N "
-            "associations — measured at 382 for one real module — because pmid, trait, ancestry "
-            "and study accession all sit behind `_links`. This is somebody else's rate limit. "
-            "`null` when the pass failed before anything was counted."
+            "Requests actually issued against EBI: a request per page of associations for each "
+            "variant, plus one per distinct study they name for its ancestry. This is somebody "
+            "else's rate limit. `null` when the pass failed before anything was counted."
         ),
     )
     requests_saved: int | None = Field(
