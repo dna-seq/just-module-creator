@@ -19,7 +19,7 @@ is usable, and what is missing.
 **Found:** 2026-11-10 22:53 UTC, branch adopt-0.8 at 113150c (enricher 0.8.3), in-process driver ·
 **Severity:** high on both builds: the pass cannot run at all, on the 0.8 branch (below) or on main (the v1 API
 it reads is retired, see the end) ·
-**Status:** upstream's (enricher), handed to the liaison at once; not ours to work around.
+**Status:** upstream's (enricher), handed to the liaison at once; not ours to work around. Our half on main (the bare 410) is answered by the lead in the commit that adds `_gwas_gone`; the description's `1 + 2N` stays, since it is what this build spends, and adopt-0.8 already rewrites it for v2. The finding stays open for upstream's half (S143, now their RM428).
 
 `enrich_gwas_effects(use="non_commercial")` on a copy of `assets/fto_bmi` (one rsID, rs1421085):
 `success: false`, `rows: null`, warning `GWAS Catalog returned 400 for

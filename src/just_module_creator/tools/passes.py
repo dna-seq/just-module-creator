@@ -45,6 +45,7 @@ from pathlib import Path
 from typing import Any
 
 import anyio
+import httpx
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
@@ -164,6 +165,24 @@ _GWAS_NOTE = (
     "`weight` stays your model of the finding. The two columns sit side by side and a "
     "consumer chooses between them wholesale."
 )
+
+def _gwas_gone(exc: GwasError) -> str | None:
+    """The sentence for a Catalog that answered 410 Gone, or ``None`` for any other failure.
+
+    F146: the Catalog retired the v1 REST API the 0.7 enricher reads, and upstream's message
+    is a bare "returned 410", which reads like an outage worth retrying. Read off the
+    ``httpx.HTTPStatusError`` upstream chains, so it never parses upstream's text.
+    """
+    cause = exc.__cause__
+    if not (isinstance(cause, httpx.HTTPStatusError) and cause.response.status_code == 410):
+        return None
+    return (
+        "The GWAS Catalog has retired the API this build reads (HTTP 410, Gone), so the pass "
+        "cannot run for any module. Retrying or editing the spec will not change that. It "
+        "comes back with an enricher release that reads the Catalog's v2 API (upstream's "
+        "RM428); until then gwas_effects.csv is left as it was."
+    )
+
 
 #: The Catalog's own marker for a variant it published nothing about, on `GwasEffectRow.status`.
 #: Upstream exports no constant for that vocabulary, so the literal is owned here — and it has to
@@ -1240,7 +1259,10 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
             )
         except GwasError as exc:
             warnings: list[str] = [str(exc)]
-            if strict:
+            gone = _gwas_gone(exc)
+            if gone:
+                warnings.append(gone)
+            if strict and not gone:
                 warnings.append(
                     "This ran strict, where the ladder escalates on the CATALOG's shape — "
                     "associations served without an id to key on, p-values below float64's "

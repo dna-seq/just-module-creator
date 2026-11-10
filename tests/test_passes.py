@@ -15,10 +15,12 @@ import re
 import time
 from pathlib import Path
 
+import httpx
 import pytest
 from conftest import offline_settings
 from fastmcp.exceptions import ToolError
 from just_dna_compiler.draft import DraftError, append_rows, stub_template
+from just_dna_enricher.gwas import GwasError
 
 from just_module_creator.expression import ROW_STATUSES, module_sites, plan_windows, report_rows
 from just_module_creator.models import DraftResult
@@ -693,6 +695,48 @@ async def test_a_published_effect_is_reported_and_never_becomes_a_weight(
     # `weight` is authored and stays authored: nothing this pass ran touched variants.csv.
     assert "1.2" in (spec_dir / "variants.csv").read_text()
 
+
+
+class _RetiredGwasClient(FakeGwasClient):
+    """The Catalog's v1 API since its retirement: every request answers 410 Gone.
+
+    Raised the way upstream's ``GwasCatalogClient._request`` raises it, from the
+    ``HTTPStatusError`` that ``raise_for_status`` produces.
+    """
+
+    def associations_for(self, rsid: str) -> list[dict]:
+        url = f"https://www.ebi.ac.uk/gwas/rest/api/singleNucleotidePolymorphisms/{rsid}/associations"
+        self.calls.append(f"assoc:{rsid}")
+        response = httpx.Response(410, request=httpx.Request("GET", url))
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            raise GwasError(f"GWAS Catalog returned 410 for {url}") from exc
+        raise AssertionError("a 410 response must raise")
+
+
+@pytest.mark.parametrize("strict", [False, True])
+async def test_a_retired_gwas_api_says_so_rather_than_inviting_a_retry(
+    monkeypatch, client, spec_dir, strict
+):
+    """F146: a 410 from the Catalog is a retired API, and the result has to say that.
+
+    Upstream's own text ("returned 410") stays first and verbatim. The strict-ladder advice
+    is about the Catalog's data shape and would mislead here, so it is left out.
+    """
+    _inject_gwas_client(monkeypatch, _RetiredGwasClient([]))
+
+    data = (
+        await client.call_tool(
+            "enrich_gwas_effects", {"spec_dir": str(spec_dir), "strict": strict}
+        )
+    ).data
+
+    assert data.success is False
+    assert "returned 410" in data.warnings[0]
+    assert any("retired the API" in w and "will not change" in w for w in data.warnings)
+    assert not any("strict ladder" in w or "re-run with strict=false" in w for w in data.warnings)
+    assert not (spec_dir / "gwas_effects.csv").exists()
 
 async def test_the_gwas_strict_ladder_escalates_on_the_catalogs_shape_after_writing(
     monkeypatch, client, spec_dir
