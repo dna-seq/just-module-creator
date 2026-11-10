@@ -86,8 +86,8 @@ its history.
 | F132 | S142 | RM427 | answered, open (patch + minor) |
 | F135 | S141 | RM426 | answered, open (patch + minor) |
 | F142 | S140 | RM425 | answered, open (patch) |
-| F139 | S139 | RM423 | answered, open (patch half + minor half) |
-| F137 | S138 | RM422 | answered, open (patch) |
+| F139 | S139 | RM423 | patch half released 0.8.3, not in our lock; minor half open |
+| F137 | S138 | RM422 | released 0.8.3, not in our lock |
 | F130 | S136 | RM414 | 0.8.2 only |
 | F131 | S137 | RM415 | 0.8.2 only |
 | F127 | S135 | RM253 | 0.8.0 only |
@@ -174,7 +174,7 @@ of the tester's Atlas runs (128 of 819, 24 of 126), and the values are right.
 
 ## F139 — `record_verification` re-signs records of checks it did not re-run over new authored bytes (format `S139`)
 
-**State: answered the same hour: RM423, high, with their pm to size.** Candidate 1 (drop carried records when the
+**State: patch half released in 0.8.3 (2026-11-10), not in our lock (`<0.8`); the per-record binding (a minor) is open.** Answered the same hour: RM423, high, with their pm to size. Candidate 1 (drop carried records when the
 binding moved, logged) is the patch half; a per-record binding is a minor. They call our interim (a record older
 than the newest authoring edit read as not current) sound. Filed 2026-11-09 by the liaison, on the tester's report. **Our mitigation
 shipped in 0.48.4:** `audit_module`'s `checks_older_than_the_last_edit` (`docs/previous_issues.md` F139). It is a
@@ -190,7 +190,7 @@ moved (interim), or a per-record binding read per check (the fix).
 
 ## F137 — a `resolution.csv` row for a variant the author removed compiles silently and publishes (format `S138`)
 
-**State: answered the same hour: RM422, a patch, with their pm to size.** One more arm of the existing
+**State: released in 0.8.3 (2026-11-10), not in our lock (`<0.8`).** Answered the same hour: RM422, a patch, with their pm to size. One more arm of the existing
 `derived_row_orphan` warning, over `resolution.csv`, in both modes; the subject set is every authored table.
 The `clin_sig_*` pair already has its arm, reading `variants.csv` only by design, which is why our probe (no
 `variants.csv`) could not show it. Filed 2026-11-09 by the liaison, on the tester's report. The upstream half only. **Our
