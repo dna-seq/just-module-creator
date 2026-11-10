@@ -13,6 +13,7 @@ On the `adopt-0.8` branch, built ahead of production's 0.8 deploy on the person'
 - **`draft_from_strchive` no longer resolves the STRchive lane itself** (F129): 0.8 does it when no catalogue is passed, reproduced on 0.8.3 (HTT and FMR1 drafted with none). The `catalogue` argument stays.
 - **The GWAS pass's cost is stated for the Catalog's v2 API**: a request per page of associations for each variant plus one per distinct study for its ancestry, where it was `1 + 2N`. pmid, trait and study accession now come with the association, so `study_facts=false` leaves only `ancestry` null.
 - **0.8's new commands and tables are named, as gaps**: `opentargets enrich`, `ld-pairs` and `clinvar-gkm lookup` have no tool here yet (`cli_map`, `references/CLI.md`), and `refresh_sidecar` refuses the four tables they write with the command to run. `meta.csv` and `model_organisms.csv` have a subject in `list_tables`. Sweeping the new authored tables into the skills is the pm's scope and not done.
+- **The gene-metrics guide drops the 0.7 gnomAD label sentences**: live-API rows read `gnomad_api_constraint`, and a row an older module carries as `gnomad_v2.1.1_constraint` is read as the live API.
 
 ## [0.48.5] — 2026-11-10
 

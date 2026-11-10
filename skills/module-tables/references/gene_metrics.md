@@ -186,12 +186,12 @@ and the delete.
 ## The columns that carry judgement
 
 - **`dataset`** — the release label, and the only column that makes two rows about one gene readable.
-  Inside the fact set on purpose. `gnomad_v4.1_constraint` (snapshot) / the live-API label /
-  `clingen_dosage_<release line>`. **The live-API label misstates its release on the 0.7 line:**
-  rows read `gnomad_v2.1.1_constraint`, but the API has always served gnomAD 4.1.1 or later
-  (upstream RM417); compiler 0.8.2 labels them `gnomad_api_constraint`. Read it as "the live API",
-  never as v2.1.1. Never edit it to "tidy up" — you are restating which route answered, and
-  relabelling means deleting `gene_metrics.csv` and enriching again, which moves its fact hash.
+  Inside the fact set on purpose. The snapshot's release (`gnomad_v4.1.2_constraint`, or the release
+  the cache holds) / `gnomad_api_constraint` (the live API, gnomAD 4.1.1 or later) /
+  `clingen_dosage_<release line>`. A row an older module carries as `gnomad_v2.1.1_constraint` came
+  from the live API under a wrong label (upstream RM417): read it as the live API, never as v2.1.1.
+  Never edit it to "tidy up" — you are restating which route answered, and relabelling means deleting
+  `gene_metrics.csv` and enriching again, which moves its fact hash.
 - **`source`** — names the **licensed source**, never the route. `gnomad`, not `gnomad-api`. The route
   distinction lives in `dataset`. Writing a route here made every gene-metrics module warn that a
   source with no recorded terms had contributed (RM33, fixed in 0.5).
@@ -325,8 +325,7 @@ row *in place*, keep `source="gnomad"`, and note the change outside the table.
 
 The fallback is **per gene**, not per run: `still_missing = [g for g in wanted if g not in
 from_snapshot]` (`gene_metrics.py`). So a six-gene module where one gene is outside the
-18,111-gene snapshot gets five `gnomad_v4.1_constraint` rows and one live-API row (labelled
-`gnomad_v2.1.1_constraint` on 0.7, though the API serves gnomAD 4.1.1 or later; see `dataset` above).
+18,111-gene snapshot gets five snapshot rows and one `gnomad_api_constraint` row (see `dataset` above).
 The numbers are not comparable — verified upstream against both routes, BRCA1 is pLI 1.55e-34 /
 LOEUF 0.885 / mis_z 2.338 from the bulk v4.1 file versus 5.52e-38 / 0.928 / 1.734 from the live API,
 same gene, same MANE transcript (ENRICHER.md:1029-1037; re-measured from the local snapshot:
@@ -338,8 +337,8 @@ same gene, same MANE transcript (ENRICHER.md:1029-1037; re-measured from the loc
 fresh cache `download.ensure_constraint_snapshot` pulls `just-dna-seq/gnomad_constraint` from
 HuggingFace — probed live, HTTP 200, one 866 KB parquet plus `release.json`. The live-API path is
 reached only when HF is unreachable (best-effort, logs *"snapshot provisioning failed … continuing
-with the live API, which serves v2.1.1 rather than v4.1"* — upstream's 0.7 wording, wrong about the
-release per RM417) or per-gene as above. Note the local
+with the live API, whose answer names no release (rows labelled gnomad_api_constraint)"*) or per-gene
+as above. Note the local
 snapshot's `release.json` reports `builder_version: 0.5.0`, `built_at: 2026-08-03`,
 `unresolved_count: 93` — the published snapshot is a **build artifact with its own age**, and nothing
 in the module records which build answered.
@@ -482,9 +481,7 @@ upgrades — and read by nothing. A pLI of 1e-19 has never reached a human readi
   `?pgx=true` (`services/enrich.py`, `write=False`) and throws them away, so the one place they
   are already derived is also where they are discarded.
 - **Read `dataset` per row before comparing two genes, and show it.** One table legitimately holds
-  `gnomad_v4.1_constraint` rows and live-API rows for different genes (the latter labelled
-  `gnomad_v2.1.1_constraint` on 0.7 and `gnomad_api_constraint` from 0.8.2, gnomAD 4.1.1 or later
-  either way), whose pLI differ by orders of magnitude for the same gene (BRCA1: 1.55e-34 vs 5.52e-38). **Ask:** key any UI on
+  snapshot rows and `gnomad_api_constraint` rows for different genes, whose pLI differ by orders of magnitude for the same gene (BRCA1: 1.55e-34 vs 5.52e-38). **Ask:** key any UI on
   `(gene, dataset)` and label the release; refuse to rank genes across differing `dataset` values.
   What breaks today: nothing reads it, so the mixed-release trap is unexercised rather than solved —
   the first consumer to join on `gene` alone will hit it.
