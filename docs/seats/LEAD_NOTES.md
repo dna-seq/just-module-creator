@@ -23,6 +23,8 @@ offer text, the RM420 `cache pull` (operator's), re-reading F139's `checks_older
 RM423. main stays 0.7 until production serves 0.8; then merge (not rebase) and release.
 Tester's probe at 113150c (2026-11-10): HTT/MTHFR strict and polygon `registry_check` true, allele_mismatches holds; F145 (false missing-lane sentence) fixed as `8ac4c82`. **The merge also waits on F146**: enricher 0.8.3 sends GWAS v2 `size=1000`, the API caps at 500 and answers 400, so `enrich_gwas_effects` fails on every module under 0.8. Upstream's to fix (liaison files it); no workaround here, and the branch's "page size 1000" budget wording follows their fix. F133's outage arm not exercised live (Europe PMC up).
 
+**main's [Unreleased], 2026-11-11**: F144 (`4f0085a`, the contract-skew note on the proxy routes) and F146's our half (`3664412`, the GWAS 410 says the v1 API is retired). The Catalog's v1 retirement means the shipped GWAS pass fails on every module; it returns only with an enricher on v2: a 0.7.4 off v0.7.3 carrying RM354 + RM428 (upstream's ask 4, put to the person by their pm and lead) or our 0.8 merge once production serves 0.8 and RM428 is released. `unattended`: the patch release waits for one of those today, so the day's one release carries the pass back rather than a message about its absence; with neither by the evening, release 0.48.6 with what is there.
+
 **Registry S28 (namespace rename): declined by design**, answered the same day (their history file; docs fixed
 after 0.28.6). `ns/name@version` is a published identity; no call moves a version. Their route on the polygon:
 claim the new `test-` namespace, `delete_module("test-sheep", name)` per module (frees the content claim), then
