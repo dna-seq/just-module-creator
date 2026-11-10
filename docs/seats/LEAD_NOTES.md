@@ -29,8 +29,8 @@ Tester's probe at 113150c (2026-11-10): HTT/MTHFR strict and polygon `registry_c
 after 0.28.6). `ns/name@version` is a published identity; no call moves a version. Their route on the polygon:
 claim the new `test-` namespace, `delete_module("test-sheep", name)` per module (frees the content claim), then
 republish the specs under the new namespace; history under `test-sheep` is lost, and only re-published versions
-come back. `blocked:` the person's go on that delete-and-republish (44 rehearsal versions, 21 modules), asked in
-chat 2026-11-10. The liaison tracks it as F143.
+come back. `blocked: desk #255`, the person's go on that delete-and-republish (44 rehearsal versions, 21 modules), asked in
+chat 2026-11-10, on the desk as #255 once they turned away (default: leave `test-sheep` as it is). The liaison tracks it as F143.
 
 F132's leftovers: the other result models carrying upstream `warnings` (fact passes, refresh, checks) lack
 `on_this_surface`; four commands are named parity gaps in `cli_map` (`clinpgx check-labels`, `alphagenome check`,
