@@ -195,12 +195,17 @@ The lead's list for the branch, same driver, same evening:
 | `draft_from_strchive` with no `catalogue` (F129) | **holds**: HTT and FMR1 drafted from the provisioned lane. Beside them, a false "No `strchive` lane on this machine": **F145** |
 | `enrich_module`'s `allele_mismatches` (RM382) | **holds**: on a strand-flipped copy of `assets/fto_bmi` (`recheck_08/fto_flip`), rs1421085 is in `unresolved` and the line names G/G, each of four sources' `16:53767042 T>C`, and "(fits the other strand)" |
 | `enrich_gwas_effects` on the v2 API | **fails upstream**: the enricher asks for a page of 1000 and the Catalog refuses anything above 500: **F146**, handed to the liaison |
-| `fetch_fulltext`'s outage line (F133) | not exercised: needs Europe PMC answering 500, which it did not tonight |
+| `fetch_fulltext`'s outage line (F133) | not exercised: 5 of 5 calls for PMC13733956 returned `fulltext`, so no 500 came |
+| recheck: F144 fixed on main (4f0085a), in-process on this checkout | **holds**: `remote_derive` on the polygon's 409 now carries the instance note, with no 503/422 advice |
+| recheck: F145 fixed on the branch (8ac4c82) | **holds**: an HTT draft from the lane carries no missing-lane sentence |
+| `enrich_gwas_effects` on **main** (shipped 0.48.5, host wire) | **fails**: the Catalog retired v1 (410), so F146 covers both builds |
 
-**The rehearsal publishes were held, deliberately.** Both would land under `test-sheep`, the namespace the person
-asked to rename (F143: the registry declined a rename; the route is delete and republish, waiting on the person).
-Publishing two more versions there adds to that cleanup, and the dry runs already answer whether they would
-publish. They go after the person decides the namespace, from whichever build speaks 0.8 then.
+**Both rehearsals ran, from the branch, and left nothing behind** (2026-11-11 ~00:05 UTC, same driver).
+`registry_publish(target="test")` as `test-sheep/test_htt_cag_repeats@0.1.0` and `test-sheep/test_mthfr_folate@0.1.0`.
+Each was read back with `registry_get_module(target="test")`, with the same `content_signature` as its dry run,
+then removed with `registry_delete_module`; a second read gives 404. The polygon's catalog counts are 50 modules
+and 112 versions before and after. An earlier draft of these notes held the publishes to spare the `test-sheep`
+cleanup (F143). That reason was wrong: a rehearsal deleted after its read-back adds nothing to the cleanup.
 
 **The host keeps the tool descriptions from its first connection.** After the server restart, ToolSearch still
 returned 0.48.3's descriptions, and the source has the new ones. A fix that is only in a description can't be
@@ -237,8 +242,8 @@ checkout's `skills/` by hand. Two compiler findings went to the liaison: the RUC
 `source_field`, and `bins_ungrounded` says "no bin pmid" while one bin carries one.
 
 **Next probes, in order:** (1) the polygon leg of 0.48.1 and the HTT and MTHFR rehearsals: dry runs pass from
-the 0.8 branch (2026-11-10, above); the publishes wait on the person's namespace decision (F143) and the token
-leg on a build that speaks 0.8;
+the 0.8 branch (2026-11-10, above); both were rehearsed and deleted on 2026-11-11 (above). The token leg waits on a
+build that speaks 0.8 being what the host runs;
 (2) a module authored from nothing through the front door by a layman, as the handout's fallback; (3) the
 list in `dogfooding.md`'s "Probes not yet run" (`enrich_expression_effects` live, a module with two of
 something).
