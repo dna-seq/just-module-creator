@@ -13,6 +13,10 @@ The MCP server wraps the authoring loop. Everything else is still CLI-only, and 
 fallback whenever a tool is unavailable (no MCP server configured, an older server, a flag the
 wrapper does not expose).
 
+Upstream's messages name its CLI commands (*"Run `just-dna-compiler close <spec-dir>`"*). A result
+that carries one also carries `on_this_surface`: which tool here does that command, or that none
+does and why. The message itself is left as upstream wrote it.
+
 Install: `pip install just-dna-enricher` pulls the compiler and the format tier. Python ≥ 3.13.
 
 ## What is wrapped, and what is not

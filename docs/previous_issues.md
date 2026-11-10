@@ -6,6 +6,28 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F132 — upstream text that names a CLI command reaches the agent with no mapping to this surface
+
+**Found:** 2026-11-07 by the tester as F125's second instance (HTT probe); split out by the lead 2026-11-08 ·
+**Severity:** low · **Status:** resolved 2026-11-10
+
+`validate_module` and `compile_module` pass on the closure warning's
+*"Run `just-dna-compiler close <spec-dir>`"* where this surface has `close_module`. Any upstream text that names a
+CLI command reaches the agent unmapped, not only the drafters' flags.
+
+Measured 2026-11-08 on the installed 0.7 packages: about twenty distinct `just-dna-compiler …` /
+`just-dna-enricher …` commands are quoted in upstream message text, most of them lane builds
+(`clinvar build`, `pubmind build`, `strchive build`, …) whose equivalent here is `provision_caches(lanes=[…])`,
+plus `close`, `compile`, `enrich`. F100's `_translate` maps three drafter flags; nothing maps a command, and
+nothing touches `to_findings`. Shape of the fix: one CLI-command-to-tool map in `src/`, guarded by a test that
+enumerates upstream's typer commands (both directions, as
+`test_every_enricher_check_command_has_a_tool_or_a_written_reason` does), applied where upstream text crosses
+(`to_findings`, the drafters' warnings, `_translate`) as our own field beside the verbatim message, never
+spliced into it: a `source="upstream"` message must stay upstream's. A structured remedy key from upstream would
+replace the map's text matching; that ask is the liaison's to weigh.
+
+**Resolution:** `src/just_module_creator/cli_map.py` maps every command upstream's two typer apps register (80 on the installed 0.7 packages): 54 to the tool that does it here, the lane builds generated from upstream's `CACHE_LANES` as `provision_caches(lanes=[…])`, and 26 abstained from with the reason (publishing a snapshot, signing, a release sweep, or a parity gap named as one). `LintFinding`, `ValidationReport`, `CompileReport` and `DraftResult` gain `on_this_surface`, computed from upstream's text and set beside it; the messages stay byte for byte. `tests/test_cli_map.py` holds the map to upstream's enumeration in both directions, checks every tool a mapping names against the live listing, pins the `clinpgx build` / `build-labels` prefix pair, and runs `validate_module` on an unclosed spec to see the closure warning answered with `close_module` (the module does not exist on 0.48.4, so every test there fails). Not done: the other result models that carry upstream `warnings` (the fact passes, refresh, checks) do not have the field yet; upstream text naming a command no app registers (`clinvar pull`, in `assertions.py` and the enricher's `cli.py`) maps to nothing and went to the liaison with the structured-remedy-key ask.
+
 ## F126 — `registry_register` says it grinds a new install-id when omitted; it reuses the environment's or the saved one first
 
 **Found:** 2026-08-11 as an unfiled note (live: the result said `install_id_origin: "environment"`); checked

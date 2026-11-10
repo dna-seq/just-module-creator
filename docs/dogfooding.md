@@ -41,26 +41,6 @@ Candidates: disable `@dna-seq` in user scope and enable it per project where the
 `Skill`'s base directory against the server's version at start, but nothing in the plugin sees which copy the
 host loaded skills from, so that is a host gap rather than ours.
 
-## F132 — upstream text that names a CLI command reaches the agent with no mapping to this surface
-
-**Found:** 2026-11-07 by the tester as F125's second instance (HTT probe); split out by the lead 2026-11-08 ·
-**Severity:** low · **Status:** open, `unattended` (the lead's)
-
-`validate_module` and `compile_module` pass on the closure warning's
-*"Run `just-dna-compiler close <spec-dir>`"* where this surface has `close_module`. Any upstream text that names a
-CLI command reaches the agent unmapped, not only the drafters' flags.
-
-Measured 2026-11-08 on the installed 0.7 packages: about twenty distinct `just-dna-compiler …` /
-`just-dna-enricher …` commands are quoted in upstream message text, most of them lane builds
-(`clinvar build`, `pubmind build`, `strchive build`, …) whose equivalent here is `provision_caches(lanes=[…])`,
-plus `close`, `compile`, `enrich`. F100's `_translate` maps three drafter flags; nothing maps a command, and
-nothing touches `to_findings`. Shape of the fix: one CLI-command-to-tool map in `src/`, guarded by a test that
-enumerates upstream's typer commands (both directions, as
-`test_every_enricher_check_command_has_a_tool_or_a_written_reason` does), applied where upstream text crosses
-(`to_findings`, the drafters' warnings, `_translate`) as our own field beside the verbatim message, never
-spliced into it: a `source="upstream"` message must stay upstream's. A structured remedy key from upstream would
-replace the map's text matching; that ask is the liaison's to weigh.
-
 ## F121 — when the seats restart together, every one of them starts without the plugin, and stays without it
 
 **Found:** 2026-11-07, by the tester seat, twice in one day · **Severity:** medium · **Status:** open, a

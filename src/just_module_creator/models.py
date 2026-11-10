@@ -21,8 +21,9 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
+from just_module_creator import cli_map
 from just_module_creator.overrides import OverrideRecord, QueuedOverride
 
 
@@ -591,6 +592,30 @@ OURS = "just-module-creator"
 UPSTREAM = "upstream"
 
 
+_ON_THIS_SURFACE = (
+    "Upstream's messages are written for its CLIs. One line per `just-dna-compiler …` / "
+    "`just-dna-enricher …` command they name, saying which tool here does it, or that none "
+    "does and why. Ours, computed from the messages, which stay exactly as upstream wrote them."
+)
+
+
+class _NamesUpstreamCommands(BaseModel):
+    """A result carrying upstream's text, plus what the CLI commands it names are here (F132)."""
+
+    on_this_surface: list[str] = Field(default_factory=list, description=_ON_THIS_SURFACE)
+
+    @model_validator(mode="after")
+    def _map_cli_commands(self) -> _NamesUpstreamCommands:
+        if not self.on_this_surface:
+            texts = [
+                *getattr(self, "errors", []),
+                *getattr(self, "warnings", []),
+                *getattr(self, "info", []),
+            ]
+            self.on_this_surface = cli_map.for_messages(texts)
+        return self
+
+
 class LintFinding(BaseModel):
     """One finding from a lint pass. ``level`` is load-bearing — read it."""
 
@@ -617,6 +642,20 @@ class LintFinding(BaseModel):
             "did not locate one; never inferred from `row` here."
         ),
     )
+    on_this_surface: str | None = Field(
+        default=None,
+        description=(
+            "When `message` names a `just-dna-compiler …` / `just-dna-enricher …` command: "
+            "which tool here does it, or that none does and why. Ours; `message` stays as "
+            "upstream wrote it."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _map_cli_command(self) -> LintFinding:
+        if self.on_this_surface is None:
+            self.on_this_surface = cli_map.on_this_surface(self.message)
+        return self
 
 
 class LintAlteration(BaseModel):
@@ -668,7 +707,7 @@ class LintResult(BaseModel):
 # --------------------------------------------------------------------------- #
 # Validate / compile
 # --------------------------------------------------------------------------- #
-class ValidationReport(BaseModel):
+class ValidationReport(_NamesUpstreamCommands):
     """Pre-flight for a compile. Pass the SAME mode you intend to compile with."""
 
     valid: bool = Field(description="Whether the spec would compile in this mode.")
@@ -758,7 +797,7 @@ class AuditReport(BaseModel):
     )
 
 
-class CompileReport(BaseModel):
+class CompileReport(_NamesUpstreamCommands):
     """Outcome of a compile: parquet artifact + manifest.json."""
 
     success: bool = Field(description="Whether the artifact was written.")
@@ -1957,7 +1996,7 @@ class DraftedTable(BaseModel):
     written: bool = Field(description="False on a dry run.")
 
 
-class DraftResult(BaseModel):
+class DraftResult(_NamesUpstreamCommands):
     """Outcome of drafting from a published source."""
 
     spec_dir: str = Field(description="The spec directory.")
