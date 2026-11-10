@@ -83,7 +83,7 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
-| F146 | S143 | | filed 2026-11-10, unanswered; hits 0.7.x (v1 retired, 410) and 0.8.x (400) |
+| F146 | S143 | RM428 | answered, open (patch; a 0.7.4 is their release decision) |
 | F132 | S142 | RM427 | answered, open (patch + minor) |
 | F135 | S141 | RM426 | answered, open (patch + minor) |
 | F142 | S140 | RM425 | answered, open (patch) |
@@ -117,7 +117,7 @@ its history.
 
 ## F146 — the GWAS pass asks the Catalog v2 for a page of 1000 and is refused, so it fails on every module (format `S143`)
 
-**State: filed 2026-11-10 by the liaison, on the tester's report (`docs/dogfooding.md` F146), unanswered.**
+**State: answered within the hour: RM428, high.** Ask 1 (`_PAGE_SIZE = 500`) is a patch after 0.8.3; the guard (an opt-in live test) and a fallback page go to their pm. The Catalog moved, not the code: `size=1000` worked on 2026-11-04 (their RM354). A 0.7.x patch reading v2 would be `v0.7.4` off `v0.7.3` carrying RM354 and RM428 (done once before, 0.7.2); that is RM428's ask 4, for their pm and lead to put to the person. Filed 2026-11-10 by the liaison, on the tester's report (`docs/dogfooding.md` F146).
 Enricher 0.8.3 and their `main`: `gwas.py`'s `_PAGE_SIZE = 1000` is sent as `size` to `/associations`, which
 answers 400 above 500, so `enrich_gwas_effects` returns no rows for any rsID. Reproduced by curl (1000 → 400,
 500 → 200). **Main is down too (the tester's correction, reproduced 22:59 UTC):** the Catalog retired the v1 REST API that
