@@ -17,7 +17,8 @@ is usable, and what is missing.
 ## F146 — under enricher 0.8.3, `enrich_gwas_effects` fails on every module: the GWAS Catalog v2 search refuses a page of 1000
 
 **Found:** 2026-11-10 22:53 UTC, branch adopt-0.8 at 113150c (enricher 0.8.3), in-process driver ·
-**Severity:** high on the 0.8 branch (the pass cannot run at all), none on main (0.7 reads v1) ·
+**Severity:** high on both builds: the pass cannot run at all, on the 0.8 branch (below) or on main (the v1 API
+it reads is retired, see the end) ·
 **Status:** upstream's (enricher), handed to the liaison at once; not ours to work around.
 
 `enrich_gwas_effects(use="non_commercial")` on a copy of `assets/fto_bmi` (one rsID, rs1421085):
@@ -36,6 +37,15 @@ Upstream's trunk has the same constant (checked in `../just-dna-format/enricher/
 same evening). Our result reports the failure honestly (`success: false`, the URL in `warnings`). Nothing to
 change on our side, except that the branch's commit 5b7684e describes a pass that cannot run until the
 enricher is fixed.
+
+**Main fails too, for a different reason** (checked 23:59 UTC on the shipped 0.48.5, host wire, a copy of
+`assets/fto_bmi` at `data/interim/recheck_08/fto_gwas_main`): `success: false`, warning `GWAS Catalog returned
+410 for https://www.ebi.ac.uk/gwas/rest/api/singleNucleotidePolymorphisms/rs1421085/associations`. By hand the
+same URL answers 410 with "This legacy GWAS Catalog REST API is no longer available", naming the v2 migration
+guide; `/api/studies/GCST000001` is 410 too. So enricher 0.7.x's GWAS pass is dead for every module, and the
+only route back is 0.8 with S143 fixed. On our side: the result shows a bare "returned 410", which does not
+tell an author that the API is retired and no retry or spec edit will help, and the tool's description still
+states the v1 budget (`1 + 2N`).
 
 ---
 
