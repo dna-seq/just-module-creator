@@ -62,30 +62,6 @@ really absent, what upstream does is not probed here; that case is the one the s
 
 ---
 
-## F144 — `remote_derive` and `remote_draft` answer a contract-skew 409 with advice about 503 and 422
-
-**Found:** 2026-11-10, plugin 0.48.5 on the host wire, the polygon on format 0.8.0 · **Severity:** low ·
-**Status:** open, for the lead.
-
-`registry_check` and `remote_derive` were run on the same spec (`assets/htt_cag_repeats`) with
-`target="test"`, while the polygon serves format 0.8.0 and the plugin 0.7.1. Both got HTTP 409
-`just-dna-format contract mismatch`. They explained it differently:
-
-- `registry_check` appends `targets.instance_note`: "This is the instance, not your module ... Nothing about
-  the spec will change the answer and recompiling will not either ... an operator's call, not an author's."
-- `remote_derive` appends advice for other codes: "A 503 naming a lane means the deployment lacks that
-  snapshot ... A 422 means the spec did not validate there ...". It never says the 409 is the instance's, and the
-  text has a doubled full stop (`downloading..`), because upstream's message already ends in one.
-
-An author reading the second message would look at their spec. The cause is in the source:
-`tools/proxy.py` does not import `instance_note`. `remote_derive`'s arm (`client.derived`) and
-`remote_draft`'s arm (`client.draft`) build their own text. `remote_draft` was read in the source only, not
-run. The other registry tools (`registry.py`, `research.py`, `comparison.py`, `advanced.py`) all append the note.
-
-Not a fix proposal, but a shape: the same suffix the other arms carry, appended to both arms here.
-
----
-
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
 
 **Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the

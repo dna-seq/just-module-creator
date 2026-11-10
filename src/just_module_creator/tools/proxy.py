@@ -60,7 +60,7 @@ from just_module_creator.models import (
     LaneStatus,
 )
 from just_module_creator.settings import RegistryTarget, Settings
-from just_module_creator.targets import client_for, describe
+from just_module_creator.targets import client_for, describe, instance_note
 from just_module_creator.tools._shared import narrate, offline_for, resolve_dir
 from just_module_creator.tools.refresh import capture_dir, capture_now, finalize_capture
 
@@ -506,12 +506,18 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         try:
             archive = await run_sync(lambda: client.derived(namespace, name, source))
         except Exception as exc:  # noqa: BLE001 — upstream's error text is the answer
+            # A contract skew is the instance's (F144): its note replaces the 503/422
+            # advice, which would send the author to look at their spec.
             raise ToolError(
-                f"the registry could not derive this spec: {exc}. A 503 naming a lane "
-                "means the deployment lacks that snapshot — `registry_caches` says which "
-                "it holds. A 422 means the spec did not validate there; this route's "
-                "contract is to produce, so it refuses rather than returning an empty "
-                "archive, and `registry_validate` is the tool that reports instead."
+                f"the registry could not derive this spec: {str(exc).rstrip('.')}."
+                + (
+                    instance_note(exc)
+                    or " A 503 naming a lane means the deployment lacks that snapshot — "
+                    "`registry_caches` says which it holds. A 422 means the spec did not "
+                    "validate there; this route's contract is to produce, so it refuses "
+                    "rather than returning an empty archive, and `registry_validate` is "
+                    "the tool that reports instead."
+                )
             ) from exc
 
         tables, extras, absent = _unpack(archive)
@@ -711,22 +717,28 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         try:
             archive = await run_sync(lambda: client.draft(target_dir, **kwargs))
         except Exception as exc:  # noqa: BLE001 — upstream's own text is the answer
-            detail = str(exc)
+            detail = str(exc).rstrip(".")
+            note = instance_note(exc)
             lane = None
             if "snapshot_unavailable" in detail:
                 lane = detail.split("snapshot_unavailable")[-1].strip(" :\"'")[:60] or None
             raise ToolError(
-                f"the registry could not draft from {source!r}: {detail}. "
+                f"the registry could not draft from {source!r}: {detail}."
+                + (note or " ")
                 + (
                     f"It named the lane {lane!r}, so that deployment does not hold that "
                     "snapshot — `registry_caches` says which it holds, and the lane's "
                     "`build_command` is how an operator makes one. "
-                    if lane
+                    if lane and not note
                     else ""
                 )
-                + "A 422 naming a parameter means that source does not read it, which is "
-                "a refusal rather than a dropped filter: a silently ignored one would "
-                "produce a draft answering a different question."
+                + (
+                    ""
+                    if note
+                    else "A 422 naming a parameter means that source does not read it, "
+                    "which is a refusal rather than a dropped filter: a silently ignored "
+                    "one would produce a draft answering a different question."
+                )
             ) from exc
 
         rows, extras = _unpack_draft(archive)

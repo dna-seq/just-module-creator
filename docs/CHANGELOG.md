@@ -5,6 +5,8 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`remote_derive` and `remote_draft` say a contract skew is the instance's** (F144): a 409 `just-dna-format contract mismatch` now carries the same note every other registry tool gives, instead of advice about 503 and 422 that sent the author to their spec.
+
 ## [0.48.5] — 2026-11-10
 
 - **Upstream text that names a CLI command now says which tool does it here** (F132): `validate_module`, `compile_module`, the drafters and every upstream lint finding carry `on_this_surface`, so the closure warning's `just-dna-compiler close` arrives with `close_module` beside it. The map covers every command upstream registers, mapped or abstained from with a reason, and a test holds it to upstream's own command list.
