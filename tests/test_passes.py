@@ -1754,6 +1754,8 @@ async def test_strchive_drafter_reads_the_provisioned_lane(
 
     assert result.skipped is False, result.warnings
     assert [(t.csv, t.added) for t in result.tables] == [("repeat_alleles.csv", 1)]
+    # F145: a draft from the lane must not also say the lane is missing.
+    assert not any("provision_caches" in f for f in result.source_findings)
 
 
 async def test_strchive_drafter_takes_an_explicit_catalogue(

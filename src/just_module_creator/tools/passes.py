@@ -1664,7 +1664,10 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
                 "No `strchive` lane on this machine and no `catalogue` given: "
                 '`provision_caches(lanes=["strchive"])` builds the lane.'
             ]
-            if source is None
+            # Upstream resolves the lane itself when no catalogue is given, and skips
+            # only when it finds none; `source is None` alone is every lane-backed call
+            # (F145).
+            if source is None and result.skipped
             else []
         )
         # Upstream's `contested` is `(gene, motif)` keys several catalogue loci claim, each
