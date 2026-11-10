@@ -18,13 +18,27 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. The hosts have
 
 ## Half read
 
-- The polygon's `/api/v1/version`: HTTP 502 from 14:58 to at least 19:54 UTC, 2026-11-07; read it again.
+- The polygon's `/api/v1/version`: HTTP 502 from 14:58 UTC, 2026-11-07, still 502 at 02:18 UTC, 2026-11-10; read it again.
+
+## The dependency bump
+
+- Last run 2026-11-10, `ebca264` (56 packages; tenacity `initial=` to `multiplier=`, floor 9.2.1). Next: the
+  nightly watcher's Tuesday.
+- **Run the whole `uv run pyright` and `uv run ruff check .`, not just the files you touched.** This run checked
+  only `net.py` and its test; pydantic 2.14's typing of `FieldInfo.annotation` broke `tools/config.py`, and the
+  lead fixed it forward in `6d9f3d0`.
+- To file with the kit (`report-to-kit`, unattended, next idle turn): LIAISON.md's "The dependency bump" step 3
+  names the suite only; a type checker and the linter belong beside it, since a new release can change typing
+  and break nothing at run time.
+- `stash@{0}` ("WIP on (no branch): a444e66") is mine, made by mistake during the 2026-11-10 bump; it holds
+  the `net.py` change already in `ebca264`. Dropping it is the person's.
 
 ## Waiting on others
 
 - The lead: five pending-fixes entries reproduced as fixed leave code of ours to lift (F94, F93, F63, F59, F67;
   told in `#just-module-creator>0.8`, 2026-11-07).
 - The polygon's 502 (since 14:58 UTC, 2026-11-07): deploys are the person's; the registry's lead asked them.
+- Format triage: S142 (F132: `clinvar pull` quoted, no such command; remedy-key ask), filed 2026-11-10.
 
 - `just-dna-registry/lead`: `just-module-creator/liaison` in its triage's `wake_from` (asked in
   `#agent-chat>wake_from`, 2026-11-07). The compiler's lead did it (their `8de1fa80`).

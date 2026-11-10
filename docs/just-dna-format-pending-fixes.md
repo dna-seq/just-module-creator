@@ -83,6 +83,7 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
+| F132 | S142 | — | filed 2026-11-10, unanswered |
 | F135 | S141 | RM426 | answered, open (patch + minor) |
 | F142 | S140 | RM425 | answered, open (patch) |
 | F139 | S139 | RM423 | answered, open (patch half + minor half) |
@@ -126,6 +127,21 @@ On `assets/htt_cag_repeats` (`validate_module`, strict), every bin declares `sou
 (a Float) and `CIRUC`: `binning._VCF_MEASURE_FIELDS` keys on `measure_kind` alone and never reads
 `source_field`. The fractional warning does not apply to an integer field; the spanning one does in substance
 (ExpansionHunter reports `REPCI`) but names a field the author does not use.
+
+## F132 — the ClinVar-pass skip names `clinvar pull`, which no command registers; and a remedy key (format `S142`)
+
+**State: filed 2026-11-10 by the liaison, on the lead's hand-off; unanswered.** Our half is resolved
+(`docs/previous_issues.md` F132, `58ea0dc`, shipped in 0.48.5). `cli_map.on_this_surface` maps every
+command the two typer apps register and returns nothing for `clinvar pull`, so an agent gets no tool pointer
+rather than a wrong one.
+
+`assertions.py`'s no-snapshot skip says *"Provision one with `just-dna-enricher clinvar pull`"* on enricher 0.7.3,
+0.8.2 and their `main`. On 0.8.2 `clinvar` has `build`, `publish` and `citations`, and the fetch is `cache pull`. A
+walk of every quoted `just-dna-* …` command in the 0.8.2 sources against both command trees found no other
+unregistered one. Asked for: (1) the wording, (2) that walk as a guard test in their tree, and (3) weighed rather
+than pressed: a structured `remedy` key on `hints.Finding` and the validate/compile warnings, so our map stops
+reading their text. We also named the reason against (3): most remedies are log text that never becomes a
+`Finding`.
 
 ## F135 — `GeneLocusConflict`'s message guesses the rsID is the invented half (format `S141`)
 
