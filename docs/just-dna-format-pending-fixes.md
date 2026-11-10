@@ -83,6 +83,7 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
+| F146 | S143 | | filed 2026-11-10, unanswered |
 | F132 | S142 | RM427 | answered, open (patch + minor) |
 | F135 | S141 | RM426 | answered, open (patch + minor) |
 | F142 | S140 | RM425 | answered, open (patch) |
@@ -113,6 +114,14 @@ its history.
 | F67 | S74 | shipped `load_spec` | in our lock; `load_spec` can replace our `yaml.safe_load` (lead) |
 | F99 | S101 | doc fixed | upstream docs, nothing to install |
 | F54 | S58 | RM122 | open upstream, parked |
+
+## F146 — the GWAS pass asks the Catalog v2 for a page of 1000 and is refused, so it fails on every module (format `S143`)
+
+**State: filed 2026-11-10 by the liaison, on the tester's report (`docs/dogfooding.md` F146), unanswered.**
+Enricher 0.8.3 and their `main`: `gwas.py`'s `_PAGE_SIZE = 1000` is sent as `size` to `/associations`, which
+answers 400 above 500, so `enrich_gwas_effects` returns no rows for any rsID. Reproduced by curl (1000 → 400,
+500 → 200). Our main installs 0.7.x, which reads v1 and is unaffected; it blocks the pass on `adopt-0.8` only. No
+mitigation of ours. Asked for: `_PAGE_SIZE = 500` and a test bounding it; a retry with a smaller page weighed.
 
 ## F143 — a namespace cannot be renamed; `rename_account` renames the handle only (registry `S28`)
 
