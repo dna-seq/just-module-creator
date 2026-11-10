@@ -19,7 +19,9 @@ environment variable, a token or a `target` is this server.
 Messages are quoted as the CLIs print them. The MCP tools surface the same text: compiler findings
 arrive in `validate_module`/`compile_module`'s `errors` and `warnings`, row-level findings in
 `lint_rows`'s `findings` (with the `level` that decides whether it blocks), and enrichment findings
-in `enrich_module`'s `ref_mismatches`, `clin_sig_conflicts` and `stale_rsids`.
+in `enrich_module`'s `ref_mismatches`, `clin_sig_conflicts` and `stale_rsids`. `validate_module` and
+`compile_module` also return `warnings_summary`, the warnings counted by upstream's code; an entry
+whose title starts with a code in backticks is the one for that code, so look a key up by name.
 
 An `RMn` in a message is a tracked upstream roadmap item: known and deliberate. Leave the data honest
 rather than working around it.
@@ -247,6 +249,25 @@ which run wrote them. Fix `licensing.csv` (on a freshly scaffolded module this i
 stub row, which reproduces the failure every time), delete the sidecar if you want a clean derivation,
 then re-run. Our `F95`, filed upstream as format-tree `S98`.
 
+**`rsid_placements_disagree`: `two placement sets for this one rsID`**
+`resolution.csv` holds rows from an earlier enrich beside a later one's, and they place the rsID
+differently: a re-run fills subjects it has no row for and never re-asks the rest. A consumer joining
+by position finds the variant at one place and misses it at the other. A warning by default, refused
+under `strict`. **What to do:** `refresh_sidecar` on `resolution.csv` (it captures the old table,
+re-derives, and restores the capture if the re-derivation comes back partial). The message's
+`enrich --rederive` is the CLI's spelling of the same act.
+
+**`vrs_version_differs`: `carry a vrs_id minted under VRS …`**
+Some rows' `vrs_id` was minted under another VRS version than the one this module's ids are pinned
+to. Actionable, never carried. **What to do:** clear `vrs_id` and `vrs_spec` on those rows and run
+`enrich_module`, which mints VRS ids as it resolves.
+
+**`fact_rows_contradict`: `under which two rows state different values`**
+A fact sidecar holds two rows for one key that say different things, and a consumer gets whichever
+comes first. The enricher writes one row per key, so the second came from a hand edit or a merge.
+A warning now; upstream says it is refused from 1.0. **What to do:** delete the wrong row (through a
+logged edit), or `refresh_sidecar` on that table.
+
 ## Validation and compile
 
 **`validate` says `valid` and `compile` then refuses**
@@ -254,16 +275,63 @@ then re-run. Our `F95`, filed upstream as format-tree `S98`.
 `--best-effort` (the default for both commands) and an error under `--strict`. A bare `validate` followed
 by `compile --strict` is a pre-flight for the *other* compile, so pass the same flag to both:
 `validate spec/ --strict`.
-With the modes matched it should not happen, and if it does, that is a bug worth reporting upstream
-rather than working around. `validate` covers `resolution.csv`, the four fact sidecars (`licensing.csv`,
-`literature.csv`, `frequencies.csv`, `gene_metrics.csv`), the licence gate, the stored `vrs_id`, the
-p-value pair, and whether every genotype and `effect_allele` names an allele its locus actually has.
-What still only appears at compile is anything computed from *resolved* rows — the expansion and hosting
-findings above — because resolution has not run when `validate` does.
+With the modes matched it should not happen: `validate` is the compile's own pre-flight, resolution
+step included, so the expansion and hosting findings refuse on both paths. If it does happen, that is
+a bug worth reporting upstream rather than working around.
 
 **A `pmid` cell holding a PMC id is refused by name**
 A PMC id can be one digit from a real — but unrelated — PMID, so the refusal is protecting you from
 citing the wrong paper. Look the record up again and write the PMID it actually has.
+
+**`names DOI(s) … and no PubMed ID`**
+Refused in both modes: a DOI's digits are not a PubMed id. **What to do:** move the DOI to `doi`.
+For the PMID, `lookup_citation(doi=…)` gives the title (from Crossref) and deliberately no PMID, since a
+PMID read off the DOI's own record would make the DOI cross-check agree with itself. Search for it
+(`literature_search` on the title), then confirm with `lookup_citation(pmid=…)` that the title matches.
+The message's `hint citation --doi` is the CLI's route, which takes the PMID from that same record. If
+the work has no PubMed record, write `NONE` in `pmid`, which then requires `doi`.
+
+**`is an HLA gene, so its allele must follow IPD-IMGT/HLA nomenclature`**
+Refused in both modes on an `HLA-` gene: the allele needs at least two colon-separated fields
+(`*15:01`, `*57:01:01`), because the field count is the resolution the name claims. `*15` and
+`*1501` are refused. **What to do:** write the name the source gives at the resolution it gives; if
+the source only states one field, the row cannot be authored at that resolution.
+
+**`is set and … is empty`** (a half-stated pair) and **`paired_field_half_stated`**
+Some fields only mean something with their partner (`confidence` with `confidence_unit`, `quality_from`
+with `min_quality`, …). Most pairs are refused when half-stated. One, `effect_size` without
+`effect_measure`, is only a warning (`paired_field_half_stated`), because published modules hold it.
+**What to do:** state the partner from the source, or clear the half that has none; never guess a unit.
+
+**`conclusion_names_other_genotype`: `a conclusion that names another genotype at the locus`**
+A row's conclusion names a different genotype at its locus and never its own. When two rows point at
+each other the conclusions look swapped; otherwise one looks copied. **What to do:** read both rows
+against the source, then exchange or rewrite the text through a logged edit (`module-voice` owns how
+it reads). Nothing is changed for you.
+
+**`phenotype_class_unrecognized`: `phenotype_class outside the recommended set`**
+The set is open, so the rows stand. **What to do:** check each value is not a second spelling of a
+recommended class; keep it if it is a genuinely different class.
+
+**`qual_floor_on_reference_evidence`**
+A `requires_callable` row states its `min_quality` floor against `QUAL`, which a reference record
+leaves missing. **What to do:** take the floor off; see
+[`variants.md`](../../module-tables/references/variants.md), point 8. An older manifest may still list
+`quality_floor_inverted`: that code is retired, and its advice (QUAL inverts, prefer `FORMAT/GQ`) was
+withdrawn as wrong.
+
+**`log_file_not_shipped`: `does not ship with the module`**
+A file under `logs/` will not be published, and the line says why (hidden, a symlink, over 5 MiB, not
+UTF-8, JSON or JSON Lines, …). **What to do:** if it is meant to travel, fix what the reason names;
+otherwise move it out of `logs/`. Remember everything that does ship there is public.
+
+**`meta_selector_matches_nothing`, `meta_member_drug_disagrees`, `meta_member_allele_ambiguous`**
+Findings on `meta.csv` members. *Matches nothing*: almost always a typo; compare the member with what the
+table stores (a diplotype pair sorted `haplotype_a <= haplotype_b`, a genotype with its alleles
+sorted). *Drug disagrees*: a drug-scoped row reaches findings about another drug; name the drug in the
+member or correct the row's `drug`. *Allele ambiguous*: a bare locus on a row stating a direction,
+where the locus's rows do not share one `effect_allele`; the compile **withholds the direction** in
+`meta.parquet`. Name the genotype in the member, or state one `effect_allele` on every row.
 
 **A coordinate past its contig's end, or on a contig only the other assembly names**
 An error in **both** modes (RM48). `--strict` is deliberately not the switch, because this is

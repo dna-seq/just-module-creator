@@ -29,6 +29,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from just_dna_format.vocab import RETIRED_WARNING_CODES, VALID_WARNING_CODES
 
 SKILLS = Path(__file__).resolve().parent.parent / "skills"
 
@@ -280,6 +281,29 @@ def test_the_shared_references_are_where_every_skill_says_they_are():
         if "../module-101/references/SYMPTOMS.md" in _document(d).read_text(encoding="utf-8")
     ]
     assert len(pointing) >= 10, "the stage guides should route symptom lookups to one place"
+
+
+def test_the_symptom_table_names_warning_codes_upstream_still_emits():
+    """A code in an entry's title is how a `warnings_summary` key is looked up here.
+
+    Upstream's result models keep each warning's code only as a count in `warnings_summary`,
+    so the code is the join between a result and this table. A code named here must be a
+    live member of `VALID_WARNING_CODES`; a retired one may appear only on a line that says
+    it is retired, for a reader holding an older manifest.
+    """
+    text = (SKILLS / "module-101" / "references" / "SYMPTOMS.md").read_text(encoding="utf-8")
+    # A code titles an entry as `**`code`:`, `**`code`,` or `**`code`**`; a title that merely opens
+    # with a backticked word (`validate` says ...) is prose, not a code.
+    titled = set(re.findall(r"^\*\*`([a-z0-9_]+)`(?=[:,*])", text, flags=re.MULTILINE))
+    named = {code for code in VALID_WARNING_CODES if f"`{code}`" in text}
+
+    assert "rsid_placements_disagree" in titled, "the instrument must find the code it is surest of"
+    assert len(titled) >= 8, titled
+    assert titled <= VALID_WARNING_CODES, titled - VALID_WARNING_CODES
+    for code in named & set(RETIRED_WARNING_CODES):
+        lines = [line for line in text.splitlines() if f"`{code}`" in line]
+        assert lines and all("retired" in line for line in lines), (code, lines)
+    assert not (titled & set(RETIRED_WARNING_CODES))
 
 
 @pytest.mark.parametrize(

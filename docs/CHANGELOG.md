@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **0.8's new warnings and refusals are in the symptom table, by code**: each of the eleven warning codes 0.8 adds has an entry whose title names it, so a `warnings_summary` key can be looked up by name; the DOI-in-`pmid`, HLA-grammar and half-stated-pair refusals have entries too. `validate_module` is now described as the compile's own pre-flight (since 0.8 it runs the resolution step, so the expansion and hosting findings refuse on both paths), and the callability note in `variants.md` follows 0.8's `qual_floor_on_reference_evidence` (the retired QUAL-inversion advice and its `FORMAT/GQ` recommendation are gone). A test holds every code the table titles to upstream's live vocabulary.
 On the `adopt-0.8` branch, built ahead of production's 0.8 deploy on the person's word (2026-11-10); the polygon serves 0.8.
 
 - **just-dna 0.8 adopted**: format, compiler and enricher `>=0.8.3,<0.9`, `just-dna-registry>=0.28.5`. 0.8.3 rather than 0.8.0 because the 0.8.3 compiler requires format 0.8.3. polars and duckdb stay capped `<2` by decision, since 0.8.3 runs on both 1.x and every 0.7 tool on a machine shares the Ensembl cache a duckdb-2 enricher would rewrite. The reference examples are recopied from upstream's `v0.8.3`. Until production serves 0.8, publish to the polygon only: production refuses a 0.8 client's guarded calls with `HTTP 409`.

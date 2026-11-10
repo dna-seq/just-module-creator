@@ -278,9 +278,11 @@ Ordered by how likely a first-timer is to hit them.
    `callable_from` / `quality_from` / `min_quality` are read by **no consumer** (see below). Authoring
    them is still right — they are the only place a module can state where it stops applying — but do not
    assume they gate anything today. And do not state `min_quality` against `QUAL` on a
-   `requires_callable` row: QUAL's sign flips with the record (VCF §1.6.1.6), so on the reference record
-   a consumer must read to prove the absence, a *high* QUAL says the position is probably variant. The
-   compiler warns (`_check_quality_inversion`, RM57) and deliberately does not refuse. Prefer `FORMAT/GQ`.
+   `requires_callable` row. Such a row is decided from a reference record, usually a gVCF `<*>` block,
+   which conventionally leaves QUAL missing (`.`), so the floor either always withholds or never
+   applies; on a joint-called site record QUAL is a site-level number, not this sample's. The compiler
+   warns (`qual_floor_on_reference_evidence`) and does not refuse. It names no replacement field on
+   purpose: the spec reserves no per-sample reference-confidence key, so leave the floor off.
 9. **`*` is not a symbolic allele and neither is `.`** (RM59 / RM58). `*` is legal in `genotype` only —
    measured: `effect_allele="*"` is refused — sorts first (`*/A`, not `A/*`), asserts *unobservable*, and
    is dropped from both sides of `hosting_verdict` before comparison so it never reads as a

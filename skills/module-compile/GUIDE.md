@@ -27,14 +27,10 @@ compile_module(spec_dir="spec", output_dir="out", strict=True)
 verify_artifact(module_dir="out")
 ```
 
-`validate_module` refuses everything `compile_module` refuses that does not need resolved rows, so a
-green pre-flight should mean a green compile. **Pass it the same `strict` as the compile you intend to
-run** — several checks are a ladder, so a mismatched pre-flight answers for the *other* compile.
-
-What `validate` covers: `resolution.csv`, the fact sidecars, the licence gate, the stored `vrs_id`, the
-p-value pair, and whether every genotype and `effect_allele` names an allele its locus actually has.
-What appears only at compile is anything computed from **resolved** rows — the expansion and hosting
-findings — because resolution has not run when `validate` does.
+`validate_module` is the compile's own pre-flight, resolution step included, so the expansion and
+hosting findings that read resolved rows refuse on both paths: a green pre-flight in the mode you will
+compile in means a green compile. **Pass it the same `strict` as the compile you intend to run** —
+several checks are a ladder, so a mismatched pre-flight answers for the *other* compile.
 
 ## `--strict` means reproducible, never right
 
