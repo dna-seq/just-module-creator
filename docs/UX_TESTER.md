@@ -188,6 +188,15 @@ reads ... (RUC)". That is its compiler 0.8.0, older than RM414 and RM415 (cut in
 these two texts after our report. Nothing is lost in the upload: the local 0.8.3 run on the same bytes sees
 the bin's pmid and `FORMAT/REPCN`.
 
+The lead's list for the branch, same driver, same evening:
+
+| item | result |
+|---|---|
+| `draft_from_strchive` with no `catalogue` (F129) | **holds**: HTT and FMR1 drafted from the provisioned lane. Beside them, a false "No `strchive` lane on this machine": **F145** |
+| `enrich_module`'s `allele_mismatches` (RM382) | **holds**: on a strand-flipped copy of `assets/fto_bmi` (`recheck_08/fto_flip`), rs1421085 is in `unresolved` and the line names G/G, each of four sources' `16:53767042 T>C`, and "(fits the other strand)" |
+| `enrich_gwas_effects` on the v2 API | **fails upstream**: the enricher asks for a page of 1000 and the Catalog refuses anything above 500: **F146**, handed to the liaison |
+| `fetch_fulltext`'s outage line (F133) | not exercised: needs Europe PMC answering 500, which it did not tonight |
+
 **The rehearsal publishes were held, deliberately.** Both would land under `test-sheep`, the namespace the person
 asked to rename (F143: the registry declined a rename; the route is delete and republish, waiting on the person).
 Publishing two more versions there adds to that cleanup, and the dry runs already answer whether they would
