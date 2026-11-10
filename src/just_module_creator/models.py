@@ -716,6 +716,20 @@ class ValidationReport(_NamesUpstreamCommands):
     warnings: list[str] = Field(
         description="Not refusals — but most known traps arrive here on a green run. Read them."
     )
+    warnings_summary: dict[str, int] = Field(
+        default_factory=dict,
+        description=(
+            "`warnings` counted by upstream's warning code, as `compile_module` reports it. "
+            "Empty is two answers (no warnings, or not classified), so read it beside `warnings`."
+        ),
+    )
+    carried: list[str] | None = Field(
+        default=None,
+        description=(
+            "The warnings no edit to the spec directory can clear. Empty is a real answer; "
+            "null means unclassified, never none."
+        ),
+    )
     info: list[str] = Field(default_factory=list, description="Advisory notes.")
     authored_findings: list[LintFinding] = Field(
         default_factory=list,

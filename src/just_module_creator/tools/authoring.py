@@ -938,11 +938,17 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         """
         target = resolve_dir(spec_dir, settings)
         result = await run_sync(lambda: compiler.validate_spec(target, strict=strict))
+        # Same reading as compile_module's: an empty summary beside warnings is "not
+        # classified", so `carried` is null there rather than an empty list.
+        summary = dict(getattr(result, "warnings_summary", None) or {})
+        classified = bool(summary) or not result.warnings
         return ValidationReport(
             valid=result.valid,
             strict=strict,
             errors=list(result.errors),
             warnings=list(result.warnings),
+            warnings_summary=summary,
+            carried=list(getattr(result, "carried", None) or []) if classified else None,
             info=list(result.info),
             authored_findings=await run_sync(lambda: authored_checks.findings_for_spec_dir(target)),
             stats=jsonable(result.stats),
