@@ -8,6 +8,7 @@ on our side, so agents in sibling repos are not surprised.
 On the `adopt-0.8` branch, built ahead of production's 0.8 deploy on the person's word (2026-11-10); the polygon serves 0.8.
 
 - **just-dna 0.8 adopted**: format, compiler and enricher `>=0.8.3,<0.9`, `just-dna-registry>=0.28.5`. 0.8.3 rather than 0.8.0 because the 0.8.3 compiler requires format 0.8.3. polars and duckdb stay capped `<2` by decision, since 0.8.3 runs on both 1.x and every 0.7 tool on a machine shares the Ensembl cache a duckdb-2 enricher would rewrite. The reference examples are recopied from upstream's `v0.8.3`. Until production serves 0.8, publish to the polygon only: production refuses a 0.8 client's guarded calls with `HTTP 409`.
+- **0.8's new commands and tables are named, as gaps**: `opentargets enrich`, `ld-pairs` and `clinvar-gkm lookup` have no tool here yet (`cli_map`, `references/CLI.md`), and `refresh_sidecar` refuses the four tables they write with the command to run. `meta.csv` and `model_organisms.csv` have a subject in `list_tables`. Sweeping the new authored tables into the skills is the pm's scope and not done.
 
 ## [0.48.5] — 2026-11-10
 

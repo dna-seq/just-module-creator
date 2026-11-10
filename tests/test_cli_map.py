@@ -61,7 +61,14 @@ def test_every_tool_a_mapping_names_exists() -> None:
         for word in re.findall(r"\b[a-z]+(?:_[a-z]+)+\b", value)
     }
     # Argument names and values that are not tools.
-    named -= {"dry_run", "gene_metrics", "drug_labels", "mitomap_miss", "alphagenome_avi"}
+    named -= {
+        "dry_run",
+        "gene_metrics",
+        "drug_labels",
+        "mitomap_miss",
+        "alphagenome_avi",
+        "clinvar_gkm",
+    }
     assert "provision_caches" in named and "close_module" in named
     assert not named - ours, f"cli_map names tools that do not exist: {sorted(named - ours)}"
 

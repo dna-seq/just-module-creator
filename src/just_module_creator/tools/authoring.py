@@ -115,6 +115,15 @@ _SUBJECTS: dict[str, str] = {
         "one correction to one derived cell — which table, which row, which column, "
         "and why the author overrode it"
     ),
+    # Draftable as of upstream 0.8 (RM28, RM335).
+    "meta.csv": (
+        "a combination of other rows whose joint finding replaces theirs, per trait, "
+        "and optionally per sex or drug"
+    ),
+    "model_organisms.csv": (
+        "one model-organism lifespan finding about a human gene; annotation only, it "
+        "reaches no weight"
+    ),
 }
 
 

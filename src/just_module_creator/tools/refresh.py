@@ -509,6 +509,24 @@ UNREFRESHABLE["expression_effects.csv"] = (
 )
 
 
+#: A fourth kind, and a gap rather than a decision: 0.8's Open Targets lane writes three
+#: sidecars (`opentargets enrich`) and its LD pass one (`ld-pairs`), and no tool here wraps
+#: either producer yet (`cli_map` names both as parity gaps). A refresh needs a pass to
+#: re-run, so these are refused with the CLI named, and the entry comes out when the
+#: producer is wrapped and joins `ROSTER`.
+_UNWRAPPED_PRODUCER = (
+    "no tool here produces this table yet: it is written by `just-dna-enricher {command}`, "
+    "which this server does not wrap (a parity gap, not a decision). Re-derive it with that "
+    "command, then validate_module and compile_module."
+)
+for _name, _command in (
+    ("locus_to_gene.csv", "opentargets enrich"),
+    ("colocalisations.csv", "opentargets enrich"),
+    ("consequences.csv", "opentargets enrich"),
+    ("ld_pairs.csv", "ld-pairs"),
+):
+    UNREFRESHABLE[_name] = _UNWRAPPED_PRODUCER.format(command=_command)
+
 # --------------------------------------------------------------------------- #
 # Row identity, derived from the live models
 # --------------------------------------------------------------------------- #

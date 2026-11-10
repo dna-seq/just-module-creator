@@ -105,6 +105,15 @@ _ABSTAINED: dict[str, str] = {
     f"{ENRICHER} alphagenome check": _NOT_YET,
     f"{ENRICHER} litvar gene": _NOT_YET,
     f"{ENRICHER} hint recover": _NOT_YET,
+    # New in 0.8 (the adoption branch, 2026-11-10): the Open Targets pass, the LD pass and the
+    # ClinVar-GKM placement witness's lookup. `refresh_sidecar` refuses their tables by name.
+    f"{ENRICHER} opentargets enrich": _NOT_YET,
+    f"{ENRICHER} ld-pairs": _NOT_YET,
+    f"{ENRICHER} clinvar-gkm lookup": _NOT_YET,
+    f"{ENRICHER} clinvar-gkm currency": (
+        "asks whether a built ClinVar-GKM snapshot is current, which is the operator's call "
+        "to rebuild it, not an author's"
+    ),
     f"{ENRICHER} gene-validity": (
         "no tool fills gene_validity.csv the first time; refresh_sidecar re-derives one that exists"
     ),

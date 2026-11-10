@@ -275,6 +275,10 @@ _WHOLE_REWRITE_SIDECARS = frozenset(
 #: returning blank. What refuses it is that a row records the query's date and not its
 #: interval, so the question cannot be re-asked from the file.
 _UNREPRODUCIBLE_QUERY_SIDECARS = frozenset({"expression_effects.csv"})
+#: 0.8's Open Targets and LD-pair sidecars, whose producers no tool here wraps yet.
+_UNWRAPPED_PRODUCER_SIDECARS = frozenset(
+    {"locus_to_gene.csv", "colocalisations.csv", "consequences.csv", "ld_pairs.csv"}
+)
 
 
 def test_the_roster_covers_every_public_sidecar_or_says_why_not() -> None:
@@ -295,12 +299,13 @@ def test_the_roster_covers_every_public_sidecar_or_says_why_not() -> None:
     assert set(ROSTER) - UNPRODUCED <= set(REFRESHABLE_ROSTER), (
         f"a roster entry no public roster names: {sorted(set(ROSTER) - set(REFRESHABLE_ROSTER))}"
     )
-    # And every public name we do not cover is one of exactly three recorded kinds.
+    # And every public name we do not cover is one of exactly four recorded kinds.
     uncovered = set(REFRESHABLE_ROSTER) - set(ROSTER)
     accounted = (
         {SOURCES_CSV}
         | (_WHOLE_REWRITE_SIDECARS & set(REFRESHABLE_ROSTER))
         | (_UNREPRODUCIBLE_QUERY_SIDECARS & set(REFRESHABLE_ROSTER))
+        | (_UNWRAPPED_PRODUCER_SIDECARS & set(REFRESHABLE_ROSTER))
     )
     assert uncovered == accounted, (
         f"an unaccounted-for fact table: {sorted(uncovered - accounted)}"

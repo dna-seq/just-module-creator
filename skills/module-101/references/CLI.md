@@ -51,6 +51,9 @@ Install: `pip install just-dna-enricher` pulls the compiler and the format tier.
 | **fact tables from ClinGen / ClinVar** | — | `gene-validity`, `assertions` |
 | **published GWAS effect sizes** | `enrich_gwas_effects` | `gwas` |
 | **which rsID sits at a GRCh37 coordinate** | — | `hint recover` |
+| **locus-to-gene, colocalisations, consequences** (Open Targets) | — | `opentargets enrich` |
+| **LD between a study's proxy rsID and its lead** | — | `ld-pairs` |
+| **where ClinVar-GKM places one allele** | — | `clinvar-gkm lookup` |
 | **snapshot building** | — | `clinvar build`, `clinpgx build`, `acmg build`, `cache pull` |
 
 ## `just-dna-compiler` (offline, never fetches)
@@ -115,6 +118,9 @@ kind, so the compile succeeds and writes a module whose every row has no `chrom`
 | `vrs mint <dir>` | stamp `ga4gh:VA.…` ids onto `resolution.csv` (substitutions offline, indels online) |
 | `enrich-and-compile <dir> <out>` | enrich + compile in one call. `--frequencies`, `--gene-metrics` |
 | `template` | print an authored table's header row |
+| `opentargets enrich <spec>` | → `locus_to_gene.csv`, `colocalisations.csv`, `consequences.csv`, and the fine-mapping posterior on `gwas_effects.csv`. Reads only the provisioned `opentargets` snapshot; run `enrich` first, since coordinates come from `resolution.csv` |
+| `ld-pairs <dir>` | → `ld_pairs.csv`: r² between each study's `proxy_rsid` and its lead, in the study's own 1000 Genomes superpopulation. Online only; an empty answer is withheld, never written as r² = 0 |
+| `clinvar-gkm lookup\|currency` | where ClinVar-GKM's indel witness places one allele (nothing found means not witnessed), and whether a built snapshot is current |
 
 The three sources this server reaches that the enricher does not — Semantic Scholar, arXiv and
 Unpaywall — have no CLI equivalent anywhere in the toolchain. Discovery is an app-surface feature;
@@ -124,7 +130,7 @@ the enricher's literature tier verifies citations you already have and deliberat
 the roster below is what `caches.CACHE_LANES` declares — **ask that rather than this list**, a hand-kept
 copy that drifts:
 `clinvar`, `clinpgx`, `acmg`, `gnomad`, `cpic`, `pharmvar`, `civic`, `pubmind`, `mane`, `strchive`,
-`mitomap`, `alphagenome`, `atlas`, plus `cache` and `upload`.
+`mitomap`, `alphagenome`, `atlas`, `opentargets`, `clinvar-gkm`, plus `cache` and `upload`.
 
 Three of them are worth knowing about by name:
 
