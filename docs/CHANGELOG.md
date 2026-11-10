@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **F113's Crossref read is gone**: from enricher 0.8 the DOI path names the work itself and resolves a PMID through Europe PMC as an advisory, so `lookup_citation(doi=…)` returns the title from the enricher and the PMID in `withheld` (`applied: false`), never in `pmid`. The `hint citation` mapping and the DOI-in-`pmid` symptom say so. F108's PMC BioC rung stays: 0.8's `PmcBiocClient` reads the same manuscript but flattens its tables into one run of words, and ours keeps cells tab-separated, which is where a GWAS paper's per-locus rows are.
 - **0.8's new warnings and refusals are in the symptom table, by code**: each of the eleven warning codes 0.8 adds has an entry whose title names it, so a `warnings_summary` key can be looked up by name; the DOI-in-`pmid`, HLA-grammar and half-stated-pair refusals have entries too. `validate_module` is now described as the compile's own pre-flight (since 0.8 it runs the resolution step, so the expansion and hosting findings refuse on both paths), and the callability note in `variants.md` follows 0.8's `qual_floor_on_reference_evidence` (the retired QUAL-inversion advice and its `FORMAT/GQ` recommendation are gone). A test holds every code the table titles to upstream's live vocabulary.
 On the `adopt-0.8` branch, built ahead of production's 0.8 deploy on the person's word (2026-11-10); the polygon serves 0.8.
 

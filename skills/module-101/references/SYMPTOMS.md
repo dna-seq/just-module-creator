@@ -284,12 +284,10 @@ A PMC id can be one digit from a real — but unrelated — PMID, so the refusal
 citing the wrong paper. Look the record up again and write the PMID it actually has.
 
 **`names DOI(s) … and no PubMed ID`**
-Refused in both modes: a DOI's digits are not a PubMed id. **What to do:** move the DOI to `doi`.
-For the PMID, `lookup_citation(doi=…)` gives the title (from Crossref) and deliberately no PMID, since a
-PMID read off the DOI's own record would make the DOI cross-check agree with itself. Search for it
-(`literature_search` on the title), then confirm with `lookup_citation(pmid=…)` that the title matches.
-The message's `hint citation --doi` is the CLI's route, which takes the PMID from that same record. If
-the work has no PubMed record, write `NONE` in `pmid`, which then requires `doi`.
+Refused in both modes: a DOI's digits are not a PubMed id. **What to do:** move the DOI to `doi`, then
+`lookup_citation(doi=…)`: it names the work the DOI belongs to, and a PMID Europe PMC holds for it comes
+back in `withheld` as an advisory. Confirm the title is the paper you meant, then type that PMID into
+`pmid`. If the work has no PubMed record, write `NONE` in `pmid`, which then requires `doi`.
 
 **`is an HLA gene, so its allele must follow IPD-IMGT/HLA nomenclature`**
 Refused in both modes on an `HLA-` gene: the allele needs at least two colon-separated fields
