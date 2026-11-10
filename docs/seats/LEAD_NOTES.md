@@ -25,6 +25,8 @@ Tester's probe at 113150c (2026-11-10): HTT/MTHFR strict and polygon `registry_c
 
 **main's [Unreleased], 2026-11-11**: F144 (`4f0085a`, the contract-skew note on the proxy routes) and F146's our half (`3664412`, the GWAS 410 says the v1 API is retired). The Catalog's v1 retirement means the shipped GWAS pass fails on every module; it returns only with an enricher on v2: a 0.7.4 off v0.7.3 carrying RM354 + RM428 (upstream's ask 4, put to the person by their pm and lead) or our 0.8 merge once production serves 0.8 and RM428 is released. `unattended`: the patch release waits for one of those today, so the day's one release carries the pass back rather than a message about its absence; with neither by the evening, release 0.48.6 with what is there.
 
+**Merge hazard, adopt-0.8 ← main**: main's `_gwas_gone` (F146, `3664412`) reads a v1 410; its test overrides `FakeGwasClient.associations_for`, while the branch's fake serves `association_pages` (v2). After the merge that test no longer reaches the 410 path, and `[Unreleased]` conflicts. At the merge: decide whether a 410 can still arrive on v2 (keep `_gwas_gone` with a v2 fake) or drop it with its test.
+
 **Registry S28 (namespace rename): declined by design**, answered the same day (their history file; docs fixed
 after 0.28.6). `ns/name@version` is a published identity; no call moves a version. Their route on the polygon:
 claim the new `test-` namespace, `delete_module("test-sheep", name)` per module (frees the content claim), then
@@ -99,16 +101,7 @@ queries exists); F141's cause (unknown).
   (the compile guide's reading of `not_found`) are this seat's, at the gate (prod serving 0.8); items 6-7 are
   the pm's. The liaison capped polars and duckdb `<2` in `pyproject.toml` (`c361614`).
 - **F121** (seats resuming together lose the plugin server): kit #300 filed; repo-side repairs wait on it.
-- **F132** (upstream text naming a CLI command reaches the agent unmapped; F125's second instance, split out
-  2026-11-08): `unattended`, mine. Shape in `docs/dogfooding.md`: one CLI-to-tool map in `src/`, guarded both ways
-  against upstream's typer commands, carried as our own field beside the verbatim message. Asked the liaison
-  whether upstream would give a structured remedy key instead.
-- **At the 0.8 move** (adoption map): drop `draft_from_strchive`'s `resolve_strchive_reference()` fallback (keep
-  the `catalogue` argument); drop the gene-metrics guide's 0.7 label sentences (`gnomad_v2.1.1_constraint`);
-  floors `>=0.8.2` for all three (liaison, 2026-11-08); recopy `assets/reference_examples/`; replace F133's
-  "call again" sentence in `discovery.fulltext` with 0.8's `fetch_fulltext`, which names an outage as one.
-- **F126** (`registry_register`'s docstring on install-id reuse) and **F128** (user-scope 0.47.0 skills; desk
-  #229, the person's) remain open in `docs/dogfooding.md`; F126 is `unattended`, mine.
+- **F128** (user-scope 0.47.0 skills; desk #229, the person's) remains open in `docs/dogfooding.md`. F126 and F132 shipped in 0.48.5; the 0.8-move list is done on adopt-0.8.
 - **The liaison's re-run of pending-fixes (`f032ecb`) leaves five lifts of our own code**, none urgent, each
   unattended: F94 (`provisioning._LANE_KB`/`_DECLARED_KB` against every lane's `approx_mb`), F93
   (`proxy._TABLE_KEY_FOR`/`_dest_for` and their probe test), F63 (our in-process enrichment claim beside
