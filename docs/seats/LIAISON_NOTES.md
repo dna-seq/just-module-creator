@@ -28,8 +28,8 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. The hosts have
   only `net.py` and its test; pydantic 2.14's typing of `FieldInfo.annotation` broke `tools/config.py`, and the
   lead fixed it forward in `6d9f3d0`.
 - Filed with the kit as #378 (2026-11-10): step 3 of "The dependency bump" to run the type checker and linter too.
-- `stash@{0}` ("WIP on (no branch): a444e66") is mine, made by mistake during the 2026-11-10 bump; it holds
-  the `net.py` change already in `ebca264`. Dropping it is the person's.
+- A stash made by mistake during the 2026-11-10 bump (a copy of `ebca264`'s `net.py` change) was dropped by the
+  person the same day. Test a change against the old spelling in a scratch copy, never with `git stash`.
 
 ## Waiting on others
 
