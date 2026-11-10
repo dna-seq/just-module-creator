@@ -206,12 +206,17 @@ class RegistrationResult(BaseModel):
             "The proof-of-work id bound to this account. SAVE IT: it is the account's ONLY "
             "recovery path — re-registering it reissues a key for the same account, and there is "
             "no email or admin to recover through. Saved on this machine with the account "
-            "(`registry_accounts`)."
+            "(`registry_accounts`). Empty when it was reused from the environment or the saved "
+            "account (`install_id_origin`), so an existing secret is not repeated."
         ),
     )
     install_id_origin: str | None = Field(
         default=None,
-        description="Where the install-id came from: 'argument', 'environment' or 'generated'.",
+        description=(
+            "Where the install-id came from: 'argument', 'environment', 'saved account' or "
+            "'generated'. For 'environment' and 'saved account' `install_id` is left empty: "
+            "the secret is already where this names, and is not repeated into the transcript."
+        ),
     )
     stored_for_session: bool = Field(
         default=False,

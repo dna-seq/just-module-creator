@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`registry_register` says where an omitted install-id comes from, and stops echoing a reused one** (F126): `JMC_INSTALL_ID`, then the saved account, then a fresh grind. The result leaves `install_id` empty when it came from the environment or the saved account, so an existing secret is not written into the transcript; `install_id_origin` names where it lives.
 - **Weekly dependency bump** (liaison, 2026-11-10): `uv lock --upgrade` moved 56 packages within their caps, among them fastmcp 3.4.11, pydantic 2.14.3, starlette 1.10.0, typer 0.29.0, tenacity 9.2.1, just-dna-registry 0.27.1 and cachetools 8.0.0 (a new major, pulled in only through fastmcp's `py-key-value-aio`). tenacity 9.2.1 renamed the backoff base from `initial=` to `multiplier=`, so `net.py` uses the new name, the floor is now `tenacity>=9.2.1`, and `tests/test_net.py` refuses the old name. The same warning still shows from enricher 0.7.3's own clients until the 0.8 adoption, because enricher 0.8.0 made the same rename.
 - **`top_expression_effects` explains `gene_not_at_locus` in its result** (F140, tester's recheck): when a row has that status, `next_step` says the sidecar holds other genes there, that the row's own gene may never have been asked, and that `rows=true` asks it. Before, the field descriptions said so, and a host can keep stale copies of those.
 

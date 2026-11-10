@@ -204,6 +204,17 @@ def resolve_install_id(explicit: str | None, settings: Settings) -> tuple[str | 
     return None, "generated"
 
 
+# F126: an install-id read from the environment or the saved account is an existing
+# secret the caller never typed; echoing it writes it into the transcript for nothing,
+# since `install_id_origin` already says where it lives.
+_NOT_ECHOED_ORIGINS = frozenset({"environment", "saved account"})
+
+
+def _echoed(install_id: str | None, origin: str) -> str | None:
+    """The install-id to put on the result: none when it was reused from storage."""
+    return None if origin in _NOT_ECHOED_ORIGINS else install_id
+
+
 def _registration_failure(exc: RegistryError, *, account: str, origin: str) -> str:
     """Turn the registry's error slug into something the caller can act on."""
     detail = str(getattr(exc, "detail", "") or exc)
@@ -330,14 +341,15 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
         one.
 
         Onboarding is self-service: no admin, no email, no approval, just an install-id
-        — a proof-of-work string ground locally in about a second, and omitting
-        `install_id` grinds one for you. **`target` picks the instance and defaults to
-        the polygon**, and the two keep separate databases, so an account on one does
-        not exist on the other; register on both with the same install-id. **Save the
-        install-id this returns**: it is the account's only recovery path, re-
-        registering it reissues a key for the SAME account and ignores `account`, while
-        calling again without one silently creates a different account. The account, token,
-        install-id and namespaces are saved on this machine automatically (`registry_accounts`).
+        — a proof-of-work string. Omitted, it is taken from `JMC_INSTALL_ID`, else from
+        the account saved on this machine, and only with neither is a fresh one ground
+        (about a second); `install_id_origin` says which. **`target` picks the instance
+        and defaults to the polygon**, and the two keep separate databases, so an account
+        on one does not exist on the other; register on both with the same install-id.
+        The install-id is the account's only recovery path: re-registering it reissues a
+        key for the SAME account and ignores `account`, and a freshly ground one makes a
+        new account. The account, token, install-id and namespaces are saved on this
+        machine automatically (`registry_accounts`); a reused install-id is not echoed back.
         `account` obeys the namespace rule — lowercase letters and digits with single
         hyphens, underscores rejected rather than normalised, and a `test-` handle is
         fine on the polygon and refused by production. The token is stored for this
@@ -388,9 +400,9 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
             log.warning("Registration of %s on %s failed: %s", account, target, exc)
             return RegistrationResult(
                 registered=False,
-                # Returned even on failure: it cost CPU to grind and is worth
-                # retrying with rather than replacing.
-                install_id=resolved,
+                # Returned even on failure when it was ground: it cost CPU and is
+                # worth retrying with rather than replacing. A reused one is not.
+                install_id=_echoed(resolved, origin),
                 install_id_origin=origin,
                 target=target,
                 registry_url=url,
@@ -481,7 +493,7 @@ def register_auth(mcp: FastMCP, settings: Settings) -> None:
             account=granted,
             namespaces=namespaces,
             token=token or None,
-            install_id=resolved,
+            install_id=_echoed(resolved, origin),
             install_id_origin=origin,
             stored_for_session=bool(token),
             target=target,

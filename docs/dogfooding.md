@@ -41,22 +41,6 @@ Candidates: disable `@dna-seq` in user scope and enable it per project where the
 `Skill`'s base directory against the server's version at start, but nothing in the plugin sees which copy the
 host loaded skills from, so that is a host gap rather than ours.
 
-## F126 — `registry_register` says it grinds a new install-id when omitted; it reuses the environment's or the saved one first
-
-**Found:** 2026-08-11 as an unfiled note (live: the result said `install_id_origin: "environment"`); checked
-again on 0.48.2's code, 2026-11-07 · **Severity:** low · **Status:** open. Not re-run live: the polygon answers
-502, and re-registering would reissue `sheep`'s key.
-
-The docstring: *"omitting `install_id` grinds one for you … calling again without one silently creates a
-different account."* `auth.py` (the install-id resolver beside `registry_register`) takes the argument, then
-`JMC_INSTALL_ID`, then **the saved account's** (0.47.0: *"A later register with no install-id reuses the saved
-one"*), and grinds only when all three are empty. On any machine that has registered once, both sentences are
-false. The consequence runs the opposite way from the warning: an agent avoids the call for fear of orphaning
-the account, or pastes the live secret in to be safe, when omitting it would have reused the account. A second
-note from August belongs with it: the result echoes the install-id back even when it came from the environment
-or the saved account, which writes an existing secret into the transcript. `install_id_origin` without the value
-says everything the caller needs.
-
 ## F132 — upstream text that names a CLI command reaches the agent with no mapping to this surface
 
 **Found:** 2026-11-07 by the tester as F125's second instance (HTT probe); split out by the lead 2026-11-08 ·

@@ -6,6 +6,24 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F126 — `registry_register` says it grinds a new install-id when omitted; it reuses the environment's or the saved one first
+
+**Found:** 2026-08-11 as an unfiled note (live: the result said `install_id_origin: "environment"`); checked
+again on 0.48.2's code, 2026-11-07 · **Severity:** low · **Status:** resolved 2026-11-10. Not re-run live: the polygon answers
+502, and re-registering would reissue `sheep`'s key.
+
+The docstring: *"omitting `install_id` grinds one for you … calling again without one silently creates a
+different account."* `auth.py` (the install-id resolver beside `registry_register`) takes the argument, then
+`JMC_INSTALL_ID`, then **the saved account's** (0.47.0: *"A later register with no install-id reuses the saved
+one"*), and grinds only when all three are empty. On any machine that has registered once, both sentences are
+false. The consequence runs the opposite way from the warning: an agent avoids the call for fear of orphaning
+the account, or pastes the live secret in to be safe, when omitting it would have reused the account. A second
+note from August belongs with it: the result echoes the install-id back even when it came from the environment
+or the saved account, which writes an existing secret into the transcript. `install_id_origin` without the value
+says everything the caller needs.
+
+**Resolution:** the docstring now gives the order an omitted install-id is taken in (`JMC_INSTALL_ID`, then the account saved on this machine, then a fresh grind) and says a ground one makes a new account; the two false sentences are gone. A reused install-id (origin `environment` or `saved account`) is no longer echoed: `install_id` is left empty and `install_id_origin` names where it lives. A passed or freshly ground one is still returned, since the caller may need to save it. Tests: `test_a_reused_install_id_is_named_by_origin_and_not_echoed` and `test_the_register_description_names_the_order_an_install_id_is_taken_in` (both fail on 0.48.4's code).
+
 ## F141 — the Atlas pass's dry-run cost is a constant two seconds a window, and the real calls took up to three minutes
 
 **Found:** 2026-11-09 by the tester, Atlas probe (`assets/fto_bmi_atlas`) · **Severity:** low · **Status:** resolved 2026-11-09 (reported, not explained)

@@ -207,6 +207,60 @@ async def test_a_later_register_reuses_the_saved_install_id():
     assert (resolved, origin) == ("install-sheep", "saved account")
 
 
+async def _register_with(make_client, monkeypatch, settings: Settings, **args) -> dict:
+    stub = _RegistryStub(
+        register={"token": "mk_minted_9999", "account": "sheep", "namespaces": ["test-sheep"]}
+    )
+    monkeypatch.setattr(auth, "client_for", stub)
+    monkeypatch.setattr(auth, "generate_install_id", lambda *_: "ground-fresh-0001")
+    async with make_client(settings=settings) as client:
+        result = await client.call_tool(
+            "registry_register", {"account": "sheep", "target": "test", **args}
+        )
+    return result.structured_content
+
+
+async def test_a_reused_install_id_is_named_by_origin_and_not_echoed(make_client, monkeypatch):
+    """F126: the environment's or the saved account's install-id is an existing secret;
+    the result says where it came from and leaves the value out of the transcript."""
+    _seed(("prod", "sheep", "mk_prod_aaaa", ["sheep"]))
+    saved = await _register_with(make_client, monkeypatch, _online())
+    assert saved["install_id_origin"] == "saved account"
+    assert saved["install_id"] is None
+    assert "install-sheep" not in str(saved)
+
+    settings = _online()
+    settings.install_id = "envinstall01"
+    env = await _register_with(make_client, monkeypatch, settings)
+    assert env["install_id_origin"] == "environment"
+    assert env["install_id"] is None
+    assert "envinstall01" not in str(env)
+    # Not echoed is not lost: the account still saves the id it registered with.
+    assert {a.install_id for a in localstore.load().accounts} >= {"envinstall01"}
+
+
+async def test_a_ground_or_passed_install_id_is_returned(make_client, monkeypatch):
+    ground = await _register_with(make_client, monkeypatch, _online())
+    assert (ground["install_id_origin"], ground["install_id"]) == (
+        "generated",
+        "ground-fresh-0001",
+    )
+    passed = await _register_with(make_client, monkeypatch, _online(), install_id="a1b2c3d4e5f6")
+    assert (passed["install_id_origin"], passed["install_id"]) == ("argument", "a1b2c3d4e5f6")
+
+
+async def test_the_register_description_names_the_order_an_install_id_is_taken_in(make_client):
+    """F126: it said an omitted install-id is ground, and that calling again without one
+    makes a different account; both were false on any machine that had registered."""
+    async with make_client(settings=_online()) as client:
+        tools = {t.name: t for t in await client.list_tools()}
+    text = " ".join((tools["registry_register"].description or "").split())
+    assert "JMC_INSTALL_ID" in text
+    assert "else from the account saved on this machine" in text
+    assert "omitting `install_id` grinds one for you" not in text
+    assert "silently creates a different account" not in text
+
+
 async def test_a_claimed_namespace_is_recorded_on_the_account_that_claimed_it(
     make_client, monkeypatch
 ):
