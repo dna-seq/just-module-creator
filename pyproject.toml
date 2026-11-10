@@ -86,7 +86,9 @@ dependencies = [
     # literature sources, and a transitive pin is not a contract.
     "httpx>=0.28",
     # Already the enricher's retry idiom; we reuse it rather than hand-roll a loop.
-    "tenacity>=9",
+    # 9.2.1 because `net.py` spells the backoff base `multiplier=`, which 9.2.1 added
+    # when it deprecated `initial=` (tests/test_net.py refuses the old spelling).
+    "tenacity>=9.2.1",
     # Same reason as httpx: `compare.py` and `audit.py` both call `yaml.safe_load`
     # on `module_spec.yaml` directly. Upstream's own loader is private
     # (`compiler._load_yaml`), so every consumer parses that file itself — asked for

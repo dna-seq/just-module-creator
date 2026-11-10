@@ -7,7 +7,9 @@ Everything here drives a fake clock; nothing here touches a socket.
 
 from __future__ import annotations
 
+import ast
 import threading
+from pathlib import Path
 
 import httpx
 import pytest
@@ -325,3 +327,28 @@ def test_the_contact_is_never_none_so_unpaywall_is_always_askable(
     services = build_services(offline_settings(user_email=None))
     email = services.contact_email()
     assert email and "@" in email
+
+
+#: tenacity's wait strategies whose backoff base 9.2.1 renamed from `initial` to `multiplier`.
+_RENAMED_BASE = {"wait_exponential_jitter", "wait_random_exponential"}
+
+
+def test_no_backoff_curve_uses_tenacitys_deprecated_initial_keyword() -> None:
+    """tenacity 9.2.1 deprecated `initial=` for `multiplier=`; the old spelling is refused here.
+
+    `initial=1.0` happens to be tenacity's default, so it raised no warning and the suite stayed
+    quiet; the next value someone tunes would have. The walk is anchored on `net._JITTER`, the
+    call we know exists, so an empty walk cannot pass.
+    """
+    src = Path(net.__file__).parent
+    calls = [
+        node
+        for path in sorted(src.rglob("*.py"))
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
+        if isinstance(node, ast.Call)
+        and getattr(node.func, "id", getattr(node.func, "attr", None)) in _RENAMED_BASE
+    ]
+    assert calls, "found no tenacity wait call; the walk is looking in the wrong place"
+    assert {kw.arg for call in calls for kw in call.keywords} >= {"multiplier"}
+    assert not [kw for call in calls for kw in call.keywords if kw.arg == "initial"]
+    assert net._JITTER.multiplier == 1.0

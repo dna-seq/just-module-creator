@@ -42,7 +42,7 @@ MAX_RETRY_AFTER = 30.0
 
 #: The backoff curve, used whenever the server did not name its own delay.
 #: Same shape as the enricher's clients, so one deployment behaves consistently.
-_JITTER = wait_exponential_jitter(initial=1.0, max=10.0)
+_JITTER = wait_exponential_jitter(multiplier=1.0, max=10.0)
 
 
 @dataclass
