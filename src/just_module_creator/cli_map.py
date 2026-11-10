@@ -65,7 +65,12 @@ _AUTHORING: dict[str, str] = {
     f"{ENRICHER} clinpgx check": "check_clinpgx",
     f"{ENRICHER} litvar coverage": "check_literature_coverage",
     f"{ENRICHER} hint variant": "lookup_variant",
-    f"{ENRICHER} hint citation": "lookup_citation",
+    # Not one-to-one: given a DOI alone, upstream returns the PMID from the DOI's own record, and
+    # lookup_citation withholds it: that PMID would make the DOI cross-check agree with itself.
+    f"{ENRICHER} hint citation": (
+        "lookup_citation (with a DOI alone it gives the title and no PMID, by design: find the "
+        "PMID with literature_search on that title and confirm it with lookup_citation(pmid=...))"
+    ),
     f"{ENRICHER} hint gene": 'lookup_identifier(kind="gene")',
     f"{ENRICHER} hint trait": 'lookup_identifier(kind="trait")',
     f"{ENRICHER} alphagenome expression": "enrich_expression_effects",
