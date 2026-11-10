@@ -27,9 +27,7 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. The hosts have
 - **Run the whole `uv run pyright` and `uv run ruff check .`, not just the files you touched.** This run checked
   only `net.py` and its test; pydantic 2.14's typing of `FieldInfo.annotation` broke `tools/config.py`, and the
   lead fixed it forward in `6d9f3d0`.
-- To file with the kit (`report-to-kit`, unattended, next idle turn): LIAISON.md's "The dependency bump" step 3
-  names the suite only; a type checker and the linter belong beside it, since a new release can change typing
-  and break nothing at run time.
+- Filed with the kit as #378 (2026-11-10): step 3 of "The dependency bump" to run the type checker and linter too.
 - `stash@{0}` ("WIP on (no branch): a444e66") is mine, made by mistake during the 2026-11-10 bump; it holds
   the `net.py` change already in `ebca264`. Dropping it is the person's.
 
