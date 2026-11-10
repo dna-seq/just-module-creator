@@ -199,6 +199,7 @@ The lead's list for the branch, same driver, same evening:
 | recheck: F144 fixed on main (4f0085a), in-process on this checkout | **holds**: `remote_derive` on the polygon's 409 now carries the instance note, with no 503/422 advice |
 | recheck: F145 fixed on the branch (8ac4c82) | **holds**: an HTT draft from the lane carries no missing-lane sentence |
 | `enrich_gwas_effects` on **main** (shipped 0.48.5, host wire) | **fails**: the Catalog retired v1 (410), so F146 covers both builds |
+| recheck: F146's half on main (3664412), in-process on this checkout | **holds**: the 410 now says the Catalog retired the API this build reads, that no retry or spec edit helps, and that the pass comes back with an enricher on v2 (RM428). The description keeps `1 + 2N`, by the lead's choice: it is what this build spends |
 
 **Both rehearsals ran, from the branch, and left nothing behind** (2026-11-11 ~00:05 UTC, same driver).
 `registry_publish(target="test")` as `test-sheep/test_htt_cag_repeats@0.1.0` and `test-sheep/test_mthfr_folate@0.1.0`.
