@@ -14,6 +14,29 @@ is usable, and what is missing.
 
 ---
 
+## F145 — on the adopt-0.8 branch, `draft_from_strchive` says "No `strchive` lane on this machine" after drafting from that lane
+
+**Found:** 2026-11-10, branch adopt-0.8 at 113150c (format 0.8.3), in-process driver, not the host wire ·
+**Severity:** low (a false sentence beside a correct result) · **Status:** open, for the lead; not in a release.
+
+`draft_from_strchive(genes=["HTT","FMR1"], use="non_commercial")` with no `catalogue`, on a scratch copy of
+`assets/htt_cag_repeats` without its `repeat_alleles.csv` (`data/interim/recheck_08/strchive/`). It drafted
+both loci (`added: 2`, HTT with `MONDO_0007739`) from the provisioned lane at
+`$JUST_DNA_PIPELINES_CACHE_DIR/strchive/` (`STRchive-loci.json`, `release.json`, present since 2026-09-03).
+Its `source_findings` opens with:
+
+> No `strchive` lane on this machine and no `catalogue` given: `provision_caches(lanes=["strchive"])` builds the lane.
+
+6715725 (F129) dropped our fallback because enricher 0.8 resolves the lane itself, and kept this sentence. In
+`tools/passes.py` it is now conditioned on `source is None`, which only means "no `catalogue` argument". Every
+call without one says the lane is missing, including every call that succeeded from it. An author told to
+provision a lane they already have may spend a provision on it, or doubt the rows.
+
+What is true at that point: no catalogue was passed, and upstream resolved its own lane. If the lane is
+really absent, what upstream does is not probed here; that case is the one the sentence belongs to.
+
+---
+
 ## F144 — `remote_derive` and `remote_draft` answer a contract-skew 409 with advice about 503 and 422
 
 **Found:** 2026-11-10, plugin 0.48.5 on the host wire, the polygon on format 0.8.0 · **Severity:** low ·
