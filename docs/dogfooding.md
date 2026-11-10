@@ -52,7 +52,7 @@ states the v1 budget (`1 + 2N`).
 ## F145 — on the adopt-0.8 branch, `draft_from_strchive` says "No `strchive` lane on this machine" after drafting from that lane
 
 **Found:** 2026-11-10, branch adopt-0.8 at 113150c (format 0.8.3), in-process driver, not the host wire ·
-**Severity:** low (a false sentence beside a correct result) · **Status:** open, for the lead; not in a release.
+**Severity:** low (a false sentence beside a correct result) · **Status:** fixed on adopt-0.8 (8ac4c82); moves to previous_issues.md with the merge. Not in a release.
 
 `draft_from_strchive(genes=["HTT","FMR1"], use="non_commercial")` with no `catalogue`, on a scratch copy of
 `assets/htt_cag_repeats` without its `repeat_alleles.csv` (`data/interim/recheck_08/strchive/`). It drafted

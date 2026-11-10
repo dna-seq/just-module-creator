@@ -21,6 +21,7 @@ out. 918 pass, ruff/pyright clean; polygon `registry_health` contract_compatible
 authored tables and passes, the pm's scope), 10 (`compilation.toolchain` beside a moved digest), item 3's cache
 offer text, the RM420 `cache pull` (operator's), re-reading F139's `checks_older_than_the_last_edit` against
 RM423. main stays 0.7 until production serves 0.8; then merge (not rebase) and release.
+Tester's probe at 113150c (2026-11-10): HTT/MTHFR strict and polygon `registry_check` true, allele_mismatches holds; F145 (false missing-lane sentence) fixed as `8ac4c82`. **The merge also waits on F146**: enricher 0.8.3 sends GWAS v2 `size=1000`, the API caps at 500 and answers 400, so `enrich_gwas_effects` fails on every module under 0.8. Upstream's to fix (liaison files it); no workaround here, and the branch's "page size 1000" budget wording follows their fix. F133's outage arm not exercised live (Europe PMC up).
 
 **Registry S28 (namespace rename): declined by design**, answered the same day (their history file; docs fixed
 after 0.28.6). `ns/name@version` is a published identity; no call moves a version. Their route on the polygon:
