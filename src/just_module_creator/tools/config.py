@@ -33,6 +33,15 @@ def _field_for(name: str) -> str | None:
     return field if field in Settings.model_fields else None
 
 
+def _adapter(field: str) -> TypeAdapter:
+    """A validator for one `Settings` field. Every field is annotated, so a missing
+    annotation is a defect in `Settings`, not a value to accept unchecked."""
+    annotation = Settings.model_fields[field].annotation
+    if annotation is None:
+        raise TypeError(f"Settings.{field} carries no annotation to validate against")
+    return TypeAdapter(annotation)
+
+
 def _state(
     name: str, note: str, *, written: bool = False, previous: str | None = None
 ) -> SettingState:
@@ -55,8 +64,7 @@ def register_config(mcp: FastMCP, settings: Settings, services: NetworkServices)
         # otherwise wait for a restart. Only what this process actually uses is updated.
         field = _field_for(name)
         if field is not None:
-            annotation = Settings.model_fields[field].annotation
-            setattr(settings, field, TypeAdapter(annotation).validate_python(value))
+            setattr(settings, field, _adapter(field).validate_python(value))
         if name == "JMC_USER_EMAIL" or (
             name == "JUST_DNA_CONTACT_EMAIL" and not (settings.user_email or "").strip()
         ):
@@ -103,7 +111,7 @@ def register_config(mcp: FastMCP, settings: Settings, services: NetworkServices)
         field = _field_for(name)
         if field is not None:
             try:
-                TypeAdapter(Settings.model_fields[field].annotation).validate_python(value)
+                _adapter(field).validate_python(value)
             except ValidationError as exc:
                 raise ToolError(
                     f"{value!r} is not a valid {name}: {exc.errors()[0]['msg']}"
