@@ -171,6 +171,28 @@ the call returns, on scratch copies under `data/interim/recheck_0484/` and the e
 | F126 | holds in the source (`auth.py`): the docstring gives the order `JMC_INSTALL_ID`, then the saved account, then a fresh grind, and `_echoed` withholds a reused id. ToolSearch still shows the old description (host cache), and no live register was run |
 | F140 | holds in the result: on `data/interim/probe_atlas_fto/fto_irx3` the `next_step` opens "2 authored row(s) read gene_not_at_locus (rs1421085)" and names `rows=true` |
 
+**The polygon answers again on format 0.8.0, 2026-11-10 (registry 0.28.5, compiler 0.8.0; production still
+0.7.1).** Two legs, on scratch copies under `data/interim/recheck_08/`:
+
+| leg | result |
+|---|---|
+| shipped 0.48.5, host wire: `registry_health(target="test")` | `contract_compatible: false`, and the message says every publish, validate, check and download will 409. Clear |
+| shipped 0.48.5: `registry_check` on HTT | 409, with the instance note: "This is the instance, not your module". Clear |
+| shipped 0.48.5: `remote_derive` on HTT (the 0.48.1 token leg) | 409 with advice about 503 and 422 instead of the instance note: **F144**. Whether the token was sent cannot be seen from a 409; that leg now waits for main to move to 0.8, not for the polygon |
+| branch adopt-0.8 at 113150c (format 0.8.3), **in-process driver, not the host wire**: strict `validate_module` on HTT and MTHFR | both valid, no new decision to come forward from 0.7 |
+| same: `registry_check(target="test")` on HTT | `verdict: true`, nothing blocking or unchecked, `content_signature` sha256:1d82655b... |
+| same: `registry_check(target="test")` on MTHFR | `verdict: true`, nothing blocking or unchecked, `content_signature` sha256:7294cc72... |
+
+The polygon's warnings on HTT read differently from the local ones: "no bin pmid" and "the field a consumer
+reads ... (RUC)". That is its compiler 0.8.0, older than RM414 and RM415 (cut in 0.8.2), which fixed exactly
+these two texts after our report. Nothing is lost in the upload: the local 0.8.3 run on the same bytes sees
+the bin's pmid and `FORMAT/REPCN`.
+
+**The rehearsal publishes were held, deliberately.** Both would land under `test-sheep`, the namespace the person
+asked to rename (F143: the registry declined a rename; the route is delete and republish, waiting on the person).
+Publishing two more versions there adds to that cleanup, and the dry runs already answer whether they would
+publish. They go after the person decides the namespace, from whichever build speaks 0.8 then.
+
 **The host keeps the tool descriptions from its first connection.** After the server restart, ToolSearch still
 returned 0.48.3's descriptions, and the source has the new ones. A fix that is only in a description can't be
 rechecked in a reconnected session: read the source, or recheck from a fresh session.
@@ -205,7 +227,9 @@ F128 (skills from the released 0.47.0) is on the person's desk as #229; until it
 checkout's `skills/` by hand. Two compiler findings went to the liaison: the RUC/CIRUC warnings ignore
 `source_field`, and `bins_ungrounded` says "no bin pmid" while one bin carries one.
 
-**Next probes, in order:** (1) the polygon leg of 0.48.1 and the HTT rehearsal, when the polygon answers;
+**Next probes, in order:** (1) the polygon leg of 0.48.1 and the HTT and MTHFR rehearsals: dry runs pass from
+the 0.8 branch (2026-11-10, above); the publishes wait on the person's namespace decision (F143) and the token
+leg on a build that speaks 0.8;
 (2) a module authored from nothing through the front door by a layman, as the handout's fallback; (3) the
 list in `dogfooding.md`'s "Probes not yet run" (`enrich_expression_effects` live, a module with two of
 something).
