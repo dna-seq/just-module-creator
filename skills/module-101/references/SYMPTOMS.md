@@ -284,10 +284,12 @@ A PMC id can be one digit from a real — but unrelated — PMID, so the refusal
 citing the wrong paper. Look the record up again and write the PMID it actually has.
 
 **`names DOI(s) … and no PubMed ID`**
-Refused in both modes: a DOI's digits are not a PubMed id. **What to do:** move the DOI to `doi`, then
-`lookup_citation(doi=…)`: it names the work the DOI belongs to, and a PMID Europe PMC holds for it comes
-back in `withheld` as an advisory. Confirm the title is the paper you meant, then type that PMID into
-`pmid`. If the work has no PubMed record, write `NONE` in `pmid`, which then requires `doi`.
+Refused in both modes: a DOI's digits are not a PubMed id. **What to do:** move the DOI to `doi`.
+`lookup_citation(doi=…)` names the work, and any PMID Europe PMC maps the DOI to comes back in
+`withheld` with its refusal (`redundancy_bearing`): typed in, the DOI cross-check would compare that
+mapping with itself. Take the PMID from a `literature_search` result and confirm its title with
+`lookup_citation(pmid=…)`, as for any PMID. If the work has no PubMed record, write `NONE` in `pmid`,
+which then requires `doi`.
 
 **`is an HLA gene, so its allele must follow IPD-IMGT/HLA nomenclature`**
 Refused in both modes on an `HLA-` gene: the allele needs at least two colon-separated fields
@@ -319,9 +321,11 @@ leaves missing. **What to do:** take the floor off; see
 withdrawn as wrong.
 
 **`log_file_not_shipped`: `does not ship with the module`**
-A file under `logs/` will not be published, and the line says why (hidden, a symlink, over 5 MiB, not
-UTF-8, JSON or JSON Lines, …). **What to do:** if it is meant to travel, fix what the reason names;
-otherwise move it out of `logs/`. Remember everything that does ship there is public.
+A file under `logs/` will not be published, and the line says why: a hidden path, a symlink, over the
+size ceiling, not UTF-8, an extension that does not ship (text ships as `.log`, `.txt`, `.md`, `.json`
+or `.jsonl`), a `.json` that is not one JSON document, or a `.jsonl` with a line that is not JSON.
+**What to do:** if it is meant to travel, fix what the reason names; otherwise move it out of `logs/`.
+Remember everything that does ship there is public.
 
 **`meta_selector_matches_nothing`, `meta_member_drug_disagrees`, `meta_member_allele_ambiguous`**
 Findings on `meta.csv` members. *Matches nothing*: almost always a typo; compare the member with what the
@@ -338,10 +342,12 @@ usual causes: the module is GRCh37 data declared as GRCh38, or the coordinate is
 happened to land past the end. `just-dna-enricher hint recover` tells you which rs-number GRCh37
 dbSNP records at that coordinate, which usually settles it in one call.
 
-**`effect_allele … is not among the resolved alleles at this locus`**
-A `studies.csv` row states an effect relative to an allele the locus cannot host (RM91). A warning
-under `--best-effort`, an **error** under `--strict`. Usually the effect allele was copied from a
-paper reporting the other strand.
+**`study_effect_allele_not_at_locus`: `effect_allele … is not among the resolved alleles at this locus`**
+A `studies.csv` row states an effect relative to an allele the locus cannot host (RM91); on a row filed
+under a proxy the message says `at the proxy`. A warning under `--best-effort`, an **error** under
+`--strict`. Usually the effect allele was copied from a paper reporting the other strand, but the
+resolving source's allele list can also be incomplete, so check which before editing: a wrong effect
+allele inverts the study's finding.
 
 **`--no-resolve switches off resolution entirely, including the injected resolution.csv`**
 You passed `--no-resolve` (or `resolve_with_ensembl=False`) with a `resolution.csv` beside the spec. The

@@ -61,5 +61,6 @@ async def test_a_bare_doi_names_the_work_and_offers_its_pmid_without_filling_it(
     offered = [w for w in data.withheld if w.column == "pmid"]
     assert len(offered) == 1
     assert (offered[0].after, offered[0].applied) == (PMID, False)
+    assert offered[0].refusal == "redundancy_bearing", "upstream's reason travels with it"
     # The enricher answered; nothing of ours speaks for it any more.
     assert not [f for f in data.findings if f.source == "just-module-creator"]

@@ -393,8 +393,8 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         its refusal rather than as a cell to paste, because filling `doi` from the
         record that gave you the PMID makes the DOI cross-check compare PubMed with
         itself. Given a DOI alone, the work it names comes back, and a PMID Europe PMC
-        holds for it arrives in `withheld` as an advisory: confirm the title is the paper
-        you meant before you type it into `pmid`; `pmid` itself stays null.
+        maps it to arrives in `withheld` with the same refusal (`redundancy_bearing`):
+        typed in, the DOI cross-check compares that mapping with itself. `pmid` stays null.
         """
         if not pmid and not doi:
             raise ToolError("Provide either pmid or doi.")

@@ -65,9 +65,7 @@ _AUTHORING: dict[str, str] = {
     f"{ENRICHER} clinpgx check": "check_clinpgx",
     f"{ENRICHER} litvar coverage": "check_literature_coverage",
     f"{ENRICHER} hint variant": "lookup_variant",
-    f"{ENRICHER} hint citation": (
-        "lookup_citation (a DOI alone: the PMID comes back in withheld, as an advisory to confirm)"
-    ),
+    f"{ENRICHER} hint citation": "lookup_citation",
     f"{ENRICHER} hint gene": 'lookup_identifier(kind="gene")',
     f"{ENRICHER} hint trait": 'lookup_identifier(kind="trait")',
     f"{ENRICHER} alphagenome expression": "enrich_expression_effects",
