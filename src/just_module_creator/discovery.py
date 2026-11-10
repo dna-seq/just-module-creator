@@ -43,6 +43,7 @@ from just_dna_enricher.licensing import TERMS_BY_SOURCE
 from just_dna_enricher.literature import (
     DEFAULT_EUROPEPMC_BASE,
     EuropePmcClient,
+    FulltextUnavailable,
     LiteratureUnavailable,
 )
 from just_dna_format.spec import DOI_PATTERN
@@ -1592,8 +1593,16 @@ def fulltext(
 
     text: str | None = None
     source: str | None = None
+    # F133: Europe PMC answers `fullTextXML` with HTTP 500 on and off (measured 2026-11-09:
+    # 5 of 10 requests for one article). `fetch_fulltext` (0.8, their RM258) raises for a
+    # request that never got an answer and returns None only for an absent copy, so an
+    # outage is named as one rather than folded into "no text".
+    epmc_down: str | None = None
     if pmcid:
-        text = client.fulltext(pmcid)
+        try:
+            text = client.fetch_fulltext(pmcid)
+        except FulltextUnavailable as exc:
+            epmc_down = str(exc)
         source = "fulltext" if text else None
 
     if not text and pmcid:
@@ -1665,17 +1674,10 @@ def fulltext(
         else:
             where = "No DOI is known for it, so no open-access location was looked up."
         retry = ""
-        if pmcid:
-            # F133: Europe PMC answers `fullTextXML` with HTTP 500 on and off (measured
-            # 2026-11-09: 5 of 10 requests for one article, 4 of 5 for another), and
-            # enricher 0.7's `fulltext` returns `None` for a 500 and a 404 alike. 0.8's
-            # `fetch_fulltext` tells them apart (their RM258); this sentence comes out at
-            # the 0.8 move, when an outage can be named as one.
+        if epmc_down:
             retry = (
-                f"Europe PMC returned no text for {pmcid}, and the installed enricher "
-                "reports a refused request the same as an absent copy: Europe PMC refuses "
-                "some requests at random, so call again before taking the text as "
-                "unavailable. "
+                f"Europe PMC could not answer for {pmcid} ({epmc_down}): an outage, not an "
+                "absent copy, so call again before taking the text as unavailable. "
             )
         findings.append(
             LintFinding(

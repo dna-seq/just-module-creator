@@ -12,7 +12,7 @@ from pathlib import Path
 
 import httpx
 from conftest import offline_settings
-from just_dna_enricher.literature import LiteratureUnavailable
+from just_dna_enricher.literature import FulltextUnavailable, LiteratureUnavailable
 
 from just_module_creator import discovery
 from just_module_creator.discovery import PUBMED, Discovery, fulltext
@@ -30,8 +30,9 @@ TEXT = "Rare longevity-associated variants, including a reduced-function mutatio
 class _EuropePmc:
     """Europe PMC with no record for the PMID, and the fulltext under the PMCID."""
 
-    def __init__(self, lookup: dict | Exception) -> None:
+    def __init__(self, lookup: dict | Exception, down: bool = False) -> None:
         self.answer = lookup
+        self.down = down
         self.fulltext_asked: list[str] = []
 
     def lookup(self, pmids: list[str]) -> dict:
@@ -39,8 +40,10 @@ class _EuropePmc:
             raise self.answer
         return self.answer
 
-    def fulltext(self, pmcid: str) -> str | None:
+    def fetch_fulltext(self, pmcid: str) -> str | None:
         self.fulltext_asked.append(pmcid)
+        if self.down:
+            raise FulltextUnavailable(f"Europe PMC could not be reached for {pmcid}: HTTP 500")
         return TEXT if pmcid == PMCID else None
 
 
@@ -246,13 +249,9 @@ def test_an_unreachable_pubmed_leaves_the_doi_route_unchecked(monkeypatch) -> No
 
 
 # --------------------------------------------------------------------------- #
-# F133: a known PMCID that yields nothing is worth asking again, and says so
+# F133: a Europe PMC outage is named as one; an absent copy is not
 # --------------------------------------------------------------------------- #
-def test_a_known_pmcid_with_no_text_says_to_call_again(monkeypatch) -> None:
-    """Europe PMC refuses some `fullTextXML` requests with HTTP 500, and enricher 0.7's
-    `fulltext` answers `None` for that and for an absent copy alike, so the same call
-    retrieves the article on one try and nothing on the next."""
-    epmc = _EuropePmc({})
+def _nothing_for_known_pmcid(monkeypatch, epmc: _EuropePmc) -> str:
     monkeypatch.setattr(discovery, "_bioc_fulltext", lambda *_a, **_k: (None, None))
     result = fulltext(
         _services(monkeypatch, epmc, _PubMed(ServiceUnavailable(PUBMED, "must not be asked"))),
@@ -263,9 +262,21 @@ def test_a_known_pmcid_with_no_text_says_to_call_again(monkeypatch) -> None:
     )
     assert not result.retrieved and epmc.fulltext_asked == ["PMC0000001"]
     nothing = [f.message for f in result.findings if f.message.startswith("Nothing was retrieved")]
-    assert len(nothing) == 1
-    assert "PMC0000001" in nothing[0] and "call again" in nothing[0]
-    assert nothing[0].endswith("no open-access location was looked up.")
+    assert len(nothing) == 1 and nothing[0].endswith("no open-access location was looked up.")
+    return nothing[0]
+
+
+def test_a_europe_pmc_outage_says_to_call_again(monkeypatch) -> None:
+    """Europe PMC refuses some `fullTextXML` requests with HTTP 500, so the same call
+    retrieves the article on one try and nothing on the next: that is said as an outage."""
+    message = _nothing_for_known_pmcid(monkeypatch, _EuropePmc({}, down=True))
+    assert "PMC0000001" in message and "HTTP 500" in message and "call again" in message
+
+
+def test_an_absent_copy_does_not_suggest_calling_again(monkeypatch) -> None:
+    """Europe PMC answered that it holds no copy: asking again buys nothing."""
+    message = _nothing_for_known_pmcid(monkeypatch, _EuropePmc({}))
+    assert "Nothing was retrieved" in message and "call again" not in message
 
 
 def test_no_pmcid_does_not_suggest_calling_again(monkeypatch) -> None:

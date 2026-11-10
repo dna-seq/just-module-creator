@@ -57,7 +57,7 @@ class _EuropePmc:
             for p in pmids
         }
 
-    def fulltext(self, pmcid: str) -> None:
+    def fetch_fulltext(self, pmcid: str) -> None:
         return None
 
 
