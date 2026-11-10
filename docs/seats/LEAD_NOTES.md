@@ -12,7 +12,10 @@ away at 05:02Z on 2026-11-05.
 
 F132's leftovers: the other result models carrying upstream `warnings` (fact passes, refresh, checks) lack
 `on_this_surface`; four commands are named parity gaps in `cli_map` (`clinpgx check-labels`, `alphagenome check`,
-`litvar gene`, `hint recover`). With the liaison: the structured-remedy-key ask and upstream's `clinvar pull` text.
+`litvar gene`, `hint recover`). Upstream answered both as format S142 → RM427 (patch + minor), 2026-11-10. Weighed and declined for now: keying
+`cli_map` by RM131's warning codes (`module_not_closed` …). The codes cover validate/compile only, still need our
+command→tool map, and text matching already covers every channel under a both-directions test. Revisit when
+RM427's minor ships a remedy key in what we install: then key by it and drop the text match.
 
 Upstream halves, all the liaison's: S138/RM422 (F137's compile warning), S139/RM423 (F139's writer), S140/RM425
 (F142's field description), S141 (F135's conflict message). When RM423 ships in what we install, our
