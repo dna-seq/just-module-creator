@@ -1693,6 +1693,14 @@ class EnrichReport(BaseModel):
         default=None, description="Why the clin_sig check did not run, when it did not."
     )
     stale_rsids: list[str] = Field(description="rsIDs that were merged or withdrawn.")
+    allele_mismatches: list[str] = Field(
+        default_factory=list,
+        description="rsIDs the source HAS, answered only at loci the authored genotype "
+        "cannot host, so no resolution.csv row was written and the key is in `unresolved`. "
+        "Not an rsID the source lacks: what did not match is the alleles. Each names the "
+        "authored genotype and every locus offered; `fits the other strand` marks a likely "
+        "strand flip, the usual cause.",
+    )
     vrs_minted: int | None = Field(default=None, description="VRS allele ids stamped.")
     warnings: list[str] = Field(default_factory=list, description="Advisory notes.")
     note: str = Field(description="What to do next, including how to regenerate.")

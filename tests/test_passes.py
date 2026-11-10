@@ -20,6 +20,7 @@ from conftest import offline_settings
 from fastmcp.exceptions import ToolError
 from just_dna_compiler.draft import DraftError, append_rows, stub_template
 from just_dna_enricher.gwas import DEFAULT_GWAS_ENDPOINT
+from just_dna_enricher.resolver import AlleleMismatch
 
 from just_module_creator.expression import ROW_STATUSES, module_sites, plan_windows, report_rows
 from just_module_creator.models import DraftResult
@@ -1089,6 +1090,58 @@ async def test_a_not_found_row_is_not_counted_as_resolved(
     assert len(report.unresolved) == 2
 
 
+
+async def test_an_rsid_whose_alleles_no_locus_hosts_is_named_on_the_result(
+    make_client, tmp_path, monkeypatch
+) -> None:
+    """Since enricher 0.8 (RM382) such an rsID leaves no `resolution.csv` row at all.
+
+    0.7 wrote a `not_found` row, which the symptom guide taught an author to read as an
+    allele mismatch. 0.8 drops the row and says why only in a log line, so the result is
+    the one place left that tells the author the source HAS the variant. The finding is
+    upstream's own type, built the way the enricher builds it: LCT's -13910 C/T, spelled on
+    the strand the literature uses, meeting the reference's G>A, and an indel genotype at
+    MTHFR's substitution, which no strand fixes.
+    """
+    spec = tmp_path / "spec"
+    spec.mkdir()
+    (spec / "module_spec.yaml").write_text("module:\n  name: spec\n", encoding="utf-8")
+    flipped = AlleleMismatch(
+        rsid="rs4988235",
+        genotype="C/T",
+        loci=("2:135851076 G>A",),
+        offered=("G>A",),
+        strand_flip=True,
+        links=("ensembl",),
+    )
+    unhostable = AlleleMismatch(
+        rsid="rs1801133",
+        genotype="GC/G",
+        loci=("1:11796321 G>A",),
+        offered=("G>A",),
+        links=("ensembl",),
+    )
+
+    class _Result:
+        rows: list = []
+        unresolved = ["rs4988235", "rs1801133"]
+        sources = ["ensembl"]
+        ref_mismatches: list[str] = []
+        clin_sig_conflicts: list[str] = []
+        clin_sig_not_checked = None
+        stale_rsids: list[str] = []
+        allele_mismatches = [flipped, unhostable]
+        vrs = None
+
+    monkeypatch.setattr(passes, "enrich", lambda *_a, **_k: _Result())
+    async with make_client(offline_settings()) as client:
+        report = (await client.call_tool("enrich_module", {"spec_dir": str(spec)})).data
+
+    assert report.unresolved == ["rs4988235", "rs1801133"]
+    assert report.allele_mismatches == [
+        "rs4988235 C/T: ensembl gave 2:135851076 G>A (fits the other strand)",
+        "rs1801133 GC/G: ensembl gave 1:11796321 G>A",
+    ]
 
 # --------------------------------------------------------------------------- #
 # The progress callback (upstream RM128, our `S66` ask 4)

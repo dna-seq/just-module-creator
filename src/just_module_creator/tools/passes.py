@@ -97,6 +97,7 @@ from just_dna_enricher.pubmind_draft import (
     DEFAULT_CLIN_SIG,
     PubMindDraftError,
     draft_gene_panel_from_pubmind,
+from just_dna_enricher.resolver import AlleleMismatch
 )
 from just_dna_enricher.strchive_draft import StrchiveDraftError, draft_repeat_loci
 from just_dna_format.vocab import VALID_DECLARED_USE
@@ -725,11 +726,32 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
             ref_mismatches=mismatches,
             clin_sig_conflicts=[str(c) for c in getattr(result, "clin_sig_conflicts", []) or []],
             clin_sig_not_checked=getattr(result, "clin_sig_not_checked", None),
+            allele_mismatches=[
+                _allele_mismatch_line(m) for m in getattr(result, "allele_mismatches", []) or []
+            ],
             stale_rsids=[str(s) for s in getattr(result, "stale_rsids", []) or []],
             vrs_minted=getattr(vrs, "minted", None) if vrs else None,
             warnings=warnings,
             note=_REGENERATE_NOTE,
         )
+
+def _allele_mismatch_line(mismatch: AlleleMismatch) -> str:
+    """One rsID the source has whose every offered locus the authored genotype cannot sit on.
+
+    Since enricher 0.8 (RM382) such an rsID leaves no `resolution.csv` row at all, where 0.7
+    wrote a `not_found` row; upstream says why only in a log line this server's caller never
+    sees, so the finding is carried on the result instead.
+    """
+    if mismatch.links:
+        offered = "; ".join(
+            f"{link} gave {locus}"
+            for link, locus in zip(mismatch.links, mismatch.loci, strict=False)
+        )
+    else:
+        offered = "; ".join(mismatch.loci)
+    flip = " (fits the other strand)" if mismatch.strand_flip else ""
+    return f"{mismatch.rsid} {mismatch.genotype}: {offered or 'no locus named'}{flip}"
+
 
 
 #: Spec directories with an enrichment in flight, mapped to when it started (UTC).
