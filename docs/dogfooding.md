@@ -57,8 +57,11 @@ Its `source_findings` opens with:
 call without one says the lane is missing, including every call that succeeded from it. An author told to
 provision a lane they already have may spend a provision on it, or doubt the rows.
 
-What is true at that point: no catalogue was passed, and upstream resolved its own lane. If the lane is
-really absent, what upstream does is not probed here; that case is the one the sentence belongs to.
+What is true at that point: no catalogue was passed, and upstream resolved its own lane. Read in the
+installed enricher 0.8.3 (`strchive_draft.draft_repeat_loci`): with `catalogue=None` it calls
+`resolve_strchive_reference()`, and if that finds nothing it sets `skipped` and writes its own warning naming
+`just-dna-enricher strchive build`. So a draft that added rows read the lane, and the absent-lane case already
+carries upstream's sentence. Ours is true in neither case as written.
 
 ---
 
