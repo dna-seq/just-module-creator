@@ -87,7 +87,6 @@ from just_dna_enricher.licensing import (
     check_declared_use,
 )
 from just_dna_enricher.literature import LiteratureEnrichmentError, enrich_literature
-from just_dna_enricher.locations import resolve_strchive_reference
 from just_dna_enricher.mitomap_draft import (
     MitomapDraftError,
     draft_panel_from_mitomap_miss,
@@ -97,8 +96,8 @@ from just_dna_enricher.pubmind_draft import (
     DEFAULT_CLIN_SIG,
     PubMindDraftError,
     draft_gene_panel_from_pubmind,
-from just_dna_enricher.resolver import AlleleMismatch
 )
+from just_dna_enricher.resolver import AlleleMismatch
 from just_dna_enricher.strchive_draft import StrchiveDraftError, draft_repeat_loci
 from just_dna_format.vocab import VALID_DECLARED_USE
 from mcp.types import ToolAnnotations
@@ -726,14 +725,15 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
             ref_mismatches=mismatches,
             clin_sig_conflicts=[str(c) for c in getattr(result, "clin_sig_conflicts", []) or []],
             clin_sig_not_checked=getattr(result, "clin_sig_not_checked", None),
+            stale_rsids=[str(s) for s in getattr(result, "stale_rsids", []) or []],
             allele_mismatches=[
                 _allele_mismatch_line(m) for m in getattr(result, "allele_mismatches", []) or []
             ],
-            stale_rsids=[str(s) for s in getattr(result, "stale_rsids", []) or []],
             vrs_minted=getattr(vrs, "minted", None) if vrs else None,
             warnings=warnings,
             note=_REGENERATE_NOTE,
         )
+
 
 def _allele_mismatch_line(mismatch: AlleleMismatch) -> str:
     """One rsID the source has whose every offered locus the authored genotype cannot sit on.
@@ -751,7 +751,6 @@ def _allele_mismatch_line(mismatch: AlleleMismatch) -> str:
         offered = "; ".join(mismatch.loci)
     flip = " (fits the other strand)" if mismatch.strand_flip else ""
     return f"{mismatch.rsid} {mismatch.genotype}: {offered or 'no locus named'}{flip}"
-
 
 
 #: Spec directories with an enrichment in flight, mapped to when it started (UTC).
@@ -1602,12 +1601,10 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
             findings=findings,
         )
 
-    # F129: enricher 0.7.3's `draft_repeat_loci` skips on `catalogue=None` and never looks
-    # for the provisioned lane, so on every machine this drafter drafted nothing while
-    # `provision_caches` reported the lane present. Fixed upstream in 0.8.0 (RM395). The
-    # `resolve_strchive_reference()` fallback below is the mitigation and comes out at the
-    # 0.8 move (adoption map item 9); the `catalogue` argument stays, for parity with
-    # `check_repeat_bands`. `load_dotenv_file=False`: `userconfig.load_env` already ran.
+    # F129: enricher 0.7.3's `draft_repeat_loci` skipped on `catalogue=None`; 0.8.0 (RM395)
+    # resolves the provisioned lane itself, reproduced on 0.8.3 (HTT and FMR1 drafted with no
+    # catalogue), so our fallback came out at the 0.8 move. The `catalogue` argument stays,
+    # for parity with `check_repeat_bands`.
     @mcp.tool(
         task=True,
         annotations=ToolAnnotations(
@@ -1650,11 +1647,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         """
         declared = _check_use(use)
         target = resolve_dir(spec_dir, settings)
-        source = (
-            resolve_source(catalogue, settings)
-            if catalogue
-            else resolve_strchive_reference(load_dotenv_file=False)
-        )
+        source = resolve_source(catalogue, settings) if catalogue else None
         if ctx:
             await narrate(ctx, f"Drafting repeat loci for {', '.join(genes)} into {target.name}")
             await ctx.report_progress(progress=1, total=2)
