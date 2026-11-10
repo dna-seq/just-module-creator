@@ -12,7 +12,7 @@ away at 05:02Z on 2026-11-05.
 
 **0.8 adoption, branch `adopt-0.8`** (2026-11-10, the person: "pre-build the 0.8 branch, there's 0.8.3 already";
 the polygon serves format/compiler 0.8.0, registry 0.28.5). Worktree `.claude/worktrees/adopt-0.8`, locked, own
-`.venv`. Seven commits `30080cf`..`113150c`, unpushed: floors `>=0.8.3,<0.9`, registry `>=0.28.5`, polars/duckdb
+`.venv`. Seven commits `30080cf`..`113150c`, pushed 2026-11-10 on the person's word: floors `>=0.8.3,<0.9`, registry `>=0.28.5`, polars/duckdb
 kept `<2` by decision; reference examples from `v0.8.3`; 0.8's new commands/tables named as gaps (`cli_map`,
 CLI.md, `refresh_sidecar`); GWAS v2 budget swept; `enrich_module.allele_mismatches` (RM382 drops the S85
 `not_found` row); F133 via `fetch_fulltext`; F129 fallback out (reproduced on 0.8.3); gnomAD 0.7 label sentences
@@ -21,6 +21,13 @@ out. 918 pass, ruff/pyright clean; polygon `registry_health` contract_compatible
 authored tables and passes, the pm's scope), 10 (`compilation.toolchain` beside a moved digest), item 3's cache
 offer text, the RM420 `cache pull` (operator's), re-reading F139's `checks_older_than_the_last_edit` against
 RM423. main stays 0.7 until production serves 0.8; then merge (not rebase) and release.
+
+**Registry S28 (namespace rename), the person's ask, 2026-11-10: "submit upstream as bug and keep iteration until
+it lands".** Filed in the registry's intake (uncommitted there); the liaison tracks it as F143 (`ddc021e`). State:
+`waits until` S28 has a `**Status —**` reply (a watcher on the intake file runs in this session; at each start,
+re-check it by hand). Then: wrap what ships as a tool on `adopt-0.8` (with `rename_account`, `merge_accounts`,
+`create_org_namespace`, the 0.28 parity gaps), and rename polygon namespace `test-sheep` to the person's
+`test-` name for real. Not applied meanwhile: the handle rename, which moves no module. `adopt-0.8` is pushed.
 
 F132's leftovers: the other result models carrying upstream `warnings` (fact passes, refresh, checks) lack
 `on_this_surface`; four commands are named parity gaps in `cli_map` (`clinpgx check-labels`, `alphagenome check`,
