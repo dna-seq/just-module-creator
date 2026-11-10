@@ -116,7 +116,7 @@ its history.
 
 ## F143 — a namespace cannot be renamed; `rename_account` renames the handle only (registry `S28`)
 
-**State: filed 2026-11-10 by the lead, unanswered.** The person asked to move the polygon namespace `test-sheep`
+**State: declined by design, the same evening (a refusal, settled).** `ns/name@version` is a published identity: the manifest's `canonical_id`, what consumers pin; a re-publish under a new namespace is refused as `409 duplicate_content`, since each version's data is claimed by `(test-sheep, name)`. The documentation half (`rename_account`'s docstring, the CLI help, CLIENT.md) is fixed after 0.28.6, unreleased. Their route on the polygon: claim the new namespace, `delete_module` each module under `test-sheep`, republish; that waits on the person's go. Filed 2026-11-10 by the lead. The person asked to move the polygon namespace `test-sheep`
 (44 rehearsal versions) to a new `test-`-prefixed name. The registry client 0.28.5 offers `rename_account`,
 `admin_rename_account` and `merge_accounts`, and nothing that names a namespace: its docstring says the old handle
 stays reserved and "nothing published changes identity", and the lead's dry run listed every version still under
