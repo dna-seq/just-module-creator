@@ -4,11 +4,15 @@ The lead seat's working state, rewritten to the present before a reset (`docs/se
 
 ## Now
 
-Released 0.48.4 (tag `v0.48.4`, `08161cb`, 2026-11-09): F133, F134, F135, F136, F137 (our half: audit signal
-`sidecar_rows_nothing_authors`), F138, F139 (our half: audit signal `checks_older_than_the_last_edit`), F140, F141,
-F142. Every new test was run against 0.48.3's code and failed there; 906 pass. Announced in
-`#just-module-creator>releases` for the tester's recheck. Next release no earlier than 2026-11-10. The person went
+Released 0.48.5 (tag `v0.48.5`, `8cba3c9`, 2026-11-10): F126 (`0598c52`), F132 (`58ea0dc`, `cli_map` and
+`on_this_surface`), the F140 recheck follow-up (`28cb212`), and the liaison's weekly bump, with pyright fixed forward
+for pydantic 2.14 (`6d9f3d0`). 0.48.4's recheck by the tester: everything held except F133 (not exercised; Europe PMC
+answered). Announced in `#just-module-creator>releases`. Next release no earlier than 2026-11-11. The person went
 away at 05:02Z on 2026-11-05.
+
+F132's leftovers: the other result models carrying upstream `warnings` (fact passes, refresh, checks) lack
+`on_this_surface`; four commands are named parity gaps in `cli_map` (`clinpgx check-labels`, `alphagenome check`,
+`litvar gene`, `hint recover`). With the liaison: the structured-remedy-key ask and upstream's `clinvar pull` text.
 
 Upstream halves, all the liaison's: S138/RM422 (F137's compile warning), S139/RM423 (F139's writer), S140/RM425
 (F142's field description), S141 (F135's conflict message). When RM423 ships in what we install, our
