@@ -83,7 +83,7 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
-| F146 | S143 | | filed 2026-11-10, unanswered |
+| F146 | S143 | | filed 2026-11-10, unanswered; hits 0.7.x (v1 retired, 410) and 0.8.x (400) |
 | F132 | S142 | RM427 | answered, open (patch + minor) |
 | F135 | S141 | RM426 | answered, open (patch + minor) |
 | F142 | S140 | RM425 | answered, open (patch) |
@@ -120,7 +120,9 @@ its history.
 **State: filed 2026-11-10 by the liaison, on the tester's report (`docs/dogfooding.md` F146), unanswered.**
 Enricher 0.8.3 and their `main`: `gwas.py`'s `_PAGE_SIZE = 1000` is sent as `size` to `/associations`, which
 answers 400 above 500, so `enrich_gwas_effects` returns no rows for any rsID. Reproduced by curl (1000 → 400,
-500 → 200). Our main installs 0.7.x, which reads v1 and is unaffected; it blocks the pass on `adopt-0.8` only. No
+500 → 200). **Main is down too (the tester's correction, reproduced 22:59 UTC):** the Catalog retired the v1 REST API that
+enricher 0.7.3 calls, which now answers 410, so the shipped plugin's GWAS pass returns nothing on any module.
+The way back is an 0.8 carrying the fix (or a 0.7.x patch reading v2, asked in S143's correction). No
 mitigation of ours. Asked for: `_PAGE_SIZE = 500` and a test bounding it; a retry with a smaller page weighed.
 
 ## F143 — a namespace cannot be renamed; `rename_account` renames the handle only (registry `S28`)
