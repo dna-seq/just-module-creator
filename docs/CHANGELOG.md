@@ -5,6 +5,8 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+## [0.48.5] — 2026-11-10
+
 - **Upstream text that names a CLI command now says which tool does it here** (F132): `validate_module`, `compile_module`, the drafters and every upstream lint finding carry `on_this_surface`, so the closure warning's `just-dna-compiler close` arrives with `close_module` beside it. The map covers every command upstream registers, mapped or abstained from with a reason, and a test holds it to upstream's own command list.
 - **`registry_register` says where an omitted install-id comes from, and stops echoing a reused one** (F126): `JMC_INSTALL_ID`, then the saved account, then a fresh grind. The result leaves `install_id` empty when it came from the environment or the saved account, so an existing secret is not written into the transcript; `install_id_origin` names where it lives.
 - **Weekly dependency bump** (liaison, 2026-11-10): `uv lock --upgrade` moved 56 packages within their caps, among them fastmcp 3.4.11, pydantic 2.14.3, starlette 1.10.0, typer 0.29.0, tenacity 9.2.1, just-dna-registry 0.27.1 and cachetools 8.0.0 (a new major, pulled in only through fastmcp's `py-key-value-aio`). tenacity 9.2.1 renamed the backoff base from `initial=` to `multiplier=`, so `net.py` uses the new name, the floor is now `tenacity>=9.2.1`, and `tests/test_net.py` refuses the old name. The same warning still shows from enricher 0.7.3's own clients until the 0.8 adoption, because enricher 0.8.0 made the same rename.
