@@ -22,12 +22,12 @@ authored tables and passes, the pm's scope), 10 (`compilation.toolchain` beside 
 offer text, the RM420 `cache pull` (operator's), re-reading F139's `checks_older_than_the_last_edit` against
 RM423. main stays 0.7 until production serves 0.8; then merge (not rebase) and release.
 
-**Registry S28 (namespace rename), the person's ask, 2026-11-10: "submit upstream as bug and keep iteration until
-it lands".** Filed in the registry's intake (uncommitted there); the liaison tracks it as F143 (`ddc021e`). State:
-`waits until` S28 has a `**Status —**` reply (a watcher on the intake file runs in this session; at each start,
-re-check it by hand). Then: wrap what ships as a tool on `adopt-0.8` (with `rename_account`, `merge_accounts`,
-`create_org_namespace`, the 0.28 parity gaps), and rename polygon namespace `test-sheep` to the person's
-`test-` name for real. Not applied meanwhile: the handle rename, which moves no module. `adopt-0.8` is pushed.
+**Registry S28 (namespace rename): declined by design**, answered the same day (their history file; docs fixed
+after 0.28.6). `ns/name@version` is a published identity; no call moves a version. Their route on the polygon:
+claim the new `test-` namespace, `delete_module("test-sheep", name)` per module (frees the content claim), then
+republish the specs under the new namespace; history under `test-sheep` is lost, and only re-published versions
+come back. `blocked:` the person's go on that delete-and-republish (44 rehearsal versions, 21 modules), asked in
+chat 2026-11-10. The liaison tracks it as F143.
 
 F132's leftovers: the other result models carrying upstream `warnings` (fact passes, refresh, checks) lack
 `on_this_surface`; four commands are named parity gaps in `cli_map` (`clinpgx check-labels`, `alphagenome check`,
