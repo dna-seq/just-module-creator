@@ -74,7 +74,7 @@ from just_dna_enricher.gene_metrics import (
     GeneMetricsUnavailable,
     enrich_gene_metrics,
 )
-from just_dna_enricher.gwas import GwasError, enrich_gwas
+from just_dna_enricher.gwas import GwasCatalogClient, GwasError, enrich_gwas
 from just_dna_enricher.licensing import (
     CIVIC_TERMS,
     CLINPGX_TERMS,
@@ -164,6 +164,19 @@ _GWAS_NOTE = (
     "`weight` stays your model of the finding. The two columns sit side by side and a "
     "consumer chooses between them wholesale."
 )
+
+def _gwas_catalog_client(offline: bool) -> GwasCatalogClient | None:
+    """The client the GWAS pass runs on, built here so its `size_refusals` can be read after.
+
+    Upstream's interim for S144 (their RM429, a minor): `GwasResult` carries no refusal count,
+    and the pass only logs it, so the caller owns the client and reads the public counter.
+    When RM429 ships in what we install, read the result's field and drop this.
+
+    `None` offline: upstream skips the pass only when it is handed no client, since a client
+    handed in is the caller's transport and the pass would ask the Catalog for its release.
+    """
+    return None if offline else GwasCatalogClient()
+
 
 #: The Catalog's own marker for a variant it published nothing about, on `GwasEffectRow.status`.
 #: Upstream exports no constant for that vocabulary, so the literal is owned here — and it has to
@@ -1252,6 +1265,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         # the retirement.
         # `tests/test_passes.py::test_no_except_arm_is_shadowed_by_an_earlier_one` is what stops
         # a second arm from being added parent-first.
+        catalog = _gwas_catalog_client(eff_offline)
         try:
             result = await run_sync(
                 lambda: enrich_gwas(
@@ -1261,6 +1275,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
                     declared_use=declared,
                     study_facts=study_facts,
                     write=True,
+                    client=catalog,
                 )
             )
         except GwasError as exc:
@@ -1288,6 +1303,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
                 warnings=warnings,
                 note=_GWAS_NOTE,
             )
+        finally:
+            if catalog is not None:
+                catalog.close()
 
         if ctx:
             await ctx.report_progress(progress=2, total=2)
@@ -1304,6 +1322,14 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         # well-studied variant's dozens of associations is a wall nobody reads. Upstream warns
         # about the first two through `logging`, which goes to stderr and reaches no MCP caller.
         warnings: list[str] = []
+        refusals = catalog.size_refusals if catalog is not None else 0
+        if refusals:
+            warnings.append(
+                f"The Catalog refused this pass's page size for {refusals} rsID(s), "
+                "so each was asked again without one, at the Catalog's default page; the extra "
+                "requests are in requests_made. Its page ceiling has moved, which is the "
+                "enricher's to follow (report it upstream); the rows are complete."
+            )
         if skipped:
             warnings.append(
                 "Offline: this pass did NOTHING. There is no snapshot of the Catalog's REST API, "

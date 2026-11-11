@@ -637,6 +637,7 @@ class FakeGwasClient:
         # Enricher 0.8.4 (RM428) counts first requests the Catalog refused for their page size;
         # this fake never refuses one.
         self.size_refusals = 0
+        self.closed = False
 
     def release(self) -> str | None:
         raise AssertionError("the tests pin `dataset`, so the release is never asked")
@@ -653,7 +654,7 @@ class FakeGwasClient:
         return dict(_GWAS_ANCESTRIES.get(url, {}))
 
     def close(self) -> None:
-        raise AssertionError("the pass must not close a client it did not create")
+        self.closed = True
 
 
 def _inject_gwas_client(monkeypatch, client):
@@ -668,9 +669,11 @@ def _inject_gwas_client(monkeypatch, client):
     from just_module_creator.tools import passes as module
 
     def wrapper(spec_dir, **kwargs):
-        return real_enrich_gwas(spec_dir, client=client, dataset="gwas_catalog_test", **kwargs)
+        assert kwargs["client"] is client, "the pass must run on the client it built"
+        return real_enrich_gwas(spec_dir, dataset="gwas_catalog_test", **kwargs)
 
     monkeypatch.setattr(module, "enrich_gwas", wrapper)
+    monkeypatch.setattr(module, "_gwas_catalog_client", lambda offline: client)
 
 
 async def test_a_published_effect_is_reported_and_never_becomes_a_weight(
@@ -1863,3 +1866,30 @@ async def test_strchive_next_step_names_the_bands_and_their_check(
     assert "check_repeat_bands" in result.next_step
     assert "one row per band" in result.next_step
     assert "genotype" not in result.next_step and "weight" not in result.next_step
+
+
+class _RefusingGwasClient(FakeGwasClient):
+    """The Catalog after its page ceiling dropped again: the sized first request is refused once.
+
+    Counted the way upstream's client counts it (RM428): `size_refusals` rises by one per rsID
+    asked again without a size, and the page still arrives.
+    """
+
+    def association_pages(self, rsid: str) -> list[list[dict]]:
+        self.size_refusals += 1
+        return super().association_pages(rsid)
+
+
+async def test_a_refused_page_size_reaches_the_caller_and_the_client_is_closed(
+    monkeypatch, client, spec_dir
+):
+    """S144/RM429 interim: upstream only logs a refusal, so the tool reads its client's count."""
+    gwas_client = _RefusingGwasClient([_GWAS_NAMED_ALLELE])
+    _inject_gwas_client(monkeypatch, gwas_client)
+
+    data = (await client.call_tool("enrich_gwas_effects", {"spec_dir": str(spec_dir)})).data
+
+    assert data.success is True and data.rows == 1
+    refused = [w for w in data.warnings if "refused this pass's page size" in w]
+    assert len(refused) == 1 and "for 1 rsID(s)" in refused[0]
+    assert gwas_client.closed, "the tool built the client, so the tool closes it"
