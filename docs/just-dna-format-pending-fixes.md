@@ -94,10 +94,10 @@ its history.
 | F127 | S135 | RM253 | 0.8.0 only |
 | F115 | S124 | RM301 | 0.8.0 only |
 | F118 | S127 | (b); RM340 | 0.8.0 only |
-| F113 | S113 | RM262, RM263 | 0.8.0 only |
-| F108 | S110 | RM257, RM258 | 0.8.0 only |
+| F113 | S113 | RM262, RM263 | fixed in 0.8.x; our Crossref read is out on `adopt-0.8` (7ff1fdc) |
+| F108 | S110 | RM257, RM258 | 0.8 reads PMC whole, but joins table cells; our reader stays (the lead, `adopt-0.8`) |
 | F105 | S112 | RM259 | 0.8.0 only |
-| F116 | S125 | RM337, RM338 | 0.8.0 only |
+| F116 | S125 | RM337, RM338 | in 0.8.3: `logs/` ships `.jsonl`; reaches desk #204 (RM31) |
 | F85 | S85 | RM154; RM382 reverses part | RM154 in our lock; RM382 0.8.0 only (entry rewritten) |
 | F94 | S97 | RM229 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
 | F93 | S96 | RM224 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
@@ -312,6 +312,8 @@ not a fact the sidecar carries. The module states the split in its README instea
 
 ## F113 — `lookup_citation(doi=…)` returns existence and no title (format `S113`)
 
+**Re-read on 0.8.3 (the lead, `adopt-0.8`, 2026-11-11):** fixed upstream. A DOI alone gets its work's title, including a DOI with no PubMed record (Crossref's), so our Crossref read comes out on the branch (`7ff1fdc`). Closes here when that branch lands on main.
+
 **Status (2026-09-25):** filed as format-tree `S113`, unanswered. **Mitigated here in 0.41.0**:
 given a DOI and no PMID, `lookup_citation` reads Crossref's `/works/{doi}` itself
 (`discovery.crossref_work`, called from `_crossref_identity` in `tools/research.py`), fills `title`,
@@ -334,6 +336,8 @@ which already fetches `/works/{doi}`, and discards the body that carries the tit
 fix 1 in the note. Close when a release we install fills `title` on the DOI path.
 
 ## F108 — the literature pass checks quotes against the abstract when PMC serves the paper whole (format `S110`)
+
+**Re-read on 0.8.3 (the lead, `adopt-0.8`, 2026-11-11):** 0.8's `PmcBiocClient` reads PMC6463297 whole, but `extract_bioc_text` joins table cells into running text, where ours keeps them tab-separated. Our reader stays after the adoption.
 
 **Status (2026-09-24):** format-tree `S110` accepted the same day — the BioC rung is their `RM257` and
 the manuscript gate is taken, both **in tree and uncut**; the 404/500 split is open as their `RM258`. Mitigated here for *reading*:
@@ -2529,6 +2533,8 @@ with no licence ledger is a real and legal module, and telling an author otherwi
 mirror of the defect.
 
 ## F116 — `logs/` ships only `*.log`; a `.jsonl` ledger beside it is dropped silently (format `S125`)
+
+**Re-read on 0.8.3 (the lead, `adopt-0.8`, 2026-11-11):** fixed upstream: `LOG_TEXT_EXTENSIONS` includes `jsonl`, so a compile under 0.8 ships a valid `.jsonl` from `logs/`. That changes the ground under desk #204 (RM31, the provenance ledger's format). Closes here when the branch lands on main.
 
 **State: filed upstream 2026-10-05, unanswered. Nothing shipped here yet; the mitigation is a
 naming convention for the provenance ledger we are designing.**
