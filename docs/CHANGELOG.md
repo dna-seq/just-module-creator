@@ -5,6 +5,8 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+## [0.48.6] — 2026-11-11
+
 - **`validate_module` reports `warnings_summary` and `carried`**, as `compile_module` already did: the warnings counted by upstream's code, and the ones no edit to the spec can clear. Upstream's validate result has carried both since 0.7; this server dropped them.
 - **`enrich_gwas_effects` says the GWAS Catalog retired the API it reads** (F146, our half): the Catalog now answers the v1 REST API with HTTP 410, so the pass fails on every module under just-dna 0.7. The result keeps upstream's "returned 410" and adds that retrying or editing the spec will not help, and that the pass returns with an enricher release on the v2 API (upstream's RM428).
 - **`remote_derive` and `remote_draft` say a contract skew is the instance's** (F144): a 409 `just-dna-format contract mismatch` now carries the same note every other registry tool gives, instead of advice about 503 and 422 that sent the author to their spec.
