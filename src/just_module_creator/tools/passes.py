@@ -1213,9 +1213,11 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
 
         The budget is a request per page of up to 500 associations for each variant,
         plus one per distinct study they name for its ancestry (175 studies for
-        rs1800562's 186 associations), against somebody else's rate limit. pmid, trait
-        and study accession come with the association. `study_facts=false` drops the
-        ancestry requests, and the cut is **sticky**: the merge is keyed on
+        rs1800562's 186 associations), against somebody else's rate limit. Requests
+        are paced at one a second at most, so time follows the count: rs1421085's 218
+        took 4 min 45 s, and a module of dozens of studied variants runs for hours.
+        pmid, trait and study accession come with the association. `study_facts=false`
+        drops the ancestry requests, and the cut is **sticky**: the merge is keyed on
         `association_id`, so a later run with study facts on skips those rows rather
         than backfilling their ancestry, and only deleting the file re-derives them.
         `offline=true` is a no-op, not a failure. `use` is recorded on the licence row
