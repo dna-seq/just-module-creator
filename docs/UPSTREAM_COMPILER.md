@@ -22,7 +22,7 @@ clone, where its seats commit: read it, never fetch or write there.
 registry instances serve 0.8 (`/api/v1/version`). polars and duckdb are capped `<2` in the lock beside it
 (`c361614`) until that move.
 
-**Read to: `v0.8.4`** (its release entry on their `main`, below; all three on PyPI 2026-11-11, tag not yet pushed when read); `v0.8.3` (its release entry; all three on PyPI 2026-11-10); `v0.8.2` (its release entry; on PyPI 2026-11-08); `v0.8.0` (tag `e97339a`, on PyPI 2026-11-05), through `docs/INTEGRATION_0_8.md` as it stands on
+**Read to: `v0.8.4`** (its release entry on their `main`, below; all three on PyPI 2026-11-11, tag `36cbc20` pushed later that day); `v0.8.3` (its release entry; all three on PyPI 2026-11-10); `v0.8.2` (its release entry; on PyPI 2026-11-08); `v0.8.0` (tag `e97339a`, on PyPI 2026-11-05), through `docs/INTEGRATION_0_8.md` as it stands on
 their `main` at `911a2fd` (2026-11-07), which postdates the `0.8` branch head `edf2661`. Read for the adoption map
 below, not entry by entry through the changelog: the integration file is the release's own per-consumer
 reading, and its § 3 block for this plugin is answered here.
