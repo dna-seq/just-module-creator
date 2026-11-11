@@ -28,12 +28,7 @@ Tester's probe at 113150c (2026-11-10): HTT/MTHFR strict and polygon `registry_c
 
 **Merge hazard, adopt-0.8 ← main**: main's `_gwas_gone` (F146, `3664412`) reads a v1 410; its test overrides `FakeGwasClient.associations_for`, while the branch's fake serves `association_pages` (v2). After the merge that test no longer reaches the 410 path, and `[Unreleased]` conflicts. At the merge: decide whether a 410 can still arrive on v2 (keep `_gwas_gone` with a v2 fake) or drop it with its test.
 
-**Registry S28 (namespace rename): declined by design**, answered the same day (their history file; docs fixed
-after 0.28.6). `ns/name@version` is a published identity; no call moves a version. Their route on the polygon:
-claim the new `test-` namespace, `delete_module("test-sheep", name)` per module (frees the content claim), then
-republish the specs under the new namespace; history under `test-sheep` is lost, and only re-published versions
-come back. `blocked: desk #255`, the person's go on that delete-and-republish (44 rehearsal versions, 21 modules), asked in
-chat 2026-11-10, on the desk as #255 once they turned away (default: leave `test-sheep` as it is). The liaison tracks it as F143.
+**Registry S28 (namespace rename): reversed in registry 0.29.0** (2026-11-11; the polygon serves it). `registry_rename_namespace` is on adopt-0.8 (`6f5e7e3`, floor `>=0.29.0`, dry run by default). The real call's dry run `test-sheep` → `test-winternewt` was refused: `namespace_taken`. `test-winternewt` is empty and held by an account not saved here (the saved `sheep` owns only `test-sheep`). `blocked: desk #255`, updated with the new options (that account's owner frees it; another name; leave it). Default: leave it. Registry parity still open: `rename_account` (0.29 also moves a namespace spelled like the handle), `merge_accounts`, `create_org_namespace`.
 
 F132's leftovers: the other result models carrying upstream `warnings` (fact passes, refresh, checks) lack
 `on_this_surface`; four commands are named parity gaps in `cli_map` (`clinpgx check-labels`, `alphagenome check`,
