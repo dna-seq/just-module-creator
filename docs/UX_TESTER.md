@@ -208,6 +208,15 @@ then removed with `registry_delete_module`; a second read gives 404. The polygon
 and 112 versions before and after. An earlier draft of these notes held the publishes to spare the `test-sheep`
 cleanup (F143). That reason was wrong: a rehearsal deleted after its read-back adds nothing to the cleanup.
 
+**0.48.6 recheck, 2026-11-11, over the host wire** (server restarted by SIGKILL plus `reload --mcp`; the
+instructions name v0.48.6). The polygon now serves format 0.8.3.
+
+| finding | result |
+|---|---|
+| F144 | holds: `remote_derive` on `assets/htt_cag_repeats` (`target="test"`) gets the 409 with the instance note, and no 503/422 advice |
+| F146, our half | holds: `enrich_gwas_effects` on `recheck_08/fto_gwas_main` carries "The GWAS Catalog has retired the API this build reads (HTTP 410, Gone) ... (upstream's RM428)" beside the raw 410 |
+| new: `validate_module`'s `warnings_summary` and `carried` | present: on `recheck_08/mthfr`, `warnings_summary` counts the three warnings by code, and `carried` holds the one restated from `verification.json` |
+
 **The host keeps the tool descriptions from its first connection.** After the server restart, ToolSearch still
 returned 0.48.3's descriptions, and the source has the new ones. A fix that is only in a description can't be
 rechecked in a reconnected session: read the source, or recheck from a fresh session.
