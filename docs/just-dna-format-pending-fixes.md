@@ -83,10 +83,10 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
-| F146 | S143 | RM428 | in tree (`f0433de5`), ships in 0.8.4; no 0.7.4 |
-| F132 | S142 | RM427 | answered, open (patch + minor) |
-| F135 | S141 | RM426 | answered, open (patch + minor) |
-| F142 | S140 | RM425 | answered, open (patch) |
+| F146 | S143 | RM428 | 0.8.4 only (closed upstream; no 0.7.4) |
+| F132 | S142 | RM427 | patch half 0.8.4 only; remedy key (minor) open |
+| F135 | S141 | RM426 | patch half 0.8.4 only; minor half open |
+| F142 | S140 | RM425 | 0.8.4 only |
 | F139 | S139 | RM423 | patch half released 0.8.3, not in our lock; minor half open |
 | F137 | S138 | RM422 | released 0.8.3, not in our lock |
 | F130 | S136 | RM414 | 0.8.2 only |
@@ -117,7 +117,7 @@ its history.
 
 ## F146 — the GWAS pass asks the Catalog v2 for a page of 1000 and is refused, so it fails on every module (format `S143`)
 
-**State: fixed in their tree (`f0433de5`, 2026-11-11), ships in the 0.8.4 cut; no 0.7.4 (their maintainer's decision), so the released plugin gets the GWAS pass back only by moving to 0.8.4.** The pass asks 500 per page; on a 400 to the first request it asks once more with no size and warns once per run; a live guard test checks the page size. Answered within the hour: RM428, high. Ask 1 (`_PAGE_SIZE = 500`) is a patch after 0.8.3; the guard (an opt-in live test) and a fallback page go to their pm. The Catalog moved, not the code: `size=1000` worked on 2026-11-04 (their RM354). A 0.7.x patch reading v2 would be `v0.7.4` off `v0.7.3` carrying RM354 and RM428 (done once before, 0.7.2); that is RM428's ask 4, for their pm and lead to put to the person. Filed 2026-11-10 by the liaison, on the tester's report (`docs/dogfooding.md` F146).
+**State: released in 0.8.4 (on PyPI 2026-11-11); their step after upgrading: re-run the GWAS pass on any module it ran on 0.8.0 to 0.8.3 since the Catalog's change, since those filled no row. Before that: fixed in their tree (`f0433de5`); no 0.7.4 (their maintainer's decision), so the released plugin gets the GWAS pass back only by moving to 0.8.4.** The pass asks 500 per page; on a 400 to the first request it asks once more with no size and warns once per run; a live guard test checks the page size. Answered within the hour: RM428, high. Ask 1 (`_PAGE_SIZE = 500`) is a patch after 0.8.3; the guard (an opt-in live test) and a fallback page go to their pm. The Catalog moved, not the code: `size=1000` worked on 2026-11-04 (their RM354). A 0.7.x patch reading v2 would be `v0.7.4` off `v0.7.3` carrying RM354 and RM428 (done once before, 0.7.2); that is RM428's ask 4, for their pm and lead to put to the person. Filed 2026-11-10 by the liaison, on the tester's report (`docs/dogfooding.md` F146).
 Enricher 0.8.3 and their `main`: `gwas.py`'s `_PAGE_SIZE = 1000` is sent as `size` to `/associations`, which
 answers 400 above 500, so `enrich_gwas_effects` returns no rows for any rsID. Reproduced by curl (1000 → 400,
 500 → 200). **Main is down too (the tester's correction, reproduced 22:59 UTC):** the Catalog retired the v1 REST API that

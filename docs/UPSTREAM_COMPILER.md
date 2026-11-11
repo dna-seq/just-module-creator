@@ -22,7 +22,7 @@ clone, where its seats commit: read it, never fetch or write there.
 registry instances serve 0.8 (`/api/v1/version`). polars and duckdb are capped `<2` in the lock beside it
 (`c361614`) until that move.
 
-**Read to: `v0.8.3`** (its release entry, below; all three on PyPI 2026-11-10); `v0.8.2` (its release entry; on PyPI 2026-11-08); `v0.8.0` (tag `e97339a`, on PyPI 2026-11-05), through `docs/INTEGRATION_0_8.md` as it stands on
+**Read to: `v0.8.4`** (its release entry on their `main`, below; all three on PyPI 2026-11-11, tag not yet pushed when read); `v0.8.3` (its release entry; all three on PyPI 2026-11-10); `v0.8.2` (its release entry; on PyPI 2026-11-08); `v0.8.0` (tag `e97339a`, on PyPI 2026-11-05), through `docs/INTEGRATION_0_8.md` as it stands on
 their `main` at `911a2fd` (2026-11-07), which postdates the `0.8` branch head `edf2661`. Read for the adoption map
 below, not entry by entry through the changelog: the integration file is the release's own per-consumer
 reading, and its § 3 block for this plugin is answered here.
@@ -35,6 +35,13 @@ reading, and its § 3 block for this plugin is answered here.
   client's `set_short_description`, unwrapped), F67 (`compiler.load_spec` in place of our `yaml.safe_load`).
 - **`v0.8.0`'s changelog, entry by entry**, for what the integration file does not name (the registry liaison
   read it at the cut; ask before repeating it).
+- **`v0.8.4`, read by its release entry** (on PyPI 2026-11-11). Format and enricher changed source, the compiler
+  moves for its floor; no public name, field, table, flag or warning code; release record moved nothing, no
+  recompile. **The 0.8 adoption floors all three at `>=0.8.4`.** It releases RM425 (F142), RM426's patch half
+  (F135), RM427's patch half (F132: the skip names `cache pull --only clinvar` and `clinvar build`, and a guard test
+  resolves every quoted command), and RM428 (F146: page of 500, one retry with no size). No 0.7.4 (their desk #252):
+  the shipped plugin's GWAS pass comes back only with the 0.8 move. Their step after upgrading: re-run the GWAS
+  pass on any module it ran on 0.8.0 to 0.8.3, which filled no row.
 - **`v0.8.3`, read by its release entry** (tag `725eb2b`, pushed 2026-11-10; format, compiler and enricher 0.8.3 on
   PyPI the same evening). All three move; no public name, field, table, flag or warning code; release record over
   22 reference modules moved nothing, so no recompile. **The 0.8 adoption now floors all three at `>=0.8.3`** (their
