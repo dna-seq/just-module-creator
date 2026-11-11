@@ -1274,3 +1274,71 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
             ),
             data={"target": target, "deleted": f"{namespace}/{name}"},
         )
+
+    # Registry 0.29 reversed S28: a namespace now renames in place, every version moving with
+    # its digest, content_signature and signature untouched, and the old name kept as a
+    # permanent alias. Dry run by default because it is upstream's default and because the
+    # report it returns (what would move) is the thing to read before the real call. Not
+    # polygon-only like the deletes: nothing is destroyed and the alias keeps old links working.
+    @mcp.tool(
+        tags={GATED_TAG},
+        annotations=ToolAnnotations(
+            title="Registry: rename a namespace",
+            readOnlyHint=False,
+            idempotentHint=True,
+            destructiveHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def registry_rename_namespace(
+        namespace: str,
+        new_name: str,
+        ctx: Context,
+        dry_run: bool = True,
+        target: RegistryTarget = "test",
+    ) -> OpResult:
+        """Rename a namespace you own, moving every version in it to the new name.
+
+        Each version keeps its digest, content signature and signature; only its
+        namespace and canonical id change. The old name becomes a permanent alias,
+        so `old/module` links keep resolving and nobody else can claim it.
+
+        `dry_run=true` (the default) returns the registry's report of what would move
+        and changes nothing; read it, then call again with `dry_run=false`. Running the
+        same rename again finishes one a storage error interrupted. A `test-` name is
+        refused on production, as at a claim.
+        """
+        token = await resolve_api_key(ctx, settings, target, namespace)
+        if token is None:
+            return unauthenticated_result(settings, target, namespace)
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        try:
+            report = await run_sync(
+                lambda: _client(token, target).rename_namespace(
+                    namespace, new_name, dry_run=dry_run
+                )
+            )
+        except RegistryError as exc:
+            return OpResult(
+                success=False,
+                message=(
+                    f"{describe(target, settings)} refused the rename: {exc}{instance_note(exc)}"
+                ),
+                data={"target": target},
+            )
+        log.info(
+            "Renamed namespace %s -> %s on %s (dry_run=%s)", namespace, new_name, target, dry_run
+        )
+        return OpResult(
+            success=True,
+            message=(
+                f"Dry run on {describe(target, settings)}: nothing changed. Read `report` for "
+                f"what would move, then call again with dry_run=false."
+                if dry_run
+                else f"Renamed {namespace} to {new_name} on {describe(target, settings)}; "
+                f"{namespace} stays as an alias."
+            ),
+            data={"target": target, "dry_run": dry_run, "report": jsonable(report)},
+        )

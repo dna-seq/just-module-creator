@@ -19,6 +19,7 @@ on production a botched publish is permanent in two ways at once.**
 | what it is | where a publish is a **rehearsal** | the catalog everyone installs from |
 | `test-` namespaces / `test_` module names | accepted | `422 test_data_on_prod`, at the claim as well as the publish |
 | deleting what you published | `registry_delete_version` / `registry_delete_module` | not possible — `yank` delists and does **not** free the content claim |
+| renaming a namespace | `registry_rename_namespace`: every version moves, the old name stays an alias; dry run first | the same; a `test-` name is refused |
 | default for writes | **yes** | only when you ask |
 | default for catalog reads | **none — `target` is required on every tool that reads a catalog**, `compare_to_published` included | **none — `target` is required** |
 

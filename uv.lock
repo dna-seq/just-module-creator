@@ -1059,7 +1059,7 @@ wheels = [
 
 [[package]]
 name = "just-dna-registry"
-version = "0.28.5"
+version = "0.29.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -1067,9 +1067,9 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8f/e0/cd4b380e1bbd6ae3f80afc7d0af08652d3549d44cda22ae8a777c5283644/just_dna_registry-0.28.5.tar.gz", hash = "sha256:a04be35dc9d81587a55263155d6873a28b8dfadc3b4dfa05b63d1c816d2632ea", size = 435106, upload-time = "2026-11-10T20:44:43.232Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/09/62/dc464ce3e1531248bc037b95c3d864e9bbdaab6c77c778cef5dff09afc8f/just_dna_registry-0.29.0.tar.gz", hash = "sha256:34c407a81c0e2f2cf84f9dcd4ab139b435e522b49343ecb0f12e30cfcfc4b788", size = 449505, upload-time = "2026-11-11T00:05:04.508Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/44/0b/a99452153e59f73954ec0b3ea54e363fd258ab2addce0fa16795312e7c65/just_dna_registry-0.28.5-py3-none-any.whl", hash = "sha256:cb0c97ce33d13ebab4a972755c4022ec3bb3ddd0042fc0a28885564eed18d71c", size = 465399, upload-time = "2026-11-10T20:44:40.795Z" },
+    { url = "https://files.pythonhosted.org/packages/5f/ba/6653b931bac74e4b740a12fb6289674bc8d9aa3a45d2eb9a226968c20732/just_dna_registry-0.29.0-py3-none-any.whl", hash = "sha256:cea885d9ec0dc1c037d2006294a8402a19c3e17046547dce3a92ea26aaa91535", size = 480678, upload-time = "2026-11-11T00:05:01.076Z" },
 ]
 
 [[package]]
@@ -1115,7 +1115,7 @@ requires-dist = [
     { name = "just-dna-compiler", specifier = ">=0.8.3,<0.9" },
     { name = "just-dna-enricher", extras = ["atlas"], specifier = ">=0.8.3,<0.9" },
     { name = "just-dna-format", specifier = ">=0.8.3,<0.9" },
-    { name = "just-dna-registry", specifier = ">=0.28.5" },
+    { name = "just-dna-registry", specifier = ">=0.29.0" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "platformdirs", specifier = ">=4.12.0" },
     { name = "pydantic", specifier = ">=2" },

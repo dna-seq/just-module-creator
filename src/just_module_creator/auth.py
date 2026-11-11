@@ -91,6 +91,8 @@ GATED_TOOLS = [
     "registry_unyank",
     "registry_delete_version",
     "registry_delete_module",
+    # Registry 0.29: moves every version to a new namespace and keeps the old one as an alias.
+    "registry_rename_namespace",
 ]
 
 

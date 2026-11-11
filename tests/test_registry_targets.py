@@ -56,6 +56,7 @@ REGISTRY_TOOL_DEFAULTS = {
     "registry_publish": "test",
     "registry_delete_version": "test",
     "registry_delete_module": "test",
+    "registry_rename_namespace": "test",
     # Yank is the one write whose real audience is production — a bad publish there is
     # what it exists for. It still defaults to the polygon like every other write: an
     # unaimed yank that silently delisted a production version would be the mistake this
@@ -1179,3 +1180,57 @@ async def test_pack_reaches_the_registry_client(make_client, monkeypatch, tmp_pa
 
     assert stub.published["spec_dir"] == spec, "the publish was never reached"
     assert stub.published["pack"] is pack
+
+
+class _RenameStub:
+    """Records what `registry_rename_namespace` asked of the registry client."""
+
+    def __init__(self, refuse: Exception | None = None) -> None:
+        self.calls: list[tuple[str, str, bool]] = []
+        self.refuse = refuse
+
+    def rename_namespace(self, namespace, name, *, dry_run=True, allow_test_data=False):
+        self.calls.append((namespace, name, dry_run))
+        if self.refuse is not None:
+            raise self.refuse
+        return {"namespace": namespace, "name": name, "applied": not dry_run, "modules": []}
+
+
+@pytest.mark.parametrize("dry_run", [None, False])
+async def test_a_namespace_rename_is_a_dry_run_unless_asked(
+    make_client, monkeypatch, tmp_path, dry_run
+):
+    """Registry 0.29's rename, wrapped with upstream's own default: nothing moves unasked."""
+    from just_module_creator.tools import registry
+
+    stub = _RenameStub()
+    monkeypatch.setattr(registry, "client_for", lambda *a, **kw: stub)
+    settings = Settings(offline=False, _env_file=None, test_api_key="mk", workspace=str(tmp_path))  # type: ignore[call-arg]
+    args: dict[str, object] = {"namespace": "test-sheep", "new_name": "test-winternewt"}
+    if dry_run is not None:
+        args["dry_run"] = dry_run
+    async with make_client(settings=settings) as client:
+        payload = (await client.call_tool("registry_rename_namespace", args)).structured_content
+
+    expected_dry = dry_run is None
+    assert stub.calls == [("test-sheep", "test-winternewt", expected_dry)]
+    assert payload["success"] is True
+    assert payload["data"]["report"]["applied"] is (not expected_dry)
+    assert ("nothing changed" in payload["message"]) is expected_dry
+
+
+async def test_a_refused_rename_keeps_the_registrys_reason(make_client, monkeypatch, tmp_path):
+    from just_module_creator.tools import registry
+
+    stub = _RenameStub(refuse=just_dna_registry.RegistryError(403, "not the namespace owner"))
+    monkeypatch.setattr(registry, "client_for", lambda *a, **kw: stub)
+    settings = Settings(offline=False, _env_file=None, test_api_key="mk", workspace=str(tmp_path))  # type: ignore[call-arg]
+    async with make_client(settings=settings) as client:
+        payload = (
+            await client.call_tool(
+                "registry_rename_namespace",
+                {"namespace": "test-sheep", "new_name": "test-winternewt", "dry_run": False},
+            )
+        ).structured_content
+    assert payload["success"] is False
+    assert "not the namespace owner" in payload["message"]

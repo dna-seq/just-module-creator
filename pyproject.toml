@@ -86,7 +86,9 @@ dependencies = [
     # `registry_check` of assets/fto_bmi against the polygon came back `verdict: true`.
     # 0.28 is the first client on format 0.8 (it requires `>=0.8.0`), so it moves with
     # the trio in one step; 0.28.0's `publish()` gains `recover_within`.
-    "just-dna-registry>=0.28.5",
+    # 0.29.0 (2026-11-11) adds `rename_namespace`, which `registry_rename_namespace` wraps;
+    # it requires format `>=0.8.3`, and the polygon served it the same night.
+    "just-dna-registry>=0.29.0",
     "python-dotenv>=1.2.2",
     # Declared, not leaned on transitively: net.py calls httpx directly for the
     # literature sources, and a transitive pin is not a contract.

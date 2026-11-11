@@ -107,6 +107,7 @@ is registered on every start, and the expensive ones say so in their own descrip
 | `registry_whoami`, `registry_claim_namespace`, `registry_publish` | gated | **yes** | registry writes; publish records the stamped identity in `published.json` |
 | `registry_amend_readme` | gated | **yes** | fix a published module's card — outside `artifact.digest`, so no version is spent |
 | `registry_delete_version`, `registry_delete_module` | gated | **yes** | undo a rehearsal on the polygon; refused for production, which offers `yank` instead |
+| `registry_rename_namespace` | gated | **yes** | registry 0.29: moves every version to a new namespace name and keeps the old one as an alias; a dry run by default |
 
 Plus a resource (`resource://just-dna/tables`) and a prompt (`create_module`).
 

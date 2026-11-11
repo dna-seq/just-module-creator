@@ -238,6 +238,7 @@ GROUPS: tuple[Group, ...] = (
             "registry_unyank",
             "registry_delete_version",
             "registry_delete_module",
+            "registry_rename_namespace",
         ),
         7486,
     ),
