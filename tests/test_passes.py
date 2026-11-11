@@ -634,6 +634,9 @@ class FakeGwasClient:
     def __init__(self, associations):
         self.associations = list(associations)
         self.calls: list[str] = []
+        # Enricher 0.8.4 (RM428) counts first requests the Catalog refused for their page size;
+        # this fake never refuses one.
+        self.size_refusals = 0
 
     def release(self) -> str | None:
         raise AssertionError("the tests pin `dataset`, so the release is never asked")

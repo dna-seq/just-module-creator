@@ -1211,7 +1211,7 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         escalates *after* the write, so a strict failure leaves everything `best_effort`
         would have written while a fetch failure mid-pass writes nothing.
 
-        The budget is a request per page of up to 1000 associations for each variant,
+        The budget is a request per page of up to 500 associations for each variant,
         plus one per distinct study they name for its ancestry (175 studies for
         rs1800562's 186 associations), against somebody else's rate limit. pmid, trait
         and study accession come with the association. `study_facts=false` drops the

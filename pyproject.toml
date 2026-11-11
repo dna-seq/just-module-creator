@@ -51,17 +51,18 @@ dependencies = [
     #   curl -s https://module-registry.just-dna.life/api/v1/version
     #   curl -s https://module-polygon.just-dna.life/api/v1/version
     #
-    # 0.8.3 rather than 0.8.0: the compiler 0.8.3 requires format `>=0.8.3`, and it is
-    # the release the suite and the polygon rehearsal ran against. Until production
+    # 0.8.4 rather than 0.8.0: 0.8.4 carries RM428, without which the GWAS pass gets a 400
+    # on every module (the Catalog's v2 search caps a page at 500; our F146), and the
+    # compiler 0.8.3 already required format `>=0.8.3`. Until production
     # serves 0.8 too, this branch publishes to the polygon only: production answers a
     # 0.8 client's guarded calls with `HTTP 409: just-dna-format contract mismatch`.
     #
     # The 0.6.x floor reasoning this replaces is not lost, only subsumed: 0.6.2's
     # exception contract and 0.6.3/0.6.4's `multi_allelic_rsids` collapse (upstream
     # S41/S45, our F36) are all below 0.7.0. `docs/CHANGELOG.md` at 0.16.0 carries it.
-    "just-dna-compiler>=0.8.3,<0.9",
-    "just-dna-format>=0.8.3,<0.9",
-    "just-dna-enricher[atlas]>=0.8.3,<0.9",
+    "just-dna-compiler>=0.8.4,<0.9",
+    "just-dna-format>=0.8.4,<0.9",
+    "just-dna-enricher[atlas]>=0.8.4,<0.9",
     # 0.25.2 is the first PUBLISHED client carrying the whole caching-proxy surface —
     # `cache_status`, `derived`, `draft`, the six `hint_*` methods and
     # `models.api.VariantHintReport`. Verified against the wheel rather than a sibling
