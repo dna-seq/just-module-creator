@@ -217,6 +217,13 @@ instructions name v0.48.6). The polygon now serves format 0.8.3.
 | F146, our half | holds: `enrich_gwas_effects` on `recheck_08/fto_gwas_main` carries "The GWAS Catalog has retired the API this build reads (HTTP 410, Gone) ... (upstream's RM428)" beside the raw 410 |
 | new: `validate_module`'s `warnings_summary` and `carried` | present: on `recheck_08/mthfr`, `warnings_summary` counts the three warnings by code, and `carried` holds the one restated from `verification.json` |
 
+**F146 on adopt-0.8 at f4793de (just-dna 0.8.4), 2026-11-11, in-process driver: holds.** `enrich_gwas_effects`
+on `recheck_08/fto_gwas` (the copy that got the 400 at 113150c): `success: true`, 223 rows for rs1421085,
+`requests_made` 218 and `requests_saved` 6. Of the 223, 38 name no effect allele and 3 have p-values below
+float64's range; there are 6 distinct `effect_unit` values. All of these are stated in `warnings`. It took
+**4 min 45 s of wall time for one rsID** (7.5 s of CPU); at that rate a 50-rsID module runs for hours. The
+branch's description gives the budget in requests (a page per variant plus one per distinct study), not in time.
+
 **The host keeps the tool descriptions from its first connection.** After the server restart, ToolSearch still
 returned 0.48.3's descriptions, and the source has the new ones. A fix that is only in a description can't be
 rechecked in a reconnected session: read the source, or recheck from a fresh session.
