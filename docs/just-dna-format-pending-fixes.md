@@ -92,10 +92,10 @@ its history.
 | F142 | S140 | RM425 | CLOSED 2026-11-12 (passes on 0.8.4) |
 | F139 | S139 | RM423 | patch half passes on 0.8.4; minor half open |
 | F137 | S138 | RM422 | CLOSED 2026-11-12 (passes on 0.8.4); our audit signal stays |
-| F130 | S136 | RM414 | in our lock, not re-run |
-| F131 | S137 | RM415 | in our lock, not re-run |
-| F127 | S135 | RM253 | in our lock, not re-run |
-| F115 | S124 | RM301 | in our lock, not re-run |
+| F130 | S136 | RM414 | CLOSED 2026-11-12 (passes on 0.8.4) |
+| F131 | S137 | RM415 | CLOSED 2026-11-12 (passes on 0.8.4) |
+| F127 | S135 | RM253 | CLOSED 2026-11-12 (emitting path read on 0.8.4) |
+| F115 | S124 | RM301 | CLOSED 2026-11-12; cache resolvers' export is RM102, settled |
 | F118 | S127 | (b); RM340 | in our lock, not re-run |
 | F113 | S113 | RM262, RM263 | CLOSED 2026-11-12; our Crossref read is out (7ff1fdc) |
 | F108 | S110 | RM257, RM258 | in our lock; 0.8 joins table cells, so our reader stays (the lead) |
@@ -147,6 +147,8 @@ docstring and CLI help. No mitigation of ours; a tool follows once upstream has 
 (the lead's).
 
 ## F130 — the repeat-count warnings name `RUC`/`CIRUC` over a declared `source_field=FORMAT/REPCN` (format `S136`)
+
+**State: CLOSED 2026-11-12.** Re-run on the installed compiler 0.8.4: `validate --strict assets/htt_cag_repeats` gives both repeat-count warnings naming the module's own field ("the field this module names (FORMAT/REPCN) is not one this format can type", "a caller's own field (FORMAT/REPCN) may come with an interval of its own"), with VCF 4.4's `RUC` kept beside it as the format's reference.
 
 **State: answered and fixed in tree the same hour (RM414, their `89610c38`), not released; ships with their
 next patch, which reaches us only with the 0.8 adoption.** When every bin names a `source_field` that is not
@@ -251,6 +253,8 @@ sidecars raise the same question; the probe's were header-only, so it is unrepro
 
 ## F131 — `bins_ungrounded` says "no bin pmid" when one bin carries one (format `S137`)
 
+**State: CLOSED 2026-11-12.** Re-run on the installed compiler 0.8.4 over `assets/htt_cag_repeats`: `bins_ungrounded` reads "3 of 4 bin(s) ... carry no grounding evidence of their own (no bin pmid, and no studies.csv rows; 1 other bin(s) do cite one)".
+
 **State: answered and fixed in tree the same hour (RM415, their `89610c38`), not released; ships with their
 next patch.** The clause is chosen by whether any bin cites: here *"3 of 4 … carry no grounding evidence of
 their own (…; 1 other bin(s) do cite one)"*. Filed 2026-11-07 by the liaison, on the tester's report. No
@@ -261,6 +265,8 @@ the module records no grounding evidence at all (no studies.csv rows, no bin pmi
 clause is fixed text written for the all-ungrounded case, so here it is false.
 
 ## F127 — a CPIC draft's skipped-allele warning names `TA(8)` on a gene that has none (format `S135`)
+
+**State: CLOSED 2026-11-12.** Read on the installed enricher 0.8.4 along the path that emits the warning, not by grep: `cpic.py` no longer reports a `"notation"` skip (its comment at the old reason says DEL/INS/repeat notations are now drafted as VCF-anchored indels), so no skip line can carry the fixed example list. Not re-run live: a CPIC draft needs the network; upstream's own run on 0.8.1 drafted TPMT `*42` and `*47`.
 
 **State: answered the same hour: already fixed in 0.8.0 (RM253), not in our lock.** The 0.8 drafter spells
 DEL/INS/repeat notations as VCF-anchored indels and each skip line names only that run's alleles; reproduced
@@ -278,6 +284,8 @@ UGT1A1's `*28` repeat. Asked for: drop the examples, or mark them as examples. C
 without them is in our lock.
 
 ## F115 — constructing an enricher client exports the working directory's whole `.env` (format `S124`)
+
+**State: CLOSED 2026-11-12.** Re-run on the installed enricher 0.8.4 in a scratch directory whose `.env` defines one probe variable: constructing `EutilsSettings()` leaves it out of `os.environ`. The cache-resolver half (`default_*_cache_dir`, `_resolve_*`) still exports the file with its default `load_dotenv_file=True`; checked, it does. That is upstream's closed decision (their RM102, reopened by RM301 for credentials only), so it is settled, not open. Our `userconfig.origin` stays, as written below.
 
 **Status (2026-09-27):** **fixed in tree, not released** — format-tree `S124`, answered as their
 `RM301` (commit `abaaf28` on `just-dna-format` main): every enricher credential reader now uses
