@@ -186,6 +186,16 @@ def _displacement_lines(spec_dir: Path, incoming: dict[str, bytes]) -> tuple[lis
         if not local_path.is_file():
             continue
         displaced.append(local_path)
+        if not csv_name.endswith(".csv"):
+            # F149: `DERIVED_FILES` holds `verification.json` too, which has no row key, so
+            # `hints.key_fields` refused it and the whole call crashed. A whole-file member
+            # is replaced whole; the local copy is in the capture like every displaced file.
+            lines.append(
+                f"{local_path.name}: replaced whole by the server's — it is not a table, so "
+                "there are no rows to compare. Your copy is in the capture; any check recorded "
+                "only in it is recorded again by running that check here."
+            )
+            continue
         if csv_name in _WHOLE_REWRITE:
             lines.append(
                 f"{local_path.name}: replaced whole rather than diffed — its producer "
@@ -402,9 +412,10 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         says more matched than one request returns. `served_from` says whether the
         deployment read its own snapshot or the lane's published repository.
 
-        Nothing is uploaded and no token is needed. These rows are the snapshot's answer, a
-        source for checking a cell, not a value to copy into one: a cell filled from the
-        source that checks it can no longer be checked by it.
+        Nothing is uploaded and no token is needed. The lane's `licence`, its notice and its
+        `redistribution` status come with every answer: some lanes are NonCommercial or not
+        redistributable, and a module leaning on their rows owes a `licensing.csv` row. These
+        rows check a cell; they are not a value to copy into one.
         """
         if offline_for(settings, False):
             raise ToolError(
@@ -425,9 +436,17 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
             raise ToolError(
                 f"{describe(target, settings)} refused the lane lookup: {exc}{instance_note(exc)}"
             ) from exc
+        # F148: the lane's terms travel with its rows, from upstream's own catalogue, so a
+        # row read from an NC-ND or refused lane says so where it is read.
+        declared = next((c for c in routing.CACHE_LANES if c.name == lane), None)
+        terms = declared.terms if declared is not None else None
         return LaneLookup(
             target=target,
             registry=describe(target, settings),
+            licence=terms.license if terms is not None else None,
+            licence_notice=terms.notice if terms is not None else None,
+            licence_url=terms.license_url if terms is not None else None,
+            redistribution=declared.unpublished if declared is not None else None,
             lane=lane,
             table=table,
             served_from=answer.get("served_from"),

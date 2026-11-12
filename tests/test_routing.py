@@ -1451,3 +1451,63 @@ async def test_a_lane_lookup_reads_tables_or_rows_and_says_who_served_them(
     assert rows.rows == [{"symbol": "APOE", "chr_start": 44905796, "chr_end": 44909393}]
     assert (rows.served_from, rows.truncated, rows.target) == ("local", False, "test")
     assert half.is_error and "together" in str(half.content)
+
+
+async def test_a_lane_lookup_carries_the_lanes_terms(monkeypatch, make_client):
+    """F148: rows from an NC-ND, not-redistributable lane say so where they are read.
+
+    The terms come from upstream's own lane catalogue, the same one `registry_caches` reports
+    from, so the two cannot disagree about a lane.
+    """
+    declared = next(c for c in routing.CACHE_LANES if c.name == "pubmind")
+    assert declared.terms is not None and declared.unpublished, "the catalogue lost PubMind's terms"
+    stub = _LaneStub()
+    monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: stub)
+    async with make_client(routed_settings()) as client:
+        found = (
+            await client.call_tool("registry_lane_lookup", {"lane": "pubmind", "target": "test"})
+        ).data
+
+    assert found.licence == declared.terms.license == "CC-BY-NC-ND-4.0"
+    assert found.licence_notice == declared.terms.notice
+    assert found.redistribution == declared.unpublished
+    assert found.redistribution.startswith("refused:")
+
+
+async def test_remote_derive_replaces_a_local_verification_json_whole_rather_than_crashing(
+    monkeypatch, make_client, tmp_path
+):
+    """F149: `verification.json` is in `DERIVED_FILES` but has no row key.
+
+    The displacement diff asked `hints.key_fields` for its key, which refuses a non-table,
+    and the whole call crashed on any spec that had ever run a check. It is now replaced
+    whole, with a line saying so, and the old copy is captured like every displaced file.
+    """
+    assert "verification.json" in DERIVED_FILES, "the case this test pins has moved upstream"
+    (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
+    (tmp_path / "verification.json").write_text('{"records": []}\n')
+    archive = _archive(
+        {
+            "derived/resolution.csv": _resolution([("2-135851076-G-A", "rs4988235", "ensembl")]),
+            "derived/verification.json": b'{"records": [{"check": "server"}]}\n',
+            "check.json": b'{"files_absent": []}',
+        }
+    )
+
+    class _Stub:
+        def derived(self, namespace, name, spec_dir, **kwargs):
+            return archive
+
+    monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Stub())
+    settings = routed_settings(test_api_key="mk_poly_stub", workspace=str(tmp_path))
+    async with make_client(settings) as client:
+        report = (
+            await client.call_tool(
+                "remote_derive",
+                {"spec_dir": str(tmp_path), "namespace": "test-sheep", "name": "test_lactose"},
+            )
+        ).data
+
+    lines = [d for d in report.decisions if d.startswith("verification.json")]
+    assert len(lines) == 1 and "replaced whole" in lines[0]
+    assert (tmp_path / "verification.json").read_text() == '{"records": []}\n', "a dry run writes nothing"

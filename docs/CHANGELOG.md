@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`registry_lane_lookup` carries the lane's terms** (F148): `licence`, `licence_notice`, `licence_url` and `redistribution`, read from upstream's lane catalogue, so rows from PubMind (CC BY-NC-ND, not redistributable) or PharmVar say so where they are read. Whether the registry should serve those lanes by key at all is filed upstream.
 ## [0.48.8] — 2026-11-13
 
 - **`registry_lane_lookup`** (registry 0.30): a keyed read of one snapshot lane a registry holds, without downloading it. With only `lane`, the lane's tables and the key columns each answers by; with `table` and `keys`, the matching rows, `truncated` when there were more, and `served_from` saying where the deployment read them. Read-only, no token, refused under `JMC_OFFLINE`; `target` is required, as for every catalog read.

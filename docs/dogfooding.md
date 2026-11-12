@@ -48,8 +48,9 @@ same pass locally took 4 min 45 s for this rsID. `notes` says the archive carrie
 ## F148 — `registry_lane_lookup` serves rows from lanes the same registry refuses to redistribute, and says nothing of their terms
 
 **Found:** 2026-11-12, plugin 0.48.8 over the host wire, registry 0.30.0 on both instances · **Severity:** medium
-(a licence question, not a crash) · **Status:** the registry half went to the liaison at once; our half is the
-lead's.
+(a licence question, not a crash) · **Status:** the registry half went to the liaison at once; our half is fixed on main (the lookup now
+carries the lane's `licence`, `licence_notice`, `licence_url` and `redistribution` from upstream's lane catalogue),
+unreleased.
 
 `registry_caches(target="test")` gives a `remote_reason` per lane. For three of them it is a refusal or an open
 question about redistribution:

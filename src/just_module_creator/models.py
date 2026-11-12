@@ -3016,6 +3016,24 @@ class LaneLookup(BaseModel):
     truncated: bool | None = Field(
         default=None, description="With `table`: more rows matched than one request returns."
     )
+    licence: str | None = Field(
+        default=None,
+        description=(
+            "The lane's licence as upstream's lane catalogue records it (SPDX). Null means the "
+            "catalogue records none for this lane, which is not permission."
+        ),
+    )
+    licence_notice: str | None = Field(
+        default=None, description="The terms' own notice: use limits, attribution duties."
+    )
+    licence_url: str | None = None
+    redistribution: str | None = Field(
+        default=None,
+        description=(
+            "Why the lane's snapshot is not published, as upstream records it (`refused: …` or "
+            "`unestablished: …`). Rows served from such a lane carry that question with them."
+        ),
+    )
 
 
 class DerivedTreeReport(BaseModel):
