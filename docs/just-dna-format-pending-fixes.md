@@ -118,6 +118,16 @@ its history.
 | F99 | S101 | doc fixed | upstream docs, nothing to install |
 | F54 | S58 | RM122 | open upstream, parked |
 
+## F150 — a live pass asked of `derived` is skipped by the deployment's `enrich_offline`, and the skip says to ask live (registry `S30`)
+
+**State: filed 2026-11-12 by the liaison, on the tester's report (`docs/dogfooding.md` F150), unanswered.** The
+registry half only; our `_passes_from` dropping the list is the lead's. On registry 0.30.0 the live leg runs only
+when neither the caller's `offline` nor the deployment's `enrich_offline` (default `True`) is set, and the polygon
+runs at the default, so `remote_derive(passes=["gwas"], live=true)` comes back `skipped` with "ask with
+offline=false". Read in their 0.30.0 source (`publish.py`, `derived.py`, `passes.py`, `config.py`). Asked for: the
+skip names which side was offline, `/caches` or `/version` says whether live legs run, and the reference says the
+deployment outranks the caller.
+
 ## F148 — the registry's keyed lane lookup serves lanes its `/caches` refuses to redistribute (registry `S29`)
 
 **State: answered within the hour, by design (a refusal for the lookup, settled).** Their maintainer ruled on 2026-11-11 that a keyed subslice is a derivative and that serving means the whole snapshot, so every held lane answers keyed lookups and `/caches`' refusal covers only the whole snapshot; the ruling now stands in their API-REFERENCE.md (endpoints 46-47). Candidate (2), the lane's terms on each answer, is a new field (a minor) in their roadmap, undecided. Meanwhile `GET /caches` gives each lane's `remote_reason` to attach, which is our half: **done on main (`d9651d1`, unreleased, the lead)**, `registry_lane_lookup` carries the lane's `remote_reason` plus `licence`, `licence_notice` and `licence_url` from upstream's lane catalogue at no extra request; it drops out when their per-answer terms ship. Filed 2026-11-12 by the liaison, on the tester's report (`docs/dogfooding.md` F148). Registry
