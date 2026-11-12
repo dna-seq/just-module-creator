@@ -120,7 +120,11 @@ its history.
 
 ## F150 — a live pass asked of `derived` is skipped by the deployment's `enrich_offline`, and the skip says to ask live (registry `S30`)
 
-**State: filed 2026-11-12 by the liaison, on the tester's report (`docs/dogfooding.md` F150), unanswered.** The
+**State: fixed in their tree (`dac4ccf`), unreleased; the polygon still serves 0.30.0, so it reproduces there until
+the next deploy.** The proxy now takes the caller's `offline`, and `enrich_offline` governs only the box's own
+publish, so the skip's advice is true again. Saying up front which live legs run is a new field in their roadmap,
+undecided. Our half (`_passes_from`) is fixed on main (`2a4b421`, the lead). Filed 2026-11-12 by the liaison, on the
+tester's report. The
 registry half only; our `_passes_from` dropping the list is the lead's. On registry 0.30.0 the live leg runs only
 when neither the caller's `offline` nor the deployment's `enrich_offline` (default `True`) is set, and the polygon
 runs at the default, so `remote_derive(passes=["gwas"], live=true)` comes back `skipped` with "ask with
