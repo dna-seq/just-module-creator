@@ -23,6 +23,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from just_dna_compiler.compiler import load_spec_variants
+from just_dna_enricher.enrich import EnrichmentError, spec_genome_build
+from just_dna_enricher.gene_spans import GeneSpanError, genes_covering
 from just_dna_format.vrs import normalize_chrom
 
 #: Per-row outcomes, in the order a reader should worry about them. Every authored
@@ -218,3 +220,53 @@ def report_rows(spec_dir: Path, *, example_cap: int = 10) -> RowReport:
             if len(bucket) < example_cap and site.variant_key not in bucket:
                 bucket.append(site.variant_key)
     return report
+
+
+@dataclass(frozen=True)
+class GeneHint:
+    """The genes worth asking the Atlas about for one row that authors no `gene` (F105, RM259).
+
+    A query hint, never a gene for the row: the Atlas names the gene it attributes, and nothing
+    here writes one into `variants.csv` or picks one of the candidates. Exactly one of `genes` and
+    `reason` is set.
+    """
+
+    variant_key: str
+    genes: tuple[str, ...] | None = None
+    reason: str | None = None
+
+
+def no_gene_hints(spec_dir: Path, sites: list[ModuleSite]) -> list[GeneHint]:
+    """For each placed row with no gene, upstream's MANE candidates within the attribution horizon.
+
+    GRCh38 only, as MANE is: on another build every row gets the reason rather than a lookup on
+    coordinates from the wrong assembly. Local (the MANE lane), so it costs no request.
+    """
+    wanted = [s for s in sites if not s.gene and s.chrom is not None and s.start is not None]
+    if not wanted:
+        return []
+    try:
+        build = spec_genome_build(spec_dir)
+    except EnrichmentError as exc:
+        # No build is invented for a module whose declaration cannot be read; the
+        # hint says so and the pass goes on reporting the rows it can.
+        reason = f"the module's genome_build could not be read: {exc}"
+        return [GeneHint(s.variant_key, reason=reason) for s in wanted]
+    if build != "GRCh38":
+        reason = f"the module declares {build}; MANE places genes on GRCh38 only"
+        return [GeneHint(s.variant_key, reason=reason) for s in wanted]
+    hints: list[GeneHint] = []
+    for site in wanted:
+        assert site.chrom is not None and site.start is not None
+        try:
+            nearby = genes_covering(site.chrom, site.start)
+        except GeneSpanError as exc:
+            # An unreadable snapshot: said on the row, so the pass still reports.
+            hints.append(GeneHint(site.variant_key, reason=f"unreadable MANE snapshot: {exc}"))
+            continue
+        if nearby.spans:
+            genes = tuple(sorted({span.gene for span in nearby.spans}))
+            hints.append(GeneHint(site.variant_key, genes=genes))
+        else:
+            hints.append(GeneHint(site.variant_key, reason=nearby.reason))
+    return hints

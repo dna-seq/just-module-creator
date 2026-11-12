@@ -3296,6 +3296,22 @@ class CachePlan(BaseModel):
     note: str = Field(description="What this measured and what it is estimating.")
 
 
+class GeneHintOut(BaseModel):
+    """Genes within reach of one row that authors no gene (F105). Exactly one field is set."""
+
+    variant_key: str
+    genes: list[str] | None = Field(
+        default=None, description="MANE symbols whose horizon covers the position, sorted."
+    )
+    reason: str | None = Field(
+        default=None,
+        description=(
+            "Why there are none: `no_snapshot` (the MANE lane is not provisioned, so nobody "
+            "asked), `no_gene_within_horizon`, or a build MANE does not place."
+        ),
+    )
+
+
 class ExpressionReport(BaseModel):
     """Outcome of the AlphaGenome Atlas pass — predicted per-gene expression effects.
 
@@ -3393,6 +3409,14 @@ class ExpressionReport(BaseModel):
     row_examples: dict[str, list[str]] = Field(
         default_factory=dict,
         description="Up to ten variant keys per non-`scored` status.",
+    )
+    no_gene_candidates: list[GeneHintOut] = Field(
+        default_factory=list,
+        description=(
+            "With `rows=true`: for each `no_gene` row that is placed, the MANE genes whose "
+            "512 kb horizon covers it. Query hints, not the row's gene: often dozens, and "
+            "each is a separate Atlas query. Never written into variants.csv."
+        ),
     )
     warnings: list[str] = Field(default_factory=list, description="Upstream's own warnings.")
     next_step: str | None = Field(default=None, description="What to do with the rows.")

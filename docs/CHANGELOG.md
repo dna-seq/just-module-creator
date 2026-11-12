@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`enrich_expression_effects(rows=true)` names the genes within reach of a row that authors none** (F105, upstream's RM259): `no_gene_candidates` lists, per `no_gene` row, the MANE genes whose 512 kb attribution horizon covers it, or why there are none (`no_snapshot`, `no_gene_within_horizon`, a build MANE does not place). They are query hints for the interval form; nothing writes one into `variants.csv`. Local, from the MANE lane, so it costs no request.
 ## [0.48.7] — 2026-11-12
 
 - **`enrich_gwas_effects` says when the Catalog refused its page size** (upstream's interim for our S144, their RM429): the tool now builds the GWAS client itself and reads its public `size_refusals` after the pass, since 0.8.4 only logs the refusal. A warning names how many rsIDs were asked again without a size; the extra requests are in `requests_made`. Offline it builds no client, so the pass stays a no-op.

@@ -107,6 +107,7 @@ from just_module_creator.expression import (
     RowReport,
     effect_key,
     module_sites,
+    no_gene_hints,
     plan_windows,
     report_rows,
 )
@@ -118,6 +119,7 @@ from just_module_creator.models import (
     ExpressionRanking,
     ExpressionReport,
     FactPassReport,
+    GeneHintOut,
     GwasReport,
     LiteratureReport,
     RankedExpressionEffect,
@@ -2125,7 +2127,9 @@ async def _expression_for_rows(
     (F95) and a merge-not-clobber sidecar folds a retry's rows in silently. What ran is
     reported, and `row_status` is read off the sidecar as it now stands.
     """
-    windows = plan_windows(module_sites(target)[0])
+    sites = module_sites(target)[0]
+    windows = plan_windows(sites)
+    hints = no_gene_hints(target, sites)
     planned = len(windows)
     candidates = written = 0
     withheld: Counter[str] = Counter()
@@ -2214,6 +2218,14 @@ async def _expression_for_rows(
         slowest_window_seconds=round(max(durations), 1) if durations else None,
         row_status={status: report.status.get(status, 0) for status in ROW_STATUSES},
         row_examples=report.examples,
+        no_gene_candidates=[
+            GeneHintOut(
+                variant_key=h.variant_key,
+                genes=list(h.genes) if h.genes is not None else None,
+                reason=h.reason,
+            )
+            for h in hints
+        ],
         licence_note=(
             None
             if dry_run or not ran

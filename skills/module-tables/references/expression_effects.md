@@ -174,7 +174,10 @@ non-reference allele. Read `row_status` before the effects: `gene_not_at_locus` 
 other genes at that position and not the row's own. That says what was asked, not what the Atlas scores: after
 an interval query for one gene, every other gene's rows read this way. Run `rows=True` to ask the row's own gene
 before concluding the Atlas has nothing for it. `no_gene` means the row has none, and supplying one from a
-reference is an authored value, so it is a decision to surface, not a gap the tool fills. **`rows=True` asks
+reference is an authored value, so it is a decision to surface, not a gap the tool fills. `rows=True`
+lists, in `no_gene_candidates`, the MANE genes whose 512 kb horizon covers each such row: genes worth
+*asking about* (the interval form, one gene at a time), never the row's gene. There are often dozens
+(33 at APOE's rs429358 region), and none is nearer the truth for being nearer the position. **`rows=True` asks
 only each row's own `gene`**: a distal target (rs1421085's IRX3, about 500 kb from FTO) takes the interval form,
 with `gene`, `chrom`, `start` and `end` named. Count
 `direction_counts`, not the sign of `effect_size`: the direction is the track-majority sign and the
