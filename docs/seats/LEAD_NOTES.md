@@ -27,6 +27,10 @@ Upstream halves, all the liaison's: S138/RM422 (F137's compile warning), S139/RM
 it redundant: re-read then. Not done on purpose: F140's split of never-asked from asked-and-empty (no record of the
 queries exists); F141's cause (unknown).
 
+## Acting: the pm's milestones duty (from kit v0.1.187, 2026-11-12)
+
+The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milestones`) and hands it back when a pm is seated. `state`: one post kept in place, source `docs/seats/LEAD_STATE.md`, refreshed with `watchdog.sh keep lead state '#just-module-creator>state' docs/seats/LEAD_STATE.md` whenever where-it-stands, a headline result or the next actions change. `milestones`: one post per landed result. Links point at `dna-seq/just-module-creator` (the remote), not the person's own account; the first 0.48.7 post had that wrong and was deleted and reposted.
+
 ## Plan states (set 2026-11-05)
 
 - RM16, RM25: waits until 2026-12-05. RM24: waits until 2027-01-05. Each line says what is looked at then.
@@ -69,7 +73,7 @@ queries exists); F141's cause (unknown).
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.186 (moved on each announcement; 0.1.186 on 2026-11-12) (`move-to-tag.py`; the pin is in the untracked
+- **Kit pin**: 0.1.187 (moved on each announcement; 0.1.187 on 2026-11-12) (`move-to-tag.py`; the pin is in the untracked
   `.claude/settings.local.json`). Taking it into this session is mine: `watchdog.sh reload`, then end the turn,
   and the kit's typer types `/reload-plugins` (the "left for the person" line `move-to-tag.py` prints is wrong, kit #306).
 
