@@ -24,6 +24,7 @@ import pytest
 from conftest import offline_settings, routed_settings
 from fastmcp.exceptions import ToolError
 from just_dna_registry.client import RegistryClient, VersionMismatchError
+from just_dna_registry.specfiles import DERIVED_FILES
 from just_dna_registry.version import VersionInfo
 
 from just_module_creator import routing
@@ -1510,4 +1511,5 @@ async def test_remote_derive_replaces_a_local_verification_json_whole_rather_tha
 
     lines = [d for d in report.decisions if d.startswith("verification.json")]
     assert len(lines) == 1 and "replaced whole" in lines[0]
-    assert (tmp_path / "verification.json").read_text() == '{"records": []}\n', "a dry run writes nothing"
+    unchanged = (tmp_path / "verification.json").read_text()
+    assert unchanged == '{"records": []}\n', "a dry run writes nothing"

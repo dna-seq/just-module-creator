@@ -17,7 +17,10 @@ is usable, and what is missing.
 ## F149 — `remote_derive` crashes on any spec that already holds a `verification.json`
 
 **Found:** 2026-11-12, released v0.48.8 source (`git archive v0.48.8`), in-process driver, the polygon on
-registry 0.30.0 · **Severity:** high (the tool cannot run on most real modules) · **Status:** open, for the lead.
+registry 0.30.0 · **Severity:** high (the tool cannot run on most real modules) · **Status:** fixed on main
+(a non-table member such as `verification.json` is replaced whole with a decision line, its old copy captured;
+the code landed inside `d9651d1`, the test's last lines in the commit after), unreleased. Part (2), `passes_report`
+null with `gwas` asked, is open: it waits on the tester's raw capture of `check.json`.
 
 `remote_derive(target="test", namespace="test-sheep", name="test_fto_remote")` on a copy of `assets/fto_bmi`
 (`data/interim/recheck_08/fto_remote/`). With or without `passes=["gwas"]` it fails with:
