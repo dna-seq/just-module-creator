@@ -14,6 +14,41 @@ is usable, and what is missing.
 
 ---
 
+## F148 — `registry_lane_lookup` serves rows from lanes the same registry refuses to redistribute, and says nothing of their terms
+
+**Found:** 2026-11-12, plugin 0.48.8 over the host wire, registry 0.30.0 on both instances · **Severity:** medium
+(a licence question, not a crash) · **Status:** the registry half went to the liaison at once; our half is the
+lead's.
+
+`registry_caches(target="test")` gives a `remote_reason` per lane. For three of them it is a refusal or an open
+question about redistribution:
+
+- `pharmvar`: "refused: the bulk data is pulled under a key PharmVar's terms §2 make personal and
+  non-transferable".
+- `pubmind`: "refused: the ANNOVAR-distributed table is CC BY-NC-ND 4.0, and the snapshot is adapted material
+  NoDerivatives forbids sharing".
+- `mane`: "unestablished: ... whether a snapshot of these bytes may be redistributed has never been answered".
+
+`registry_lane_lookup` reads all three by key, anonymously (the tool says no token is needed), with
+`served_from: "local"`:
+
+| call | rows |
+|---|---|
+| `pharmvar`/`alleles`, `CYP2C19*2`, on **test and prod** | 1 row: `function: "no function"` |
+| `pubmind`/`pubmind`, chr19:44908684 (APOE rs429358), test | 36 rows with `clin_sig` and `pathogenicity_score` |
+| `mane`/`summary`, `APOE`, test | the full MANE Select record |
+
+The registry's changelog for 0.30 ("Every lane answers keyed lookups ... Keyed and bounded per request; nothing
+enumerates a lane") does not mention licences. Whether a bounded keyed read is redistribution is the registry's
+and the person's question, not ours, so it went to the liaison for the registry's intake.
+
+**Our half:** the result names `served_from` but not the lane's terms. An agent reading PubMind's rows has
+nothing on the result saying they are NC-ND adapted material. The docstring warns against copying a value into
+a cell, but for the check-only reason. The licence that `registry_caches` already knows could travel with the
+rows (its `remote_reason`, or a `licence` field), so a module that leans on them can carry a `licensing.csv` row.
+
+---
+
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
 
 **Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the
