@@ -36,7 +36,7 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. The hosts have
 - The lead: five pending-fixes entries reproduced as fixed leave code of ours to lift (F94, F93, F63, F59, F67;
   told in `#just-module-creator>0.8`, 2026-11-07).
 - Format v0.8.3 (2026-11-10) released RM422 (F137) and RM423's patch half (F139); not in our lock. The 0.8 adoption floors move to `>=0.8.3`; told the lead.
-- The lead's branch `adopt-0.8` (local, 0.8.3, registry >=0.28.5) waits for production to serve 0.8. When it lands on main, re-check every pending-fixes row whose fix is released in 0.8.x (F130, F131, F137, F139's patch half) and move what is now in our lock.
+- **Open, mine:** 0.8.4 is in our lock (0.48.7, 2026-11-12). Re-run the reproduction of every pending-fixes row marked *in our lock, not re-run* on the installed package, close what passes (move to `previous_issues.md`), and hand what of ours can come out to the lead.
 - Format: RM427 (S142, F132: `clinvar pull` at two sites; guard walk; remedy key a minor), answered 2026-11-10.
 
 - `just-dna-registry/lead`: `just-module-creator/liaison` in its triage's `wake_from` (asked in

@@ -16,7 +16,7 @@ guarded call answers `HTTP 409: contract mismatch` on a minor skew (CLAUDE.md §
 
 ## Read mark
 
-**Installed client: 0.27.0** (`uv.lock`, 2026-11-07). **Servers, 2026-11-07:** production `registry 0.27.0,
+**Installed client: 0.30.0** (`uv.lock`, 2026-11-12, release 0.48.7). Before that: 0.27.0 (`uv.lock`, 2026-11-07). **Servers, 2026-11-07:** production `registry 0.27.0,
 format 0.7.1, compiler 0.7.2`; the polygon gave no answer within 15 s (not read, so unknown), then answered HTTP 502 from at least 14:58 to
 16:40 UTC (the tester's `registry_health`, and a curl here); asked of `just-dna-registry/lead` the same day: not a deploy it knows of (deploys are the
 person's), still 502 at 17:0x UTC, and it has asked the person; still 502 at 02:37 UTC on 2026-11-09 and at 20:50 UTC on 2026-11-10 (production answers, 0.27.0). **Back at 21:22 UTC on 2026-11-10, serving `registry 0.28.5, format 0.8.0, compiler 0.8.0`** (the person redeployed it): main's 0.7 client now gets the minor-skew 409 on the polygon's guarded calls (`registry_check`, `registry_validate`, publish), while production still serves 0.7.1. The `adopt-0.8` branch matches the polygon. Registry 0.28.3 (enricher 0.8.1) is being cut; the

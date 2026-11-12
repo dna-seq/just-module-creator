@@ -72,6 +72,8 @@ the installed packages, not the sibling checkouts** — which is the check this 
 exists to force, and the reason its status lines name both halves.
 
 
+**In our lock from 2026-11-12: format, compiler and enricher 0.8.4, registry 0.30.0** (0.48.7, `adopt-0.8` merged as `d2032a4`). Every row below that read *0.8.x only* now reads *in our lock, not re-run*: the fix is installed, and the entry closes once its reproduction passes on the installed package (CLAUDE.md §8). Re-running them is the liaison's open item.
+
 **Against 0.8.0 (the liaison, 2026-11-07).** Each format-side entry's upstream item, read from the
 compiler's `RM_TOC_*` status lines on their `main` at `911a2fd`, against what `uv.lock` installs (format
 0.7.1, compiler 0.7.2, enricher 0.7.3; capped `<0.8`). *In our lock* means the fix is released and installed,
@@ -83,23 +85,23 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
-| F146 | S143 | RM428 | 0.8.4 only (closed upstream; no 0.7.4) |
-| F146 | S144 | RM429 | parked upstream (a minor); our interim on `adopt-0.8` |
-| F132 | S142 | RM427 | patch half 0.8.4 only; remedy key (minor) open |
-| F135 | S141 | RM426 | patch half 0.8.4 only; minor half open |
-| F142 | S140 | RM425 | 0.8.4 only |
-| F139 | S139 | RM423 | patch half released 0.8.3, not in our lock; minor half open |
-| F137 | S138 | RM422 | released 0.8.3, not in our lock |
-| F130 | S136 | RM414 | 0.8.2 only |
-| F131 | S137 | RM415 | 0.8.2 only |
-| F127 | S135 | RM253 | 0.8.0 only |
-| F115 | S124 | RM301 | 0.8.0 only |
-| F118 | S127 | (b); RM340 | 0.8.0 only |
-| F113 | S113 | RM262, RM263 | fixed in 0.8.x; our Crossref read is out on `adopt-0.8` (7ff1fdc) |
-| F108 | S110 | RM257, RM258 | 0.8 reads PMC whole, but joins table cells; our reader stays (the lead, `adopt-0.8`) |
-| F105 | S112 | RM259 | 0.8.0 only |
-| F116 | S125 | RM337, RM338 | in 0.8.3: `logs/` ships `.jsonl`; reaches desk #204 (RM31) |
-| F85 | S85 | RM154; RM382 reverses part | RM154 in our lock; RM382 0.8.0 only (entry rewritten) |
+| F146 | S143 | RM428 | in our lock (0.8.4); the lead ran it live on 0.8.4 (223 rows), closable |
+| F146 | S144 | RM429 | parked upstream (a minor); our interim on main since 0.48.7 |
+| F132 | S142 | RM427 | patch half in our lock, not re-run; remedy key (minor) open |
+| F135 | S141 | RM426 | patch half in our lock, not re-run; minor half open |
+| F142 | S140 | RM425 | in our lock, not re-run |
+| F139 | S139 | RM423 | patch half in our lock, not re-run; minor half open |
+| F137 | S138 | RM422 | in our lock, not re-run |
+| F130 | S136 | RM414 | in our lock, not re-run |
+| F131 | S137 | RM415 | in our lock, not re-run |
+| F127 | S135 | RM253 | in our lock, not re-run |
+| F115 | S124 | RM301 | in our lock, not re-run |
+| F118 | S127 | (b); RM340 | in our lock, not re-run |
+| F113 | S113 | RM262, RM263 | in our lock; our Crossref read is out (7ff1fdc, on main since 0.48.7), closable |
+| F108 | S110 | RM257, RM258 | in our lock; 0.8 joins table cells, so our reader stays (the lead) |
+| F105 | S112 | RM259 | in our lock, not re-run |
+| F116 | S125 | RM337, RM338 | in our lock; the lead verified `.jsonl` ships; desk #204 (RM31), closable |
+| F85 | S85 | RM154; RM382 reverses part | both in our lock; RM382 not re-run |
 | F94 | S97 | RM229 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
 | F93 | S96 | RM224 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
 | F89 | S87 | RM180 | in our lock (0.7.0); reproduction passes 2026-11-07, nothing to remove |
