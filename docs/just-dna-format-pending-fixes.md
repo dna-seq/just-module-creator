@@ -90,8 +90,8 @@ its history.
 | F132 | S142 | RM427 | patch half passes on 0.8.4; remedy key (minor) open |
 | F135 | S141 | RM426 | patch half passes on 0.8.4; minor half open |
 | F142 | S140 | RM425 | CLOSED 2026-11-12 (passes on 0.8.4) |
-| F139 | S139 | RM423 | patch half in our lock, not re-run; minor half open |
-| F137 | S138 | RM422 | in our lock, not re-run |
+| F139 | S139 | RM423 | patch half passes on 0.8.4; minor half open |
+| F137 | S138 | RM422 | CLOSED 2026-11-12 (passes on 0.8.4); our audit signal stays |
 | F130 | S136 | RM414 | in our lock, not re-run |
 | F131 | S137 | RM415 | in our lock, not re-run |
 | F127 | S135 | RM253 | in our lock, not re-run |
@@ -212,6 +212,8 @@ of the tester's Atlas runs (128 of 819, 24 of 126), and the values are right.
 
 ## F139 — `record_verification` re-signs records of checks it did not re-run over new authored bytes (format `S139`)
 
+**Patch half re-run 2026-11-12 on the installed enricher 0.8.4, passes:** over a copy of `assets/mthfr_folate` (13 records), with `studies.csv` edited, `record_verification` given one fresh `reference_allele` record wrote that record alone and logged "verification.json held 12 record(s) put over different authored bytes, not re-signed over these: ..."; a second call with the bytes unchanged kept both records (RM45 intact). The per-record binding (a minor) is open, so the entry stays. Whether `audit_module`'s `checks_older_than_the_last_edit` comes out is the lead's.
+
 **State: patch half released in 0.8.3 (2026-11-10), not in our lock (`<0.8`); the per-record binding (a minor) is open.** Answered the same hour: RM423, high, with their pm to size. Candidate 1 (drop carried records when the
 binding moved, logged) is the patch half; a per-record binding is a minor. They call our interim (a record older
 than the newest authoring edit read as not current) sound. Filed 2026-11-09 by the liaison, on the tester's report. **Our mitigation
@@ -227,6 +229,8 @@ while the closure beside them is dropped in the same case. Asked for: drop carri
 moved (interim), or a per-record binding read per check (the fix).
 
 ## F137 — a `resolution.csv` row for a variant the author removed compiles silently and publishes (format `S138`)
+
+**State: CLOSED 2026-11-12, upstream half.** Re-run on the installed compiler 0.8.4 over a copy of `assets/mthfr_folate` with a `resolution.csv` row for rs1801394 added: `validate --strict` exits 0 with "warning: resolution.csv places 1 identity(ies) no table in this module names: ['rs1801394']. Delete those rows ...". Our audit signal stays, as written below (offline, names the repair).
 
 **State: released in 0.8.3 (2026-11-10), not in our lock (`<0.8`).** Answered the same hour: RM422, a patch, with their pm to size. One more arm of the existing
 `derived_row_orphan` warning, over `resolution.csv`, in both modes; the subject set is every authored table.
