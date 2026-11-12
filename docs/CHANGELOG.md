@@ -5,6 +5,8 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+## [0.48.8] — 2026-11-13
+
 - **`registry_lane_lookup`** (registry 0.30): a keyed read of one snapshot lane a registry holds, without downloading it. With only `lane`, the lane's tables and the key columns each answers by; with `table` and `keys`, the matching rows, `truncated` when there were more, and `served_from` saying where the deployment read them. Read-only, no token, refused under `JMC_OFFLINE`; `target` is required, as for every catalog read.
 - **`remote_derive` takes registry 0.30's options**: `passes` adds upstream's other derived-table passes by command name (`gwas`, `frequencies`, `gene-metrics`, `literature`, `alphagenome expression`, …), `live=true` lets a pass's live leg run on the server (off by default, so an unasked call spends no live leg), and `gene`/`chrom`/`start`/`end` aim `alphagenome expression` at one interval. The run's own account of each pass comes back as `passes_report`.
 - **`enrich_expression_effects(rows=true)` names the genes within reach of a row that authors none** (F105, upstream's RM259): `no_gene_candidates` lists, once per position whose rows name no gene (every row key there named, F147), the MANE genes whose 512 kb attribution horizon covers it, each with its span and distance (0 when the position is inside it), or why there are none (`no_snapshot`, `no_gene_within_horizon`, a build MANE does not place). They are query hints for the interval form; nothing writes one into `variants.csv`. Local, from the MANE lane, so it costs no request.

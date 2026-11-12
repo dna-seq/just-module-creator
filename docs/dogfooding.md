@@ -14,36 +14,6 @@ is usable, and what is missing.
 
 ---
 
-## F147 — `no_gene_candidates` lists 32–33 genes alphabetically, once per row, and drops the containment upstream gives
-
-**Found:** 2026-11-12, main at 7e8291d (unreleased), in-process driver, not the host wire · **Severity:** low
-(the hint is right, but hard to act on) · **Status:** fixed on main in the commit after 7e8291d (one entry per position naming every row key; each gene keeps its span and `distance_bp`, in upstream's order rather than ranked by distance, since nearer is not likelier). Unreleased; moves to previous_issues.md with the release.
-
-`enrich_expression_effects(rows=true, dry_run=true)` on a copy of the APOE scratch module
-(`data/interim/recheck_08/apoe_nogene/`), with `gene` blanked on its 9 coordinate-only rows (3 sites in the
-APOC1/TOMM40 region; nothing else changed). `row_status.no_gene` is 9, and `no_gene_candidates` comes back:
-
-- **9 entries for 3 sites.** One per `variants.csv` row, so each site repeats once per genotype row. One site
-  also appears under two keys, its VRS id (the alt rows) and `19:44919171:A` (its reference-homozygote row).
-- **Each list holds every MANE gene within 512 kb, sorted by name:** 33 genes for 19:44919171, 32 for each
-  TOMM40 site, with APOC1, APOE and TOMM40 somewhere among ZNF180 to ZNF296.
-
-Upstream's `genes_covering` returns each span's `start` and `end` (`GeneSpan`), so which gene contains the site,
-and how far the others are, is already in hand. Measured from those spans:
-
-| site | genes in reach | containing | next nearest |
-|---|---|---|---|
-| 19:44919171 | 33 | APOC1 | APOE 9.8 kb, TOMM40 15.5 kb |
-| 19:44891698 | 32 | TOMM40 | NECTIN2 2.5 kb, APOE 14.1 kb |
-| 19:44891678 | 32 | TOMM40 | NECTIN2 2.5 kb, APOE 14.1 kb |
-
-An agent acting on the hint cannot tell the containing gene from a ZNF 400 kb away, and each gene it then asks
-the Atlas about is a window of its own (minutes, F141). Ordering by distance, or marking the containing gene,
-would not pick a gene for the row, which `GeneHint`'s docstring rules out; it only keeps what upstream already
-gave. Separately, one hint per site rather than per row would cut the repetition.
-
----
-
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
 
 **Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the
