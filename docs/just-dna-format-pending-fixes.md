@@ -96,7 +96,7 @@ its history.
 | F131 | S137 | RM415 | CLOSED 2026-11-12 (passes on 0.8.4) |
 | F127 | S135 | RM253 | CLOSED 2026-11-12 (emitting path read on 0.8.4) |
 | F115 | S124 | RM301 | CLOSED 2026-11-12; cache resolvers' export is RM102, settled |
-| F118 | S127 | (b); RM340 | in our lock, symbol present; not re-run over a module |
+| F118 | S127 | (b); RM340 | CLOSED 2026-11-12 (passes on 0.8.4) |
 | F113 | S113 | RM262, RM263 | CLOSED 2026-11-12; our Crossref read is out (7ff1fdc) |
 | F108 | S110 | RM257, RM258 | in our lock; 0.8 joins table cells, so our reader stays (the lead) |
 | F105 | S112 | RM259 | wrapped on main (`7e8291d`, unreleased); closes at the release |
@@ -308,7 +308,7 @@ correct after the fix, so nothing here needs to come out when it lands.
 
 ## F118 — `source="authored"` in `resolution.csv` covers two opposite situations (format `S127`)
 
-**State (2026-11-12): fix (b) installed, checked by symbol only.** RM340 is in our lock (compiler 0.8.4): `just_dna_compiler.compiler.SNAPSHOT_UNPLACED_PHRASE` is present ("absent from this snapshot is not absent from Ensembl"), the phrase the VRS-coverage warning now shares with the record that explains its no-ALT rows. Not re-run over a module: that needs one with snapshot-unplaced rsIDs (the `statin_response` probe in `data/interim`, if still there). Closes when that run shows the warning naming the record.
+**State: CLOSED 2026-11-12.** Re-run on the installed compiler 0.8.4 over a copy of `data/interim/statin_response`: `validate` reports "VRS allele identity covers 166/183 ..." and its no-ALT line now reads "17 allele(s): no ALT recorded ... verification.json's `rsid_coordinate_agreement` record names authored rsIDs the injected Ensembl snapshot carries no record for, and a newer snapshot may fill their ALT". Fix (b) was what we asked; the row-level split of `source="authored"` was not taken, and the record carries it.
 
 **Status (2026-10-25):** filed as format-tree `S127`, unanswered. **Not mitigated here, by choice.**
 
