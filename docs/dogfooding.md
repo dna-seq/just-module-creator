@@ -17,7 +17,7 @@ is usable, and what is missing.
 ## F150 — `remote_derive`'s `passes_report` is always null: the server sends `passes` as a list, and we read only a dict
 
 **Found:** 2026-11-12, released v0.48.8 source, in-process driver, with the raw archive captured · **Severity:**
-medium (the one field that says what a requested pass did is never filled) · **Status:** ours, for the lead.
+medium (the one field that says what a requested pass did is never filled) · **Status:** our reading fixed on main (`passes` is read as upstream's list; the test now uses the polygon's captured answer and fails on the old reader), unreleased. Why `gwas` was skipped is the deployment's `enrich_offline`, with the liaison.
 The polygon half went to the liaison.
 
 `remote_derive(passes=["gwas"], live=true)` on `recheck_08/fto_remote_nov` (a copy of `assets/fto_bmi`

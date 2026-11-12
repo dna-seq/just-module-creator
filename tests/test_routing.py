@@ -1360,7 +1360,15 @@ async def test_remote_derive_passes_registry_030s_options_and_reports_each_pass(
     leg; the run's own `passes` block comes back as it was sent.
     """
     (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
-    passes_block = {"alphagenome expression": {"ran": True, "rows": 4}}
+    # The shape the polygon sent on 2026-11-13 (F150; the tester's raw capture): a list.
+    passes_block = [
+        {
+            "command": "gwas",
+            "status": "skipped",
+            "tables": ["gwas_effects.csv"],
+            "detail": "offline: this pass needs a live source (ask with offline=false)",
+        }
+    ]
     archive = _archive(
         {
             "derived/resolution.csv": _resolution([("2-135851076-G-A", "rs4988235", "ensembl")]),

@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`remote_derive`'s `passes_report` is filled** (F150): the registry sends `passes` as a list of `{command, status, detail, tables}`, and 0.48.8 read it as a dict, so the field was always null. A skipped pass now says why, where `not_produced` lists its table.
 - **`remote_derive` no longer crashes on a spec that holds `verification.json`** (F149): the displacement check asked every derived member for a row key, and `verification.json`, which has none, raised. A non-table member is now replaced whole, with a decision line saying so, and the old copy captured like every displaced file.
 - **`registry_lane_lookup` carries the lane's terms** (F148): `licence`, `licence_notice`, `licence_url` and `redistribution`, read from upstream's lane catalogue, so rows from PubMind (CC BY-NC-ND, not redistributable) or PharmVar say so where they are read. Whether the registry should serve those lanes by key at all is filed upstream.
 ## [0.48.8] — 2026-11-13

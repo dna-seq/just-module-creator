@@ -291,11 +291,12 @@ def _absent_from(report: bytes) -> list[str] | None:
     return sorted({str(item) for item in listed})
 
 
-def _passes_from(archive: bytes) -> dict | None:
-    """The run's `passes` block (registry 0.30): what each requested pass did, or `None`.
+def _passes_from(archive: bytes) -> list[dict] | None:
+    """The run's `passes` list (registry 0.30): one `{command, status, detail, tables}` per pass.
 
-    Read off the report member only. `None` when the archive carries no report or the
-    report has no `passes` object: an older server, or a run that asked for none.
+    Read off the report member only, and only its object entries. `None` when the archive
+    carries no report or the report has no `passes` list: an older server, or a run that
+    asked for none. F150: an earlier reading took it for a dict and so always said `None`.
     """
     with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as tar:
         for member in tar.getmembers():
@@ -308,7 +309,9 @@ def _passes_from(archive: bytes) -> dict | None:
                 except (UnicodeDecodeError, json.JSONDecodeError):
                     return None
                 passes = parsed.get("passes") if isinstance(parsed, dict) else None
-                return passes if isinstance(passes, dict) else None
+                if not isinstance(passes, list):
+                    return None
+                return [entry for entry in passes if isinstance(entry, dict)]
     return None
 
 
