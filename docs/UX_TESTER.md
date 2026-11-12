@@ -224,6 +224,20 @@ float64's range; there are 6 distinct `effect_unit` values. All of these are sta
 **4 min 45 s of wall time for one rsID** (7.5 s of CPU); at that rate a 50-rsID module runs for hours. The
 branch's description gives the budget in requests (a page per variant plus one per distinct study), not in time.
 
+**0.48.7 recheck (just-dna 0.8 on main), 2026-11-12, over the host wire** (server restarted by SIGKILL plus
+`reload --mcp`; the instructions name v0.48.7 and format 0.8.4). Both registries serve registry 0.30.0 on format 0.8.4.
+
+| check | result |
+|---|---|
+| `registry_health` on test and prod | `contract_compatible: true` on both (0.8.4 / 0.8.4); the 409 skew is gone |
+| `registry_check(target="test")` on `assets/htt_cag_repeats` | `verdict: true`, signature sha256:1d82655b... as before. The polygon's warnings now read the bin pmid and `FORMAT/REPCN` (RM414/RM415 are on the server) |
+| F145: `draft_from_strchive(["HTT"])` without a catalogue, dry run | holds: one locus from the lane, no missing-lane sentence |
+| F146: `enrich_gwas_effects` on `recheck_08/fto_gwas_main` (the copy that got the 410) | holds: `success: true`, 223 rows, 218 requests; same warnings as on the branch. It ran past the host's 120 s and finished as a background task |
+| new: `registry_rename_namespace` dry run on the polygon | works: `test-sheep` to `test-winternewt` is refused, `namespace_taken` (the lead saw this too). To a free name it reports 20 modules and 44 versions that would move, `test-sheep` kept as an alias, `applied: false`. Two of the 20 module names have no `test_` prefix (`longevity_2026`, `longevity_rare_variants`); that bears on desk #255, not on the tool |
+
+The GWAS description in the source gives the v2 budget and the time ("rs1421085's 218 took 4 min 45 s"). ToolSearch
+still shows the old `1 + 2N` text: the host cache noted below, not a regression.
+
 **The host keeps the tool descriptions from its first connection.** After the server restart, ToolSearch still
 returned 0.48.3's descriptions, and the source has the new ones. A fix that is only in a description can't be
 rechecked in a reconnected session: read the source, or recheck from a fresh session.
