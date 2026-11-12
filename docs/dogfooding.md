@@ -14,6 +14,37 @@ is usable, and what is missing.
 
 ---
 
+## F149 — `remote_derive` crashes on any spec that already holds a `verification.json`
+
+**Found:** 2026-11-12, released v0.48.8 source (`git archive v0.48.8`), in-process driver, the polygon on
+registry 0.30.0 · **Severity:** high (the tool cannot run on most real modules) · **Status:** open, for the lead.
+
+`remote_derive(target="test", namespace="test-sheep", name="test_fto_remote")` on a copy of `assets/fto_bmi`
+(`data/interim/recheck_08/fto_remote/`). With or without `passes=["gwas"]` it fails with:
+
+> Error calling tool 'remote_derive': 'verification.json' is not a machine-produced table of this format.
+> Known: ['clin_sig_authority_calls.csv', ..., 'sources.csv']
+
+The traceback ends in upstream's `just_dna_compiler.hints.key_fields` → `derived_model_for`. The path in
+`tools/proxy.py`: `_unpack` keeps every archive member whose basename is in the registry's `DERIVED_FILES`,
+which includes `verification.json` (checked: 16 names, `verification.json` the only non-CSV). Then
+`_displacement_lines` finds the local `verification.json` and calls `_read_local_keys` → `_key_columns` →
+`hints.key_fields("verification.json")`, which raises `DraftError`, uncaught.
+
+The same copy **without** a local `verification.json` (`fto_remote_nov/`) returns normally. So the crash needs
+two things: the server returns a `verification.json`, which it did on every call here, and the spec already has
+one. Every module that ran `check_identifiers` or another cross-check has one; of the reference modules,
+`assets/fto_bmi` and `assets/mthfr_folate` do. Until 0.48.7 every `remote_derive` on the polygon stopped at
+the format-skew 409, which is why this was not seen earlier.
+
+**A second, open question, from the copy that does run:** `passes=["gwas"]`, with `live` false or true, returns
+`passes_report: null` and lists `gwas_effects.csv` under `not_produced`. The live call took 10 s, where the
+same pass locally took 4 min 45 s for this rsID. `notes` says the archive carried `check.json`, but
+`_passes_from` found no `passes` object in it. Capturing the raw `check.json` waits on the polygon's rate limit
+(429, enrich bucket, after six calls in about four minutes).
+
+---
+
 ## F148 — `registry_lane_lookup` serves rows from lanes the same registry refuses to redistribute, and says nothing of their terms
 
 **Found:** 2026-11-12, plugin 0.48.8 over the host wire, registry 0.30.0 on both instances · **Severity:** medium
