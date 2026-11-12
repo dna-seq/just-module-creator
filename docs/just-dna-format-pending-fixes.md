@@ -99,7 +99,7 @@ its history.
 | F118 | S127 | (b); RM340 | CLOSED 2026-11-12 (passes on 0.8.4) |
 | F113 | S113 | RM262, RM263 | CLOSED 2026-11-12; our Crossref read is out (7ff1fdc) |
 | F108 | S110 | RM257, RM258 | in our lock; 0.8 joins table cells, so our reader stays (the lead) |
-| F105 | S112 | RM259 | wrapped on main (`7e8291d`, unreleased); closes at the release |
+| F105 | S112 | RM259 | CLOSED 2026-11-12 (wrapped, released in 0.48.8) |
 | F116 | S125 | RM337, RM338 | CLOSED 2026-11-12; desk #204 (RM31) is the lead's |
 | F85 | S85 | RM154; RM382 reverses part | both in our lock; RM382 symbol present, not re-run |
 | F94 | S97 | RM229 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
@@ -378,7 +378,7 @@ gate that lets an author manuscript through.
 
 ## F105 — a row with no `gene` cannot be put to the AlphaGenome pass, and no sidecar maps a position to one (format `S112`)
 
-**State (2026-11-12): upstream's answer installed, and it is a capability for us to wrap.** RM259's `just_dna_enricher.gene_spans.genes_covering(chrom, position)` is in our lock (enricher 0.8.4): MANE genes whose span plus the 512 kb horizon covers a position, as query hints for a row with no `gene`. Our AlphaGenome rows mode still reports such rows `no_gene` (`expression.py`), so wrapping it is parity work for the lead (CLAUDE.md §5). Closes when that ships. **Wrapped on main the same day (`7e8291d`, the lead):** `enrich_expression_effects(rows=true)` returns `no_gene_candidates` from `genes_covering` for each `no_gene` row.
+**State: CLOSED 2026-11-12, released in 0.48.8 (`102401d`).** Upstream's answer installed, and it was a capability for us to wrap. RM259's `just_dna_enricher.gene_spans.genes_covering(chrom, position)` is in our lock (enricher 0.8.4): MANE genes whose span plus the 512 kb horizon covers a position, as query hints for a row with no `gene`. Our AlphaGenome rows mode still reports such rows `no_gene` (`expression.py`), so wrapping it is parity work for the lead (CLAUDE.md §5). Closes when that ships. **Wrapped on main the same day (`7e8291d`, the lead):** `enrich_expression_effects(rows=true)` returns `no_gene_candidates` from `genes_covering` for each `no_gene` row.
 
 **Status (2026-09-24):** filed as format-tree `S112`, unanswered. Our rows mode reports such rows as
 `no_gene` and fills nothing. Checked first, on the owner's rule (*"can we get gene if derived sidecars
