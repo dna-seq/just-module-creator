@@ -40,6 +40,7 @@ import csv
 import time
 from collections import Counter
 from collections.abc import Sequence
+from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -122,6 +123,7 @@ from just_module_creator.models import (
     GeneHintOut,
     GwasReport,
     LiteratureReport,
+    NearbyGeneOut,
     RankedExpressionEffect,
 )
 from just_module_creator.net import NetworkServices
@@ -2220,8 +2222,14 @@ async def _expression_for_rows(
         row_examples=report.examples,
         no_gene_candidates=[
             GeneHintOut(
-                variant_key=h.variant_key,
-                genes=list(h.genes) if h.genes is not None else None,
+                variant_keys=list(h.variant_keys),
+                chrom=h.chrom,
+                position=h.position,
+                genes=(
+                    [NearbyGeneOut(**asdict(g)) for g in h.genes]
+                    if h.genes is not None
+                    else None
+                ),
                 reason=h.reason,
             )
             for h in hints

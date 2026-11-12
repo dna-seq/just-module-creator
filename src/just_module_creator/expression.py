@@ -223,50 +223,80 @@ def report_rows(spec_dir: Path, *, example_cap: int = 10) -> RowReport:
 
 
 @dataclass(frozen=True)
-class GeneHint:
-    """The genes worth asking the Atlas about for one row that authors no `gene` (F105, RM259).
+class NearbyGene:
+    """One MANE gene within reach of a position: its GRCh38 span and how far the position is."""
 
-    A query hint, never a gene for the row: the Atlas names the gene it attributes, and nothing
-    here writes one into `variants.csv` or picks one of the candidates. Exactly one of `genes` and
-    `reason` is set.
+    gene: str
+    start: int
+    end: int
+    #: 0 when the position falls inside the gene's span; otherwise bases to the nearer end.
+    distance_bp: int
+
+
+@dataclass(frozen=True)
+class GeneHint:
+    """The genes worth asking the Atlas about at one position no row there names a gene for (F105).
+
+    A query hint, never a gene for the rows: the Atlas names the gene it attributes, and nothing
+    here writes one into `variants.csv` or picks one of the candidates. Genes keep upstream's
+    order, `(start, gene)`: the distance is a fact to read, not a ranking, since nearer is not
+    likelier. Exactly one of `genes` and `reason` is set. One hint per position (F147), naming
+    every row key placed there.
     """
 
-    variant_key: str
-    genes: tuple[str, ...] | None = None
+    variant_keys: tuple[str, ...]
+    chrom: str
+    position: int
+    genes: tuple[NearbyGene, ...] | None = None
     reason: str | None = None
 
 
 def no_gene_hints(spec_dir: Path, sites: list[ModuleSite]) -> list[GeneHint]:
-    """For each placed row with no gene, upstream's MANE candidates within the attribution horizon.
+    """For each position whose rows name no gene, upstream's MANE candidates within the horizon.
 
-    GRCh38 only, as MANE is: on another build every row gets the reason rather than a lookup on
-    coordinates from the wrong assembly. Local (the MANE lane), so it costs no request.
+    GRCh38 only, as MANE is: on another build every position gets the reason rather than a lookup
+    on coordinates from the wrong assembly. Local (the MANE lane), so it costs no request.
     """
-    wanted = [s for s in sites if not s.gene and s.chrom is not None and s.start is not None]
-    if not wanted:
+    by_position: dict[tuple[str, int], list[str]] = {}
+    for site in sites:
+        if not site.gene and site.chrom is not None and site.start is not None:
+            keys = by_position.setdefault((site.chrom, site.start), [])
+            if site.variant_key not in keys:
+                keys.append(site.variant_key)
+    if not by_position:
         return []
+    positions = sorted(by_position)
     try:
         build = spec_genome_build(spec_dir)
     except EnrichmentError as exc:
         # No build is invented for a module whose declaration cannot be read; the
         # hint says so and the pass goes on reporting the rows it can.
         reason = f"the module's genome_build could not be read: {exc}"
-        return [GeneHint(s.variant_key, reason=reason) for s in wanted]
+        return [GeneHint(tuple(by_position[p]), p[0], p[1], reason=reason) for p in positions]
     if build != "GRCh38":
         reason = f"the module declares {build}; MANE places genes on GRCh38 only"
-        return [GeneHint(s.variant_key, reason=reason) for s in wanted]
+        return [GeneHint(tuple(by_position[p]), p[0], p[1], reason=reason) for p in positions]
     hints: list[GeneHint] = []
-    for site in wanted:
-        assert site.chrom is not None and site.start is not None
+    for chrom, position in positions:
+        keys = tuple(by_position[(chrom, position)])
         try:
-            nearby = genes_covering(site.chrom, site.start)
+            nearby = genes_covering(chrom, position)
         except GeneSpanError as exc:
-            # An unreadable snapshot: said on the row, so the pass still reports.
-            hints.append(GeneHint(site.variant_key, reason=f"unreadable MANE snapshot: {exc}"))
+            # An unreadable snapshot: said on the position, so the pass still reports.
+            reason = f"unreadable MANE snapshot: {exc}"
+            hints.append(GeneHint(keys, chrom, position, reason=reason))
             continue
         if nearby.spans:
-            genes = tuple(sorted({span.gene for span in nearby.spans}))
-            hints.append(GeneHint(site.variant_key, genes=genes))
+            genes = tuple(
+                NearbyGene(
+                    gene=span.gene,
+                    start=span.start,
+                    end=span.end,
+                    distance_bp=max(0, span.start - position, position - span.end),
+                )
+                for span in nearby.spans
+            )
+            hints.append(GeneHint(keys, chrom, position, genes=genes))
         else:
-            hints.append(GeneHint(site.variant_key, reason=nearby.reason))
+            hints.append(GeneHint(keys, chrom, position, reason=nearby.reason))
     return hints

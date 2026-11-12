@@ -28,6 +28,7 @@ MANE_ROWS = [
 VARIANTS = (
     "rsid,chrom,start,ref,alts,genotype,gene,weight,state,conclusion\n"
     ",19,44919171,A,T,A/T,,0.5,risk,no gene on this row\n"
+    ",19,44919171,A,T,T/T,,1.0,risk,the other genotype at the same position\n"
 )
 
 
@@ -65,9 +66,18 @@ def test_a_row_with_no_gene_is_offered_the_genes_within_reach(tmp_path, mane_lan
     spec = _spec(tmp_path)
     hints = no_gene_hints(spec, module_sites(spec)[0])
 
+    # F147: two rows at one position give one hint naming both keys.
     assert len(hints) == 1
-    assert hints[0].reason is None
-    assert hints[0].genes == ("APOE", "TOMM40"), "LCT is on another contig"
+    (hint,) = hints
+    assert (hint.chrom, hint.position, hint.reason) == ("19", 44919171, None)
+    assert set(hint.variant_keys) == {s.variant_key for s in module_sites(spec)[0]}
+    assert hint.genes is not None
+    # Upstream's order (start, then name), and each distance from the real span.
+    by_gene = {g.gene: g for g in hint.genes}
+    assert [g.gene for g in hint.genes] == ["TOMM40", "APOE"], "LCT is on another contig"
+    for symbol, _chrom, start, end in MANE_ROWS[:2]:
+        assert (by_gene[symbol].start, by_gene[symbol].end) == (start, end)
+        assert by_gene[symbol].distance_bp == 44919171 - end
 
 
 def test_without_the_lane_the_row_says_nobody_asked(tmp_path, monkeypatch) -> None:
@@ -98,10 +108,11 @@ async def test_the_rows_pass_reports_the_hints_and_writes_no_gene(
         )
     body = json.loads(out.content[0].text)
 
-    assert body["row_status"]["no_gene"] == 1
+    assert body["row_status"]["no_gene"] == 2
     # The key is the loader's, read from the same producer the pass uses.
-    (site,) = module_sites(spec)[0]
-    assert body["no_gene_candidates"] == [
-        {"variant_key": site.variant_key, "genes": ["APOE", "TOMM40"], "reason": None}
-    ]
+    keys = {s.variant_key for s in module_sites(spec)[0]}
+    (entry,) = body["no_gene_candidates"]
+    assert set(entry["variant_keys"]) == keys
+    assert (entry["chrom"], entry["position"], entry["reason"]) == ("19", 44919171, None)
+    assert [g["gene"] for g in entry["genes"]] == ["TOMM40", "APOE"]
     assert (spec / "variants.csv").read_text() == VARIANTS, "a hint is never written into a row"

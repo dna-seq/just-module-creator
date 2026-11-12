@@ -3296,12 +3296,29 @@ class CachePlan(BaseModel):
     note: str = Field(description="What this measured and what it is estimating.")
 
 
-class GeneHintOut(BaseModel):
-    """Genes within reach of one row that authors no gene (F105). Exactly one field is set."""
+class NearbyGeneOut(BaseModel):
+    """One MANE gene within the 512 kb horizon of a position."""
 
-    variant_key: str
-    genes: list[str] | None = Field(
-        default=None, description="MANE symbols whose horizon covers the position, sorted."
+    gene: str
+    start: int = Field(description="GRCh38, 1-based, as MANE places the gene.")
+    end: int
+    distance_bp: int = Field(
+        description="0 when the position is inside the gene; otherwise bases to its nearer end."
+    )
+
+
+class GeneHintOut(BaseModel):
+    """Genes within reach of one position whose rows name none (F105, F147); one field set."""
+
+    variant_keys: list[str] = Field(description="Every row key placed at this position.")
+    chrom: str
+    position: int
+    genes: list[NearbyGeneOut] | None = Field(
+        default=None,
+        description=(
+            "In upstream's order, by start then name. The distance is a fact to read, not a "
+            "ranking: the Atlas attributes the gene, and a nearer one is not likelier."
+        ),
     )
     reason: str | None = Field(
         default=None,
@@ -3413,9 +3430,9 @@ class ExpressionReport(BaseModel):
     no_gene_candidates: list[GeneHintOut] = Field(
         default_factory=list,
         description=(
-            "With `rows=true`: for each `no_gene` row that is placed, the MANE genes whose "
-            "512 kb horizon covers it. Query hints, not the row's gene: often dozens, and "
-            "each is a separate Atlas query. Never written into variants.csv."
+            "With `rows=true`: one entry per position whose rows name no gene, with the MANE "
+            "genes whose 512 kb horizon covers it. Query hints, not the rows' gene: often "
+            "dozens, each a separate Atlas query. Never written into variants.csv."
         ),
     )
     warnings: list[str] = Field(default_factory=list, description="Upstream's own warnings.")

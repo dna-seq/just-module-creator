@@ -17,7 +17,7 @@ is usable, and what is missing.
 ## F147 — `no_gene_candidates` lists 32–33 genes alphabetically, once per row, and drops the containment upstream gives
 
 **Found:** 2026-11-12, main at 7e8291d (unreleased), in-process driver, not the host wire · **Severity:** low
-(the hint is right, but hard to act on) · **Status:** open, for the lead.
+(the hint is right, but hard to act on) · **Status:** fixed on main in the commit after 7e8291d (one entry per position naming every row key; each gene keeps its span and `distance_bp`, in upstream's order rather than ranked by distance, since nearer is not likelier). Unreleased; moves to previous_issues.md with the release.
 
 `enrich_expression_effects(rows=true, dry_run=true)` on a copy of the APOE scratch module
 (`data/interim/recheck_08/apoe_nogene/`), with `gene` blanked on its 9 coordinate-only rows (3 sites in the
