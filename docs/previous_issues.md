@@ -6,6 +6,67 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F146 — under enricher 0.8.3, `enrich_gwas_effects` fails on every module: the GWAS Catalog v2 search refuses a page of 1000
+
+**Found:** 2026-11-10 22:53 UTC, branch adopt-0.8 at 113150c (enricher 0.8.3), in-process driver ·
+**Severity:** high on both builds: the pass cannot run at all, on the 0.8 branch (below) or on main (the v1 API
+it reads is retired, see the end) ·
+**Status:** resolved 2026-11-12
+
+`enrich_gwas_effects(use="non_commercial")` on a copy of `assets/fto_bmi` (one rsID, rs1421085):
+`success: false`, `rows: null`, warning `GWAS Catalog returned 400 for
+https://www.ebi.ac.uk/gwas/rest/api/v2/associations?rs_id=rs1421085&size=1000`.
+
+The page size is the cause. `just_dna_enricher/gwas.py` has `_PAGE_SIZE = 1000` and sends it as `size`.
+The same request by hand:
+
+| `size` | HTTP |
+|---|---|
+| 100, 200, 500 | 200 (`size=500` returns all 223 associations of rs1421085 on one page) |
+| 501, 999, 1000 | 400 `Bad Request` |
+
+Upstream's trunk has the same constant (checked in `../just-dna-format/enricher/src/just_dna_enricher/gwas.py`,
+same evening). Our result reports the failure honestly (`success: false`, the URL in `warnings`). Nothing to
+change on our side, except that the branch's commit 5b7684e describes a pass that cannot run until the
+enricher is fixed.
+
+**Main fails too, for a different reason** (checked 23:59 UTC on the shipped 0.48.5, host wire, a copy of
+`assets/fto_bmi` at `data/interim/recheck_08/fto_gwas_main`): `success: false`, warning `GWAS Catalog returned
+410 for https://www.ebi.ac.uk/gwas/rest/api/singleNucleotidePolymorphisms/rs1421085/associations`. By hand the
+same URL answers 410 with "This legacy GWAS Catalog REST API is no longer available", naming the v2 migration
+guide; `/api/studies/GCST000001` is 410 too. So enricher 0.7.x's GWAS pass is dead for every module, and the
+only route back is 0.8 with S143 fixed. On our side: the result shows a bare "returned 410", which does not
+tell an author that the API is retired and no retry or spec edit will help, and the tool's description still
+states the v1 budget (`1 + 2N`).
+
+**Resolution (2026-11-12, released in 0.48.7):** upstream's RM428 (enricher 0.8.4) asks for 500 per page and retries a first-request 400 once without a size; adopted with the 0.8 merge. Measured live on `assets/fto_bmi`: 223 associations, 218 requests. 0.48.6's v1 410 note came out with the merge, since 0.8.4 raises its own `GwasRetired`. The page-size refusal now reaches the caller through the S144 interim (`_gwas_catalog_client`; upstream's RM429 replaces it).
+
+## F145 — on the adopt-0.8 branch, `draft_from_strchive` says "No `strchive` lane on this machine" after drafting from that lane
+
+**Found:** 2026-11-10, branch adopt-0.8 at 113150c (format 0.8.3), in-process driver, not the host wire ·
+**Severity:** low (a false sentence beside a correct result) · **Status:** resolved 2026-11-12
+
+`draft_from_strchive(genes=["HTT","FMR1"], use="non_commercial")` with no `catalogue`, on a scratch copy of
+`assets/htt_cag_repeats` without its `repeat_alleles.csv` (`data/interim/recheck_08/strchive/`). It drafted
+both loci (`added: 2`, HTT with `MONDO_0007739`) from the provisioned lane at
+`$JUST_DNA_PIPELINES_CACHE_DIR/strchive/` (`STRchive-loci.json`, `release.json`, present since 2026-09-03).
+Its `source_findings` opens with:
+
+> No `strchive` lane on this machine and no `catalogue` given: `provision_caches(lanes=["strchive"])` builds the lane.
+
+6715725 (F129) dropped our fallback because enricher 0.8 resolves the lane itself, and kept this sentence. In
+`tools/passes.py` it is now conditioned on `source is None`, which only means "no `catalogue` argument". Every
+call without one says the lane is missing, including every call that succeeded from it. An author told to
+provision a lane they already have may spend a provision on it, or doubt the rows.
+
+What is true at that point: no catalogue was passed, and upstream resolved its own lane. Read in the
+installed enricher 0.8.3 (`strchive_draft.draft_repeat_loci`): with `catalogue=None` it calls
+`resolve_strchive_reference()`, and if that finds nothing it sets `skipped` and writes its own warning naming
+`just-dna-enricher strchive build`. So a draft that added rows read the lane, and the absent-lane case already
+carries upstream's sentence. Ours is true in neither case as written.
+
+**Resolution (2026-11-12, released in 0.48.7):** the missing-lane sentence waits for upstream's skip (`8ac4c82`), merged with the 0.8 adoption.
+
 ## F144 — `remote_derive` and `remote_draft` answer a contract-skew 409 with advice about 503 and 422
 
 **Found:** 2026-11-10, plugin 0.48.5 on the host wire, the polygon on format 0.8.0 · **Severity:** low ·
