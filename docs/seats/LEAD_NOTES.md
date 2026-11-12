@@ -31,6 +31,10 @@ queries exists); F141's cause (unknown).
 
 The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milestones`) and hands it back when a pm is seated. `state`: one post kept in place, source `docs/seats/LEAD_STATE.md`, refreshed with `watchdog.sh keep lead state '#just-module-creator>state' docs/seats/LEAD_STATE.md` whenever where-it-stands, a headline result or the next actions change. `milestones`: one post per landed result. Links point at `dna-seq/just-module-creator` (the remote), not the person's own account; the first 0.48.7 post had that wrong and was deleted and reposted.
 
+## Practice
+
+- **A commit queued behind a long suite takes its named files as they stand when it runs** (2026-11-13: `d9651d1`, F148, swept in the F149 fix and a half-finished test, and pushed a failing test until `26009a1`). While such a run is pending, edit none of the files it names; start the next fix after it lands.
+
 ## Plan states (set 2026-11-05)
 
 - RM16, RM25: waits until 2026-12-05. RM24: waits until 2027-01-05. Each line says what is looked at then.
