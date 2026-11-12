@@ -118,6 +118,15 @@ its history.
 | F99 | S101 | doc fixed | upstream docs, nothing to install |
 | F54 | S58 | RM122 | open upstream, parked |
 
+## F148 — the registry's keyed lane lookup serves lanes its `/caches` refuses to redistribute (registry `S29`)
+
+**State: filed 2026-11-12 by the liaison, on the tester's report (`docs/dogfooding.md` F148), unanswered.** Registry
+0.30's `lane_rows` answers `pharmvar` (CYP2C19*2, production and polygon; re-run here on production with no key),
+`pubmind` (36 rows at APOE rs429358) and `mane` anonymously, while `/caches` records redistribution of the first two
+as refused (PharmVar's terms §2; CC BY-NC-ND) and the third as unestablished. Whether a keyed read is redistribution
+is the registry's and its maintainer's. Asked for: refuse such lanes in the lookup, or carry their terms on every
+answer. Our half (the lane's terms travelling with `registry_lane_lookup`'s rows) is the lead's.
+
 ## F146 — the GWAS pass asks the Catalog v2 for a page of 1000 and is refused, so it fails on every module (format `S143`)
 
 **State: CLOSED 2026-11-12 for `S143`; `S144` stays open (RM429, parked).** RM428 is installed (enricher 0.8.4, release 0.48.7), and the pass ran live on it: the lead's run on `fto_bmi` returned rs1421085's 223 associations in 218 requests, and the tester's in-process recheck matched (223 rows). The shipped plugin's 0.7 failure (v1's 410) is gone with 0.7.
