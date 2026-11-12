@@ -85,11 +85,11 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
-| F146 | S143 | RM428 | in our lock (0.8.4); the lead ran it live on 0.8.4 (223 rows), closable |
+| F146 | S143 | RM428 | CLOSED 2026-11-12 (run live on 0.8.4) |
 | F146 | S144 | RM429 | parked upstream (a minor); our interim on main since 0.48.7 |
-| F132 | S142 | RM427 | patch half in our lock, not re-run; remedy key (minor) open |
-| F135 | S141 | RM426 | patch half in our lock, not re-run; minor half open |
-| F142 | S140 | RM425 | in our lock, not re-run |
+| F132 | S142 | RM427 | patch half passes on 0.8.4; remedy key (minor) open |
+| F135 | S141 | RM426 | patch half passes on 0.8.4; minor half open |
+| F142 | S140 | RM425 | CLOSED 2026-11-12 (passes on 0.8.4) |
 | F139 | S139 | RM423 | patch half in our lock, not re-run; minor half open |
 | F137 | S138 | RM422 | in our lock, not re-run |
 | F130 | S136 | RM414 | in our lock, not re-run |
@@ -97,10 +97,10 @@ its history.
 | F127 | S135 | RM253 | in our lock, not re-run |
 | F115 | S124 | RM301 | in our lock, not re-run |
 | F118 | S127 | (b); RM340 | in our lock, not re-run |
-| F113 | S113 | RM262, RM263 | in our lock; our Crossref read is out (7ff1fdc, on main since 0.48.7), closable |
+| F113 | S113 | RM262, RM263 | CLOSED 2026-11-12; our Crossref read is out (7ff1fdc) |
 | F108 | S110 | RM257, RM258 | in our lock; 0.8 joins table cells, so our reader stays (the lead) |
 | F105 | S112 | RM259 | in our lock, not re-run |
-| F116 | S125 | RM337, RM338 | in our lock; the lead verified `.jsonl` ships; desk #204 (RM31), closable |
+| F116 | S125 | RM337, RM338 | CLOSED 2026-11-12; desk #204 (RM31) is the lead's |
 | F85 | S85 | RM154; RM382 reverses part | both in our lock; RM382 not re-run |
 | F94 | S97 | RM229 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
 | F93 | S96 | RM224 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
@@ -119,6 +119,8 @@ its history.
 | F54 | S58 | RM122 | open upstream, parked |
 
 ## F146 — the GWAS pass asks the Catalog v2 for a page of 1000 and is refused, so it fails on every module (format `S143`)
+
+**State: CLOSED 2026-11-12 for `S143`; `S144` stays open (RM429, parked).** RM428 is installed (enricher 0.8.4, release 0.48.7), and the pass ran live on it: the lead's run on `fto_bmi` returned rs1421085's 223 associations in 218 requests, and the tester's in-process recheck matched (223 rows). The shipped plugin's 0.7 failure (v1's 410) is gone with 0.7.
 
 **Follow-up `S144` (2026-11-11, the lead's reading, verified on 0.8.4):** the pass counts `size_refusals` but only logs them; `GwasResult` has no field for it, so an MCP caller never learns the Catalog's ceiling moved. Asked for a `size_refusals` field. **Answered as RM429, a minor** (the next minor branch); parked as of 2026-11-11. Their interim on 0.8.4: pass our own `client=GwasCatalogClient()` to `enrich_gwas` and read `client.size_refusals` after the run, a public attribute. **Our mitigation, on `adopt-0.8` (`d478756`, the lead):** `enrich_gwas_effects` builds its own client (none offline), reads `size_refusals` after the pass and warns when it is non-zero. It comes out when RM429 ships: read the result field and drop `_gwas_catalog_client`.
 
@@ -160,6 +162,8 @@ On `assets/htt_cag_repeats` (`validate_module`, strict), every bin declares `sou
 
 ## F132 — the ClinVar-pass skip names `clinvar pull`, which no command registers; and a remedy key (format `S142`)
 
+**Patch half re-run 2026-11-12 on the installed enricher 0.8.4:** no installed source quotes `` `clinvar pull` ``; `assertions.py` and `cli/pass_commands.py` both name `cache pull --only clinvar`. Ask 3 (a remedy key, a minor) is still open, so the entry stays.
+
 **State: answered the same hour: RM427. Asks 1 and 2 are a patch, ask 3 a minor for their pm.** Filed
 2026-11-10 by the liaison, on the lead's hand-off. Our half is resolved (`docs/previous_issues.md` F132, `58ea0dc`,
 shipped in 0.48.5): `cli_map.on_this_surface` maps every command the two typer apps register and returns nothing
@@ -180,6 +184,8 @@ reading their text. We also named the reason against (3): most remedies are log 
 
 ## F135 — `GeneLocusConflict`'s message guesses the rsID is the invented half (format `S141`)
 
+**Patch half re-run 2026-11-12 on the installed enricher 0.8.4:** `identifiers.py` carries "Either half may be the wrong one", and the old guess is in no installed source. The minor half is still open, so the entry stays.
+
 **State: answered the same hour: RM426, with their pm to size.** Naming both readings is a patch; naming the
 gene the rsID sits in (read from `consequences.csv` when its pass ran; `resolution.csv` carries no gene) needs a new
 field on the public `GeneLocusConflict`, so a minor. Filed 2026-11-09 by the liaison, on the lead's hand-off. Our half is
@@ -192,6 +198,8 @@ chromosome 5, and the summary paired it with MTHFR. Asked for: a message naming 
 on disk already names the gene the variant sits in, that gene.
 
 ## F142 — `ExpressionEffectRow.effect_size` is described as an aggregate; it is one track's value (format `S140`)
+
+**State: CLOSED 2026-11-12, upstream half.** Re-run on the installed format 0.8.4: `ExpressionEffectRow.effect_size`'s description (`just_dna_format.expression`) now reads "The single strongest of the scorer's tissue tracks ..., not an aggregate over the tracks", and no installed source carries "aggregated over the scorer". Our half shipped in 0.48.4 and stays as written.
 
 **State: answered the same hour: RM425, a patch, wording only.** Filed 2026-11-09 by the liaison, on the
 tester's report. Our half
@@ -316,6 +324,8 @@ not a fact the sidecar carries. The module states the split in its README instea
 `data/interim/statin_response/README.md`.
 
 ## F113 — `lookup_citation(doi=…)` returns existence and no title (format `S113`)
+
+**State: CLOSED 2026-11-12.** Fixed in 0.8 and in our lock (0.8.4, release 0.48.7). The lead's reading on 0.8.3 (below) is the reproduction; 0.8.4 changed nothing on that path (its entries are RM425 to RM428). Our Crossref read came out in `7ff1fdc`.
 
 **Re-read on 0.8.3 (the lead, `adopt-0.8`, 2026-11-11):** fixed upstream. A DOI alone gets its work's title, including a DOI with no PubMed record (Crossref's), so our Crossref read comes out on the branch (`7ff1fdc`). Closes here when that branch lands on main.
 
@@ -2538,6 +2548,8 @@ with no licence ledger is a real and legal module, and telling an author otherwi
 mirror of the defect.
 
 ## F116 — `logs/` ships only `*.log`; a `.jsonl` ledger beside it is dropped silently (format `S125`)
+
+**State: CLOSED 2026-11-12, upstream half.** Fixed in 0.8 and in our lock (0.8.4, release 0.48.7): `LOG_TEXT_EXTENSIONS` includes `jsonl`, per the lead's reading on 0.8.3 (below), unchanged in 0.8.4. The ledger's own format is desk #204 (RM31), the lead's.
 
 **Re-read on 0.8.3 (the lead, `adopt-0.8`, 2026-11-11):** fixed upstream: `LOG_TEXT_EXTENSIONS` includes `jsonl`, so a compile under 0.8 ships a valid `.jsonl` from `logs/`. That changes the ground under desk #204 (RM31, the provenance ledger's format). Closes here when the branch lands on main.
 
