@@ -12,8 +12,11 @@ file links an `F<n>` rather than copying it.
 
 Watched on this machine from a clone outside the repository, `/data/sources/just-dna-compiler` (the line
 `just-dna-compiler` in the liaison state file, which is the registry liaison's and is reused, never edited):
-`[seat.liaison.watch.compiler]` says each new tag. `/data/sources/just-dna-format` is the compiler's own working
-clone, where its seats commit: read it, never fetch or write there.
+`[seat.liaison.watch.compiler]` says each new tag. **Since 2026-11-12 that path is a symlink to
+`/data/sources/just-dna-format`, the compiler's own working clone** (their maintainer: two copies with different
+content were "unacceptable"; the old clone is at `just-dna-compiler.old-2026-11-12`). So reading a tag there reads
+the live clone: read with `git show <tag>:<path>` and `git grep`, write only the inbox note, and leave fetching to the
+watcher. Restrict a `git grep` to paths: a whole-tree grep on NTFS times out.
 
 ## Read mark
 
