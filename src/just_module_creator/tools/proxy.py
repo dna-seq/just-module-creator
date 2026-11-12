@@ -192,8 +192,8 @@ def _displacement_lines(spec_dir: Path, incoming: dict[str, bytes]) -> tuple[lis
             # is replaced whole; the local copy is in the capture like every displaced file.
             lines.append(
                 f"{local_path.name}: replaced whole by the server's — it is not a table, so "
-                "there are no rows to compare. Your copy is in the capture; any check recorded "
-                "only in it is recorded again by running that check here."
+                "there are no rows to compare. Installing captures your copy first; a check "
+                "recorded only in it is recorded again by running that check here."
             )
             continue
         if csv_name in _WHOLE_REWRITE:
