@@ -43,6 +43,7 @@ from just_dna_format.layout import (
     SidecarCollision,
     sidecar_write_path,
 )
+from just_dna_registry import RegistryError
 from just_dna_registry.specfiles import (
     DERIVED_FILES,
     DERIVED_REPORT_FILE,
@@ -57,6 +58,7 @@ from just_module_creator.models import (
     CacheReport,
     DerivedTreeReport,
     DraftArchiveReport,
+    LaneLookup,
     LaneStatus,
 )
 from just_module_creator.settings import RegistryTarget, Settings
@@ -373,6 +375,66 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         if not token:
             raise ToolError(unauthenticated_result(settings, target, namespace).message)
         return token
+
+    # Registry 0.30: a keyed read on any snapshot lane, answered by the deployment. A read, so
+    # no token and no upload; but it is egress, so the offline ceiling refuses it, and the
+    # answer names the instance and where it read the lane (`served_from`), so a routed answer
+    # never hides who gave it.
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Look up rows in a registry's snapshot lane",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def registry_lane_lookup(
+        lane: str,
+        target: RegistryTarget,
+        table: str | None = None,
+        keys: dict[str, list[str | int]] | None = None,
+    ) -> LaneLookup:
+        """Read a snapshot lane the registry holds, by key, without downloading it.
+
+        With only `lane`, it returns the lane's tables and the key columns each answers by.
+        With `table` and `keys` (e.g. `{"symbol": ["APOE"]}` on `mane`/`summary`, or
+        `{"chrom": ["22"], "start": [17000001]}`), it returns the matching rows; `truncated`
+        says more matched than one request returns. `served_from` says whether the
+        deployment read its own snapshot or the lane's published repository.
+
+        Nothing is uploaded and no token is needed. These rows are the snapshot's answer, a
+        source for checking a cell, not a value to copy into one: a cell filled from the
+        source that checks it can no longer be checked by it.
+        """
+        if offline_for(settings, False):
+            raise ToolError(
+                "JMC_OFFLINE is set and this is a request to a registry. `registry_caches` "
+                "says which lanes this machine holds locally."
+            )
+        if (table is None) != (keys is None):
+            raise ToolError(
+                "Give `table` and `keys` together for rows, or neither for the lane's tables."
+            )
+        client = client_for(target, settings)
+        try:
+            if table is None or keys is None:
+                answer = await run_sync(lambda: client.lane_tables(lane))
+            else:
+                answer = await run_sync(lambda: client.lane_rows(lane, table, keys))
+        except RegistryError as exc:
+            raise ToolError(
+                f"{describe(target, settings)} refused the lane lookup: {exc}{instance_note(exc)}"
+            ) from exc
+        return LaneLookup(
+            target=target,
+            registry=describe(target, settings),
+            lane=lane,
+            table=table,
+            served_from=answer.get("served_from"),
+            tables=answer.get("tables") if table is None else None,
+            rows=answer.get("rows") if table is not None else None,
+            truncated=answer.get("truncated") if table is not None else None,
+        )
 
     @mcp.tool(
         annotations=ToolAnnotations(

@@ -1390,3 +1390,64 @@ async def test_remote_derive_passes_registry_030s_options_and_reports_each_pass(
 
     assert seen == expected
     assert report.passes_report == passes_block
+
+
+class _LaneStub:
+    """Answers as the polygon answered on 2026-11-13 for `mane` / `summary`, APOE."""
+
+    def __init__(self) -> None:
+        self.asked: list[tuple] = []
+
+    def lane_tables(self, lane):
+        self.asked.append(("tables", lane))
+        return {
+            "lane": lane,
+            "served_from": "local",
+            "tables": [{"table": "summary", "kind": "parquet", "files": 1, "keys": ["symbol"]}],
+        }
+
+    def lane_rows(self, lane, table, keys):
+        self.asked.append(("rows", lane, table, keys))
+        return {
+            "lane": lane,
+            "table": table,
+            "served_from": "local",
+            "rows": [{"symbol": "APOE", "chr_start": 44905796, "chr_end": 44909393}],
+            "truncated": False,
+        }
+
+
+async def test_a_lane_lookup_reads_tables_or_rows_and_says_who_served_them(
+    monkeypatch, make_client
+):
+    stub = _LaneStub()
+    monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: stub)
+    async with make_client(routed_settings()) as client:
+        tables = (
+            await client.call_tool("registry_lane_lookup", {"lane": "mane", "target": "test"})
+        ).data
+        rows = (
+            await client.call_tool(
+                "registry_lane_lookup",
+                {
+                    "lane": "mane",
+                    "target": "test",
+                    "table": "summary",
+                    "keys": {"symbol": ["APOE"]},
+                },
+            )
+        ).data
+        half = await client.call_tool(
+            "registry_lane_lookup",
+            {"lane": "mane", "target": "test", "table": "summary"},
+            raise_on_error=False,
+        )
+
+    assert stub.asked == [
+        ("tables", "mane"),
+        ("rows", "mane", "summary", {"symbol": ["APOE"]}),
+    ], "the half-asked call reached nothing"
+    assert tables.tables and tables.tables[0]["keys"] == ["symbol"] and tables.rows is None
+    assert rows.rows == [{"symbol": "APOE", "chr_start": 44905796, "chr_end": 44909393}]
+    assert (rows.served_from, rows.truncated, rows.target) == ("local", False, "test")
+    assert half.is_error and "together" in str(half.content)

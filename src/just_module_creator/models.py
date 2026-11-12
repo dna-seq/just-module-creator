@@ -2998,6 +2998,26 @@ class CacheReport(BaseModel):
     note: str = Field(description="What to do with this, in one or two sentences.")
 
 
+class LaneLookup(BaseModel):
+    """One registry snapshot lane, read by key (registry 0.30). Tables, or rows, never both."""
+
+    target: str = Field(description="Which instance answered.")
+    registry: str = Field(description="The instance, named with its URL.")
+    lane: str
+    table: str | None = None
+    served_from: str | None = Field(
+        default=None,
+        description="`local` (the deployment's own snapshot) or `remote:<repo>`; null if unsaid.",
+    )
+    tables: list[dict] | None = Field(
+        default=None, description="Without `table`: each table and the key columns it answers by."
+    )
+    rows: list[dict] | None = Field(default=None, description="With `table`: the matching rows.")
+    truncated: bool | None = Field(
+        default=None, description="With `table`: more rows matched than one request returns."
+    )
+
+
 class DerivedTreeReport(BaseModel):
     """A derived tree built by a registry and installed here, and what it would displace.
 

@@ -246,7 +246,13 @@ GROUPS: tuple[Group, ...] = (
         "snapshots",
         "Thick or thin: which snapshot caches this machine holds, what the missing ones "
         "would cost to provision, and having a registry derive the tables it cannot.",
-        ("registry_caches", "provision_caches", "remote_derive", "remote_draft"),
+        (
+            "registry_caches",
+            "registry_lane_lookup",
+            "provision_caches",
+            "remote_derive",
+            "remote_draft",
+        ),
         6780,
     ),
     Group(

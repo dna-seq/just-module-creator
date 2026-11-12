@@ -91,6 +91,9 @@ REGISTRY_TOOL_DEFAULTS = {
     # question. It is NOT the proxy-routing target — that is `JMC_PROXY_TARGET`,
     # which needs no argument because a routed hint writes nothing to any catalog.
     "registry_caches": None,
+    # Registry 0.30: a keyed read of one deployment's snapshot lane. A read, so no default:
+    # rows from the wrong instance would answer about a lane nobody asked.
+    "registry_lane_lookup": None,
 }
 
 
