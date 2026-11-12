@@ -96,12 +96,12 @@ its history.
 | F131 | S137 | RM415 | CLOSED 2026-11-12 (passes on 0.8.4) |
 | F127 | S135 | RM253 | CLOSED 2026-11-12 (emitting path read on 0.8.4) |
 | F115 | S124 | RM301 | CLOSED 2026-11-12; cache resolvers' export is RM102, settled |
-| F118 | S127 | (b); RM340 | in our lock, not re-run |
+| F118 | S127 | (b); RM340 | in our lock, symbol present; not re-run over a module |
 | F113 | S113 | RM262, RM263 | CLOSED 2026-11-12; our Crossref read is out (7ff1fdc) |
 | F108 | S110 | RM257, RM258 | in our lock; 0.8 joins table cells, so our reader stays (the lead) |
-| F105 | S112 | RM259 | in our lock, not re-run |
+| F105 | S112 | RM259 | in our lock; `genes_covering` to wrap (the lead's) |
 | F116 | S125 | RM337, RM338 | CLOSED 2026-11-12; desk #204 (RM31) is the lead's |
-| F85 | S85 | RM154; RM382 reverses part | both in our lock; RM382 not re-run |
+| F85 | S85 | RM154; RM382 reverses part | both in our lock; RM382 symbol present, not re-run |
 | F94 | S97 | RM229 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
 | F93 | S96 | RM224 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
 | F89 | S87 | RM180 | in our lock (0.7.0); reproduction passes 2026-11-07, nothing to remove |
@@ -308,6 +308,8 @@ correct after the fix, so nothing here needs to come out when it lands.
 
 ## F118 — `source="authored"` in `resolution.csv` covers two opposite situations (format `S127`)
 
+**State (2026-11-12): fix (b) installed, checked by symbol only.** RM340 is in our lock (compiler 0.8.4): `just_dna_compiler.compiler.SNAPSHOT_UNPLACED_PHRASE` is present ("absent from this snapshot is not absent from Ensembl"), the phrase the VRS-coverage warning now shares with the record that explains its no-ALT rows. Not re-run over a module: that needs one with snapshot-unplaced rsIDs (the `statin_response` probe in `data/interim`, if still there). Closes when that run shows the warning naming the record.
+
 **Status (2026-10-25):** filed as format-tree `S127`, unanswered. **Not mitigated here, by choice.**
 
 Found while building `data/interim/statin_response` (a CPIC-drafted SLCO1B1 + CYP2C9 module,
@@ -375,6 +377,8 @@ and published as a miss (`S109` / `F111`). Close when a release we install carri
 gate that lets an author manuscript through.
 
 ## F105 — a row with no `gene` cannot be put to the AlphaGenome pass, and no sidecar maps a position to one (format `S112`)
+
+**State (2026-11-12): upstream's answer installed, and it is a capability for us to wrap.** RM259's `just_dna_enricher.gene_spans.genes_covering(chrom, position)` is in our lock (enricher 0.8.4): MANE genes whose span plus the 512 kb horizon covers a position, as query hints for a row with no `gene`. Our AlphaGenome rows mode still reports such rows `no_gene` (`expression.py`), so wrapping it is parity work for the lead (CLAUDE.md §5). Closes when that ships.
 
 **Status (2026-09-24):** filed as format-tree `S112`, unanswered. Our rows mode reports such rows as
 `no_gene` and fills nothing. Checked first, on the owner's rule (*"can we get gene if derived sidecars
@@ -809,6 +813,8 @@ them to lose work. `describe_table` answers it — an agent that asks gets the t
 to it.
 
 ## F85 — an unresolvable rsID reports `not_found` whoever asked, and the warning names the wrong reason (upstream `S85`; `RM154` in our lock, partly reversed in 0.8.0 by `RM382`)
+
+**State (2026-11-12): RM382 installed, checked by symbol only.** Enricher 0.8.4 carries `superseded_answers` (`resolver.py`, `orchestration.py`, `outcome.py`). Not re-run: it needs a live resolution where no link can host the authored genotype.
 
 **State (the liaison, 2026-11-07).** `RM154` shipped in 0.7.0 and is in what we install: enricher 0.7.3's
 `EnrichmentResult` carries `allele_mismatches` (checked against the installed package). Under 0.7 the row
