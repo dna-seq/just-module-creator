@@ -201,6 +201,28 @@ async def test_reverse_round_trip_preserves_the_content_signature(
 # --------------------------------------------------------------------------- #
 # The coded-warning channel (upstream RM131)
 # --------------------------------------------------------------------------- #
+async def test_a_validate_reports_the_same_coded_channel_as_its_compile(client, spec_dir, tmp_path):
+    """`validate_module` is the compile's pre-flight, so its warnings carry the same codes.
+
+    The symptom table is looked up by warning code; a pre-flight that dropped the summary
+    would leave that lookup to the compile alone.
+    """
+    validated = (
+        await client.call_tool("validate_module", {"spec_dir": str(spec_dir), "strict": False})
+    ).data
+    assert validated.warnings, "the fixture must draw warnings or this asserts nothing"
+    assert sum(validated.warnings_summary.values()) == len(validated.warnings)
+    assert validated.carried is not None and set(validated.carried) <= set(validated.warnings)
+
+    compiled = (
+        await client.call_tool(
+            "compile_module",
+            {"spec_dir": str(spec_dir), "output_dir": str(tmp_path / "out"), "strict": False},
+        )
+    ).data
+    assert set(validated.warnings_summary) <= set(compiled.warnings_summary)
+
+
 async def test_a_compile_says_which_warnings_the_author_can_actually_clear(
     client, spec_dir, tmp_path
 ):

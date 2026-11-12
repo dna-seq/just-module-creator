@@ -203,7 +203,7 @@ def polygon_naming_note(
     )
 
 
-def instance_note(exc: RegistryError) -> str:
+def instance_note(exc: BaseException) -> str:
     """The sentence that says a failure is about the *instance*, not the module.
 
     Both mismatch types are ``RegistryError`` subclasses, so every ``except
@@ -218,7 +218,8 @@ def instance_note(exc: RegistryError) -> str:
     for. There is no ordering to get wrong if there is only ever one arm.
 
     Empty string when the failure is an ordinary refusal, so a caller can append
-    it unconditionally.
+    it unconditionally. It takes any exception because the proxy routes catch
+    broadly (upstream's text is their answer) and must still tell this one apart.
     """
     if isinstance(exc, VersionMismatchError):
         return (

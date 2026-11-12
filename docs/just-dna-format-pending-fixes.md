@@ -83,20 +83,22 @@ its history.
 
 | Entry | Upstream | Fix | Where it is |
 |---|---|---|---|
-| F132 | S142 | RM427 | answered, open (patch + minor) |
-| F135 | S141 | RM426 | answered, open (patch + minor) |
-| F142 | S140 | RM425 | answered, open (patch) |
-| F139 | S139 | RM423 | answered, open (patch half + minor half) |
-| F137 | S138 | RM422 | answered, open (patch) |
+| F146 | S143 | RM428 | 0.8.4 only (closed upstream; no 0.7.4) |
+| F146 | S144 | RM429 | parked upstream (a minor); our interim on `adopt-0.8` |
+| F132 | S142 | RM427 | patch half 0.8.4 only; remedy key (minor) open |
+| F135 | S141 | RM426 | patch half 0.8.4 only; minor half open |
+| F142 | S140 | RM425 | 0.8.4 only |
+| F139 | S139 | RM423 | patch half released 0.8.3, not in our lock; minor half open |
+| F137 | S138 | RM422 | released 0.8.3, not in our lock |
 | F130 | S136 | RM414 | 0.8.2 only |
 | F131 | S137 | RM415 | 0.8.2 only |
 | F127 | S135 | RM253 | 0.8.0 only |
 | F115 | S124 | RM301 | 0.8.0 only |
 | F118 | S127 | (b); RM340 | 0.8.0 only |
-| F113 | S113 | RM262, RM263 | 0.8.0 only |
-| F108 | S110 | RM257, RM258 | 0.8.0 only |
+| F113 | S113 | RM262, RM263 | fixed in 0.8.x; our Crossref read is out on `adopt-0.8` (7ff1fdc) |
+| F108 | S110 | RM257, RM258 | 0.8 reads PMC whole, but joins table cells; our reader stays (the lead, `adopt-0.8`) |
 | F105 | S112 | RM259 | 0.8.0 only |
-| F116 | S125 | RM337, RM338 | 0.8.0 only |
+| F116 | S125 | RM337, RM338 | in 0.8.3: `logs/` ships `.jsonl`; reaches desk #204 (RM31) |
 | F85 | S85 | RM154; RM382 reverses part | RM154 in our lock; RM382 0.8.0 only (entry rewritten) |
 | F94 | S97 | RM229 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
 | F93 | S96 | RM224 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
@@ -113,6 +115,32 @@ its history.
 | F67 | S74 | shipped `load_spec` | in our lock; `load_spec` can replace our `yaml.safe_load` (lead) |
 | F99 | S101 | doc fixed | upstream docs, nothing to install |
 | F54 | S58 | RM122 | open upstream, parked |
+
+## F146 — the GWAS pass asks the Catalog v2 for a page of 1000 and is refused, so it fails on every module (format `S143`)
+
+**Follow-up `S144` (2026-11-11, the lead's reading, verified on 0.8.4):** the pass counts `size_refusals` but only logs them; `GwasResult` has no field for it, so an MCP caller never learns the Catalog's ceiling moved. Asked for a `size_refusals` field. **Answered as RM429, a minor** (the next minor branch); parked as of 2026-11-11. Their interim on 0.8.4: pass our own `client=GwasCatalogClient()` to `enrich_gwas` and read `client.size_refusals` after the run, a public attribute. **Our mitigation, on `adopt-0.8` (`d478756`, the lead):** `enrich_gwas_effects` builds its own client (none offline), reads `size_refusals` after the pass and warns when it is non-zero. It comes out when RM429 ships: read the result field and drop `_gwas_catalog_client`.
+
+**State: released in 0.8.4 (on PyPI 2026-11-11); their step after upgrading: re-run the GWAS pass on any module it ran on 0.8.0 to 0.8.3 since the Catalog's change, since those filled no row. Before that: fixed in their tree (`f0433de5`); no 0.7.4 (their maintainer's decision), so the released plugin gets the GWAS pass back only by moving to 0.8.4.** The pass asks 500 per page; on a 400 to the first request it asks once more with no size and warns once per run; a live guard test checks the page size. Answered within the hour: RM428, high. Ask 1 (`_PAGE_SIZE = 500`) is a patch after 0.8.3; the guard (an opt-in live test) and a fallback page go to their pm. The Catalog moved, not the code: `size=1000` worked on 2026-11-04 (their RM354). A 0.7.x patch reading v2 would be `v0.7.4` off `v0.7.3` carrying RM354 and RM428 (done once before, 0.7.2); that is RM428's ask 4, for their pm and lead to put to the person. Filed 2026-11-10 by the liaison, on the tester's report (`docs/dogfooding.md` F146).
+Enricher 0.8.3 and their `main`: `gwas.py`'s `_PAGE_SIZE = 1000` is sent as `size` to `/associations`, which
+answers 400 above 500, so `enrich_gwas_effects` returns no rows for any rsID. Reproduced by curl (1000 → 400,
+500 → 200). **Main is down too (the tester's correction, reproduced 22:59 UTC):** the Catalog retired the v1 REST API that
+enricher 0.7.3 calls, which now answers 410, so the shipped plugin's GWAS pass returns nothing on any module.
+The way back is an 0.8 carrying the fix (or a 0.7.x patch reading v2, asked in S143's correction). No
+mitigation of ours. Asked for: `_PAGE_SIZE = 500` and a test bounding it; a retry with a smaller page weighed.
+
+## F143 — a namespace cannot be renamed; `rename_account` renames the handle only (registry `S28`)
+
+**State: reversed and released in registry 0.29.0 (2026-11-11), on PyPI; the polygon serves it (format 0.8.3).** `rename_namespace` (client, `registry-client rename-namespace`) moves every version, amends `identity.namespace` and `canonical_id` outside the digest, `content_signature` and signature, and keeps the old name as a permanent alias (`X-Namespace-Current`). `rename_account` now also moves the handle-spelled namespace. 0.29 floors `just-dna-format>=0.8.3`, so a tool for it belongs to `adopt-0.8`. **Earlier:** declined by design, the same evening. `ns/name@version` is a published identity: the manifest's `canonical_id`, what consumers pin; a re-publish under a new namespace is refused as `409 duplicate_content`, since each version's data is claimed by `(test-sheep, name)`. The documentation half (`rename_account`'s docstring, the CLI help, CLIENT.md) shipped in 0.28.6. Their route on the polygon: claim the new namespace, `delete_module` each module under `test-sheep`, republish; that waits on the person's go. Filed 2026-11-10 by the lead. The person asked to move the polygon namespace `test-sheep`
+(44 rehearsal versions) to a new `test-`-prefixed name. The registry client 0.28.5 offers `rename_account`,
+`admin_rename_account` and `merge_accounts`, and nothing that names a namespace: its docstring says the old handle
+stays reserved and "nothing published changes identity", and the lead's dry run listed every version still under
+`test-sheep/`. Nothing was applied. Asked for: a namespace rename or transfer with an alias for the old name, a
+dry run and a per-version report, or, if a published `namespace/name` is deliberately fixed, saying so in the
+docstring and CLI help. No mitigation of ours; a tool follows once upstream has the call.
+
+**Parity gap beside it (ours, not upstream's):** the 0.28 client's `rename_account`, `merge_accounts` and
+`create_org_namespace` have no tool here. 0.28 needs format 0.8, so they belong to the `adopt-0.8` branch's list
+(the lead's).
 
 ## F130 — the repeat-count warnings name `RUC`/`CIRUC` over a declared `source_field=FORMAT/REPCN` (format `S136`)
 
@@ -174,7 +202,7 @@ of the tester's Atlas runs (128 of 819, 24 of 126), and the values are right.
 
 ## F139 — `record_verification` re-signs records of checks it did not re-run over new authored bytes (format `S139`)
 
-**State: answered the same hour: RM423, high, with their pm to size.** Candidate 1 (drop carried records when the
+**State: patch half released in 0.8.3 (2026-11-10), not in our lock (`<0.8`); the per-record binding (a minor) is open.** Answered the same hour: RM423, high, with their pm to size. Candidate 1 (drop carried records when the
 binding moved, logged) is the patch half; a per-record binding is a minor. They call our interim (a record older
 than the newest authoring edit read as not current) sound. Filed 2026-11-09 by the liaison, on the tester's report. **Our mitigation
 shipped in 0.48.4:** `audit_module`'s `checks_older_than_the_last_edit` (`docs/previous_issues.md` F139). It is a
@@ -190,7 +218,7 @@ moved (interim), or a per-record binding read per check (the fix).
 
 ## F137 — a `resolution.csv` row for a variant the author removed compiles silently and publishes (format `S138`)
 
-**State: answered the same hour: RM422, a patch, with their pm to size.** One more arm of the existing
+**State: released in 0.8.3 (2026-11-10), not in our lock (`<0.8`).** Answered the same hour: RM422, a patch, with their pm to size. One more arm of the existing
 `derived_row_orphan` warning, over `resolution.csv`, in both modes; the subject set is every authored table.
 The `clin_sig_*` pair already has its arm, reading `variants.csv` only by design, which is why our probe (no
 `variants.csv`) could not show it. Filed 2026-11-09 by the liaison, on the tester's report. The upstream half only. **Our
@@ -287,6 +315,8 @@ not a fact the sidecar carries. The module states the split in its README instea
 
 ## F113 — `lookup_citation(doi=…)` returns existence and no title (format `S113`)
 
+**Re-read on 0.8.3 (the lead, `adopt-0.8`, 2026-11-11):** fixed upstream. A DOI alone gets its work's title, including a DOI with no PubMed record (Crossref's), so our Crossref read comes out on the branch (`7ff1fdc`). Closes here when that branch lands on main.
+
 **Status (2026-09-25):** filed as format-tree `S113`, unanswered. **Mitigated here in 0.41.0**:
 given a DOI and no PMID, `lookup_citation` reads Crossref's `/works/{doi}` itself
 (`discovery.crossref_work`, called from `_crossref_identity` in `tools/research.py`), fills `title`,
@@ -309,6 +339,8 @@ which already fetches `/works/{doi}`, and discards the body that carries the tit
 fix 1 in the note. Close when a release we install fills `title` on the DOI path.
 
 ## F108 — the literature pass checks quotes against the abstract when PMC serves the paper whole (format `S110`)
+
+**Re-read on 0.8.3 (the lead, `adopt-0.8`, 2026-11-11):** 0.8's `PmcBiocClient` reads PMC6463297 whole, but `extract_bioc_text` joins table cells into running text, where ours keeps them tab-separated. Our reader stays after the adoption.
 
 **Status (2026-09-24):** format-tree `S110` accepted the same day — the BioC rung is their `RM257` and
 the manuscript gate is taken, both **in tree and uncut**; the 404/500 split is open as their `RM258`. Mitigated here for *reading*:
@@ -2504,6 +2536,8 @@ with no licence ledger is a real and legal module, and telling an author otherwi
 mirror of the defect.
 
 ## F116 — `logs/` ships only `*.log`; a `.jsonl` ledger beside it is dropped silently (format `S125`)
+
+**Re-read on 0.8.3 (the lead, `adopt-0.8`, 2026-11-11):** fixed upstream: `LOG_TEXT_EXTENSIONS` includes `jsonl`, so a compile under 0.8 ships a valid `.jsonl` from `logs/`. That changes the ground under desk #204 (RM31, the provenance ledger's format). Closes here when the branch lands on main.
 
 **State: filed upstream 2026-10-05, unanswered. Nothing shipped here yet; the mitigation is a
 naming convention for the provenance ledger we are designing.**

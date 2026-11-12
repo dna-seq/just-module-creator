@@ -171,6 +171,59 @@ the call returns, on scratch copies under `data/interim/recheck_0484/` and the e
 | F126 | holds in the source (`auth.py`): the docstring gives the order `JMC_INSTALL_ID`, then the saved account, then a fresh grind, and `_echoed` withholds a reused id. ToolSearch still shows the old description (host cache), and no live register was run |
 | F140 | holds in the result: on `data/interim/probe_atlas_fto/fto_irx3` the `next_step` opens "2 authored row(s) read gene_not_at_locus (rs1421085)" and names `rows=true` |
 
+**The polygon answers again on format 0.8.0, 2026-11-10 (registry 0.28.5, compiler 0.8.0; production still
+0.7.1).** Two legs, on scratch copies under `data/interim/recheck_08/`:
+
+| leg | result |
+|---|---|
+| shipped 0.48.5, host wire: `registry_health(target="test")` | `contract_compatible: false`, and the message says every publish, validate, check and download will 409. Clear |
+| shipped 0.48.5: `registry_check` on HTT | 409, with the instance note: "This is the instance, not your module". Clear |
+| shipped 0.48.5: `remote_derive` on HTT (the 0.48.1 token leg) | 409 with advice about 503 and 422 instead of the instance note: **F144**. Whether the token was sent cannot be seen from a 409; that leg now waits for main to move to 0.8, not for the polygon |
+| branch adopt-0.8 at 113150c (format 0.8.3), **in-process driver, not the host wire**: strict `validate_module` on HTT and MTHFR | both valid, no new decision to come forward from 0.7 |
+| same: `registry_check(target="test")` on HTT | `verdict: true`, nothing blocking or unchecked, `content_signature` sha256:1d82655b... |
+| same: `registry_check(target="test")` on MTHFR | `verdict: true`, nothing blocking or unchecked, `content_signature` sha256:7294cc72... |
+
+The polygon's warnings on HTT read differently from the local ones: "no bin pmid" and "the field a consumer
+reads ... (RUC)". That is its compiler 0.8.0, older than RM414 and RM415 (cut in 0.8.2), which fixed exactly
+these two texts after our report. Nothing is lost in the upload: the local 0.8.3 run on the same bytes sees
+the bin's pmid and `FORMAT/REPCN`.
+
+The lead's list for the branch, same driver, same evening:
+
+| item | result |
+|---|---|
+| `draft_from_strchive` with no `catalogue` (F129) | **holds**: HTT and FMR1 drafted from the provisioned lane. Beside them, a false "No `strchive` lane on this machine": **F145** |
+| `enrich_module`'s `allele_mismatches` (RM382) | **holds**: on a strand-flipped copy of `assets/fto_bmi` (`recheck_08/fto_flip`), rs1421085 is in `unresolved` and the line names G/G, each of four sources' `16:53767042 T>C`, and "(fits the other strand)" |
+| `enrich_gwas_effects` on the v2 API | **fails upstream**: the enricher asks for a page of 1000 and the Catalog refuses anything above 500: **F146**, handed to the liaison |
+| `fetch_fulltext`'s outage line (F133) | not exercised: 5 of 5 calls for PMC13733956 returned `fulltext`, so no 500 came |
+| recheck: F144 fixed on main (4f0085a), in-process on this checkout | **holds**: `remote_derive` on the polygon's 409 now carries the instance note, with no 503/422 advice |
+| recheck: F145 fixed on the branch (8ac4c82) | **holds**: an HTT draft from the lane carries no missing-lane sentence |
+| `enrich_gwas_effects` on **main** (shipped 0.48.5, host wire) | **fails**: the Catalog retired v1 (410), so F146 covers both builds |
+| recheck: F146's half on main (3664412), in-process on this checkout | **holds**: the 410 now says the Catalog retired the API this build reads, that no retry or spec edit helps, and that the pass comes back with an enricher on v2 (RM428). The description keeps `1 + 2N`, by the lead's choice: it is what this build spends |
+
+**Both rehearsals ran, from the branch, and left nothing behind** (2026-11-11 ~00:05 UTC, same driver).
+`registry_publish(target="test")` as `test-sheep/test_htt_cag_repeats@0.1.0` and `test-sheep/test_mthfr_folate@0.1.0`.
+Each was read back with `registry_get_module(target="test")`, with the same `content_signature` as its dry run,
+then removed with `registry_delete_module`; a second read gives 404. The polygon's catalog counts are 50 modules
+and 112 versions before and after. An earlier draft of these notes held the publishes to spare the `test-sheep`
+cleanup (F143). That reason was wrong: a rehearsal deleted after its read-back adds nothing to the cleanup.
+
+**0.48.6 recheck, 2026-11-11, over the host wire** (server restarted by SIGKILL plus `reload --mcp`; the
+instructions name v0.48.6). The polygon now serves format 0.8.3.
+
+| finding | result |
+|---|---|
+| F144 | holds: `remote_derive` on `assets/htt_cag_repeats` (`target="test"`) gets the 409 with the instance note, and no 503/422 advice |
+| F146, our half | holds: `enrich_gwas_effects` on `recheck_08/fto_gwas_main` carries "The GWAS Catalog has retired the API this build reads (HTTP 410, Gone) ... (upstream's RM428)" beside the raw 410 |
+| new: `validate_module`'s `warnings_summary` and `carried` | present: on `recheck_08/mthfr`, `warnings_summary` counts the three warnings by code, and `carried` holds the one restated from `verification.json` |
+
+**F146 on adopt-0.8 at f4793de (just-dna 0.8.4), 2026-11-11, in-process driver: holds.** `enrich_gwas_effects`
+on `recheck_08/fto_gwas` (the copy that got the 400 at 113150c): `success: true`, 223 rows for rs1421085,
+`requests_made` 218 and `requests_saved` 6. Of the 223, 38 name no effect allele and 3 have p-values below
+float64's range; there are 6 distinct `effect_unit` values. All of these are stated in `warnings`. It took
+**4 min 45 s of wall time for one rsID** (7.5 s of CPU); at that rate a 50-rsID module runs for hours. The
+branch's description gives the budget in requests (a page per variant plus one per distinct study), not in time.
+
 **The host keeps the tool descriptions from its first connection.** After the server restart, ToolSearch still
 returned 0.48.3's descriptions, and the source has the new ones. A fix that is only in a description can't be
 rechecked in a reconnected session: read the source, or recheck from a fresh session.
@@ -205,7 +258,9 @@ F128 (skills from the released 0.47.0) is on the person's desk as #229; until it
 checkout's `skills/` by hand. Two compiler findings went to the liaison: the RUC/CIRUC warnings ignore
 `source_field`, and `bins_ungrounded` says "no bin pmid" while one bin carries one.
 
-**Next probes, in order:** (1) the polygon leg of 0.48.1 and the HTT rehearsal, when the polygon answers;
+**Next probes, in order:** (1) the polygon leg of 0.48.1 and the HTT and MTHFR rehearsals: dry runs pass from
+the 0.8 branch (2026-11-10, above); both were rehearsed and deleted on 2026-11-11 (above). The token leg waits on a
+build that speaks 0.8 being what the host runs;
 (2) a module authored from nothing through the front door by a layman, as the handout's fallback; (3) the
 list in `dogfooding.md`'s "Probes not yet run" (`enrich_expression_effects` live, a module with two of
 something).

@@ -6,6 +6,30 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F144 — `remote_derive` and `remote_draft` answer a contract-skew 409 with advice about 503 and 422
+
+**Found:** 2026-11-10, plugin 0.48.5 on the host wire, the polygon on format 0.8.0 · **Severity:** low ·
+**Status:** resolved 2026-11-10
+
+`registry_check` and `remote_derive` were run on the same spec (`assets/htt_cag_repeats`) with
+`target="test"`, while the polygon serves format 0.8.0 and the plugin 0.7.1. Both got HTTP 409
+`just-dna-format contract mismatch`. They explained it differently:
+
+- `registry_check` appends `targets.instance_note`: "This is the instance, not your module ... Nothing about
+  the spec will change the answer and recompiling will not either ... an operator's call, not an author's."
+- `remote_derive` appends advice for other codes: "A 503 naming a lane means the deployment lacks that
+  snapshot ... A 422 means the spec did not validate there ...". It never says the 409 is the instance's, and the
+  text has a doubled full stop (`downloading..`), because upstream's message already ends in one.
+
+An author reading the second message would look at their spec. The cause is in the source:
+`tools/proxy.py` does not import `instance_note`. `remote_derive`'s arm (`client.derived`) and
+`remote_draft`'s arm (`client.draft`) build their own text. `remote_draft` was read in the source only, not
+run. The other registry tools (`registry.py`, `research.py`, `comparison.py`, `advanced.py`) all append the note.
+
+Not a fix proposal, but a shape: the same suffix the other arms carry, appended to both arms here.
+
+**Resolution:** both arms append `targets.instance_note(exc)`, and on a contract skew it replaces the 503/422 advice rather than following it; upstream's trailing full stop is stripped before ours. `instance_note` now takes any exception, since these arms catch broadly. Pinned by `tests/test_routing.py::test_a_remote_route_says_a_contract_skew_is_the_instance_not_the_spec` (both tools; it fails on the previous code).
+
 ## F132 — upstream text that names a CLI command reaches the agent with no mapping to this surface
 
 **Found:** 2026-11-07 by the tester as F125's second instance (HTT probe); split out by the lead 2026-11-08 ·

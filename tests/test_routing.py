@@ -22,7 +22,8 @@ import just_dna_registry.models.api as registry_api
 import pytest
 from conftest import offline_settings, routed_settings
 from fastmcp.exceptions import ToolError
-from just_dna_registry.client import RegistryClient
+from just_dna_registry.client import RegistryClient, VersionMismatchError
+from just_dna_registry.version import VersionInfo
 
 from just_module_creator import routing
 from just_module_creator.settings import Settings
@@ -1275,3 +1276,46 @@ async def test_a_remote_route_hands_the_polygon_token_to_its_client(
     ) as client:
         await client.call_tool(tool, {"spec_dir": str(tmp_path), **args}, raise_on_error=False)
     assert seen == {"target": "test", "token": "mk_poly_stub", "method": method}
+
+
+@pytest.mark.parametrize(
+    ("tool", "args"),
+    [
+        ("remote_derive", {"namespace": "test-sheep", "name": "test_lactose"}),
+        ("remote_draft", {"source": "clinvar"}),
+    ],
+)
+async def test_a_remote_route_says_a_contract_skew_is_the_instance_not_the_spec(
+    monkeypatch, make_client, tmp_path, tool, args
+):
+    """F144: a 409 contract mismatch is the deployment's, as every other registry arm says.
+
+    The routes used to append their 503/422 advice to it, which sends an author to look at
+    a spec nothing in which can change the answer; and upstream's text already ends in a
+    full stop, so the old join doubled it.
+    """
+
+    class _Skewed:
+        def __getattr__(self, name):
+            def _call(*_a, **_k):
+                raise VersionMismatchError(
+                    "just-dna-format contract mismatch: server speaks 0.8, client 0.7; "
+                    "upgrade the client before downloading.",
+                    server=VersionInfo(registry="0.28.5", format="0.8.0"),
+                    client=VersionInfo(registry="0.27.0", format="0.7.1"),
+                )
+
+            return _call
+
+    monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Skewed())
+    (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
+
+    async with make_client(routed_settings(test_api_key="mk_poly_stub")) as client:
+        result = await client.call_tool(
+            tool, {"spec_dir": str(tmp_path), **args}, raise_on_error=False
+        )
+    text = str(result.content)
+    assert "contract mismatch" in text, "upstream's own text is carried through"
+    assert "This is the instance, not your module" in text
+    assert "A 503" not in text and "A 422" not in text
+    assert "downloading.." not in text
