@@ -14,6 +14,36 @@ is usable, and what is missing.
 
 ---
 
+## F150 — `remote_derive`'s `passes_report` is always null: the server sends `passes` as a list, and we read only a dict
+
+**Found:** 2026-11-12, released v0.48.8 source, in-process driver, with the raw archive captured · **Severity:**
+medium (the one field that says what a requested pass did is never filled) · **Status:** ours, for the lead.
+The polygon half went to the liaison.
+
+`remote_derive(passes=["gwas"], live=true)` on `recheck_08/fto_remote_nov` (a copy of `assets/fto_bmi`
+without its local `verification.json`, so F149 does not stop it). I wrapped `RegistryClient.derived` to keep the
+archive. It sent `passes=["gwas"], offline=False`, and the archive's `check.json` holds:
+
+```
+"enrichment": {"offline": true, "ran": true, ...},
+"passes": [{"command": "gwas", "status": "skipped", "tables": ["gwas_effects.csv"],
+            "detail": "offline: this pass needs a live source (ask with offline=false)"}]
+```
+
+Our `tools/proxy.py` `_passes_from` returns `passes` only `if isinstance(passes, dict)`, so a list (the shape the
+server sends, and the shape its docstring describes: "what each did") comes back as `None`. The result then said
+`passes_report: null`, and `gwas_effects.csv` sat in `not_produced` beside 12 tables nobody asked for. An agent
+cannot tell "the pass was skipped and why" from "this server reports nothing". On main at b255c5f the check is
+unchanged.
+
+**Why it was skipped is the registry's half.** In registry 0.30.0's `api/routers/publish.py` the live leg runs only
+`if passes and not (offline or settings.enrich_offline)`, and `enrich_offline` defaults to `True`.
+`check.json`'s `enrichment.offline: true` shows the polygon runs that way. So a caller's `offline=false` cannot
+reach a live pass there, but the skip detail still tells it to "ask with offline=false", which it did. The
+GWAS pass has no snapshot, so on this deployment `passes=["gwas"]` can never produce a row.
+
+---
+
 ## F149 — `remote_derive` crashes on any spec that already holds a `verification.json`
 
 **Found:** 2026-11-12, released v0.48.8 source (`git archive v0.48.8`), in-process driver, the polygon on
