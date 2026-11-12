@@ -238,6 +238,14 @@ branch's description gives the budget in requests (a page per variant plus one p
 The GWAS description in the source gives the v2 budget and the time ("rs1421085's 218 took 4 min 45 s"). ToolSearch
 still shows the old `1 + 2N` text: the host cache noted below, not a regression.
 
+**F147 recheck on main at bed200b (unreleased), 2026-11-12, in-process: holds.** Same dry run on
+`recheck_08/apoe_nogene`: 3 hints for 3 positions, each naming both row keys there (VRS id and `chrom:pos:ref`).
+Every gene carries `start`, `end` and `distance_bp`; the containing gene is at 0 (TOMM40, TOMM40, APOC1), and the
+nearest distances match the ones I measured from upstream's spans (NECTIN2 2,455 bp, APOE 9,778 bp). Order is
+upstream's (by start), not ranked: the lead's call, since nearer is not likelier. The containing gene is
+findable by `distance_bp == 0`. Note for my driver: its 12,000-character cut breaks JSON on a large result;
+`drive08_full.py` writes it whole.
+
 **The host keeps the tool descriptions from its first connection.** After the server restart, ToolSearch still
 returned 0.48.3's descriptions, and the source has the new ones. A fix that is only in a description can't be
 rechecked in a reconnected session: read the source, or recheck from a fresh session.
