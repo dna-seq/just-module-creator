@@ -3043,6 +3043,13 @@ class DerivedTreeReport(BaseModel):
         "`registry_caches` answers the snapshot half. **Null means the archive carried "
         "no report**, which is a question that could not be put rather than a clean run.",
     )
+    passes_report: dict | None = Field(
+        default=None,
+        description=(
+            "With `passes`: the run's own account of each requested pass (registry 0.30), as "
+            "it sent it. Null when the archive carried none: an older server, or none asked."
+        ),
+    )
     notes: list[str] = Field(default_factory=list, description="What the run reported.")
     next_step: str = Field(description="What to do now.")
 

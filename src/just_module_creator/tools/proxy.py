@@ -279,6 +279,27 @@ def _absent_from(report: bytes) -> list[str] | None:
     return sorted({str(item) for item in listed})
 
 
+def _passes_from(archive: bytes) -> dict | None:
+    """The run's `passes` block (registry 0.30): what each requested pass did, or `None`.
+
+    Read off the report member only. `None` when the archive carries no report or the
+    report has no `passes` object: an older server, or a run that asked for none.
+    """
+    with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as tar:
+        for member in tar.getmembers():
+            if member.isfile() and Path(member.name).name == DERIVED_REPORT_FILE:
+                handle = tar.extractfile(member)
+                if handle is None:
+                    return None
+                try:
+                    parsed = json.loads(handle.read().decode("utf-8-sig"))
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    return None
+                passes = parsed.get("passes") if isinstance(parsed, dict) else None
+                return passes if isinstance(passes, dict) else None
+    return None
+
+
 #: Every spec file name a draft archive may legitimately carry, so a member outside the
 #: set contributes nothing rather than being written. Derived from the registry's own
 #: roster: a drafter that starts writing a new table appears here with no edit, and a
@@ -446,6 +467,12 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         name: str,
         target: RegistryTarget = "test",
         dry_run: bool = True,
+        passes: list[str] | None = None,
+        live: bool = False,
+        gene: str | None = None,
+        chrom: str | None = None,
+        start: int | None = None,
+        end: int | None = None,
         ctx: Context | None = None,
     ) -> DerivedTreeReport:
         """Enrich a spec on a registry that holds the snapshots, and install the result.
@@ -472,10 +499,13 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         `dry_run=false` the previous bytes are copied out and the copy is read back and
         hashed before anything is replaced.
 
-        It runs what a publish runs, not what `registry_check` runs — no frequency,
-        literature, identifier, ACMG or PGx pass, because those are egress spent on a
-        verdict and this call is for the bytes. A spec too broken to enrich is a refusal
-        here rather than an empty archive.
+        By default it runs what a publish runs. `passes` adds upstream's other derived-table
+        passes by command name (`gwas`, `frequencies`, `gene-metrics`, `literature`,
+        `alphagenome expression`, …; registry 0.30); `passes_report` says what each did.
+        They answer from the server's snapshots unless `live=true`, which lets a pass's
+        live leg run, charged per upstream. `alphagenome expression` scores one interval
+        (`gene`, `chrom`, `start`, `end`) where the operator enabled it. A spec too broken
+        to enrich is a refusal here rather than an empty archive.
         """
         if offline_for(settings, False):
             raise ToolError(
@@ -504,7 +534,19 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
             await ctx.report_progress(progress=1, total=3)
 
         try:
-            archive = await run_sync(lambda: client.derived(namespace, name, source))
+            archive = await run_sync(
+                lambda: client.derived(
+                    namespace,
+                    name,
+                    source,
+                    passes=passes or None,
+                    offline=not live,
+                    gene=gene,
+                    chrom=chrom,
+                    start=start,
+                    end=end,
+                )
+            )
         except Exception as exc:  # noqa: BLE001 — upstream's error text is the answer
             # A contract skew is the instance's (F144): its note replaces the 503/422
             # advice, which would send the author to look at their spec.
@@ -620,6 +662,7 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
             capture_dir=str(capture) if capture else None,
             decisions=lines,
             not_produced=absent,
+            passes_report=_passes_from(archive),
             dry_run=dry_run,
             validation_errors=[],
             notes=[f"archive carried {m}" for m in sorted(extras)],

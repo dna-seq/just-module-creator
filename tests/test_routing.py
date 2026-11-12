@@ -14,6 +14,7 @@ anyone, only through `TestClient`.
 from __future__ import annotations
 
 import io
+import json
 import tarfile
 from pathlib import Path
 from typing import Any
@@ -442,7 +443,7 @@ async def test_a_table_the_run_could_not_produce_reaches_the_caller_as_a_questio
     )
 
     class _Stub:
-        def derived(self, namespace, name, spec_dir):
+        def derived(self, namespace, name, spec_dir, **kwargs):
             return archive
 
     monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Stub())
@@ -589,7 +590,7 @@ async def test_remote_derive_writes_over_the_deprecated_spelling_not_beside_it(
     archive = _archive({"derived/licensing.csv": incoming})
 
     class _Stub:
-        def derived(self, namespace, name, spec_dir):
+        def derived(self, namespace, name, spec_dir, **kwargs):
             return archive
 
     monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Stub())
@@ -1319,3 +1320,73 @@ async def test_a_remote_route_says_a_contract_skew_is_the_instance_not_the_spec(
     assert "This is the instance, not your module" in text
     assert "A 503" not in text and "A 422" not in text
     assert "downloading.." not in text
+
+
+@pytest.mark.parametrize(
+    ("args", "expected"),
+    [
+        (
+            {},
+            {"passes": None, "offline": True, "gene": None, "chrom": None}
+            | {"start": None, "end": None},
+        ),
+        (
+            {
+                "passes": ["alphagenome expression"],
+                "live": True,
+                "gene": "LCT",
+                "chrom": "2",
+                "start": 135850000,
+                "end": 135852000,
+            },
+            {
+                "passes": ["alphagenome expression"],
+                "offline": False,
+                "gene": "LCT",
+                "chrom": "2",
+                "start": 135850000,
+                "end": 135852000,
+            },
+        ),
+    ],
+)
+async def test_remote_derive_passes_registry_030s_options_and_reports_each_pass(
+    monkeypatch, make_client, tmp_path, args, expected
+):
+    """Registry 0.30's `derived()` options reach the client, defaulting to a snapshot-only run.
+
+    `live` maps onto upstream's `offline` inverted, so an unasked call never spends a live
+    leg; the run's own `passes` block comes back as it was sent.
+    """
+    (tmp_path / "module_spec.yaml").write_text("module:\n  name: x\n")
+    passes_block = {"alphagenome expression": {"ran": True, "rows": 4}}
+    archive = _archive(
+        {
+            "derived/resolution.csv": _resolution([("2-135851076-G-A", "rs4988235", "ensembl")]),
+            "check.json": json.dumps({"files_absent": [], "passes": passes_block}).encode(),
+        }
+    )
+    seen: dict[str, Any] = {}
+
+    class _Stub:
+        def derived(self, namespace, name, spec_dir, **kwargs):
+            seen.update(kwargs)
+            return archive
+
+    monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Stub())
+    settings = routed_settings(test_api_key="mk_poly_stub", workspace=str(tmp_path))
+    async with make_client(settings) as client:
+        report = (
+            await client.call_tool(
+                "remote_derive",
+                {
+                    "spec_dir": str(tmp_path),
+                    "namespace": "test-sheep",
+                    "name": "test_lactose",
+                    **args,
+                },
+            )
+        ).data
+
+    assert seen == expected
+    assert report.passes_report == passes_block
