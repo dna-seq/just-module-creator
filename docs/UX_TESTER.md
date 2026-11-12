@@ -246,6 +246,24 @@ upstream's (by start), not ranked: the lead's call, since nearer is not likelier
 findable by `distance_bp == 0`. Note for my driver: its 12,000-character cut breaks JSON on a large result;
 `drive08_full.py` writes it whole.
 
+**0.48.8 probe, 2026-11-12** (host wire for `registry_lane_lookup`; in-process for `remote_derive`'s new arguments,
+which the host's cached schema lacks). Found **F148** (the lane lookup serves pharmvar, pubmind and mane rows
+that `/caches` refuses to redistribute; registry S29 answered "by design", our terms field is on main), **F149**
+(`remote_derive` crashed on any spec holding a `verification.json`) and **F150** (`passes_report` always null:
+`check.json`'s `passes` is a list; the polygon skips a live GWAS pass because its own `enrich_offline` outranks the
+caller, registry S30, fixed in their tree).
+
+Rechecks on main, in-process, each after the polygon's 429 cleared (enrich bucket, about 10 minutes per call):
+
+| finding | result |
+|---|---|
+| F149 (d9651d1 + 26009a1) | holds: on `recheck_08/fto_remote`, which keeps its `verification.json`, no crash. `decisions` names `verification.json` as replaced whole. Its wording, "Installing captures your copy first" (8f5b473), now holds on a dry run too |
+| F150 (2a4b421) | holds: `passes_report` is `[{"command": "gwas", "status": "skipped", "detail": "offline: this pass needs a live source ...", "tables": ["gwas_effects.csv"]}]` |
+
+Lessons for this seat. **Run the release, not the working tree**: the lead's uncommitted edits sit in the shared
+tree, and one import caught a file mid-save (`git archive <tag> src` plus `PYTHONPATH` runs the release whole).
+**Pace polygon derives at one per ten minutes**: six in four minutes bought a 429 per call after that.
+
 **The host keeps the tool descriptions from its first connection.** After the server restart, ToolSearch still
 returned 0.48.3's descriptions, and the source has the new ones. A fix that is only in a description can't be
 rechecked in a reconnected session: read the source, or recheck from a fresh session.
