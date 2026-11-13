@@ -101,7 +101,7 @@ its history.
 | F108 | S110 | RM257, RM258 | in our lock; 0.8 joins table cells, so our reader stays (the lead) |
 | F105 | S112 | RM259 | CLOSED 2026-11-12 (wrapped, released in 0.48.8) |
 | F116 | S125 | RM337, RM338 | CLOSED 2026-11-12; desk #204 (RM31) is the lead's |
-| F85 | S85 | RM154; RM382 reverses part | both in our lock; RM382 symbol present, not re-run |
+| F85 | S85 | RM154; RM382 reverses part | CLOSED 2026-11-13 (RM382 passes on 0.8.5) |
 | F94 | S97 | RM229 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
 | F93 | S96 | RM224 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
 | F89 | S87 | RM180 | in our lock (0.7.0); reproduction passes 2026-11-07, nothing to remove |
@@ -837,7 +837,7 @@ to it.
 
 ## F85 — an unresolvable rsID reports `not_found` whoever asked, and the warning names the wrong reason (upstream `S85`; `RM154` in our lock, partly reversed in 0.8.0 by `RM382`)
 
-**State (2026-11-12): RM382 installed, checked by symbol only.** Enricher 0.8.4 carries `superseded_answers` (`resolver.py`, `orchestration.py`, `outcome.py`). Not re-run: it needs a live resolution where no link can host the authored genotype.
+**State: CLOSED 2026-11-13.** Re-run on the installed enricher 0.8.5 over a copy of `assets/fto_bmi` with its genotypes reverse-complemented (`G/G`, `A/G`, `A/A`) and no `resolution.csv`: `enrich` wrote the file with **no row** for rs1421085, listed it under `unresolved`, and said "16:53767042 T>C cannot host the authored genotype G/G ... reading G/G on the other strand fits it exactly. The source HAS this variant". That is RM382's reading over RM154's. Our side already reads the same: `skills/module-101/references/SYMPTOMS.md` says a mismatch writes no row and `not_found` means the source holds no record.
 
 **State (the liaison, 2026-11-07).** `RM154` shipped in 0.7.0 and is in what we install: enricher 0.7.3's
 `EnrichmentResult` carries `allele_mismatches` (checked against the installed package). Under 0.7 the row

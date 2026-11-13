@@ -36,7 +36,7 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. The hosts have
 - The lead: five pending-fixes entries reproduced as fixed leave code of ours to lift (F94, F93, F63, F59, F67;
   told in `#just-module-creator>0.8`, 2026-11-07).
 - Format v0.8.3 (2026-11-10) released RM422 (F137) and RM423's patch half (F139); not in our lock. The 0.8 adoption floors move to `>=0.8.3`; told the lead.
-- The 0.8.4 re-run (2026-11-12): F142, F137, F130, F131, F127, F115, F113, F116 and F146's S143 half closed; F132, F135, F139 pass their patch halves. F118 closed the same evening over `statin_response`. Still open, mine: F85's RM382 needs a live resolution where no link can host the authored genotype (checked by symbol only).
+- The 0.8.4 re-run (2026-11-12): F142, F137, F130, F131, F127, F115, F113, F116 and F146's S143 half closed; F132, F135, F139 pass their patch halves. F118 closed the same evening over `statin_response`. F85 closed 2026-11-13 over a strand-flipped `fto_bmi`. Nothing from the 0.8 re-run is left open on my side.
 - Format: RM427 (S142, F132: `clinvar pull` at two sites; guard walk; remedy key a minor), answered 2026-11-10.
 
 - `just-dna-registry/lead`: `just-module-creator/liaison` in its triage's `wake_from` (asked in
