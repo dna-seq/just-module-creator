@@ -175,9 +175,12 @@ stays reserved and "nothing published changes identity", and the lead's dry run 
 dry run and a per-version report, or, if a published `namespace/name` is deliberately fixed, saying so in the
 docstring and CLI help. No mitigation of ours; a tool follows once upstream has the call.
 
-**Parity gap beside it (ours, not upstream's):** the 0.28 client's `rename_account`, `merge_accounts` and
-`create_org_namespace` have no tool here. 0.28 needs format 0.8, so they belong to the `adopt-0.8` branch's list
-(the lead's).
+**Parity gap beside it (ours, not upstream's): closed on main (`6ba23f6`, unreleased, the lead).**
+`registry_rename_account`, `registry_create_org` and `registry_create_org_namespace` wrap the client's calls, beside
+`registry_rename_namespace`. Not wrapped, with the reason (CLAUDE.md §5, "only a deployment calls it"):
+`merge_accounts` and `admin_rename_account`, site-admin calls only; the saved polygon account answers
+`site_admin: false`, so neither could be tried here. An org namespace recorded on the saved account is dropped
+again by the start-up check until registry `S31` ships (entry above).
 
 ## F130 — the repeat-count warnings name `RUC`/`CIRUC` over a declared `source_field=FORMAT/REPCN` (format `S136`)
 
