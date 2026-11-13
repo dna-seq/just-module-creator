@@ -8,4 +8,5 @@
 
 **Next**
 1. Account tools the registry offers that the plugin lacks (rename, merge, organisation namespaces). Lead; waits on nothing.
-2. Renaming the `test-sheep` rehearsal namespace. Lead; ⏸ waits on the person (desk #255).
+2. Looking up what published modules say about a variant or a gene, the registry's new 0.31 reads. Lead; waits on nothing to build, on the test registry serving 0.31 to try live.
+3. Renaming the `test-sheep` rehearsal namespace. Lead; ⏸ waits on the person (desk #255).
