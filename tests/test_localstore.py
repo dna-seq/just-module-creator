@@ -350,6 +350,25 @@ async def test_an_applied_account_rename_moves_the_saved_handle_and_its_namespac
     assert localstore.pick_token(state, "test", "sheep") is None, "the old name is an alias now"
 
 
+async def test_a_renamed_namespace_this_server_cannot_read_is_said_not_dropped(
+    make_client, monkeypatch
+):
+    _seed(("test", "sheep", "mk_sheep_aaaa", ["sheep", "test-sheep"]))
+
+    def _odd(name: str, dry_run: bool) -> dict:
+        return {**_account_rename(name, dry_run), "namespaces_renamed": ["sheep => ewe"]}
+
+    monkeypatch.setattr(registry_tools, "client_for", _RegistryStub(rename_account=_odd))
+    async with make_client(settings=_online()) as client:
+        payload = (
+            await client.call_tool("registry_rename_account", {"new_name": "ewe", "dry_run": False})
+        ).structured_content
+
+    assert payload["success"] is True
+    assert "could not read: sheep => ewe" in payload["message"]
+    assert localstore.load().accounts[0].account == "ewe"
+
+
 async def test_an_applied_namespace_rename_moves_the_saved_namespace(make_client, monkeypatch):
     """Before this, the saved account kept the old name, so a publish to the new one found
     no owner token and refused."""
@@ -391,7 +410,7 @@ async def test_an_org_namespace_is_recorded_and_says_a_refresh_forgets_it(make_c
     assert localstore.load().accounts[0].namespaces == ["test-herd-ns", "test-sheep"]
     # Registry S31: whoami lists only owned namespaces, so the start-up check drops it.
     assert "forgets test-herd-ns" in claim["message"]
-    assert "`authenticate`" in claim["message"]
+    assert "finds no saved token" in claim["message"] and "JMC_TEST_API_KEY" in claim["message"]
 
 
 async def test_production_refuses_a_test_org_namespace_before_any_request(make_client, monkeypatch):

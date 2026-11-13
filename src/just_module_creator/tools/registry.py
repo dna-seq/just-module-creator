@@ -1447,11 +1447,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         log.info("Renamed account to %s on %s (dry_run=%s)", new_name, target, dry_run)
         note = ""
         if report.get("applied"):
-            moved = dict(
-                pair.split(" -> ", 1)
-                for pair in report.get("namespaces_renamed", [])
-                if " -> " in pair
-            )
+            # The server writes each entry as f"{old} -> {new}" (services/accounts.py).
+            renamed = report.get("namespaces_renamed", [])
+            moved = dict(pair.split(" -> ", 1) for pair in renamed if " -> " in pair)
+            unread = [pair for pair in renamed if " -> " not in pair]
 
             def _rename(owner: localstore.StoredAccount) -> None:
                 owner.account = report["name"]
@@ -1460,6 +1459,11 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
             note = _amend_saved_account(
                 target, token, _rename, what=f"that this account is now {report['name']}"
             )
+            if unread:
+                note = (
+                    f"{note} Not recorded here, in a form this server could not read: "
+                    f"{', '.join(unread)}; `registry_accounts` refreshes the saved namespaces."
+                ).strip()
         old = report.get("account", "your account")
         return OpResult(
             success=True,
@@ -1580,9 +1584,12 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
             what=f"that it can publish to {namespace}",
         )
         caveat = (
-            f"The registry's account listing does not name a namespace an organisation owns, "
-            f"so the next check of saved accounts (each server start) forgets {namespace}; "
-            f"after that, `authenticate` with this account's key before publishing to it."
+            f"The registry's account listing does not name a namespace an organisation owns "
+            f"(registry S31, accepted, not yet shipped), so the check of saved accounts at the "
+            f"next server start forgets {namespace}, and a publish to it then finds no saved "
+            f"token. It works with the key given to `authenticate` or set as "
+            f"{'JMC_TEST_API_KEY' if target == 'test' else 'JMC_API_KEY'}; no tool here shows "
+            f"a saved key whole."
         )
         return OpResult(
             success=True,
