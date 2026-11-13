@@ -69,6 +69,11 @@ cmd = "sh kit:classes/liaison/watch-upstream.sh just-dna-compiler --tags"
 [seat.liaison.watch.registry]
 cmd = "sh kit:classes/liaison/watch-upstream.sh just-dna-registry --tags"
 
+# The key upstreams' releases from the package index (the kit's L136, L143; duty upstream-index): the compiler's
+# three packages and the registry client (held one minor both ends), and fastmcp, the server's framework (held <4).
+[seat.liaison.watch.upstream-index]
+cmd = "python3 kit:drivers/pypi/watch-pypi.py --upstream just-dna-format just-dna-compiler just-dna-enricher just-dna-registry fastmcp"
+
 # The weekly dependency bump (the kit's liaison role, "The dependency bump"): said due once a week while the
 # person is away, on this seat's own day. polars and duckdb are capped below 2 in pyproject.toml until 0.8.
 [seat.liaison.watch.nightly]
