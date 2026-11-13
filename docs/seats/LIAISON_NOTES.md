@@ -13,7 +13,7 @@ between. Later ledger commits: `a9eee8c`, `b5be9c4` (v0.8.1 read), `2d8b3a5` (th
 
 `compiler` (tags of `dna-seq/just-dna-compiler`, from the registry liaison's state-file line `just-dna-compiler`,
 reused), `registry` (this seat's line `just-dna-registry`, the registry's own clone, fetch only), `nightly` (the
-weekly dependency bump), `desk`, `brief`. All started 2026-11-07. The hosts have none: read `claude --version` and
+weekly dependency bump), `desk`, `brief`. All started 2026-11-07. `upstream-index` (the package index, `--upstream`, over the format trio, the registry client and fastmcp; added 2026-11-13 on the seat-builder's handoff, `dffb355`): a `published` line starts the per-release read, often before the tag line; fastmcp's 4.x lines are read against the `<4` lift gate, not taken. The hosts have none: read `claude --version` and
 `codex --version` at each start against `docs/UPSTREAM_HOSTS.md`.
 
 ## Half read
