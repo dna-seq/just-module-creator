@@ -90,7 +90,7 @@ its history.
 | F132 | S142 | RM427 | patch half passes on 0.8.4; remedy key (minor) open |
 | F135 | S141 | RM426 | patch half passes on 0.8.4; minor half open |
 | F142 | S140 | RM425 | CLOSED 2026-11-12 (passes on 0.8.4) |
-| F139 | S139 | RM423 | patch half passes on 0.8.4; minor half open |
+| F139 | S139 | RM423 | patch half passes on 0.8.4, our audit signal removed (c14cee2); minor half open |
 | F137 | S138 | RM422 | CLOSED 2026-11-12 (passes on 0.8.4); our audit signal stays |
 | F130 | S136 | RM414 | CLOSED 2026-11-12 (passes on 0.8.4) |
 | F131 | S137 | RM415 | CLOSED 2026-11-12 (passes on 0.8.4) |
@@ -237,7 +237,7 @@ of the tester's Atlas runs (128 of 819, 24 of 126), and the values are right.
 
 ## F139 — `record_verification` re-signs records of checks it did not re-run over new authored bytes (format `S139`)
 
-**Patch half re-run 2026-11-12 on the installed enricher 0.8.4, passes:** over a copy of `assets/mthfr_folate` (13 records), with `studies.csv` edited, `record_verification` given one fresh `reference_allele` record wrote that record alone and logged "verification.json held 12 record(s) put over different authored bytes, not re-signed over these: ..."; a second call with the bytes unchanged kept both records (RM45 intact). The per-record binding (a minor) is open, so the entry stays. Whether `audit_module`'s `checks_older_than_the_last_edit` comes out is the lead's.
+**Patch half re-run 2026-11-12 on the installed enricher 0.8.4, passes:** over a copy of `assets/mthfr_folate` (13 records), with `studies.csv` edited, `record_verification` given one fresh `reference_allele` record wrote that record alone and logged "verification.json held 12 record(s) put over different authored bytes, not re-signed over these: ..."; a second call with the bytes unchanged kept both records (RM45 intact). The per-record binding (a minor) is open, so the entry stays. `audit_module`'s `checks_older_than_the_last_edit` came out on main (`c14cee2`, the lead, 2026-11-13).
 
 **State: patch half released in 0.8.3 (2026-11-10), not in our lock (`<0.8`); the per-record binding (a minor) is open.** Answered the same hour: RM423, high, with their pm to size. Candidate 1 (drop carried records when the
 binding moved, logged) is the patch half; a per-record binding is a minor. They call our interim (a record older
