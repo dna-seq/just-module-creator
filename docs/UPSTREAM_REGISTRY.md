@@ -22,7 +22,7 @@ format 0.7.1, compiler 0.7.2`; the polygon gave no answer within 15 s (not read,
 person's), still 502 at 17:0x UTC, and it has asked the person; still 502 at 02:37 UTC on 2026-11-09 and at 20:50 UTC on 2026-11-10 (production answers, 0.27.0). **Back at 21:22 UTC on 2026-11-10, serving `registry 0.28.5, format 0.8.0, compiler 0.8.0`** (the person redeployed it): main's 0.7 client now gets the minor-skew 409 on the polygon's guarded calls (`registry_check`, `registry_validate`, publish), while production still serves 0.7.1. The `adopt-0.8` branch matches the polygon. Registry 0.28.3 (enricher 0.8.1) is being cut; the
 polygon gets it at the next deploy.
 
-**Servers, 14:37 UTC on 2026-11-12: both production and the polygon serve `registry 0.30.0, format 0.8.4, compiler 0.8.4`.** Main's 0.7 client is now a minor skew on both (409 on guarded calls); the 0.8 adoption's condition (production on 0.8) is met.
+**Servers, 14:37 UTC on 2026-11-12: both production and the polygon serve `registry 0.30.0, format 0.8.4, compiler 0.8.4`.** Main's 0.7 client is now a minor skew on both (409 on guarded calls); the 0.8 adoption's condition (production on 0.8) is met. **2026-11-13: production answers HTTP 502** on `/api/v1/version` from at least 17:11 to 17:57 UTC, the hour registry 0.31.0 was tagged; the polygon answers (0.30.0). Asked of `just-dna-registry/lead` at 17:18 UTC (deploys are the person's); no answer yet.
 
 **Read to: `v0.31.0`, by its `Client surface:` lines** (2026-11-13; 0.30.0 on 2026-11-12), which CLAUDE.md §11 trusts for "did our
 methods move". 0.27.1 and 0.28.1, 0.28.2: client surface unchanged. **0.28.0** moves it: `catalog_stats()`
