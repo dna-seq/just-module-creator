@@ -18,7 +18,9 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. The hosts have
 
 ## Half read
 
-- The polygon answers again (21:22 UTC, 2026-11-10) on format 0.8.0; production on 0.7.1. Main (0.7) cannot rehearse there until `adopt-0.8` lands; read production's version for the adoption.
+- Nothing. Main runs format/compiler/enricher 0.8.5 and registry client 0.30.0 (release 0.48.9); both registries
+  serve registry 0.30.0 on format 0.8.4 (read 2026-11-12). Re-run S30 on the polygon after the registry's next
+  release and deploy (their fix is `dac4ccf`, unreleased).
 
 ## The dependency bump
 
@@ -35,7 +37,10 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. The hosts have
 
 - The lead: five pending-fixes entries reproduced as fixed leave code of ours to lift (F94, F93, F63, F59, F67;
   told in `#just-module-creator>0.8`, 2026-11-07).
-- Format v0.8.3 (2026-11-10) released RM422 (F137) and RM423's patch half (F139); not in our lock. The 0.8 adoption floors move to `>=0.8.3`; told the lead.
+- Format minors still open upstream: RM429 (F146, parked; our interim on main), the minor halves of RM427 (F132),
+  RM426 (F135) and RM423 (F139; our audit signal removed by the lead in `c14cee2`). Registry: S29's per-answer
+  terms field, undecided.
+- Desk #255 (the lead's, the person's): the polygon's `test-sheep` namespace; default leave it.
 - The 0.8.4 re-run (2026-11-12): F142, F137, F130, F131, F127, F115, F113, F116 and F146's S143 half closed; F132, F135, F139 pass their patch halves. F118 closed the same evening over `statin_response`. F85 closed 2026-11-13 over a strand-flipped `fto_bmi`. Nothing from the 0.8 re-run is left open on my side.
 - Format: RM427 (S142, F132: `clinvar pull` at two sites; guard walk; remedy key a minor), answered 2026-11-10.
 
