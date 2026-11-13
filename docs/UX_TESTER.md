@@ -264,6 +264,14 @@ Lessons for this seat. **Run the release, not the working tree**: the lead's unc
 tree, and one import caught a file mid-save (`git archive <tag> src` plus `PYTHONPATH` runs the release whole).
 **Pace polygon derives at one per ten minutes**: six in four minutes bought a 429 per call after that.
 
+**0.48.9 smoke, 2026-11-13, over the host wire** (instructions name v0.48.9, format 0.8.5).
+
+| finding | result |
+|---|---|
+| F148 | holds: `registry_lane_lookup` on `pharmvar`/`alleles` (`CYP2C19*2`) carries `licence: CC-BY-SA-4.0`, the notice, the URL and `redistribution: "refused: ..."` beside the row |
+| F149 | holds: `remote_derive` on `recheck_08/fto_remote` (keeps its `verification.json`) answers with the decision line, no crash |
+| F150 | not re-run over the wire: this session's cached listing has no `passes` argument (the known first-connection cache). 2a4b421, which I rechecked in-process on main, is in v0.48.9 and `_passes_from` is unchanged since |
+
 **The host keeps the tool descriptions from its first connection.** After the server restart, ToolSearch still
 returned 0.48.3's descriptions, and the source has the new ones. A fix that is only in a description can't be
 rechecked in a reconnected session: read the source, or recheck from a fresh session.
