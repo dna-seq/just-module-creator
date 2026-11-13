@@ -33,6 +33,8 @@ admin-only `runs`, `run`, `run_log` (upgrade logs over REST), nothing for us. **
 map item 1 does, and `upgrade --online` now asks dbSNP (RM398's `dbsnp` witness rows reach republished modules). 0.28.x requires `just-dna-format>=0.8.0`, so our
 `<0.8` cap holds us at 0.27.x until the 0.8 adoption (`docs/UPSTREAM_COMPILER.md`, map item 1).
 
+**Filed:** `S31` (the lead, 2026-11-13): `whoami` lists owned namespaces only, and no call lists the caller's orgs. Accepted as a reporting gap; our additive shape (`member_of` with `via`, `orgs` with role) filed for their next minor, undecided.
+
 **Filed:** `S30` (F150, 2026-11-12): `derived?passes=…&offline=false` is skipped by the deployment's `enrich_offline`, and the skip tells the caller to ask live. Released in 0.30.1 (`dac4ccf`): the caller's `offline` now reaches the proxy. Not deployed at 2026-11-13 (both instances on 0.30.0); re-run on the polygon after the deploy.
 
 **Filed:** `S29` (F148, 2026-11-12): the keyed lane lookup serves lanes `/caches` refuses to redistribute (pharmvar, pubmind) or calls unestablished (mane). By design: a keyed subslice is a derivative, the refusal covers the whole snapshot (their API-REFERENCE.md, endpoints 46-47); terms on each answer is an undecided minor.

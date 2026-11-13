@@ -118,6 +118,16 @@ its history.
 | F99 | S101 | doc fixed | upstream docs, nothing to install |
 | F54 | S58 | RM122 | open upstream, parked |
 
+## Registry `S31` — `whoami` lists only owned namespaces; no call lists the caller's orgs (no F#: the lead's account tools)
+
+**State: accepted as a reporting gap, filed for their next minor, undecided (answered 2026-11-13, their `56c515f`).**
+Authorization already reads memberships and the org cascade (`effective_role()`); only `whoami`'s report is short,
+so a namespace reached through an org (`create_org_namespace`) or a membership (`add_member`) is in no account's
+`whoami().namespaces`, and our token picker finds no account for it. Their filed shape is ours, additive: `member_of`
+with `via`, and `orgs` with the role; `namespaces` keeps its meaning. Meanwhile our org-namespace tool records the
+namespace on the saved account after the claim and says the next account refresh drops it (the lead, in progress);
+that note comes out when the minor ships and the picker reads `member_of`. Filed by the lead.
+
 ## F150 — a live pass asked of `derived` is skipped by the deployment's `enrich_offline`, and the skip says to ask live (registry `S30`)
 
 **State: released in registry 0.30.1 (on PyPI 2026-11-13, carries `dac4ccf`); not yet deployed: at 2026-11-13 both
