@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`audit_module` drops `checks_older_than_the_last_edit`** (F139's mitigation, from 0.48.4). Upstream's RM423 (in our lock since 0.8.3) drops carried records when the module's bytes move, and `validate_module` / `compile_module` report `verification_stale` the moment an authored edit lands after a check, decided on the bytes rather than on our log. With both in place, the signal could only fire on a logged move that changed no authored bytes, a false alarm.
 ## [0.48.9] — 2026-11-13
 
 - **Locked at just-dna 0.8.5** (a patch: two snapshot readers raise rather than answer empty on an unreadable reference, and `resolve_variants` back-fills fewer rsIDs). Nothing here calls either directly; floors stay at 0.8.4.

@@ -34,9 +34,7 @@ a name stops resolving — the `keyed_on` pattern, and the reason it exists.
 from __future__ import annotations
 
 import csv
-import re
 from collections.abc import Iterable, Mapping, Sequence
-from datetime import datetime
 from pathlib import Path
 from statistics import NormalDist
 from typing import Any
@@ -56,7 +54,6 @@ SPEC_YAML = "module_spec.yaml"
 VERIFICATION_JSON = "verification.json"
 STUDIES = "studies.csv"
 VARIANTS = "variants.csv"
-AUTHORING_LOG = "logs/authoring.log"
 DIPLOTYPES = "diplotypes.csv"
 
 #: Every column this module reads by name. Not generated and it cannot be: a schema
@@ -803,90 +800,9 @@ def sidecar_rows_nothing_authors(spec_dir: Path) -> AuditSignal:
     )
 
 
-#: The ISO-8601 UTC stamp every `logs/authoring.log` line opens with (`overrides.utc_now`).
-_LOG_STAMP = re.compile(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)\s")
-
-
-def _when(stamp: str | None) -> datetime | None:
-    try:
-        return datetime.fromisoformat(stamp) if stamp else None
-    except ValueError:
-        return None
-
-
-def checks_older_than_the_last_edit(spec_dir: Path) -> AuditSignal:
-    """Recorded checks that ran before the newest logged authoring move (F139).
-
-    `verification.json` binds one hash over the whole file, and a later pass re-signs
-    the records of checks it did not re-run, so a bound file can carry a verdict
-    computed over rows that have since changed (upstream's S139, RM423). Each record
-    keeps its own `checked_at`; this compares it with the newest line in
-    `logs/authoring.log`. A hand edit no tool logged leaves no line, so a `clear` here
-    covers only logged moves, and says so.
-    """
-    name = "checks_older_than_the_last_edit"
-    path = spec_dir / VERIFICATION_JSON
-    if not path.is_file():
-        return _blocked(name, f"there is no {VERIFICATION_JSON}, so no check record to date")
-    try:
-        doc = read_verification(path)
-    except (ValueError, OSError) as exc:
-        return _blocked(name, f"{VERIFICATION_JSON} could not be read: {exc}")
-    stale = attestation_failure(doc, module_binding(authored_input_entries(spec_dir)))
-    if stale is not None:
-        # The compiler drops the whole file then, so no record of it publishes.
-        return _blocked(name, f"{VERIFICATION_JSON} does not describe these bytes: {stale}")
-    log = spec_dir / AUTHORING_LOG
-    stamps = (
-        [
-            moment
-            for line in log.read_text(encoding="utf-8").splitlines()
-            if (m := _LOG_STAMP.match(line)) and (moment := _when(m.group(1))) is not None
-        ]
-        if log.is_file()
-        else []
-    )
-    if not stamps:
-        return _blocked(
-            name,
-            f"no dated line in {AUTHORING_LOG}, so there is no logged edit to date the checks "
-            "against; a hand edit no tool logged leaves none",
-        )
-    newest = max(stamps)
-    undated = [r.check for r in doc.records if _when(r.checked_at) is None]
-    older = sorted(
-        (r for r in doc.records if (w := _when(r.checked_at)) is not None and w < newest),
-        key=lambda r: r.check,
-    )
-    shown = newest.strftime("%Y-%m-%dT%H:%M:%SZ")
-    if not older:
-        return _clear(
-            name,
-            f"every dated check ran after the newest logged edit ({shown}); unlogged hand "
-            "edits are outside what this can see"
-            + (f"; {len(undated)} record(s) carry no checked_at" if undated else ""),
-        )
-    return _decide(
-        name,
-        f"{len(older)} recorded check(s) ran before the newest logged edit ({shown}), so their "
-        "verdicts may describe rows that have since changed",
-        [f"{r.check}: checked {r.checked_at}, over {r.subjects} subject(s)" for r in older]
-        + (
-            [f"{len(undated)} further record(s) carry no checked_at and could not be dated"]
-            if undated
-            else []
-        )
-        + [
-            "the file's signature covers these records whatever their age, and the compile "
-            "publishes their findings. Re-run each check to date it after your edits.",
-        ],
-    )
-
-
 SIGNALS = (
     weight_scale,
     checks_that_never_ran,
-    checks_older_than_the_last_edit,
     findings_without_detail,
     effect_size_is_its_own_z,
     clinical_claims_without_studies,
