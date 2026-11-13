@@ -17,6 +17,7 @@ they upload the spec, so they need a credential whatever their effect. The tag i
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -367,6 +368,43 @@ def _preflight(
         target=target,
         registry_url=registry_url,
         next_step=next_step,
+    )
+
+
+def _rename_in(owner: localstore.StoredAccount, moved: dict[str, str]) -> None:
+    """Swap each moved namespace on a saved account for its new name."""
+    owner.namespaces = sorted({moved.get(ns, ns) for ns in owner.namespaces})
+
+
+def _amend_saved_account(
+    target: RegistryTarget,
+    token: str,
+    change: Callable[[localstore.StoredAccount], None],
+    *,
+    what: str,
+) -> str:
+    """Apply `change` to the saved account holding `token`; a note when it could not be.
+
+    A token saved nowhere (a header, `authenticate` with a key never saved) has no record to
+    update, and that is not an error; it is said, so nobody reads silence as recorded.
+    """
+
+    def _apply(state: localstore.State) -> bool:
+        owner = localstore.account_for_token(state, target, token)
+        if owner is None:
+            return False
+        change(owner)
+        return True
+
+    try:
+        recorded = localstore.update(_apply)
+    except OSError as exc:
+        return f"Not recorded on this machine ({exc})."
+    if recorded:
+        return ""
+    return (
+        f"No saved account holds this token, so nothing here knows {what}: "
+        f'`registry_accounts(action="add")` saves it.'
     )
 
 
@@ -1331,6 +1369,16 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         log.info(
             "Renamed namespace %s -> %s on %s (dry_run=%s)", namespace, new_name, target, dry_run
         )
+        note = ""
+        if report.get("applied"):
+            # The saved account picks its token by namespace, so the old name must give way
+            # to the new one here too, or the next publish to the new name finds no owner.
+            note = _amend_saved_account(
+                target,
+                token,
+                lambda owner: _rename_in(owner, {namespace: new_name}),
+                what=f"that it now owns {new_name}",
+            )
         return OpResult(
             success=True,
             message=(
@@ -1338,7 +1386,210 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
                 f"what would move, then call again with dry_run=false."
                 if dry_run
                 else f"Renamed {namespace} to {new_name} on {describe(target, settings)}; "
-                f"{namespace} stays as an alias."
+                f"{namespace} stays as an alias." + (f" {note}" if note else "")
             ),
             data={"target": target, "dry_run": dry_run, "report": jsonable(report)},
+        )
+
+    # Registry 0.28 (namespace half 0.29). Upstream's own default is to apply; ours is a dry
+    # run, as for the namespace rename, because the report (every version whose `owner` is
+    # amended, which namespace renames with the handle) is what to read before the real call.
+    # The account renamed is the one whose token the call resolves, which is why `namespace`
+    # is accepted: it picks among several saved accounts the way every other gated tool does.
+    @mcp.tool(
+        tags={GATED_TAG},
+        annotations=ToolAnnotations(
+            title="Registry: rename your account",
+            readOnlyHint=False,
+            idempotentHint=True,
+            destructiveHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def registry_rename_account(
+        new_name: str,
+        ctx: Context,
+        dry_run: bool = True,
+        namespace: str | None = None,
+        target: RegistryTarget = "test",
+    ) -> OpResult:
+        """Rename your own account handle on the registry.
+
+        Nothing published changes identity: each version whose manifest `owner` names
+        you is amended (outside its digest and signature), the old handle stays
+        reserved to you, and a namespace spelled like the old handle that you own
+        renames with it, the old name kept as an alias. An organisation's handle is
+        renamed by a site admin, not here.
+
+        `dry_run=true` (the default) returns the registry's report and changes nothing;
+        read it, then call again with `dry_run=false`. The account renamed is the one
+        this call's token belongs to; `namespace` picks among several saved accounts by
+        one it owns. Running the same rename again finishes versions listed under `failed`.
+        """
+        token = await resolve_api_key(ctx, settings, target, namespace)
+        if token is None:
+            return unauthenticated_result(settings, target, namespace)
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        try:
+            report = await run_sync(
+                lambda: _client(token, target).rename_account(new_name, dry_run=dry_run)
+            )
+        except RegistryError as exc:
+            return OpResult(
+                success=False,
+                message=(
+                    f"{describe(target, settings)} refused the rename: {exc}{instance_note(exc)}"
+                ),
+                data={"target": target},
+            )
+        log.info("Renamed account to %s on %s (dry_run=%s)", new_name, target, dry_run)
+        note = ""
+        if report.get("applied"):
+            moved = dict(
+                pair.split(" -> ", 1)
+                for pair in report.get("namespaces_renamed", [])
+                if " -> " in pair
+            )
+
+            def _rename(owner: localstore.StoredAccount) -> None:
+                owner.account = report["name"]
+                _rename_in(owner, moved)
+
+            note = _amend_saved_account(
+                target, token, _rename, what=f"that this account is now {report['name']}"
+            )
+        old = report.get("account", "your account")
+        return OpResult(
+            success=True,
+            message=(
+                f"Dry run on {describe(target, settings)}: nothing changed. Read `report` for "
+                f"what would be amended, then call again with dry_run=false."
+                if dry_run
+                else f"Renamed {old} to {report.get('name', new_name)} on "
+                f"{describe(target, settings)}; {old} stays reserved to you."
+                + (f" {note}" if note else "")
+            ),
+            data={"target": target, "dry_run": dry_run, "report": jsonable(report)},
+        )
+
+    # An org is an account the caller owns; `create_org_namespace` needs one, and no other
+    # call here could make it. Registry S31: nothing lists the orgs an account belongs to, so
+    # the org's name has to come from the author or from this call's result.
+    @mcp.tool(
+        tags={GATED_TAG},
+        annotations=ToolAnnotations(
+            title="Registry: create an organisation",
+            readOnlyHint=False,
+            idempotentHint=False,
+            destructiveHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def registry_create_org(
+        name: str, ctx: Context, target: RegistryTarget = "test"
+    ) -> OpResult:
+        """Create an organisation account on the registry; you become its owner.
+
+        An organisation owns namespaces its members publish to by their role in it
+        (`registry_create_org_namespace`). Its name follows the account-name rule:
+        lowercase letters and digits with single hyphens. The registry offers no call
+        that lists the organisations you belong to, so keep the name.
+        """
+        token = await resolve_api_key(ctx, settings, target)
+        if token is None:
+            return unauthenticated_result(settings, target)
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        try:
+            payload = await run_sync(lambda: _client(token, target).create_org(name))
+        except RegistryError as exc:
+            return OpResult(
+                success=False,
+                message=(
+                    f"{describe(target, settings)} refused the organisation: "
+                    f"{exc}{instance_note(exc)}"
+                ),
+                data={"target": target, "org": name},
+            )
+        return OpResult(
+            success=True,
+            message=f"Created the organisation {name} on {describe(target, settings)}; you own it.",
+            data={**jsonable(payload), "target": target},
+        )
+
+    # The claim's org twin. Recorded on the saved account so the next publish to it picks
+    # this token, but `whoami` lists only namespaces an account owns itself (registry S31),
+    # so the next account refresh drops it again; the result says so rather than hiding it.
+    @mcp.tool(
+        tags={GATED_TAG},
+        annotations=ToolAnnotations(
+            title="Registry: claim a namespace for an organisation",
+            readOnlyHint=False,
+            idempotentHint=False,
+            destructiveHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def registry_create_org_namespace(
+        org: str, namespace: str, ctx: Context, target: RegistryTarget = "test"
+    ) -> OpResult:
+        """Claim a namespace owned by an organisation you administer.
+
+        Its members publish to it by their role in the organisation, with no grant per
+        person. Needs the admin or owner role in `org`. The name rules and the polygon
+        and production split are `registry_claim_namespace`'s: production refuses a
+        `test-` name, and a claim there is permanent.
+        """
+        try:
+            validate_namespace(namespace)
+        except Exception as exc:
+            raise ToolError(f"Invalid namespace {namespace!r}: {exc}") from exc
+        refusal = prod_refusal(target, namespace=namespace)
+        if refusal is not None:
+            return OpResult(
+                success=False,
+                message=f"Nothing was claimed. {refusal}",
+                data={"target": target, "namespace": namespace, "org": org},
+            )
+
+        token = await resolve_api_key(ctx, settings, target)
+        if token is None:
+            return unauthenticated_result(settings, target)
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        try:
+            payload = await run_sync(
+                lambda: _client(token, target).create_org_namespace(org, namespace)
+            )
+        except RegistryError as exc:
+            return OpResult(
+                success=False,
+                message=(
+                    f"{describe(target, settings)} refused the claim: {exc}{instance_note(exc)}"
+                ),
+                data={"target": target, "namespace": namespace, "org": org},
+            )
+        note = _amend_saved_account(
+            target,
+            token,
+            lambda owner: setattr(owner, "namespaces", sorted({*owner.namespaces, namespace})),
+            what=f"that it can publish to {namespace}",
+        )
+        caveat = (
+            f"The registry's account listing does not name a namespace an organisation owns, "
+            f"so the next check of saved accounts (each server start) forgets {namespace}; "
+            f"after that, `authenticate` with this account's key before publishing to it."
+        )
+        return OpResult(
+            success=True,
+            message=(
+                f"Claimed {namespace} for {org} on {describe(target, settings)}. "
+                + (f"{note} " if note else "")
+                + caveat
+            ),
+            data={**jsonable(payload), "target": target},
         )

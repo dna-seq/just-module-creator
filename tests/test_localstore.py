@@ -7,7 +7,9 @@ the one construction point for a registry client.
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import httpx
 import pytest
@@ -156,6 +158,7 @@ class _RegistryStub:
     def __init__(self, **replies) -> None:
         self.replies = replies
         self.tokens: list[str | None] = []
+        self.calls: list[tuple] = []
 
     def __call__(self, target, settings, *, token=None, timeout=None):
         self.tokens.append(token)
@@ -172,6 +175,22 @@ class _RegistryStub:
 
     def claim_namespace(self, namespace, **kwargs):
         return {"namespace": namespace}
+
+    def rename_namespace(self, namespace, name, *, dry_run=True, allow_test_data=False):
+        self.calls.append(("rename_namespace", namespace, name, dry_run))
+        return {"namespace": namespace, "name": name, "applied": not dry_run, "modules": []}
+
+    def rename_account(self, name, *, dry_run=False, allow_test_data=False):
+        self.calls.append(("rename_account", name, dry_run))
+        return self.replies["rename_account"](name, dry_run)
+
+    def create_org(self, name):
+        self.calls.append(("create_org", name))
+        return {"org": name}
+
+    def create_org_namespace(self, org, namespace):
+        self.calls.append(("create_org_namespace", org, namespace))
+        return {"namespace": namespace, "org": org}
 
     def whoami(self):
         reply = self.replies["whoami"]
@@ -275,6 +294,118 @@ async def test_a_claimed_namespace_is_recorded_on_the_account_that_claimed_it(
     assert stub.tokens == ["mk_sheep_aaaa"], "the default account made the claim"
     assert localstore.load().accounts[0].namespaces == ["test-flock", "test-sheep"]
     assert localstore.pick_token(localstore.load(), "test", "test-flock") == "mk_sheep_aaaa"
+
+
+#: The polygon's own reply to a dry-run handle rename (assets/registry_replies/README.md).
+REPLIES = Path(__file__).parent.parent / "assets" / "registry_replies"
+DRY_RENAME = json.loads((REPLIES / "rename_account_dry_run.json").read_text())
+
+
+def _account_rename(name: str, dry_run: bool) -> dict:
+    """The captured reply, for the name asked. Applied, it is not captured: `applied` and
+    `namespaces_renamed` follow `AccountRename`'s documented fields (`old -> new`)."""
+    reply = {**DRY_RENAME, "name": name, "applied": not dry_run}
+    if not dry_run:
+        reply["namespaces_renamed"] = [f"{DRY_RENAME['account']} -> {name}"]
+    return reply
+
+
+async def test_an_account_rename_is_a_dry_run_unless_asked_and_a_dry_run_records_nothing(
+    make_client, monkeypatch
+):
+    """Upstream's `rename_account` applies by default; ours does not."""
+    assert DRY_RENAME["account"] == "sheep" and DRY_RENAME["applied"] is False
+    _seed(("test", "sheep", "mk_sheep_aaaa", ["sheep", "test-sheep"]))
+    stub = _RegistryStub(rename_account=_account_rename)
+    monkeypatch.setattr(registry_tools, "client_for", stub)
+    async with make_client(settings=_online()) as client:
+        payload = (
+            await client.call_tool("registry_rename_account", {"new_name": "sheep-dryrun"})
+        ).structured_content
+
+    assert stub.calls == [("rename_account", "sheep-dryrun", True)]
+    assert payload["success"] is True and "nothing changed" in payload["message"]
+    assert payload["data"]["report"]["versions"] == DRY_RENAME["versions"]
+    saved = localstore.load().accounts[0]
+    assert (saved.account, saved.namespaces) == ("sheep", ["sheep", "test-sheep"])
+
+
+async def test_an_applied_account_rename_moves_the_saved_handle_and_its_namespace(
+    make_client, monkeypatch
+):
+    _seed(("test", "sheep", "mk_sheep_aaaa", ["sheep", "test-sheep"]))
+    stub = _RegistryStub(rename_account=_account_rename)
+    monkeypatch.setattr(registry_tools, "client_for", stub)
+    async with make_client(settings=_online()) as client:
+        payload = (
+            await client.call_tool("registry_rename_account", {"new_name": "ewe", "dry_run": False})
+        ).structured_content
+
+    assert stub.calls == [("rename_account", "ewe", False)]
+    assert payload["success"] is True and "Renamed sheep to ewe" in payload["message"]
+    saved = localstore.load().accounts[0]
+    assert (saved.account, saved.namespaces) == ("ewe", ["ewe", "test-sheep"])
+    state = localstore.load()
+    assert localstore.pick_token(state, "test", "ewe") == "mk_sheep_aaaa"
+    assert localstore.pick_token(state, "test", "sheep") is None, "the old name is an alias now"
+
+
+async def test_an_applied_namespace_rename_moves_the_saved_namespace(make_client, monkeypatch):
+    """Before this, the saved account kept the old name, so a publish to the new one found
+    no owner token and refused."""
+    _seed(("test", "sheep", "mk_sheep_aaaa", ["test-sheep"]))
+    stub = _RegistryStub()
+    monkeypatch.setattr(registry_tools, "client_for", stub)
+    async with make_client(settings=_online()) as client:
+        for dry_run in (True, False):
+            await client.call_tool(
+                "registry_rename_namespace",
+                {"namespace": "test-sheep", "new_name": "test-flock", "dry_run": dry_run},
+            )
+            if dry_run:
+                assert localstore.load().accounts[0].namespaces == ["test-sheep"]
+
+    assert localstore.load().accounts[0].namespaces == ["test-flock"]
+    assert localstore.pick_token(localstore.load(), "test", "test-flock") == "mk_sheep_aaaa"
+
+
+async def test_an_org_namespace_is_recorded_and_says_a_refresh_forgets_it(make_client, monkeypatch):
+    _seed(("test", "sheep", "mk_sheep_aaaa", ["test-sheep"]))
+    stub = _RegistryStub()
+    monkeypatch.setattr(registry_tools, "client_for", stub)
+    async with make_client(settings=_online()) as client:
+        org = (
+            await client.call_tool("registry_create_org", {"name": "test-herd"})
+        ).structured_content
+        claim = (
+            await client.call_tool(
+                "registry_create_org_namespace", {"org": "test-herd", "namespace": "test-herd-ns"}
+            )
+        ).structured_content
+
+    assert stub.calls == [
+        ("create_org", "test-herd"),
+        ("create_org_namespace", "test-herd", "test-herd-ns"),
+    ]
+    assert org["success"] is True and claim["success"] is True
+    assert localstore.load().accounts[0].namespaces == ["test-herd-ns", "test-sheep"]
+    # Registry S31: whoami lists only owned namespaces, so the start-up check drops it.
+    assert "forgets test-herd-ns" in claim["message"]
+    assert "`authenticate`" in claim["message"]
+
+
+async def test_production_refuses_a_test_org_namespace_before_any_request(make_client, monkeypatch):
+    stub = _RegistryStub()
+    monkeypatch.setattr(registry_tools, "client_for", stub)
+    async with make_client(settings=_online()) as client:
+        claim = (
+            await client.call_tool(
+                "registry_create_org_namespace",
+                {"org": "herd", "namespace": "test-herd", "target": "prod"},
+            )
+        ).structured_content
+    assert claim["success"] is False and "Nothing was claimed" in claim["message"]
+    assert stub.calls == [] and stub.tokens == []
 
 
 # --- the check at start ----------------------------------------------------------------

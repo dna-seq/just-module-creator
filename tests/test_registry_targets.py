@@ -57,6 +57,9 @@ REGISTRY_TOOL_DEFAULTS = {
     "registry_delete_version": "test",
     "registry_delete_module": "test",
     "registry_rename_namespace": "test",
+    "registry_rename_account": "test",
+    "registry_create_org": "test",
+    "registry_create_org_namespace": "test",
     # Yank is the one write whose real audience is production — a bad publish there is
     # what it exists for. It still defaults to the polygon like every other write: an
     # unaimed yank that silently delisted a production version would be the mistake this

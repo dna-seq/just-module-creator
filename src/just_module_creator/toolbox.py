@@ -239,8 +239,11 @@ GROUPS: tuple[Group, ...] = (
             "registry_delete_version",
             "registry_delete_module",
             "registry_rename_namespace",
+            "registry_rename_account",
+            "registry_create_org",
+            "registry_create_org_namespace",
         ),
-        7486,
+        9388,
     ),
     Group(
         "snapshots",
