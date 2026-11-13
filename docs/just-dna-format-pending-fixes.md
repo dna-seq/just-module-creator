@@ -120,8 +120,8 @@ its history.
 
 ## F150 — a live pass asked of `derived` is skipped by the deployment's `enrich_offline`, and the skip says to ask live (registry `S30`)
 
-**State: fixed in their tree (`dac4ccf`), unreleased; the polygon still serves 0.30.0, so it reproduces there until
-the next deploy.** The proxy now takes the caller's `offline`, and `enrich_offline` governs only the box's own
+**State: released in registry 0.30.1 (on PyPI 2026-11-13, carries `dac4ccf`); not yet deployed: at 2026-11-13 both
+instances still serve 0.30.0, so it reproduces until the next deploy, when the liaison re-runs it on the polygon.** The proxy now takes the caller's `offline`, and `enrich_offline` governs only the box's own
 publish, so the skip's advice is true again. Saying up front which live legs run is a new field in their roadmap,
 undecided. Our half (`_passes_from`) is fixed on main (`2a4b421`, the lead). Filed 2026-11-12 by the liaison, on the
 tester's report. The
