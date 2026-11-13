@@ -25,7 +25,7 @@ watcher. Restrict a `git grep` to paths: a whole-tree grep on NTFS times out.
 registry instances serve 0.8 (`/api/v1/version`). polars and duckdb are capped `<2` in the lock beside it
 (`c361614`) until that move.
 
-**Read to: `v0.8.5`** (its release entry, below; all three on PyPI 2026-11-12); `v0.8.4` (its release entry on their `main`; all three on PyPI 2026-11-11, tag `36cbc20` pushed later that day); `v0.8.3` (its release entry; all three on PyPI 2026-11-10); `v0.8.2` (its release entry; on PyPI 2026-11-08); `v0.8.0` (tag `e97339a`, on PyPI 2026-11-05), through `docs/INTEGRATION_0_8.md` as it stands on
+**Read to: `v0.8.6`** (its release entry, below; all three on PyPI 2026-11-13); `v0.8.5` (its release entry; all three on PyPI 2026-11-12); `v0.8.4` (its release entry on their `main`; all three on PyPI 2026-11-11, tag `36cbc20` pushed later that day); `v0.8.3` (its release entry; all three on PyPI 2026-11-10); `v0.8.2` (its release entry; on PyPI 2026-11-08); `v0.8.0` (tag `e97339a`, on PyPI 2026-11-05), through `docs/INTEGRATION_0_8.md` as it stands on
 their `main` at `911a2fd` (2026-11-07), which postdates the `0.8` branch head `edf2661`. Read for the adoption map
 below, not entry by entry through the changelog: the integration file is the release's own per-consumer
 reading, and its § 3 block for this plugin is answered here.
@@ -38,6 +38,13 @@ reading, and its § 3 block for this plugin is answered here.
   client's `set_short_description`, unwrapped), F67 (`compiler.load_spec` in place of our `yaml.safe_load`).
 - **`v0.8.0`'s changelog, entry by entry**, for what the integration file does not name (the registry liaison
   read it at the cut; ask before repeating it).
+- **`v0.8.6`, read by its release entry** (tag `2f03ab4a`, 2026-11-13, on PyPI). No public name, field, table,
+  flag or warning code; no return value or raise changes; release record moved nothing, no recompile. Floors to
+  `>=0.8.6` at our next bump (the nightly watcher's). What it carries: RM439 (`VariantRow.stat_significance`'s
+  description: the module author's verdict across the variant's evidence; `describe_table` passes it through, and
+  nothing of ours pins the wording), RM440 (`enrich --rederive` logs one aggregated warning naming rows that lost a
+  back-filled rsID on RM438's no-host arm; a log line only), RM437's doc half (INTEGRATION_0_8 § 3: the `ensembl`
+  lane carries the core only; the route that pulls `groups/` sidecars stays open for 0.9). Nothing for us to change.
 - **`v0.8.5`, read by its release entry** (tag `c036c700`, 2026-11-12, on PyPI). No public name, field, table, flag
   or warning code; release record moved nothing, no recompile. Floors to `>=0.8.5` at our next bump. What it carries:
   RM432 (`gene_metrics.lookup_snapshot`, `civic_snapshot_rows` raise `FileNotFoundError` on an unreadable
