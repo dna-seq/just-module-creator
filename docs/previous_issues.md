@@ -6,6 +6,100 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F150 — `remote_derive`'s `passes_report` is always null: the server sends `passes` as a list, and we read only a dict
+
+**Found:** 2026-11-12, released v0.48.8 source, in-process driver, with the raw archive captured · **Severity:**
+medium (the one field that says what a requested pass did is never filled) · **Status:** resolved 2026-11-13, released in 0.48.9
+
+`remote_derive(passes=["gwas"], live=true)` on `recheck_08/fto_remote_nov` (a copy of `assets/fto_bmi`
+without its local `verification.json`, so F149 does not stop it). I wrapped `RegistryClient.derived` to keep the
+archive. It sent `passes=["gwas"], offline=False`, and the archive's `check.json` holds:
+
+```
+"enrichment": {"offline": true, "ran": true, ...},
+"passes": [{"command": "gwas", "status": "skipped", "tables": ["gwas_effects.csv"],
+            "detail": "offline: this pass needs a live source (ask with offline=false)"}]
+```
+
+Our `tools/proxy.py` `_passes_from` returns `passes` only `if isinstance(passes, dict)`, so a list (the shape the
+server sends, and the shape its docstring describes: "what each did") comes back as `None`. The result then said
+`passes_report: null`, and `gwas_effects.csv` sat in `not_produced` beside 12 tables nobody asked for. An agent
+cannot tell "the pass was skipped and why" from "this server reports nothing". On main at b255c5f the check is
+unchanged.
+
+**Why it was skipped is the registry's half.** In registry 0.30.0's `api/routers/publish.py` the live leg runs only
+`if passes and not (offline or settings.enrich_offline)`, and `enrich_offline` defaults to `True`.
+`check.json`'s `enrichment.offline: true` shows the polygon runs that way. So a caller's `offline=false` cannot
+reach a live pass there, but the skip detail still tells it to "ask with offline=false", which it did. The
+GWAS pass has no snapshot, so on this deployment `passes=["gwas"]` can never produce a row.
+
+**Resolution:** `passes` read as upstream's list (`2a4b421`).
+
+## F149 — `remote_derive` crashes on any spec that already holds a `verification.json`
+
+**Found:** 2026-11-12, released v0.48.8 source (`git archive v0.48.8`), in-process driver, the polygon on
+registry 0.30.0 · **Severity:** high (the tool cannot run on most real modules) · **Status:** resolved 2026-11-13, released in 0.48.9
+
+`remote_derive(target="test", namespace="test-sheep", name="test_fto_remote")` on a copy of `assets/fto_bmi`
+(`data/interim/recheck_08/fto_remote/`). With or without `passes=["gwas"]` it fails with:
+
+> Error calling tool 'remote_derive': 'verification.json' is not a machine-produced table of this format.
+> Known: ['clin_sig_authority_calls.csv', ..., 'sources.csv']
+
+The traceback ends in upstream's `just_dna_compiler.hints.key_fields` → `derived_model_for`. The path in
+`tools/proxy.py`: `_unpack` keeps every archive member whose basename is in the registry's `DERIVED_FILES`,
+which includes `verification.json` (checked: 16 names, `verification.json` the only non-CSV). Then
+`_displacement_lines` finds the local `verification.json` and calls `_read_local_keys` → `_key_columns` →
+`hints.key_fields("verification.json")`, which raises `DraftError`, uncaught.
+
+The same copy **without** a local `verification.json` (`fto_remote_nov/`) returns normally. So the crash needs
+two things: the server returns a `verification.json`, which it did on every call here, and the spec already has
+one. Every module that ran `check_identifiers` or another cross-check has one; of the reference modules,
+`assets/fto_bmi` and `assets/mthfr_folate` do. Until 0.48.7 every `remote_derive` on the polygon stopped at
+the format-skew 409, which is why this was not seen earlier.
+
+**A second, open question, from the copy that does run:** `passes=["gwas"]`, with `live` false or true, returns
+`passes_report: null` and lists `gwas_effects.csv` under `not_produced`. The live call took 10 s, where the
+same pass locally took 4 min 45 s for this rsID. `notes` says the archive carried `check.json`, but
+`_passes_from` found no `passes` object in it. Capturing the raw `check.json` waits on the polygon's rate limit
+(429, enrich bucket, after six calls in about four minutes).
+
+**Resolution:** a non-table member is replaced whole with a decision line (`d9651d1`, `26009a1`, `8f5b473`).
+
+## F148 — `registry_lane_lookup` serves rows from lanes the same registry refuses to redistribute, and says nothing of their terms
+
+**Found:** 2026-11-12, plugin 0.48.8 over the host wire, registry 0.30.0 on both instances · **Severity:** medium
+(a licence question, not a crash) · **Status:** resolved 2026-11-13, released in 0.48.9
+
+`registry_caches(target="test")` gives a `remote_reason` per lane. For three of them it is a refusal or an open
+question about redistribution:
+
+- `pharmvar`: "refused: the bulk data is pulled under a key PharmVar's terms §2 make personal and
+  non-transferable".
+- `pubmind`: "refused: the ANNOVAR-distributed table is CC BY-NC-ND 4.0, and the snapshot is adapted material
+  NoDerivatives forbids sharing".
+- `mane`: "unestablished: ... whether a snapshot of these bytes may be redistributed has never been answered".
+
+`registry_lane_lookup` reads all three by key, anonymously (the tool says no token is needed), with
+`served_from: "local"`:
+
+| call | rows |
+|---|---|
+| `pharmvar`/`alleles`, `CYP2C19*2`, on **test and prod** | 1 row: `function: "no function"` |
+| `pubmind`/`pubmind`, chr19:44908684 (APOE rs429358), test | 36 rows with `clin_sig` and `pathogenicity_score` |
+| `mane`/`summary`, `APOE`, test | the full MANE Select record |
+
+The registry's changelog for 0.30 ("Every lane answers keyed lookups ... Keyed and bounded per request; nothing
+enumerates a lane") does not mention licences. Whether a bounded keyed read is redistribution is the registry's
+and the person's question, not ours, so it went to the liaison for the registry's intake.
+
+**Our half:** the result names `served_from` but not the lane's terms. An agent reading PubMind's rows has
+nothing on the result saying they are NC-ND adapted material. The docstring warns against copying a value into
+a cell, but for the check-only reason. The licence that `registry_caches` already knows could travel with the
+rows (its `remote_reason`, or a `licence` field), so a module that leans on them can carry a `licensing.csv` row.
+
+**Resolution:** the lookup carries the lane's licence, notice, URL and redistribution status (`d9651d1`); serving by key is the registry's ruled design (S29).
+
 ## F147 — `no_gene_candidates` lists 32–33 genes alphabetically, once per row, and drops the containment upstream gives
 
 **Found:** 2026-11-12, main at 7e8291d (unreleased), in-process driver, not the host wire · **Severity:** low

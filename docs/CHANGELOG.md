@@ -5,11 +5,13 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+## [0.48.9] — 2026-11-13
+
 - **Locked at just-dna 0.8.5** (a patch: two snapshot readers raise rather than answer empty on an unreadable reference, and `resolve_variants` back-fills fewer rsIDs). Nothing here calls either directly; floors stay at 0.8.4.
 - **`remote_derive`'s `passes_report` is filled** (F150): the registry sends `passes` as a list of `{command, status, detail, tables}`, and 0.48.8 read it as a dict, so the field was always null. A skipped pass now says why, where `not_produced` lists its table.
 - **`remote_derive` no longer crashes on a spec that holds `verification.json`** (F149): the displacement check asked every derived member for a row key, and `verification.json`, which has none, raised. A non-table member is now replaced whole, with a decision line saying so, and the old copy captured like every displaced file.
 - **`registry_lane_lookup` carries the lane's terms** (F148): `licence`, `licence_notice`, `licence_url` and `redistribution`, read from upstream's lane catalogue, so rows from PubMind (CC BY-NC-ND, not redistributable) or PharmVar say so where they are read. Whether the registry should serve those lanes by key at all is filed upstream.
-## [0.48.8] — 2026-11-13
+## [0.48.8] — 2026-11-12
 
 - **`registry_lane_lookup`** (registry 0.30): a keyed read of one snapshot lane a registry holds, without downloading it. With only `lane`, the lane's tables and the key columns each answers by; with `table` and `keys`, the matching rows, `truncated` when there were more, and `served_from` saying where the deployment read them. Read-only, no token, refused under `JMC_OFFLINE`; `target` is required, as for every catalog read.
 - **`remote_derive` takes registry 0.30's options**: `passes` adds upstream's other derived-table passes by command name (`gwas`, `frequencies`, `gene-metrics`, `literature`, `alphagenome expression`, …), `live=true` lets a pass's live leg run on the server (off by default, so an unasked call spends no live leg), and `gene`/`chrom`/`start`/`end` aim `alphagenome expression` at one interval. The run's own account of each pass comes back as `passes_report`.
