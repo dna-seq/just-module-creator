@@ -40,6 +40,7 @@ from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 from just_dna_compiler import compiler
 from just_dna_enricher import lookup as enricher_lookup
+from just_dna_enricher.grch37 import Grch37Client, recover_rsid
 from just_dna_enricher.literature import EuropePmcClient
 from just_dna_enricher.locations import default_ensembl_cache_dir
 from just_dna_registry import RegistryError
@@ -65,6 +66,7 @@ from just_module_creator.models import (
     LintAlteration,
     LiteratureSearchResult,
     NamespaceAvailability,
+    OldAssemblyRecovery,
     OpenAccessResult,
     OpResult,
     ProxyCost,
@@ -331,6 +333,15 @@ def _collapse_pubmind(withheld: list[LintAlteration]) -> list[LintAlteration]:
         elif not (a.source == "pubmind" and a.column == "clin_sig"):
             out.append(a)
     return out
+
+
+def new_grch37_client() -> Grch37Client:
+    """The GRCh37 service client, built once per server: upstream's own pacing and retries.
+
+    A function so a test can hand the server a client over a mock transport; upstream says to
+    hold one per session, since its pacing gate and connection pool die with a per-call client.
+    """
+    return Grch37Client()
 
 
 def register_research(mcp: FastMCP, settings: Settings, services: NetworkServices) -> None:
@@ -1229,6 +1240,55 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             state=status.state,
             current=status.replaced_by,
             label=status.label,
+        )
+
+    # Upstream RM48's recovery, never a liftover: an rs-number authored from an hg19
+    # coordinate is resolved onto the module's build by the ordinary chain, which then has a
+    # second witness to cross-examine; a converted position would be its own only witness.
+    # The registry's `hint_old_assembly` is the same recovery proxied; no snapshot lane stands
+    # behind it, so there is no miss to route and we ask the service directly. Several
+    # candidates are reported, never picked (upstream's rule). `offline` is passed through, so
+    # an offline server answers `skipped_offline` (unchecked) rather than refusing.
+    grch37: list[Grch37Client] = []
+
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Which rs-number is at an hg19 coordinate",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def lookup_old_assembly(
+        chrom: str, start: int, ref: str | None = None, alts: str | None = None
+    ) -> OldAssemblyRecovery:
+        """Which rs-number GRCh37 (hg19) dbSNP records at an old coordinate, so you author the
+        rs-number and let resolution place it on the module's build. It never converts.
+
+        `start` is the 1-based position as the source prints it. A candidate must start
+        exactly there; `ref` and `alts` (comma-separated) narrow it. Several are reported and
+        never picked, and `unreachable` or `skipped_offline` means unchecked, not absent.
+        Writes nothing.
+        """
+        if start < 1:
+            raise ToolError("`start` is the 1-based GRCh37 position, so it is 1 or more.")
+        if not grch37:
+            grch37.append(new_grch37_client())
+        client = grch37[0]
+        found = await run_sync(
+            lambda: recover_rsid(
+                chrom, start, ref=ref, alts=alts, client=client, offline=settings.offline
+            )
+        )
+        return OldAssemblyRecovery(
+            chrom=found.chrom,
+            start=found.start,
+            ref=found.ref,
+            alts=found.alts,
+            outcome=found.outcome,
+            rsids=list(found.rsids),
+            candidates=jsonable(found.candidates),
+            message=str(found),
         )
 
     # ----------------------------------------------------------------- #

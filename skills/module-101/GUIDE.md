@@ -317,7 +317,7 @@ and the licence rows it records on the way.
 default and refuse to guess** — reading the instance you did not just write to is what makes a fresh
 publish look like a broken catalog.
 `references/CLI.md` names the few things no tool wraps — signing, the PGx cross-checks,
-snapshot building, `hint recover`.
+snapshot building.
 
 
 ## For the author: the minimal surface

@@ -135,8 +135,14 @@ GROUPS: tuple[Group, ...] = (
     Group(
         "identifiers",
         "Is this gene symbol / ontology CURIE current, does it agree with the row, and "
-        "what allele does a source's bare variant NAME denote.",
-        ("check_identifiers", "lookup_identifier", "lookup_allele_identity"),
+        "what allele does a source's bare variant NAME denote, and which rs-number an hg19 "
+        "coordinate carries.",
+        (
+            "check_identifiers",
+            "lookup_identifier",
+            "lookup_allele_identity",
+            "lookup_old_assembly",
+        ),
         4632,
     ),
     # The three checks that ask a catalogue about an authored cell and write only the

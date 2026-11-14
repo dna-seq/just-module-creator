@@ -1143,6 +1143,28 @@ class IdentifierStatus(BaseModel):
     label: str | None = Field(default=None, description="Human-readable label.")
 
 
+class OldAssemblyRecovery(BaseModel):
+    """Which rs-number GRCh37 dbSNP records at one old (hg19) coordinate. Advisory; nothing is
+    written."""
+
+    chrom: str = Field(description="The GRCh37 chromosome asked about.")
+    start: int = Field(description="The GRCh37 1-based position asked about, as given.")
+    ref: str | None = Field(default=None, description="The `ref` the match was narrowed by.")
+    alts: str | None = Field(default=None, description="The alts the match was narrowed by.")
+    outcome: str = Field(
+        description="Upstream's verdict, verbatim: `recovered` (one rs-number), `ambiguous` "
+        "(several, reported and never picked), `none` (dbSNP records nothing starting here), "
+        "`skipped_offline` or `unreachable` (not asked, so unchecked rather than empty)."
+    )
+    rsids: list[str] = Field(
+        default_factory=list, description="Every rs-number that starts exactly here."
+    )
+    candidates: list[dict[str, Any]] = Field(
+        default_factory=list, description="The service's records behind `rsids`."
+    )
+    message: str = Field(description="Upstream's own reading of the outcome.")
+
+
 class IdentifierTally(BaseModel):
     """How many identifiers of one kind were asked about, and how many came back clean.
 

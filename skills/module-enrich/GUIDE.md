@@ -215,8 +215,8 @@ asked. Your authored coordinates are transcribed under your own build and the mo
 So on such a module: **author coordinates rather than rsIDs**, since an rsID is only resolvable against
 GRCh38, and say so in the README.
 
-**`just-dna-enricher hint recover`** tells you which rs-number GRCh37 dbSNP records at an hg19
-coordinate — the fastest way to lift an old panel honestly, because recovering the **rsID** and letting
+**`lookup_old_assembly`** (the CLI's `just-dna-enricher hint recover`) tells you which rs-number GRCh37
+dbSNP records at an hg19 coordinate — the fastest way to lift an old panel honestly, because recovering the **rsID** and letting
 resolution place it is not a liftover and cannot shift anything. It reports and never fills.
 
 🚧 **ROADWORKS — a non-GRCh38 module gets zero frequencies and the skip barely surfaces.** Any resolution
@@ -241,7 +241,7 @@ override that duplicates instead of overriding). Load it before re-running anyth
 
 **Apply it and say nothing:** re-running the `unreachable_rsids` list; clearing a `vrs_id` that no longer
 recomputes from its own row; recording the X spelling of a pseudoautosomal locus; recovering an rsID with
-`hint recover` and letting resolution place it. None of these has a judgement in it.
+`lookup_old_assembly` and letting resolution place it. None of these has a judgement in it.
 
 **Surface it, and let a pilot settle it:**
 

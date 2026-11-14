@@ -2,7 +2,7 @@
 
 | Section | Answers |
 |---|---|
-| [What is wrapped, and what is not](#what-is-wrapped-and-what-is-not) | task → MCP tool → CLI equivalent, and the seven things only the CLI can do |
+| [What is wrapped, and what is not](#what-is-wrapped-and-what-is-not) | task → MCP tool → CLI equivalent, and what only the CLI can do |
 | [`just-dna-compiler`](#just-dna-compiler-offline-never-fetches) | scaffold, template, validate, compile, signature, reverse, keygen, sign, close, verify, sweep |
 | [`just-dna-enricher`](#just-dna-enricher-the-only-tier-that-fetches) | enrich, the fact passes, the three drafters, the cross-checks, `hint recover`, `vrs mint` |
 | [`registry-client`](#registry-client) | the client commands, which instance it drives, and what the CLI still owns alone |
@@ -54,7 +54,7 @@ Install: `pip install just-dna-enricher` pulls the compiler and the format tier.
 | which papers an index holds per locus | `check_literature_coverage` | `litvar coverage` |
 | **fact tables from ClinGen / ClinVar** | — | `gene-validity`, `assertions` |
 | **published GWAS effect sizes** | `enrich_gwas_effects` | `gwas` |
-| **which rsID sits at a GRCh37 coordinate** | — | `hint recover` |
+| **which rsID sits at a GRCh37 coordinate** | `lookup_old_assembly` | `hint recover` |
 | **locus-to-gene, colocalisations, consequences** (Open Targets) | — | `opentargets enrich` |
 | **LD between a study's proxy rsID and its lead** | — | `ld-pairs` |
 | **where ClinVar-GKM places one allele** | — | `clinvar-gkm lookup` |
@@ -169,9 +169,10 @@ rather than a URL, pin `expect_mode` to it, and refuse before spending anything 
 disagrees; `mode` is on `/health` and `/api/v1/version`.
 `registry_health` shows you the same answer up front. Prefer the tools for anything that publishes.
 
-**What the CLI still owns:** `yank` / `unyank` (production's delisting, which does **not** free the
-content claim), and the operator commands `registry serve --mode`, `registry backup`,
-`registry purge-test-data` — the last of these sweeps `test-`prefixed data by prefix, on the polygon,
+**What only the tools do:** `registry_yank` / `registry_unyank` (production's delisting, which does
+**not** free the content claim), members, profiles, reviews and stars: `registry-client --help` lists
+none of them. **What neither does for an author:** the operator commands `registry serve --mode`,
+`registry backup`, `registry purge-test-data` — the last of these sweeps `test-`prefixed data by prefix, on the polygon,
 and is the operator's job rather than an author's.
 
 `register` and `namespace-available` are wrapped as `registry_register` and

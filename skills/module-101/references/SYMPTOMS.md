@@ -339,8 +339,8 @@ where the locus's rows do not share one `effect_allele`; the compile **withholds
 An error in **both** modes (RM48). `--strict` is deliberately not the switch, because this is
 arithmetic rather than judgement — the position cannot exist on the build the module declares. Two
 usual causes: the module is GRCh37 data declared as GRCh38, or the coordinate is an off-by-one that
-happened to land past the end. `just-dna-enricher hint recover` tells you which rs-number GRCh37
-dbSNP records at that coordinate, which usually settles it in one call.
+happened to land past the end. `lookup_old_assembly` (the CLI's `just-dna-enricher hint recover`)
+tells you which rs-number GRCh37 dbSNP records at that coordinate, which usually settles it in one call.
 
 **`study_effect_allele_not_at_locus`: `effect_allele … is not among the resolved alleles at this locus`**
 A `studies.csv` row states an effect relative to an allele the locus cannot host (RM91); on a row filed
