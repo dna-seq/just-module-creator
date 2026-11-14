@@ -9,6 +9,7 @@ from __future__ import annotations
 import pytest
 from fastmcp.exceptions import ToolError
 from just_dna_registry import RegistryError
+from just_dna_registry.models.api import ReviewRequest
 
 from just_module_creator import localstore
 from just_module_creator.settings import Settings
@@ -95,6 +96,33 @@ class _PeopleStub:
     def update_org_settings(self, org, **fields):
         self._record("update_org_settings", org, fields)
         return {"org": org, **fields}
+
+    def star(self, namespace, name):
+        self._record("star", namespace, name)
+        return {"namespace": namespace, "name": name, "stars": 1, "starred_by_me": True}
+
+    def unstar(self, namespace, name):
+        self._record("unstar", namespace, name)
+        return {"namespace": namespace, "name": name, "stars": 0, "starred_by_me": False}
+
+    def review(self, namespace, name, version, *, rating, verdict=None, notes=None):
+        self._record("review", namespace, name, version, rating, verdict, notes)
+        return [{"reviewer": "sheep", "version": version, "rating": rating, "verdict": verdict}]
+
+    def delete_review(self, namespace, name, version):
+        self._record("delete_review", namespace, name, version)
+        return []
+
+    def highlight_review(self, namespace, name, version, reviewer, *, highlighted=True):
+        self._record("highlight_review", namespace, name, version, reviewer, highlighted)
+        return [{"reviewer": reviewer, "version": version, "highlighted": highlighted}]
+
+    def reviews(self, namespace, name, version=None):
+        self._record("reviews", namespace, name, version)
+        return [
+            {"reviewer": "goat", "version": "1.0.0", "rating": 5, "highlighted": True},
+            {"reviewer": "wolf", "version": "1.0.0", "rating": 2, "highlighted": False},
+        ]
 
 
 async def _members(make_client, monkeypatch, stub: _PeopleStub, args: dict) -> dict:
@@ -238,3 +266,87 @@ async def test_a_profile_edit_with_nothing_to_send_is_refused_before_any_call(
         with pytest.raises(ToolError, match="at least one of"):
             await client.call_tool("registry_profile", {"org": "test-herd"})
     assert stub.calls == [] and stub.tokens == []
+
+
+MODULE = {"namespace": "test-sheep", "name": "test_big_five_personality_snps"}
+
+
+async def _tool(make_client, monkeypatch, stub: _PeopleStub, tool: str, args: dict) -> dict:
+    monkeypatch.setattr(registry_tools, "client_for", stub)
+    async with make_client(settings=_online()) as client:
+        result = await client.call_tool(tool, args)
+    return result.structured_content or {}
+
+
+@pytest.mark.parametrize(("starred", "call"), [(True, "star"), (False, "unstar")])
+async def test_a_star_and_its_withdrawal_reach_their_own_calls(
+    make_client, monkeypatch, starred, call
+):
+    _seed("test", "sheep", "mk_sheep_aaaa", ["test-sheep"])
+    stub = _PeopleStub()
+    payload = await _tool(
+        make_client, monkeypatch, stub, "registry_star", {**MODULE, "starred": starred}
+    )
+    assert stub.calls == [(call, MODULE["namespace"], MODULE["name"])]
+    assert payload["success"] is True
+
+
+@pytest.mark.parametrize(
+    ("args", "call"),
+    [
+        (
+            {"rating": 4, "verdict": "verified", "notes": "Alleles checked against dbSNP."},
+            ("review", 4, "verified", "Alleles checked against dbSNP."),
+        ),
+        ({"action": "delete"}, ("delete_review",)),
+        ({"action": "highlight", "reviewer": "goat"}, ("highlight_review", "goat", True)),
+        ({"action": "unhighlight", "reviewer": "goat"}, ("highlight_review", "goat", False)),
+    ],
+)
+async def test_each_review_action_reaches_its_own_call(make_client, monkeypatch, args, call):
+    _seed("test", "sheep", "mk_sheep_aaaa", ["test-sheep"])
+    stub = _PeopleStub()
+    payload = await _tool(
+        make_client, monkeypatch, stub, "registry_review", {**MODULE, "version": "1.0.0", **args}
+    )
+    assert payload["success"] is True
+    [sent] = stub.calls
+    assert sent[0] == call[0] and sent[1:4] == (MODULE["namespace"], MODULE["name"], "1.0.0")
+    assert sent[4:] == call[1:]
+
+
+@pytest.mark.parametrize(
+    ("args", "match"),
+    [({}, "`post` needs a `rating`"), ({"action": "highlight"}, "needs the `reviewer`")],
+)
+async def test_a_review_missing_its_argument_is_refused_before_any_call(
+    make_client, monkeypatch, args, match
+):
+    _seed("test", "sheep", "mk_sheep_aaaa", ["test-sheep"])
+    stub = _PeopleStub()
+    monkeypatch.setattr(registry_tools, "client_for", stub)
+    async with make_client(settings=_online()) as client:
+        with pytest.raises(ToolError, match=match):
+            await client.call_tool("registry_review", {**MODULE, "version": "1.0.0", **args})
+    assert stub.calls == [] and stub.tokens == []
+
+
+async def test_the_review_fields_are_described_by_the_registry_model(make_client):
+    """The rating range and verdict tiers are upstream's; the listing carries their words."""
+    async with make_client(settings=_online()) as client:
+        tools = {t.name: t for t in await client.list_tools()}
+    properties = tools["registry_review"].inputSchema["properties"]
+    for field in ("rating", "verdict"):
+        expected = ReviewRequest.model_fields[field].description
+        assert expected, f"upstream's {field} lost its description"
+        assert properties[field]["description"] == expected
+
+
+async def test_reading_reviews_needs_no_token_and_counts_the_highlighted(make_client, monkeypatch):
+    stub = _PeopleStub()
+    payload = await _tool(
+        make_client, monkeypatch, stub, "registry_reviews", {"target": "prod", **MODULE}
+    )
+    assert stub.calls == [("reviews", MODULE["namespace"], MODULE["name"], None)]
+    assert stub.tokens == [None]
+    assert "2 review(s)" in payload["message"] and "1 highlighted" in payload["message"]

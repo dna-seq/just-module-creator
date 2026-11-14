@@ -251,10 +251,16 @@ GROUPS: tuple[Group, ...] = (
     ),
     Group(
         "people",
-        "Who acts on the registry: the members of a namespace or organisation, and the profile "
-        "a module card shows for you or an organisation you own.",
-        ("registry_members", "registry_profile"),
-        866,
+        "Who acts on the registry: members of a namespace or organisation, the profile a card "
+        "shows for you or your organisation, stars, and reviews.",
+        (
+            "registry_members",
+            "registry_profile",
+            "registry_star",
+            "registry_review",
+            "registry_reviews",
+        ),
+        2041,
     ),
     Group(
         "snapshots",

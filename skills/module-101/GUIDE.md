@@ -140,8 +140,9 @@ data, source refresh, rebuild. They compose, they differ in what they invalidate
 number is *not* how you tell them apart: **there is no versioning contract.** `2.0.0` does not mean
 reviewed, a module may sit at `1.0.0` forever and be fine, and no agent may withhold a publish
 waiting for a milestone that does not exist. What accumulates trust is what the module *records* —
-`authorship` and its `kind`, the checks in `verification.json`, the closure. `module-revise` owns all
-of this.
+`authorship` and its `kind`, the checks in `verification.json`, the closure. Beside the module, the
+registry keeps what other people said of it: reviews, and the ones its owner highlighted, which a card
+counts as curated (`registry_reviews`). `module-revise` owns all of this.
 
 ## What it looks like on disk
 

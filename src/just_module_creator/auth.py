@@ -101,6 +101,8 @@ GATED_TOOLS = [
     # Even the listing: both instances refuse `members` without a bearer token.
     "registry_members",
     "registry_profile",
+    "registry_star",
+    "registry_review",
 ]
 
 

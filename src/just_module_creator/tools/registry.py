@@ -20,7 +20,7 @@ import json
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
@@ -28,7 +28,9 @@ from fastmcp.exceptions import ToolError
 from just_dna_compiler import compiler
 from just_dna_format.identity import is_valid_version, validate_namespace
 from just_dna_registry import RegistryError
+from just_dna_registry.models.api import ReviewRequest
 from mcp.types import ToolAnnotations
+from pydantic import Field
 
 from just_module_creator import localstore, logscan
 from just_module_creator.auth import (
@@ -1928,4 +1930,183 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
             message=f"{what} for {namespace}/{name} at {describe(target, settings)}. "
             "No version was spent.",
             data={**jsonable(payload), "target": target},
+        )
+
+    # Stars: idempotent both ways upstream, so one tool with a flag.
+    @mcp.tool(
+        tags={GATED_TAG},
+        annotations=ToolAnnotations(
+            title="Registry: star or unstar a module",
+            readOnlyHint=False,
+            idempotentHint=True,
+            destructiveHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def registry_star(
+        namespace: str,
+        name: str,
+        ctx: Context,
+        starred: bool = True,
+        target: RegistryTarget = DEFAULT_WRITE_TARGET,
+    ) -> OpResult:
+        """Star a module, or with `starred=false` take your star back.
+
+        A star is public and counted on the card. Give one when the person asks.
+        """
+        token = await resolve_api_key(ctx, settings, target)
+        if token is None:
+            return unauthenticated_result(settings, target)
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+        try:
+            payload = await run_sync(
+                lambda: (
+                    _client(token, target).star(namespace, name)
+                    if starred
+                    else _client(token, target).unstar(namespace, name)
+                )
+            )
+        except RegistryError as exc:
+            return OpResult(
+                success=False,
+                message=f"{describe(target, settings)} refused the star on {namespace}/{name}: "
+                f"{exc}{instance_note(exc)}",
+                data={"target": target},
+            )
+        return OpResult(
+            success=True,
+            message=f"{'Starred' if starred else 'Unstarred'} {namespace}/{name} on "
+            f"{describe(target, settings)}.",
+            data={**jsonable(payload), "target": target},
+        )
+
+    # Four client calls, one tool: the caller's own review (post or delete) and the owner's
+    # highlight, which is the `curated` signal on a card. A review is a public judgement of
+    # somebody else's work signed by the person's account, so the description says it is
+    # theirs to give. The rating range and verdict tiers are the registry's: the two
+    # parameters carry `ReviewRequest`'s own field descriptions, so they move when it does.
+    @mcp.tool(
+        tags={GATED_TAG},
+        annotations=ToolAnnotations(
+            title="Registry: review a module version",
+            readOnlyHint=False,
+            idempotentHint=True,
+            destructiveHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def registry_review(
+        namespace: str,
+        name: str,
+        version: str,
+        ctx: Context,
+        action: Literal["post", "delete", "highlight", "unhighlight"] = "post",
+        rating: Annotated[
+            int | None, Field(description=ReviewRequest.model_fields["rating"].description)
+        ] = None,
+        verdict: Annotated[
+            str | None, Field(description=ReviewRequest.model_fields["verdict"].description)
+        ] = None,
+        notes: str | None = None,
+        reviewer: str | None = None,
+        target: RegistryTarget = DEFAULT_WRITE_TARGET,
+    ) -> OpResult:
+        """Post or delete your review of a module version, or as its owner highlight one.
+
+        `post` takes a `rating` and optionally a `verdict` and `notes`, each as the
+        registry defines it; posting again replaces yours. `delete`
+        removes yours. `highlight` and `unhighlight` take the `reviewer` whose review the
+        owner marks, which is what a card counts as curated. A review is public and
+        signed by your account: post one only with the person's own rating and words.
+        """
+        if action == "post" and rating is None:
+            raise ToolError("`post` needs a `rating`.")
+        if action in ("highlight", "unhighlight") and not reviewer:
+            raise ToolError(f"`{action}` needs the `reviewer` whose review it marks.")
+
+        token = await resolve_api_key(ctx, settings, target)
+        if token is None:
+            return unauthenticated_result(settings, target)
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        where = f"{namespace}/{name}@{version}"
+        score = rating or 0
+        marked = reviewer or ""
+
+        def _call() -> object:
+            client = _client(token, target)
+            if action == "post":
+                return client.review(
+                    namespace, name, version, rating=score, verdict=verdict, notes=notes
+                )
+            if action == "delete":
+                return client.delete_review(namespace, name, version)
+            return client.highlight_review(
+                namespace, name, version, marked, highlighted=action == "highlight"
+            )
+
+        try:
+            payload = await run_sync(_call)
+        except RegistryError as exc:
+            return OpResult(
+                success=False,
+                message=f"{describe(target, settings)} refused `{action}` on the reviews of "
+                f"{where}: {exc}{instance_note(exc)}",
+                data={"target": target, "action": action},
+            )
+        done = {
+            "post": "Your review is posted on",
+            "delete": "Your review is removed from",
+            "highlight": f"{marked}'s review is highlighted on",
+            "unhighlight": f"{marked}'s review is no longer highlighted on",
+        }[action]
+        return OpResult(
+            success=True,
+            message=f"{done} {where} at {describe(target, settings)}.",
+            data={"target": target, "action": action, "reviews": jsonable(payload)},
+        )
+
+    # The read half needs no token (upstream: "Anonymous"), so it is not gated, and it is a
+    # catalog read: `target` has no default, like every tool that reads a catalog.
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Registry: read a module's reviews",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def registry_reviews(
+        target: RegistryTarget, namespace: str, name: str, version: str | None = None
+    ) -> OpResult:
+        """Read the reviews of a published module, or of one `version`, highlighted first.
+
+        A highlighted review is one the module's owner marked, and is what a card counts as
+        curated. `target` is required: `prod` for the catalog, `test` for the polygon.
+        """
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+        try:
+            payload = await run_sync(
+                lambda: client_for(target, settings).reviews(namespace, name, version)
+            )
+        except RegistryError as exc:
+            return OpResult(
+                success=False,
+                message=f"{describe(target, settings)} refused the reviews of "
+                f"{namespace}/{name}: {exc}{instance_note(exc)}",
+                data={"target": target},
+            )
+        rows = (
+            [dict(r) for r in payload if isinstance(r, dict)] if isinstance(payload, list) else []
+        )
+        highlighted = sum(1 for r in rows if r.get("highlighted"))
+        what = f"{namespace}/{name}" + (f"@{version}" if version else "")
+        return OpResult(
+            success=True,
+            message=f"{len(rows)} review(s) of {what} on {describe(target, settings)}, "
+            f"{highlighted} highlighted by its owner.",
+            data={"target": target, "reviews": jsonable(rows)},
         )
