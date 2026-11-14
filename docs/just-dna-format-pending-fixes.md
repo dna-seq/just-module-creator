@@ -109,7 +109,7 @@ its history.
 | F91 | S89 | RM184 | in our lock (0.7.0); reproduction passes 2026-11-07, nothing to remove |
 | F63 | S66 | RM128 | in our lock (0.7.0); call sites verified 2026-11-07, our claim's fate is the lead's |
 | F112 | S67, S68 | shipped; RM131 | in our lock (0.7.0); adopted, nothing to remove |
-| F59 | S64 | justified; RM133 | in our lock (0.7.0); registry client's `set_short_description` not wrapped here (lead) |
+| F59 | S64 | justified; RM133 | in our lock (0.7.0); closed on main: `registry_set_subtitle` wraps `set_short_description` (`0395250`, unreleased) |
 | F98 | S100 | RM234, RM235 | in our lock (0.7 line); adopted, nothing to remove |
 | F53 | S57 | RM121 | in our lock (0.6.6); passes, nothing to remove |
 | F55 | S59 | RM123 | in our lock (0.6.6); nothing of ours to lift |
@@ -127,7 +127,7 @@ reason is one of §5's grounds or a covering tool; a row with a trigger is wrapp
 
 | Client calls | Reason | Wrap when |
 |---|---|---|
-| `hint_citation`, `hint_gene`, `hint_trait` | Covered: `lookup_citation` and `lookup_identifier` ask the same sources directly. No snapshot lane stands behind these hints, so routing them through the registry adds a third party and spends its budget with no miss to justify it. | a hint gains a lane our direct call cannot reach |
+| `hint_citation` (by PMID or DOI), `hint_gene`, `hint_trait` | Covered: `lookup_citation` and `lookup_identifier` ask the same sources directly. A citation by PMCID is not covered: upstream's `lookup_citation` takes a `pmcid` and ours does not pass it, a gap the lead holds (LEAD_NOTES `ccb65fb`), not an abstention. No snapshot lane stands behind these hints, so routing them through the registry adds a third party and spends its budget with no miss to justify it. | a hint gains a lane our direct call cannot reach |
 | `logs`, `get_tarball` | Covered: `registry_download` fetches the logs (`download(include_logs=True)`); a tarball is the same version in another container. | |
 | `versions` | Covered while measured: `get_module` returned every version of every module on both instances (longest history 6). | a module passes 20 versions, the client's page size |
 | `lookup_by_digest` | Covered: `registry_is_published` asks by `content_signature`, which survives a compiler change; an artifact digest moves with the build. | |
@@ -137,7 +137,7 @@ reason is one of §5's grounds or a covering tool; a row with a trigger is wrapp
 | `admin_rename_account`, `merge_accounts`, `runs`, `run_log` | Only a deployment calls them: site admins only (the saved polygon account answers `site_admin: false`). | |
 | `assert_compatible`, `issue_jwt_token` | Transport: the client calls the first on every connection itself; the second is a web session's token exchange, and a static token serves every call. | |
 
-`set_short_description` is not an abstention: it is F59's open half, and F59 closes when the lead's tool lands.
+`set_short_description` is not an abstention: `registry_set_subtitle` wraps it (`0395250`), closing F59 on our side.
 
 ## Registry `S32` — the variant catalog matches a key's spelling exactly (no F#: the lead's 0.31 reads)
 
@@ -2248,6 +2248,8 @@ ours comes out then — the point-of-write repetition is still worth having, bec
 description does not reach an agent replacing a `<<REPLACE>>` in a YAML file.
 
 ## F59 — display metadata is inside the attestation binding (format `S64`, registry `S16`)
+
+**State: CLOSED on our side 2026-11-14, on main, unreleased.** `registry_set_subtitle` wraps `set_short_description` (the lead's `0395250`), tried live on the polygon (set, then cleared): a published module's subtitle is reworded with no version and no closure spent. The binding itself stays upstream's settled answer (RM133).
 
 **Reproduced 2026-11-07 (the liaison), on the installed packages** (format 0.7.1, compiler 0.7.2, enricher 0.7.3, registry client 0.27.0): the binding question was answered and closed upstream (RM133: the binding stays, do not re-propose), and the fix arrived on the registry side as a module-level subtitle stored beside the module: `RegistryClient.set_short_description(namespace, name, short_description)`, at most 120 characters, `None` clears, no version and no closure spent. **The plugin wraps `amend_readme` and not this**, so rewording a published subtitle still reads here as costing a version. Handed to the lead, 2026-11-07, as a registry write-surface gap.
 
