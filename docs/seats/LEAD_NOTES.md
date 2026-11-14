@@ -24,6 +24,30 @@ Upstream halves, all the liaison's: S138/RM422 (F137's compile warning), S139/RM
 it redundant: re-read then. Not done on purpose: F140's split of never-asked from asked-and-empty (no record of the
 queries exists); F141's cause (unknown).
 
+## The registry parity sweep: what each unwrapped client call becomes (2026-11-14)
+
+Measured against the installed client (just-dna-registry 0.31.0): 36 public methods no code here references.
+Reads probed on both instances the same day. Built in this order, serially, each with its tests, skill row and
+changelog line; the abstentions go to the liaison for `docs/just-dna-format-pending-fixes.md`.
+
+| Client calls | Becomes | Why |
+|---|---|---|
+| `members`, `add_member`, `remove_member`, `org_members`, `add_org_member`, `remove_org_member`, `set_org_role` | tool `registry_members` (gated; list/add/remove/role, a namespace or an org) | 0.48.10 ships `registry_create_org` and nothing adds anyone to it. `members` needs a bearer token on both instances (401 measured), so the read is gated too. |
+| `update_profile`, `update_org_settings` | tool `registry_profile` (gated) | The author's or an owned org's display name, funding URL, avatar, email. Email only as an argument the author gives, never from the session. |
+| `amend_changelog`, `amend_logo`, `set_short_description` | tools beside `registry_amend_readme` | Metadata an author amends without a version bump; `set_short_description` is F59's open half. |
+| `star`, `unstar` | tool `registry_star` (gated) | User-facing; no §5 ground. |
+| `reviews`, `review`, `delete_review`, `highlight_review` | tools `registry_reviews` (read, anonymous) and `registry_review` (gated) | Reviews and the owner's highlight are the trust signal (§10: trust is read off the module). |
+| `catalog_stats` | tool `registry_stats` (read) | Per-namespace totals; `registry_health`'s `catalog` block is the instance-wide one only. |
+| `hint_old_assembly` | tool `lookup_old_assembly`, local via `just_dna_enricher.grch37.recover_rsid` | Nothing here takes an hg19 coordinate; `cli_map` already names `hint recover` as a gap. The registry hint is the same recovery proxied; no snapshot lane is involved, so there is no miss to route. |
+| `hint_citation`, `hint_gene`, `hint_trait` | abstain: covered | `lookup_citation` and `lookup_identifier` ask the same sources directly. No snapshot lane stands behind them, so routing through the registry would add a third party and spend its budget with no miss to justify it. |
+| `logs`, `get_tarball` | abstain: covered | `registry_download` calls `download(include_logs=True)`, which fetches the logs; a tarball is the same version in another container. |
+| `versions` | abstain: covered while measured | `get_module` returned every version for every module on both instances (longest history 6). Trigger: a module past 20 versions, the client's page size; then wrap. |
+| `lookup_by_digest`, `lookup_by_digests`, `lookup_by_signatures` | abstain | `registry_is_published` asks by `content_signature`, the identity that survives a compiler change; a digest moves with the build. The batch forms classify a corpus: an operator's sweep. |
+| `pubkey` | abstain until an instance signs | Both instances answer `None` (measured). Trigger: one signs; then pin it in `registry_download`. |
+| `import_module` | abstain | A spec archive is unpacked and published through `registry_publish`; the legacy parquet-only form has no spec for any check here to read before a permanent publish. |
+| `admin_rename_account`, `merge_accounts`, `runs`, `run_log` | abstain: operator | Site admins only. |
+| `assert_compatible`, `issue_jwt_token` | abstain: transport | The client calls the first itself on every connection; the second is a web session's exchange, and a static token serves every call. |
+
 ## Acting: the pm's milestones duty (from kit v0.1.187, 2026-11-12)
 
 The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milestones`) and hands it back when a pm is seated. `state`: one post kept in place, source `docs/seats/LEAD_STATE.md`, refreshed with `watchdog.sh keep lead state '#just-module-creator>state' docs/seats/LEAD_STATE.md` whenever where-it-stands, a headline result or the next actions change. `milestones`: one post per landed result. Links point at `dna-seq/just-module-creator` (the remote), not the person's own account; the first 0.48.7 post had that wrong and was deleted and reposted.
