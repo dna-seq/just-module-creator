@@ -118,6 +118,16 @@ its history.
 | F99 | S101 | doc fixed | upstream docs, nothing to install |
 | F54 | S58 | RM122 | open upstream, parked |
 
+## Registry `S32` — the variant catalog matches a key's spelling exactly (no F#: the lead's 0.31 reads)
+
+**State: answered 2026-11-14 (their `f4eca0b`), all three readings confirmed; on their roadmap, undecided.** 0.31's
+`/variants?key=` answers empty for `RS429358`, `chr19:44908684:T:C` or `19-44908684-T-C`, a variant five production
+modules cover (measured by the lead). A patch would fold rsID case, a leading `chr` and `-` onto the stored alias
+forms, and quote the symbol in `gene_claims`' path; a minor would say whether the key matched any spelling and carry
+a haplotype claim's name. Ours (`registry_claims`, `319765c`) passes the reply through, and its message says an empty
+answer is about the spelling asked; no folding of our own. Those sentences come out when the patch is in our lock:
+the liaison tells the lead. Filed by the lead.
+
 ## Registry `S31` — `whoami` lists only owned namespaces; no call lists the caller's orgs (no F#: the lead's account tools)
 
 **State: accepted as a reporting gap, filed for their next minor, undecided (answered 2026-11-13, their `56c515f`).**
