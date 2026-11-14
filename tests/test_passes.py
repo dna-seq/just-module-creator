@@ -1096,7 +1096,6 @@ async def test_a_not_found_row_is_not_counted_as_resolved(
     assert len(report.unresolved) == 2
 
 
-
 async def test_an_rsid_whose_alleles_no_locus_hosts_is_named_on_the_result(
     make_client, tmp_path, monkeypatch
 ) -> None:
@@ -1148,6 +1147,7 @@ async def test_an_rsid_whose_alleles_no_locus_hosts_is_named_on_the_result(
         "rs4988235 C/T: ensembl gave 2:135851076 G>A (fits the other strand)",
         "rs1801133 GC/G: ensembl gave 1:11796321 G>A",
     ]
+
 
 # --------------------------------------------------------------------------- #
 # The progress callback (upstream RM128, our `S66` ask 4)
@@ -1893,3 +1893,65 @@ async def test_a_refused_page_size_reaches_the_caller_and_the_client_is_closed(
     refused = [w for w in data.warnings if "refused this pass's page size" in w]
     assert len(refused) == 1 and "for 1 rsID(s)" in refused[0]
     assert gwas_client.closed, "the tool built the client, so the tool closes it"
+
+
+@pytest.mark.parametrize("not_diagnosed", [None, "skipped_offline"])
+async def test_the_wrong_build_diagnosis_reaches_the_report(
+    make_client, tmp_path, monkeypatch, not_diagnosed
+) -> None:
+    """Upstream RM48's pass runs inside `enrich` over the ref-mismatched rows; until 2026-11-14
+    `enrich_module` computed it and dropped it. The diagnosis lines are upstream's own summary,
+    its "not diagnosed" reason travels beside them, and the call is handed the server's one GRCh37
+    client so this pass and `lookup_old_assembly` share one paced budget.
+
+    The rows are the real HFE pair authored from GRCh37 literature into a GRCh38 module, as
+    upstream's `BuildDiagnosis` docstring names them; rs1799945 is H63D's rs-number.
+    """
+    from just_dna_enricher.grch37 import BuildDiagnosis, summarize_build_diagnoses
+
+    from just_module_creator.tools import passes
+
+    spec = tmp_path / "spec"
+    spec.mkdir()
+    (spec / "module_spec.yaml").write_text("module:\n  name: spec\n", encoding="utf-8")
+
+    diagnoses = [
+        BuildDiagnosis(
+            variant_key="rs1799945",
+            chrom="6",
+            start=26091179,
+            claimed="C",
+            reason="dbsnp_corroborated",
+            grch37_bases="C",
+            rsids=["rs1799945"],
+            shift_claimed=1,
+        )
+    ]
+    handed: dict[str, object] = {}
+
+    class _Result:
+        rows: list[object] = []
+        unresolved: list[str] = []
+        sources = ["ensembl"]
+        ref_mismatches = ["rs1799945: authored ref C, GRCh38 has G"]
+        clin_sig_conflicts: list[str] = []
+        clin_sig_not_checked = None
+        stale_rsids: list[str] = []
+        vrs = None
+        build_diagnoses = [] if not_diagnosed else diagnoses
+        build_not_diagnosed = not_diagnosed
+
+    def _fake_enrich(*_args, **kwargs):
+        handed.update(kwargs)
+        return _Result()
+
+    monkeypatch.setattr(passes, "enrich", _fake_enrich)
+
+    async with make_client(offline_settings()) as client:
+        report = (await client.call_tool("enrich_module", {"spec_dir": str(spec)})).data
+
+    expected = [] if not_diagnosed else summarize_build_diagnoses(diagnoses)
+    assert not_diagnosed or expected, "upstream's summary came back empty for one diagnosis"
+    assert report.build_diagnoses == expected
+    assert report.build_not_diagnosed == not_diagnosed
+    assert handed["grch37_client"] is not None

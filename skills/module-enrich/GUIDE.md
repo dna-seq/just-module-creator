@@ -134,6 +134,13 @@ Read that line as being about **`start`**, not about `ref`. Your `ref` cells are
 cells are each one too low, which is exactly what subtracting one from a VCF position produces. The
 field that names it is `RefMismatch.shift`.
 
+**Unless `build_diagnoses` says otherwise.** The same report asks GRCh37 about the mismatched rows (only
+those, and a bounded number of them) and lists the ones that read as hg19 coordinates in a GRCh38
+module. When a row is in both, the build reading wins: a neighbouring base equal to your `ref` is a
+one-in-four coincidence. The fix is then the rs-number `lookup_old_assembly` gives, not a shifted
+`start`. An empty `build_diagnoses` means asked and nothing found only when `build_not_diagnosed` is
+null.
+
 **Why this report matters more than any other in the toolchain:** a uniformly shifted module passes
 `validate`, passes `compile --strict`, reports `fully_resolved: true`, and mints `ga4gh:VA.…` ids the
 compiler then reports **verified**. It has happened at scale — **3,038 rows across four modules**, every

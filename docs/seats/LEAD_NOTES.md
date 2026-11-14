@@ -55,9 +55,10 @@ told to the liaison), `registry_reviews`, `registry_review`, `registry_star` (5c
 the liaison's f37c6d5. Full suite 996 passed with the Codex reinstall test deselected: earlier the same day
 it timed out after 300 s on `codex plugin add`; run alone afterwards it passed in 95 s, so transient, cause
 not established. Release as 0.48.11 on or after
-2026-11-15. **New, mine, `unattended`, found on the way:** the enricher's `diagnose_wrong_build` (does a
-ref-mismatched row read as GRCh37 in a GRCh38 module) is wrapped by nothing here; parity says wrap it beside
-`lookup_old_assembly`, where the reference-base check's mismatches are the input.
+2026-11-15. **Done the same evening:** the enricher's `diagnose_wrong_build` already runs inside `enrich` over the
+ref-mismatched rows; `enrich_module` dropped its result. It now reports `build_diagnoses` and
+`build_not_diagnosed` and hands `enrich` the server's GRCh37 client. Tested on a fake result built from
+upstream's own `BuildDiagnosis`; not run live (a GRCh38 module with hg19 rows was not at hand).
 **Fixed forward after review (same day):** a highlight is signed by the account saved for the module's
 namespace (it was the default account); `lookup_old_assembly` names upstream's `unchecked`, not an invented
 `unreachable`, and its client is built in `net.build_services` behind a `ServiceGate`; `registry_members` takes

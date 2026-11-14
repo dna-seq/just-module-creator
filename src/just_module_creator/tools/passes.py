@@ -75,6 +75,7 @@ from just_dna_enricher.gene_metrics import (
     GeneMetricsUnavailable,
     enrich_gene_metrics,
 )
+from just_dna_enricher.grch37 import summarize_build_diagnoses
 from just_dna_enricher.gwas import GwasCatalogClient, GwasError, enrich_gwas
 from just_dna_enricher.licensing import (
     CIVIC_TERMS,
@@ -169,6 +170,7 @@ _GWAS_NOTE = (
     "consumer chooses between them wholesale."
 )
 
+
 def _gwas_catalog_client(offline: bool) -> GwasCatalogClient | None:
     """The client the GWAS pass runs on, built here so its `size_refusals` can be read after.
 
@@ -219,7 +221,7 @@ _SPEC_PLACEHOLDER_REMEDY = (
 )
 _STUB_ROW_REMEDY = (
     "That row is the scaffold's stub. A drafter creates and fills the table, so delete the "
-    "stub row (keep the header line) and re-run. On this surface, scaffolding \"without "
+    'stub row (keep the header line) and re-run. On this surface, scaffolding "without '
     "`--kind`\" is `scaffold_module(kinds=[...], rows=0)`: the table's header and no stub row."
 )
 
@@ -655,6 +657,9 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
                             offline=eff_offline,
                             write=True,
                             progress=_note_progress,
+                            # The server's one GRCh37 client, so the wrong-build pass and
+                            # `lookup_old_assembly` spend one paced budget.
+                            grch37_client=services.grch37,
                         )
                     )
                     beat.cancel_scope.cancel()
@@ -747,6 +752,13 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
                 _allele_mismatch_line(m) for m in getattr(result, "allele_mismatches", []) or []
             ],
             vrs_minted=getattr(vrs, "minted", None) if vrs else None,
+            # Upstream RM48's wrong-build pass, run inside `enrich` over the mismatched rows
+            # only. It was computed and dropped here until 2026-11-14; its two fields travel
+            # together, since an empty list alone means both "asked, nothing" and "never asked".
+            build_diagnoses=summarize_build_diagnoses(
+                list(getattr(result, "build_diagnoses", []) or [])
+            ),
+            build_not_diagnosed=getattr(result, "build_not_diagnosed", None),
             warnings=warnings,
             note=_REGENERATE_NOTE,
         )
@@ -2226,9 +2238,7 @@ async def _expression_for_rows(
                 chrom=h.chrom,
                 position=h.position,
                 genes=(
-                    [NearbyGeneOut(**asdict(g)) for g in h.genes]
-                    if h.genes is not None
-                    else None
+                    [NearbyGeneOut(**asdict(g)) for g in h.genes] if h.genes is not None else None
                 ),
                 reason=h.reason,
             )

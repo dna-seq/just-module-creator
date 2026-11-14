@@ -1744,6 +1744,18 @@ class EnrichReport(BaseModel):
         "strand flip, the usual cause.",
     )
     vrs_minted: int | None = Field(default=None, description="VRS allele ids stamped.")
+    build_diagnoses: list[str] = Field(
+        default_factory=list,
+        description="Which `ref_mismatches` read as GRCh37 (hg19) coordinates in a GRCh38 "
+        "module, one line per reason with a count and examples, upstream's own wording. Asked "
+        "of the mismatched rows only, and of at most a bounded number of them.",
+    )
+    build_not_diagnosed: str | None = Field(
+        default=None,
+        description="Why `build_diagnoses` was not computed, or null when it was: "
+        "`no_ref_mismatches` (nothing to ask) or `skipped_offline`. An empty list with this "
+        "null means asked, and nothing pointed at another build.",
+    )
     warnings: list[str] = Field(default_factory=list, description="Advisory notes.")
     note: str = Field(description="What to do next, including how to regenerate.")
 
