@@ -54,7 +54,7 @@ which, or the module is not GRCh38.
 
 | Start | How | Good for |
 |---|---|---|
-| **A gap in the catalog** | `registry_search(target="prod", gene=…)` / `registry_search(target="prod", query=…)` — `target` is required, so production is something you state | knowing the work is wanted before doing it |
+| **A gap in the catalog** | `registry_search(target="prod", gene=…)` / `registry_search(target="prod", query=…)` — `target` is required, so production is something you state; `registry_claims(target="prod", gene=…)` says which modules already state something about the gene's variants | knowing the work is wanted before doing it |
 | **A source that publishes the table** | `draft_from_clinvar` for a gene panel; `draft_from_cpic` / `draft_from_clinpgx` for drug response | the fastest route to real rows — then curate what it stubs |
 | **A paper the author actually read** | `literature_search` to pin the PMID and read the title back | one well-grounded finding, which is a legitimate module |
 | **Something the author was told** — a video, a podcast, a blog, an AI summary | **triage first**, below | by far the most common in practice, and the only one that starts by *removing* claims |

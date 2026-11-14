@@ -29,6 +29,7 @@ qualified by an exception.
 
 from __future__ import annotations
 
+import json
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -67,6 +68,7 @@ from just_module_creator.models import (
     OpenAccessResult,
     OpResult,
     ProxyCost,
+    PublishedClaims,
     RegistryModule,
     RegistrySearchResult,
     RouteInfo,
@@ -173,6 +175,118 @@ def _search_next_step(*, total: int, group: str | None, namespace: str | None) -
             "no single group lists an instance whole."
         )
     return "These are the matches under this filter."
+
+
+#: The registry release that serves the variant-level catalog (`/variants`,
+#: `/genes/{symbol}/claims`) and `?pgs_id=` on the listing.
+CLAIMS_RELEASE = (0, 31)
+
+#: How many claim rows a reply carries at most. A gene answer is whole on the registry's side
+#: and large (MTHFR on production, 2026-11-14: 385 claims, about 140 kB), so `claims` is cut
+#: and says so.
+CLAIMS_LIMIT_MAX = 1000
+
+
+def serves_claims(info: VersionInfo | None) -> bool | None:
+    """Whether an instance's `/version` says it serves the 0.31 reads; `None` when it did not say.
+
+    Asked before `pgs_id` is sent, because a 0.30 server ignores a query parameter it does not
+    know and answers the unfiltered listing (measured on the polygon, 2026-11-14: 47 of 47).
+    """
+    release = getattr(info, "registry", None) if info is not None else None
+    if not release:
+        return None
+    parts = str(release).split(".")[:2]
+    if len(parts) < 2 or not all(p.isdigit() for p in parts):
+        return None
+    return (int(parts[0]), int(parts[1])) >= CLAIMS_RELEASE
+
+
+def older_instance(target: str, info: VersionInfo | None, what: str) -> str:
+    """The refusal for a 0.31 read on an instance that does not serve it, or did not say."""
+    if info is None or not getattr(info, "registry", None):
+        return (
+            f"The {target} instance did not say which registry release it runs, so whether it "
+            f"serves {what} (registry 0.31) is unknown; `registry_health` reads what it can."
+        )
+    return f"The {target} instance runs registry {info.registry}, and {what} is registry 0.31."
+
+
+def _claim_order(claim: dict[str, Any]) -> tuple[str, ...]:
+    return (
+        str(claim.get("module") or ""),
+        str(claim.get("variant_key") or ""),
+        str(claim.get("kind") or ""),
+        str(claim.get("genotype") or ""),
+        json.dumps(claim, sort_keys=True, default=str),
+    )
+
+
+def claims_message(
+    *,
+    asked: str,
+    key: str,
+    total: int,
+    shown: int,
+    not_projected: int,
+    conflicts: dict[str, Any] | None,
+) -> str:
+    """What one claims answer establishes, and the three readings it must not be given.
+
+    An empty answer is about the spelling asked (registry S32: the alias lookup is exact), a
+    `compared` of 0 is not agreement, and an unprojected module's silence is not agreement either.
+    """
+    parts: list[str] = []
+    if total == 0 and asked == "variant":
+        parts.append(
+            f"No visible module is known under the spelling {key!r}. The lookup matches a spelling "
+            "exactly (registry S32): `RS429358` or `chr19:44908684:T:C` answers empty where "
+            "`rs429358` or `19:44908684:T:C` does not, so this is not evidence that no module "
+            "covers the variant."
+        )
+    elif total == 0:
+        parts.append(
+            f"No visible module names {key!r} as the authored gene of a row. Genes are the ones "
+            "rows author, never assigned by position, so a module whose rows carry no gene is "
+            "not counted."
+        )
+    if conflicts is not None and total:
+        pairs = conflicts.get("pairs") or []
+        compared = int(conflicts.get("compared") or 0)
+        skipped = conflicts.get("incomparable") or {}
+        reasons = ", ".join(f"{reason} {n}" for reason, n in sorted(skipped.items()))
+        if pairs:
+            parts.append(
+                f"{len(pairs)} pair(s) of modules give one allele opposite directions for the same "
+                "genotype and trait. That is a fact about two statements, not a verdict on either, "
+                "and on its own never a reason to change a row."
+            )
+        elif compared:
+            parts.append(
+                f"{compared} pair(s) of modules were compared and none gives opposite directions."
+            )
+        elif skipped:
+            parts.append("No pair of modules could be compared, which is not agreement.")
+        else:
+            # The registry passes over two modules that state different genotypes without
+            # counting them: different statements, not a disagreement and not a comparison.
+            parts.append(
+                "No two modules state the same genotype here, so nothing was compared; that is "
+                "not agreement."
+            )
+        if reasons:
+            parts.append(f"Pairs not compared, by reason: {reasons}.")
+    if not_projected:
+        parts.append(
+            f"{not_projected} visible module(s) have no projection yet, so their silence here is "
+            "not agreement."
+        )
+    if shown < total:
+        parts.append(
+            f"`claims` shows {shown} of {total}; `modules` and `claims_by_module` count all of "
+            f"them, and `limit` (at most {CLAIMS_LIMIT_MAX}) shows more."
+        )
+    return " ".join(parts) or "Every claim is listed."
 
 
 def _collapse_pubmind(withheld: list[LintAlteration]) -> list[LintAlteration]:
@@ -497,6 +611,7 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         category: str | None = None,
         group: str | None = None,
         namespace: str | None = None,
+        pgs_id: str | None = None,
         page: int = 1,
         per_page: int = 20,
     ) -> RegistrySearchResult:
@@ -504,7 +619,10 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
 
         Run this before authoring: an existing module covering the same genes is
         either the thing to extend or the reason not to start. Filter by free
-        text (`query`), by `gene`, or by `category`.
+        text (`query`), by `gene`, or by `category`. `pgs_id` (registry 0.31)
+        finds the modules whose `pgs` table names that PGS Catalog score; an older
+        instance is refused rather than asked, since it ignores the filter and
+        answers the whole listing.
 
         `target` is REQUIRED and has no default. `prod` is the published world
         this question is usually about; `test` is the polygon, where a publish is
@@ -547,15 +665,30 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             params["group"] = group
         if namespace:
             params["namespace"] = namespace
+        if pgs_id:
+            params["pgs_id"] = pgs_id
 
-        def _search() -> dict:
+        def _search() -> tuple[dict | None, VersionInfo | None]:
             client = client_for(target, settings)
-            return client.list_modules(**params)
+            if pgs_id:
+                # A 0.30 server ignores `pgs_id` and answers every module, which reads as
+                # a filtered result; so the release is read first and the filter never
+                # sent to an instance that would drop it.
+                info = client.server_version()
+                if not serves_claims(info):
+                    return None, info
+            return client.list_modules(**params), None
 
         try:
-            payload = await run_sync(_search)
+            payload, refused_by = await run_sync(_search)
         except RegistryError as exc:
             raise ToolError(f"Registry error: {exc}") from exc
+        if payload is None:
+            raise ToolError(
+                older_instance(target, refused_by, "`pgs_id`")
+                + " An older server ignores the filter and answers the unfiltered listing, so "
+                "nothing was asked; search by `query` or `gene` there."
+            )
 
         items = payload.get("items") or payload.get("results") or []
         total = int(payload.get("total", len(items)))
@@ -566,6 +699,123 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             target=target,
             registry_url=settings.registry_url_for(target),
             next_step=_search_next_step(total=total, group=group, namespace=namespace),
+        )
+
+    # Registry 0.31's variant-level catalog. Two client calls, one tool: the listing pays for
+    # every description, and the two answers share every reading that matters (empty is about
+    # the spelling, unprojected is silence, a conflict is a fact and not a verdict). The rows
+    # pass through as dicts because upstream projects "columns by presence"; a typed row would
+    # restate their schema here and drop what a later projector adds.
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Registry: what published modules say about a variant or gene",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def registry_claims(
+        target: RegistryTarget,
+        variant: str | None = None,
+        gene: str | None = None,
+        limit: int = 50,
+    ) -> PublishedClaims:
+        """What published modules say about one variant or one gene. Read-only, no token.
+
+        Pass exactly one: `variant` (an rsID, VRS id or `chrom:start:ref:alt`) or `gene` (the
+        symbol rows author). `target` is required, as for every catalog read. Registry 0.31;
+        an older instance is refused, naming the release it runs.
+
+        Use it while curating: another module's genotype, direction or trait for the same
+        variant is a second reading. **A conflict pair is a fact about two modules'
+        statements, never a verdict**, and on its own never a reason to change a row.
+        `conflicts.compared` of 0 is not agreement (`incomparable` says why each pair was
+        skipped), and a `not_projected` module is silent, not agreeing.
+
+        The lookup matches a spelling exactly (registry S32): `RS429358` or `chr19:…`
+        answers empty where `rs429358` or `19:44908684:T:C` finds five modules, so an empty
+        answer is about the spelling. A gene answer counts authored genes only, never one
+        assigned by position.
+
+        `claims` is cut at `limit` (default 50, at most 1000) in a fixed order; `modules`,
+        `claims_by_module` and `conflicts` are always whole.
+        """
+        if settings.offline:
+            raise ToolError(
+                "The server is configured offline (JMC_OFFLINE), so the registry cannot be reached."
+            )
+        if (variant is None) == (gene is None):
+            raise ToolError("Pass exactly one of `variant` or `gene`.")
+        if not 1 <= limit <= CLAIMS_LIMIT_MAX:
+            raise ToolError(f"`limit` is between 1 and {CLAIMS_LIMIT_MAX}.")
+        asked = "gene" if gene is not None else "variant"
+        key = (gene if gene is not None else variant or "").strip()
+        if asked == "gene" and (
+            not key or any(ch in key for ch in "/?#%") or any(ch.isspace() for ch in key)
+        ):
+            # The client puts the symbol into the path unquoted (registry S32), so a `/` or `?`
+            # would address another route rather than fail.
+            raise ToolError(f"{gene!r} is not a gene symbol: no spaces, `/`, `?`, `#` or `%`.")
+        if asked == "variant" and not 3 <= len(key) <= 500:
+            raise ToolError(
+                "`variant` is 3 to 500 characters: an rsID, VRS id or chrom:start:ref:alt."
+            )
+
+        def _ask() -> tuple[dict | None, VersionInfo | None, RegistryError | None]:
+            with client_for(target, settings) as client:
+                try:
+                    reply = (
+                        client.gene_claims(key) if asked == "gene" else client.variant_claims(key)
+                    )
+                except RegistryError as exc:
+                    # Both routes answer an unknown key with an empty 200, so a 404 is the
+                    # route itself missing: an instance older than 0.31, said as such rather
+                    # than as "not found", which would read as an answer about the variant.
+                    if exc.status_code != 404:
+                        raise
+                    return None, client.server_version(), exc
+                return reply, None, None
+
+        try:
+            payload, info, missing = await run_sync(_ask)
+        except RegistryError as exc:
+            raise ToolError(f"Registry error: {exc}") from exc
+        if payload is None:
+            if serves_claims(info):
+                raise ToolError(f"Registry error: {missing}")
+            raise ToolError(older_instance(target, info, "the variant-level catalog"))
+
+        rows = sorted(
+            (c for c in payload.get("claims") or [] if isinstance(c, dict)), key=_claim_order
+        )
+        by_module = Counter(str(c.get("module") or "") for c in rows)
+        conflicts = payload.get("conflicts") if asked == "variant" else None
+        not_projected = int(payload.get("not_projected") or 0)
+        shown = rows[:limit]
+        return PublishedClaims(
+            target=target,
+            registry_url=settings.registry_url_for(target),
+            asked=asked,
+            key=key,
+            variant_keys=[str(k) for k in payload.get("variant_keys") or []],
+            modules=sorted({str(m) for m in payload.get("modules") or []} | set(by_module)),
+            claims_by_module=dict(sorted(by_module.items())),
+            claims_total=len(rows),
+            claims=shown,
+            truncated=len(shown) < len(rows),
+            variants=int(payload["variants"])
+            if asked == "gene" and "variants" in payload
+            else None,
+            conflicts=conflicts,
+            not_projected=not_projected,
+            message=claims_message(
+                asked=asked,
+                key=key,
+                total=len(rows),
+                shown=len(shown),
+                not_projected=not_projected,
+                conflicts=conflicts,
+            ),
         )
 
     @mcp.tool(

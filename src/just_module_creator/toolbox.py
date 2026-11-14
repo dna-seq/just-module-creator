@@ -213,16 +213,18 @@ GROUPS: tuple[Group, ...] = (
     ),
     Group(
         "catalog",
-        "Read the registry: search it, read a module, download one, check a name is free.",
+        "Read the registry: search it, read a module, what modules say about a variant or gene, "
+        "download one, check a name is free.",
         (
             "registry_search",
             "registry_get_module",
+            "registry_claims",
             "registry_health",
             "registry_is_published",
             "registry_namespace_available",
             "registry_download",
         ),
-        4532,
+        6013,
     ),
     Group(
         "publish",

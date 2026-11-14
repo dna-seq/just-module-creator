@@ -271,6 +271,7 @@ match.
 | content signature, artifact integrity | `module_signature`, `verify_artifact` | — |
 | the whole generated DSL at once | `authoring_reference` | — |
 | see whether a module already exists, and read one | `registry_search`, `registry_get_module` | — |
+| what published modules say about a variant, a gene or a PGS score | `registry_claims`, `registry_search(pgs_id=…)` | — |
 | **get a published module onto disk, verified** | `registry_download` | — |
 | turn a compiled artifact back into a spec | `reverse_module` | — |
 | re-derive a sidecar without losing curation | `refresh_sidecar` | two names cost more — see below |

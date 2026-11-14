@@ -36,6 +36,7 @@ Install: `pip install just-dna-enricher` pulls the compiler and the format tier.
 | **open access + full text** | `lookup_open_access`, `fetch_fulltext` | — |
 | **citation graph** | `paper_citations` | — |
 | registry search / read / publish | `registry_search`, `registry_get_module`, `registry_download`, `registry_publish` | `registry-client list / download / publish` |
+| what published modules say about a variant or gene (registry 0.31) | `registry_claims` | `registry-client variant`, `registry-client gene` |
 | **would this publish** (dry run, no version spent) | `registry_check`, `registry_validate` | `registry-client check`, `registry-client validate` |
 | already published under any name | `registry_is_published` | `registry-client signature` + `find-by-hash` |
 | instance up, and which mode is it | `registry_health` | `registry-client version` (or `curl /health`) |

@@ -1774,6 +1774,45 @@ class RegistrySearchResult(BaseModel):
     )
 
 
+class PublishedClaims(BaseModel):
+    """What published modules say about one variant or one gene (registry 0.31)."""
+
+    target: str = Field(description="Which instance answered: 'prod' or 'test'.")
+    registry_url: str = Field(description="Which registry answered.")
+    asked: str = Field(description="'variant' or 'gene': which question this answers.")
+    key: str = Field(description="The spelling or symbol asked, as sent.")
+    variant_keys: list[str] = Field(
+        default_factory=list,
+        description="Every key the spelling resolved to (variant only). Only the spelling itself "
+        "means no stored alias matched it.",
+    )
+    modules: list[str] = Field(
+        description="Every module with a claim here, whole even when `claims` is cut."
+    )
+    claims_by_module: dict[str, int] = Field(
+        description="Claims per module, counted over all of them."
+    )
+    claims_total: int = Field(description="How many claims the registry returned.")
+    claims: list[dict[str, Any]] = Field(
+        description="The claim rows as the registry sends them (columns by presence), sorted by "
+        "module, variant, kind and genotype; at most `limit` of them."
+    )
+    truncated: bool = Field(description="True when `claims` holds fewer than `claims_total`.")
+    variants: int | None = Field(
+        default=None, description="Distinct variants under the gene (gene only)."
+    )
+    conflicts: dict[str, Any] | None = Field(
+        default=None,
+        description="The registry's disagreement marker, verbatim (variant only): `pairs` of "
+        "modules giving one allele opposite directions for one genotype and trait, `compared`, "
+        "and `incomparable` by reason. A fact about two statements, never a verdict on either.",
+    )
+    not_projected: int = Field(
+        description="Visible modules with no projection yet: their absence here is not agreement."
+    )
+    message: str = Field(description="What this answer does and does not establish.")
+
+
 class PublishedVersion(BaseModel):
     """One published version built from the same authored data."""
 

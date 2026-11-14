@@ -60,9 +60,9 @@ dependencies = [
     # The 0.6.x floor reasoning this replaces is not lost, only subsumed: 0.6.2's
     # exception contract and 0.6.3/0.6.4's `multi_allelic_rsids` collapse (upstream
     # S41/S45, our F36) are all below 0.7.0. `docs/CHANGELOG.md` at 0.16.0 carries it.
-    "just-dna-compiler>=0.8.4,<0.9",
-    "just-dna-format>=0.8.4,<0.9",
-    "just-dna-enricher[atlas]>=0.8.4,<0.9",
+    "just-dna-compiler>=0.8.6,<0.9",
+    "just-dna-format>=0.8.6,<0.9",
+    "just-dna-enricher[atlas]>=0.8.6,<0.9",
     # 0.25.2 is the first PUBLISHED client carrying the whole caching-proxy surface —
     # `cache_status`, `derived`, `draft`, the six `hint_*` methods and
     # `models.api.VariantHintReport`. Verified against the wheel rather than a sibling
@@ -90,7 +90,13 @@ dependencies = [
     # 0.29.0 (2026-11-11) adds `rename_namespace`, which `registry_rename_namespace` wraps;
     # it requires format `>=0.8.3`, and the polygon served it the same night.
     # 0.29.1 floors format `>=0.8.4`, in step with the trio's floor above.
-    "just-dna-registry>=0.29.1",
+    # 0.31.0 (2026-11-13) adds `variant_claims`, `gene_claims` and `list_modules(pgs_id=)`,
+    # which `registry_claims` and `registry_search` wrap; it requires format `>=0.8.6`, so the
+    # trio moves to 0.8.6 with it (a patch: no public name, field or warning code moved).
+    # A registry minor is not a contract skew, so this client still talks to a 0.30
+    # instance; the tools read `/version` and refuse the three reads there, since a 0.30
+    # server ignores `pgs_id` and answers the wider listing.
+    "just-dna-registry>=0.31.0",
     "python-dotenv>=1.2.2",
     # Declared, not leaned on transitively: net.py calls httpx directly for the
     # literature sources, and a transitive pin is not a contract.

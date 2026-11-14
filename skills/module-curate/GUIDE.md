@@ -325,6 +325,12 @@ hand against `ref` and `alts`, and never read "no genotype warnings" as "every g
 - ⚠️ **CHECK — the sign warning cannot fire on an honest GWAS module.** It keys on `state` or
   `direction` being `risk`, and withholding the axis is *correct* when the direction is unknown — which
   disables the only check the weight column has.
+- **What other published modules say about the variant is a second reading, never a check.**
+  `registry_claims(target="prod", variant=…)` lists each module's genotype, direction and trait for it,
+  with the registry's disagreement marker. A pair there is a fact about two statements: conforming your
+  row to it makes the module agree with another author, not with the evidence. A `compared` of 0 and a
+  `not_projected` module are silence, not agreement; ask by the lower-case rsID or `chrom:start:ref:alt`,
+  since the lookup matches a spelling exactly (registry S32).
 
 ## How many rows is a report
 
