@@ -118,6 +118,27 @@ its history.
 | F99 | S101 | doc fixed | upstream docs, nothing to install |
 | F54 | S58 | RM122 | open upstream, parked |
 
+## Registry client calls not wrapped, and why (CLAUDE.md §5; no F#)
+
+**State: written 2026-11-14 from the lead's parity sweep** (`docs/seats/LEAD_NOTES.md`, "The registry parity
+sweep", `f76d0af`), measured against the installed client 0.31.0 with reads probed on both instances the same day
+by the lead. The calls this sweep wraps are the lead's to build; these are the ones that stay unwrapped. Each
+reason is one of §5's grounds or a covering tool; a row with a trigger is wrapped once the trigger holds.
+
+| Client calls | Reason | Wrap when |
+|---|---|---|
+| `hint_citation`, `hint_gene`, `hint_trait` | Covered: `lookup_citation` and `lookup_identifier` ask the same sources directly. No snapshot lane stands behind these hints, so routing them through the registry adds a third party and spends its budget with no miss to justify it. | a hint gains a lane our direct call cannot reach |
+| `logs`, `get_tarball` | Covered: `registry_download` fetches the logs (`download(include_logs=True)`); a tarball is the same version in another container. | |
+| `versions` | Covered while measured: `get_module` returned every version of every module on both instances (longest history 6). | a module passes 20 versions, the client's page size |
+| `lookup_by_digest` | Covered: `registry_is_published` asks by `content_signature`, which survives a compiler change; an artifact digest moves with the build. | |
+| `lookup_by_digests`, `lookup_by_signatures` | An operator's sweep: the batch forms classify a corpus. | |
+| `pubkey` | Both instances answer `None`: nothing is signed to check against. | an instance signs; then pin its key in `registry_download` |
+| `import_module` | A spec archive goes through `registry_publish`; the legacy parquet-only form carries no spec for any check here to read before a permanent publish. | |
+| `admin_rename_account`, `merge_accounts`, `runs`, `run_log` | Only a deployment calls them: site admins only (the saved polygon account answers `site_admin: false`). | |
+| `assert_compatible`, `issue_jwt_token` | Transport: the client calls the first on every connection itself; the second is a web session's token exchange, and a static token serves every call. | |
+
+`set_short_description` is not an abstention: it is F59's open half, and F59 closes when the lead's tool lands.
+
 ## Registry `S32` — the variant catalog matches a key's spelling exactly (no F#: the lead's 0.31 reads)
 
 **State: answered 2026-11-14 (their `f4eca0b`), all three readings confirmed; on their roadmap, undecided.** 0.31's
@@ -188,7 +209,7 @@ docstring and CLI help. No mitigation of ours; a tool follows once upstream has 
 
 **Parity gap beside it (ours, not upstream's): closed on main (`6ba23f6`, unreleased, the lead).**
 `registry_rename_account`, `registry_create_org` and `registry_create_org_namespace` wrap the client's calls, beside
-`registry_rename_namespace`. Not wrapped, with the reason (CLAUDE.md §5, "only a deployment calls it"):
+`registry_rename_namespace`. Not wrapped, with the reason (CLAUDE.md §5, "only a deployment calls it"; the whole list is under "Registry client calls not wrapped" above):
 `merge_accounts` and `admin_rename_account`, site-admin calls only; the saved polygon account answers
 `site_admin: false`, so neither could be tried here. An org namespace recorded on the saved account is dropped
 again by the start-up check until registry `S31` ships (entry above).
