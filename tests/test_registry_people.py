@@ -14,6 +14,7 @@ from just_dna_registry.models.api import ReviewRequest
 from just_module_creator import localstore
 from just_module_creator.settings import Settings
 from just_module_creator.tools import registry as registry_tools
+from just_module_creator.tools import research
 
 
 def _online() -> Settings:
@@ -350,3 +351,38 @@ async def test_reading_reviews_needs_no_token_and_counts_the_highlighted(make_cl
     assert stub.calls == [("reviews", MODULE["namespace"], MODULE["name"], None)]
     assert stub.tokens == [None]
     assert "2 review(s)" in payload["message"] and "1 highlighted" in payload["message"]
+
+
+class _StatsStub:
+    def __init__(self) -> None:
+        self.calls: list[tuple] = []
+
+    def catalog_stats(self, namespace=None, *, group=None):
+        self.calls.append(("catalog_stats", namespace, group))
+        return {"modules": 1, "downloads": 40, "stars": 0, "reviews": 0, "curated": 0}
+
+
+@pytest.mark.parametrize(
+    ("args", "call", "scope"),
+    [
+        (
+            {"namespace": "winternewt"},
+            ("catalog_stats", "winternewt", None),
+            "namespace winternewt",
+        ),
+        ({"group": "test"}, ("catalog_stats", None, "test"), "listing group test"),
+        ({}, ("catalog_stats", None, None), "the default listing"),
+    ],
+)
+async def test_totals_name_the_listing_they_were_counted_over(
+    make_client, monkeypatch, args, call, scope
+):
+    stub = _StatsStub()
+    monkeypatch.setattr(research, "client_for", lambda *a, **kw: stub)
+    async with make_client(settings=_online()) as client:
+        payload = (
+            await client.call_tool("registry_stats", {"target": "prod", **args})
+        ).structured_content or {}
+    assert stub.calls == [call]
+    assert f"Totals over {scope}" in payload["message"]
+    assert payload["data"]["downloads"] == 40

@@ -91,6 +91,7 @@ REGISTRY_TOOL_DEFAULTS = {
     "registry_is_published": None,
     "registry_search": None,
     "registry_claims": None,
+    "registry_stats": None,
     "registry_get_module": None,
     "registry_download": None,
     # Health follows the write default so the common case — "confirm I am pointed at

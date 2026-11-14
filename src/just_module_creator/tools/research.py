@@ -834,6 +834,53 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             ),
         )
 
+    # `registry_health`'s `catalog` block is the instance's whole catalog; this is the same
+    # totals over one namespace or listing group, which is what an author asks of their own
+    # work. It inherits the listing's policy on what is shown (upstream says so), so the
+    # message names the filter rather than calling the totals the instance's.
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Registry: totals for a namespace",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def registry_stats(
+        target: RegistryTarget, namespace: str | None = None, group: str | None = None
+    ) -> OpResult:
+        """Totals over the modules a listing shows: modules, downloads, stars, views, reviews,
+        curated, variants, studies and genes, for one `namespace` or listing `group`.
+
+        Without either it is the instance's listing as a whole. `target` is required:
+        `prod` for the catalog, `test` for the polygon.
+        """
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+        try:
+            payload = await run_sync(
+                lambda: client_for(target, settings).catalog_stats(namespace, group=group)
+            )
+        except RegistryError as exc:
+            return OpResult(
+                success=False,
+                message=f"{describe(target, settings)} refused the totals: {exc}",
+                data={"target": target},
+            )
+        scope = (
+            f"namespace {namespace}"
+            if namespace
+            else f"listing group {group}"
+            if group
+            else "the default listing"
+        )
+        return OpResult(
+            success=True,
+            message=f"Totals over {scope} on {describe(target, settings)}: what that listing "
+            "shows, never more.",
+            data={**jsonable(payload), "target": target, "namespace": namespace, "group": group},
+        )
+
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Registry: is this namespace free",
