@@ -3,7 +3,7 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## [Unreleased]
+## [0.48.11] — 2026-11-15
 
 - **`registry_members`**: list, add, re-role or remove the members of a namespace or an organisation, so the organisation `registry_create_org` makes can take a second person. Token-gated, listing included, since both instances refuse a member list without one; the registry enforces who may grant which role. A new `people` toolbox group holds it.
 - **`registry_profile`**: edit your own registry profile, or one of an organisation you own: display name, the funding link a module card shows beside its author, avatar, email. Only the fields passed are sent, and an empty string clears one; nothing is filled in from the session.
