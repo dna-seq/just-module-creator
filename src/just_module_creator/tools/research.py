@@ -250,6 +250,14 @@ def claims_message(
             "rows author, never assigned by position, so a module whose rows carry no gene is "
             "not counted."
         )
+    if asked == "gene" and total:
+        # Upstream's `/genes/{symbol}/claims` computes no marker, so a null there is not a
+        # quiet "nothing to report" (F151).
+        parts.append(
+            "The registry compares claims per variant only, so this gene answer says nothing "
+            "about whether modules disagree: ask `registry_claims(variant=...)` for each variant "
+            "in `claims`."
+        )
     if conflicts is not None and total:
         pairs = conflicts.get("pairs") or []
         compared = int(conflicts.get("compared") or 0)
@@ -740,8 +748,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         is about the spelling. A gene answer counts authored genes only, never one
         assigned by position.
 
-        `claims` is cut at `limit` (default 50, at most 1000) in a fixed order; `modules`,
-        `claims_by_module` and `conflicts` are always whole.
+        `claims` is cut at `limit` (default 50, at most 1000) in a fixed order; `modules` and
+        `claims_by_module` are always whole. The registry computes `conflicts` per variant
+        only: a gene answer carries none, so ask each variant in its `claims`.
         """
         if settings.offline:
             raise ToolError(
@@ -786,7 +795,11 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         if payload is None:
             if serves_claims(info):
                 raise ToolError(f"Registry error: {missing}")
-            raise ToolError(older_instance(target, info, "the variant-level catalog"))
+            raise ToolError(
+                older_instance(target, info, "the variant-level catalog")
+                + " `registry_search(gene=...)` lists the modules that name a gene there, without"
+                " their claims."
+            )
 
         rows = sorted(
             (c for c in payload.get("claims") or [] if isinstance(c, dict)), key=_claim_order

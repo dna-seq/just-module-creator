@@ -5,6 +5,8 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`registry_claims` on a gene no longer reads as "nothing to report"** (F151): its description said `conflicts` is always whole, while the registry computes that marker per variant only and a gene answer carries none. The description and a gene answer's message now say so and name the per-variant call; the refusal on an instance older than 0.31 names `registry_search(gene=...)` as what still works there.
+
 ## [0.48.10] — 2026-11-14
 
 - **`registry_claims`** (registry 0.31): what every visible module's latest version says about one variant (by rsID, VRS id or `chrom:start:ref:alt`) or one gene (authored genes only), with the registry's disagreement marker passed through verbatim. Its message never reads silence as agreement: a `compared` of 0, the pairs skipped by reason and unprojected modules are each said as such, and a conflict pair is named as a fact about two statements, not a verdict. An empty answer says it is about the spelling asked, since registry 0.31.0 matches exactly (registry S32, on their roadmap, undecided). `claims` is cut at `limit` (default 50) in a fixed order, with `modules` and per-module counts kept whole; production's MTHFR answer is 385 claims. An instance older than 0.31 is named rather than answered with a bare 404.

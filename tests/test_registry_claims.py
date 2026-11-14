@@ -119,6 +119,9 @@ async def test_a_gene_answer_is_cut_and_says_what_stayed_whole(make_client, monk
     assert payload["variants"] == APOE["variants"]
     assert payload["conflicts"] is None, "the gene route computes no marker"
     assert f"shows 50 of {total}" in payload["message"]
+    assert "says nothing about whether modules disagree" in payload["message"], (
+        "a null marker must not read as nothing to report (F151)"
+    )
 
 
 async def test_the_cut_is_the_same_whatever_order_the_registry_sends(make_client, monkeypatch):
@@ -220,6 +223,7 @@ async def test_an_instance_older_than_031_is_named_not_answered_not_found(make_c
             await client.call_tool("registry_claims", {"target": "test", "variant": "rs429358"})
     assert "0.31" in str(raised.value)
     assert "Not Found" not in str(raised.value)
+    assert "registry_search(gene=" in str(raised.value), "the refusal says what to do instead"
 
 
 async def test_a_symbol_that_would_address_another_route_is_refused_before_the_call(

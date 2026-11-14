@@ -6,6 +6,42 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F151 — `registry_claims` says `conflicts` is "always whole", and a gene answer carries none
+
+**Found:** 2026-11-14, probing 0.48.10 over the host wire · **Severity:** low (wording) · **Status:** resolved
+2026-11-14 on main, unreleased
+
+The tool's description ends: *"`modules`, `claims_by_module` and `conflicts` are always whole."* On production,
+`registry_claims(gene="APOE", target="prod")` answered 57 claims from 8 modules with `conflicts: null`, and its
+`message` said only how many claims were shown. The model's field description has it right (*"The registry's
+disagreement marker, verbatim (variant only)"*), but the description is what an agent reads before calling, and
+the field text never reaches it: the result is a plain dict.
+
+Why it matters: a curator asking "do modules disagree about APOE?" by gene gets a null marker and a message silent
+on it, which reads as "nothing to report". The disagreement marker exists only per variant. Asked the same
+question per variant (`variant="rs429358"`), the answer is honest: `compared: 0`, `incomparable: {no_trait: 15}`,
+and the message says *"No pair of weight claims could be compared, which is not agreement."*
+
+What would close it: the description says `conflicts` is per variant only, and a gene answer's `message` says the
+marker is not computed for a gene (ask per variant from `claims`). Not upstream's: the null is the registry's
+documented shape, so this is our wording.
+
+Also seen, all holding: `RS429358` answers empty with the S32 spelling message; `19:44908684:T:C` expands to
+`rs429358` and finds the same 5 modules / 14 claims; the polygon (0.30.0) refuses `registry_claims` and
+`registry_search(pgs_id=)` by release. The `pgs_id` refusal says what to do instead, and the claims one does
+not (*"The test instance runs registry 0.30.0, and the variant-level catalog is registry 0.31."*). A small
+asymmetry, not separately filed. `registry_rename_account` dry run (`sheep` → `test-sheep-probe`, polygon): 44
+versions, 24 of them in `versions_unattributed` (all the `registry upgrade` successors), no conflicts, no
+namespace renamed (`test-sheep` is not spelled like `sheep`). The raw report gives no reading of
+`versions_unattributed`. Upstream's model says those versions are amended too, so there is nothing to decide.
+
+**Resolution (lead, 2026-11-14):** the description now says `modules` and `claims_by_module` are whole and that
+the registry computes `conflicts` per variant only, so a gene answer is asked again per variant from its
+`claims`. A gene answer's `message` says it tells nothing about disagreement and names that call. The refusal on
+an instance older than 0.31 now says what to do there: `registry_search(gene=...)` lists the modules naming a gene,
+without their claims. `src/just_module_creator/tools/research.py` (`claims_message`, `registry_claims`), pinned in
+`tests/test_registry_claims.py` (the APOE and 0.30 tests).
+
 ## F150 — `remote_derive`'s `passes_report` is always null: the server sends `passes` as a list, and we read only a dict
 
 **Found:** 2026-11-12, released v0.48.8 source, in-process driver, with the raw archive captured · **Severity:**
