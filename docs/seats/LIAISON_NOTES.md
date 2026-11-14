@@ -18,10 +18,11 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. `upstream-inde
 
 ## Half read
 
-- Nothing. Main runs format/compiler/enricher 0.8.5 and registry client 0.30.0 (release 0.48.9); read to format
-  0.8.6 and registry 0.31.0 (both nothing to change; the lead wraps 0.31's three catalog reads). Production serves
-  registry 0.31.0 on format 0.8.6, the polygon 0.30.0 on 0.8.4 (2026-11-13). Re-run S30 on the polygon once it
-  serves 0.30.1 or later (the fix is released in 0.30.1).
+- Nothing. Main runs format/compiler/enricher 0.8.6 and registry client 0.31.0 (release 0.48.10, with
+  `registry_claims` and `registry_search(pgs_id=)`); read to registry 0.31.1 (operator only, nothing to change).
+  Production serves registry 0.31.0 on format 0.8.6, the polygon 0.30.0 on 0.8.4 (2026-11-14). Re-run S30 on the
+  polygon once it serves 0.30.1 or later. Watch S32's folding patch reaching an instance, and a client release
+  quoting `gene_claims`' symbol (tell the lead of each).
 
 ## The dependency bump
 
