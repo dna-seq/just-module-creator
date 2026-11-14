@@ -528,9 +528,12 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         )
     )
     async def lookup_citation(
-        pmid: str | None = None, doi: str | None = None, offline: bool = False
+        pmid: str | None = None,
+        doi: str | None = None,
+        pmcid: str | None = None,
+        offline: bool = False,
     ) -> CitationLookup:
-        """Check a PMID or DOI, and read back **which paper it names**.
+        """Check a PMID, DOI or PMC id, and read back **which paper it names**.
 
         Existence alone is a weak guard: PMIDs are densely allocated, so a half-
         remembered number is usually a real record for a different paper and comes back
@@ -547,14 +550,20 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         itself. Given a DOI alone, the work it names comes back, and a PMID Europe PMC
         maps it to arrives in `withheld` with the same refusal (`redundancy_bearing`):
         typed in, the DOI cross-check compares that mapping with itself. `pmid` stays null.
+        A `pmcid` alone works the same way (PubMed and PMC number articles separately);
+        given beside a `pmid`, the two are checked against each other.
         """
-        if not pmid and not doi:
-            raise ToolError("Provide either pmid or doi.")
+        if not pmid and not doi and not pmcid:
+            raise ToolError("Provide a pmid, doi or pmcid.")
 
         eff_offline = offline_for(settings, offline)
         hint = await run_sync(
             lambda: enricher_lookup.lookup_citation(
-                pmid=pmid, doi=doi, offline=eff_offline, clients=services.lookup_clients
+                pmid=pmid,
+                doi=doi,
+                pmcid=pmcid,
+                offline=eff_offline,
+                clients=services.lookup_clients,
             )
         )
         result = CitationLookup(
@@ -563,7 +572,7 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             pmid_exists=getattr(hint, "pmid_exists", None),
             doi_exists=getattr(hint, "doi_exists", None),
             registry_doi=getattr(hint, "registry_doi", None),
-            pmcid=getattr(hint, "pmcid", None),
+            pmcid=getattr(hint, "pmcid", None) or pmcid,
             open_access=getattr(hint, "open_access", None),
             abstract_available=getattr(hint, "abstract_available", None),
             title=getattr(hint, "title", None),

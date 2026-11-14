@@ -34,7 +34,11 @@ Only a title settles identity. Both of these report one:
 ```
 lookup_citation(pmid="11788828")                   # title, journal, year, first_author for one id
 literature_search(pmids=["11788828", "10748118"])  # the same, in bulk, across services
+lookup_citation(pmcid="PMC3498066")                # a PMC id: the paper, and its PMID in `withheld`
 ```
+
+`studies.csv:pmid` takes the PubMed number, and a PMC id is a different one. The PMID a PMC id maps to
+comes back in `withheld`, for you to type after checking the title.
 
 Compare each title against the paper you meant. **A title that disagrees means the id is wrong,
 however true `pmid_exists` is.** A `null` title means the question was not put — offline, or the

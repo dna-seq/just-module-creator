@@ -67,6 +67,7 @@ its roles from `just_dna_registry.permissions` and refuses to re-role a non-memb
 **Also new, mine, `unattended`:** `lookup_citation` does not pass `pmcid` to upstream's `lookup_citation`, which
 takes it; so `hint_citation`'s PMCID form is a gap, not covered, and the liaison's abstention reason narrows to
 PMID and DOI. Wiring it needs the `withheld` logic re-read for a third identifier.
+**Done the same evening:** `lookup_citation(pmcid=)` passes it through; upstream's advisory needed no logic of ours. Tried live: `PMC3498066` alone offers PMID 23128226 in `withheld`; beside the wrong PMID it warns the pair names different articles.
 
 ## Acting: the pm's milestones duty (from kit v0.1.187, 2026-11-12)
 
