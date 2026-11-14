@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`registry_members`**: list, add, re-role or remove the members of a namespace or an organisation, so the organisation `registry_create_org` makes can take a second person. Token-gated, listing included, since both instances refuse a member list without one; the registry enforces who may grant which role. A new `people` toolbox group holds it.
 - **`registry_claims` on a gene no longer reads as "nothing to report"** (F151): its description said `conflicts` is always whole, while the registry computes that marker per variant only and a gene answer carries none. The description and a gene answer's message now say so and name the per-variant call; the refusal on an instance older than 0.31 names `registry_search(gene=...)` as what still works there.
 
 ## [0.48.10] — 2026-11-14

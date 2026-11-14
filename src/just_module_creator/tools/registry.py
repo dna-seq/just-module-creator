@@ -20,6 +20,7 @@ import json
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Literal
 
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
@@ -1599,4 +1600,109 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
                 + caveat
             ),
             data={**jsonable(payload), "target": target},
+        )
+
+    # Seven client calls, one tool: who may publish to a namespace or act for an
+    # organisation. 0.48.10 shipped `registry_create_org` and nothing could add anyone to
+    # it. Even the listing needs a token (both instances answer `members` 401 without one,
+    # measured 2026-11-14), so the whole tool is gated. A namespace's re-role is upstream's
+    # `add_member` again ("add or re-role"); an organisation's is `set_org_role`.
+    @mcp.tool(
+        tags={GATED_TAG},
+        annotations=ToolAnnotations(
+            title="Registry: members of a namespace or organisation",
+            readOnlyHint=False,
+            idempotentHint=True,
+            destructiveHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def registry_members(
+        ctx: Context,
+        target: RegistryTarget = "test",
+        namespace: str | None = None,
+        org: str | None = None,
+        action: Literal["list", "add", "remove", "role"] = "list",
+        account: str | None = None,
+        role: Literal["owner", "admin", "member"] | None = None,
+    ) -> OpResult:
+        """List, add, remove or re-role the members of one namespace or one organisation.
+
+        Pass exactly one of `namespace` or `org`. `add` takes `account` and a `role`
+        (default `member`); `role` changes an existing member's role; `remove` takes
+        `account`. Any member may list; adding or removing needs admin or owner, and
+        granting or removing an owner needs owner, which the registry enforces.
+        """
+        if (namespace is None) == (org is None):
+            raise ToolError("Pass exactly one of `namespace` or `org`.")
+        if action != "list" and not account:
+            raise ToolError(f"`{action}` needs the `account` it applies to.")
+        if action == "role" and role is None:
+            raise ToolError("`role` needs the new `role`: owner, admin or member.")
+        if namespace is not None:
+            try:
+                validate_namespace(namespace)
+            except Exception as exc:
+                raise ToolError(f"Invalid namespace {namespace!r}: {exc}") from exc
+
+        token = await resolve_api_key(ctx, settings, target, namespace=namespace)
+        if token is None:
+            return unauthenticated_result(settings, target)
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        who = f"namespace {namespace}" if namespace is not None else f"organisation {org}"
+        member = account or ""
+        new_role = role or "member"
+
+        def _call() -> object:
+            client = _client(token, target)
+            if namespace is not None:
+                if action == "list":
+                    return client.members(namespace)
+                if action == "remove":
+                    return client.remove_member(namespace, member)
+                return client.add_member(namespace, member, new_role)
+            assert org is not None
+            if action == "list":
+                return client.org_members(org)
+            if action == "remove":
+                return client.remove_org_member(org, member)
+            if action == "role":
+                return client.set_org_role(org, member, new_role)
+            return client.add_org_member(org, member, new_role)
+
+        data: dict = {"target": target, "namespace": namespace, "org": org, "action": action}
+        try:
+            payload = await run_sync(_call)
+        except RegistryError as exc:
+            return OpResult(
+                success=False,
+                message=(
+                    f"{describe(target, settings)} refused `{action}` on the {who}: "
+                    f"{exc}{instance_note(exc)}"
+                ),
+                data={**data, "account": account},
+            )
+        if action == "list":
+            members = sorted(
+                (dict(m) for m in payload if isinstance(m, dict))
+                if isinstance(payload, list)
+                else [],
+                key=lambda m: (str(m.get("role") or ""), str(m.get("account") or "")),
+            )
+            return OpResult(
+                success=True,
+                message=f"The {who} has {len(members)} member(s) on {describe(target, settings)}.",
+                data={**data, "members": jsonable(members)},
+            )
+        done = {
+            "add": f"Added {member} to the {who} as {new_role}",
+            "role": f"{member} is now {new_role} in the {who}",
+            "remove": f"Removed {member} from the {who}",
+        }[action]
+        return OpResult(
+            success=True,
+            message=f"{done} on {describe(target, settings)}.",
+            data={**data, "account": account, "result": jsonable(payload)},
         )

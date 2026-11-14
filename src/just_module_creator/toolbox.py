@@ -248,6 +248,12 @@ GROUPS: tuple[Group, ...] = (
         9388,
     ),
     Group(
+        "people",
+        "Who acts on the registry beside you: the members of a namespace or organisation.",
+        ("registry_members",),
+        453,
+    ),
+    Group(
         "snapshots",
         "Thick or thin: which snapshot caches this machine holds, what the missing ones "
         "would cost to provision, and having a registry derive the tables it cannot.",

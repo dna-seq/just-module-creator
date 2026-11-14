@@ -22,6 +22,7 @@ on production a botched publish is permanent in two ways at once.**
 | renaming a namespace | `registry_rename_namespace`: every version moves, the old name stays an alias; dry run first | the same; a `test-` name is refused |
 | renaming your account | `registry_rename_account`: each manifest's `owner` is amended, nothing changes identity, the old handle stays yours, a namespace spelled like it renames too; dry run first | the same |
 | a namespace a team shares | `registry_create_org`, then `registry_create_org_namespace`: members publish by their role in the organisation. The registry lists no one's organisations, so keep the name. Until it lists org namespaces on an account, this machine forgets one at the next server start, and publishing to it then needs the key passed to `authenticate` | the same; a `test-` name is refused |
+| who may publish there | `registry_members`: list, add, re-role or remove the members of a namespace or an organisation; even the listing needs a token | the same |
 | default for writes | **yes** | only when you ask |
 | default for catalog reads | **none — `target` is required on every tool that reads a catalog**, `compare_to_published` included | **none — `target` is required** |
 
