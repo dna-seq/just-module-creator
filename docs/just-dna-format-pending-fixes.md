@@ -125,8 +125,9 @@ its history.
 modules cover (measured by the lead). A patch would fold rsID case, a leading `chr` and `-` onto the stored alias
 forms, and quote the symbol in `gene_claims`' path; a minor would say whether the key matched any spelling and carry
 a haplotype claim's name. Ours (`registry_claims`, `319765c`) passes the reply through, and its message says an empty
-answer is about the spelling asked; no folding of our own. Those sentences come out when the patch is in our lock:
-the liaison tells the lead. Filed by the lead.
+answer is about the spelling asked; no folding of our own. The folding is server-side, so
+those sentences come out when an instance we read serves it (`/api/v1/version`), not when our lock moves; only
+`gene_claims`' quoting comes with the client. The liaison tells the lead either way. Filed by the lead.
 
 ## Registry `S31` — `whoami` lists only owned namespaces; no call lists the caller's orgs (no F#: the lead's account tools)
 
