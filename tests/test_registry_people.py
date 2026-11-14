@@ -10,6 +10,7 @@ import pytest
 from fastmcp.exceptions import ToolError
 from just_dna_registry import RegistryError
 from just_dna_registry.models.api import ReviewRequest
+from just_dna_registry.permissions import VALID_NS_ROLES, VALID_ORG_ROLES
 
 from just_module_creator import localstore
 from just_module_creator.settings import Settings
@@ -142,10 +143,6 @@ async def _members(make_client, monkeypatch, stub: _PeopleStub, args: dict) -> d
             ("add_member", "test-sheep", "wolf", "member"),
         ),
         (
-            {"namespace": "test-sheep", "action": "role", "account": "wolf", "role": "admin"},
-            ("add_member", "test-sheep", "wolf", "admin"),
-        ),
-        (
             {"namespace": "test-sheep", "action": "remove", "account": "wolf"},
             ("remove_member", "test-sheep", "wolf"),
         ),
@@ -171,6 +168,43 @@ async def test_each_action_reaches_its_own_upstream_call(make_client, monkeypatc
     assert payload["success"] is True
     assert stub.calls == [call]
     assert stub.tokens == ["mk_sheep_aaaa"]
+
+
+async def test_a_namespace_re_role_checks_membership_first(make_client, monkeypatch):
+    """Upstream's re-role is `add_member` again, which would add a stranger."""
+    _seed("test", "sheep", "mk_sheep_aaaa", ["test-sheep"])
+    stub = _PeopleStub()
+    payload = await _members(
+        make_client,
+        monkeypatch,
+        stub,
+        {"namespace": "test-sheep", "action": "role", "account": "wolf", "role": "admin"},
+    )
+    assert payload["success"] is True
+    assert stub.calls == [("members", "test-sheep"), ("add_member", "test-sheep", "wolf", "admin")]
+
+
+async def test_re_roling_someone_who_is_not_a_member_sends_nothing(make_client, monkeypatch):
+    _seed("test", "sheep", "mk_sheep_aaaa", ["test-sheep"])
+    stub = _PeopleStub()
+    payload = await _members(
+        make_client,
+        monkeypatch,
+        stub,
+        {"namespace": "test-sheep", "action": "role", "account": "fox", "role": "admin"},
+    )
+    assert payload["success"] is False
+    assert "fox is not a member" in payload["message"] and "Use `add`" in payload["message"]
+    assert stub.calls == [("members", "test-sheep")], "only the listing was asked"
+
+
+async def test_the_roles_offered_are_the_registrys_own(make_client):
+    async with make_client(settings=_online()) as client:
+        tools = {t.name: t for t in await client.list_tools()}
+    described = tools["registry_members"].inputSchema["properties"]["role"]["description"]
+    assert VALID_NS_ROLES, "upstream's role set came back empty"
+    for role in VALID_NS_ROLES | VALID_ORG_ROLES:
+        assert role in described
 
 
 async def test_a_listing_comes_back_in_a_fixed_order(make_client, monkeypatch):
@@ -211,6 +245,7 @@ async def test_a_refusal_names_the_action_and_what_it_was_on(make_client, monkey
         ({"namespace": "test-sheep", "action": "add"}, "needs the `account`"),
         ({"org": "test-herd", "action": "role", "account": "wolf"}, "needs the new `role`"),
         ({"namespace": "Not A Namespace"}, "Invalid namespace"),
+        ({"org": "test-herd", "action": "add", "account": "wolf", "role": "chief"}, "not a role"),
     ],
 )
 async def test_an_incomplete_request_is_refused_before_any_call(
@@ -386,3 +421,28 @@ async def test_totals_name_the_listing_they_were_counted_over(
     assert stub.calls == [call]
     assert f"Totals over {scope}" in payload["message"]
     assert payload["data"]["downloads"] == 40
+
+
+@pytest.mark.parametrize(
+    ("args", "signed_by"),
+    [
+        ({"action": "highlight", "reviewer": "wolf"}, "mk_goat_bbbb"),
+        ({"rating": 4}, "mk_sheep_aaaa"),
+    ],
+)
+async def test_a_highlight_is_signed_by_the_namespaces_owner_and_a_review_by_the_default(
+    make_client, monkeypatch, args, signed_by
+):
+    """Two saved accounts: the one owning the module's namespace highlights; a review is the
+    default account's own."""
+    _seed("test", "sheep", "mk_sheep_aaaa", ["test-sheep"])
+    _seed("test", "goat", "mk_goat_bbbb", ["test-goat"])
+    stub = _PeopleStub()
+    await _tool(
+        make_client,
+        monkeypatch,
+        stub,
+        "registry_review",
+        {"namespace": "test-goat", "name": "test_goat_module", "version": "1.0.0", **args},
+    )
+    assert stub.tokens == [signed_by]

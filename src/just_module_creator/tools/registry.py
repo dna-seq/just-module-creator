@@ -29,6 +29,7 @@ from just_dna_compiler import compiler
 from just_dna_format.identity import is_valid_version, validate_namespace
 from just_dna_registry import RegistryError
 from just_dna_registry.models.api import ReviewRequest
+from just_dna_registry.permissions import VALID_NS_ROLES, VALID_ORG_ROLES
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
@@ -61,6 +62,11 @@ from just_module_creator.tools._shared import (
 )
 
 log = get_logger()
+
+
+class _NotAMember(Exception):
+    """A namespace re-role asked for an account that is not a member (nothing was sent)."""
+
 
 #: Where a publish receipt lands, beside the spec it describes.
 #:
@@ -1626,13 +1632,21 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         org: str | None = None,
         action: Literal["list", "add", "remove", "role"] = "list",
         account: str | None = None,
-        role: Literal["owner", "admin", "member"] | None = None,
+        role: Annotated[
+            str | None,
+            Field(
+                description="The role to grant: one of "
+                f"{', '.join(sorted(VALID_NS_ROLES | VALID_ORG_ROLES))}, as the registry "
+                "defines them."
+            ),
+        ] = None,
     ) -> OpResult:
         """List, add, remove or re-role the members of one namespace or one organisation.
 
         Pass exactly one of `namespace` or `org`. `add` takes `account` and a `role`
         (default `member`); `role` changes an existing member's role; `remove` takes
-        `account`. Any member may list; adding or removing needs admin or owner, and
+        `account`; `role` on a namespace first checks they are a member, since the registry
+        would add a stranger. Any member may list; adding or removing needs admin or owner, and
         granting or removing an owner needs owner, which the registry enforces.
         """
         if (namespace is None) == (org is None):
@@ -1640,7 +1654,12 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         if action != "list" and not account:
             raise ToolError(f"`{action}` needs the `account` it applies to.")
         if action == "role" and role is None:
-            raise ToolError("`role` needs the new `role`: owner, admin or member.")
+            raise ToolError("`role` needs the new `role`.")
+        valid_roles = VALID_NS_ROLES if namespace is not None else VALID_ORG_ROLES
+        if role is not None and role not in valid_roles:
+            raise ToolError(
+                f"{role!r} is not a role here: one of {', '.join(sorted(valid_roles))}."
+            )
         if namespace is not None:
             try:
                 validate_namespace(namespace)
@@ -1664,6 +1683,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
                     return client.members(namespace)
                 if action == "remove":
                     return client.remove_member(namespace, member)
+                if action == "role" and member not in {
+                    str(m.get("account")) for m in client.members(namespace) if isinstance(m, dict)
+                }:
+                    raise _NotAMember(member)
                 return client.add_member(namespace, member, new_role)
             assert org is not None
             if action == "list":
@@ -1677,6 +1700,13 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         data: dict = {"target": target, "namespace": namespace, "org": org, "action": action}
         try:
             payload = await run_sync(_call)
+        except _NotAMember:
+            return OpResult(
+                success=False,
+                message=f"{member} is not a member of the {who}, so there is no role to change "
+                "and nothing was sent. Use `add` to make them one.",
+                data={**data, "account": account},
+            )
         except RegistryError as exc:
             return OpResult(
                 success=False,
@@ -2025,7 +2055,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         if action in ("highlight", "unhighlight") and not reviewer:
             raise ToolError(f"`{action}` needs the `reviewer` whose review it marks.")
 
-        token = await resolve_api_key(ctx, settings, target)
+        # A highlight is the module owner's act, so it is signed by the account saved for
+        # that namespace; a review is the reviewer's own, signed by the default account.
+        owner_act = action in ("highlight", "unhighlight")
+        token = await resolve_api_key(ctx, settings, target, namespace if owner_act else None)
         if token is None:
             return unauthenticated_result(settings, target)
         if settings.offline:

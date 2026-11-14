@@ -32,7 +32,7 @@ from just_module_creator.settings import Settings
 from just_module_creator.tools import proxy
 
 
-def test_the_floor_buys_every_proxy_method_this_layer_calls():
+def test_the_floor_buys_every_proxy_method_named_here():
     """The roster that `proxy_gap()` used to read at runtime, read by a test instead.
 
     `proxy_gap` refused by name while the installed client could not proxy. At a

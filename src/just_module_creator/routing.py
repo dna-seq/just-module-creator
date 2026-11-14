@@ -112,8 +112,12 @@ def local_lane_presence() -> dict[str, bool]:
     return {lane.name: lane.resolve() is not None for lane in CACHE_LANES}
 
 
-#: The proxy surface this layer calls on the registry client. **The runtime probe is
-#: gone and the roster is not**, which is the distinction `CLAUDE.md` § 2 draws: a fact
+#: The registry client's proxy surface, as the floor buys it. This layer calls five of the
+#: nine (`cache_status`, `derived`, `draft`, `hint_variant`, `hint_variants`); the four other
+#: hints are left uncalled on purpose, since a local tool asks the same source with no snapshot
+#: lane behind it (the reasons are in `docs/just-dna-format-pending-fixes.md`).
+#: **The runtime probe is gone and the roster is not**, which is the distinction `CLAUDE.md`
+#: § 2 draws: a fact
 #: you cannot generate is guarded by a test, and when the fact goes unconditional the
 #: test's subject moves rather than the test being deleted.
 #:
@@ -132,7 +136,7 @@ def local_lane_presence() -> dict[str, bool]:
 #:            hasattr(api, 'VariantHintReport'))"
 #:
 #: Run 2026-09-12, verbatim: `[] True`. What keeps that true is
-#: `test_the_floor_buys_every_proxy_method_this_layer_calls`, which reads this roster
+#: `test_the_floor_buys_every_proxy_method_named_here`, which reads this roster
 #: against the installed client — so a method retired upstream fails the suite here
 #: rather than at a caller's first proxied lookup.
 PROXY_METHODS: tuple[str, ...] = (

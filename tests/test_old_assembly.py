@@ -16,8 +16,8 @@ import pytest
 from fastmcp.exceptions import ToolError
 from just_dna_enricher.grch37 import Grch37Client
 
+from just_module_creator import net
 from just_module_creator.settings import Settings
-from just_module_creator.tools import research
 
 REPLIES = Path(__file__).resolve().parent.parent / "assets" / "grch37_replies"
 APOE_E4 = json.loads((REPLIES / "overlap_19_45411941.json").read_text())
@@ -36,7 +36,7 @@ def _serving(monkeypatch, reply: object) -> list[str]:
         return httpx.Response(200, json=reply)
 
     monkeypatch.setattr(
-        research,
+        net,
         "new_grch37_client",
         lambda: Grch37Client(_client=httpx.Client(transport=httpx.MockTransport(_answer))),
     )
@@ -94,7 +94,7 @@ async def test_one_client_serves_every_call(make_client, monkeypatch):
         built.append(client)
         return client
 
-    monkeypatch.setattr(research, "new_grch37_client", _build)
+    monkeypatch.setattr(net, "new_grch37_client", _build)
     async with make_client(settings=_online()) as client:
         for _ in range(3):
             await client.call_tool("lookup_old_assembly", {"chrom": "19", "start": 45411941})
@@ -107,3 +107,31 @@ async def test_a_position_below_one_is_refused_before_any_request(make_client, m
         with pytest.raises(ToolError, match="1-based"):
             await client.call_tool("lookup_old_assembly", {"chrom": "19", "start": 0})
     assert asked == []
+
+
+@pytest.mark.parametrize(
+    "fail",
+    [
+        lambda request: httpx.Response(503, json={"error": "maintenance"}),
+        lambda request: (_ for _ in ()).throw(httpx.ConnectError("refused", request=request)),
+    ],
+)
+async def test_a_service_that_cannot_answer_is_unchecked_not_none(make_client, monkeypatch, fail):
+    """An outage must not read as "dbSNP records nothing here", and must not raise either."""
+    monkeypatch.setattr(
+        net,
+        "new_grch37_client",
+        lambda: Grch37Client(_client=httpx.Client(transport=httpx.MockTransport(fail))),
+    )
+    async with make_client(settings=_online()) as client:
+        result = await client.call_tool("lookup_old_assembly", {"chrom": "19", "start": 45411941})
+    payload = result.structured_content or {}
+    assert payload["outcome"] == "unchecked"
+    assert payload["rsids"] == []
+    assert "could not be asked" in payload["message"]
+
+
+def test_the_server_paces_grch37_with_a_thread_safe_gate() -> None:
+    """Tools reach the one client from worker threads; upstream's own gate is not lock-safe."""
+    client = net.new_grch37_client()
+    assert isinstance(client.gate, net.ServiceGate)

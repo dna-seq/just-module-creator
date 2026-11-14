@@ -1154,7 +1154,8 @@ class OldAssemblyRecovery(BaseModel):
     outcome: str = Field(
         description="Upstream's verdict, verbatim: `recovered` (one rs-number), `ambiguous` "
         "(several, reported and never picked), `none` (dbSNP records nothing starting here), "
-        "`skipped_offline` or `unreachable` (not asked, so unchecked rather than empty)."
+        "`unchecked` (the service could not be asked) or `skipped_offline`: neither is an "
+        "empty answer."
     )
     rsids: list[str] = Field(
         default_factory=list, description="Every rs-number that starts exactly here."

@@ -52,11 +52,20 @@ changelog line; the abstentions go to the liaison for `docs/just-dna-format-pend
 `registry_profile` (3b12409), `registry_amend_version` and `registry_set_subtitle` (0395250, F59 closed and
 told to the liaison), `registry_reviews`, `registry_review`, `registry_star` (5c2b2f2), `registry_stats`
 (93d209f), `lookup_old_assembly` (c3d7785, also closing `cli_map`'s `hint recover` gap). The abstentions are
-the liaison's f37c6d5. Full suite 996 passed (the Codex reinstall test deselected: it timed out on
-`codex plugin add` over the network earlier the same day, 949 + that 1 error). Release as 0.48.11 on or after
+the liaison's f37c6d5. Full suite 996 passed with the Codex reinstall test deselected: earlier the same day
+it timed out after 300 s on `codex plugin add`, cause not established (it first failed at 4213c8e, before
+these tools). Release as 0.48.11 on or after
 2026-11-15. **New, mine, `unattended`, found on the way:** the enricher's `diagnose_wrong_build` (does a
 ref-mismatched row read as GRCh37 in a GRCh38 module) is wrapped by nothing here; parity says wrap it beside
 `lookup_old_assembly`, where the reference-base check's mismatches are the input.
+**Fixed forward after review (same day):** a highlight is signed by the account saved for the module's
+namespace (it was the default account); `lookup_old_assembly` names upstream's `unchecked`, not an invented
+`unreachable`, and its client is built in `net.build_services` behind a `ServiceGate`; `registry_members` takes
+its roles from `just_dna_registry.permissions` and refuses to re-role a non-member (upstream's re-role is
+`add_member`, which would add them); `routing.PROXY_METHODS` no longer says this layer calls all nine.
+**Also new, mine, `unattended`:** `lookup_citation` does not pass `pmcid` to upstream's `lookup_citation`, which
+takes it; so `hint_citation`'s PMCID form is a gap, not covered, and the liaison's abstention reason narrows to
+PMID and DOI. Wiring it needs the `withheld` logic re-read for a third identifier.
 
 ## Acting: the pm's milestones duty (from kit v0.1.187, 2026-11-12)
 

@@ -26,6 +26,7 @@ from typing import Any
 
 import httpx
 from just_dna_enricher.eutils import EutilsClient, EutilsSettings
+from just_dna_enricher.grch37 import Grch37Client, Grch37Settings
 from just_dna_enricher.literature import CrossrefClient, EuropePmcClient
 from just_dna_enricher.lookup import LookupClients
 from just_dna_enricher.net import PacingGate, attempt_floor
@@ -255,6 +256,7 @@ class NetworkServices:
     ncbi_gate: ServiceGate
     lookup_clients: LookupClients
     eutils_settings: EutilsSettings
+    grch37: Grch37Client
     _extra: list[HttpService] = field(default_factory=list, repr=False)
 
     def register(self, service: HttpService) -> HttpService:
@@ -284,6 +286,17 @@ DEFAULT_CONTACT_EMAIL`, so a source needing a contact can no longer report itsel
             service.close()
         self._extra.clear()
         self.lookup_clients.close()
+        self.grch37.close()
+
+
+def new_grch37_client() -> Grch37Client:
+    """Upstream's GRCh37 client behind a `ServiceGate`, at upstream's own interval.
+
+    The server holds one, as upstream asks, and tools reach it from worker threads, which
+    is what `ServiceGate`'s lock is for. A function so a test can hand the server one over a
+    mock transport.
+    """
+    return Grch37Client(gate=ServiceGate(interval=Grch37Settings().interval))
 
 
 def build_services(settings: Settings) -> NetworkServices:
@@ -331,4 +344,5 @@ def build_services(settings: Settings) -> NetworkServices:
         ncbi_gate=ncbi_gate,
         lookup_clients=clients,
         eutils_settings=eutils_settings,
+        grch37=new_grch37_client(),
     )
