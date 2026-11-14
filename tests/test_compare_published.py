@@ -13,13 +13,16 @@ whole reason the tool's network work is a separate two lines.
 from __future__ import annotations
 
 import hashlib
+import platform
 import shutil
+from importlib.metadata import version
 from pathlib import Path
 
+import polars as pl
 import pytest
 from conftest import REFERENCE_EXAMPLES
 from just_dna_compiler import compiler
-from just_dna_format.manifest import ModuleManifest
+from just_dna_format.manifest import Compilation, ModuleManifest
 
 from just_module_creator.tools.comparison import _compare_published
 
@@ -193,3 +196,33 @@ def test_a_crlf_file_that_did_not_change_is_reported_as_same(spec: Path) -> None
     assert entry.local_sha256 is not None
     assert entry.local_sha256.endswith(hashlib.sha256(crlf.read_bytes()).hexdigest())
     assert result.content == "same"
+
+
+def test_the_published_toolchain_is_named_so_a_moved_digest_has_a_reason(spec: Path) -> None:
+    """Item 10 of the 0.8 map: a different polars moves `artifact.digest` with nothing authored
+    changed, so the libraries that wrote the published bytes are named beside the compiler."""
+    toolchain = {"polars": pl.__version__, "python": platform.python_version()}
+    published = manifest_of(spec).model_copy(
+        update={
+            "compilation": Compilation(
+                compiler_version=version("just-dna-compiler"), toolchain=toolchain
+            )
+        }
+    )
+    result = compare(spec, published)
+
+    assert result.content == "same"
+    line = next(m for m in result.metadata if m.what == "toolchain")
+    assert line.right == f"polars {pl.__version__}, python {platform.python_version()}"
+    assert line.in_hash is False
+
+
+def test_a_pre_0_8_compile_says_its_toolchain_was_not_recorded(spec: Path) -> None:
+    """Unrecorded is unknown, never an empty toolchain and never a missing line."""
+    published = manifest_of(spec).model_copy(
+        update={"compilation": Compilation(compiler_version=version("just-dna-compiler"))}
+    )
+    result = compare(spec, published)
+
+    line = next(m for m in result.metadata if m.what == "toolchain")
+    assert line.right is not None and "not recorded" in line.right

@@ -474,15 +474,29 @@ def _compare_published(
                 right=_text(getattr(closure, "module_hash", None)) or "present",
             )
         )
-    published_compiler = _text(
-        getattr(getattr(manifest, "compilation", None), "compiler_version", None)
-    )
+    compilation = getattr(manifest, "compilation", None)
+    published_compiler = _text(getattr(compilation, "compiler_version", None))
     if published_compiler:
         metadata.append(
             MetadataDelta(
                 what="compiler_version",
                 left="(this spec is not compiled here)",
                 right=published_compiler,
+            )
+        )
+    # The libraries that wrote the published bytes (upstream RM342). A different polars
+    # moves `artifact.digest` with nothing authored changed, so an author holding a
+    # digest from `compile_module` reads "another polars" here rather than "changed".
+    # Unrecorded is said as such: a pre-0.8 compile stamped nothing, which is unknown.
+    if compilation is not None:
+        toolchain = getattr(compilation, "toolchain", None)
+        metadata.append(
+            MetadataDelta(
+                what="toolchain",
+                left="(this spec is not compiled here; `compile_module` reports this install's)",
+                right=", ".join(f"{lib} {release}" for lib, release in sorted(toolchain.items()))
+                if toolchain
+                else "(not recorded: compiled before just-dna 0.8)",
             )
         )
 
@@ -511,8 +525,8 @@ def _compare_published(
             "look, because byte inequality moves on formatting that content_signature ignores. "
             "No staleness is computed and none is implied — differing from the published "
             "version is a fact about two versions, not a defect in either. `artifact.digest` "
-            "is deliberately absent: across two compiler versions it differs for a reason "
-            "nobody asked about."
+            "is deliberately absent: across two compiler versions or toolchains (the "
+            "`toolchain` line) it differs for a reason nobody asked about."
         ),
     )
 

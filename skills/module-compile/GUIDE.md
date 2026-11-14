@@ -65,9 +65,12 @@ Three signatures — `artifact_digest`, `content_signature`, `resolution_signatu
 one compiler version.**
 
 **Across a version boundary the rule is different**, and worth knowing before you panic:
-`artifact_digest` is the **byte** identity and moves on a compiler upgrade by design, while
-`content_signature` is the identity of your **authored rows** and does not. So compare
-`content_signature` when you upgrade, and re-pin any stored `artifact_digest`. [`module-diff`](../module-diff/GUIDE.md) owns the
+`artifact_digest` is the **byte** identity and moves on a compiler upgrade by design, and on a
+different polars under the same compiler, while `content_signature` is the identity of your
+**authored rows** and does neither. The report's `toolchain` names the libraries that wrote the bytes;
+`compare_to_published` lists the published version's, so a moved digest beside two different polars
+releases has its reason. So compare `content_signature` when you upgrade, and re-pin any stored
+`artifact_digest`. [`module-diff`](../module-diff/GUIDE.md) owns the
 full decision tree over which of them moved.
 
 **Read `resolution_subjects` beside `fully_resolved`.** Over an empty list that flag is `true`

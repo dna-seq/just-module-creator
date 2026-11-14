@@ -1135,6 +1135,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             stats=jsonable(result.stats),
             artifact_digest=getattr(artifact, "digest", None),
             content_signature=getattr(manifest, "content_signature", None),
+            toolchain=getattr(comp, "toolchain", None),
             resolution_signature=getattr(comp, "resolution_signature", None),
             fully_resolved=getattr(comp, "fully_resolved", None),
             # RM44/S31/S33. `getattr(..., None)` is the honest default rather than a

@@ -853,6 +853,12 @@ class CompileReport(_NamesUpstreamCommands):
     content_signature: str | None = Field(
         default=None, description="Signature of the raw authored data."
     )
+    toolchain: dict[str, str] | None = Field(
+        default=None,
+        description="The library releases that wrote the artifact's bytes (the manifest's "
+        "`compilation.toolchain`). A different polars moves `artifact_digest` with no authored "
+        "change; `compare_to_published` shows the published version's. null = not recorded.",
+    )
     resolution_signature: str | None = Field(default=None, description="Signature of resolution.")
     fully_resolved: bool | None = Field(
         default=None,

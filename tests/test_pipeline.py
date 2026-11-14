@@ -7,6 +7,8 @@ cheap check that our compile wrapper is not quietly dropping authored content.
 
 from __future__ import annotations
 
+import json
+
 import pytest
 from fastmcp.exceptions import ToolError
 
@@ -93,6 +95,9 @@ async def test_compile_writes_an_artifact(client, spec_dir, tmp_path):
     assert "weights.parquet" in result.data.files
     assert result.data.artifact_digest
     assert (out / "manifest.json").is_file()
+    written = json.loads((out / "manifest.json").read_text())["compilation"]["toolchain"]
+    assert "polars" in written, "upstream stamps polars, the library that writes the parquet"
+    assert result.data.toolchain == written
 
 
 async def test_an_output_dir_inside_the_spec_is_warned_about_and_still_compiles(

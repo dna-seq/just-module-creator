@@ -202,7 +202,8 @@ Sorted hardest first. *Touches* names our code or skill; *cost* is an estimate f
 10. **`artifact.digest` moves on every recompile** (§ 1.11, `toolchain_differs` between polars 1 and 2): a
     published module compared by digest reads as changed. `compare_to_published` (`tools/comparison.py`) already
     compares by `content_signature`; what it may add is `compilation.toolchain` beside a moved digest, so an author
-    reads "another polars" rather than "changed". *Cost*: an hour.
+    reads "another polars" rather than "changed". *Cost*: an hour. **Done (2026-11-15)**: `compile_module`'s `toolchain` and
+    `compare_to_published`'s `toolchain` metadata line.
 
 Nothing for us in § 1: the release-sweep readers (§ 1.11 sweep fields, RM342/RM352), the snapshot publishers
 (§ 1.27, § 1.40), `reverse` (§ 1.28, § 1.34, unless a tool wraps it), the HF `HfApi` stubs.

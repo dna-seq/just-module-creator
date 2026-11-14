@@ -3,6 +3,10 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [Unreleased]
+
+- **The toolchain behind a moved digest is named**: `compile_module` reports `toolchain`, the library releases that wrote its artifact (upstream's `compilation.toolchain`), and `compare_to_published` lists the published version's beside its compiler, or says a pre-0.8 compile recorded none. A different polars moves `artifact_digest` with nothing authored changed; the two lines let an author read that as another polars rather than as changed content.
+
 ## [0.48.11] — 2026-11-15
 
 - **`registry_members`**: list, add, re-role or remove the members of a namespace or an organisation, so the organisation `registry_create_org` makes can take a second person. Token-gated, listing included, since both instances refuse a member list without one; the registry enforces who may grant which role. A new `people` toolbox group holds it.
