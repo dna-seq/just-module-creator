@@ -98,6 +98,7 @@ GATED_TOOLS = [
     "registry_create_org_namespace",
     # Even the listing: both instances refuse `members` without a bearer token.
     "registry_members",
+    "registry_profile",
 ]
 
 

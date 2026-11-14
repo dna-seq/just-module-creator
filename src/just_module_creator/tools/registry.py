@@ -1706,3 +1706,75 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
             message=f"{done} on {describe(target, settings)}.",
             data={**data, "account": account, "result": jsonable(payload)},
         )
+
+    # `update_profile` and `update_org_settings` take the same four fields, one for the caller
+    # and one for an organisation it owns. `funding_url` is what a module card shows as
+    # `author_funding_url`. Nothing is filled in from the session: an email the agent knows is
+    # the author's to give, never ours to publish.
+    @mcp.tool(
+        tags={GATED_TAG},
+        annotations=ToolAnnotations(
+            title="Registry: edit your profile or an organisation's",
+            readOnlyHint=False,
+            idempotentHint=True,
+            destructiveHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def registry_profile(
+        ctx: Context,
+        target: RegistryTarget = "test",
+        org: str | None = None,
+        display_name: str | None = None,
+        funding_url: str | None = None,
+        avatar_url: str | None = None,
+        email: str | None = None,
+    ) -> OpResult:
+        """Edit your own registry profile, or with `org` the profile of an organisation you own.
+
+        Only the fields you pass are sent, and `""` clears one. `funding_url` is the link
+        a module card shows beside its author. Pass `email` only when the author gives it.
+        """
+        fields = {
+            "display_name": display_name,
+            "funding_url": funding_url,
+            "avatar_url": avatar_url,
+            "email": email,
+        }
+        sent = {k: v for k, v in fields.items() if v is not None}
+        if not sent:
+            raise ToolError(
+                "Pass at least one of `display_name`, `funding_url`, `avatar_url` or `email`."
+            )
+
+        token = await resolve_api_key(ctx, settings, target)
+        if token is None:
+            return unauthenticated_result(settings, target)
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        def _call() -> dict:
+            client = _client(token, target)
+            if org is None:
+                return client.update_profile(**sent)
+            return client.update_org_settings(org, **sent)
+
+        whose = "your profile" if org is None else f"the profile of {org}"
+        data: dict = {"target": target, "org": org, "fields": sorted(sent)}
+        try:
+            payload = await run_sync(_call)
+        except RegistryError as exc:
+            return OpResult(
+                success=False,
+                message=f"{describe(target, settings)} refused to edit {whose}: {exc}"
+                f"{instance_note(exc)}",
+                data=data,
+            )
+        cleared = sorted(k for k, v in sent.items() if v == "")
+        return OpResult(
+            success=True,
+            message=f"Edited {whose} on {describe(target, settings)}: {', '.join(sorted(sent))}"
+            + (f" (cleared: {', '.join(cleared)})" if cleared else "")
+            + ".",
+            data={**data, "result": jsonable(payload)},
+        )

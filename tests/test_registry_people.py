@@ -88,6 +88,14 @@ class _PeopleStub:
         self._record("set_org_role", org, member, role)
         return {"account": member, "role": role}
 
+    def update_profile(self, **fields):
+        self._record("update_profile", fields)
+        return {"account": "sheep", **fields}
+
+    def update_org_settings(self, org, **fields):
+        self._record("update_org_settings", org, fields)
+        return {"org": org, **fields}
+
 
 async def _members(make_client, monkeypatch, stub: _PeopleStub, args: dict) -> dict:
     monkeypatch.setattr(registry_tools, "client_for", stub)
@@ -185,4 +193,48 @@ async def test_an_incomplete_request_is_refused_before_any_call(
     async with make_client(settings=_online()) as client:
         with pytest.raises(ToolError, match=match):
             await client.call_tool("registry_members", args)
+    assert stub.calls == [] and stub.tokens == []
+
+
+async def _profile(make_client, monkeypatch, stub: _PeopleStub, args: dict) -> dict:
+    monkeypatch.setattr(registry_tools, "client_for", stub)
+    async with make_client(settings=_online()) as client:
+        result = await client.call_tool("registry_profile", args)
+    return result.structured_content or {}
+
+
+async def test_a_profile_edit_sends_only_the_fields_passed(make_client, monkeypatch):
+    """`""` clears a field and is sent; a field left out is not sent at all."""
+    _seed("test", "sheep", "mk_sheep_aaaa", ["test-sheep"])
+    stub = _PeopleStub()
+    payload = await _profile(
+        make_client,
+        monkeypatch,
+        stub,
+        {"display_name": "Sheep Lab", "funding_url": ""},
+    )
+    assert stub.calls == [("update_profile", {"display_name": "Sheep Lab", "funding_url": ""})]
+    assert payload["success"] is True
+    assert "(cleared: funding_url)" in payload["message"]
+
+
+async def test_an_org_profile_goes_to_the_org_route(make_client, monkeypatch):
+    _seed("test", "sheep", "mk_sheep_aaaa", ["test-sheep"])
+    stub = _PeopleStub()
+    payload = await _profile(
+        make_client, monkeypatch, stub, {"org": "test-herd", "display_name": "The Herd"}
+    )
+    assert stub.calls == [("update_org_settings", "test-herd", {"display_name": "The Herd"})]
+    assert "the profile of test-herd" in payload["message"]
+
+
+async def test_a_profile_edit_with_nothing_to_send_is_refused_before_any_call(
+    make_client, monkeypatch
+):
+    _seed("test", "sheep", "mk_sheep_aaaa", ["test-sheep"])
+    stub = _PeopleStub()
+    monkeypatch.setattr(registry_tools, "client_for", stub)
+    async with make_client(settings=_online()) as client:
+        with pytest.raises(ToolError, match="at least one of"):
+            await client.call_tool("registry_profile", {"org": "test-herd"})
     assert stub.calls == [] and stub.tokens == []
