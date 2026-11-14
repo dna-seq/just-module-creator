@@ -120,7 +120,7 @@ its history.
 
 ## F153 — an owner can review and highlight their own module, and the card reads `curated: true` (registry `S33`)
 
-**State: filed 2026-11-14, unanswered.** Found by the tester on the polygon (`docs/dogfooding.md`, F153): the
+**State: answered 2026-11-14, accepted (contradicts their 0.8.0 rule that curation comes from outside the namespace); on their roadmap, the fix undecided between refusing it and counting only outside reviewers; own stars ride with it; the DELETE asymmetry stays as documented. Our wording judged accurate. Filed 2026-11-14.** Found by the tester on the polygon (`docs/dogfooding.md`, F153): the
 owner's own "verified" review, highlighted by the owner, raises `curated` exactly as a third party's would, and an
 owner may star their own module. Read in the registry's tree at the time: neither `upsert_review` nor
 `highlight_review` compares the reviewer with the namespace's owner, while its docs describe the highlight as
@@ -131,7 +131,7 @@ messages stop claiming an act the registry did not perform. Nothing of ours refu
 
 ## F152 — `recover_rsid` says "records nothing here" for F508del as VCF spells it; its docstring names the wrong cause (format `S155`)
 
-**State: filed 2026-11-14, unanswered; enricher 0.8.6 installed.** Found by the tester through
+**State: answered 2026-11-14 as RM444, a patch, text only (their `f65c2a04`, unpushed): all four rows reproduce; the `none` headline, the docstring's anchor and `ref`/`alts` in `__str__` taken, plus "with the alleles given" when none were and the position-only advice to author the anchor SNV. A separate outcome declined (a minor). Our wording stands. Not released; enricher 0.8.6 installed.** Found by the tester through
 `lookup_old_assembly` (`docs/dogfooding.md`, F152). Ensembl's GRCh37 record for rs113993960 is padded at
 117199645, one base right of the left-aligned VCF spelling at 117199644, so the docstring's "padded against
 unpadded" is not the cause. Filed: the `none` headline is false when records overlap, an indel's VCF position
