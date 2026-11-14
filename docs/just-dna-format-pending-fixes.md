@@ -118,6 +118,27 @@ its history.
 | F99 | S101 | doc fixed | upstream docs, nothing to install |
 | F54 | S58 | RM122 | open upstream, parked |
 
+## F153 — an owner can review and highlight their own module, and the card reads `curated: true` (registry `S33`)
+
+**State: filed 2026-11-14, unanswered.** Found by the tester on the polygon (`docs/dogfooding.md`, F153): the
+owner's own "verified" review, highlighted by the owner, raises `curated` exactly as a third party's would, and an
+owner may star their own module. Read in the registry's tree at the time: neither `upsert_review` nor
+`highlight_review` compares the reviewer with the namespace's owner, while its docs describe the highlight as
+accepting someone else's answer. Asked: refuse it, or allow it, say so and let the card tell it apart. Also noted
+there: a highlight of a missing review 404s while its removal answers 200. Ours meanwhile (the lead): the
+description says an owner's highlight of their own review is self-curation the card does not tell apart, and our
+messages stop claiming an act the registry did not perform. Nothing of ours refuses.
+
+## F152 — `recover_rsid` says "records nothing here" for F508del as VCF spells it; its docstring names the wrong cause (format `S155`)
+
+**State: filed 2026-11-14, unanswered; enricher 0.8.6 installed.** Found by the tester through
+`lookup_old_assembly` (`docs/dogfooding.md`, F152). Ensembl's GRCh37 record for rs113993960 is padded at
+117199645, one base right of the left-aligned VCF spelling at 117199644, so the docstring's "padded against
+unpadded" is not the cause. Filed: the `none` headline is false when records overlap, an indel's VCF position
+without alleles comes back as the anchor base's SNV, and `__str__` names CLI flags (`--ref/--alts`) for library
+callers. The anchored match itself is right and stays. Ours meanwhile (the lead): the tool's description and a
+`none`-with-overlaps message saying retry, not absence.
+
 ## Registry client calls not wrapped, and why (CLAUDE.md §5; no F#)
 
 **State: written 2026-11-14 from the lead's parity sweep** (`docs/seats/LEAD_NOTES.md`, "The registry parity
