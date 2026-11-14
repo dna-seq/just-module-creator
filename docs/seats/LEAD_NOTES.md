@@ -48,6 +48,16 @@ changelog line; the abstentions go to the liaison for `docs/just-dna-format-pend
 | `admin_rename_account`, `merge_accounts`, `runs`, `run_log` | abstain: operator | Site admins only. |
 | `assert_compatible`, `issue_jwt_token` | abstain: transport | The client calls the first itself on every connection; the second is a web session's exchange, and a static token serves every call. |
 
+**Built, all on main and unreleased (2026-11-14), each tried live:** `registry_members` (a9fae2b),
+`registry_profile` (3b12409), `registry_amend_version` and `registry_set_subtitle` (0395250, F59 closed and
+told to the liaison), `registry_reviews`, `registry_review`, `registry_star` (5c2b2f2), `registry_stats`
+(93d209f), `lookup_old_assembly` (c3d7785, also closing `cli_map`'s `hint recover` gap). The abstentions are
+the liaison's f37c6d5. Full suite 996 passed (the Codex reinstall test deselected: it timed out on
+`codex plugin add` over the network earlier the same day, 949 + that 1 error). Release as 0.48.11 on or after
+2026-11-15. **New, mine, `unattended`, found on the way:** the enricher's `diagnose_wrong_build` (does a
+ref-mismatched row read as GRCh37 in a GRCh38 module) is wrapped by nothing here; parity says wrap it beside
+`lookup_old_assembly`, where the reference-base check's mismatches are the input.
+
 ## Acting: the pm's milestones duty (from kit v0.1.187, 2026-11-12)
 
 The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milestones`) and hands it back when a pm is seated. `state`: one post kept in place, source `docs/seats/LEAD_STATE.md`, refreshed with `watchdog.sh keep lead state '#just-module-creator>state' docs/seats/LEAD_STATE.md` whenever where-it-stands, a headline result or the next actions change. `milestones`: one post per landed result. Links point at `dna-seq/just-module-creator` (the remote), not the person's own account; the first 0.48.7 post had that wrong and was deleted and reposted.
