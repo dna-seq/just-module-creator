@@ -330,7 +330,7 @@ hand against `ref` and `alts`, and never read "no genotype warnings" as "every g
   with the registry's disagreement marker. A pair there is a fact about two statements: conforming your
   row to it makes the module agree with another author, not with the evidence. A `compared` of 0 and a
   `not_projected` module are silence, not agreement; ask by the lower-case rsID or `chrom:start:ref:alt`,
-  since the lookup matches a spelling exactly (registry S32).
+  since registry 0.31.0 matches a spelling exactly (registry S32).
 
 ## How many rows is a report
 

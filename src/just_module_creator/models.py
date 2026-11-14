@@ -1783,8 +1783,8 @@ class PublishedClaims(BaseModel):
     key: str = Field(description="The spelling or symbol asked, as sent.")
     variant_keys: list[str] = Field(
         default_factory=list,
-        description="Every key the spelling resolved to (variant only). Only the spelling itself "
-        "means no stored alias matched it.",
+        description="Every key the spelling resolved to (variant only). The spelling asked is "
+        "always among them; a second key means a stored alias matched it.",
     )
     modules: list[str] = Field(
         description="Every module with a claim here, whole even when `claims` is cut."

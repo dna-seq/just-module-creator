@@ -85,7 +85,8 @@ async def _call(make_client, monkeypatch, stub: _ClaimsStub, tool: str, args: di
 
 
 async def test_nothing_compared_is_not_read_as_agreement(make_client, monkeypatch):
-    """rs429358 on production: five modules, fifteen pairs, none comparable for want of a trait."""
+    """rs429358 on production: five modules, fifteen claim pairs, none comparable for want of a
+    trait."""
     assert RS429358["conflicts"] == {"pairs": [], "compared": 0, "incomparable": {"no_trait": 15}}
     stub = _ClaimsStub(variant=RS429358)
     payload = await _call(
@@ -167,7 +168,9 @@ async def test_an_empty_answer_is_about_the_spelling(make_client, monkeypatch):
 async def test_two_modules_that_never_meet_on_a_genotype_are_not_called_agreeing(
     make_client, monkeypatch
 ):
-    """rs1801133 on production: two modules, nine claims, no pair compared and none skipped."""
+    """rs1801133 on production: two modules, both stating G/G, but only one module's claims are
+    `weight` (pharmgkb's are `pharm`, which never enter the marker): nothing compared, nothing
+    counted as skipped, and the message must not invent the reason."""
     assert RS1801133["conflicts"] == {"pairs": [], "compared": 0, "incomparable": {}}
     assert len(RS1801133["modules"]) == 2
     payload = await _call(
@@ -177,7 +180,9 @@ async def test_two_modules_that_never_meet_on_a_genotype_are_not_called_agreeing
         "registry_claims",
         {"target": "prod", "variant": "rs1801133"},
     )
-    assert "nothing was compared; that is not agreement" in payload["message"]
+    assert "the registry gives no reason" in payload["message"]
+    assert "That is not agreement." in payload["message"]
+    assert "same genotype" not in payload["message"]
 
 
 def test_a_conflict_pair_is_named_as_a_fact_not_a_verdict() -> None:
@@ -198,7 +203,7 @@ def test_a_conflict_pair_is_named_as_a_fact_not_a_verdict() -> None:
         not_projected=2,
         conflicts={"pairs": [pair], "compared": 1, "incomparable": {"other_trait": 3}},
     )
-    assert "1 pair(s) of modules give one allele opposite directions" in message
+    assert "1 pair(s) of claims from different modules give one allele opposite" in message
     assert "not a verdict on either" in message
     assert "never a reason to change a row" in message
     assert "other_trait 3" in message

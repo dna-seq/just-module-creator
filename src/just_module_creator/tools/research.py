@@ -239,10 +239,10 @@ def claims_message(
     parts: list[str] = []
     if total == 0 and asked == "variant":
         parts.append(
-            f"No visible module is known under the spelling {key!r}. The lookup matches a spelling "
-            "exactly (registry S32): `RS429358` or `chr19:44908684:T:C` answers empty where "
-            "`rs429358` or `19:44908684:T:C` does not, so this is not evidence that no module "
-            "covers the variant."
+            f"No visible module is known under the spelling {key!r}. Registry 0.31.0 matches a "
+            "spelling exactly (registry S32): `RS429358` or `chr19:44908684:T:C` answers empty "
+            "where `rs429358` or `19:44908684:T:C` does not, so this is not evidence that no "
+            "module covers the variant."
         )
     elif total == 0:
         parts.append(
@@ -257,25 +257,28 @@ def claims_message(
         reasons = ", ".join(f"{reason} {n}" for reason, n in sorted(skipped.items()))
         if pairs:
             parts.append(
-                f"{len(pairs)} pair(s) of modules give one allele opposite directions for the same "
-                "genotype and trait. That is a fact about two statements, not a verdict on either, "
-                "and on its own never a reason to change a row."
+                f"{len(pairs)} pair(s) of claims from different modules give one allele opposite "
+                "directions for the same genotype and trait. That is a fact about two statements, "
+                "not a verdict on either, and on its own never a reason to change a row."
             )
         elif compared:
             parts.append(
-                f"{compared} pair(s) of modules were compared and none gives opposite directions."
+                f"{compared} pair(s) of weight claims from different modules were compared, and "
+                "none gives opposite directions."
             )
         elif skipped:
-            parts.append("No pair of modules could be compared, which is not agreement.")
+            parts.append("No pair of weight claims could be compared, which is not agreement.")
         else:
-            # The registry passes over two modules that state different genotypes without
-            # counting them: different statements, not a disagreement and not a comparison.
+            # Upstream's marker passes over three cases without counting them: claims that are
+            # not `weight` (pharm, haplotype, heteroplasmy), two claims of one module, and two
+            # claims on different genotypes. The reply does not say which, so neither may we.
             parts.append(
-                "No two modules state the same genotype here, so nothing was compared; that is "
-                "not agreement."
+                "No two weight claims from different modules were compared, and the registry "
+                "gives no reason: only `weight` claims enter the marker, and it passes over one "
+                "module's own claims and differing genotypes uncounted. That is not agreement."
             )
         if reasons:
-            parts.append(f"Pairs not compared, by reason: {reasons}.")
+            parts.append(f"Claim pairs not compared, by reason: {reasons}.")
     if not_projected:
         parts.append(
             f"{not_projected} visible module(s) have no projection yet, so their silence here is "
@@ -732,9 +735,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         `conflicts.compared` of 0 is not agreement (`incomparable` says why each pair was
         skipped), and a `not_projected` module is silent, not agreeing.
 
-        The lookup matches a spelling exactly (registry S32): `RS429358` or `chr19:…`
-        answers empty where `rs429358` or `19:44908684:T:C` finds five modules, so an empty
-        answer is about the spelling. A gene answer counts authored genes only, never one
+        Registry 0.31.0 matches a spelling exactly (registry S32): `RS429358` or `chr19:…`
+        answers empty where `rs429358` or `19:44908684:T:C` finds modules, so an empty answer
+        is about the spelling. A gene answer counts authored genes only, never one
         assigned by position.
 
         `claims` is cut at `limit` (default 50, at most 1000) in a fixed order; `modules`,
