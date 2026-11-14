@@ -235,6 +235,8 @@ GROUPS: tuple[Group, ...] = (
             "registry_check",
             "registry_publish",
             "registry_amend_readme",
+            "registry_amend_version",
+            "registry_set_subtitle",
             "registry_claim_namespace",
             "registry_yank",
             "registry_unyank",

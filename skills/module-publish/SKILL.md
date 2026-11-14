@@ -269,8 +269,10 @@ here, which is exactly why it is written down.
 
 ## Prose costs no version
 
-Changelog, logo and readme each have an amend endpoint (`registry_amend_readme` here; the other two are
-on the client). They move no digest and no content claim. **Do not spend a version on prose.**
+Changelog, logo and readme each have an amend endpoint (`registry_amend_readme`, and `registry_amend_version`
+for the changelog and logo), and the card's subtitle has `registry_set_subtitle`, module-level, overriding
+`module.description` without touching the spec. None moves a digest or the content claim. **Do not spend a
+version on prose.**
 
 **Version deliberately.** A rebuild that changes the compiled shape moves `artifact_digest` and needs a
 version either way; a rebuild that changes *what variants are in the module* or how they are grounded is

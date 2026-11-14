@@ -54,6 +54,7 @@ from just_module_creator.tools._shared import (
     narrate,
     normalize_declared_use,
     resolve_dir,
+    resolve_source,
     to_published_versions,
 )
 
@@ -669,9 +670,8 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         It is also the field where a module says what it is **not** — that its rows
         are candidates, that one association was not significant, which population
         the evidence came from. `description` is meant to be the card's
-        one-sentence subtitle and cannot carry that -- and being inside the
-        attestation binding, lengthening it would cost a version, which is the
-        reason this is amendable at all on an otherwise immutable registry.
+        one-sentence subtitle and cannot carry that; rewording what the card shows
+        is `registry_set_subtitle`, which spends no version either.
 
         Give it **one** of two things, and the distinction matters because both
         arrive as strings over this wire: `spec_dir` reads `README.md` from that
@@ -1777,4 +1777,155 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
             + (f" (cleared: {', '.join(cleared)})" if cleared else "")
             + ".",
             data={**data, "result": jsonable(payload)},
+        )
+
+    # `registry_amend_readme`'s two siblings on one published version: the changelog and
+    # the logo. Both sit outside `artifact.digest`, so neither spends a version. One tool
+    # because they answer one question ("fix what this version's page says"); the readme
+    # keeps its own because its spec_dir/readme_text split is a trap of its own.
+    @mcp.tool(
+        tags={GATED_TAG},
+        annotations=ToolAnnotations(
+            title="Registry: amend a version's changelog or logo",
+            readOnlyHint=False,
+            idempotentHint=False,
+            destructiveHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def registry_amend_version(
+        namespace: str,
+        name: str,
+        version: str,
+        ctx: Context,
+        changelog: str | None = None,
+        append: bool = False,
+        logo_path: str | None = None,
+        target: RegistryTarget = DEFAULT_WRITE_TARGET,
+    ) -> OpResult:
+        """Replace a published version's changelog or logo, with no version bump.
+
+        Both sit outside the artifact digest, like the readme (`registry_amend_readme`).
+        `changelog` replaces the text, or with `append=true` adds to it. `logo_path` is
+        an image file on this machine. Needs the owner's token.
+        """
+        if changelog is None and logo_path is None:
+            raise ToolError("Pass `changelog`, `logo_path`, or both.")
+        if changelog is not None and not changelog.strip():
+            raise ToolError(
+                "The changelog is empty, and sending it would blank the version's entry "
+                "rather than fix it."
+            )
+        logo: Path | None = None
+        if logo_path is not None:
+            logo = resolve_source(logo_path, settings)
+            if not logo.is_file():
+                raise ToolError(f"{logo} is not a file; `logo_path` names one image.")
+
+        token = await resolve_api_key(ctx, settings, target, namespace)
+        if token is None:
+            return unauthenticated_result(settings, target, namespace)
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        where = f"{namespace}/{name}@{version}"
+        done: list[str] = []
+        result: dict = {}
+        client = _client(token, target)
+        try:
+            if changelog is not None:
+                text = changelog
+                result["changelog"] = jsonable(
+                    await run_sync(
+                        lambda: client.amend_changelog(
+                            namespace, name, version, text, append=append
+                        )
+                    )
+                )
+                done.append("changelog appended to" if append else "changelog replaced on")
+            if logo is not None:
+                image = logo
+                result["logo"] = jsonable(
+                    await run_sync(lambda: client.amend_logo(namespace, name, version, image))
+                )
+                done.append("logo replaced on")
+        except RegistryError as exc:
+            # The changelog may have gone through before the logo was refused; say which.
+            landed = f" Already done: {', '.join(done)} {where}." if done else ""
+            return OpResult(
+                success=False,
+                message=f"{describe(target, settings)} refused the amendment of {where}: "
+                f"{exc}{instance_note(exc)}.{landed}",
+                data={"target": target, **result},
+            )
+        log.info("Amended %s on %s: %s", where, target, ", ".join(done))
+        return OpResult(
+            success=True,
+            message=f"{' and '.join(done).capitalize()} {where} at {describe(target, settings)}. "
+            "No version was spent; the artifact digest is unchanged.",
+            data={"target": target, **result},
+        )
+
+    # F59's open half: the card's subtitle, held by the registry beside the module rather
+    # than in `module_spec.yaml`, so rewording it spends no version and leaves the content
+    # identity alone. Upstream keeps "clear the override" (None) apart from "a deliberately
+    # blank subtitle" (""), and both arrive as strings over this wire, so clearing is its own
+    # flag rather than a value that guesses. Length and the one-line rule are the server's,
+    # refused there by name; restating its cap here would be a hand-kept copy.
+    @mcp.tool(
+        tags={GATED_TAG},
+        annotations=ToolAnnotations(
+            title="Registry: set a module's subtitle",
+            readOnlyHint=False,
+            idempotentHint=True,
+            destructiveHint=False,
+            openWorldHint=True,
+        ),
+    )
+    async def registry_set_subtitle(
+        namespace: str,
+        name: str,
+        ctx: Context,
+        subtitle: str | None = None,
+        clear: bool = False,
+        target: RegistryTarget = DEFAULT_WRITE_TARGET,
+    ) -> OpResult:
+        """Set the subtitle a listing shows for a published module, with no version bump.
+
+        It overrides what the card renders for every version; `module.description` in the
+        spec stays as authored and its content identity does not move. `clear=true` drops
+        the override so the authored description shows again. One line; the registry
+        refuses one past its length limit rather than cutting it.
+        """
+        if (subtitle is None) == (not clear):
+            raise ToolError("Pass `subtitle`, or `clear=true` to show the authored one again.")
+
+        token = await resolve_api_key(ctx, settings, target, namespace)
+        if token is None:
+            return unauthenticated_result(settings, target, namespace)
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        value = None if clear else subtitle
+        try:
+            payload = await run_sync(
+                lambda: _client(token, target).set_short_description(namespace, name, value)
+            )
+        except RegistryError as exc:
+            return OpResult(
+                success=False,
+                message=f"{describe(target, settings)} refused the subtitle of "
+                f"{namespace}/{name}: {exc}{instance_note(exc)}",
+                data={"target": target},
+            )
+        what = (
+            "The subtitle override is cleared; the card shows the authored description"
+            if clear
+            else "The subtitle is set"
+        )
+        return OpResult(
+            success=True,
+            message=f"{what} for {namespace}/{name} at {describe(target, settings)}. "
+            "No version was spent.",
+            data={**jsonable(payload), "target": target},
         )

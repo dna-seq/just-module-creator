@@ -323,10 +323,8 @@ Ordered by how likely a first-timer is to hit them.
   that fact nowhere.
 - **No second image.** One logo per version. No screenshots, no banner, no icon set.
 - **No content validation, ever.** Nothing opens the bytes as an image.
-- **No `registry_amend_logo` tool in this plugin.** `just-module-creator` wraps
-  `registry_amend_readme` (`tools/registry.py`, gated in `auth.GATED_TOOLS:67`) and stops there;
-  `references/CLI.md:29` routes a logo fix to the raw `registry-client amend-logo`. Grepping
-  `src/just_module_creator/` for "logo" returns nothing at all.
+- **A published logo is replaced with `registry_amend_version(logo_path=...)`**, gated like the
+  readme amend; no version is spent, and the server's `invalid_logo` refusal comes back as it is.
 - **`compile_module` here never passes `logo_file`.** This plugin relies entirely on convention
   discovery, which means gotcha 1 applies to every module it compiles.
 

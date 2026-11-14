@@ -82,6 +82,8 @@ GATED_TOOLS = [
     # Out-of-digest and no version bump, so it is the one published-module write that
     # is genuinely repairable rather than permanent.
     "registry_amend_readme",
+    "registry_amend_version",
+    "registry_set_subtitle",
     "registry_claim_namespace",
     # The production answer to a bad publish (RM21). Not a repair: it stops a
     # version being recommended and corrects nothing, and it does not release the

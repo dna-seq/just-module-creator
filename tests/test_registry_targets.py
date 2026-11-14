@@ -77,6 +77,8 @@ REGISTRY_TOOL_DEFAULTS = {
     # A write, so it rehearses like the others — and it is per-instance anyway: the
     # module it amends exists on one registry only.
     "registry_amend_readme": "test",
+    "registry_amend_version": "test",
+    "registry_set_subtitle": "test",
     # The catalog reads have NO default, and `None` here means exactly that. They
     # defaulted to production until 2026-08-21, which was right about the common case
     # and wrong about the common mistake: rehearse a publish on the polygon, read it
