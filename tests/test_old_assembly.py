@@ -135,3 +135,31 @@ def test_the_server_paces_grch37_with_a_thread_safe_gate() -> None:
     """Tools reach the one client from worker threads; upstream's own gate is not lock-safe."""
     client = net.new_grch37_client()
     assert isinstance(client.gate, net.ServiceGate)
+
+
+async def test_a_none_for_given_alleles_says_it_is_not_absence(make_client, monkeypatch):
+    """F152: F508del as gnomAD spells it (7:117199644 ATCT>A) finds nothing starting there, while
+    Ensembl anchors its padded record one base right. Upstream's message says "records nothing
+    here"; ours beside it must not let that read as absence."""
+    _serving(monkeypatch, [])
+    async with make_client(settings=_online()) as client:
+        result = await client.call_tool(
+            "lookup_old_assembly", {"chrom": "7", "start": 117199644, "ref": "ATCT", "alts": "A"}
+        )
+    payload = result.structured_content or {}
+    assert payload["outcome"] == "none"
+    assert "Not evidence that dbSNP lacks the variant" in payload["next_step"]
+    assert "117199645" in payload["next_step"]
+
+
+async def test_an_ambiguity_names_this_tools_arguments_not_the_clis_flags(make_client, monkeypatch):
+    two = [
+        {**APOE_E4[1], "id": "rs429358"},
+        {**APOE_E4[1], "id": "rs869189980"},
+    ]
+    _serving(monkeypatch, two)
+    async with make_client(settings=_online()) as client:
+        result = await client.call_tool("lookup_old_assembly", {"chrom": "19", "start": 45411941})
+    payload = result.structured_content or {}
+    assert payload["outcome"] == "ambiguous" and len(payload["rsids"]) == 2
+    assert "`ref` and `alts` arguments" in payload["next_step"]

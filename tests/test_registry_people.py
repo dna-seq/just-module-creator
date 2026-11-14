@@ -117,7 +117,12 @@ class _PeopleStub:
 
     def highlight_review(self, namespace, name, version, reviewer, *, highlighted=True):
         self._record("highlight_review", namespace, name, version, reviewer, highlighted)
-        return [{"reviewer": reviewer, "version": version, "highlighted": highlighted}]
+        # The registry answers with the version's list as it stands; only goat and wolf
+        # have reviewed, so a highlight of anyone else changes nothing in it.
+        return [
+            {"reviewer": who, "version": version, "highlighted": highlighted and who == reviewer}
+            for who in ("goat", "wolf")
+        ]
 
     def reviews(self, namespace, name, version=None):
         self._record("reviews", namespace, name, version)
@@ -446,3 +451,27 @@ async def test_a_highlight_is_signed_by_the_namespaces_owner_and_a_review_by_the
         {"namespace": "test-goat", "name": "test_goat_module", "version": "1.0.0", **args},
     )
     assert stub.tokens == [signed_by]
+
+
+@pytest.mark.parametrize(
+    ("args", "said"),
+    [
+        ({"action": "delete"}, "No review of yours is on"),
+        ({"action": "unhighlight", "reviewer": "fox"}, "The registry lists no review by fox"),
+    ],
+)
+async def test_a_review_message_reads_the_registrys_answer_not_the_request(
+    make_client, monkeypatch, args, said
+):
+    """F153: the registry answers these two with the list as it stands, review or not."""
+    _seed("test", "sheep", "mk_sheep_aaaa", ["test-sheep"])
+    payload = await _tool(
+        make_client,
+        monkeypatch,
+        _PeopleStub(),
+        "registry_review",
+        {**MODULE, "version": "1.0.0", **args},
+    )
+    assert payload["success"] is True
+    assert said in payload["message"]
+    assert "removed" not in payload["message"] and "no longer" not in payload["message"]

@@ -1163,7 +1163,12 @@ class OldAssemblyRecovery(BaseModel):
     candidates: list[dict[str, Any]] = Field(
         default_factory=list, description="The service's records behind `rsids`."
     )
-    message: str = Field(description="Upstream's own reading of the outcome.")
+    message: str = Field(description="Upstream's own reading of the outcome, verbatim.")
+    next_step: str | None = Field(
+        default=None,
+        description="Ours, beside upstream's: what a `none` or an ambiguity asks next. A `none` "
+        "for an indel is not absence, since Ensembl may anchor its record a base away.",
+    )
 
 
 class IdentifierTally(BaseModel):

@@ -6,6 +6,92 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F153 — a module's owner can review and highlight their own module, and the card then reads `curated: true`
+
+**Found:** 2026-11-14, probing main at 24e782d in-process, on the polygon in `test-sheep` · **Severity:** medium
+(a trust signal) · **Status:** resolved here 2026-11-14 (unreleased); the rule is the registry's (S33)
+
+`registry_review`'s description: *"`highlight` and `unhighlight` take the `reviewer` whose review the owner marks,
+which is what a card counts as curated."* On the polygon, as `sheep` (owner of `test-sheep`):
+`registry_review(test-sheep/test_statin_response@0.1.1, rating=5, verdict="verified")`, then
+`action="highlight", reviewer="sheep"`. `registry_get_module` went from `review_count: 0, curated: false` to
+`review_count: 1, curated: true`. The owner reviewed their own module "verified" and highlighted it, and the
+card counts it as curated. `registry_star` on one's own module is accepted the same way (`stars: 1`). Both
+undone afterwards, read back as 0 reviews, 0 stars, `curated: false`.
+
+Why it matters: CLAUDE.md §10 makes trust *"a signal read off the module"*. `registry_stats` sums `curated`, and
+the publish skill judges a module on checks. A curated flag the owner can raise alone is a signal anyone can
+fake, and an agent that follows the description ("post one only with the person's own rating") would do it
+for an author who asks.
+
+Two smaller things seen in the same cycle:
+- `action="delete"` with no review of yours says *"Your review is removed from ..."*, and `unhighlight` of a
+  review that does not exist says *"sheep's review is no longer highlighted"*, both `success: true`. `highlight`
+  of the same missing review is `HTTP 404: review_not_found`. The registry answers the two halves differently;
+  our messages claim an act either way. `registry_star(starred=false)` when not starred says "Unstarred", though
+  its `starred_by_me: false` keeps that one honest.
+- The refusals pass through verbatim, as claimed: `verdict="approved"` → 422 naming
+  `['concerns', 'rejected', 'verified']`; `rating=0` → 422 `greater than or equal to 1`. The `rating` and `verdict`
+  parameter descriptions are the registry model's own (*"Overall rating, 1-5"*, *"Optional audit tier, one of
+  [...]"*). `notes` does not carry its model text (*"Free-text review/audit notes"*), which is harmless.
+
+What would close it: whether an owner may curate their own module is the registry's rule (filed through the
+liaison). Until it answers, our description says a highlight is the owner's mark, and on the owner's own review
+it is self-curation the card does not tell apart.
+
+Also exercised, holding: `registry_stats` (prod default listing: 24 modules, 5 namespaces; polygon `test-sheep`: 20
+modules), `registry_members` (`test-sheep`: `sheep`, owner). Not exercised: `registry_profile`,
+`registry_amend_version`, `registry_set_subtitle` (the lead already cycled the subtitle live).
+
+**Resolution (lead, 2026-11-14, on main, unreleased):** our wording. `registry_review`'s description says the
+registry accepts an owner highlighting their own review and the card does not tell that apart. A delete or an
+unhighlight now reads the list the registry returns instead of claiming an act: *"No review of yours is on …"*, and
+*"The registry lists no review by …, so none is highlighted"*. Pinned in `tests/test_registry_people.py`. Whether
+an owner may curate their own module is the registry's rule: the liaison's registry `S33`.
+
+## F152 — `lookup_old_assembly` answers "dbSNP records nothing here" for the CFTR F508del deletion as VCFs spell it
+
+**Found:** 2026-11-14, probing main at 24e782d (unreleased) in-process · **Severity:** medium · **Status:** resolved
+here 2026-11-14 (unreleased); the upstream half is format S155
+
+The description says *"`start` is the 1-based position as the source prints it. A candidate must start exactly
+there"*. Sources print VCF. F508del in gnomAD v2's GRCh37 spelling is `7-117199644-ATCT-A`:
+
+| Asked | Outcome | Message |
+|---|---|---|
+| `7, 117199644, ref=ATCT, alts=A` (gnomAD/VCF, left-aligned) | `none` | *"GRCh37 dbSNP records nothing here. 5 dbSNP record(s) overlap the position, none starting at it with the alleles given."* |
+| `7, 117199644` (no alleles) | `recovered` | `rs1801178`, an SNV at that base. The wrong variant for an author who meant the deletion |
+| `7, 117199646` (HGVS-style, unpadded) | `none` | *"... records nothing here. 6 dbSNP record(s) overlap ..."* |
+| `7, 117199645` | `ambiguous` | `rs113993960`, `rs869189980`, reported and never picked. With `ref=TCTT, alts=T` it recovers `rs113993960` |
+
+Ensembl's GRCh37 record for rs113993960 is padded too (`TCTT/T` at 117199645), just anchored one base right of
+the left-aligned spelling. So the one spelling that finds it is neither VCF's nor HGVS's. The anchored match
+itself is right (an overlapping record can be a different event, and picking one would be worse). What misleads
+is what the answer says:
+
+1. **The headline is false here.** dbSNP does record this deletion, one base over. "Records nothing here" with
+   `outcome: none` reads as "no rs-number exists". The overlap count in the second sentence is the only clue.
+2. **Without alleles, an indel's VCF position returns the SNV at the anchor base** as `recovered`. Nothing says
+   the anchor base of a padded indel is a different variant. The description never mentions indels at all.
+3. **The ambiguous message says "Narrow it with --ref/--alts"**: the CLI's flags, passed through `str(found)`.
+   The tool's arguments are `ref` and `alts`.
+
+What would close it, ours: the description says a padded indel (VCF, gnomAD) is matched only at Ensembl's own
+anchor and may come back `none` or as the anchor base's SNV. A `none` with overlapping records says so as a
+reason to retry (ask the alleles, try one base right) rather than as absence. Upstream's half (liaison): the
+enricher's `recover_rsid` docstring blames padding against *"Ensembl's unpadded record"*, but the record here is
+padded, at a different anchor. Its `none` sentence *"records nothing here"* is also its own wording.
+
+Holding: SNVs are clean (`19:45411941` → `rs429358` with or without `T`/`C`; `chr19` accepted). The
+several-candidates case is reported and never picked, as claimed.
+
+**Resolution (lead, 2026-11-14, on main, unreleased):** our half. The description says an indel is matched only
+where Ensembl anchors its own record, that `none` there is not absence, and that without alleles the anchor base's
+SNV can come back. A new `next_step` field beside upstream's verbatim `message` says a `none` for given alleles is
+not evidence dbSNP lacks the variant and names the base one right to try; an ambiguity names this tool's `ref` and
+`alts` arguments rather than the CLI's flags. Pinned in `tests/test_old_assembly.py`. Upstream's half (the
+`recover_rsid` wording and docstring) is the liaison's format `S155`.
+
 ## F151 — `registry_claims` says `conflicts` is "always whole", and a gene answer carries none
 
 **Found:** 2026-11-14, probing 0.48.10 over the host wire · **Severity:** low (wording) · **Status:** resolved

@@ -335,6 +335,31 @@ def _collapse_pubmind(withheld: list[LintAlteration]) -> list[LintAlteration]:
     return out
 
 
+def _old_assembly_next_step(outcome: str, *, start: int, alleles: bool) -> str | None:
+    """Our reading beside upstream's message (F152): what a `none` or an ambiguity asks next.
+
+    Upstream's text stays verbatim in `message`; it names the CLI's `--ref`/`--alts` flags and
+    says "records nothing here" even where an indel sits one anchor over.
+    """
+    if outcome == "ambiguous":
+        return (
+            "Narrow it with this tool's `ref` and `alts` arguments, or take the one your "
+            "source names."
+        )
+    if outcome == "none" and alleles:
+        return (
+            "Not evidence that dbSNP lacks the variant: for an indel, Ensembl anchors its padded "
+            f"record where it chooses, which can be {start + 1} rather than a VCF's {start}. Ask "
+            "again one base right with the alleles padded from there, or without alleles to see "
+            "what starts at each base."
+        )
+    if outcome == "none":
+        return (
+            "Nothing starts at this base. An indel may be anchored a base away; see `ref`/`alts`."
+        )
+    return None
+
+
 def register_research(mcp: FastMCP, settings: Settings, services: NetworkServices) -> None:
     """Register the always-on read-only lookup tools.
 
@@ -1256,10 +1281,11 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         """Which rs-number GRCh37 (hg19) dbSNP records at an old coordinate, so you author the
         rs-number and let resolution place it on the module's build. It never converts.
 
-        `start` is the 1-based position as the source prints it. A candidate must start
-        exactly there; `ref` and `alts` (comma-separated) narrow it. Several are reported and
-        never picked, and `unchecked` or `skipped_offline` means not asked, not absent.
-        Writes nothing.
+        A candidate must start exactly at `start`, 1-based; `ref` and `alts` (comma-separated)
+        narrow it. An indel is matched only where Ensembl anchors its own record, which can sit a
+        base right of a VCF or gnomAD spelling: there `none` is not absence, and without alleles
+        the anchor base's SNV can come back instead. Several candidates are reported and never
+        picked; `unchecked` or `skipped_offline` means not asked. Writes nothing.
         """
         if start < 1:
             raise ToolError("`start` is the 1-based GRCh37 position, so it is 1 or more.")
@@ -1278,6 +1304,9 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             rsids=list(found.rsids),
             candidates=jsonable(found.candidates),
             message=str(found),
+            next_step=_old_assembly_next_step(
+                found.outcome, start=start, alleles=bool(ref or alts)
+            ),
         )
 
     # ----------------------------------------------------------------- #

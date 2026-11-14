@@ -2047,8 +2047,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         `post` takes a `rating` and optionally a `verdict` and `notes`, each as the
         registry defines it; posting again replaces yours. `delete`
         removes yours. `highlight` and `unhighlight` take the `reviewer` whose review the
-        owner marks, which is what a card counts as curated. A review is public and
-        signed by your account: post one only with the person's own rating and words.
+        owner marks, which a card counts as curated; the registry accepts an owner
+        highlighting their own review, and the card does not tell that apart. A review is
+        public and signed by your account: post one only with the person's own words.
         """
         if action == "post" and rating is None:
             raise ToolError("`post` needs a `rating`.")
@@ -2089,15 +2090,24 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
                 f"{where}: {exc}{instance_note(exc)}",
                 data={"target": target, "action": action},
             )
+        # The registry answers a delete or an unhighlight of a review that does not exist
+        # with the list as it stands (F153), so the message reads that list instead of
+        # claiming an act that may not have happened.
+        rows = [r for r in payload if isinstance(r, dict)] if isinstance(payload, list) else []
+        theirs = [r for r in rows if str(r.get("reviewer") or "") == marked]
         done = {
-            "post": "Your review is posted on",
-            "delete": "Your review is removed from",
-            "highlight": f"{marked}'s review is highlighted on",
-            "unhighlight": f"{marked}'s review is no longer highlighted on",
+            "post": f"Your review is posted on {where}",
+            "delete": f"No review of yours is on {where} now ({len(rows)} review(s) left)",
+            "highlight": f"{marked}'s review is highlighted on {where}",
+            "unhighlight": (
+                f"{marked}'s review on {where} is not highlighted"
+                if theirs
+                else f"The registry lists no review by {marked} on {where}, so none is highlighted"
+            ),
         }[action]
         return OpResult(
             success=True,
-            message=f"{done} {where} at {describe(target, settings)}.",
+            message=f"{done}, at {describe(target, settings)}.",
             data={"target": target, "action": action, "reviews": jsonable(payload)},
         )
 
