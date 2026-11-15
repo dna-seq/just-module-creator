@@ -2048,8 +2048,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         registry defines it; posting again replaces yours. `delete`
         removes yours. `highlight` and `unhighlight` take the `reviewer` whose review the
         owner marks, which a card counts as curated whatever its verdict; the registry
-        accepts an owner highlighting their own review, and the card tells neither apart. A review is
-        public and signed by your account: post one only with the person's own words.
+        accepts an owner highlighting their own review, and the card tells neither apart.
+        A review is public and signed by your account: post one only with the person's own
+        words.
         """
         if action == "post" and rating is None:
             raise ToolError("`post` needs a `rating`.")
@@ -2127,7 +2128,8 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         """Read the reviews of a published module, or of one `version`, highlighted first.
 
         A highlighted review is one the module's owner marked, and is what a card counts as
-        curated, whatever its verdict: read the verdict here. `target` is required: `prod` for the catalog, `test` for the polygon.
+        curated, whatever its verdict: read the verdict here. `target` is required: `prod`
+        for the catalog, `test` for the polygon.
         """
         if settings.offline:
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
