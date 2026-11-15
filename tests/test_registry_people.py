@@ -383,6 +383,17 @@ async def test_the_review_fields_are_described_by_the_registry_model(make_client
         assert properties[field]["description"] == expected
 
 
+@pytest.mark.parametrize("tool", ["registry_review", "registry_reviews"])
+async def test_curated_is_said_to_ignore_the_verdict(make_client, tool):
+    """F154: a highlighted `concerns` review turned the polygon's card `curated: true`, so a
+    description naming `curated` must not let it read as a favourable audit."""
+    async with make_client(settings=_online()) as client:
+        tools = {t.name: t for t in await client.list_tools()}
+    description = " ".join((tools[tool].description or "").split())
+    assert "curated" in description
+    assert "whatever its verdict" in description
+
+
 async def test_reading_reviews_needs_no_token_and_counts_the_highlighted(make_client, monkeypatch):
     stub = _PeopleStub()
     payload = await _tool(

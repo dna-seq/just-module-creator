@@ -14,46 +14,6 @@ is usable, and what is missing.
 
 ---
 
-## F154 — a highlighted review marks the card `curated: true` whatever its verdict, and our descriptions say "curated" bare
-
-**Found:** 2026-11-15, probing 0.48.11's review tools over the host wire (the lead asked) · **Severity:** low
-(wording here; the upstream half rides on registry `S33`) · **Status:** open
-
-On the polygon, as `sheep`, I posted a review of `test-sheep/test_statin_response@0.1.1` with `rating=3,
-verdict="concerns"`, then highlighted it. The card (`GET /api/v1/modules/test-sheep/test_statin_response`) went to
-`curated: true, review_count: 1, avg_rating: 3.0`. The registry defines the group as *"Has an owner-highlighted
-review/audit"* (`groups.py`), so a highlighted `concerns` (or `rejected`) audit lists the module under the
-`curated` tab, and the card's bare boolean doesn't say which way the audit went. `registry_reviews` says a
-highlighted review *"is what a card counts as curated"*, and `registry_review` says the same. Both are accurate, and
-neither says the verdict plays no part. An agent reading `curated: true` as a trust signal (the `module-start`
-"who else built one" read, or a prod suggestion) would count a module whose owner pinned a negative audit.
-
-Why it matters: S33's accepted fix ("count only outside reviewers") would close the self-highlight route and leave
-this one open. An outside reviewer's highlighted `rejected` audit would still read as `curated: true`.
-
-What would close it: here, the two descriptions say "whatever its verdict" (one clause). Upstream (liaison,
-appended to registry S33 as a corroboration, not a new S): the card names the highlighted verdict, or `curated`
-counts `verified` only. Their call which.
-
-Also seen, all holding over the wire on 0.48.11:
-- **F152:** `next_step` on `7:117199644 ATCT>A`.
-- **F151:** the gene message on `registry_claims(gene="APOE")`. The host still shows the 0.48.10 description,
-  because it caches the tool's schema from its first connection, while `v0.48.11:src/.../research.py` carries the
-  fix.
-- **`lookup_citation(pmcid="PMC3564898")`:** names Nilsson 2012 and withholds the PMID and DOI as
-  `redundancy_bearing`.
-- **`registry_members` refusals:** listing `test-sheep` gives `sheep`/owner, `org` with `namespace` is refused
-  locally, and a bad role names the three valid roles. A missing org gives `HTTP 404: org_not_found`.
-- **`registry_review`:** post to a missing version gives `HTTP 404: version_not_found`, and `highlight` without
-  `reviewer` is refused locally. `delete` now says *"No review of yours is on … now"*, which no longer claims an
-  act.
-
-Every write was undone, and the card read back as `curated: false, review_count: 0, stars: 0`. Not exercised: the
-`add` and `role` actions of `registry_members`, because the host's auto-mode classifier denied both (adding a
-nonexistent `test-` account to `test-sheep`) as unauthorized access. Filed to the kit.
-
----
-
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
 
 **Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the

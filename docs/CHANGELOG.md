@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`registry_review` and `registry_reviews` say `curated` ignores the verdict** (F154): a highlighted `concerns` review marks a card `curated: true` on the registry, so both descriptions now say a highlight counts whatever its verdict, and point to the verdict the listing carries.
 - **The toolchain behind a moved digest is named**: `compile_module` reports `toolchain`, the library releases that wrote its artifact (upstream's `compilation.toolchain`), and `compare_to_published` lists the published version's beside its compiler, or says a pre-0.8 compile recorded none. A different polars moves `artifact_digest` with nothing authored changed; the two lines let an author read that as another polars rather than as changed content.
 
 ## [0.48.11] — 2026-11-15
