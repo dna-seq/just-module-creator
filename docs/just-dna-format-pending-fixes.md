@@ -133,7 +133,7 @@ messages stop claiming an act the registry did not perform. Nothing of ours refu
 
 ## F152 — `recover_rsid` says "records nothing here" for F508del as VCF spells it; its docstring names the wrong cause (format `S155`)
 
-**State: answered 2026-11-14 as RM444, a patch, text only (their `f65c2a04`, unpushed): all four rows reproduce; the `none` headline, the docstring's anchor and `ref`/`alts` in `__str__` taken, plus "with the alleles given" when none were and the position-only advice to author the anchor SNV. A separate outcome declined (a minor). Our wording stands. Built on their main (`35cfabad`), uncut: ships in their next patch; enricher 0.8.6 installed.** Found by the tester through
+**State: answered 2026-11-14 as RM444, a patch, text only (their `f65c2a04`, unpushed): all four rows reproduce; the `none` headline, the docstring's anchor and `ref`/`alts` in `__str__` taken, plus "with the alleles given" when none were and the position-only advice to author the anchor SNV. A separate outcome declined (a minor). Our wording stands. Released in enricher 0.8.7 (tag `v0.8.7`, on PyPI 2026-11-15); not in our lock (0.8.6) until the bump.** Found by the tester through
 `lookup_old_assembly` (`docs/dogfooding.md`, F152). Ensembl's GRCh37 record for rs113993960 is padded at
 117199645, one base right of the left-aligned VCF spelling at 117199644, so the docstring's "padded against
 unpadded" is not the cause. Filed: the `none` headline is false when records overlap, an indel's VCF position

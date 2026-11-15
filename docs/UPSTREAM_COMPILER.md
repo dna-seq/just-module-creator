@@ -25,7 +25,7 @@ watcher. Restrict a `git grep` to paths: a whole-tree grep on NTFS times out.
 registry instances serve 0.8 (`/api/v1/version`). polars and duckdb are capped `<2` in the lock beside it
 (`c361614`) until that move.
 
-**Read to: `v0.8.6`** (its release entry, below; all three on PyPI 2026-11-13); `v0.8.5` (its release entry; all three on PyPI 2026-11-12); `v0.8.4` (its release entry on their `main`; all three on PyPI 2026-11-11, tag `36cbc20` pushed later that day); `v0.8.3` (its release entry; all three on PyPI 2026-11-10); `v0.8.2` (its release entry; on PyPI 2026-11-08); `v0.8.0` (tag `e97339a`, on PyPI 2026-11-05), through `docs/INTEGRATION_0_8.md` as it stands on
+**Read to: `v0.8.7`** (its release entry, below; the enricher alone, on PyPI 2026-11-15); `v0.8.6` (its release entry; all three on PyPI 2026-11-13); `v0.8.5` (its release entry; all three on PyPI 2026-11-12); `v0.8.4` (its release entry on their `main`; all three on PyPI 2026-11-11, tag `36cbc20` pushed later that day); `v0.8.3` (its release entry; all three on PyPI 2026-11-10); `v0.8.2` (its release entry; on PyPI 2026-11-08); `v0.8.0` (tag `e97339a`, on PyPI 2026-11-05), through `docs/INTEGRATION_0_8.md` as it stands on
 their `main` at `911a2fd` (2026-11-07), which postdates the `0.8` branch head `edf2661`. Read for the adoption map
 below, not entry by entry through the changelog: the integration file is the release's own per-consumer
 reading, and its § 3 block for this plugin is answered here.
@@ -38,6 +38,15 @@ reading, and its § 3 block for this plugin is answered here.
   client's `set_short_description`, unwrapped), F67 (`compiler.load_spec` in place of our `yaml.safe_load`).
 - **`v0.8.0`'s changelog, entry by entry**, for what the integration file does not name (the registry liaison
   read it at the cut; ask before repeating it).
+- **`v0.8.7`, read by its release entry** (tag `3b65ab7a`, 2026-11-14, enricher 0.8.7 on PyPI; format and compiler
+  stay 0.8.6). Text only: no public name, field, outcome or raise changes. RM444 (our S155, F152): `recover_rsid`'s
+  `none` beside overlapping records counts them and says to retry at a neighbouring anchor, a position-only
+  `recovered` makes its advice conditional, the `ambiguous` text names `ref`/`alts` instead of the CLI flags, and
+  the docstring says the anchor may be neither VCF's nor HGVS's. RM442: the two AlphaGenome licence rows' `notice`
+  and `license` text corrected; a module re-enriched after it carries the new text, its digest moves, no licence
+  axis moves. **Ours after the bump (the lead's):** `research._old_assembly_next_step`'s docstring says upstream
+  names the CLI flags and over-claims, which stops being true, and its `ambiguous` sentence repeats what upstream
+  now says. Floor the enricher at `>=0.8.7` at the bump; format and compiler stay `>=0.8.6`.
 - **`v0.8.6`, read by its release entry** (tag `2f03ab4a`, 2026-11-13, on PyPI). No public name, field, table,
   flag or warning code; no return value or raise changes; release record moved nothing, no recompile. Floors to
   `>=0.8.6` at our next bump (the nightly watcher's). What it carries: RM439 (`VariantRow.stat_significance`'s
