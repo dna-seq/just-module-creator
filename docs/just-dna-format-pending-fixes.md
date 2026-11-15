@@ -129,7 +129,7 @@ there: a highlight of a missing review 404s while its removal answers 200. Ours 
 description says an owner's highlight of their own review is self-curation the card does not tell apart, and our
 messages stop claiming an act the registry did not perform. Nothing of ours refuses.
 
-**Corroborated 2026-11-15 (F154, the tester):** a highlighted review raises `curated` whatever its verdict (a highlighted `concerns` audit read `curated: true` on the polygon), so S33's "outside reviewers only" would still let an outside `rejected` audit read as curated. Appended to the registry's inbox as a corroboration on S33, not a new S; asked: the card names the verdict, or `curated` counts `verified` only.
+**Corroborated 2026-11-15 (F154, the tester):** a highlighted review raises `curated` whatever its verdict (a highlighted `concerns` audit read `curated: true` on the polygon), so S33's "outside reviewers only" would still let an outside `rejected` audit read as curated. Appended to the registry's inbox as a corroboration on S33, not a new S; asked: the card names the verdict, or `curated` counts `verified` only. Answered the same hour (their `1903722`): confirmed on their 0.32 branch, both candidates on their roadmap for their pm, undecided; our descriptions judged accurate.
 
 ## F152 — `recover_rsid` says "records nothing here" for F508del as VCF spells it; its docstring names the wrong cause (format `S155`)
 
