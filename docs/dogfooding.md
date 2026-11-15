@@ -120,6 +120,11 @@ plugin server failed, or spreads one clone's resumes). The first is the person's
 §2 reopened, so neither is taken while the kit's answer is pending. Until then a seat that finds the server
 missing runs `watchdog.sh reload --mcp` itself (kit v0.1.141).
 
+**Measurement (lead, 2026-11-15):** first `initialize` after a long test run took 35 s, then 15.7 s, then 6.0 s
+warm. That fits the cold-cache reading above. The cause is not established: the lead first named a dev-group
+resync by `uv run`, then withdrew it, because `uv run --no-dev` syncs inexactly, left pytest and ruff installed,
+and its stderr showed no install or uninstall.
+
 ## F86 — LitVar2 is the rsID↔CAID bridge we lack, and it is DEFERRED to upstream's 0.7
 
 **Not a defect. A probed capability, parked deliberately on 2026-09-01** so the notes are not
