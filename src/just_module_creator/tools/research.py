@@ -336,26 +336,19 @@ def _collapse_pubmind(withheld: list[LintAlteration]) -> list[LintAlteration]:
 
 
 def _old_assembly_next_step(outcome: str, *, start: int, alleles: bool) -> str | None:
-    """Our reading beside upstream's message (F152): what a `none` or an ambiguity asks next.
+    """Our reading beside upstream's message (F152): the base to ask next after a `none`.
 
-    Upstream's text stays verbatim in `message`; it names the CLI's `--ref`/`--alts` flags and
-    says "records nothing here" even where an indel sits one anchor over.
+    Since enricher 0.8.7 (RM444) upstream's text says a `none` beside overlapping records is not
+    absence, and names this tool's `ref`/`alts` for an ambiguity, so neither is repeated here.
+    What stays ours is the concrete neighbour for alleles given in VCF's padded spelling.
+    Asking again without alleles is not offered: at a padded position that returns the anchor
+    base's own record, a different variant.
     """
-    if outcome == "ambiguous":
-        return (
-            "Narrow it with this tool's `ref` and `alts` arguments, or take the one your "
-            "source names."
-        )
     if outcome == "none" and alleles:
         return (
             "Not evidence that dbSNP lacks the variant: for an indel, Ensembl anchors its padded "
             f"record where it chooses, which can be {start + 1} rather than a VCF's {start}. Ask "
-            "again one base right with the alleles padded from there, or without alleles to see "
-            "what starts at each base."
-        )
-    if outcome == "none":
-        return (
-            "Nothing starts at this base. An indel may be anchored a base away; see `ref`/`alts`."
+            "again one base right with the alleles padded from there."
         )
     return None
 
