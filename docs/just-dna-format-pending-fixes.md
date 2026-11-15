@@ -109,7 +109,7 @@ its history.
 | F91 | S89 | RM184 | in our lock (0.7.0); reproduction passes 2026-11-07, nothing to remove |
 | F63 | S66 | RM128 | in our lock (0.7.0); call sites verified 2026-11-07, our claim's fate is the lead's |
 | F112 | S67, S68 | shipped; RM131 | in our lock (0.7.0); adopted, nothing to remove |
-| F59 | S64 | justified; RM133 | in our lock (0.7.0); closed on main: `registry_set_subtitle` wraps `set_short_description` (`0395250`, unreleased) |
+| F59 | S64 | justified; RM133 | in our lock (0.7.0); closed on main: `registry_set_subtitle` wraps `set_short_description` (`0395250`, released in 0.48.11) |
 | F98 | S100 | RM234, RM235 | in our lock (0.7 line); adopted, nothing to remove |
 | F53 | S57 | RM121 | in our lock (0.6.6); passes, nothing to remove |
 | F55 | S59 | RM123 | in our lock (0.6.6); nothing of ours to lift |
@@ -148,7 +148,7 @@ reason is one of §5's grounds or a covering tool; a row with a trigger is wrapp
 
 | Client calls | Reason | Wrap when |
 |---|---|---|
-| `hint_citation`, `hint_gene`, `hint_trait` | Covered: `lookup_citation` (by PMID, DOI or PMCID; the PMCID form since the lead's `d5ceaef`, unreleased) and `lookup_identifier` ask the same sources directly. No snapshot lane stands behind these hints, so routing them through the registry adds a third party and spends its budget with no miss to justify it. | a hint gains a lane our direct call cannot reach |
+| `hint_citation`, `hint_gene`, `hint_trait` | Covered: `lookup_citation` (by PMID, DOI or PMCID; the PMCID form since the lead's `d5ceaef`, released in 0.48.11) and `lookup_identifier` ask the same sources directly. No snapshot lane stands behind these hints, so routing them through the registry adds a third party and spends its budget with no miss to justify it. | a hint gains a lane our direct call cannot reach |
 | `logs`, `get_tarball` | Covered: `registry_download` fetches the logs (`download(include_logs=True)`); a tarball is the same version in another container. | |
 | `versions` | Covered while measured: `get_module` returned every version of every module on both instances (longest history 6). | a module passes 20 versions, the client's page size |
 | `lookup_by_digest` | Covered: `registry_is_published` asks by `content_signature`, which survives a compiler change; an artifact digest moves with the build. | |
@@ -197,7 +197,7 @@ deployment outranks the caller.
 
 ## F148 — the registry's keyed lane lookup serves lanes its `/caches` refuses to redistribute (registry `S29`)
 
-**State: answered within the hour, by design (a refusal for the lookup, settled).** Their maintainer ruled on 2026-11-11 that a keyed subslice is a derivative and that serving means the whole snapshot, so every held lane answers keyed lookups and `/caches`' refusal covers only the whole snapshot; the ruling now stands in their API-REFERENCE.md (endpoints 46-47). Candidate (2), the lane's terms on each answer, is a new field (a minor) in their roadmap, undecided. Meanwhile `GET /caches` gives each lane's `remote_reason` to attach, which is our half: **done on main (`d9651d1`, unreleased, the lead)**, `registry_lane_lookup` carries the lane's `remote_reason` plus `licence`, `licence_notice` and `licence_url` from upstream's lane catalogue at no extra request; it drops out when their per-answer terms ship. Filed 2026-11-12 by the liaison, on the tester's report (`docs/dogfooding.md` F148). Registry
+**State: answered within the hour, by design (a refusal for the lookup, settled).** Their maintainer ruled on 2026-11-11 that a keyed subslice is a derivative and that serving means the whole snapshot, so every held lane answers keyed lookups and `/caches`' refusal covers only the whole snapshot; the ruling now stands in their API-REFERENCE.md (endpoints 46-47). Candidate (2), the lane's terms on each answer, is a new field (a minor) in their roadmap, undecided. Meanwhile `GET /caches` gives each lane's `remote_reason` to attach, which is our half: **done (`d9651d1`, released in 0.48.11, the lead)**, `registry_lane_lookup` carries the lane's `remote_reason` plus `licence`, `licence_notice` and `licence_url` from upstream's lane catalogue at no extra request; it drops out when their per-answer terms ship. Filed 2026-11-12 by the liaison, on the tester's report (`docs/dogfooding.md` F148). Registry
 0.30's `lane_rows` answers `pharmvar` (CYP2C19*2, production and polygon; re-run here on production with no key),
 `pubmind` (36 rows at APOE rs429358) and `mane` anonymously, while `/caches` records redistribution of the first two
 as refused (PharmVar's terms §2; CC BY-NC-ND) and the third as unestablished. Whether a keyed read is redistribution
@@ -228,7 +228,7 @@ stays reserved and "nothing published changes identity", and the lead's dry run 
 dry run and a per-version report, or, if a published `namespace/name` is deliberately fixed, saying so in the
 docstring and CLI help. No mitigation of ours; a tool follows once upstream has the call.
 
-**Parity gap beside it (ours, not upstream's): closed on main (`6ba23f6`, unreleased, the lead).**
+**Parity gap beside it (ours, not upstream's): closed in 0.48.11 (`6ba23f6`, the lead).**
 `registry_rename_account`, `registry_create_org` and `registry_create_org_namespace` wrap the client's calls, beside
 `registry_rename_namespace`. Not wrapped, with the reason (CLAUDE.md §5, "only a deployment calls it"; the whole list is under "Registry client calls not wrapped" above):
 `merge_accounts` and `admin_rename_account`, site-admin calls only; the saved polygon account answers
@@ -2270,7 +2270,7 @@ description does not reach an agent replacing a `<<REPLACE>>` in a YAML file.
 
 ## F59 — display metadata is inside the attestation binding (format `S64`, registry `S16`)
 
-**State: CLOSED on our side 2026-11-14, on main, unreleased.** `registry_set_subtitle` wraps `set_short_description` (the lead's `0395250`), tried live on the polygon (set, then cleared): a published module's subtitle is reworded with no version and no closure spent. The binding itself stays upstream's settled answer (RM133).
+**State: CLOSED on our side 2026-11-14, released in 0.48.11 (2026-11-15).** `registry_set_subtitle` wraps `set_short_description` (the lead's `0395250`), tried live on the polygon (set, then cleared): a published module's subtitle is reworded with no version and no closure spent. The binding itself stays upstream's settled answer (RM133).
 
 **Reproduced 2026-11-07 (the liaison), on the installed packages** (format 0.7.1, compiler 0.7.2, enricher 0.7.3, registry client 0.27.0): the binding question was answered and closed upstream (RM133: the binding stays, do not re-propose), and the fix arrived on the registry side as a module-level subtitle stored beside the module: `RegistryClient.set_short_description(namespace, name, short_description)`, at most 120 characters, `None` clears, no version and no closure spent. **The plugin wraps `amend_readme` and not this**, so rewording a published subtitle still reads here as costing a version. Handed to the lead, 2026-11-07, as a registry write-surface gap.
 
