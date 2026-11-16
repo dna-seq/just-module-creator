@@ -283,3 +283,38 @@ or article text.
 **Not tried here.** A second session appending to the same module (one file per session is designed in,
 but not exercised), a hand edit made between sessions, and the reviewer pass, which should go to the
 tester seat as a fresh pair of eyes on this module and its ledger.
+
+### The fresh-eyes read, and what it adds
+
+The tester seat read the rehearsal from the registry download alone, before reading the above, as the
+reviewer pass in 4.5 would. It re-fetched both articles: hashes and lengths match the ledger and every
+anchor resolves. It found six things this section had missed, and the first two change the design.
+
+1. **An anchor can sit beside a reason it does not witness.** The `rs9939609 not_used` decision gives
+   linkage disequilibrium with `rs1421085` as its reason, and both its anchors sit in PMID 28642257. That
+   paper never names `rs1421085`; the anchors witness an association with BMI, not the reason. It is the
+   title-as-quote shape one level up: evidence that looks like support for a claim and witnesses something
+   else. **For the build:** a reason recalled from knowledge is labelled `recalled`, not anchored to
+   whatever text was at hand, and the join never counts an anchor as support for a reason unless the
+   anchored passage names that reason's subject.
+2. **`traced` covered the quote, not the row.** The MC4R weights (-0.3 and -0.15, against FTO's -0.5
+   and -0.25) have nothing behind them: the paper gives standardised mean differences and no event maps
+   one to a weight. **For the build:** a row is traced cell by cell. The judged cells (`weight`,
+   `direction`, `conclusion`) each need their own basis or are reported `not_traceable`, and the
+   `basis` dropped above comes back, on the cell rather than the row.
+3. The MC4R conclusion keeps the paper's publication-bias caveat and drops its next sentence, that the
+   trim-and-fill correction changed nothing. That is a reviewer's catch, and the reason 4.5 exists.
+4. Nothing records the seven results per search that were never opened, why `rs17782313` was chosen over
+   the README's dropped `rs6567160`, or the third allele at a T>A,C site. The unopened results can be
+   derived (returned but never fetched); the other two are decisions that went unrecorded, which the
+   hook cannot see and the reviewer can.
+5. All nine events carry one timestamp and the edits carry no values, so the ledger reads as written
+   after the fact, which by hand it was. The hook stamps as it goes and records each edit's new cell
+   values by hash.
+6. What shipped contradicted the module in ways the ledger did not catch: `licensing.csv` still says no
+   full text was fetched, the README is the original module's, the spec said `1.0.0` against a `0.1.0`
+   publish (F158, fixed), and `authorship` is empty. A copied module carries stale sidecars; the audit,
+   not the ledger, is where that belongs.
+
+The read also led to F159: the pre-publish log check read only `*.log`, so this ledger reached the
+polygon without that check ever reading it. Fixed.
