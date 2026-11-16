@@ -13,5 +13,5 @@
 **Next**
 1. Renaming the `test-sheep` rehearsal namespace. Lead; ⏸ waits on the person (desk #255).
 2. ✅ A note for Anton on his four published modules is drafted: `docs/HANDOUT-antonkulaga-modules.md`. Four of the five August points are already fixed in his current versions; one question on two rows is left. Sending it, or not, is yours.
-3. A tool that searches trait names in the standard vocabularies, so a module's trait id is picked from real candidates rather than guessed. Lead, overnight.
+3. ✅ A tool that searches trait names in the standard vocabularies, so a module's trait id is picked from real candidates rather than guessed (`search_trait_terms`, built; ships in the next release).
 4. Row traceability: a record of which searches and readings produced each row, tried by hand on one real module before any of it is automated. Lead, after 3.
