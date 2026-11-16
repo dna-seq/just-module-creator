@@ -19,7 +19,7 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. `upstream-inde
 ## Half read
 
 - Nothing. Main runs format/compiler 0.8.6, enricher 0.8.7 (`37caadb`; RM444's text for F152) and
-  registry client 0.31.0 (release 0.48.12); read to v0.8.7 and registry 0.32.0 (2026-11-16: releases S29-S33 and `upgrade_status`; on no instance yet, not in our lock; held at 0.31 in the 2026-11-17 bump on the lead's word; the lead adopts 0.32 once an instance we read serves it).
+  registry client 0.31.0 (release 0.48.13, which also floors the enricher `>=0.8.7`); read to v0.8.7 and registry 0.32.0 (2026-11-16: releases S29-S33 and `upgrade_status`; on no instance yet, not in our lock; held at 0.31 in the 2026-11-17 bump on the lead's word; the lead adopts 0.32 once an instance we read serves it).
   Production serves registry 0.31.0 on format 0.8.6, the polygon 0.30.0 on 0.8.4 (2026-11-16). Re-run S30 on the
   polygon once it serves 0.30.1 or later. Watch S32's folding patch reaching an instance, and a client release
   quoting `gene_claims`' symbol (tell the lead of each).
@@ -27,7 +27,7 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. `upstream-inde
 ## The dependency bump
 
 - Last run 2026-11-17, `af1f0c6` (13 packages; registry client held at 0.31.0 by `uv lock --upgrade-package just-dna-registry==0.31.0` after the upgrade, on the lead's word until an instance we read serves 0.32; pytest-asyncio 1.5's loop-scope warning settled in `pyproject.toml`). Next: the nightly watcher's Tuesday.
-- **The tree is shared: a peer's merge reset an uncommitted `uv.lock` mid-run once (2026-11-17), and a peer's `uv run` re-syncs `.venv` to the committed lock.** Commit the lock as soon as the checks pass, and read `git diff --stat uv.lock` right before committing.
+- **The tree is shared: a peer's `git checkout -- uv.lock` before its merge discarded an uncommitted bump mid-run once (2026-11-17; the lead, who owned it), and a peer's `uv run` re-syncs `.venv` to the committed lock.** Commit the lock as soon as the checks pass, and read `git diff --stat uv.lock` right before committing.
 - 2026-11-10, `ebca264` (56 packages; tenacity `initial=` to `multiplier=`, floor 9.2.1).
 - **Run the whole `uv run pyright` and `uv run ruff check .`, not just the files you touched.** This run checked
   only `net.py` and its test; pydantic 2.14's typing of `FieldInfo.annotation` broke `tools/config.py`, and the
