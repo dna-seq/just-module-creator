@@ -47,7 +47,7 @@ from just_dna_registry import RegistryError
 from just_dna_registry.version import VersionInfo, compatibility_error
 from mcp.types import ToolAnnotations
 
-from just_module_creator import alleles, routing, supplementary
+from just_module_creator import alleles, routing, supplementary, traitsearch
 from just_module_creator.discovery import (
     DEFAULT_EUROPEPMC_BASE,
     fulltext,
@@ -79,6 +79,8 @@ from just_module_creator.models import (
     SupplementaryFileInfo,
     SupplementaryList,
     SupplementaryRows,
+    TraitTerm,
+    TraitTermSearch,
     VariantLookup,
 )
 from just_module_creator.net import HttpService, NetworkServices, ServiceGate, ServiceUnavailable
@@ -1260,6 +1262,54 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             label=status.label,
         )
 
+    # RM28 (`F79`): `lookup_identifier` verifies a CURIE you already hold, and memory was the
+    # only source of one. A recalled `EFO_0007796` verified `current` and named a different trait
+    # ("parental longevity"). Obsolete hits are kept, never filtered: in that run the obsolete
+    # `EFO_0004300` was the only record pointing at the right term. Ours to build, not upstream's:
+    # the ontologies are public and no schema is involved. Its own gate, since OLS4 is EBI's and
+    # not NCBI's budget; 0.5 s is courtesy rather than a published limit.
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Search trait terms by name",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        ),
+    )
+    async def search_trait_terms(
+        query: str, ontologies: list[str] | None = None, limit: int = 10
+    ) -> TraitTermSearch:
+        """Find ontology terms for a trait by name, to pick a `trait_efo_id` from candidates.
+
+        Searches OLS4 for current and obsolete terms separately and returns both, each with
+        its label and defining ontology; an obsolete term carries the successor its record
+        names. `ontologies` defaults to EFO, MONDO, OBA and HP. `limit` caps each half.
+
+        Costs two requests, plus one per obsolete hit to read its successor. The order is
+        OLS4's relevance, not a judgement: choosing the term is yours, and
+        `lookup_identifier(kind="trait")` confirms the one you choose. Refuses offline.
+        """
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+        if not query.strip():
+            raise ToolError("Pass the trait's name as `query`.")
+        if limit < 1:
+            raise ToolError("`limit` must be at least 1.")
+        chosen = tuple(o.strip().lower() for o in ontologies or () if o.strip()) or (
+            traitsearch.DEFAULT_ONTOLOGIES
+        )
+        service = _ols_service(services)
+        result = await run_sync(
+            lambda: traitsearch.search(
+                service,
+                query.strip(),
+                ontologies=chosen,
+                limit=limit,
+                successor=enricher_lookup.lookup_trait,
+            )
+        )
+        return _trait_term_search(query.strip(), chosen, result)
+
     # Upstream RM48's recovery, never a liftover: an rs-number authored from an hg19
     # coordinate is resolved onto the module's build by the ordinary chain, which then has a
     # second witness to cross-examine; a converted position would be its own only witness.
@@ -1607,6 +1657,69 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             collapsed=len(ids) == 1,
             note=note,
         )
+
+
+def _ols_service(services: NetworkServices) -> HttpService:
+    """OLS4's search as a paced service, built once and closed at shutdown."""
+    for existing in services._extra:  # noqa: SLF001 — the registry is ours
+        if existing.name == "ols4_search":
+            return existing
+    return services.register(
+        HttpService(
+            name="ols4_search",
+            base_url=traitsearch.OLS4_BASE,
+            gate=ServiceGate(interval=0.5),
+            headers={"User-Agent": f"just-module-creator (mailto:{services.contact_email()})"},
+        )
+    )
+
+
+def _trait_term(hit: traitsearch.TermHit) -> TraitTerm:
+    return TraitTerm(
+        curie=hit.curie,
+        label=hit.label,
+        ontology=hit.ontology,
+        state=hit.state,
+        description=hit.description,
+        replaced_by=hit.replaced_by,
+        replacement_checked=hit.replacement_checked,
+    )
+
+
+def _trait_term_search(
+    query: str, ontologies: tuple[str, ...], result: traitsearch.TermSearch
+) -> TraitTermSearch:
+    current = None if result.current is None else [_trait_term(h) for h in result.current]
+    obsolete = None if result.obsolete is None else [_trait_term(h) for h in result.obsolete]
+    if current is None and obsolete is None:
+        next_step = (
+            "Neither search could run, so this says nothing about whether a term exists. "
+            "Try again later; never write a CURIE from memory meanwhile."
+        )
+    elif not current and not obsolete:
+        unasked = " The other half could not be asked." if result.failures else ""
+        next_step = (
+            "No term matched this name in these ontologies. Try a broader or differently "
+            f"worded name, or another ontology.{unasked}"
+        )
+    else:
+        next_step = (
+            "Pick by label and definition, not by position: the order is OLS4's relevance. "
+            "An obsolete term's `replaced_by` names its current successor, often the term "
+            'you want. Confirm the one you choose with lookup_identifier(kind="trait").'
+        )
+        if result.failures:
+            next_step += " One half could not be asked; see `failures`."
+    return TraitTermSearch(
+        query=query,
+        ontologies=list(ontologies),
+        current=current,
+        obsolete=obsolete,
+        current_found=result.current_found,
+        obsolete_found=result.obsolete_found,
+        failures=result.failures,
+        next_step=next_step,
+    )
 
 
 def _allele_service(services: NetworkServices) -> HttpService:

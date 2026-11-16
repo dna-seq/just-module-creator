@@ -7,6 +7,7 @@ on our side, so agents in sibling repos are not surprised.
 
 - **`compare_to_published` lists a file on one side only** (F155): it walks the published inputs and the local authored files together, so a table added since the publish reads `only_local` and a removed one `only_published`, where before the first appeared nowhere and the second read `unknown`.
 - **The enricher floor is 0.8.7** (F152 follow-up, from the liaison): 0.48.12 trimmed `lookup_old_assembly`'s advice to what 0.8.7's own message leaves out, but still allowed 0.8.6, where an install got neither the old advice nor upstream's new wording.
+- **`search_trait_terms` finds a trait's ontology term by name** (RM28, `F79`): `lookup_identifier` could only confirm an id the agent already held, so the id came from memory, and a recalled `EFO_0007796` ("parental longevity") confirmed as `current` for a lifespan module. The new tool searches OLS4 for current and obsolete terms in EFO, MONDO, OBA and HP. It returns each term's label and definition, and for an obsolete term the successor its record names, because in that case the obsolete `EFO_0004300` was the record that pointed at the right term, `OBA_VT0005372`. Two requests plus one per obsolete hit; choosing stays the author's.
 
 ## [0.48.12] — 2026-11-16
 

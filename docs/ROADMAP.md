@@ -16,7 +16,7 @@ something and invites a workaround where a note was owed. A probe belongs in
 
 ## RM28 — nothing finds a trait CURIE, and `lookup_identifier` only verifies one you already hold
 
-**State:** blocked: desk #203, yes after a present · **Owner:** just-module-creator/lead
+**State:** built 2026-11-16 as `search_trait_terms` (desk #203 withdrawn as no fork), ships in the next release; then this moves to `ROADMAP_HISTORY.md` · **Owner:** just-module-creator/lead
 
 **Opened 2026-08-31** from `F79`, the one finding of the `a2` benchmark run that is a missing
 capability rather than a defect. Deferred deliberately, with the reason written down rather than the

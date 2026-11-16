@@ -265,7 +265,7 @@ match.
 | where may I read this paper, and read it | `lookup_open_access`, `fetch_fulltext` | — |
 | draft variants + studies from ClinVar | `draft_from_clinvar` | — |
 | resolve coordinates, mint ids, catch a ref mismatch | `enrich_module` | — |
-| identifier currency, **and gene↔chromosome agreement** | `check_identifiers`, `lookup_identifier` | — |
+| identifier currency, **and gene↔chromosome agreement**; a trait term by name | `check_identifiers`, `lookup_identifier`, `search_trait_terms` | — |
 | declare the authoring finished | `close_module` | — |
 | record why an authored value outranks a source, and read the queue back | `record_override`, `review_queue` | — |
 | compare two spec directories, at three grains | `compare_modules` | — |

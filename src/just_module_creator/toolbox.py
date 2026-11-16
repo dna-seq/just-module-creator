@@ -134,16 +134,18 @@ GROUPS: tuple[Group, ...] = (
     ),
     Group(
         "identifiers",
-        "Is this gene symbol / ontology CURIE current, does it agree with the row, and "
+        "Is this gene symbol / ontology CURIE current, which terms a trait name matches, does it "
+        "agree with the row, and "
         "what allele does a source's bare variant NAME denote, and which rs-number an hg19 "
         "coordinate carries.",
         (
             "check_identifiers",
             "lookup_identifier",
+            "search_trait_terms",
             "lookup_allele_identity",
             "lookup_old_assembly",
         ),
-        4632,
+        6506,
     ),
     # The three checks that ask a catalogue about an authored cell and write only the
     # attestation. They are grouped by what they ask rather than by what they cost:

@@ -1149,6 +1149,54 @@ class IdentifierStatus(BaseModel):
     label: str | None = Field(default=None, description="Human-readable label.")
 
 
+class TraitTerm(BaseModel):
+    """One ontology term a name search returned. A candidate, never a choice."""
+
+    curie: str = Field(
+        description="The term's id as `trait_efo_id` takes it, e.g. `OBA_VT0005372`."
+    )
+    label: str | None = Field(default=None, description="The ontology's label for it.")
+    ontology: str | None = Field(default=None, description="The defining ontology's prefix.")
+    state: str = Field(description="current | obsolete.")
+    description: str | None = Field(default=None, description="The ontology's definition, if any.")
+    replaced_by: str | None = Field(
+        default=None,
+        description="For an obsolete term, the successor its record names. Null with "
+        "`replacement_checked: obsolete` means the record names none; with `unchecked`, that "
+        "the question could not be put.",
+    )
+    replacement_checked: str | None = Field(
+        default=None,
+        description="Upstream's answer when asked for an obsolete term's successor (`obsolete`, "
+        "or `unchecked` when it could not be asked). Null on a current term.",
+    )
+
+
+class TraitTermSearch(BaseModel):
+    """Candidates for a trait name, current and obsolete kept apart."""
+
+    query: str = Field(description="The name searched.")
+    ontologies: list[str] = Field(description="The ontologies searched.")
+    current: list[TraitTerm] | None = Field(
+        description="Current terms in OLS4's relevance order. Null means the search could not "
+        "run, never that nothing matched."
+    )
+    obsolete: list[TraitTerm] | None = Field(
+        description="Obsolete terms, each with the successor its record names. Null means the "
+        "search could not run."
+    )
+    current_found: int | None = Field(
+        default=None, description="How many current terms matched in all, beyond `limit`."
+    )
+    obsolete_found: int | None = Field(
+        default=None, description="How many obsolete terms matched in all, beyond `limit`."
+    )
+    failures: list[str] = Field(
+        default_factory=list, description="Which half could not be asked, and why."
+    )
+    next_step: str = Field(description="What to do with the candidates.")
+
+
 class OldAssemblyRecovery(BaseModel):
     """Which rs-number GRCh37 dbSNP records at one old (hg19) coordinate. Advisory; nothing is
     written."""

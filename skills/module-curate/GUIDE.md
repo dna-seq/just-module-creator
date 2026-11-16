@@ -97,6 +97,7 @@ lookup_variant(rsid="rs334", ambiguity=True)         # warn when the answer is n
 lookup_variant(chrom="1", start=11796321, ref="G", alts="A")   # allele-exact by coordinate
 literature_search(gene="MTHFR", trait="homocysteine")          # the papers — with titles
 lookup_citation(pmid="7647779")                                # exists? and WHICH paper — read the title
+search_trait_terms(query="homocysteine")                       # candidates by name, obsolete ones kept
 lookup_identifier(kind="trait", identifier="EFO_0004541")      # current | obsolete | absent
 lookup_identifier(kind="gene", identifier="MTHFR")             # approved | retired | unknown
 ```
