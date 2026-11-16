@@ -76,6 +76,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
 ## Practice
 
 - **A commit queued behind a long suite takes its named files as they stand when it runs** (2026-11-13: `d9651d1`, F148, swept in the F149 fix and a half-finished test, and pushed a failing test until `26009a1`). While such a run is pending, edit none of the files it names; start the next fix after it lands.
+- **A change in the shared tree that I did not make is another seat's until shown otherwise** (2026-11-17: the release bump's `uv lock` showed 14 upgraded packages that were the liaison's uncommitted weekly bump, and I ran `git checkout -- uv.lock` on it; the liaison redid it as `af1f0c6`, nothing lost). Before restoring or overwriting a file, run `git status --short` and ask whether I touched it; if not, ask its seat first.
 
 ## Plan states (set 2026-11-05)
 
