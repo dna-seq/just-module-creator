@@ -355,9 +355,13 @@ Both fulltexts refetched: sha256 and length match the ledger and every anchor re
 
 Full reading kept in the session scratchpad; the summary went to the lead.
 
-**Owed when this session's auto-mode carries the kit's rule 23** (kit v0.1.226, answering kit #491; the automode
-watcher says when it is applied): the `registry_members` `add` and `role` probe on the polygon's `test-sheep`, which the
-classifier refused on 2026-11-15. Add, change the role, remove, then read back to `sheep`/owner alone.
+**`registry_members` add/role/remove on the polygon, 2026-11-16, after kit rule 23 was applied** (it answers kit
+#491; the classifier let every call through). On `test-sheep`: `add test-nobody-probe` → `HTTP 404: account_not_found`;
+`role` on a non-member is refused locally with "not a member ... nothing was sent", as the description promises;
+`remove` a non-member → `HTTP 404: account_not_found`; `add` with no `account` refused locally. The list still reads
+`sheep`/owner alone. **The success path of add and role is still unexercised**: `sheep` is the only saved account, and
+adding a real person's polygon account, or registering a second one (an account cannot be deleted), would leave a write
+the polygon does not get back. It waits for a second account the person makes available.
 **At the next plugin release, also recheck** F158 (publish refuses a spec version that differs from the call's;
 name may differ only by `test_`) and F159 (the pre-publish log scan now reads the `.jsonl` ledger).
 
