@@ -14,6 +14,37 @@ is usable, and what is missing.
 
 ---
 
+## F156 — `search_trait_terms` reports an imported copy as defined by the ontology that imports it, and lists it twice
+
+**Found:** 2026-11-16 (tester, in-process on main 8ab47c5, unreleased) · **Severity:** medium · **Status:** ours.
+
+`TraitTerm.ontology` is described as "the defining ontology's prefix", and `traitsearch._ask` sends
+`isDefiningOntology=true` so that "the defining copy is the one a CURIE names". OLS4's `/api/search` ignores
+that parameter: the same request with `true`, `false` or the snake-case spelling returns the same six docs for
+"longevity", three of them carrying `is_defining_ontology: false` in the response itself. The tool neither asks
+for that field nor filters on it, so:
+
+- "longevity": `MONDO_0015903` appears twice (as `MONDO`, then as `EFO`); `PR_000009681` and `PR_Q8N5B7`
+  (ceramide synthase proteins) read `ontology: "EFO"`.
+- "life span": `PATO_0000050` appears as `HP` and again as `OBA`; it is defined in neither.
+- "cancer", `limit=40`: 40 current hits, 38 distinct; `MONDO_0004992` listed as `EFO` and as `OBA`.
+- `ontologies=["go"]`: `CL_1000428` (a cell type) comes back as `GO`.
+
+The cost is that the field a reader uses to tell a trait term from an imported protein or cell type says the
+wrong thing, and duplicates eat into `limit`. The core case holds: "longevity" lists `EFO_0007796` (parental
+longevity) and, separately, the obsolete `EFO_0004300` with `replaced_by: OBA_VT0005372`. A half that fails
+reads `null`, never empty (a `limit` OLS4 refuses gave both halves `null` and `HTTP 400` in `failures`).
+
+## F157 — `search_trait_terms` reads a misspelt ontology as "no term matched", and a refused request as an outage
+
+**Found:** 2026-11-16 (tester, same run) · **Severity:** low · **Status:** ours.
+
+1. `ontologies=["nosuchontology"]` returns `current: []`, `obsolete: []`, no failure, and "No term matched this
+   name in these ontologies". OLS4 ignores an ontology it does not hold, so a typo such as `ebo` reads as the trait
+   having no term. OLS4 lists its ontologies at `/api/ontologies`.
+2. `limit=100000000000` makes OLS4 answer `HTTP 400` on both halves, and the next step says "Try again later".
+   A 4xx is the request's fault and a retry gets the same answer; `limit` has no upper bound locally.
+
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
 
 **Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the
