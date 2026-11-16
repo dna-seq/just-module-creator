@@ -43,7 +43,7 @@ _CURRENT = _docs(
         "label": "hyperalphalipoproteinemia",
         "ontology_prefix": "MONDO",
     },
-    found=6,
+    found=3,
 )
 _OBSOLETE = _docs(
     {
@@ -95,7 +95,7 @@ def test_obsolete_terms_are_kept_with_their_successor() -> None:
     assert [h.curie for h in result.current] == ["EFO_0007796", "MONDO_0015903"]
     assert result.current[0].description is not None
     assert result.current[0].description.startswith("length of an individual's parents' life")
-    assert result.current_found == 6
+    assert result.current_found == 3
     (gone,) = result.obsolete
     assert (gone.curie, gone.state, gone.replaced_by) == (
         "EFO_0004300",
@@ -105,8 +105,35 @@ def test_obsolete_terms_are_kept_with_their_successor() -> None:
     assert gone.replacement_checked == "obsolete"
     # Two searches, one of them for obsolete terms, both on the defining ontology only.
     assert sorted(str(r.url.params.get("obsoletes")) for r in asked) == ["None", "true"]
-    assert {r.url.params["isDefiningOntology"] for r in asked} == {"true"}
+    assert {r.url.params["local"] for r in asked} == {"true"}
     assert {r.url.params["ontology"] for r in asked} == {"efo,mondo,oba,hp"}
+
+
+def test_an_imported_copy_is_dropped_even_if_the_server_sends_it() -> None:
+    """`isDefiningOntology=true` was the first flag tried and OLS4 ignored it, returning
+    `PR_000009681` under EFO for "longevity" (2026-11-16), an id upstream's checker answers
+    `unchecked`. `local=true` works today; this pins the second guard, which reads the
+    server's own `is_defining_ontology` and holds whatever the flag does."""
+    imported = _docs(
+        {
+            "short_form": "EFO_0007796",
+            "label": "parental longevity",
+            "ontology_prefix": "EFO",
+            "is_defining_ontology": True,
+        },
+        {
+            "short_form": "PR_000009681",
+            "label": "ceramide synthase 5",
+            "ontology_prefix": "EFO",
+            "is_defining_ontology": False,
+        },
+    )
+    asked: list[httpx.Request] = []
+    result = traitsearch.search(
+        _service(_ols(imported, _OBSOLETE, asked)), "longevity", successor=_successor
+    )
+    assert result.current is not None
+    assert [h.curie for h in result.current] == ["EFO_0007796"]
 
 
 def test_a_failed_half_is_unknown_never_empty() -> None:
@@ -169,12 +196,12 @@ async def test_the_tool_returns_both_halves_and_says_how_to_choose(
     assert "not by position" in report.next_step
 
 
-async def test_both_halves_failing_says_nothing_about_existence(make_client, monkeypatch) -> None:
+async def test_a_refused_request_is_named_as_the_arguments_fault(make_client, monkeypatch) -> None:
+    """F157: a 4xx is the request's fault, and "try again later" would send the reader round."""
     from just_module_creator.tools import research
 
     asked: list[httpx.Request] = []
-    # 4xx rather than 5xx: a 5xx is retried with backoff, which would only slow the test.
-    service = _service(_ols(404, 404, asked))
+    service = _service(_ols(400, 400, asked))
     monkeypatch.setattr(research, "_ols_service", lambda _services: service)
     networked = Settings(offline=False, _env_file=None)  # type: ignore[call-arg]
     async with make_client(networked) as client:
@@ -182,7 +209,70 @@ async def test_both_halves_failing_says_nothing_about_existence(make_client, mon
     report = result.data
     assert report.current is None and report.obsolete is None
     assert len(report.failures) == 2
+    assert "refused the request" in report.next_step
+    assert "later" not in report.next_step
+
+
+def test_an_outage_says_nothing_about_existence() -> None:
+    """Both halves unreadable, and not refused: a gap, never "no such term".
+
+    Built on the formatter rather than through the tool, because a real 5xx is retried with
+    backoff and would only slow the suite."""
+    from just_module_creator.tools import research
+
+    gone = traitsearch.TermSearch(
+        current=None,
+        obsolete=None,
+        current_found=None,
+        obsolete_found=None,
+        failures=["current terms: ols4_search: HTTP 503", "obsolete terms: ols4_search: HTTP 503"],
+    )
+    report = research._trait_term_search("longevity", traitsearch.DEFAULT_ONTOLOGIES, gone)
+    assert report.current is None and report.obsolete is None
     assert "says nothing about whether a term exists" in report.next_step
+
+
+async def test_a_misspelt_ontology_is_refused_not_read_as_no_match(
+    make_client, monkeypatch
+) -> None:
+    """F157: OLS4's search ignores an ontology it does not hold, so `ebo` would read as the trait
+    having no term. Only names outside the default four are checked."""
+    from just_module_creator.tools import research
+
+    asked: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        asked.append(request)
+        if request.url.path.endswith("/ontologies/ebo"):
+            return httpx.Response(404)
+        if request.url.path.endswith("/ontologies/go"):
+            return httpx.Response(200, json={"ontologyId": "go"})
+        return httpx.Response(200, json=_docs())
+
+    service = _service(handler)
+    monkeypatch.setattr(research, "_ols_service", lambda _services: service)
+    networked = Settings(offline=False, _env_file=None)  # type: ignore[call-arg]
+    async with make_client(networked) as client:
+        with pytest.raises(ToolError, match="no ontology named ebo"):
+            await client.call_tool(
+                "search_trait_terms", {"query": "longevity", "ontologies": ["efo", "ebo"]}
+            )
+        assert [r.url.path for r in asked] == ["/ols4/api/ontologies/ebo"]
+
+        asked.clear()
+        result = await client.call_tool(
+            "search_trait_terms", {"query": "longevity", "ontologies": ["go"]}
+        )
+    assert result.data.current == [] and result.data.obsolete == []
+    assert asked[0].url.path == "/ols4/api/ontologies/go"
+    assert "No term matched" in result.data.next_step
+
+
+async def test_limit_is_capped_before_anything_is_asked(make_client) -> None:
+    networked = Settings(offline=False, _env_file=None)  # type: ignore[call-arg]
+    async with make_client(networked) as client:
+        with pytest.raises(ToolError, match="between 1 and 100"):
+            await client.call_tool("search_trait_terms", {"query": "longevity", "limit": 101})
 
 
 async def test_the_tool_refuses_offline(make_client) -> None:

@@ -1234,10 +1234,10 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         A gene comes back approved / retired / unknown; a trait current /
         obsolete / absent. Writes nothing.
 
-        This is what `trait_efo_id` is for: `describe_table` tells you the column
-        takes an ontology CURIE, and this is the only thing that tells you the one
-        you have in mind is real and current. Writing an ontology id from memory
-        is the failure this exists to prevent.
+        This is what `trait_efo_id` is for: it tells you a CURIE is real and current,
+        never that it names your trait (a current id can name a different one). Find
+        candidates with `search_trait_terms` first, never from memory, and read the
+        label this returns.
         """
         if kind not in {"gene", "trait"}:
             raise ToolError('kind must be "gene" or "trait".')
@@ -1283,7 +1283,8 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
 
         Searches OLS4 for current and obsolete terms separately and returns both, each with
         its label and defining ontology; an obsolete term carries the successor its record
-        names. `ontologies` defaults to EFO, MONDO, OBA and HP. `limit` caps each half.
+        names. `ontologies` defaults to EFO, MONDO, OBA and HP; any other is checked
+        to exist first. `limit` caps each half, at most 100.
 
         Costs two requests, plus one per obsolete hit to read its successor. The order is
         OLS4's relevance, not a judgement: choosing the term is yours, and
@@ -1293,12 +1294,19 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             raise ToolError("The server is configured offline (JMC_OFFLINE).")
         if not query.strip():
             raise ToolError("Pass the trait's name as `query`.")
-        if limit < 1:
-            raise ToolError("`limit` must be at least 1.")
+        if not 1 <= limit <= traitsearch.MAX_LIMIT:
+            raise ToolError(f"`limit` must be between 1 and {traitsearch.MAX_LIMIT}.")
         chosen = tuple(o.strip().lower() for o in ontologies or () if o.strip()) or (
             traitsearch.DEFAULT_ONTOLOGIES
         )
         service = _ols_service(services)
+        extra = tuple(o for o in chosen if o not in traitsearch.DEFAULT_ONTOLOGIES)
+        missing = await run_sync(lambda: traitsearch.missing_ontologies(service, extra))
+        if missing:
+            raise ToolError(
+                f"OLS4 holds no ontology named {', '.join(missing)}. Its search would ignore "
+                "the name and answer as if no term matched; check the spelling."
+            )
         result = await run_sync(
             lambda: traitsearch.search(
                 service,
@@ -1691,7 +1699,12 @@ def _trait_term_search(
 ) -> TraitTermSearch:
     current = None if result.current is None else [_trait_term(h) for h in result.current]
     obsolete = None if result.obsolete is None else [_trait_term(h) for h in result.obsolete]
-    if current is None and obsolete is None:
+    if current is None and obsolete is None and result.refused:
+        next_step = (
+            "OLS4 refused the request (HTTP 4xx): the arguments are at fault, and asking "
+            "again gets the same answer. See `failures`."
+        )
+    elif current is None and obsolete is None:
         next_step = (
             "Neither search could run, so this says nothing about whether a term exists. "
             "Try again later; never write a CURIE from memory meanwhile."

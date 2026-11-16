@@ -14,37 +14,6 @@ is usable, and what is missing.
 
 ---
 
-## F156 — `search_trait_terms` reports an imported copy as defined by the ontology that imports it, and lists it twice
-
-**Found:** 2026-11-16 (tester, in-process on main 8ab47c5, unreleased) · **Severity:** medium · **Status:** ours.
-
-`TraitTerm.ontology` is described as "the defining ontology's prefix", and `traitsearch._ask` sends
-`isDefiningOntology=true` so that "the defining copy is the one a CURIE names". OLS4's `/api/search` ignores
-that parameter: the same request with `true`, `false` or the snake-case spelling returns the same six docs for
-"longevity", three of them carrying `is_defining_ontology: false` in the response itself. The tool neither asks
-for that field nor filters on it, so:
-
-- "longevity": `MONDO_0015903` appears twice (as `MONDO`, then as `EFO`); `PR_000009681` and `PR_Q8N5B7`
-  (ceramide synthase proteins) read `ontology: "EFO"`.
-- "life span": `PATO_0000050` appears as `HP` and again as `OBA`; it is defined in neither.
-- "cancer", `limit=40`: 40 current hits, 38 distinct; `MONDO_0004992` listed as `EFO` and as `OBA`.
-- `ontologies=["go"]`: `CL_1000428` (a cell type) comes back as `GO`.
-
-The cost is that the field a reader uses to tell a trait term from an imported protein or cell type says the
-wrong thing, and duplicates eat into `limit`. The core case holds: "longevity" lists `EFO_0007796` (parental
-longevity) and, separately, the obsolete `EFO_0004300` with `replaced_by: OBA_VT0005372`. A half that fails
-reads `null`, never empty (a `limit` OLS4 refuses gave both halves `null` and `HTTP 400` in `failures`).
-
-## F157 — `search_trait_terms` reads a misspelt ontology as "no term matched", and a refused request as an outage
-
-**Found:** 2026-11-16 (tester, same run) · **Severity:** low · **Status:** ours.
-
-1. `ontologies=["nosuchontology"]` returns `current: []`, `obsolete: []`, no failure, and "No term matched this
-   name in these ontologies". OLS4 ignores an ontology it does not hold, so a typo such as `ebo` reads as the trait
-   having no term. OLS4 lists its ontologies at `/api/ontologies`.
-2. `limit=100000000000` makes OLS4 answer `HTTP 400` on both halves, and the next step says "Try again later".
-   A 4xx is the request's fault and a retry gets the same answer; `limit` has no upper bound locally.
-
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
 
 **Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the
@@ -196,7 +165,7 @@ one a single run mentioned.
 | A way to read rows out of a downloaded `.xlsx` | **4 of 4** | `F68` — every one hand-wrote a zip+XML parser or reached for `uv run --with openpyxl`; no spreadsheet engine exists in the venv (`openpyxl`, `pandas`, `xlrd` absent, `polars.read_excel` has no backend) |
 | `lint_rows` taking a path instead of CSV text | **4 of 4** | `F66` — files were 79–129 KB; two runs skipped the taught `lint_rows → validate_module` step entirely rather than round-trip the table through the model |
 | `lookup_citation(doi=…)` to return a title | **4 of 4** | `F113` — upstream `S113`, in pending-fixes |
-| A trait CURIE **search**, not just verification | 3 of 4 | `F79` / `F29` — one run guessed four EFO ids, all four obsolete, before finding the live one |
+| A trait CURIE **search**, not just verification | 3 of 4 | `F79` (resolved: `search_trait_terms`) / `F29` — one run guessed four EFO ids, all four obsolete, before finding the live one |
 | `registry_check` not reporting `study_count: 0` when the file failed to parse | 3 of 4 | `F60`-adjacent; three-valued rule, `null` is the honest answer |
 | `review_queue` showing a real `authored_value` | 3 of 4 | `F71c` — confirmed unchanged |
 | An earlier warning than `registry_check` for the `curator`/0.6.1 refusal | 2 of 4 | `F77` — both runs correctly refused to drop the column |
@@ -234,27 +203,6 @@ skills have never seen, and it stays unbriefed only until somebody writes down w
 are three papers in the corpus; `sirt6` is where the adjudicated reference lives and its answer cell
 reached `CLAUDE.md` (see the runbook's pitfall 1), and now `centenarian` is briefed in two skills.
 **Budget a fresh paper per round rather than expecting the corpus to keep.**
-
-## F79 — the CURIE verifier turns a wrong guess into a confident wrong answer, because nothing finds one
-
-**Found:** 2026-08-31 · **Severity:** medium · **Status:** ours to build, deferred as `RM28` with the
-reason recorded there.
-
-`lookup_identifier` verifies a trait CURIE you already hold. Nothing produces candidates, and its own
-docstring says writing an id from memory is the failure it exists to prevent — so the only source of a
-candidate is the thing the tool forbids. A run guessed four times: `EFO_0007796` is "parental
-longevity", `EFO_0007797` is "language measurement", `HP_0025153` is "Transient".
-
-**The first guess is the finding.** "Parental longevity" is a real, current EFO term, so
-`lookup_identifier` answers `current` — a green verification of a CURIE naming a different trait, with
-nothing in the answer able to say so. That is a check that cannot fail for the error actually being
-made. The id the module carries, `OBA_VT0005372`, was reached only through the **obsolete**
-`EFO_0004300`, whose record names its successor.
-
-**Surface it rather than patch it.** Making `lookup_identifier` return near-misses would blur verify
-and search; a hardcoded map of common traits is the hardcoded-vocabulary defect. The tool is a
-search against OLS4, which `check_identifiers` already reaches — `RM28`. And whatever ships must
-**report** obsoletion rather than filter on it: the obsolete record was the only one that led anywhere.
 
 ## F66 — `lint_rows` echoes its whole input back, and that is load-bearing
 

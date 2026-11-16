@@ -35,7 +35,11 @@ OLS4_BASE = DEFAULT_OLS4_BASE
 #: `tests/test_trait_search.py` compares it with that description rather than trusting a comment.
 DEFAULT_ONTOLOGIES: tuple[str, ...] = ("efo", "mondo", "oba", "hp")
 
-_FIELDS = "short_form,label,ontology_prefix,description"
+#: The most hits asked for per half. Each obsolete hit costs one more request (its successor),
+#: so an unbounded `limit` is an unbounded bill, and OLS4 answers HTTP 400 to a huge one.
+MAX_LIMIT = 100
+
+_FIELDS = "short_form,label,ontology_prefix,description,is_defining_ontology"
 
 
 @dataclass(frozen=True)
@@ -62,6 +66,35 @@ class TermSearch:
     current_found: int | None
     obsolete_found: int | None
     failures: list[str] = field(default_factory=list)
+    #: True when OLS4 refused a request with a 4xx: the arguments are at fault, and asking
+    #: again gets the same answer. Distinct from an outage, which a retry may clear.
+    refused: bool = False
+
+
+def missing_ontologies(service: HttpService, names: tuple[str, ...]) -> list[str]:
+    """The names OLS4 holds no ontology under. One request each.
+
+    OLS4's search ignores an ontology it does not hold, so a misspelt one (`ebo`) would read
+    as "no term matched" rather than as a wrong argument. A name the endpoint could not be
+    asked about is not reported: it is unknown, and the search itself will say so if it fails.
+    """
+    missing: list[str] = []
+    for name in names:
+        try:
+            response = service.probe(f"ontologies/{name}")
+        except ServiceUnavailable:
+            continue
+        if response.status_code == 404:
+            missing.append(name)
+    return missing
+
+
+def _refused(exc: Exception) -> bool:
+    return (
+        isinstance(exc, ServiceUnavailable)
+        and exc.reason.startswith("HTTP 4")
+        and not (exc.rate_limited)
+    )
 
 
 def _hits(payload: dict[str, Any], state: str) -> tuple[list[TermHit], int | None]:
@@ -75,7 +108,10 @@ def _hits(payload: dict[str, Any], state: str) -> tuple[list[TermHit], int | Non
     hits: list[TermHit] = []
     for doc in docs:
         curie = doc.get("short_form")
-        if not curie:
+        # Belt and braces with `local=true`: a copy OLS4 itself marks as imported is dropped
+        # here too, so the filter holds if the server-side flag is ever ignored. That is not
+        # hypothetical: `isDefiningOntology=true`, the first flag tried, is ignored (2026-11-16).
+        if not curie or doc.get("is_defining_ontology") is False:
             continue
         description = doc.get("description")
         if isinstance(description, list):
@@ -100,8 +136,9 @@ def _ask(
         "ontology": ",".join(ontologies),
         "rows": limit,
         # A term imported into another ontology comes back once per importer, under a
-        # prefix that is not its own; the defining copy is the one a CURIE names.
-        "isDefiningOntology": "true",
+        # prefix that is not its own (`PR_…` under EFO for "longevity"), and upstream's checker
+        # answers such an id `unchecked`. `local=true` keeps the defining copy only.
+        "local": "true",
         "fieldList": _FIELDS,
     }
     if obsolete:
@@ -120,6 +157,7 @@ def search(
 ) -> TermSearch:
     """Two searches, current and obsolete, plus one successor lookup per obsolete hit."""
     failures: list[str] = []
+    refused = False
     current: list[TermHit] | None
     current_found: int | None
     try:
@@ -127,6 +165,7 @@ def search(
     except (ServiceUnavailable, ValueError) as exc:
         current, current_found = None, None
         failures.append(f"current terms: {exc}")
+        refused = refused or _refused(exc)
 
     obsolete: list[TermHit] | None
     obsolete_found: int | None
@@ -135,6 +174,7 @@ def search(
     except (ServiceUnavailable, ValueError) as exc:
         obsolete, obsolete_found = None, None
         failures.append(f"obsolete terms: {exc}")
+        refused = refused or _refused(exc)
     else:
         obsolete = []
         for hit in found_obsolete:
@@ -156,4 +196,5 @@ def search(
         current_found=current_found,
         obsolete_found=obsolete_found,
         failures=failures,
+        refused=refused,
     )

@@ -6,6 +6,64 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F157 — `search_trait_terms` reads a misspelt ontology as "no term matched", and a refused request as an outage
+
+**Found:** 2026-11-16 (tester, same run) · **Severity:** low · **Status:** ours.
+
+1. `ontologies=["nosuchontology"]` returns `current: []`, `obsolete: []`, no failure, and "No term matched this
+   name in these ontologies". OLS4 ignores an ontology it does not hold, so a typo such as `ebo` reads as the trait
+   having no term. OLS4 lists its ontologies at `/api/ontologies`.
+2. `limit=100000000000` makes OLS4 answer `HTTP 400` on both halves, and the next step says "Try again later".
+   A 4xx is the request's fault and a retry gets the same answer; `limit` has no upper bound locally.
+
+**Resolved 2026-11-16 (lead, before release).** An ontology outside the default four is checked at OLS4's `/api/ontologies/<name>` first (one request each) and a 404 is refused by name; `limit` is capped at 100 (each obsolete hit costs a request, and OLS4 400s a huge one); a 4xx on both halves now says the request was refused, not "try again later". Three tests in `tests/test_trait_search.py`.
+
+## F156 — `search_trait_terms` reports an imported copy as defined by the ontology that imports it, and lists it twice
+
+**Found:** 2026-11-16 (tester, in-process on main 8ab47c5, unreleased) · **Severity:** medium · **Status:** ours.
+
+`TraitTerm.ontology` is described as "the defining ontology's prefix", and `traitsearch._ask` sends
+`isDefiningOntology=true` so that "the defining copy is the one a CURIE names". OLS4's `/api/search` ignores
+that parameter: the same request with `true`, `false` or the snake-case spelling returns the same six docs for
+"longevity", three of them carrying `is_defining_ontology: false` in the response itself. The tool neither asks
+for that field nor filters on it, so:
+
+- "longevity": `MONDO_0015903` appears twice (as `MONDO`, then as `EFO`); `PR_000009681` and `PR_Q8N5B7`
+  (ceramide synthase proteins) read `ontology: "EFO"`.
+- "life span": `PATO_0000050` appears as `HP` and again as `OBA`; it is defined in neither.
+- "cancer", `limit=40`: 40 current hits, 38 distinct; `MONDO_0004992` listed as `EFO` and as `OBA`.
+- `ontologies=["go"]`: `CL_1000428` (a cell type) comes back as `GO`.
+
+The cost is that the field a reader uses to tell a trait term from an imported protein or cell type says the
+wrong thing, and duplicates eat into `limit`. The core case holds: "longevity" lists `EFO_0007796` (parental
+longevity) and, separately, the obsolete `EFO_0004300` with `replaced_by: OBA_VT0005372`. A half that fails
+reads `null`, never empty (a `limit` OLS4 refuses gave both halves `null` and `HTTP 400` in `failures`).
+
+**Resolved 2026-11-16 (lead, before release).** `isDefiningOntology` is ignored by OLS4, as found; `local=true` is the flag that keeps the defining copy, measured live ("longevity": 6 docs without it, the 3 defining ones with it). The tool now sends `local=true` and also drops any doc whose own `is_defining_ontology` is `false`, so the filter holds if the flag is ever ignored too. `test_an_imported_copy_is_dropped_even_if_the_server_sends_it` fails with the client-side filter removed.
+
+## F79 — the CURIE verifier turns a wrong guess into a confident wrong answer, because nothing finds one
+
+**Found:** 2026-08-31 · **Severity:** medium · **Status:** ours to build, deferred as `RM28` with the
+reason recorded there.
+
+`lookup_identifier` verifies a trait CURIE you already hold. Nothing produces candidates, and its own
+docstring says writing an id from memory is the failure it exists to prevent — so the only source of a
+candidate is the thing the tool forbids. A run guessed four times: `EFO_0007796` is "parental
+longevity", `EFO_0007797` is "language measurement", `HP_0025153` is "Transient".
+
+**The first guess is the finding.** "Parental longevity" is a real, current EFO term, so
+`lookup_identifier` answers `current` — a green verification of a CURIE naming a different trait, with
+nothing in the answer able to say so. That is a check that cannot fail for the error actually being
+made. The id the module carries, `OBA_VT0005372`, was reached only through the **obsolete**
+`EFO_0004300`, whose record names its successor.
+
+**Surface it rather than patch it.** Making `lookup_identifier` return near-misses would blur verify
+and search; a hardcoded map of common traits is the hardcoded-vocabulary defect. The tool is a
+search against OLS4, which `check_identifiers` already reaches — `RM28`. And whatever ships must
+**report** obsoletion rather than filter on it: the obsolete record was the only one that led anywhere.
+
+**Resolved 2026-11-16 as `search_trait_terms` (RM28).** OLS4 search, current and obsolete kept apart, each obsolete hit with the successor upstream's `lookup_trait` reads. Live: "longevity" lists `EFO_0007796` (parental longevity) beside the obsolete `EFO_0004300` → `OBA_VT0005372`. `lookup_identifier`'s docstring now says a current id can name a different trait and points to the search.
+
 ## F155 — `compare_to_published` never lists a file you added, and calls a file you removed "unknown"
 
 **Found:** 2026-11-16, probing 0.48.12's `toolchain` line (the lead asked) · **Severity:** medium (the pointer an
