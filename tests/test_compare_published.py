@@ -160,8 +160,33 @@ def test_a_missing_local_file_is_reported_rather_than_dropped(spec: Path) -> Non
     result = compare(spec, published)
 
     studies = next(f for f in result.files if f.name == "studies.csv")
-    assert studies.verdict in {"moved", "unknown"}
+    # Its absence is a known fact, not a comparison that could not run (F155).
+    assert studies.verdict == "only_published"
+    assert studies.local_sha256 is None
     assert studies.published_sha256 is not None
+
+
+def test_a_file_authored_since_the_publish_is_listed(spec: Path) -> None:
+    """F155: a file the published inputs lack, present here, is named rather than skipped.
+
+    The published side is the honest manifest minus `studies.csv`, which is what a version
+    published before that file was authored records. The walk once covered the published
+    names alone, so the file appeared nowhere while every listed file read `same`.
+    """
+    full = manifest_of(spec)
+    assert "studies.csv" in {e.name for e in full.inputs}  # the anchor: it is an input
+    published = full.model_copy(
+        update={"inputs": [e for e in full.inputs if e.name != "studies.csv"]}
+    )
+
+    result = compare(spec, published)
+
+    by_name = {f.name: f for f in result.files}
+    assert set(by_name) == _authored_names(spec)
+    added = by_name["studies.csv"]
+    assert added.verdict == "only_local"
+    assert added.local_sha256 is not None and added.published_sha256 is None
+    assert {f.verdict for n, f in by_name.items() if n != "studies.csv"} == {"same"}
 
 
 def test_a_crlf_file_that_did_not_change_is_reported_as_same(spec: Path) -> None:

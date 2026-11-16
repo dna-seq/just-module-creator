@@ -2897,7 +2897,10 @@ class FileDelta(BaseModel):
     name: str = Field(description="The authored file, as the manifest names it.")
     verdict: str = Field(
         description=(
-            "`same` | `moved` | `unknown`. **Subordinate to `content`, always.** Byte equality "
+            "`same` | `moved` | `only_local` | `only_published` | `unknown`. `only_local` is a "
+            "file present here and absent from the published inputs (added since, or one the "
+            "published compiler did not hash); `only_published` one the publish recorded and "
+            "this directory lacks. **Subordinate to `content`, always.** Byte equality "
             "is decisive — an identical hash is an identical file. Byte INEQUALITY means almost "
             "nothing on its own: a CRLF, a reordered column, a reordered row and `1.00` written "
             "as `1.0` each move this and leave `content_signature` exactly where it was. Use "

@@ -75,6 +75,24 @@ def _verdict(left: object, right: object) -> str:
     return "same" if left == right else "moved"
 
 
+def _file_verdict(
+    local: str | None, published: str | None, *, here: bool | None, there: bool
+) -> str:
+    """One authored file's verdict, where being absent on one side is a fact (F155).
+
+    `here` and `there` say whether the name is present at all, `here` being `None` when
+    the local side could not be read. A digest can still be missing on a present file (a
+    manifest that carried none), and that stays `unknown`.
+    """
+    if here is None:
+        return "unknown"
+    if here and not there:
+        return "only_local"
+    if there and not here:
+        return "only_published"
+    return _verdict(local, published)
+
+
 def register_comparison(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
@@ -376,8 +394,17 @@ def _compare_published(
     published_files = {e.name: _text(getattr(e, "sha256", None)) for e in inputs}
     files: list[FileDelta] = []
     if published_files:
+        # The union, not the published names alone (F155): a file authored since the
+        # publish is exactly what a second pass adds, and it moves `content` while a walk
+        # over the manifest alone would list every file as `same`. The local half is
+        # upstream's own authored set, so this walks what a compile would hash. Only its
+        # names are used: its digests are newline-normalized, and the ones below are raw.
         names = sorted(published_files)
+        local_names: set[str] = set()
+        read_ok = True
         try:
+            local_names = {e.name for e in compiler.authored_input_entries(local)}
+            names = sorted(set(published_files) | local_names)
             # `file_entries`, NOT `newline_normalized_file_entries`. The comment here
             # used to claim the publisher hashes through `authored_input_entries`,
             # which normalizes newlines. It does not, and upstream's own RM82
@@ -399,6 +426,7 @@ def _compare_published(
             entries = compiler.file_entries(local, names)
         except (OSError, ValueError) as exc:
             entries = []
+            read_ok = False
             unknown.append(
                 Unknown(
                     subject="authored file digests",
@@ -411,9 +439,18 @@ def _compare_published(
             files.append(
                 FileDelta(
                     name=filename,
-                    verdict=_verdict(local_files.get(filename), published_files[filename]),
+                    verdict=_file_verdict(
+                        local_files.get(filename),
+                        published_files.get(filename),
+                        # Present here: hashed now, or listed by the authored set. When the
+                        # local read failed, presence is not known.
+                        here=(filename in local_files or filename in local_names)
+                        if read_ok
+                        else None,
+                        there=filename in published_files,
+                    ),
                     local_sha256=local_files.get(filename),
-                    published_sha256=published_files[filename],
+                    published_sha256=published_files.get(filename),
                 )
             )
     else:

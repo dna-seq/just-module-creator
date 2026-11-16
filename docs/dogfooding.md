@@ -14,45 +14,6 @@ is usable, and what is missing.
 
 ---
 
-## F155 — `compare_to_published` never lists a file you added, and calls a file you removed "unknown"
-
-**Found:** 2026-11-16, probing 0.48.12's `toolchain` line (the lead asked) · **Severity:** medium (the pointer an
-agent is told to follow points nowhere on the normal second pass) · **Status:** open
-
-The description says *"Use `files` to decide where to look."* I downloaded `antonkulaga/apoe_epsilon@1.1.1` from
-prod with `registry_download` into a scratch directory. Compared as downloaded, `content` was `same` and all four
-files were `same` (good). Then two edits, one at a time, each undone:
-
-1. **Added a table kind** by putting a `variants.csv` beside the haplotype tables, which is the "1, to add a table
-   kind" re-entry `create-module` names. `content: moved` and a new local signature. Yet `files` listed the same
-   four entries, **every one `same`**, and `variants.csv` appeared nowhere, in `files` or in `unknown`. The verdict
-   says something changed, and the pointer says nothing did.
-2. **Removed `diplotypes.csv`.** `content: moved`, and `files` listed it as `verdict: "unknown", local_sha256:
-   null`, while `unknown: []` stayed empty. The file's absence is a known fact. The verdict reads as "could not
-   compare", and nothing explains it.
-
-The cause is in `tools/comparison.py`: `names = sorted(published_files)`, so only the published manifest's
-`inputs` are walked, and a missing local digest falls through `_verdict(None, x)` to `unknown`. What would close
-it: walk the union of the published inputs and the local authored files (the same input set `file_entries` hashes
-on a compile), with a verdict for "only here" and one for "only published". Ours, not upstream's: the manifest is
-complete, and we choose which names to walk.
-
-Also seen, holding, on 0.48.12 over the wire:
-- **`compile_module` reports `toolchain`.** A fresh compile of a copy of `assets/fto_bmi` gave `toolchain:
-  {polars: 1.44.2, python: 3.14.8}`, with the same `content_signature` as the polygon rehearsal recorded.
-  `compiler_version` is not in the result: it is in the manifest's `compilation` block and in the server's header.
-  `compare_to_published` prints the two side by side, so an author comparing a fresh compile has to find this
-  install's compiler elsewhere. Small, not separately filed.
-- **The `toolchain` line in `compare_to_published` works on both kinds of version.** On a version compiled under
-  0.8 (`apoe_epsilon@1.1.1`, compiler 0.8.4): `polars 2.1.0, python 3.13.13`. The registry's polars is a major
-  ahead of ours, which is exactly the moved digest the line exists to explain. On one compiled before 0.8
-  (`antonkulaga/cognitive_intelligence@1.0.0`, compiler 0.5.4): *"(not recorded: compiled before just-dna 0.8)"*.
-- **A downloaded spec can't be compared without naming it.** Its `module_spec.yaml` carries `name` and no
-  `namespace`, so the call refuses with *"Pass them explicitly"*, though `manifest.json` beside it names both.
-  Accurate as described. Noted in case the default should read the manifest too.
-
----
-
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
 
 **Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the

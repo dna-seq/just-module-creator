@@ -5,6 +5,8 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`compare_to_published` lists a file on one side only** (F155): it walks the published inputs and the local authored files together, so a table added since the publish reads `only_local` and a removed one `only_published`, where before the first appeared nowhere and the second read `unknown`.
+
 ## [0.48.12] — 2026-11-16
 
 - **`lookup_old_assembly` leaves to upstream what upstream now says** (F152): enricher 0.8.7 (RM444) says a `none` beside overlapping records is not absence, and names `ref`/`alts` for an ambiguity, so our `next_step` keeps only the neighbouring base to ask after a `none` for given alleles. It no longer suggests asking without alleles, which at a padded indel position returns the anchor base's own record. The lock moves to just-dna-enricher 0.8.7.
