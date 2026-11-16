@@ -167,6 +167,9 @@ dev = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# pytest-asyncio 1.5 warns when this is unset and plans to change the default; "function" is the
+# scope every async fixture here already runs at (the in-memory client's loop, CLAUDE.md §6).
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 addopts = "-v --tb=short"
 filterwarnings = [
