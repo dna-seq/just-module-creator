@@ -6,6 +6,35 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F159 — the pre-publish log check read only `*.log` while compiler 0.8 ships `.jsonl`, `.json`, `.md`, `.txt` and images from `logs/`
+
+**Found:** 2026-11-16 (lead, reading `registry_publish` while fixing F158, after the RM31 rehearsal had shipped
+`logs/trace/2026-11-16-lead.jsonl` to the polygon) · **Severity:** medium · **Status:** resolved the same night.
+
+`logscan.logs_in` globbed `*.log` and `logs/**/*.log`, and its docstring said it "mirrors what `_collect_logs`
+collects ... if it ever widens, this is the line that has to move with it". It widened in 0.8 (RM337/RM338)
+and the line did not move. So `review_logs` and the note `registry_publish` appends listed nothing for a `.jsonl`
+ledger, a `.md` note or a `.txt` dump that the compile then shipped: exactly the files a provenance ledger
+(RM31) is made of. The rehearsal's ledger carried nothing sensitive; nothing had read it to say so.
+
+**Resolved 2026-11-16 (lead).** `logs_in` now returns what upstream's `discover_logs` says ships (the function
+the compile copies from), so it cannot fall behind again; `scan_file` weighs an image by size only. Two tests
+fail on the old code. The `logs` dossier, `module-publish` and `LAYOUT.md` said only `*.log` ships and now say
+what 0.8 ships, pointing at `review_logs` for the exact list.
+
+## F158 — `registry_publish` ships a spec whose `module.version` disagrees with the version it publishes, and nothing says so
+
+**Found:** 2026-11-16 (tester, reading `test-sheep/test_fto_bmi_trace@0.1.0` from the polygon) · **Severity:** low ·
+**Status:** ours.
+
+`registry_publish` takes `version` as its own argument and never compares it with `module_spec.yaml`. The lead's
+trace rehearsal was published as `0.1.0` (manifest `identity.version: 0.1.0`, `version_coerced_from: null`), and the
+`module_spec.yaml` it ships, which `registry_download` hands to the next author, says `version: '1.0.0'`. Someone
+revising from that download reads the published version as 1.0.0 and bumps from the wrong base. `validate_module`,
+`registry_check` and the publish itself all passed. The same gap would hold for `module.name` against `name`.
+
+**Resolved 2026-11-16 (lead).** `registry_publish` loads the spec with the compiler's `load_spec` after the strict pre-flight and refuses a version that differs from the call's, and a name that differs by more than the rehearsal prefix (`test_<name>` over an unprefixed spec is the taught polygon flow, so it passes). Nothing is published, and the message names both values. `test_a_spec_naming_another_module_is_not_published` fails on the old code.
+
 ## F157 — `search_trait_terms` reads a misspelt ontology as "no term matched", and a refused request as an outage
 
 **Found:** 2026-11-16 (tester, same run) · **Severity:** low · **Status:** ours.

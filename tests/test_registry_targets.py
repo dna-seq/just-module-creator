@@ -1197,6 +1197,47 @@ async def test_pack_reaches_the_registry_client(make_client, monkeypatch, tmp_pa
     assert stub.published["pack"] is pack
 
 
+@pytest.mark.parametrize(
+    ("name", "version", "named"),
+    [
+        ("test_fto_bmi", "0.1.0", "version"),  # F158's case: the spec says 1.0.0
+        ("test_other_module", "1.0.0", "name"),  # not the rehearsal prefix over the spec's name
+    ],
+)
+async def test_a_spec_naming_another_module_is_not_published(
+    make_client, monkeypatch, tmp_path, name, version, named
+):
+    """F158: the registry publishes under the call's identity and ships the spec as written.
+
+    `assets/fto_bmi` says `name: fto_bmi`, `version: '1.0.0'`. The rehearsal prefix alone is
+    allowed over the name (`test_pack_reaches_the_registry_client` publishes `test_fto_bmi`);
+    anything else would hand the next downloader a spec naming another module or version.
+    """
+    import shutil
+
+    from just_module_creator.tools import registry
+
+    spec = tmp_path / "fto_bmi"
+    shutil.copytree(Path(__file__).parent.parent / "assets" / "fto_bmi", spec)
+    stub = _PublishStub()
+    monkeypatch.setattr(registry, "client_for", lambda *a, **kw: stub)
+    settings = Settings(offline=False, _env_file=None, test_api_key="mk", workspace=str(tmp_path))  # type: ignore[call-arg]
+    args = {
+        "namespace": "test-sheep",
+        "name": name,
+        "version": version,
+        "spec_dir": str(spec),
+        "target": "test",
+    }
+    async with make_client(settings=settings) as client:
+        payload = (await client.call_tool("registry_publish", args)).structured_content
+
+    assert payload["success"] is False
+    assert stub.published == {}, "the publish was reached"
+    assert [d.split(":", 1)[0] for d in payload["data"]["disagree"]] == [named]
+    assert "module_spec.yaml" in payload["message"]
+
+
 class _RenameStub:
     """Records what `registry_rename_namespace` asked of the registry client."""
 

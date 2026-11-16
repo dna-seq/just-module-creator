@@ -89,19 +89,38 @@ def test_a_system_prompt_sized_line_is_flagged() -> None:
     assert longest < LONG_LINE / 10, "the clean fixture should not be anywhere near the threshold"
 
 
-def test_it_finds_every_log_a_compile_would_sweep(tmp_path: Path) -> None:
-    """`logs/**/*.log` plus top-level `*.log` — nested included, other files not."""
+def test_it_finds_every_log_a_compile_would_ship(tmp_path: Path) -> None:
+    """What the compile ships, not a glob of ours (F159).
+
+    The glob was `*.log` while compiler 0.8 shipped `.jsonl`, `.json`, `.md` and `.txt` from
+    `logs/` too, so a provenance ledger went to the registry unscanned. The negatives anchor the
+    other side: an SVG and a hidden path stay behind, so the list is not simply "everything".
+    """
     spec = tmp_path / "spec"
     (spec / "logs" / "nested").mkdir(parents=True)
-    for relative in ("run.log", "logs/researcher.log", "logs/nested/deep.log"):
+    (spec / "logs" / "trace").mkdir()
+    (spec / "logs" / ".cache").mkdir()
+    for relative in ("run.log", "logs/researcher.log", "logs/nested/deep.log", "logs/notes.txt"):
         (spec / relative).write_text("clean\n", encoding="utf-8")
-    (spec / "logs" / "notes.txt").write_text("not swept\n", encoding="utf-8")
+    (spec / "logs" / "trace" / "session.jsonl").write_text('{"v": 1}\n', encoding="utf-8")
+    (spec / "logs" / "figure.svg").write_text("<svg/>\n", encoding="utf-8")
+    (spec / "logs" / ".cache" / "state.json").write_text("{}\n", encoding="utf-8")
 
     assert [p.relative_to(spec).as_posix() for p in logs_in(spec)] == [
         "logs/nested/deep.log",
+        "logs/notes.txt",
         "logs/researcher.log",
+        "logs/trace/session.jsonl",
         "run.log",
     ]
+
+
+def test_an_image_is_weighed_by_size_and_not_read_as_text(tmp_path: Path) -> None:
+    """A PNG's bytes are not lines a reader could be surprised by."""
+    image = tmp_path / "figure.png"
+    # The PNG magic, then bytes that would read as a path if decoded as text.
+    image.write_bytes(b"\x89PNG\r\n\x1a\n" + b"/home/somebody/secret.txt\n")
+    assert scan_file(image) == []
 
 
 async def test_review_logs_reports_and_changes_nothing(make_client, tmp_path: Path) -> None:

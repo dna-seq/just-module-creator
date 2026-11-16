@@ -44,6 +44,7 @@ from just_module_creator.models import OpResult, PublishPreflight
 from just_module_creator.settings import RegistryTarget, Settings
 from just_module_creator.targets import (
     DEFAULT_WRITE_TARGET,
+    TEST_MODULE_PREFIX,
     client_for,
     describe,
     instance_note,
@@ -933,6 +934,36 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
                     "what the registry runs. Fix these first."
                 ),
                 data={"errors": list(pre.errors), "warnings": list(pre.warnings)},
+            )
+
+        # F158: the registry takes the identity from these arguments, and ships the spec as
+        # authored, so a `module_spec.yaml` naming another version reaches the next author who
+        # downloads it, who then bumps from the wrong base. Which of the two is right is the
+        # author's, so this refuses rather than rewriting either. After validation, so a spec
+        # that does not load gets the validator's message rather than a traceback. The name may
+        # differ by the rehearsal prefix alone: `module-publish` teaches `test_<name>` on the
+        # polygon over an unprefixed spec, so `purge-test-data` collects it.
+        authored = (await run_sync(lambda: compiler.load_spec(spec / "module_spec.yaml"))).module
+        disagree: list[str] = []
+        if authored.version is not None and str(authored.version) != version:
+            disagree.append(
+                f"version: the call says {version!r}, module_spec.yaml says {authored.version!r}"
+            )
+        if authored.name and name not in {authored.name, f"{TEST_MODULE_PREFIX}{authored.name}"}:
+            disagree.append(
+                f"name: the call says {name!r}, module_spec.yaml says {authored.name!r}"
+            )
+        if disagree:
+            return OpResult(
+                success=False,
+                message=(
+                    "Not published: the spec and the call name different modules ("
+                    + "; ".join(disagree)
+                    + "). The registry would publish under the call's identity and ship the "
+                    "spec as written, so whoever downloads it reads the other. Make "
+                    "module_spec.yaml say what you are publishing, then publish again."
+                ),
+                data={"target": target, "disagree": disagree},
             )
 
         # The log pre-flight (RM25). Every `*.log` in the spec is swept into the

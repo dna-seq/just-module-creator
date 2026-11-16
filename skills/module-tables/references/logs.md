@@ -47,7 +47,8 @@ reached the catalog.
 
 ## What must never go in one
 
-**`logs/**.log` is swept into every compile with no opt-out and travels to the catalog verbatim**, so
+**What sits under `logs/` is swept into every compile with no opt-out and travels to the catalog verbatim**
+(any `*.log`, and since 0.8 text, JSON and images whose content matches their name), so
 a log is a **publishing surface**, not scratch space. Nothing redacts it, nothing reviews it, and a
 published version is immutable — a secret written here cannot be taken back by deleting the file
 afterwards.
@@ -90,7 +91,7 @@ filename and a re-publish drops it silently (`F88`, registry-tree `S19`).
 | In `artifact.digest`? | **No**, explicitly — `manifest.py`: "Kept out of `artifact.digest` so identical compiled data stays dedup-equal regardless of logs" |
 | In `manifest.inputs`? | **No.** `_INPUT_FILES` is `module_spec.yaml` + `variants.csv` + `studies.csv` + the table kinds (`compiler.py`) |
 | In the Ed25519 signature? | **No.** `sign_digest` signs the `artifact.digest` string's UTF-8 bytes and nothing else (`schema/src/just_dna_format/signing.py`) |
-| Location | `spec_dir/*.log` (top level) **and** `spec_dir/logs/**.log`, at any depth |
+| Location | `spec_dir/*.log` (top level) **and** `spec_dir/logs/**`, at any depth. Since 0.8 a file under `logs/` ships by the compiler's own rule (`discover_logs`: a `.log` unchecked, other text and JSON when they parse, images by their magic bytes, 5 MiB at most, never a link, a hidden path or an SVG); each one left behind is warned. `review_logs` lists exactly what will ship |
 
 ## Who populates what
 
@@ -106,9 +107,8 @@ There are no columns, so this section names **producers** instead.
   directions — the enricher does not write there, and what does write there is the *authoring*
   pipeline.
 - **compiler-stamped** — the compiler collects and hashes, it does not author. `_collect_logs`
-  auto-discovers `sorted(spec_dir.glob("*.log"))` plus `logs_dir.rglob("*.log")`, copies each to
-  `output_dir / rel` with `shutil.copyfile` (creating parent directories), and returns
-  `file_entries(output_dir, names)` (`compiler.py`).
+  copies what `discover_logs` decides ships (top-level `*.log` plus what passes under `logs/`) to
+  `output_dir / rel`, and returns their file entries; what it leaves behind becomes a compile warning.
 - **registry-stamped** — nothing on the entry itself. But on a registry publish the **server** runs
   the compile, so `manifest.logs` on a published module is the registry's own hash of what you
   uploaded, not yours (`just-dna-registry/src/just_dna_registry/services/publish.py`).

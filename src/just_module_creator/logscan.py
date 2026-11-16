@@ -27,6 +27,8 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from just_dna_compiler.compiler.manifest import LOG_IMAGE_MAGIC, discover_logs
+
 #: A line longer than this is the signature of an embedded system prompt or a
 #: serialized payload rather than a run log. The remediation fixtures top out at
 #: 92 characters; the submitted Agno transcripts carry single lines orders of
@@ -126,6 +128,10 @@ def scan_file(path: Path) -> list[Flag]:
                 ),
             )
         )
+    # An image ships too (a figure, a screenshot), and its bytes are not lines a
+    # reader could be surprised by: only its size is weighed.
+    if path.suffix.lower().lstrip(".") in LOG_IMAGE_MAGIC:
+        return flags
     # `errors="replace"` rather than a second try/except: a log that is not valid
     # UTF-8 is itself worth seeing, and refusing to read it would hide the file
     # this exists to show.
@@ -134,10 +140,12 @@ def scan_file(path: Path) -> list[Flag]:
 
 
 def logs_in(spec_dir: Path) -> list[Path]:
-    """Every file a compile would sweep up: `logs/**/*.log` and top-level `*.log`.
+    """Every file a compile would ship from the spec's logs, asked of the compiler itself.
 
-    Mirrors what `_collect_logs` collects rather than restating a rule — if it
-    ever widens, this is the line that has to move with it.
+    This was a glob for `*.log`, "mirroring" the compiler, until upstream's 0.8 (RM337/RM338)
+    began shipping `.jsonl`, `.json`, `.md`, `.txt` and images from `logs/` and the glob did not
+    move (F159): a `.jsonl` ledger went to the polygon unscanned. `discover_logs` is the
+    function the compile itself copies from, so this now cannot fall behind it.
     """
-    found = {*spec_dir.glob("*.log"), *(spec_dir / "logs").rglob("*.log")}
-    return sorted(found)
+    shipped, _left_behind = discover_logs(spec_dir, None)
+    return sorted({path for _name, path in shipped})

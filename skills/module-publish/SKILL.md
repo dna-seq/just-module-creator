@@ -236,7 +236,7 @@ first hit, so **`jpeg` beats `jpg` beats `png`** — a directory holding two shi
 even copy the loser. `verify_manifest(check_logo=True)` will not report a missing logo — an absent file
 is not a failure there — so confirm the logo you meant is the one that got uploaded.
 
-**A stray `*.log` publishes silently.** `logs/` is swept up by every compile and published **with no
+**A stray file under `logs/` publishes silently.** Any `*.log`, and since 0.8 the text, JSON and images there, is swept up by every compile and published **with no
 opt-out**, and real bundles carry system prompts and local paths — a measured submitted transcript
 runs to 450 KB with single lines past 8000 characters. It is the one subtree whose contents are kept
 verbatim, and a published version is immutable: `yank` delists without removing.

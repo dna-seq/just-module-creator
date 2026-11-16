@@ -118,7 +118,7 @@ docstring's reason is worth knowing: producers already ship `metadata/`, `enrich
 trees, and accepting whichever arrived costs nothing, "while blessing a second name in this module
 would make it a name we then have to keep."
 
-**`logs/` is the one subtree never touched.** The compiler discovers `logs/**.log` and the manifest
+**`logs/` is the one subtree never touched.** The compiler discovers what ships under `logs/` and the manifest
 records that path *verbatim*, so flattening one would rename a file the manifest attests. A top-level
 `*.log` is equally discovered and equally left alone.
 

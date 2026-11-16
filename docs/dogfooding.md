@@ -14,17 +14,6 @@ is usable, and what is missing.
 
 ---
 
-## F158 — `registry_publish` ships a spec whose `module.version` disagrees with the version it publishes, and nothing says so
-
-**Found:** 2026-11-16 (tester, reading `test-sheep/test_fto_bmi_trace@0.1.0` from the polygon) · **Severity:** low ·
-**Status:** ours.
-
-`registry_publish` takes `version` as its own argument and never compares it with `module_spec.yaml`. The lead's
-trace rehearsal was published as `0.1.0` (manifest `identity.version: 0.1.0`, `version_coerced_from: null`), and the
-`module_spec.yaml` it ships, which `registry_download` hands to the next author, says `version: '1.0.0'`. Someone
-revising from that download reads the published version as 1.0.0 and bumps from the wrong base. `validate_module`,
-`registry_check` and the publish itself all passed. The same gap would hold for `module.name` against `name`.
-
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
 
 **Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the
