@@ -16,7 +16,7 @@ something and invites a workaround where a note was owed. A probe belongs in
 
 ## RM28 — nothing finds a trait CURIE, and `lookup_identifier` only verifies one you already hold
 
-**State:** built 2026-11-16 as `search_trait_terms` (desk #203 withdrawn as no fork), ships in the next release; then this moves to `ROADMAP_HISTORY.md` · **Owner:** just-module-creator/lead
+**State:** waits until 2026-11-17: ships in that release as `search_trait_terms` (built 2026-11-16, F156/F157 fixed; desk #203 withdrawn as no fork), then moves to `ROADMAP_HISTORY.md` · **Owner:** just-module-creator/lead
 
 **Opened 2026-08-31** from `F79`, the one finding of the `a2` benchmark run that is a missing
 capability rather than a defect. Deferred deliberately, with the reason written down rather than the
@@ -251,7 +251,7 @@ grading recommendations; and `S52`'s answer decides whether a severity change fo
 
 ## RM18 — the four published modules carry decisions only their owner can make
 
-**State:** handout drafted 2026-11-16 (`docs/HANDOUT-antonkulaga-modules.md`); sending it, or not, is the person's · **Owner:** the person
+**State:** done: handout drafted 2026-11-16 (`docs/HANDOUT-antonkulaga-modules.md`); sending it, or not, is the person's · **Owner:** the person
 
 > **Re-checked 2026-11-16 against the published versions, row by row; corrected the same night.** The
 > published modules never carried items 2-4 or the title-as-quote: `aggression_anger_snps@1.0.0` (2026-08-14)
@@ -422,7 +422,7 @@ surprised to see this in the catalog?*
 
 ## RM31 — a row cannot be traced back to the search and the reading that produced it
 
-**State:** blocked: desk #204 · **Owner:** just-module-creator/lead
+**State:** unattended: hand trial done 2026-11-16 (desk #204 withdrawn as no fork; report §10 of `DESIGN-traceability.md` on branch `rm31-trial`, with the tester's fresh-eyes read); next the hook that buffers fetched text and writes the ledger, built after the 2026-11-17 release · **Owner:** just-module-creator/lead
 
 **Severity:** medium · **Status:** open, designed 2026-10-05, nothing built · **Owner:** unassigned ·
 **Opened** 2026-10-05 · **Upstream:** format-tree `S125` (`F116`) for the transport · **Rationale
