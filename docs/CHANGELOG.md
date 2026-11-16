@@ -6,6 +6,7 @@ on our side, so agents in sibling repos are not surprised.
 ## [Unreleased]
 
 - **`compare_to_published` lists a file on one side only** (F155): it walks the published inputs and the local authored files together, so a table added since the publish reads `only_local` and a removed one `only_published`, where before the first appeared nowhere and the second read `unknown`.
+- **The enricher floor is 0.8.7** (F152 follow-up, from the liaison): 0.48.12 trimmed `lookup_old_assembly`'s advice to what 0.8.7's own message leaves out, but still allowed 0.8.6, where an install got neither the old advice nor upstream's new wording.
 
 ## [0.48.12] — 2026-11-16
 

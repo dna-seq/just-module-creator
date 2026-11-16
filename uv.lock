@@ -1113,7 +1113,7 @@ requires-dist = [
     { name = "filelock", specifier = ">=4.0.4" },
     { name = "httpx", specifier = ">=0.28" },
     { name = "just-dna-compiler", specifier = ">=0.8.6,<0.9" },
-    { name = "just-dna-enricher", extras = ["atlas"], specifier = ">=0.8.6,<0.9" },
+    { name = "just-dna-enricher", extras = ["atlas"], specifier = ">=0.8.7,<0.9" },
     { name = "just-dna-format", specifier = ">=0.8.6,<0.9" },
     { name = "just-dna-registry", specifier = ">=0.31.0" },
     { name = "openpyxl", specifier = ">=3.1.5" },
