@@ -14,4 +14,4 @@
 1. Renaming the `test-sheep` rehearsal namespace. Lead; ⏸ waits on the person (desk #255).
 2. ✅ A note for Anton on his four published modules is drafted: `docs/HANDOUT-antonkulaga-modules.md`. His published versions hold up; it asks one question about two rows in the personality module. Sending it, or not, is yours.
 3. ✅ A tool that searches trait names in the standard vocabularies, so a module's trait id is picked from real candidates rather than guessed (`search_trait_terms`, built; ships in the next release).
-4. Row traceability: a record of which searches and readings produced each row, tried by hand on one real module before any of it is automated. Lead, after 3.
+4. Row traceability: tried by hand on one module and it works: the record travels with the published module, and every row comes out traced, not traceable, or contradicted, as it should. Next is building the automatic recorder. Lead, after tomorrow's release.
