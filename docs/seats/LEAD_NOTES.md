@@ -81,7 +81,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
 
 - RM16, RM25: waits until 2026-12-05. RM24: waits until 2027-01-05. Each line says what is looked at then.
 - RM28: shipped in 0.48.13 (2026-11-17); moved to `ROADMAP_HISTORY.md`.
-- RM31: hand trial done 2026-11-16, all three pass criteria held; report is §10 of `docs/DESIGN-traceability.md`, merged to main 2026-11-17 (the worktree `../just-module-creator-rm31` is unlocked; removing it, and the branch it holds, is the person's). Polygon rehearsal `test-sheep/test_fto_bmi_trace@0.1.0`. Fresh-eyes read asked of the tester. Next, `unattended`: build step 1 (the hook buffering fetched text, the ledger writer), then the join. Also ours: `compile_module` to report the logs it shipped.
+- RM31: building on branch `rm31-build` (worktree `../just-module-creator-rm31`, locked; `e2e52b7`). Hook input measured 2026-11-17: Claude Code gives the whole MCP result and edit content; Codex documents the same after a one-time `/hooks` review. Plan: §11 of `docs/DESIGN-traceability.md`, three slices. Next: slice 1 (hook, buffer, ledger writer). Branch pushes are not in this seat's grant: two made (`rm31-trial`, `rm31-build`), named to the person; no more until they answer.
 - RM18: moved to `ROADMAP_HISTORY.md` 2026-11-16; the handout is `docs/HANDOUT-antonkulaga-modules.md`, sending it is the person's.
 - The "Owed to just-dna-lite" section had been done on 2026-09-26; moved to `ROADMAP_HISTORY.md`.
 - No plan watcher runs for this seat (`classes/lead/plan-watch.py`); asking the seat-builder is on the to-file list.
