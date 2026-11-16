@@ -9,6 +9,89 @@ here: it is filed upstream as an `S<n>` and tracked in
 
 ---
 
+## RM18 — DONE 2026-11-16 — a handout for the owner of the four published modules
+
+**Drafted, not sent.** `docs/HANDOUT-antonkulaga-modules.md` asks one question, on two big-five rows whose trait and p-values differ from the cited paper's Table 1. Re-reading the published versions row by row showed they never carried the other four August findings; those were measured on another copy. Desk #205 was withdrawn as no fork under the 2026-11-16 base rule. Whether and how the handout reaches its reader stays the person's. The section as it stood follows.
+
+### As it stood on the roadmap
+
+
+**State:** done: handout drafted 2026-11-16 (`docs/HANDOUT-antonkulaga-modules.md`); sending it, or not, is the person's · **Owner:** the person
+
+> **Re-checked 2026-11-16 against the published versions, row by row; corrected the same night.** The
+> published modules never carried items 2-4 or the title-as-quote: `aggression_anger_snps@1.0.0` (2026-08-14)
+> already has 28 study rows, no PMID 20585324, a real `population` and `authorship`; big-five's 1.0.0 already
+> has 330 SNPs and dropped rs3742021 by its README. So the August measurement (69 and 859 rows) was of some other
+> copy than the catalog's, and which is not recorded. Item 1 holds on the published big-five for two rows
+> (rs4245154, rs527528): their p-values (9e-09, 4e-11) differ from the paper's sociability-score Table 1
+> (7.17e-09, 4.02e-10), so whether `GCST012111` is the worry item alone decides it. The handout asks only that.
+> The desk #205 update of 2026-11-14 ("every finding still applies") was not checked against rows and was wrong;
+> so was this note's first version, which read the difference as a later fix.
+
+**Severity:** medium · **Status:** open · **Owner:** **the repo owner, not an agent** · **Opened** 2026-08-20
+
+> **Decided 2026-08-20, and it settles the output form.** *"It's not our item. Its output form is a
+> handout with proposed solutions: reread articles to iron out discrepancy, get fulltexts, and so on.
+> Each item has a more-or-less clear path."* So nothing below is work this repo schedules — the
+> deliverable is **prose for Anton**, one item per row-set, each with its route attached. Three
+> consequences, and none is optional:
+>
+> 1. **The skills get patched so nobody steps on the same landmine.** That is the half that *is* ours,
+>    and it is where the real repair lives — `authorship` undeclared and title-as-quote both came from
+>    a surface that never asked.
+> 2. **Republished versions will carry `authorship`.** Whether to **yank** the old ones is Anton's
+>    call and nobody else's; a published version is immutable and yank does not touch that.
+> 3. **Expose yank in the toolset** — *"if an agent publishes and spots a grave error"*. Tracked as
+>    `RM21` below; the client already has `yank`/`unyank` and we wrap neither.
+>
+> **The quote column, decided:** empty it, keep only the real quotes. The honest reading of a 2–3%
+> yield — a sparse column that means something beats a full one that witnesses nothing. The visible
+> cost is real and is accepted: coverage drops from apparently-complete to nearly empty.
+>
+> **`population`, decided:** it is the studied cohort's ancestry. And the follow-through is a
+> **finding about us**, not about the module — the enricher already fetches ancestry and nothing here
+> surfaces it. Tracked as `RM22`.
+
+Carried out of `docs/HANDOFF-antonkulaga-quotes.md` before that file was deleted. **A published version
+is immutable, so none of this is a repair** — each item is a decision about what a *next* version says,
+or about whether one is worth cutting at all. Nothing below was touched.
+
+**The rows, most specific first:**
+
+1. **Four rows of `big_five_personality_snps` cite a paper that does not support them.**
+   `rs34588274`, `rs3742021`, `rs4245154` and `rs527528` cite PMID `34054130` via GWAS Catalog
+   `GCST012111` for `EFO_0009589` (a neuroticism item). The article names all four rsIDs — in a table of
+   hits for **sociability**. So exactly one of three is wrong: the trait label, the accession, or the
+   PMID. Settling it needs the `GCST012111` record. **This is the finding that justifies the whole
+   attestation reversal**: under the retired rule those four rows carried the article's title and looked
+   exactly like the other 855, and only going after the actual passage surfaced it.
+2. **Three rows of `aggression_anger_snps` are behind a paywall.** `rs11838918`, `rs16891867`,
+   `rs7950811` cite PMID `20585324`, whose abstract names only `C1QTNF7` and no rsID. Somebody with
+   journal access settles all three in ten minutes; nobody without it can.
+3. **`population` holds a citation label rather than a population** in every `aggression_anger_snps`
+   row — *"Nagel M et al. — GWAS Catalog GCST006941"*. Flagged and not touched: it is an authored cell
+   and the fix is a judgement about what the column is for.
+4. **None of the four declares `authorship`.** They are AI-authored and say so nowhere, which is the one
+   failure mode a later reviewer cannot detect from the artifact. A prose-only amend cannot fix it —
+   `authorship` is inside the spec — so it costs a version.
+5. **Whether a quote change is a version at all**, and **whether emptying the column beats leaving a
+   title in it.** Both are defensible; the second is the honest reading of a 2–3% yield, and the cost is
+   that a module goes from apparently-complete coverage to visibly sparse.
+
+**The two untouched modules, with their budget:** `cognitive_intelligence` (2045 rows, 33 PMIDs) and
+`risk_impulsivity` (695 rows, 19 PMIDs). Expect the **low** end of the 2–3% yield on both, because both
+are dominated by papers cited for hundreds of variants at once — the three papers grounding the most
+rows in the remediated pair named none of them.
+
+**One positive result worth keeping**, and it is stated nowhere else: on all **18** rows where both were
+available, every module p-value agreed with its paper's own table to one significant figure.
+
+**The grain decision, if a later pass redoes this:** quote per `(pmid, rsid)`, not per `(pmid, trait)`.
+The second degenerates on a single-trait module — every row shares the trait, so one quote covers the
+whole file and you have rebuilt the defect under a better name.
+
+---
+
 ## Owed to `just-dna-lite` — SHIPPED 2026-09-26 — the blanks, packaged as one document
 
 **Done before it was marked.** The dossiers' `## Blanks for just-dna-lite` sections went to -lite as one

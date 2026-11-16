@@ -82,7 +82,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
 - RM16, RM25: waits until 2026-12-05. RM24: waits until 2027-01-05. Each line says what is looked at then.
 - RM28: built 2026-11-16 as `search_trait_terms` (desk #203 withdrawn as no fork); ships in the next release, then RM28 moves to history.
 - RM31: hand trial done 2026-11-16, all three pass criteria held; report is §10 of `docs/DESIGN-traceability.md` on branch `rm31-trial` (0838354, worktree `../just-module-creator-rm31`, locked), merged after the 2026-11-17 release. Polygon rehearsal `test-sheep/test_fto_bmi_trace@0.1.0`. Fresh-eyes read asked of the tester. Next, `unattended`: build step 1 (the hook buffering fetched text, the ledger writer), then the join. Also ours: `compile_module` to report the logs it shipped.
-- RM18: handout drafted 2026-11-16 (`docs/HANDOUT-antonkulaga-modules.md`); the published modules never carried four of the five August findings (their source was another copy); one question on two big-five rows remains; sending is the person's. Next: RM31.
+- RM18: moved to `ROADMAP_HISTORY.md` 2026-11-16; the handout is `docs/HANDOUT-antonkulaga-modules.md`, sending it is the person's.
 - The "Owed to just-dna-lite" section had been done on 2026-09-26; moved to `ROADMAP_HISTORY.md`.
 - No plan watcher runs for this seat (`classes/lead/plan-watch.py`); asking the seat-builder is on the to-file list.
 
@@ -137,7 +137,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   (`proxy._TABLE_KEY_FOR`/`_dest_for` and their probe test), F63 (our in-process enrichment claim beside
   upstream's `spec_lock`), F67 (`compiler.load_spec` in place of `yaml.safe_load` in `compare.py`/`audit.py`,
   and perhaps the pyyaml dependency). F59 (`set_short_description` unwrapped) is a gap whose scope is the pm's.
-- Desk #203 (RM28), #204 (RM31), #205 (RM18): waiting on the person.
+- Desk #255 (the `test-sheep` rename): waiting on the person. #203, #204, #205 withdrawn 2026-11-16 as no fork (base rule, kit #510).
 - The tester's probe of 0.48.1's token refusal on the polygon, asked in `#just-module-creator>releases`.
 
 ## Downstream
