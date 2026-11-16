@@ -9,6 +9,43 @@ here: it is filed upstream as an `S<n>` and tracked in
 
 ---
 
+## RM28 — SHIPPED 0.48.13, 2026-11-17 — `search_trait_terms`
+
+OLS4 search, current and obsolete kept apart, each obsolete hit with the successor upstream's `lookup_trait` reads; imported copies dropped (F156), a misspelt ontology refused and `limit` capped (F157). Live: "longevity" lists `EFO_0007796` beside the obsolete `EFO_0004300` → `OBA_VT0005372`. The tester verified both fixes. The section as it stood follows.
+
+### As it stood on the roadmap
+
+
+**State:** waits until 2026-11-17: ships in that release as `search_trait_terms` (built 2026-11-16, F156/F157 fixed; desk #203 withdrawn as no fork), then moves to `ROADMAP_HISTORY.md` · **Owner:** just-module-creator/lead
+
+**Opened 2026-08-31** from `F79`, the one finding of the `a2` benchmark run that is a missing
+capability rather than a defect. Deferred deliberately, with the reason written down rather than the
+work started at the end of a long session.
+
+**What happened.** An agent needed `trait_efo_id` for a longevity module. `lookup_identifier` verifies
+a CURIE you name, and its own docstring says writing one from memory is the failure it exists to
+prevent — while memory is the only place a candidate can come from. Four guesses:
+`EFO_0007796` = "parental longevity" (**wrong trait, and it would have verified as `current`, which is
+the dangerous half**), `EFO_0007797` = "language measurement", `HP_0025153` = "Transient". The one
+that worked was the *obsolete* `EFO_0004300`, because its record names its successor —
+`OBA_VT0005372`, "life span determination trait", which is what the module carries.
+
+**So the verifier turns a wrong guess into a confident wrong answer**, which is worse than no tool:
+`lookup_identifier` answered `current` for a CURIE naming a different trait, and nothing in that
+answer could have said so. A search would have shown the candidates side by side with their labels.
+
+**What it needs, and why it is not tonight's work.** A networked tool against OLS4 (which
+`check_identifiers` already reaches), ranked results carrying label, ontology and obsoletion status,
+a `toolbox.GROUPS` entry, a docstring saying what it costs, and tests. It is a new name on the tool
+surface, so a minor, and it is `§11`'s "ours to build" case rather than anything to file upstream —
+the ontologies are public and nobody else's schema is involved.
+
+**One design note to carry forward, from the case above:** obsoletion is not a failure state here. The
+obsolete record was the only one that led anywhere, so a search that hides obsolete terms would have
+hidden the answer. Report the status; never filter on it.
+
+---
+
 ## RM18 — DONE 2026-11-16 — a handout for the owner of the four published modules
 
 **Drafted, not sent.** `docs/HANDOUT-antonkulaga-modules.md` asks one question, on two big-five rows whose trait and p-values differ from the cited paper's Table 1. Re-reading the published versions row by row showed they never carried the other four August findings; those were measured on another copy. Desk #205 was withdrawn as no fork under the 2026-11-16 base rule. Whether and how the handout reaches its reader stays the person's. The section as it stood follows.
