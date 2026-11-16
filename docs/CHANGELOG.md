@@ -5,6 +5,8 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+## [0.48.13] — 2026-11-17
+
 - **The pre-publish log check reads every file that ships** (F159): `review_logs` and `registry_publish`'s note found only `*.log`, while compiler 0.8 also ships text, JSON and images from `logs/`, so a `.jsonl` there went to the registry unread. The list now comes from the compiler's own `discover_logs`; an image is weighed by size and not read as text. The `logs` dossier, `module-publish` and the layout reference say what 0.8 ships.
 - **`registry_publish` refuses a spec that names another module** (F158): the registry publishes under the call's `version` and ships `module_spec.yaml` as written, so a spec saying `1.0.0` beside a `0.1.0` publish handed the next downloader the wrong base. A mismatched version is refused, and so is a name that differs by more than the rehearsal's `test_` prefix.
 - **`compare_to_published` lists a file on one side only** (F155): it walks the published inputs and the local authored files together, so a table added since the publish reads `only_local` and a removed one `only_published`, where before the first appeared nowhere and the second read `unknown`.
