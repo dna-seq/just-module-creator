@@ -335,6 +335,26 @@ highlights. Rehearse on the polygon's `test-sheep/test_statin_response` as on 20
 then unhighlight, delete, read back), and check that F154's "whatever its verdict" description sentence is
 retired; that wording is the lead's. Today prod serves 0.31.0, the polygon 0.30.0.
 
+**RM31 hand trial, fresh-eyes read (2026-11-16, at the lead's request; `test-sheep/test_fto_bmi_trace@0.1.0`).**
+Read from the download alone, then compared with the lead's DESIGN-traceability §10 (branch `rm31-trial`, 0838354).
+Both fulltexts refetched: sha256 and length match the ledger and every anchor resolves. What §10 does not say:
+
+1. **The `rs9939609 not_used` reason has no witness.** Its `why` is LD with rs1421085; both anchors sit in PMID
+   28642257 (FTO x depression meta-analysis) and say rs9939609 is associated with BMI. That paper never names
+   rs1421085. The anchors look like support for the reason and witness something else.
+2. **`traced` covers the quote, not the row.** The MC4R rows' weights (-0.3/-0.15 against FTO's -0.5/-0.25) have
+   nothing behind them; the paper gives SMDs and no event maps one to a weight. §10 drops `basis` as not needed;
+   the weight is where a basis was missing.
+3. **The rs17782313 conclusion keeps the publication bias and drops the next sentence** (trim-and-fill changed nothing).
+4. **Nothing records the candidates not read** (7 of 8 PMIDs per search), nor why rs17782313 replaced the README's
+   dropped rs6567160, nor the A allele at a T>A,C site.
+5. **All nine events carry 19:21:32Z**, so the ledger reads as written after the fact; edits carry no values written.
+6. **What ships contradicts the module:** licensing.csv's europepmc/pubmed notices say no fulltext was fetched and
+   provenance_quote is empty by design; README.md is fto_bmi's; the spec says 1.0.0 against identity 0.1.0 (F158).
+   Manifest `authorship`/`authors` are empty and every decision is the agent's.
+
+Full reading kept in the session scratchpad; the summary went to the lead.
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
