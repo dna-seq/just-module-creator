@@ -20,7 +20,7 @@ watcher. Restrict a `git grep` to paths: a whole-tree grep on NTFS times out.
 
 ## Read mark
 
-**Installed: format and compiler 0.8.6, enricher 0.8.7** (`uv.lock` on main; enricher `37caadb`, 2026-11-15, unreleased; the trio `319765c`, release 0.48.10; capped `<0.9`). Before that: 0.8.5 (release 0.48.9), 0.8.4 (`uv.lock`, 2026-11-12, release 0.48.7); format 0.7.1, compiler 0.7.2, enricher 0.7.3 (`uv.lock`, 2026-11-07), capped `<0.8` in
+**Installed: format and compiler 0.8.6, enricher 0.8.7** (`uv.lock` on main; enricher `37caadb`, 2026-11-15, release 0.48.12; the trio `319765c`, release 0.48.10; capped `<0.9`). Before that: 0.8.5 (release 0.48.9), 0.8.4 (`uv.lock`, 2026-11-12, release 0.48.7); format 0.7.1, compiler 0.7.2, enricher 0.7.3 (`uv.lock`, 2026-11-07), capped `<0.8` in
 `pyproject.toml` on the person's decision of 2026-09-04: the 0.8 move is an explicit bump, made once both
 registry instances serve 0.8 (`/api/v1/version`). polars and duckdb are capped `<2` in the lock beside it
 (`c361614`) until that move.
@@ -44,7 +44,7 @@ reading, and its § 3 block for this plugin is answered here.
   `recovered` makes its advice conditional, the `ambiguous` text names `ref`/`alts` instead of the CLI flags, and
   the docstring says the anchor may be neither VCF's nor HGVS's. RM442: the two AlphaGenome licence rows' `notice`
   and `license` text corrected; a module re-enriched after it carries the new text, its digest moves, no licence
-  axis moves. **Done by the lead in `37caadb` (enricher floored `>=0.8.7`, unreleased); before it, ours read:** `research._old_assembly_next_step`'s docstring says upstream
+  axis moves. **Done by the lead in `37caadb` (enricher floored `>=0.8.7`, released in 0.48.12); before it, ours read:** `research._old_assembly_next_step`'s docstring says upstream
   names the CLI flags and over-claims, which stops being true, and its `ambiguous` sentence repeats what upstream
   now says. Floor the enricher at `>=0.8.7` at the bump; format and compiler stay `>=0.8.6`.
 - **`v0.8.6`, read by its release entry** (tag `2f03ab4a`, 2026-11-13, on PyPI). No public name, field, table,
