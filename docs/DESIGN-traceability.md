@@ -229,3 +229,57 @@ Nothing is built yet. In order:
 
 The work closes when a real module authored end to end under the hook can be retraced row by row, the
 reviewer flags the rows it cannot trace, and upstream has answered `S125`.
+
+## 10. Hand trial, 2026-11-16
+
+Before building any of section 9, one session kept the ledger by hand on a small module, to learn what
+the hook and the join must do. The module was a copy of `assets/fto_bmi` (one FTO row, written before
+any ledger existed) plus one new row authored under the ledger: MC4R `rs17782313` from PMID 37621650, a
+meta-analysis read in full from PMC10445758. It was rehearsed on the polygon as
+`test-sheep/test_fto_bmi_trace@0.1.0`.
+
+**The three pass criteria, fixed before starting, all held.**
+
+1. A local compile with just-dna-compiler 0.8.6 lists `logs/trace/2026-11-16-lead.jsonl` in
+   `manifest.logs` and leaves nothing behind.
+2. The polygon's own compile (0.8.4) kept it with the same digest (`sha256:6ad89147…`, 2672 bytes).
+   `registry_check`'s dry run answered `verdict: true` but names no logs, so only a real rehearsal
+   publish could show this.
+3. The join, done by hand, put every row in the state it should be in. The four FTO rows (one study row,
+   three genotypes) came out `not_traceable`, because no ledger existed when they were written. The four
+   MC4R rows came out `traced`, through search, then fetch by hash, then the quote at its offset. Three
+   negative controls reached `contradicted`: a title used as the quote, a quote changed by one word so it
+   no longer sits at its anchor, and a PMID no recorded search returned. Each state can be reached, so
+   the join can fail.
+
+**The ledger: nine events, 2.7 KB.** It holds two searches (query and returned PMIDs), two retrievals
+(PMID, text source, sha256, length), one variant lookup, two decisions and two edits. One decision is
+`not_used` for `rs9939609`: it is in strong linkage disequilibrium with the module's `rs1421085`, so
+adding it would count one FTO signal twice. That decision has no row to attach to, which is exactly the
+kind of record the reviewer pass in 4.5 reads. Nothing in the ledger is a path, an address, a credential
+or article text.
+
+**What the build has to do, learned here.**
+
+- **Seven of the nine events are mechanical.** The searches, retrievals, lookup and edits are fully
+  determined by a tool's arguments and its result, so they belong to the hook. Only the two decisions'
+  `why` was written, and it is labelled `declared`.
+- **The hook has to keep the fetched text, outside the module, for the rest of the session.** The ledger
+  stores only a hash, and the quote's offset was taken from the text by hand. Re-fetching at review time
+  is no substitute, because a source can re-render an article and change its hash. So the anchor has to
+  be computed when the row is written, from text the hook buffered when it saw the fetch.
+- **An edit record needs the row keys it touched.** A hook watching a write to `studies.csv` has to diff
+  the rows before and after to find them.
+- **A genotype row can join its study row on `rsid`.** The `basis` the hand ledger wrote on the
+  `variants.csv` edit turned out not to be needed.
+- **Our `compile_module` result does not list the logs it shipped**, and neither does `registry_check`,
+  so an author cannot see from either one that the ledger will travel. Both read the same compiler, so
+  the first is ours to add (`manifest.logs` and anything left behind). Whether the registry's dry run
+  should name them is the registry's question.
+- **The searches show what the author chose from.** For `rs9939609` with `body mass index`, PubMed's
+  first eight results were all recent, and the variant's discovery paper was not among them. The ledger
+  records that without anyone having to remember it.
+
+**Not tried here.** A second session appending to the same module (one file per session is designed in,
+but not exercised), a hand edit made between sessions, and the reviewer pass, which should go to the
+tester seat as a fresh pair of eyes on this module and its ledger.
