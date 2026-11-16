@@ -19,7 +19,7 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. `upstream-inde
 ## Half read
 
 - Nothing. Main runs format/compiler 0.8.6, enricher 0.8.7 (`37caadb`; RM444's text for F152) and
-  registry client 0.31.0 (release 0.48.12); read to v0.8.7 and registry 0.31.1 (operator only, nothing to change).
+  registry client 0.31.0 (release 0.48.12); read to v0.8.7 and registry 0.32.0 (2026-11-16: releases S29-S33 and `upgrade_status`; on no instance yet, not in our lock; whether it rides the 2026-11-17 bump is asked of the lead, since `pyproject.toml` caps the registry at nothing).
   Production serves registry 0.31.0 on format 0.8.6, the polygon 0.30.0 on 0.8.4 (2026-11-16). Re-run S30 on the
   polygon once it serves 0.30.1 or later. Watch S32's folding patch reaching an instance, and a client release
   quoting `gene_claims`' symbol (tell the lead of each).

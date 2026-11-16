@@ -120,7 +120,7 @@ its history.
 
 ## F153 — an owner can review and highlight their own module, and the card reads `curated: true` (registry `S33`)
 
-**State: answered 2026-11-14, accepted (contradicts their 0.8.0 rule that curation comes from outside the namespace); on their roadmap, the fix undecided between refusing it and counting only outside reviewers; own stars ride with it; the DELETE asymmetry stays as documented. Our wording judged accurate. Filed 2026-11-14.** Found by the tester on the polygon (`docs/dogfooding.md`, F153): the
+**Released in registry 0.32.0 (on PyPI 2026-11-16), served by no instance yet (2026-11-16): `curated` counts only outside `verified` highlights (corroboration below); own stars unchanged.** **State: answered 2026-11-14, accepted (contradicts their 0.8.0 rule that curation comes from outside the namespace); on their roadmap, the fix undecided between refusing it and counting only outside reviewers; own stars ride with it; the DELETE asymmetry stays as documented. Our wording judged accurate. Filed 2026-11-14.** Found by the tester on the polygon (`docs/dogfooding.md`, F153): the
 owner's own "verified" review, highlighted by the owner, raises `curated` exactly as a third party's would, and an
 owner may star their own module. Read in the registry's tree at the time: neither `upsert_review` nor
 `highlight_review` compares the reviewer with the namespace's owner, while its docs describe the highlight as
@@ -129,7 +129,7 @@ there: a highlight of a missing review 404s while its removal answers 200. Ours 
 description says an owner's highlight of their own review is self-curation the card does not tell apart, and our
 messages stop claiming an act the registry did not perform. Nothing of ours refuses.
 
-**Corroborated 2026-11-15 (F154, the tester):** a highlighted review raises `curated` whatever its verdict (a highlighted `concerns` audit read `curated: true` on the polygon), so S33's "outside reviewers only" would still let an outside `rejected` audit read as curated. Appended to the registry's inbox as a corroboration on S33, not a new S; asked: the card names the verdict, or `curated` counts `verified` only. Answered the same hour (their `1903722`): confirmed on their 0.32 branch, both candidates on their roadmap for their pm, undecided; our descriptions judged accurate. Our side released in 0.48.12: `registry_review`/`registry_reviews` say `curated` counts a highlight whatever its verdict.
+**Corroborated 2026-11-15 (F154, the tester):** a highlighted review raises `curated` whatever its verdict (a highlighted `concerns` audit read `curated: true` on the polygon), so S33's "outside reviewers only" would still let an outside `rejected` audit read as curated. Appended to the registry's inbox as a corroboration on S33, not a new S; asked: the card names the verdict, or `curated` counts `verified` only. Answered the same hour (their `1903722`): confirmed on their 0.32 branch, both candidates on their roadmap for their pm, undecided; our descriptions judged accurate. Our side released in 0.48.12: `registry_review`/`registry_reviews` say `curated` counts a highlight whatever its verdict. **Both candidates taken in registry 0.32.0** (on PyPI 2026-11-16): `curated` counts a highlight only from a reviewer with no role on the namespace and with verdict `verified`, read at query time. Our 0.48.12 sentence turns false on each instance as it deploys 0.32, so for a while it holds on one and not the other; the lead words it per instance or drops it then.
 
 ## F152 — `recover_rsid` says "records nothing here" for F508del as VCF spells it; its docstring names the wrong cause (format `S155`)
 
@@ -158,13 +158,14 @@ reason is one of §5's grounds or a covering tool; a row with a trigger is wrapp
 | `pubkey` | Both instances answer `None`: nothing is signed to check against. | an instance signs; then pin its key in `registry_download` |
 | `import_module` | A spec archive goes through `registry_publish`; the legacy parquet-only form carries no spec for any check here to read before a permanent publish. | |
 | `admin_rename_account`, `merge_accounts`, `runs`, `run_log` | Only a deployment calls them: site admins only (the saved polygon account answers `site_admin: false`). | |
+| `upgrade_status` (new in 0.32.0) | **Owed, undecided**: anonymous, per module, says whether the upgrade sweep left a version `held` or `behind`, which an author can act on; wrapping is the default (the lead's). | the 0.32 client is in our lock |
 | `assert_compatible`, `issue_jwt_token` | Transport: the client calls the first on every connection itself; the second is a web session's token exchange, and a static token serves every call. | |
 
 `set_short_description` is not an abstention: `registry_set_subtitle` wraps it (`0395250`), closing F59 on our side.
 
 ## Registry `S32` — the variant catalog matches a key's spelling exactly (no F#: the lead's 0.31 reads)
 
-**State: answered 2026-11-14 (their `f4eca0b`), all three readings confirmed; on their roadmap, undecided.** 0.31's
+**State: answered 2026-11-14 (their `f4eca0b`), all three readings confirmed; on their roadmap, undecided.** **Released in registry 0.32.0 (tagged 2026-11-15, on PyPI 2026-11-16); served by no instance yet (2026-11-16: production 0.31.0, polygon 0.30.0); our lock 0.31.0.** Folding, `matched` and `haplotype` are server-side and reach our 0.31 client as fields; `gene_claims`' quoting needs the 0.32 client in our lock. 0.31's
 `/variants?key=` answers empty for `RS429358`, `chr19:44908684:T:C` or `19-44908684-T-C`, a variant five production
 modules cover (measured by the lead). A patch would fold rsID case, a leading `chr` and `-` onto the stored alias
 forms, and quote the symbol in `gene_claims`' path; a minor would say whether the key matched any spelling and carry
@@ -175,7 +176,7 @@ those sentences come out when an instance we read serves it (`/api/v1/version`),
 
 ## Registry `S31` — `whoami` lists only owned namespaces; no call lists the caller's orgs (no F#: the lead's account tools)
 
-**State: accepted as a reporting gap, filed for their next minor, undecided (answered 2026-11-13, their `56c515f`).**
+**State: accepted as a reporting gap, filed for their next minor, undecided (answered 2026-11-13, their `56c515f`).** **Released in registry 0.32.0 (tagged 2026-11-15, on PyPI 2026-11-16); served by no instance yet (2026-11-16: production 0.31.0, polygon 0.30.0); our lock 0.31.0.** Shipped as filed: `member_of` (`via` `member` or `org:<name>`) and `orgs`, on `whoami` and `register`; a raw dict, so the picker can read them once an instance serves 0.32.
 Authorization already reads memberships and the org cascade (`effective_role()`); only `whoami`'s report is short,
 so a namespace reached through an org (`create_org_namespace`) or a membership (`add_member`) is in no account's
 `whoami().namespaces`, and our token picker finds no account for it. Their filed shape is ours, additive: `member_of`
@@ -185,7 +186,7 @@ that note comes out when the minor ships and the picker reads `member_of`. Filed
 
 ## F150 — a live pass asked of `derived` is skipped by the deployment's `enrich_offline`, and the skip says to ask live (registry `S30`)
 
-**State: released in registry 0.30.1 (on PyPI 2026-11-13, carries `dac4ccf`); not yet deployed: at 2026-11-13 both
+**0.32.0 (on PyPI 2026-11-16) adds the field asked for: `GET /caches`' `proxy_live_legs` says which operator-gated live legs run. The polygon will likely go from 0.30.0 straight to 0.32.x; re-run there then, and read `proxy_live_legs` in the same run.** **State: released in registry 0.30.1 (on PyPI 2026-11-13, carries `dac4ccf`); not yet deployed: at 2026-11-13 both
 instances still serve 0.30.0, so it reproduces until the next deploy, when the liaison re-runs it on the polygon.** The proxy now takes the caller's `offline`, and `enrich_offline` governs only the box's own
 publish, so the skip's advice is true again. Saying up front which live legs run is a new field in their roadmap,
 undecided. Our half (`_passes_from`) is fixed on main (`2a4b421`, the lead). Filed 2026-11-12 by the liaison, on the
@@ -199,7 +200,7 @@ deployment outranks the caller.
 
 ## F148 — the registry's keyed lane lookup serves lanes its `/caches` refuses to redistribute (registry `S29`)
 
-**State: answered within the hour, by design (a refusal for the lookup, settled).** Their maintainer ruled on 2026-11-11 that a keyed subslice is a derivative and that serving means the whole snapshot, so every held lane answers keyed lookups and `/caches`' refusal covers only the whole snapshot; the ruling now stands in their API-REFERENCE.md (endpoints 46-47). Candidate (2), the lane's terms on each answer, is a new field (a minor) in their roadmap, undecided. Meanwhile `GET /caches` gives each lane's `remote_reason` to attach, which is our half: **done (`d9651d1`, released in 0.48.11, the lead)**, `registry_lane_lookup` carries the lane's `remote_reason` plus `licence`, `licence_notice` and `licence_url` from upstream's lane catalogue at no extra request; it drops out when their per-answer terms ship. Filed 2026-11-12 by the liaison, on the tester's report (`docs/dogfooding.md` F148). Registry
+**State: answered within the hour, by design (a refusal for the lookup, settled).** Their maintainer ruled on 2026-11-11 that a keyed subslice is a derivative and that serving means the whole snapshot, so every held lane answers keyed lookups and `/caches`' refusal covers only the whole snapshot; the ruling now stands in their API-REFERENCE.md (endpoints 46-47). Candidate (2), the lane's terms on each answer, is a new field (a minor) in their roadmap, undecided. Meanwhile `GET /caches` gives each lane's `remote_reason` to attach, which is our half: **done (`d9651d1`, released in 0.48.11, the lead)**, `registry_lane_lookup` carries the lane's `remote_reason` plus `licence`, `licence_notice` and `licence_url` from upstream's lane catalogue at no extra request; it drops out when their per-answer terms ship. **They ship in registry 0.32.0** (`terms` and `unpublished` on `lane_tables`/`lane_rows`, verbatim from the enricher's lane registry; `terms: null` means none stated); served by no instance yet (2026-11-16), and our 0.31 client passes them through once one does. Filed 2026-11-12 by the liaison, on the tester's report (`docs/dogfooding.md` F148). Registry
 0.30's `lane_rows` answers `pharmvar` (CYP2C19*2, production and polygon; re-run here on production with no key),
 `pubmind` (36 rows at APOE rs429358) and `mane` anonymously, while `/caches` records redistribution of the first two
 as refused (PharmVar's terms §2; CC BY-NC-ND) and the third as unestablished. Whether a keyed read is redistribution
