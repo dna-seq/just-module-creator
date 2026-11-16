@@ -26,9 +26,9 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. `upstream-inde
 
 ## The dependency bump
 
-- **2026-11-17: hold `just-dna-registry` at 0.31.0** (the lead, 2026-11-16: it adopts 0.32 once an instance we read serves it). The bump's `uv lock --upgrade` would take 0.32.0, since `pyproject.toml` caps it at nothing; follow it with `uv lock --upgrade-package just-dna-registry==0.31.0` and check `uv.lock` says 0.31.0 before committing.
-- Last run 2026-11-10, `ebca264` (56 packages; tenacity `initial=` to `multiplier=`, floor 9.2.1). Next: the
-  nightly watcher's Tuesday.
+- Last run 2026-11-17, `af1f0c6` (13 packages; registry client held at 0.31.0 by `uv lock --upgrade-package just-dna-registry==0.31.0` after the upgrade, on the lead's word until an instance we read serves 0.32; pytest-asyncio 1.5's loop-scope warning settled in `pyproject.toml`). Next: the nightly watcher's Tuesday.
+- **The tree is shared: a peer's merge reset an uncommitted `uv.lock` mid-run once (2026-11-17), and a peer's `uv run` re-syncs `.venv` to the committed lock.** Commit the lock as soon as the checks pass, and read `git diff --stat uv.lock` right before committing.
+- 2026-11-10, `ebca264` (56 packages; tenacity `initial=` to `multiplier=`, floor 9.2.1).
 - **Run the whole `uv run pyright` and `uv run ruff check .`, not just the files you touched.** This run checked
   only `net.py` and its test; pydantic 2.14's typing of `FieldInfo.annotation` broke `tools/config.py`, and the
   lead fixed it forward in `6d9f3d0`.
