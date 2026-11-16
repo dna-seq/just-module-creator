@@ -44,7 +44,7 @@ reading, and its § 3 block for this plugin is answered here.
   `recovered` makes its advice conditional, the `ambiguous` text names `ref`/`alts` instead of the CLI flags, and
   the docstring says the anchor may be neither VCF's nor HGVS's. RM442: the two AlphaGenome licence rows' `notice`
   and `license` text corrected; a module re-enriched after it carries the new text, its digest moves, no licence
-  axis moves. **Done by the lead in `37caadb` (enricher 0.8.7 locked, released in 0.48.12; the `pyproject.toml` floor stays `>=0.8.6`, raised to the lead 2026-11-16); before it, ours read:** `research._old_assembly_next_step`'s docstring says upstream
+  axis moves. **Done by the lead in `37caadb` (enricher 0.8.7 locked, released in 0.48.12; floored `>=0.8.7` by the lead in `147cb45`, 2026-11-16, unreleased); before it, ours read:** `research._old_assembly_next_step`'s docstring says upstream
   names the CLI flags and over-claims, which stops being true, and its `ambiguous` sentence repeats what upstream
   now says. Floor the enricher at `>=0.8.7` at the bump; format and compiler stay `>=0.8.6`.
 - **`v0.8.6`, read by its release entry** (tag `2f03ab4a`, 2026-11-13, on PyPI). No public name, field, table,
