@@ -27,6 +27,9 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+# The submodule, not the facade: `just_dna_compiler.compiler` is a re-export shell that does
+# not export these and is removed at 1.0 (its own docstring, RM260); the code lives here.
+# `discover_logs` is public, documented as the pre-flight's read-only question (RM367).
 from just_dna_compiler.compiler.manifest import LOG_IMAGE_MAGIC, discover_logs
 
 #: A line longer than this is the signature of an embedded system prompt or a

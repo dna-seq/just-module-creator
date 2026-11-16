@@ -884,7 +884,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         module* or how they are grounded is a **major** — someone pinned to the
         old major would otherwise silently receive different content. Write the
         changelog as a continuation of the previous one, not a fresh
-        "initial release".
+        "initial release". Refused when `version` differs from the spec's
+        `module.version`, or `name` from its `module.name` by more than a
+        `test_` prefix: the spec ships as written.
 
         On success, `data.page_url` is the module's page in that registry's web
         console. Hand it to the author: it is how they see what was published.

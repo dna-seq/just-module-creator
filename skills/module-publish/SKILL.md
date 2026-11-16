@@ -281,6 +281,11 @@ changelog as a continuation of the previous one, not a fresh "initial release" â
 is a claim: the catalog contains an unrecorded rewrite of 990 rows and its unrecorded revert, both
 described as something else.
 
+**Bump `module.version` in `module_spec.yaml` to the version you publish.** The registry publishes under
+the call's `version` and ships the spec as written, so the next author who downloads it reads the spec's.
+`registry_publish` refuses when the two differ, and when the call's `name` differs from the spec's by more
+than the rehearsal's `test_` prefix. Nothing is uploaded; edit the spec and publish again.
+
 ## What needs a pilot, and what you may simply fix
 
 **Apply it and say nothing:** renaming `logo.jpeg` to `logo.png`; clearing a stray `logs/*.log` out of the
