@@ -329,6 +329,12 @@ remain open on it:**
 The namespace `test-sheep` is left claimed — it *is* `test-`prefixed, so the operator's sweep collects
 it, and there is no unclaim operation anyway.
 
+**Owed when an instance serves registry 0.32 (S33; the liaison, 2026-11-16, message 640786088):** a highlighted
+review with verdict `concerns` should no longer mark the card `curated`, since 0.32 counts only outside `verified`
+highlights. Rehearse on the polygon's `test-sheep/test_statin_response` as on 2026-11-15 (post, highlight, read,
+then unhighlight, delete, read back), and check that F154's "whatever its verdict" description sentence is
+retired; that wording is the lead's. Today prod serves 0.31.0, the polygon 0.30.0.
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
