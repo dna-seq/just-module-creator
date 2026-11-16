@@ -251,7 +251,14 @@ grading recommendations; and `S52`'s answer decides whether a severity change fo
 
 ## RM18 — the four published modules carry decisions only their owner can make
 
-**State:** blocked: desk #205 · **Owner:** the person; the lead drafts the handout on a yes
+**State:** handout drafted 2026-11-16 (`docs/HANDOUT-antonkulaga-modules.md`); sending it, or not, is the person's · **Owner:** the person
+
+> **Re-checked 2026-11-16 against the current versions, row by row.** Items 2-4 below and the title-as-quote
+> are already settled in the published versions (aggression cites none of PMID 20585324, its `population` is a
+> population, all four declare `authorship`, no PMID repeats a quote). Item 1 is down to two rows (rs4245154,
+> rs527528); rs34588274 and rs3742021 left the module. Their p-values (9e-09, 4e-11) differ from the paper's
+> sociability-score Table 1 (7.17e-09, 4.02e-10), so whether `GCST012111` is the worry item alone decides it.
+> The desk #205 update of 2026-11-14 said every finding still applied: it read changelogs, not rows, and was wrong.
 
 **Severity:** medium · **Status:** open · **Owner:** **the repo owner, not an agent** · **Opened** 2026-08-20
 

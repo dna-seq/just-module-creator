@@ -82,7 +82,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
 - RM16, RM25: waits until 2026-12-05. RM24: waits until 2027-01-05. Each line says what is looked at then.
 - RM28: `unattended` (desk #203 withdrawn 2026-11-16 as no fork, base kit #510): the trait-term search tool, shipped as a patch.
 - RM31: `unattended` (desk #204 withdrawn 2026-11-16: 0.8 ships `.jsonl` from `logs/`, the rest is how): a hand-kept record on one real module first, then build what that run shows.
-- RM18: `unattended` (desk #205 withdrawn 2026-11-16): draft the handout for Anton as a document in `docs/`, each finding re-checked against the current published versions; sending stays the person's. Order: RM18, then RM28, then RM31.
+- RM18: handout drafted 2026-11-16 (`docs/HANDOUT-antonkulaga-modules.md`); four of five August findings were already settled in the current versions; sending is the person's. Next: RM28, then RM31.
 - The "Owed to just-dna-lite" section had been done on 2026-09-26; moved to `ROADMAP_HISTORY.md`.
 - No plan watcher runs for this seat (`classes/lead/plan-watch.py`); asking the seat-builder is on the to-file list.
 
