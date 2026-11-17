@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import csv
 import json
+from collections import Counter
 from dataclasses import asdict
 from typing import get_args, get_origin
 
@@ -29,7 +30,7 @@ from just_dna_format.spec import ModuleSpecConfig
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel
 
-from just_module_creator import audit, authored_checks, logscan
+from just_module_creator import audit, authored_checks, logscan, trace
 from just_module_creator.logging_setup import get_logger
 from just_module_creator.models import (
     AuditReport,
@@ -50,6 +51,8 @@ from just_module_creator.models import (
     TableList,
     TableRequirements,
     TemplateResult,
+    TracedRow,
+    TraceReport,
     ValidationReport,
     VerifyResult,
 )
@@ -889,9 +892,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # is not an error.
 
     @mcp.tool(
-        annotations=ToolAnnotations(
-            title="Lint CSV rows", readOnlyHint=True, idempotentHint=True
-        )
+        annotations=ToolAnnotations(title="Lint CSV rows", readOnlyHint=True, idempotentHint=True)
     )
     def lint_rows(csv_name: str, csv_text: str) -> LintResult:
         """Lint CSV text against a table kind. Writes nothing, anywhere.
@@ -929,9 +930,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # Validate / compile
     # ----------------------------------------------------------------- #
     @mcp.tool(
-        annotations=ToolAnnotations(
-            title="Validate a spec", readOnlyHint=True, idempotentHint=True
-        )
+        annotations=ToolAnnotations(title="Validate a spec", readOnlyHint=True, idempotentHint=True)
     )
     async def validate_module(spec_dir: str, strict: bool = True) -> ValidationReport:
         """Pre-flight a spec directory. Writes nothing.
@@ -961,6 +960,70 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             info=list(result.info),
             authored_findings=await run_sync(lambda: authored_checks.findings_for_spec_dir(target)),
             stats=jsonable(result.stats),
+        )
+
+    # RM31 part 2, the join over the ledger `tracehook` writes. Offline and read-only like the audit
+    # beside it. The quote-bearing table is upstream's (`hints.REDUNDANCY_BEARING_TABLES`) and the
+    # authored tables are the compiler's (`spec_tables`), so no table is named here. Its scope is
+    # stated in the result because "traced" invites reading more than it says: the tester's read of
+    # the hand trial found a traced quote beside a weight nothing recorded (DESIGN §10).
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Trace a module's rows to its ledger", readOnlyHint=True, idempotentHint=True
+        )
+    )
+    async def trace_module(spec_dir: str) -> TraceReport:
+        """Join every authored row back to the module's provenance ledger. Offline; writes nothing.
+
+        The ledger is `logs/trace/*.jsonl`, which this plugin's host hook writes while a module is
+        authored. Each row comes back `written: recorded | not_recorded | unknown`, and each row of
+        the quote-bearing table also gets a citation state: `traced` (the cited article came back
+        from a recorded search, was fetched, and the quote sits verbatim in that text),
+        `contradicted` (a citation no search returned, a quote that is the article's own title, a
+        quote not in the text fetched for its citation) or `not_traceable`, with the reason.
+
+        It never says a row is right, and it reads no basis for a judged cell (weight, direction,
+        conclusion): a traced citation can sit beside a weight nothing recorded. A row written
+        before the ledger existed is `not_traceable`, which is an unknown, not a failure.
+        """
+        target = resolve_dir(spec_dir, settings)
+        tables, _build = await run_sync(lambda: compiler.spec_tables(target))
+        quote_tables = hints.REDUNDANCY_BEARING_TABLES.get(trace.QUOTE_COLUMN, frozenset())
+        ledger = await run_sync(lambda: trace.read_ledger(target))
+        states = await run_sync(
+            lambda: trace.trace_with(target, sorted(tables), quote_tables, ledger)
+        )
+        counts = Counter(f"written:{s.written}" for s in states)
+        counts.update(f"citation:{s.citation}" for s in states if s.citation is not None)
+        contradicted = counts.get(f"citation:{trace.CONTRADICTED}", 0)
+        if not ledger.files:
+            next_step = (
+                "This module has no ledger, so every row reads not_traceable: it was authored "
+                "before the ledger existed, or with JMC_TRACE=0. That is an unknown, not a defect."
+            )
+        elif contradicted:
+            next_step = (
+                f"{contradicted} row(s) have evidence against their citation. Read each `why`: "
+                "re-read the paper and fix the row, or cite the paper that does support it."
+            )
+        else:
+            next_step = (
+                "Nothing contradicts a citation. Rows not_traceable have no recorded chain: a "
+                "reviewer's attention belongs there first. Judged cells are not covered here."
+            )
+        return TraceReport(
+            spec_dir=str(target),
+            ledgers=ledger.files,
+            events=dict(ledger.counts),
+            unreadable_lines=ledger.unreadable_lines,
+            rows=[TracedRow(**vars(s)) for s in states],
+            counts=dict(sorted(counts.items())),
+            scope=(
+                "Whether a recorded edit wrote each row, and whether each citation in the "
+                "quote-bearing table holds together against the recorded searches and fetches. "
+                "Not whether any row is right, nor the basis of weight, direction or conclusion."
+            ),
+            next_step=next_step,
         )
 
     @mcp.tool(
@@ -1151,9 +1214,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         )
 
     @mcp.tool(
-        annotations=ToolAnnotations(
-            title="Close a module", readOnlyHint=False, idempotentHint=True
-        )
+        annotations=ToolAnnotations(title="Close a module", readOnlyHint=False, idempotentHint=True)
     )
     async def close_module(
         spec_dir: str,

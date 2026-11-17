@@ -776,6 +776,43 @@ class ColumnFill(BaseModel):
     filled: int = Field(description="Rows where this column is non-empty after stripping.")
 
 
+class TracedRow(BaseModel):
+    """One authored row, joined back to the provenance ledger."""
+
+    file: str = Field(description="The authored table.")
+    line: int = Field(description="The row's line in that CSV; the header is line 1.")
+    row_sha256: str = Field(
+        description="The hash of the row's non-empty cells, as the hook records."
+    )
+    written: str = Field(
+        description="`recorded` (a recorded edit wrote this row), `not_recorded` (none did: "
+        "written before the ledger, or by hand between sessions) or `unknown` (an edit to this "
+        "file was recorded without its before-copy)."
+    )
+    citation: str | None = Field(
+        description="For a row of the quote-bearing table: `traced`, `contradicted` or "
+        "`not_traceable`. Null for a table that carries no citation. Never a verdict on the row."
+    )
+    why: str = Field(description="What established the state, or what is missing.")
+
+
+class TraceReport(BaseModel):
+    """A module's rows joined back to its provenance ledger. Offline; writes nothing."""
+
+    spec_dir: str = Field(description="The module read.")
+    ledgers: list[str] = Field(description="The ledger files read from `logs/trace/`.")
+    events: dict[str, int] = Field(description="Ledger events by kind.")
+    unreadable_lines: int = Field(
+        description="Ledger lines that did not parse; never skipped silently."
+    )
+    rows: list[TracedRow] = Field(description="Every authored row, in file order.")
+    counts: dict[str, int] = Field(
+        description="Rows of the quote-bearing table by citation state, and all rows by `written`."
+    )
+    scope: str = Field(description="What this join establishes and what it does not.")
+    next_step: str = Field(description="What to do with the result.")
+
+
 class AuditReport(BaseModel):
     """What an offline curation pass would otherwise have had to compute by hand.
 

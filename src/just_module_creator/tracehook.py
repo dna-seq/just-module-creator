@@ -95,6 +95,16 @@ def row_sha256(row: dict[str, str]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def title_sha256(title: str) -> str:
+    """A title's identity, loose on case, spacing and a closing full stop.
+
+    Kept so the join can tell a quote that is the cited article's own title (S54's shape: it occurs
+    in its own fulltext, so a quote check can never fail on it) without the ledger holding titles.
+    """
+    loose = " ".join(title.split()).strip().rstrip(".").casefold()
+    return hashlib.sha256(loose.encode("utf-8")).hexdigest()
+
+
 def read_rows(text: str) -> list[dict[str, str]]:
     return [dict(row) for row in csv.DictReader(io.StringIO(text))]
 
@@ -253,6 +263,11 @@ def record_tool(session: Session, tool: str, tool_input: dict[str, Any], respons
             "query": result.get("query"),
             "asked": {k: v for k, v in tool_input.items() if v not in (None, "", [])},
             "returned": [p.get("pmid") or p.get("doi") or p.get("arxiv_id") for p in papers],
+            "titles": {
+                (p.get("pmid") or p.get("doi") or p.get("arxiv_id")): title_sha256(p["title"])
+                for p in papers
+                if p.get("title") and (p.get("pmid") or p.get("doi") or p.get("arxiv_id"))
+            },
             "sources": [
                 {"source": s.get("source"), "results": s.get("results")}
                 for s in result.get("sources") or []

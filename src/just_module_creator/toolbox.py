@@ -202,9 +202,17 @@ GROUPS: tuple[Group, ...] = (
     ),
     Group(
         "review",
-        "Read a module back — the decision list, the override queue, the logs, the study "
+        "Read a module back — the decision list, each row traced to its ledger, the override "
+        "queue, the logs, the study "
         "facts — and apply a keep-list the author decided.",
-        ("audit_module", "review_queue", "review_logs", "study_facts", "prune_rows"),
+        (
+            "audit_module",
+            "trace_module",
+            "review_queue",
+            "review_logs",
+            "study_facts",
+            "prune_rows",
+        ),
         6814,
     ),
     Group(
