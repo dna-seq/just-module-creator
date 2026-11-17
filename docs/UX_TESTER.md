@@ -362,8 +362,13 @@ Full reading kept in the session scratchpad; the summary went to the lead.
 `sheep`/owner alone. **The success path of add and role is still unexercised**: `sheep` is the only saved account, and
 adding a real person's polygon account, or registering a second one (an account cannot be deleted), would leave a write
 the polygon does not get back. It waits for a second account the person makes available.
-**At the next plugin release, also recheck** F158 (publish refuses a spec version that differs from the call's;
-name may differ only by `test_`) and F159 (the pre-publish log scan now reads the `.jsonl` ledger).
+**0.48.13 recheck, 2026-11-17, over the wire (server restarted by SIGKILL and `reload --mcp`; header v0.48.13).**
+F155 holds (`antonkulaga/apoe_epsilon@1.1.1` copy: added `variants.csv` `only_local`, removed `diplotypes.csv`
+`only_published`, `unknown` empty). F156 and F157 hold (`longevity`: three defining terms and the obsolete
+`EFO_0004300` -> `OBA_VT0005372`; `["efo","ebo"]` refused by name). F158 holds for version and for a different name;
+its `test_` allowance is refused by the registry: **F160**. F159 holds: a planted `logs/trace/*.jsonl` with a home path
+is flagged (the scan notes, it never refuses, by design). The installed enricher is 0.8.7, so the floor is met. F154's
+wording is in the live description.
 
 ## Standing constraints
 

@@ -14,6 +14,18 @@ is usable, and what is missing.
 
 ---
 
+## F160 — `registry_publish` lets the name differ by a `test_` prefix, and the registry refuses exactly that
+
+**Found:** 2026-11-17 (tester, over the wire on 0.48.13) · **Severity:** low · **Status:** ours.
+
+F158's fix refuses a call whose `version` or `name` differs from `module_spec.yaml`, "or `name` from its
+`module.name` by more than a `test_` prefix". The allowance is what a first rehearsal reaches for, and the polygon
+refuses it: a copy of `assets/fto_bmi` (spec name `fto_bmi`) published as `test-sheep/test_fto_bmi@1.0.0` passed the
+local check, went out, and came back `HTTP 422: name_mismatch`, "module_spec name 'fto_bmi' != path
+'test_fto_bmi'". So the one difference the description permits is one the registry never accepts, and the author
+learns it from the server after an upload. The rest of F158 holds: version `9.9.9` against the spec's `1.0.0`, and
+the name `test_other_bmi`, were both refused locally with nothing sent.
+
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
 
 **Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the
