@@ -392,3 +392,28 @@ async def test_record_decision_writes_nothing_and_refuses_a_bad_basis(module, ma
             )
     assert sorted(p.name for p in module.rglob("*")) == before
     assert stated.recording in {"hook", "off"} and stated.basis == "recalled"
+
+
+def test_a_ledger_without_the_tie_field_reads_the_tie_from_the_reason(module, env) -> None:
+    """A ledger from the hook before `tied` existed: the join derives the tie itself (the tester's
+    leftover on F162), so a reason naming rs17782313 is not read as naming no variant."""
+    fetch(env)
+    decide(
+        env,
+        spec_dir=str(module),
+        subject="pmid:37621650",
+        verdict="used",
+        basis="read",
+        why="States the rs17782313 C allele association with BMI.",
+        passage=QUOTE,
+    )
+    write_study(module, env)
+    ledger_file = next((module / "logs" / "trace").glob("*.jsonl"))
+    lines = []
+    for line in ledger_file.read_text("utf-8").splitlines():
+        event = json.loads(line)
+        event.pop("tied", None)
+        lines.append(json.dumps(event))
+    ledger_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (state,) = decisions(module)
+    assert state.witness == "anchored", state.because

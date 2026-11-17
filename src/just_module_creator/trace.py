@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from just_module_creator.tracehook import read_rows, row_sha256, title_sha256
+from just_module_creator.tracehook import _RSID, read_rows, row_sha256, title_sha256
 
 #: The column a citation row names its paper by. Not generated: guarded by
 #: `tests/test_trace.py::test_the_citation_column_is_the_formats`, against the format's own model.
@@ -233,7 +233,14 @@ def decision_states(ledger: Ledger) -> list[DecisionState]:
         placed = [a for a in anchors or [] if "sha256" in a]
         from_title = [a for a in anchors or [] if "title_of" in a]
         unnamed = event.get("unnamed") or []
-        tied = event.get("tied")
+        # Derived here from the event's own words, not read from the hook's `tied`, so the rule
+        # lives in one place and a ledger written before that field existed reads the same.
+        tied = sorted(
+            {
+                r.lower()
+                for r in _RSID.findall(f"{event.get('subject') or ''} {event.get('why') or ''}")
+            }
+        )
         passages: list[dict[str, Any]] = []
         if basis == "recalled":
             witness, because = "recalled", "stated as recalled from knowledge, not read"
