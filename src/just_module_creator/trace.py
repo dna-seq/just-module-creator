@@ -11,9 +11,11 @@ whose citation is `traced` may still carry a weight nothing recorded (the tester
 hand trial, §10). The report says that scope in its own words.
 
 **Three states, and unknown is not a pass.** `traced` is a complete chain. `contradicted` is
-evidence against the row: a citation no search returned, a quote that is the article's own title, a
-quote not in the text fetched for its citation. `not_traceable` is no record, with the reason: a row
-written before the ledger, a hand edit between sessions, a call whose result could not be read.
+evidence against the row: a quote that is the article's own title or a piece of it, a quote not in
+the text fetched for its citation, a quote found in another article. A citation no recorded search
+returned is `not_traceable`, never `contradicted`: the ledger cannot see every route (F161).
+`not_traceable` is no record, with the reason: a row written before the ledger, a hand edit between
+sessions, a call whose result could not be read.
 """
 
 from __future__ import annotations
@@ -117,19 +119,26 @@ def citation_state(
         return CONTRADICTED, "the quote is the cited article's own title"
     if not pmid:
         return NOT_TRACEABLE, "the row cites no PMID"
+    if any(a.get("column") == QUOTE_COLUMN and a.get("title_of") == pmid for a in anchors):
+        return CONTRADICTED, "the quote is a piece of the cited article's own title"
     if pmid not in ledger.searched:
-        if ledger.unread_searches:
-            return NOT_TRACEABLE, (
-                f"PMID {pmid} came back from no readable search, and "
-                f"{ledger.unread_searches} search result(s) could not be read"
-            )
-        return CONTRADICTED, f"PMID {pmid} came back from no recorded search"
+        # Never `contradicted`: a route the ledger cannot see (a drafter, a lookup, a paper the
+        # author handed over) is an unknown, not evidence against the row (F161).
+        unread = (
+            f"; {ledger.unread_searches} search result(s) could not be read"
+            if ledger.unread_searches
+            else ""
+        )
+        return NOT_TRACEABLE, (
+            f"no recorded search or citation list returned PMID {pmid}: recalled, or found by a "
+            f"route the ledger does not see{unread}"
+        )
     texts = ledger.fetched.get(pmid, set())
     if not quote:
         if texts:
             return NOT_TRACEABLE, "searched and fetched, but there is no quote to anchor the claim"
         return NOT_TRACEABLE, "searched, but no quote and no fetch of the article"
-    placed = [a for a in anchors if a.get("column") == QUOTE_COLUMN]
+    placed = [a for a in anchors if a.get("column") == QUOTE_COLUMN and "sha256" in a]
     if any(a.get("sha256") in texts for a in placed):
         return TRACED, f"search, then fetch of PMID {pmid}, then the quote at its offset"
     if placed:

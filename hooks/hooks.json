@@ -9,7 +9,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "mcp__plugin_just-module-creator_just-module-creator__(literature_search|fetch_fulltext|lookup_variant)|Write|Edit|MultiEdit",
+        "matcher": "mcp__plugin_just-module-creator_just-module-creator__(literature_search|paper_citations|fetch_fulltext|lookup_variant)|Write|Edit|MultiEdit",
         "hooks": [{"type": "command", "command": "uv run --no-project python -I \"${CLAUDE_PLUGIN_ROOT}/src/just_module_creator/tracehook.py\" post", "timeout": 10}]
       }
     ],

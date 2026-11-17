@@ -142,15 +142,49 @@ def test_a_quote_not_in_the_fetched_text_is_contradicted(module, env) -> None:
     assert state.citation == trace.CONTRADICTED and "not in the text fetched" in state.why
 
 
-def test_a_pmid_no_search_returned_is_contradicted(module, env) -> None:
+def test_a_pmid_no_search_returned_is_unknown_never_contradicted(module, env) -> None:
+    """F161: a route the ledger cannot see (a drafter, a lookup, a paper handed over) is an
+    unknown. The recalled-PMID failure still shows, by its own reason, without being asserted."""
     search(env, ["38674326"])  # 37621650 is not among the results
     fetch(env)
     write_study(module, env)
     state = by_rsid(run(module), "studies.csv", "rs17782313", module)
-    assert state.citation == trace.CONTRADICTED and "no recorded search" in state.why
+    assert state.citation == trace.NOT_TRACEABLE
+    assert "no recorded search or citation list returned PMID 37621650" in state.why
 
 
-def test_an_unreadable_search_makes_a_missing_pmid_unknown_not_contradicted(module, env) -> None:
+def test_a_paper_reached_by_citation_traversal_is_traced(module, env) -> None:
+    """F161's case: the PMID came from `paper_citations`, then was fetched and quoted."""
+    papers = [{"pmid": "37621650", "title": TITLE}]
+    hook(
+        "post",
+        env,
+        tool_name=f"{CLAUDE}paper_citations",
+        tool_input={"pmid": "31954858", "direction": "citing"},
+        tool_response=json.dumps(
+            {"paper_id": "31954858", "direction": "citing", "papers": papers, "sources": []}
+        ),
+    )
+    fetch(env)
+    write_study(module, env)
+    state = by_rsid(run(module), "studies.csv", "rs17782313", module)
+    assert state.citation == trace.TRACED, state.why
+
+
+def test_a_quote_cut_from_the_title_is_contradicted(module, env) -> None:
+    """A piece of the title is verbatim in the fulltext too, so its text anchor proves nothing."""
+    search(env, ["37621650"])
+    fetch(env)
+    piece = "The rs17782313 polymorphism near MC4R gene confers a high risk of obesity"
+    write_study(module, env, quote=piece)
+    state = by_rsid(run(module), "studies.csv", "rs17782313", module)
+    assert (
+        state.citation == trace.CONTRADICTED
+        and "piece of the cited article's own title" in state.why
+    )
+
+
+def test_an_unreadable_search_is_named_in_the_reason(module, env) -> None:
     hook(
         "post",
         env,

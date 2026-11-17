@@ -41,7 +41,8 @@ LEDGER_VERSION = 1
 #: Our tools whose results the ledger records, by the name after the server prefix. Each host
 #: spells the prefix its own way (Claude Code: `mcp__plugin_just-module-creator_<server>__`), so
 #: a name is matched on its suffix and on carrying the server's name.
-SEARCH_TOOLS = frozenset({"literature_search"})
+#: Every route by which a session finds a paper: a search, and following citations (F161).
+SEARCH_TOOLS = frozenset({"literature_search", "paper_citations"})
 FETCH_TOOLS = frozenset({"fetch_fulltext"})
 LOOKUP_TOOLS = frozenset({"lookup_variant"})
 RECORDED_TOOLS = SEARCH_TOOLS | FETCH_TOOLS | LOOKUP_TOOLS
@@ -153,6 +154,7 @@ class Session:
         self.texts = self.dir / "texts"
         self.before = self.dir / "before"
         self.pending = self.dir / "pending.jsonl"
+        self.titles = self.dir / "titles.json"
 
     def ensure(self) -> None:
         self.texts.mkdir(parents=True, exist_ok=True)
@@ -177,6 +179,16 @@ class Session:
         if not target.exists():
             target.write_text(text, encoding="utf-8")
         return digest
+
+    def keep_titles(self, titles: dict[str, str]) -> None:
+        """Titles stay in the buffer, never in the ledger: only to catch a quote cut from one."""
+        self.ensure()
+        known = self.known_titles()
+        known.update(titles)
+        self.titles.write_text(json.dumps(known, ensure_ascii=False), encoding="utf-8")
+
+    def known_titles(self) -> dict[str, str]:
+        return json.loads(self.titles.read_text("utf-8")) if self.titles.exists() else {}
 
     def known_texts(self) -> dict[str, str]:
         if not self.texts.exists():
@@ -224,13 +236,26 @@ def append(ledger: Path, events: list[dict[str, Any]]) -> None:
             handle.write(json.dumps(event, ensure_ascii=False) + "\n")
 
 
-def anchors(row: dict[str, str], texts: dict[str, str]) -> list[dict[str, Any]]:
-    """Where each long cell of `row` sits verbatim in a text this session fetched."""
-    found = []
+def _loose(text: str) -> str:
+    return " ".join(text.split()).strip().rstrip(".").casefold()
+
+
+def anchors(
+    row: dict[str, str], texts: dict[str, str], titles: dict[str, str] | None = None
+) -> list[dict[str, Any]]:
+    """Where each long cell of `row` sits verbatim in a text this session fetched.
+
+    A cell that is a title this session's searches returned, or a piece of one, is marked
+    `title_of` that paper: it sits verbatim in its own fulltext, so its text anchor proves nothing.
+    """
+    found: list[dict[str, Any]] = []
     for column, value in row.items():
         cell = (value or "").strip()
         if len(cell) < ANCHOR_MIN_CHARS:
             continue
+        for paper, title in (titles or {}).items():
+            if _loose(cell) in _loose(title):
+                found.append({"column": column, "title_of": paper})
         for digest, text in texts.items():
             offset = text.find(cell)
             if offset >= 0:
@@ -258,9 +283,16 @@ def record_tool(session: Session, tool: str, tool_input: dict[str, Any], respons
         return
     if tool in SEARCH_TOOLS:
         papers = result.get("papers") or []
+        session.keep_titles(
+            {
+                str(p.get("pmid") or p.get("doi") or p.get("arxiv_id")): p["title"]
+                for p in papers
+                if p.get("title") and (p.get("pmid") or p.get("doi") or p.get("arxiv_id"))
+            }
+        )
         event |= {
             "kind": "search",
-            "query": result.get("query"),
+            "query": result.get("query") or result.get("paper_id"),
             "asked": {k: v for k, v in tool_input.items() if v not in (None, "", [])},
             "returned": [p.get("pmid") or p.get("doi") or p.get("arxiv_id") for p in papers],
             "titles": {
@@ -329,9 +361,9 @@ def record_edit(session: Session, tool: str, files: list[Path]) -> None:
             before_copy.unlink()
             old = {row_sha256(r) for r in before_rows}
             new = {row_sha256(r): r for r in after_rows}
-            texts = session.known_texts()
+            texts, titles = session.known_texts(), session.known_titles()
             event["added"] = [
-                {"row_sha256": digest, "anchors": anchors(row, texts)}
+                {"row_sha256": digest, "anchors": anchors(row, texts, titles)}
                 for digest, row in new.items()
                 if digest not in old
             ]
