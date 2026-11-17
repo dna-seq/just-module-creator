@@ -6,6 +6,36 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F162 — `trace_module` calls a decision `witnessed` when its passage contradicts it, or when the reason names no variant
+
+**Found:** 2026-11-17 (tester, a headless Claude Code session with `--plugin-dir` on branch `rm31-build` 18b6cec,
+unreleased) · **Severity:** medium · **Status:** ours.
+
+`witnessed` asks two things of a `basis="read"` decision: the passage sits verbatim in a text fetched that session,
+and it names every rsID the reason names. Neither asks whether the passage says what the reason says. Four decisions
+were recorded after fetching PMID 26287746, two of them deliberate negative controls:
+
+| reason | passage | read back |
+|---|---|---|
+| rs1558902 left out: perfect LD with rs1421085 | the paper's sentence stating exactly that | `witnessed` (right) |
+| rs1558902 left out: "not associated with obesity and unrelated to rs1421085" | the same sentence, which says the opposite | `witnessed` |
+| a weight of -0.5 "because the effect on body mass is large" (names no rsID) | a methods sentence about Irx3 dominant-negative mice | `witnessed` |
+| rs9939609 left out: LD with rs1421085, `recalled` | none | `recalled` (right) |
+
+So the label the join presents as evidence is reached by a reason its own passage contradicts, and by any reason
+that names no variant, since "names every rsID the reason names" is vacuous over none. Weights, directions and
+conclusions are the reasons that usually name no rsID. The run's `next_step` mentions no decision at all.
+
+**The reviewer brief in `module-check` cannot do the check that would catch it.** It hands a fresh agent "only the
+spec directory", and the ledger keeps a passage as a hash and offset, never its text. Reading the passage beside its
+reason is the check that caught the hand trial's rs9939609 reason, and the brief's reviewer has no passage to read
+unless it re-fetches. The brief also asks the reviewer to read `trace_module`'s result, which hands it `witnessed` on
+the two controls above before it has looked. What the cold read on 2026-11-16 used that the brief leaves out: fetching
+the cited texts to read the anchored spans, the judged cells by name, the candidates a search returned and nobody
+read, and the shipped files that are not tables (README, licensing notices, the spec's version).
+
+**Resolved 2026-11-17 on branch `rm31-build` (`22a4ef4`, unmerged).** The state is renamed `anchored` and says only where a passage sits: verbatim in a fetched text, not cut from a title, and naming the variants the subject or reason names, at least one. Case C (a reason naming no variant) now reads `declared`, and its test fails with that check off. Case B (a passage contradicting its reason) still reads `anchored`, because no check here can read meaning; the label and its `because` now say so, and each anchored decision carries `passages` (PMID, offset, length) to read it at. `next_step` counts the anchored decisions to read. The reviewer brief now re-fetches each cited article, reads every anchored span beside its reason, checks judged cells and the non-table files, notes unopened search results, and reads `trace_module`'s labels last.
+
 ## F161 — `trace_module` reads a paper found by following citations as evidence against its row
 
 **Found:** 2026-11-17 (tester, one headless Claude Code session with `--plugin-dir` on branch `rm31-build` 63fcbc8,
