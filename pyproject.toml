@@ -64,7 +64,11 @@ dependencies = [
     "just-dna-format>=0.8.6,<0.9",
     # 0.8.7 for RM444: `lookup_old_assembly`'s trimmed `next_step` (F152) leaves the
     # `ref`/`alts` and overlap wording to upstream's own message, which 0.8.6 lacks.
-    "just-dna-enricher[atlas]>=0.8.7,<0.9",
+    # 0.8.8 for RM445: a pull put the hub's release label over kept files it never fetched,
+    # so a ClinVar cache could serve August rows labelled with a November release. A failed
+    # `release.json` fetch now raises from `ensure_*_snapshot`; `prepare_lane` reports it as a
+    # failed lane, which is how `provision_caches` already shows one.
+    "just-dna-enricher[atlas]>=0.8.8,<0.9",
     # 0.25.2 is the first PUBLISHED client carrying the whole caching-proxy surface —
     # `cache_status`, `derived`, `draft`, the six `hint_*` methods and
     # `models.api.VariantHintReport`. Verified against the wheel rather than a sibling

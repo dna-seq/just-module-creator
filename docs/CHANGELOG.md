@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **The enricher floor is 0.8.8** (upstream RM445): a cache pull could label kept files with a release it never fetched, so a ClinVar cache could serve older rows under a newer release name. A machine pulled before 0.8.8 should run `just-dna-enricher cache pull` once.
 - **Registry 0.32 adopted** (both instances serve it; the registry floor is 0.32.0):
   - `registry_review` and `registry_reviews` say what `curated` now means: a highlighted `verified` review from outside the module's namespace (S33). 0.48.12's "whatever its verdict" became false when the instances moved.
   - `registry_claims` reports `spellings` and `matched`, so an empty answer says whether no module spells the variant or modules name it without a claim (S32); the gene-symbol guard came out because the client now quotes the symbol.
