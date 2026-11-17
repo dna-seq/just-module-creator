@@ -14,6 +14,20 @@ is usable, and what is missing.
 
 ---
 
+## F163 — on a ledger written before 22a4ef4, `trace_module` reads a passage that never names the subject as `anchored`
+
+**Found:** 2026-11-17 (tester, re-joining the F162 sessions' ledgers on `rm31-build` e5540dc, merged to main as
+6d0aeee for 0.48.14) · **Severity:** low · **Status:** ours.
+
+e5540dc derives a decision's tie from its own subject and reason, so an older ledger is graded the same way as a new
+one. It cannot re-check the passage, though: whether the passage names a variant was computed by the hook from the
+text it buffered, and stored as `unnamed`. A ledger from 18b6cec's hook stored `unnamed: []` for decision C (subject
+`rs1421085`, a weight reason naming no variant, passage a sentence about Irx3 dominant-negative mice), because it read
+variants from the reason only. Re-joined now, C reads `anchored`, "the passage sits in a fetched text and names the
+reason's variants". The same decision written by today's hook reads `declared`, "the passage never names rs1421085".
+One decision, two labels, and the older one claims a fact the join cannot know. Where the stored field predates the
+tie it is checked against, the honest reading is that the naming was not checked.
+
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
 
 **Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the
