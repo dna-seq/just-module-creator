@@ -278,6 +278,16 @@ the caches **before a multi-gigabyte pull** (one `remember_setting` call, named 
 there deliberately so an unconfigured run raises rather than filling the root filesystem — hand over
 that line as **the fix**, with the path the plan named.
 
+## Tell the author what the ledger records — once
+
+This plugin keeps a **provenance ledger** for every module it edits: which searches ran, which
+articles were fetched (by hash and length, never their text), and which table rows were written.
+It is `logs/trace/*.jsonl` inside the module and **publishes with it**, like everything in `logs/`.
+Say so once, in one plain sentence, the first time a session writes into a module, and say how to
+stop it (`JMC_TRACE=0` where the host runs). It holds no paths, no conversation and no article
+text, so there is nothing to review before publishing that `review_logs` would not show. On Codex
+it starts only after the author approves the plugin's hooks in `/hooks`.
+
 ## Create the spec
 
 Check first whether the module already exists:

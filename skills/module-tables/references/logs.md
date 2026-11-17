@@ -101,6 +101,12 @@ There are no columns, so this section names **producers** instead.
   for one. A hand-written `notes.log` dropped in a spec directory would be picked up and hashed
   exactly like a machine one, silently.
 - **drafter** — none. `clinvar_draft` / `pgx_draft` / `clinpgx_draft` write no logs.
+- **this plugin's host hook** — `logs/trace/<date>-<session>.jsonl`, the provenance ledger (RM31). One
+  JSON object per line: a `search` (query, returned ids), a `fetch` (identifiers, `sha256` and `chars`
+  of the article text, never the text), a `lookup`, and an `edit` (the file, and each row `added` or
+  `removed` as the sha256 of its non-empty cells, with `anchors` where a long cell sits verbatim in a
+  fetched text). A call whose result could not be read is kept with `result: null`. Written only when
+  a session edits a module's table; `JMC_TRACE=0` turns it off. `docs/DESIGN-traceability.md` §11.
 - **enricher pass** — **none, and this is the correction worth carrying.** Grepping
   `enricher/src/` for a `.log` write returns nothing: the enricher writes `resolution.csv` and the
   fact sidecars and never a log file. Annotating `logs/` as "the enricher's" is wrong in both

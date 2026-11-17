@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **A provenance ledger travels with each module** (RM31, part 1): a host hook, on Claude Code and Codex, records what an authoring session searched, which articles it fetched (by hash and length, never their text) and which table rows it wrote, into `logs/trace/*.jsonl`, which publishes with the module. A quote is anchored where it sits in the article fetched that session. A row is identified by the hash of its cells, so the hook needs no schema and costs about 20 ms. On by default; `JMC_TRACE=0` turns it off, and this repository sets that for its own fixtures. Codex runs it once the author approves the plugin's hooks in `/hooks`.
 ## [0.48.13] — 2026-11-17
 
 - **The pre-publish log check reads every file that ships** (F159): `review_logs` and `registry_publish`'s note found only `*.log`, while compiler 0.8 also ships text, JSON and images from `logs/`, so a `.jsonl` there went to the registry unread. The list now comes from the compiler's own `discover_logs`; an image is weighed by size and not read as text. The `logs` dossier, `module-publish` and the layout reference say what 0.8 ships.
