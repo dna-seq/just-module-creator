@@ -370,6 +370,12 @@ its `test_` allowance is refused by the registry: **F160**. F159 holds: a plante
 is flagged (the scan notes, it never refuses, by design). The installed enricher is 0.8.7, so the floor is met. F154's
 wording is in the live description.
 
+**RM31 F161 recheck, 2026-11-17, on `rm31-build` eef1fb4 (local).** The first session's ledger re-joined: the
+citation-traversal row now reads `not_traceable` ("found by a route the ledger does not see"). A second headless session
+(`paper_citations(26287746)` -> 42968160, fetched, two rows): the ledger records `paper_citations` as a search; the
+row quoting a sentence of 42968160 reads `traced`; a quote of the title's first five words reads `contradicted`, "a
+piece of the cited article's own title". Holds. Codex still untried.
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
