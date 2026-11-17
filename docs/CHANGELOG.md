@@ -5,6 +5,13 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **Registry 0.32 adopted** (both instances serve it; the registry floor is 0.32.0):
+  - `registry_review` and `registry_reviews` say what `curated` now means: a highlighted `verified` review from outside the module's namespace (S33). 0.48.12's "whatever its verdict" became false when the instances moved.
+  - `registry_claims` reports `spellings` and `matched`, so an empty answer says whether no module spells the variant or modules name it without a claim (S32); the gene-symbol guard came out because the client now quotes the symbol.
+  - `registry_lane_lookup` takes a lane's licence from the registry's own answer and names where it came from (`terms_from`), falling back to the installed catalogue only for an older registry (S29).
+  - `registry_caches` adds each lane's size and provisioning cost, and the proxy's live legs.
+  - A namespace an organisation owns stays on the saved account at the next check, read from `whoami`'s `member_of` (S31); `registry_create_org_namespace` no longer warns that it will be forgotten.
+  - New: `registry_upgrade_status`, which of your published versions the registry's upgrade sweep left `held` or `behind`.
 - **`registry_publish` refuses a `test_` rehearsal name over an unprefixed spec** (F160): 0.48.13 let that one name difference through, and the registry refuses it (`422 name_mismatch`). The name must now equal `module.name` exactly; `module-publish`'s rehearsal recipe says to set `module.name` to the rehearsal name and back before publishing for real.
 ## [0.48.13] — 2026-11-17
 

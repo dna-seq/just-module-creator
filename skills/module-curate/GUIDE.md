@@ -330,8 +330,9 @@ hand against `ref` and `alts`, and never read "no genotype warnings" as "every g
   `registry_claims(target="prod", variant=…)` lists each module's genotype, direction and trait for it,
   with the registry's disagreement marker. A pair there is a fact about two statements: conforming your
   row to it makes the module agree with another author, not with the evidence. A `compared` of 0 and a
-  `not_projected` module are silence, not agreement; ask by the lower-case rsID or `chrom:start:ref:alt`,
-  since registry 0.31.0 matches a spelling exactly (registry S32).
+  `not_projected` module are silence, not agreement. An empty answer says which it is (`matched`): no
+  module spells the variant, or modules name it without a claim. The registry folds case, `chr` and
+  separators, never the strand or the build.
 
 ## How many rows is a report
 

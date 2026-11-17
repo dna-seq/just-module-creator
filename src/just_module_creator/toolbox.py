@@ -228,6 +228,7 @@ GROUPS: tuple[Group, ...] = (
             "registry_get_module",
             "registry_claims",
             "registry_stats",
+            "registry_upgrade_status",
             "registry_health",
             "registry_is_published",
             "registry_namespace_available",

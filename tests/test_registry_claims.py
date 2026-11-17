@@ -145,16 +145,20 @@ async def test_the_cut_is_the_same_whatever_order_the_registry_sends(make_client
     assert first["claims"][0]["module"] == min(APOE["modules"])
 
 
-async def test_an_empty_answer_is_about_the_spelling(make_client, monkeypatch):
-    """`RS429358` on production: a well-formed empty answer for a variant five modules cover."""
-    empty = {
-        "key": "RS429358",
-        "variant_keys": ["RS429358"],
-        "claims": [],
-        "modules": [],
-        "conflicts": {"pairs": [], "compared": 0, "incomparable": {}},
-        "not_projected": 0,
-    }
+_EMPTY = {
+    "claims": [],
+    "modules": [],
+    "conflicts": {"pairs": [], "compared": 0, "incomparable": {}},
+    "not_projected": 0,
+}
+
+
+async def test_an_empty_answer_from_an_older_instance_is_about_the_spelling(
+    make_client, monkeypatch
+):
+    """`RS429358` on a 0.31 production: an empty answer for a variant five modules cover, with no
+    `matched` to say why."""
+    empty = {"key": "RS429358", "variant_keys": ["RS429358"], **_EMPTY}
     payload = await _call(
         make_client,
         monkeypatch,
@@ -162,10 +166,56 @@ async def test_an_empty_answer_is_about_the_spelling(make_client, monkeypatch):
         "registry_claims",
         {"target": "prod", "variant": "RS429358"},
     )
-    assert payload["claims_total"] == 0
+    assert payload["claims_total"] == 0 and payload["matched"] is None
     assert "under the spelling 'RS429358'" in payload["message"]
-    assert "S32" in payload["message"]
-    assert "not evidence that no module" in payload["message"]
+    assert "older than 0.32" in payload["message"]
+    assert "Not evidence that no module" in payload["message"]
+
+
+async def test_a_0_32_answer_says_no_module_spells_it_and_never_covers_strand(
+    make_client, monkeypatch
+):
+    """Registry 0.32 (S32): the key folds onto the stored spellings and `matched` says whether any
+    is stored. `false` is about those spellings only: strand and build are never folded."""
+    empty = {
+        "key": "chr19:44908684:T:C",
+        "spellings": ["chr19:44908684:T:C", "19:44908684:T:C"],
+        "matched": False,
+        "variant_keys": [],
+        **_EMPTY,
+    }
+    payload = await _call(
+        make_client,
+        monkeypatch,
+        _ClaimsStub(variant=empty),
+        "registry_claims",
+        {"target": "prod", "variant": "chr19:44908684:T:C"},
+    )
+    assert payload["matched"] is False
+    assert payload["spellings"] == ["chr19:44908684:T:C", "19:44908684:T:C"]
+    assert "chr19:44908684:T:C, 19:44908684:T:C" in payload["message"]
+    assert "never the strand or the build" in payload["message"]
+
+
+async def test_a_0_32_answer_naming_the_variant_without_a_claim_is_not_silence(
+    make_client, monkeypatch
+):
+    empty = {
+        "key": "rs429358",
+        "spellings": ["rs429358"],
+        "matched": True,
+        "variant_keys": ["rs429358"],
+        **_EMPTY,
+    }
+    payload = await _call(
+        make_client,
+        monkeypatch,
+        _ClaimsStub(variant=empty),
+        "registry_claims",
+        {"target": "prod", "variant": "rs429358"},
+    )
+    assert payload["matched"] is True
+    assert "name this variant but make no claim" in payload["message"]
 
 
 async def test_two_modules_that_never_meet_on_a_genotype_are_not_called_agreeing(
@@ -226,16 +276,14 @@ async def test_an_instance_older_than_031_is_named_not_answered_not_found(make_c
     assert "registry_search(gene=" in str(raised.value), "the refusal says what to do instead"
 
 
-async def test_a_symbol_that_would_address_another_route_is_refused_before_the_call(
-    make_client, monkeypatch
-):
-    """The client puts the symbol into the path unquoted (registry S32)."""
+async def test_a_symbol_reaches_the_registry_quoted(make_client, monkeypatch):
+    """The 0.32 client quotes the symbol into the path (registry S32), so nothing is refused
+    here beyond an empty one; the registry answers whatever it was given as itself."""
     stub = _ClaimsStub(gene=APOE)
     monkeypatch.setattr(research, "client_for", lambda *a, **kw: stub)
     async with make_client(settings=_online()) as client:
-        for symbol in ("APOE/../x", "APOE?y=1", "AP OE", " "):
-            with pytest.raises(ToolError, match="not a gene symbol"):
-                await client.call_tool("registry_claims", {"target": "prod", "gene": symbol})
+        with pytest.raises(ToolError, match="empty"):
+            await client.call_tool("registry_claims", {"target": "prod", "gene": " "})
         with pytest.raises(ToolError, match="exactly one"):
             await client.call_tool(
                 "registry_claims", {"target": "prod", "gene": "APOE", "variant": "rs429358"}
@@ -243,6 +291,24 @@ async def test_a_symbol_that_would_address_another_route_is_refused_before_the_c
         with pytest.raises(ToolError, match="exactly one"):
             await client.call_tool("registry_claims", {"target": "prod"})
     assert stub.calls == []
+
+
+def test_the_installed_client_quotes_a_gene_symbol(monkeypatch) -> None:
+    """The guard above came out because the client quotes; this is the client's own path."""
+    from just_dna_registry import client as registry_client
+
+    seen: list[str] = []
+
+    class _Http:
+        def get(self, path, **_kw):
+            seen.append(path)
+            return None
+
+    fake = object.__new__(registry_client.RegistryClient)
+    monkeypatch.setattr(fake, "_http", _Http(), raising=False)
+    monkeypatch.setattr(fake, "_json", lambda response: {}, raising=False)
+    fake.gene_claims("APOE/../x")
+    assert seen == ["/genes/APOE%2F..%2Fx/claims"]
 
 
 async def test_pgs_id_is_not_sent_to_an_instance_that_would_ignore_it(make_client, monkeypatch):
@@ -277,3 +343,65 @@ async def test_a_search_without_pgs_id_costs_no_version_request(make_client, mon
 )
 def test_serves_claims_is_three_valued(info: VersionInfo | None, expected: bool | None) -> None:
     assert research.serves_claims(info) is expected
+
+
+async def test_upgrade_status_filters_one_namespace_over_every_page(make_client, monkeypatch):
+    """Registry 0.32's `upgrade_status` lists the whole catalog with a `state` filter only, so a
+    namespace is filtered here, over every page; `counts` stays the catalog's."""
+    from just_dna_registry.models.api import UpgradeStatusItem, UpgradeStatusReport
+
+    def item(ns: str, name: str, state: str) -> UpgradeStatusItem:
+        return UpgradeStatusItem(
+            namespace=ns,
+            name=name,
+            version="1.0.0",
+            state=state,
+            gap="patch",
+            compiled_under="0.8.4",
+            last_sweep=None,
+            kept=False,
+            kept_stale=None,
+        )
+
+    pages = {
+        1: [item("antonkulaga", "apoe_epsilon", "current")] * 99
+        + [item("test-sheep", "test_fto_trace", "held")],
+        2: [item("test-sheep", "test_kunkle", "behind")],
+    }
+
+    class _Upgrade:
+        def __init__(self) -> None:
+            self.asked: list[int] = []
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def upgrade_status(self, *, state=None, page=1, per_page=100):
+            self.asked.append(page)
+            return UpgradeStatusReport(
+                items=pages[page],
+                total=101,
+                page=page,
+                per_page=per_page,
+                counts={"current": 99, "held": 1, "behind": 1},
+                compiler="0.8.6",
+                swept=12,
+                sweeps_on_record=3,
+                sweeps_since=None,
+            )
+
+    stub = _Upgrade()
+    monkeypatch.setattr(research, "client_for", lambda *a, **kw: stub)
+    async with make_client(settings=_online()) as client:
+        found = (
+            await client.call_tool(
+                "registry_upgrade_status", {"target": "test", "namespace": "test-sheep"}
+            )
+        ).structured_content
+    assert stub.asked == [1, 2]
+    assert [i["name"] for i in found["data"]["items"]] == ["test_fto_trace", "test_kunkle"]
+    assert found["data"]["counts"] == {"current": 99, "held": 1, "behind": 1}
+    assert "2 not current" in found["message"]

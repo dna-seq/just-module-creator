@@ -1521,8 +1521,8 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         )
 
     # An org is an account the caller owns; `create_org_namespace` needs one, and no other
-    # call here could make it. Registry S31: nothing lists the orgs an account belongs to, so
-    # the org's name has to come from the author or from this call's result.
+    # call here could make it. Since registry 0.32 (S31) `registry_whoami` lists the orgs an
+    # account belongs to (`orgs`) and the namespaces it reaches through them (`member_of`).
     @mcp.tool(
         tags={GATED_TAG},
         annotations=ToolAnnotations(
@@ -1567,8 +1567,8 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         )
 
     # The claim's org twin. Recorded on the saved account so the next publish to it picks
-    # this token, but `whoami` lists only namespaces an account owns itself (registry S31),
-    # so the next account refresh drops it again; the result says so rather than hiding it.
+    # this token. Since registry 0.32 `whoami` lists it under `member_of`, and the account
+    # check keeps it (`accountcheck.publishable`); before, the next refresh dropped it (S31).
     @mcp.tool(
         tags={GATED_TAG},
         annotations=ToolAnnotations(
@@ -1625,20 +1625,11 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
             lambda owner: setattr(owner, "namespaces", sorted({*owner.namespaces, namespace})),
             what=f"that it can publish to {namespace}",
         )
-        caveat = (
-            f"The registry's account listing does not name a namespace an organisation owns "
-            f"(registry S31, accepted, not yet shipped), so the check of saved accounts at the "
-            f"next server start forgets {namespace}, and a publish to it then finds no saved "
-            f"token. It works with the key given to `authenticate` or set as "
-            f"{'JMC_TEST_API_KEY' if target == 'test' else 'JMC_API_KEY'}; no tool here shows "
-            f"a saved key whole."
-        )
         return OpResult(
             success=True,
             message=(
-                f"Claimed {namespace} for {org} on {describe(target, settings)}. "
-                + (f"{note} " if note else "")
-                + caveat
+                f"Claimed {namespace} for {org} on {describe(target, settings)}."
+                + (f" {note}" if note else "")
             ),
             data={**jsonable(payload), "target": target},
         )
@@ -2080,8 +2071,8 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         `post` takes a `rating` and optionally a `verdict` and `notes`, each as the
         registry defines it; posting again replaces yours. `delete`
         removes yours. `highlight` and `unhighlight` take the `reviewer` whose review the
-        owner marks, which a card counts as curated whatever its verdict; the registry
-        accepts an owner highlighting their own review, and the card tells neither apart.
+        owner marks. Since registry 0.32 a card is curated only by a highlighted `verified`
+        review from outside the module's namespace, so an owner's own review never curates.
         A review is public and signed by your account: post one only with the person's own
         words.
         """
@@ -2160,8 +2151,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
     ) -> OpResult:
         """Read the reviews of a published module, or of one `version`, highlighted first.
 
-        A highlighted review is one the module's owner marked, and is what a card counts as
-        curated, whatever its verdict: read the verdict here. `target` is required: `prod`
+        A highlighted review is one the module's owner marked. A card counts as curated only
+        a highlighted `verified` review from outside the namespace (registry 0.32): read the
+        verdict and the reviewer here. `target` is required: `prod`
         for the catalog, `test` for the polygon.
         """
         if settings.offline:

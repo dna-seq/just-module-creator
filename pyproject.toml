@@ -98,7 +98,10 @@ dependencies = [
     # A registry minor is not a contract skew, so this client still talks to a 0.30
     # instance; the tools read `/version` and refuse the three reads there, since a 0.30
     # server ignores `pgs_id` and answers the wider listing.
-    "just-dna-registry>=0.31.0",
+    # 0.32.0 (2026-11-17, both instances serving it): `gene_claims` quotes the symbol, so the
+    # path guard came out; `upgrade_status` is wrapped; `/variants` folds spellings and says
+    # `matched`; lane answers carry `terms`/`unpublished`; `whoami` lists `member_of`/`orgs`.
+    "just-dna-registry>=0.32.0",
     "python-dotenv>=1.2.2",
     # Declared, not leaned on transitively: net.py calls httpx directly for the
     # literature sources, and a transitive pin is not a contract.

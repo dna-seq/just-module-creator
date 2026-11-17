@@ -106,6 +106,11 @@ def _lane_rows(target: RegistryTarget, remote: Any | None) -> list[LaneStatus]:
                 remote_reason=_reason(far),
                 env_var=lane.env_var,
                 build_command=lane.build_command,
+                approx_mb=getattr(far, "approx_mb", None) if far is not None else None,
+                provision_lanes=list(getattr(far, "provision_lanes", None) or [])
+                if far is not None
+                else [],
+                provision_mb=getattr(far, "provision_mb", None) if far is not None else None,
             )
         )
 
@@ -439,17 +444,35 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
             raise ToolError(
                 f"{describe(target, settings)} refused the lane lookup: {exc}{instance_note(exc)}"
             ) from exc
-        # F148: the lane's terms travel with its rows, from upstream's own catalogue, so a
-        # row read from an NC-ND or refused lane says so where it is read.
-        declared = next((c for c in routing.CACHE_LANES if c.name == lane), None)
-        terms = declared.terms if declared is not None else None
+        # F148: the lane's terms travel with its rows, so a row read from an NC-ND or refused
+        # lane says so where it is read. Since registry 0.32 (S29) the answer carries them
+        # (`terms`, `unpublished`) as the deployment states them, and those win. An older
+        # instance sends neither, and then the installed enricher's catalogue answers, named in
+        # `terms_from` rather than passed off as the registry's.
+        if "terms" in answer or "unpublished" in answer:
+            stated = answer.get("terms") or {}
+            licence, notice, url = (
+                stated.get("license"),
+                stated.get("notice"),
+                stated.get("license_url"),
+            )
+            unpublished, terms_from = answer.get("unpublished"), "registry"
+        else:
+            declared = next((c for c in routing.CACHE_LANES if c.name == lane), None)
+            terms = declared.terms if declared is not None else None
+            licence = terms.license if terms is not None else None
+            notice = terms.notice if terms is not None else None
+            url = terms.license_url if terms is not None else None
+            unpublished = declared.unpublished if declared is not None else None
+            terms_from = "installed enricher (the registry is older than 0.32)"
         return LaneLookup(
             target=target,
             registry=describe(target, settings),
-            licence=terms.license if terms is not None else None,
-            licence_notice=terms.notice if terms is not None else None,
-            licence_url=terms.license_url if terms is not None else None,
-            redistribution=declared.unpublished if declared is not None else None,
+            licence=licence,
+            licence_notice=notice,
+            licence_url=url,
+            redistribution=unpublished,
+            terms_from=terms_from,
             lane=lane,
             table=table,
             served_from=answer.get("served_from"),
@@ -533,6 +556,11 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
             local_count=local_count,
             remote_count=remote_count,
             unreachable=unreachable,
+            proxy_live_legs=(
+                [dict(leg) for leg in legs]
+                if (legs := getattr(remote, "proxy_live_legs", None)) is not None
+                else None
+            ),
             note=note,
         )
 
