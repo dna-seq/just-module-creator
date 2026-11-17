@@ -72,16 +72,26 @@ recorded, which the result's `scope` says in its own words.
 **State what no edit shows** with `record_decision`: a paper read and set aside, a variant left out,
 how a weight was set. Give `basis="read"` with a `passage` copied verbatim from an article fetched this
 session, `recalled` when the reason comes from knowledge, or `author` for the person's own decision in
-an English paraphrase they approved. `trace_module` reads each back as `witnessed`, `declared` or
-`recalled`, and only `witnessed` is evidence: a passage that does not name every rsID the reason names
-is declared, however real the anchor.
+an English paraphrase they approved. `trace_module` reads each back as `anchored`, `declared` or
+`recalled`. **`anchored` says where a passage is, never that it supports the reason:** it needs the
+passage verbatim in a fetched text and naming the variants the decision names. A passage can name the
+right variant and say the opposite, and a reason naming no variant (a weight's, usually) reads
+`declared`, since nothing ties it to any passage.
 
-**Then hand the module to a reader who did not write it.** Start a fresh agent, never this one, with
-only the spec directory and this brief: *read the tables, the `logs/trace/` ledger and
-`trace_module`'s result; list the rows with no chain behind them, and the rows or decisions whose stated
-reason does not support what they claim; return questions for the author, not verdicts.* A row with no
-recorded chain may still be right, and a reviewer anchored on your reasoning confirms it, which is why
-the brief carries no conclusions of yours.
+**Then hand the module to a reader who did not write it.** Start a fresh agent, never this one, with the
+spec directory and this brief, and nothing of your reasoning:
+
+> Read the module cold. First the tables and the shipped files that are not tables (README, the
+> licensing notices, the spec's version). Then the `logs/trace/` ledger: for each article fetched,
+> fetch it again with `fetch_fulltext`, check its hash against the ledger, and read every anchored span
+> beside the row or decision that cites it. Check each judged cell by name (`weight`, `direction`,
+> `conclusion`) for a stated basis, and note the search results nobody opened. Only after that, run
+> `trace_module` and compare its labels with what you read. Return questions for the author, never
+> verdicts: which rows have no chain, which reasons the passage beside them does not support, which
+> shipped file contradicts the tables.
+
+The order matters: a reviewer who reads `trace_module`'s labels first is handed a conclusion before
+looking, and the check that caught a wrong reason in the hand trial was reading the passage beside it.
 
 ## The checks, and what each one actually reads
 

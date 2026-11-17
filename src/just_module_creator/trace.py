@@ -207,19 +207,25 @@ class DecisionState:
     subject: str
     verdict: str
     by: str
-    witness: str  # witnessed | declared | recalled
+    witness: str  # anchored | declared | recalled
     why: str
     because: str
+    passages: list[dict[str, Any]] = field(default_factory=list)  # pmid, sha256, offset, len
 
 
 def decision_states(ledger: Ledger) -> list[DecisionState]:
-    """How each stated decision's reason is known. Only a passage can make it evidence.
+    """How each stated decision's reason is known. Never whether the reason holds.
 
-    `witnessed` needs a passage sitting verbatim in a text fetched that session, not cut from a
-    title, and naming every rsID the reason names. The last condition is the tester's finding on
-    the hand trial: a `not_used` reason about linkage with rs1421085 was anchored to a paper that
-    never names rs1421085, so the anchor looked like support and witnessed something else.
+    `anchored` means: a passage sits verbatim in a text fetched that session, is not cut from a
+    title, and names every variant the subject or reason names, of which there is at least one.
+    It does NOT mean the passage supports the reason: a passage can name the right variant and
+    say the opposite (F162, case B), and only a reader settles that, so each anchored decision
+    carries `passages` (PMID, offset, length) to read it at. A reason that names no variant has
+    nothing tying it to a passage and reads `declared` (F162, case C). The rsID test is the
+    tester's hand-trial finding: an LD reason about rs1421085 anchored to a paper that never
+    names rs1421085.
     """
+    by_sha = {sha: pmid for pmid, shas in ledger.fetched.items() for sha in shas}
     states: list[DecisionState] = []
     for event in ledger.decisions:
         basis = str(event.get("basis") or "")
@@ -227,6 +233,8 @@ def decision_states(ledger: Ledger) -> list[DecisionState]:
         placed = [a for a in anchors or [] if "sha256" in a]
         from_title = [a for a in anchors or [] if "title_of" in a]
         unnamed = event.get("unnamed") or []
+        tied = event.get("tied")
+        passages: list[dict[str, Any]] = []
         if basis == "recalled":
             witness, because = "recalled", "stated as recalled from knowledge, not read"
         elif anchors is None:
@@ -235,14 +243,27 @@ def decision_states(ledger: Ledger) -> list[DecisionState]:
             witness, because = "declared", "the passage is a piece of an article's title"
         elif not placed:
             witness, because = "declared", "the passage is in no text fetched that session"
+        elif not tied:
+            witness = "declared"
+            because = "the reason names no variant, so nothing ties the passage to it"
         elif unnamed:
             witness = "declared"
             because = f"the passage never names {', '.join(unnamed)}, which the reason relies on"
         else:
-            witness, because = (
-                "witnessed",
-                "the passage sits in a fetched text and names the reason's variants",
+            witness = "anchored"
+            because = (
+                "the passage sits in a fetched text and names the reason's variants; whether it "
+                "supports the reason is for a reader, at `passages`"
             )
+            passages = [
+                {
+                    "pmid": by_sha.get(a["sha256"]),
+                    "sha256": a["sha256"],
+                    "offset": a.get("offset"),
+                    "len": a.get("len"),
+                }
+                for a in placed
+            ]
         states.append(
             DecisionState(
                 subject=str(event.get("subject") or ""),
@@ -251,6 +272,7 @@ def decision_states(ledger: Ledger) -> list[DecisionState]:
                 witness=witness,
                 why=str(event.get("why") or ""),
                 because=because,
+                passages=passages,
             )
         )
     return states

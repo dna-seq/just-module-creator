@@ -271,7 +271,9 @@ def test_a_reason_anchored_to_a_paper_that_never_names_its_variant_is_declared(m
     assert state.witness == "declared" and "never names rs1421085" in state.because
 
 
-def test_a_reason_whose_passage_names_its_variants_is_witnessed(module, env) -> None:
+def test_a_reason_whose_passage_names_its_variants_is_anchored_with_where_to_read_it(
+    module, env
+) -> None:
     fetch(env)
     decide(
         env,
@@ -284,7 +286,52 @@ def test_a_reason_whose_passage_names_its_variants_is_witnessed(module, env) -> 
     )
     write_study(module, env)
     (state,) = decisions(module)
-    assert state.witness == "witnessed", state.because
+    assert state.witness == "anchored", state.because
+    (where,) = state.passages
+    assert (where["pmid"], where["offset"], where["len"]) == (
+        "37621650",
+        ARTICLE.index(QUOTE),
+        len(QUOTE),
+    )
+    assert "for a reader" in state.because
+
+
+def test_a_reason_naming_no_variant_is_declared_whatever_the_passage(module, env) -> None:
+    """F162 case C: a weight's reason usually names no rsID, and "names every variant it names"
+    is vacuous over none, so a methods sentence about mice once read as evidence for it."""
+    fetch(env)
+    decide(
+        env,
+        spec_dir=str(module),
+        subject="variants.csv weight",
+        verdict="-0.5",
+        basis="read",
+        why="Because the effect on body mass is large.",
+        passage=QUOTE,
+    )
+    write_study(module, env)
+    (state,) = decisions(module)
+    assert state.witness == "declared" and "names no variant" in state.because
+
+
+def test_anchored_never_claims_the_passage_supports_the_reason(module, env) -> None:
+    """F162 case B: the same passage under a reason it contradicts. No check here can tell, so
+    the label says located, not supported, and points the reader at the passage."""
+    fetch(env)
+    decide(
+        env,
+        spec_dir=str(module),
+        subject="rsid:rs17782313",
+        verdict="not_used",
+        basis="read",
+        why="rs17782313 is not associated with BMI.",
+        passage=QUOTE,
+    )
+    write_study(module, env)
+    (state,) = decisions(module)
+    assert state.witness == "anchored"  # located, and names rs17782313: all a check can know
+    assert "whether it supports the reason is for a reader" in state.because
+    assert state.passages
 
 
 def test_a_recalled_reason_is_kept_and_never_counted(module, env) -> None:

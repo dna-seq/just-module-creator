@@ -295,9 +295,11 @@ def record_decision(session: Session, tool_input: dict[str, Any]) -> None:
             {"passage": passage}, session.known_texts(), session.known_titles()
         )
         lowered = passage.casefold()
-        event["unnamed"] = sorted(
-            {r.lower() for r in _RSID.findall(why) if r.lower() not in lowered}
-        )
+        # The variants that tie the passage to this decision: every rsID its subject or reason
+        # names. None named means nothing ties them (F162: a weight's reason usually names none).
+        tied = {r.lower() for r in _RSID.findall(f"{event['subject']} {why}")}
+        event["tied"] = sorted(tied)
+        event["unnamed"] = sorted(r for r in tied if r not in lowered)
     session.queue(event)
 
 

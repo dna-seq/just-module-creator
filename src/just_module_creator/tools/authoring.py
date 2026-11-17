@@ -988,9 +988,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
         `basis` is `read` (give `passage`, verbatim from an article fetched this session),
         `recalled` (from knowledge, not read here) or `author` (the person decided; `why` is
-        an English paraphrase they have approved). `trace_module` reads it back: a passage
-        found in a fetched text that names every rsID `why` names is evidence; anything else
-        is a declared or recalled reason, kept and labelled, never counted as support.
+        an English paraphrase they have approved). `trace_module` reads it back as `anchored`
+        (the passage is in a fetched text and names the variants the decision names), else
+        `declared` or `recalled`. Anchored is never a verdict that the passage supports it.
         """
         target = resolve_dir(spec_dir, settings)
         if not (target / "module_spec.yaml").is_file():
@@ -1004,9 +1004,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             "JMC_TRACE=0 here, so the hook records nothing and this decision is not kept."
             if off
             else (
-                "Recorded at the module's next table edit. A `read` reason counts as evidence "
+                "Recorded at the module's next table edit. A `read` reason reads `anchored` "
                 "only if its passage is verbatim in an article fetched this session and names "
-                "every rsID the reason names."
+                "the variants the decision names; whether it supports the reason stays a reading."
                 if basis == "read"
                 else "Kept as a stated reason and labelled so; it never counts as evidence."
             )
@@ -1054,6 +1054,8 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         counts = Counter(f"written:{s.written}" for s in states)
         counts.update(f"citation:{s.citation}" for s in states if s.citation is not None)
         contradicted = counts.get(f"citation:{trace.CONTRADICTED}", 0)
+        decided = trace.decision_states(ledger)
+        to_read = sum(1 for d in decided if d.witness == "anchored")
         if not ledger.files:
             next_step = (
                 "This module has no ledger, so every row reads not_traceable: it was authored "
@@ -1069,13 +1071,18 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
                 "Nothing contradicts a citation. Rows not_traceable have no recorded chain: a "
                 "reviewer's attention belongs there first. Judged cells are not covered here."
             )
+        if decided:
+            next_step += (
+                f" {len(decided)} stated decision(s), {to_read} anchored: read each anchored "
+                "passage at `passages` beside its reason, since anchored is not support."
+            )
         return TraceReport(
             spec_dir=str(target),
             ledgers=ledger.files,
             events=dict(ledger.counts),
             unreadable_lines=ledger.unreadable_lines,
             rows=[TracedRow(**vars(s)) for s in states],
-            decisions=[TracedDecision(**vars(d)) for d in trace.decision_states(ledger)],
+            decisions=[TracedDecision(**vars(d)) for d in decided],
             counts=dict(sorted(counts.items())),
             scope=(
                 "Whether a recorded edit wrote each row, and whether each citation in the "

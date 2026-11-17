@@ -797,12 +797,19 @@ class TracedDecision(BaseModel):
     verdict: str
     by: str = Field(description="`agent` or `author`, as stated.")
     witness: str = Field(
-        description="`witnessed` (a passage anchored in a fetched text, naming every rsID the "
-        "reason names), `declared` (a reason with no such passage) or `recalled` (stated as "
-        "recalled from knowledge, not read). Only `witnessed` is evidence."
+        description="`anchored` (a passage verbatim in a fetched text, naming every variant the "
+        "subject or reason names, at least one), `declared` (no such passage) or `recalled` "
+        "(stated as recalled, not read). `anchored` is never a verdict that the passage supports "
+        "the reason: read it at `passages`."
     )
     why: str = Field(description="The stated reason, verbatim.")
     because: str = Field(description="What established `witness`, or what is missing.")
+    passages: list[dict] = Field(
+        default_factory=list,
+        description="For an anchored decision: where each passage sits (`pmid`, `sha256`, "
+        "`offset`, `len`), so a reader can fetch the article, check its hash, and read the "
+        "passage beside the reason. The ledger keeps no passage text.",
+    )
 
 
 class TracedRow(BaseModel):
