@@ -314,7 +314,7 @@ surprised to see this in the catalog?*
 
 ## RM31 — a row cannot be traced back to the search and the reading that produced it
 
-**State:** unattended: hand trial done 2026-11-16 (desk #204 withdrawn as no fork; report §10 of `DESIGN-traceability.md` on branch `rm31-trial`, with the tester's fresh-eyes read); next the hook that buffers fetched text and writes the ledger, built after the 2026-11-17 release · **Owner:** just-module-creator/lead
+**State:** waits until 2026-11-18: built and merged to main (`6d0aeee`): the hook, `trace_module`, `record_decision` and the reviewer brief; ships in 0.48.14, then moves to `ROADMAP_HISTORY.md`. Not yet: author decisions captured from the question tool (decision 4's approved paraphrase), and Codex measured live · **Owner:** just-module-creator/lead
 
 **Severity:** medium · **Status:** open, designed 2026-10-05, nothing built · **Owner:** unassigned ·
 **Opened** 2026-10-05 · **Upstream:** format-tree `S125` (`F116`) for the transport · **Rationale
