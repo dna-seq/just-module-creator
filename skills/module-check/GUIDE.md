@@ -58,6 +58,17 @@ Its three lists are three different claims, and the third is the one to read car
 established. A signal is not a verdict on the work either: a module that raises one is out of date or
 undeclared, not broken.
 
+**Then read each row's chain:** `trace_module(spec_dir="spec")`, also offline. It joins every authored
+row to the module's provenance ledger (`logs/trace/`, which this plugin's hook writes while you author).
+A row of `studies.csv` comes back `traced` (its PMID came back from a recorded search, the article was
+fetched, and the quote sits verbatim in it), `contradicted` or `not_traceable`, each with its `why`.
+**A `contradicted` row is the one to act on first:** a PMID no search returned is the recalled-PMID
+failure, and a quote that is the article's title, or is not in the fetched text, is not a located
+passage. Re-read the paper and fix the row, or cite the paper that does support it. `not_traceable`
+is an unknown, never a defect: every row written before the ledger existed reads that way. And
+`traced` covers the citation only: a traced row can still carry a weight or conclusion nothing
+recorded, which the result's `scope` says in its own words.
+
 ## The checks, and what each one actually reads
 
 ```
