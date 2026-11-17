@@ -776,6 +776,35 @@ class ColumnFill(BaseModel):
     filled: int = Field(description="Rows where this column is non-empty after stripping.")
 
 
+class DecisionStated(BaseModel):
+    """A decision handed to the ledger. The host hook records it; this tool writes nothing."""
+
+    spec_dir: str = Field(description="The module the decision is about.")
+    subject: str = Field(description="What was decided about, as given.")
+    verdict: str = Field(description="The decision, as given.")
+    basis: str = Field(description="`read`, `recalled` or `author`.")
+    recording: str = Field(
+        description="`hook`: the host hook records it into `logs/trace/` at the module's next "
+        "edit; `off`: JMC_TRACE=0 in this server's environment, so nothing is recorded."
+    )
+    note: str = Field(description="What the record will and will not establish.")
+
+
+class TracedDecision(BaseModel):
+    """One stated decision from the ledger, with how its reason is known."""
+
+    subject: str
+    verdict: str
+    by: str = Field(description="`agent` or `author`, as stated.")
+    witness: str = Field(
+        description="`witnessed` (a passage anchored in a fetched text, naming every rsID the "
+        "reason names), `declared` (a reason with no such passage) or `recalled` (stated as "
+        "recalled from knowledge, not read). Only `witnessed` is evidence."
+    )
+    why: str = Field(description="The stated reason, verbatim.")
+    because: str = Field(description="What established `witness`, or what is missing.")
+
+
 class TracedRow(BaseModel):
     """One authored row, joined back to the provenance ledger."""
 
@@ -806,6 +835,9 @@ class TraceReport(BaseModel):
         description="Ledger lines that did not parse; never skipped silently."
     )
     rows: list[TracedRow] = Field(description="Every authored row, in file order.")
+    decisions: list[TracedDecision] = Field(
+        default_factory=list, description="Every stated decision in the ledger, in order."
+    )
     counts: dict[str, int] = Field(
         description="Rows of the quote-bearing table by citation state, and all rows by `written`."
     )

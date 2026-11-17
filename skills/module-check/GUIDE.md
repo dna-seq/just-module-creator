@@ -69,6 +69,20 @@ is an unknown, never a defect: every row written before the ledger existed reads
 `traced` covers the citation only: a traced row can still carry a weight or conclusion nothing
 recorded, which the result's `scope` says in its own words.
 
+**State what no edit shows** with `record_decision`: a paper read and set aside, a variant left out,
+how a weight was set. Give `basis="read"` with a `passage` copied verbatim from an article fetched this
+session, `recalled` when the reason comes from knowledge, or `author` for the person's own decision in
+an English paraphrase they approved. `trace_module` reads each back as `witnessed`, `declared` or
+`recalled`, and only `witnessed` is evidence: a passage that does not name every rsID the reason names
+is declared, however real the anchor.
+
+**Then hand the module to a reader who did not write it.** Start a fresh agent, never this one, with
+only the spec directory and this brief: *read the tables, the `logs/trace/` ledger and
+`trace_module`'s result; list the rows with no chain behind them, and the rows or decisions whose stated
+reason does not support what they claim; return questions for the author, not verdicts.* A row with no
+recorded chain may still be right, and a reviewer anchored on your reasoning confirms it, which is why
+the brief carries no conclusions of yours.
+
 ## The checks, and what each one actually reads
 
 ```

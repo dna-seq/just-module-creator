@@ -208,6 +208,7 @@ GROUPS: tuple[Group, ...] = (
         (
             "audit_module",
             "trace_module",
+            "record_decision",
             "review_queue",
             "review_logs",
             "study_facts",

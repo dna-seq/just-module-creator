@@ -45,7 +45,11 @@ LEDGER_VERSION = 1
 SEARCH_TOOLS = frozenset({"literature_search", "paper_citations"})
 FETCH_TOOLS = frozenset({"fetch_fulltext"})
 LOOKUP_TOOLS = frozenset({"lookup_variant"})
-RECORDED_TOOLS = SEARCH_TOOLS | FETCH_TOOLS | LOOKUP_TOOLS
+#: A decision the agent states through our tool: recorded from its arguments, its passage anchored.
+DECISION_TOOLS = frozenset({"record_decision"})
+RECORDED_TOOLS = SEARCH_TOOLS | FETCH_TOOLS | LOOKUP_TOOLS | DECISION_TOOLS
+
+_RSID = re.compile(r"\brs\d+\b", re.IGNORECASE)
 
 #: The hosts' file-writing tools. Codex reports a patch as `apply_patch`, paths inside the patch.
 EDIT_TOOLS = frozenset({"Write", "Edit", "MultiEdit", "apply_patch"})
@@ -265,8 +269,43 @@ def anchors(
     return found
 
 
+def record_decision(session: Session, tool_input: dict[str, Any]) -> None:
+    """Queue a stated decision, from the tool's own arguments (its result adds nothing).
+
+    A `passage` is anchored in the texts this session fetched, as a row's long cell is. Every rsID
+    the reason names that the passage does not is listed in `unnamed`: an anchor beside a reason it
+    does not witness is the title-as-quote shape one level up (the tester's read of the hand trial).
+    The passage text itself is never recorded, only where it sits.
+    """
+    passage = str(tool_input.get("passage") or "").strip()
+    why = str(tool_input.get("why") or "")
+    event: dict[str, Any] = {
+        "v": LEDGER_VERSION,
+        "t": _now(),
+        "via": "record_decision",
+        "kind": "decision",
+        "by": str(tool_input.get("by") or "agent"),
+        "subject": str(tool_input.get("subject") or ""),
+        "verdict": str(tool_input.get("verdict") or ""),
+        "basis": str(tool_input.get("basis") or ""),
+        "why": why,
+    }
+    if passage:
+        event["anchors"] = anchors(
+            {"passage": passage}, session.known_texts(), session.known_titles()
+        )
+        lowered = passage.casefold()
+        event["unnamed"] = sorted(
+            {r.lower() for r in _RSID.findall(why) if r.lower() not in lowered}
+        )
+    session.queue(event)
+
+
 def record_tool(session: Session, tool: str, tool_input: dict[str, Any], response: Any) -> None:
     """Queue a search, fetch or lookup. Nothing reaches a ledger until a module is edited."""
+    if tool in DECISION_TOOLS:
+        record_decision(session, tool_input)
+        return
     event: dict[str, Any] = {"v": LEDGER_VERSION, "t": _now(), "via": tool}
     # A call whose result cannot be read is still a call that happened: recorded with what was
     # asked and `result: null`, so the join sees an unknown rather than nothing at all.

@@ -237,3 +237,111 @@ async def test_no_ledger_reads_as_unknown_never_as_a_defect(module, make_client)
     assert report.ledgers == []
     assert {r.written for r in report.rows} == {"not_recorded"}
     assert "unknown, not a defect" in report.next_step
+
+
+def decide(env: dict[str, str], **arguments) -> None:
+    hook(
+        "post",
+        env,
+        tool_name=f"{CLAUDE}record_decision",
+        tool_input=arguments,
+        tool_response=json.dumps({"recording": "hook"}),
+    )
+
+
+def decisions(module: Path) -> list[trace.DecisionState]:
+    return trace.decision_states(trace.read_ledger(module))
+
+
+def test_a_reason_anchored_to_a_paper_that_never_names_its_variant_is_declared(module, env) -> None:
+    """The tester's first finding on the hand trial: an LD reason about rs1421085 anchored to an
+    FTO x depression passage that never names rs1421085. The anchor is real; the support is not."""
+    fetch(env)  # the fetched article names rs17782313, never rs1421085
+    decide(
+        env,
+        spec_dir=str(module),
+        subject="rsid:rs17782313",
+        verdict="not_used",
+        basis="read",
+        why="In strong linkage disequilibrium with rs1421085, already in the module.",
+        passage=QUOTE,
+    )
+    write_study(module, env)
+    (state,) = decisions(module)
+    assert state.witness == "declared" and "never names rs1421085" in state.because
+
+
+def test_a_reason_whose_passage_names_its_variants_is_witnessed(module, env) -> None:
+    fetch(env)
+    decide(
+        env,
+        spec_dir=str(module),
+        subject="pmid:37621650",
+        verdict="used",
+        basis="read",
+        why="States the rs17782313 C allele association with BMI.",
+        passage=QUOTE,
+    )
+    write_study(module, env)
+    (state,) = decisions(module)
+    assert state.witness == "witnessed", state.because
+
+
+def test_a_recalled_reason_is_kept_and_never_counted(module, env) -> None:
+    decide(
+        env,
+        spec_dir=str(module),
+        subject="rsid:rs6567160",
+        verdict="not_used",
+        basis="recalled",
+        why="Dropped in the original README; reason not re-read here.",
+    )
+    write_study(module, env)
+    (state,) = decisions(module)
+    assert state.witness == "recalled"
+
+
+def test_a_passage_from_no_fetched_text_is_declared(module, env) -> None:
+    fetch(env)
+    decide(
+        env,
+        spec_dir=str(module),
+        subject="pmid:37621650",
+        verdict="used",
+        basis="read",
+        why="Supports rs17782313.",
+        passage=QUOTE.replace("higher", "lower"),
+    )
+    write_study(module, env)
+    (state,) = decisions(module)
+    assert state.witness == "declared" and "no text fetched" in state.because
+
+
+async def test_record_decision_writes_nothing_and_refuses_a_bad_basis(module, make_client) -> None:
+    before = sorted(p.name for p in module.rglob("*"))
+    async with make_client(offline_settings()) as client:
+        stated = (
+            await client.call_tool(
+                "record_decision",
+                {
+                    "spec_dir": str(module),
+                    "subject": "pmid:37621650",
+                    "verdict": "used",
+                    "why": "States the association.",
+                    "basis": "recalled",
+                },
+            )
+        ).data
+        with pytest.raises(Exception, match="basis"):
+            await client.call_tool(
+                "record_decision",
+                {
+                    "spec_dir": str(module),
+                    "subject": "x",
+                    "verdict": "y",
+                    "why": "z",
+                    "basis": "guessed",
+                },
+            )
+    assert sorted(p.name for p in module.rglob("*")) == before
+    assert stated.recording in {"hook", "off"} and stated.basis == "recalled"

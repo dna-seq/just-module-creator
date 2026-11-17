@@ -64,6 +64,7 @@ class Ledger:
     unread_fetches: set[str] = field(default_factory=set)  # pmids asked, result unreadable
     written: dict[str, list[dict[str, Any]]] = field(default_factory=dict)  # row sha -> anchors
     blind_files: set[str] = field(default_factory=set)  # edited with no before-copy
+    decisions: list[dict[str, Any]] = field(default_factory=list)
 
 
 def read_ledger(spec_dir: Path) -> Ledger:
@@ -101,6 +102,8 @@ def _take(ledger: Ledger, event: dict[str, Any]) -> None:
             return
         if pmid and event.get("sha256"):
             ledger.fetched.setdefault(pmid, set()).add(event["sha256"])
+    elif kind == "decision":
+        ledger.decisions.append(event)
     elif kind == "edit":
         if "added" not in event:
             ledger.blind_files.add(str(event.get("file")))
@@ -196,4 +199,58 @@ def trace_with(
             else:
                 citation, why = citation_state(row, ledger.written[digest], ledger)
             states.append(RowState(name, index, digest, written, citation, why))
+    return states
+
+
+@dataclass(frozen=True)
+class DecisionState:
+    subject: str
+    verdict: str
+    by: str
+    witness: str  # witnessed | declared | recalled
+    why: str
+    because: str
+
+
+def decision_states(ledger: Ledger) -> list[DecisionState]:
+    """How each stated decision's reason is known. Only a passage can make it evidence.
+
+    `witnessed` needs a passage sitting verbatim in a text fetched that session, not cut from a
+    title, and naming every rsID the reason names. The last condition is the tester's finding on
+    the hand trial: a `not_used` reason about linkage with rs1421085 was anchored to a paper that
+    never names rs1421085, so the anchor looked like support and witnessed something else.
+    """
+    states: list[DecisionState] = []
+    for event in ledger.decisions:
+        basis = str(event.get("basis") or "")
+        anchors = event.get("anchors")
+        placed = [a for a in anchors or [] if "sha256" in a]
+        from_title = [a for a in anchors or [] if "title_of" in a]
+        unnamed = event.get("unnamed") or []
+        if basis == "recalled":
+            witness, because = "recalled", "stated as recalled from knowledge, not read"
+        elif anchors is None:
+            witness, because = "declared", "no passage was given for the reason"
+        elif from_title:
+            witness, because = "declared", "the passage is a piece of an article's title"
+        elif not placed:
+            witness, because = "declared", "the passage is in no text fetched that session"
+        elif unnamed:
+            witness = "declared"
+            because = f"the passage never names {', '.join(unnamed)}, which the reason relies on"
+        else:
+            witness, because = (
+                "witnessed",
+                "the passage sits in a fetched text and names the reason's variants",
+            )
+        states.append(
+            DecisionState(
+                subject=str(event.get("subject") or ""),
+                verdict=str(event.get("verdict") or ""),
+                by=str(event.get("by") or "agent"),
+                witness=witness,
+                why=str(event.get("why") or ""),
+                because=because,
+            )
+        )
     return states

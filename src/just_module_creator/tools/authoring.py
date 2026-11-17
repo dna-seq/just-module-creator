@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 from collections import Counter
 from dataclasses import asdict
 from typing import get_args, get_origin
@@ -36,6 +37,7 @@ from just_module_creator.models import (
     AuditReport,
     ClosureResult,
     CompileReport,
+    DecisionStated,
     LintResult,
     LogFinding,
     LogReview,
@@ -51,6 +53,7 @@ from just_module_creator.models import (
     TableList,
     TableRequirements,
     TemplateResult,
+    TracedDecision,
     TracedRow,
     TraceReport,
     ValidationReport,
@@ -962,6 +965,61 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             stats=jsonable(result.stats),
         )
 
+    # RM31 part 3. The ledger has one writer, the host hook, which records this call from its
+    # arguments; the tool validates and says so, and writes nothing itself. The alternative, a
+    # second writer here, could not anchor the passage: the fetched texts live in the hook's
+    # session buffer, which this server cannot name. The cost: with the hook off, nothing is
+    # kept, and the result says that rather than claiming a record.
+    @mcp.tool(
+        annotations=ToolAnnotations(title="State a decision for the ledger", readOnlyHint=True)
+    )
+    async def record_decision(
+        spec_dir: str,
+        subject: str,
+        verdict: str,
+        why: str,
+        basis: str,
+        passage: str | None = None,
+        by: str = "agent",
+    ) -> DecisionStated:
+        """Hand the provenance ledger a decision no edit shows: a paper read and set aside, a
+        variant left out, how a weight was set. The host hook records it at the module's next
+        table edit; this tool writes nothing.
+
+        `basis` is `read` (give `passage`, verbatim from an article fetched this session),
+        `recalled` (from knowledge, not read here) or `author` (the person decided; `why` is
+        an English paraphrase they have approved). `trace_module` reads it back: a passage
+        found in a fetched text that names every rsID `why` names is evidence; anything else
+        is a declared or recalled reason, kept and labelled, never counted as support.
+        """
+        target = resolve_dir(spec_dir, settings)
+        if not (target / "module_spec.yaml").is_file():
+            raise ToolError(f"{spec_dir} holds no module_spec.yaml, so no module to record for.")
+        if basis not in {"read", "recalled", "author"}:
+            raise ToolError("`basis` is `read`, `recalled` or `author`.")
+        if not subject.strip() or not verdict.strip() or not why.strip():
+            raise ToolError("`subject`, `verdict` and `why` each need words.")
+        off = os.environ.get("JMC_TRACE", "").strip().lower() in {"0", "false", "no", "off"}
+        note = (
+            "JMC_TRACE=0 here, so the hook records nothing and this decision is not kept."
+            if off
+            else (
+                "Recorded at the module's next table edit. A `read` reason counts as evidence "
+                "only if its passage is verbatim in an article fetched this session and names "
+                "every rsID the reason names."
+                if basis == "read"
+                else "Kept as a stated reason and labelled so; it never counts as evidence."
+            )
+        )
+        return DecisionStated(
+            spec_dir=str(target),
+            subject=subject,
+            verdict=verdict,
+            basis=basis,
+            recording="off" if off else "hook",
+            note=note,
+        )
+
     # RM31 part 2, the join over the ledger `tracehook` writes. Offline and read-only like the audit
     # beside it. The quote-bearing table is upstream's (`hints.REDUNDANCY_BEARING_TABLES`) and the
     # authored tables are the compiler's (`spec_tables`), so no table is named here. Its scope is
@@ -1017,6 +1075,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             events=dict(ledger.counts),
             unreadable_lines=ledger.unreadable_lines,
             rows=[TracedRow(**vars(s)) for s in states],
+            decisions=[TracedDecision(**vars(d)) for d in trace.decision_states(ledger)],
             counts=dict(sorted(counts.items())),
             scope=(
                 "Whether a recorded edit wrote each row, and whether each citation in the "

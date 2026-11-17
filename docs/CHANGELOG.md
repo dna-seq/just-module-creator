@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **Decisions no edit shows go to the ledger** (RM31, part 3): `record_decision` states a paper set aside, a variant left out or how a weight was set, as `read` (with a verbatim passage), `recalled` or `author`. The host hook records it; `trace_module` reads each back as `witnessed`, `declared` or `recalled`, and a passage that does not name every rsID the reason names is declared, however real its anchor. `module-check` carries the brief for an independent reviewer pass.
 - **The enricher floor is 0.8.8** (upstream RM445): a cache pull could label kept files with a release it never fetched, so a ClinVar cache could serve older rows under a newer release name. A machine pulled before 0.8.8 should run `just-dna-enricher cache pull` once.
 - **Registry 0.32 adopted** (both instances serve it; the registry floor is 0.32.0):
   - `registry_review` and `registry_reviews` say what `curated` now means: a highlighted `verified` review from outside the module's namespace (S33). 0.48.12's "whatever its verdict" became false when the instances moved.
