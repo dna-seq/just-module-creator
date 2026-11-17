@@ -318,3 +318,55 @@ anchor resolves. It found six things this section had missed, and the first two 
 
 The read also led to F159: the pre-publish log check read only `*.log`, so this ledger reached the
 polygon without that check ever reading it. Fixed.
+
+## 11. What the host hook receives, measured 2026-11-17
+
+Before writing the hook, a throwaway one dumped what it was given: a headless Claude Code session with this
+plugin loaded from a working copy, a `PostToolUse` hook matching every tool, and three calls. Codex was read
+from its own documentation, not run.
+
+**Claude Code.**
+
+- **An MCP result arrives whole.** `fetch_fulltext` for PMID 28642257 reached the hook as a 52,756-character
+  string, the tool's full JSON with the article text inside, although the model-facing copy of a result that
+  size is spilled to a file. So the hook can hash the text and keep it for the session itself; nothing has to
+  re-fetch it.
+- **Edits arrive with their content.** `Write` carries `file_path` and `content`; `Edit` carries `file_path`,
+  `old_string`, `new_string` and `replace_all`. The touched rows come from reading the file after the edit
+  and comparing it with the copy taken before.
+- **Every event carries** `session_id`, `cwd`, `tool_name`, `tool_input`, `tool_response`, `tool_use_id` and
+  `transcript_path`. The ledger keeps none of `transcript_path` or `cwd`: both are absolute paths.
+- **Cost.** A stdlib-only script started with `uv run --no-project python -I` takes about 20 ms. The hook
+  stays stdlib-only and its matcher names exact tools, so other calls pay nothing.
+
+**Codex** (developers' documentation, `docs/hooks`): `PostToolUse` fires for MCP tools by name and gives
+`tool_response` as "the MCP call result"; file edits arrive as `apply_patch` (also matched as `Edit` and
+`Write`) with the patch in `tool_input.command`. A plugin declares hooks in `hooks/hooks.json` or a `hooks`
+entry in `.codex-plugin/plugin.json`. **Plugin hooks run only after the author reviews them once** (`/hooks`
+in the CLI), and again after an update changes the script. So on Codex capture starts at that approval:
+decision 3's notice has to say so, and the join reports what came before as `not_traceable`, as it does for
+any untraced row. Not measured yet: the exact shape Codex gives an MCP result.
+
+**Decisions this settles, for the build.**
+
+1. **One mechanism.** The hook captures our own tools too, since it sees their whole result. No second
+   capture path inside the server.
+2. **Exact tool names in the matcher**, never a pattern: our search, fetch and lookup tools, and the hosts'
+   edit tools. Never just-dna-lite's (sample ids and genotypes) and never shell command text.
+3. **What counts as a module.** A directory holding `module_spec.yaml` that the session edits. The plugin's
+   own development tree sets `JMC_TRACE=0` in its tracked settings, so editing `assets/` or a reference
+   example here grows no ledger.
+4. **The buffer** (fetched texts by hash, the session's pending events, the before-copies of edited files)
+   lives under the resolved cache directory, one folder per session, deleted at session end, and never in
+   the spec directory.
+5. **A recalled reason is labelled `recalled`**, and the join counts an anchor as support for a reason only
+   when the anchored passage names the reason's subject (the tester's first finding). **Judged cells are
+   traced one by one** (`weight`, `direction`, `conclusion`), each needing its own basis (the second).
+
+**Slices, each landing whole:**
+
+1. The hook, the buffer and the ledger writer for searches, fetches and edits of `studies.csv` and
+   `variants.csv`, with the quote anchor computed at write time from the buffered text. Both manifests.
+2. The join as a read-only tool (`trace_module`), with the tester's two findings and the three negative
+   controls of section 10 as tests that fail without the check.
+3. The decision record (a rejected paper, a recalled reason) and the reviewer pass.

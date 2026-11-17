@@ -1,0 +1,22 @@
+{
+  "description": "just-module-creator: the provenance ledger (RM31). Records searches, fetched articles by hash, and module table edits into the module's logs/trace/. JMC_TRACE=0 turns it off.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [{"type": "command", "command": "uv run --no-project python -I \"${CLAUDE_PLUGIN_ROOT}/src/just_module_creator/tracehook.py\" pre", "timeout": 10}]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__plugin_just-module-creator_just-module-creator__(literature_search|paper_citations|fetch_fulltext|lookup_variant|record_decision)|Write|Edit|MultiEdit",
+        "hooks": [{"type": "command", "command": "uv run --no-project python -I \"${CLAUDE_PLUGIN_ROOT}/src/just_module_creator/tracehook.py\" post", "timeout": 10}]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [{"type": "command", "command": "uv run --no-project python -I \"${CLAUDE_PLUGIN_ROOT}/src/just_module_creator/tracehook.py\" end", "timeout": 10}]
+      }
+    ]
+  }
+}

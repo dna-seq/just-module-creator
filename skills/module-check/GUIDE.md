@@ -58,6 +58,41 @@ Its three lists are three different claims, and the third is the one to read car
 established. A signal is not a verdict on the work either: a module that raises one is out of date or
 undeclared, not broken.
 
+**Then read each row's chain:** `trace_module(spec_dir="spec")`, also offline. It joins every authored
+row to the module's provenance ledger (`logs/trace/`, which this plugin's hook writes while you author).
+A row of `studies.csv` comes back `traced` (its PMID came back from a recorded search, the article was
+fetched, and the quote sits verbatim in it), `contradicted` or `not_traceable`, each with its `why`.
+**A `contradicted` row is the one to act on first:** a PMID no search returned is the recalled-PMID
+failure, and a quote that is the article's title, or is not in the fetched text, is not a located
+passage. Re-read the paper and fix the row, or cite the paper that does support it. `not_traceable`
+is an unknown, never a defect: every row written before the ledger existed reads that way. And
+`traced` covers the citation only: a traced row can still carry a weight or conclusion nothing
+recorded, which the result's `scope` says in its own words.
+
+**State what no edit shows** with `record_decision`: a paper read and set aside, a variant left out,
+how a weight was set. Give `basis="read"` with a `passage` copied verbatim from an article fetched this
+session, `recalled` when the reason comes from knowledge, or `author` for the person's own decision in
+an English paraphrase they approved. `trace_module` reads each back as `anchored`, `declared` or
+`recalled`. **`anchored` says where a passage is, never that it supports the reason:** it needs the
+passage verbatim in a fetched text and naming the variants the decision names. A passage can name the
+right variant and say the opposite, and a reason naming no variant (a weight's, usually) reads
+`declared`, since nothing ties it to any passage.
+
+**Then hand the module to a reader who did not write it.** Start a fresh agent, never this one, with the
+spec directory and this brief, and nothing of your reasoning:
+
+> Read the module cold. First the tables and the shipped files that are not tables (README, the
+> licensing notices, the spec's version). Then the `logs/trace/` ledger: for each article fetched,
+> fetch it again with `fetch_fulltext`, check its hash against the ledger, and read every anchored span
+> beside the row or decision that cites it. Check each judged cell by name (`weight`, `direction`,
+> `conclusion`) for a stated basis, and note the search results nobody opened. Only after that, run
+> `trace_module` and compare its labels with what you read. Return questions for the author, never
+> verdicts: which rows have no chain, which reasons the passage beside them does not support, which
+> shipped file contradicts the tables.
+
+The order matters: a reviewer who reads `trace_module`'s labels first is handed a conclusion before
+looking, and the check that caught a wrong reason in the hand trial was reading the passage beside it.
+
 ## The checks, and what each one actually reads
 
 ```
