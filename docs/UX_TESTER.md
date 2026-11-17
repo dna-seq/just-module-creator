@@ -329,11 +329,14 @@ remain open on it:**
 The namespace `test-sheep` is left claimed — it *is* `test-`prefixed, so the operator's sweep collects
 it, and there is no unclaim operation anyway.
 
-**Owed when an instance serves registry 0.32 (S33; the liaison, 2026-11-16, message 640786088):** a highlighted
-review with verdict `concerns` should no longer mark the card `curated`, since 0.32 counts only outside `verified`
-highlights. Rehearse on the polygon's `test-sheep/test_statin_response` as on 2026-11-15 (post, highlight, read,
-then unhighlight, delete, read back), and check that F154's "whatever its verdict" description sentence is
-retired; that wording is the lead's. Today prod serves 0.31.0, the polygon 0.30.0.
+**S33 recheck on registry 0.32.0 (both instances, read 02:40 CET 2026-11-17), polygon `test-sheep/test_statin_response@0.1.1`.**
+The owner's own highlighted review leaves the card `curated: false` with verdict `concerns`, and still with `verified`
+(0.31 made it `true` on 2026-11-15). So curated now needs an outside `verified` highlight, and the live descriptions of
+`registry_review` and `registry_reviews` ("curated whatever its verdict") are false on both instances; rewording them is
+in the lead's 0.32 adoption. Seen in passing: re-posting a highlighted review with another verdict kept
+`highlighted: true`. With an outside reviewer that would let a highlighted `concerns` become `verified`, and the card
+curated, without the owner acting again; untested, since `sheep` is the only account. Cleaned up: unhighlight, delete,
+card back to `curated: false, review_count: 0`.
 
 **RM31 hand trial, fresh-eyes read (2026-11-16, at the lead's request; `test-sheep/test_fto_bmi_trace@0.1.0`).**
 Read from the download alone, then compared with the lead's DESIGN-traceability §10 (branch `rm31-trial`, 0838354).
