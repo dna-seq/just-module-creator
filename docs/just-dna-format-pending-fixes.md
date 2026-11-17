@@ -158,7 +158,7 @@ reason is one of §5's grounds or a covering tool; a row with a trigger is wrapp
 | `pubkey` | Both instances answer `None`: nothing is signed to check against. | an instance signs; then pin its key in `registry_download` |
 | `import_module` | A spec archive goes through `registry_publish`; the legacy parquet-only form carries no spec for any check here to read before a permanent publish. | |
 | `admin_rename_account`, `merge_accounts`, `runs`, `run_log` | Only a deployment calls them: site admins only (the saved polygon account answers `site_admin: false`). | |
-| `upgrade_status` (new in 0.32.0) | **Owed, undecided**: anonymous, per module, says whether the upgrade sweep left a version `held` or `behind`, which an author can act on; wrapping is the default (the lead's). | the 0.32 client is in our lock |
+| `upgrade_status` (new in 0.32.0) | **Owed; 0.32 in our lock since `7a75591`, the lead's adoption block**: anonymous, per module, says whether the upgrade sweep left a version `held` or `behind`, which an author can act on; wrapping is the default (the lead's). | the 0.32 client is in our lock |
 | `assert_compatible`, `issue_jwt_token` | Transport: the client calls the first on every connection itself; the second is a web session's token exchange, and a static token serves every call. | |
 
 `set_short_description` is not an abstention: `registry_set_subtitle` wraps it (`0395250`), closing F59 on our side.

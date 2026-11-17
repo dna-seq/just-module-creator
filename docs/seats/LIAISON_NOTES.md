@@ -18,11 +18,7 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. `upstream-inde
 
 ## Half read
 
-- Nothing. Main runs format/compiler 0.8.6, enricher 0.8.7 (`37caadb`; RM444's text for F152) and
-  registry client 0.31.0 (release 0.48.13, which also floors the enricher `>=0.8.7`); read to v0.8.7 and registry 0.32.0 (2026-11-16: releases S29-S33 and `upgrade_status`; on no instance yet, not in our lock; held at 0.31 in the 2026-11-17 bump on the lead's word; the lead adopts 0.32 once an instance we read serves it).
-  Production serves registry 0.31.0 on format 0.8.6, the polygon 0.30.0 on 0.8.4 (2026-11-16). Re-run S30 on the
-  polygon once it serves 0.30.1 or later. Watch S32's folding patch reaching an instance, and a client release
-  quoting `gene_claims`' symbol (tell the lead of each).
+- Nothing. Main runs format/compiler 0.8.6, enricher 0.8.8 (`33d706c`, RM445) and registry client 0.32.0 (`7a75591`), both unreleased as of 2026-11-17; read to v0.8.8 and registry 0.32.0. Both instances serve registry 0.32.0 on format 0.8.6 (2026-11-17 02:40 CET). Owed of me: S30's live re-run on the polygon (`passes=` with `offline=false`), deferred while the 7-day quota is past 90%. Watch: the next plugin release carrying both, then mark F148/S29, S31, S32, S33 and `upgrade_status` released.
 
 ## The dependency bump
 
