@@ -387,6 +387,13 @@ names the judged cells and the non-table files, notes unopened results, and read
 re-joining a ledger written by 18b6cec's hook (no `tied` field) reads all four as "the reason names no variant",
 including A and B, whose `why` names two rsIDs; only pre-release ledgers carry that shape.
 
+**Polygon claims and `pgs_id` reads on registry 0.32.0, 2026-11-17 (pending since the polygon served 0.30).**
+`registry_claims(variant="RS429358", target="test")` folds the spelling (`variant_keys: ["RS429358","rs429358"]`), 11
+modules, 32 claims, each carrying `haplotype`; `conflicts.compared: 0` with reasons. `registry_search(pgs_id=...)` is
+accepted on the polygon now (0 matches for PGS000001). The live `registry_claims` description still says 0.31 answers
+`RS429358` empty; false on both instances now, and its rewording is in the lead's 0.32 adoption. F150 closed by the
+liaison (c577c01).
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
