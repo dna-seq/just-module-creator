@@ -379,6 +379,14 @@ citation-traversal row now reads `not_traceable` ("found by a route the ledger d
 row quoting a sentence of 42968160 reads `traced`; a quote of the title's first five words reads `contradicted`, "a
 piece of the cited article's own title". Holds. Codex still untried.
 
+**RM31 F162 recheck, 2026-11-17, `rm31-build` 22a4ef4.** A fresh headless session, same four decisions: A (true LD
+reason) and B (reason its passage contradicts) read `anchored`, "whether it supports the reason is for a reader", each
+with `passages` (pmid, sha256, offset, len); C (weight reason naming no variant) reads `declared`; D `recalled`. Holds,
+with B honestly labelled rather than caught. The revised reviewer brief now re-fetches and reads each anchored span,
+names the judged cells and the non-table files, notes unopened results, and reads `trace_module` last. One leftover:
+re-joining a ledger written by 18b6cec's hook (no `tied` field) reads all four as "the reason names no variant",
+including A and B, whose `why` names two rsIDs; only pre-release ledgers carry that shape.
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
