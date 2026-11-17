@@ -118,6 +118,10 @@ its history.
 | F99 | S101 | doc fixed | upstream docs, nothing to install |
 | F54 | S58 | RM122 | open upstream, parked |
 
+## Registry `S35` — an outside reviewer's edit can turn an owner's pinned critique into `curated` (no F#: the tester's S33 check)
+
+**State: filed 2026-11-17, unanswered.** On 0.32.0 a re-posted review keeps the owner's `highlighted` flag (`upsert_review` leaves it alone, by its docstring), so an outside `concerns` review the owner pinned can be re-posted `verified` and the card turns `curated` without the owner acting. Observed with one account on the polygon by the tester (`58741df`); the outside-account case read in their source, not run. Asked: a verdict change clears the highlight, or `curated` counts only a highlight newer than the last verdict change; or a sentence saying editing carries the endorsement. Ours: `registry_review`'s description follows whichever they choose (the lead's).
+
 ## F153 — an owner can review and highlight their own module, and the card reads `curated: true` (registry `S33`)
 
 **Released in registry 0.32.0 (on PyPI 2026-11-16), served by no instance yet (2026-11-16): `curated` counts only outside `verified` highlights (corroboration below); own stars unchanged.** **State: answered 2026-11-14, accepted (contradicts their 0.8.0 rule that curation comes from outside the namespace); on their roadmap, the fix undecided between refusing it and counting only outside reviewers; own stars ride with it; the DELETE asymmetry stays as documented. Our wording judged accurate. Filed 2026-11-14.** Found by the tester on the polygon (`docs/dogfooding.md`, F153): the
