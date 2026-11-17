@@ -6,6 +6,20 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F160 — `registry_publish` lets the name differ by a `test_` prefix, and the registry refuses exactly that
+
+**Found:** 2026-11-17 (tester, over the wire on 0.48.13) · **Severity:** low · **Status:** ours.
+
+F158's fix refuses a call whose `version` or `name` differs from `module_spec.yaml`, "or `name` from its
+`module.name` by more than a `test_` prefix". The allowance is what a first rehearsal reaches for, and the polygon
+refuses it: a copy of `assets/fto_bmi` (spec name `fto_bmi`) published as `test-sheep/test_fto_bmi@1.0.0` passed the
+local check, went out, and came back `HTTP 422: name_mismatch`, "module_spec name 'fto_bmi' != path
+'test_fto_bmi'". So the one difference the description permits is one the registry never accepts, and the author
+learns it from the server after an upload. The rest of F158 holds: version `9.9.9` against the spec's `1.0.0`, and
+the name `test_other_bmi`, were both refused locally with nothing sent.
+
+**Resolved 2026-11-17 (lead).** The allowance was mine, taken from `module-publish`'s rehearsal recipe without checking it against the registry. `registry_publish` now refuses any `name` that differs from `module.name`, prefix included, and says to set `module.name` to the rehearsal name; `module-publish`'s recipe says the same. The `test_fto_bmi` case is a parametrization of `test_a_spec_naming_another_module_is_not_published`, and fails on the code that allowed it.
+
 ## F159 — the pre-publish log check read only `*.log` while compiler 0.8 ships `.jsonl`, `.json`, `.md`, `.txt` and images from `logs/`
 
 **Found:** 2026-11-16 (lead, reading `registry_publish` while fixing F158, after the RM31 rehearsal had shipped

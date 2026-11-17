@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`registry_publish` refuses a `test_` rehearsal name over an unprefixed spec** (F160): 0.48.13 let that one name difference through, and the registry refuses it (`422 name_mismatch`). The name must now equal `module.name` exactly; `module-publish`'s rehearsal recipe says to set `module.name` to the rehearsal name and back before publishing for real.
 ## [0.48.13] — 2026-11-17
 
 - **The pre-publish log check reads every file that ships** (F159): `review_logs` and `registry_publish`'s note found only `*.log`, while compiler 0.8 also ships text, JSON and images from `logs/`, so a `.jsonl` there went to the registry unread. The list now comes from the compiler's own `discover_logs`; an image is weighed by size and not read as text. The `logs` dossier, `module-publish` and the layout reference say what 0.8 ships.

@@ -44,7 +44,6 @@ from just_module_creator.models import OpResult, PublishPreflight
 from just_module_creator.settings import RegistryTarget, Settings
 from just_module_creator.targets import (
     DEFAULT_WRITE_TARGET,
-    TEST_MODULE_PREFIX,
     client_for,
     describe,
     instance_note,
@@ -884,9 +883,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         module* or how they are grounded is a **major** — someone pinned to the
         old major would otherwise silently receive different content. Write the
         changelog as a continuation of the previous one, not a fresh
-        "initial release". Refused when `version` differs from the spec's
-        `module.version`, or `name` from its `module.name` by more than a
-        `test_` prefix: the spec ships as written.
+        "initial release". Refused when `version` or `name` differs from the
+        spec's `module.version` or `module.name`: the spec ships as written, and
+        the registry refuses a name mismatch, a `test_` rehearsal name included.
 
         On success, `data.page_url` is the module's page in that registry's web
         console. Hand it to the author: it is how they see what was published.
@@ -942,16 +941,16 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         # authored, so a `module_spec.yaml` naming another version reaches the next author who
         # downloads it, who then bumps from the wrong base. Which of the two is right is the
         # author's, so this refuses rather than rewriting either. After validation, so a spec
-        # that does not load gets the validator's message rather than a traceback. The name may
-        # differ by the rehearsal prefix alone: `module-publish` teaches `test_<name>` on the
-        # polygon over an unprefixed spec, so `purge-test-data` collects it.
+        # that does not load gets the validator's message rather than a traceback. The name must
+        # match exactly: the registry refuses any other (`422 name_mismatch`, F160), a `test_`
+        # rehearsal prefix included, which an allowance here once let through to the upload.
         authored = (await run_sync(lambda: compiler.load_spec(spec / "module_spec.yaml"))).module
         disagree: list[str] = []
         if authored.version is not None and str(authored.version) != version:
             disagree.append(
                 f"version: the call says {version!r}, module_spec.yaml says {authored.version!r}"
             )
-        if authored.name and name not in {authored.name, f"{TEST_MODULE_PREFIX}{authored.name}"}:
+        if authored.name and name != authored.name:
             disagree.append(
                 f"name: the call says {name!r}, module_spec.yaml says {authored.name!r}"
             )
@@ -962,8 +961,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
                     "Not published: the spec and the call name different modules ("
                     + "; ".join(disagree)
                     + "). The registry would publish under the call's identity and ship the "
-                    "spec as written, so whoever downloads it reads the other. Make "
-                    "module_spec.yaml say what you are publishing, then publish again."
+                    "spec as written, so whoever downloads it reads the other, and the "
+                    "registry refuses a name that differs. Make module_spec.yaml say what you "
+                    "are publishing (a `test_` rehearsal name included), then publish again."
                 ),
                 data={"target": target, "disagree": disagree},
             )
