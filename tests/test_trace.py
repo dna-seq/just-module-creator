@@ -417,3 +417,31 @@ def test_a_ledger_without_the_tie_field_reads_the_tie_from_the_reason(module, en
     ledger_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
     (state,) = decisions(module)
     assert state.witness == "anchored", state.because
+
+
+def test_an_old_ledger_never_claims_a_check_it_did_not_make(module, env) -> None:
+    """F163: the hook before `tied` checked a passage against the reason's variants only. A
+    decision naming rs1421085 in its subject alone was never checked for it, so it reads
+    declared, not anchored, however the stale `unnamed` reads."""
+    fetch(env)  # the article names rs17782313, never rs1421085
+    decide(
+        env,
+        spec_dir=str(module),
+        subject="rsid:rs1421085",
+        verdict="-0.5",
+        basis="read",
+        why="Because the effect on body mass is large.",
+        passage=QUOTE,
+    )
+    write_study(module, env)
+    ledger_file = next((module / "logs" / "trace").glob("*.jsonl"))
+    lines = []
+    for line in ledger_file.read_text("utf-8").splitlines():
+        event = json.loads(line)
+        if event.get("kind") == "decision":
+            event.pop("tied", None)
+            event["unnamed"] = []  # what the older hook stored: the reason names no rsID
+        lines.append(json.dumps(event))
+    ledger_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (state,) = decisions(module)
+    assert state.witness == "declared" and "never checked for rs1421085" in state.because

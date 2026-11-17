@@ -213,6 +213,18 @@ class DecisionState:
     passages: list[dict[str, Any]] = field(default_factory=list)  # pmid, sha256, offset, len
 
 
+def _never_checked(event: dict[str, Any], tied: list[str]) -> list[str]:
+    """Variants the decision names that its recorded `unnamed` was never computed against.
+
+    The hook records `tied` beside `unnamed` since both covered the subject and the reason; an
+    older event's `unnamed` covered the reason alone. Empty for any event that records `tied`.
+    """
+    if "tied" in event:
+        return []
+    from_reason = {r.lower() for r in _RSID.findall(str(event.get("why") or ""))}
+    return sorted(set(tied) - from_reason)
+
+
 def decision_states(ledger: Ledger) -> list[DecisionState]:
     """How each stated decision's reason is known. Never whether the reason holds.
 
@@ -256,6 +268,14 @@ def decision_states(ledger: Ledger) -> list[DecisionState]:
         elif unnamed:
             witness = "declared"
             because = f"the passage never names {', '.join(unnamed)}, which the reason relies on"
+        elif unchecked := _never_checked(event, tied):
+            # F163: a hook before `tied` checked the passage against the reason's variants only,
+            # so a variant named in the subject alone was never looked for. Unknown, not anchored.
+            witness = "declared"
+            because = (
+                f"the passage was never checked for {', '.join(unchecked)}: the ledger predates "
+                "that check"
+            )
         else:
             witness = "anchored"
             because = (
