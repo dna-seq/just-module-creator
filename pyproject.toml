@@ -64,7 +64,11 @@ dependencies = [
     "just-dna-format>=0.8.6,<0.9",
     # 0.8.7 for RM444: `lookup_old_assembly`'s trimmed `next_step` (F152) leaves the
     # `ref`/`alts` and overlap wording to upstream's own message, which 0.8.6 lacks.
-    "just-dna-enricher[atlas]>=0.8.7,<0.9",
+    # 0.8.8 for RM445: a pull put the hub's release label over kept files it never fetched,
+    # so a ClinVar cache could serve August rows labelled with a November release. A failed
+    # `release.json` fetch now raises from `ensure_*_snapshot`; `prepare_lane` reports it as a
+    # failed lane, which is how `provision_caches` already shows one.
+    "just-dna-enricher[atlas]>=0.8.8,<0.9",
     # 0.25.2 is the first PUBLISHED client carrying the whole caching-proxy surface —
     # `cache_status`, `derived`, `draft`, the six `hint_*` methods and
     # `models.api.VariantHintReport`. Verified against the wheel rather than a sibling
@@ -98,7 +102,10 @@ dependencies = [
     # A registry minor is not a contract skew, so this client still talks to a 0.30
     # instance; the tools read `/version` and refuse the three reads there, since a 0.30
     # server ignores `pgs_id` and answers the wider listing.
-    "just-dna-registry>=0.31.0",
+    # 0.32.0 (2026-11-17, both instances serving it): `gene_claims` quotes the symbol, so the
+    # path guard came out; `upgrade_status` is wrapped; `/variants` folds spellings and says
+    # `matched`; lane answers carry `terms`/`unpublished`; `whoami` lists `member_of`/`orgs`.
+    "just-dna-registry>=0.32.0",
     "python-dotenv>=1.2.2",
     # Declared, not leaned on transitively: net.py calls httpx directly for the
     # literature sources, and a transitive pin is not a contract.
@@ -167,6 +174,9 @@ dev = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# pytest-asyncio 1.5 warns when this is unset and plans to change the default; "function" is the
+# scope every async fixture here already runs at (the in-memory client's loop, CLAUDE.md §6).
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 addopts = "-v --tb=short"
 filterwarnings = [

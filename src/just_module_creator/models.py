@@ -1917,6 +1917,17 @@ class PublishedClaims(BaseModel):
         description="Every key the spelling resolved to (variant only). The spelling asked is "
         "always among them; a second key means a stored alias matched it.",
     )
+    spellings: list[str] = Field(
+        default_factory=list,
+        description="The key as asked, then the stored forms the registry folded it onto "
+        "(variant only, registry 0.32). Empty from an older instance.",
+    )
+    matched: bool | None = Field(
+        default=None,
+        description="Whether any of `spellings` is stored for a visible module (variant only, "
+        "registry 0.32): false with no claims is a variant no module spells, true with no claims "
+        "is one modules name without a claim. Null when the instance did not say.",
+    )
     modules: list[str] = Field(
         description="Every module with a claim here, whole even when `claims` is cut."
     )
@@ -3133,6 +3144,21 @@ class LaneStatus(BaseModel):
         description="How to build it here, as typed. **Not derivable from the lane "
         "name** — there is no `drug_labels build`.",
     )
+    approx_mb: int | None = Field(
+        default=None,
+        description="Roughly what the lane stores, in MB, as the instance states it (registry "
+        "0.32). Null when it was not asked, or states none.",
+    )
+    provision_lanes: list[str] = Field(
+        default_factory=list,
+        description="The lanes provisioning this one would pull here, itself included (registry "
+        "0.32); empty when not stated.",
+    )
+    provision_mb: int | None = Field(
+        default=None,
+        description="What provisioning it would cost here, in MB (registry 0.32): `approx_mb` "
+        "summed over `provision_lanes`. Null when not stated, which is not free.",
+    )
 
 
 class CacheReport(BaseModel):
@@ -3168,6 +3194,12 @@ class CacheReport(BaseModel):
         "produce from a snapshot: a tool needing one of them fetches live or reports "
         "that the question was not put.",
     )
+    proxy_live_legs: list[dict] | None = Field(
+        default=None,
+        description="The caching proxy's operator-gated live legs and whether each is open on "
+        "the instance (registry 0.32): `upstream`, `open`, `setting`, `passes`, `hint_flags`. "
+        "Null when not asked or the instance predates the field, never 'every leg open'.",
+    )
     note: str = Field(description="What to do with this, in one or two sentences.")
 
 
@@ -3192,8 +3224,8 @@ class LaneLookup(BaseModel):
     licence: str | None = Field(
         default=None,
         description=(
-            "The lane's licence as upstream's lane catalogue records it (SPDX). Null means the "
-            "catalogue records none for this lane, which is not permission."
+            "The lane's licence as `terms_from` states it (SPDX). Null means none is stated "
+            "for this lane, which is not permission."
         ),
     )
     licence_notice: str | None = Field(
@@ -3206,6 +3238,11 @@ class LaneLookup(BaseModel):
             "Why the lane's snapshot is not published, as upstream records it (`refused: …` or "
             "`unestablished: …`). Rows served from such a lane carry that question with them."
         ),
+    )
+    terms_from: str | None = Field(
+        default=None,
+        description="Who stated the licence fields: `registry` (since registry 0.32 the answer "
+        "carries the lane's terms), or the installed enricher's catalogue for an older registry.",
     )
 
 

@@ -388,7 +388,7 @@ async def test_an_applied_namespace_rename_moves_the_saved_namespace(make_client
     assert localstore.pick_token(localstore.load(), "test", "test-flock") == "mk_sheep_aaaa"
 
 
-async def test_an_org_namespace_is_recorded_and_says_a_refresh_forgets_it(make_client, monkeypatch):
+async def test_an_org_namespace_is_recorded_and_kept_at_refresh(make_client, monkeypatch):
     _seed(("test", "sheep", "mk_sheep_aaaa", ["test-sheep"]))
     stub = _RegistryStub()
     monkeypatch.setattr(registry_tools, "client_for", stub)
@@ -408,9 +408,26 @@ async def test_an_org_namespace_is_recorded_and_says_a_refresh_forgets_it(make_c
     ]
     assert org["success"] is True and claim["success"] is True
     assert localstore.load().accounts[0].namespaces == ["test-herd-ns", "test-sheep"]
-    # Registry S31: whoami lists only owned namespaces, so the start-up check drops it.
-    assert "forgets test-herd-ns" in claim["message"]
-    assert "finds no saved token" in claim["message"] and "JMC_TEST_API_KEY" in claim["message"]
+    # Registry 0.32 lists it under `member_of`, so the start-up check keeps it (S31): no caveat.
+    assert "forgets" not in claim["message"] and "no saved token" not in claim["message"]
+
+
+def test_the_account_check_keeps_a_namespace_reached_through_an_org() -> None:
+    """S31, registry 0.32: `member_of` names what a token reaches without owning it, and every
+    registry role carries `publish`, so all of it is selectable alongside what it owns."""
+    from just_dna_registry.models.api import NamespaceMembership, WhoAmI
+
+    reply = WhoAmI(
+        account="sheep",
+        namespaces=["test-sheep"],
+        member_of=[
+            NamespaceMembership(namespace="test-herd-ns", role="member", via="org:test-herd"),
+            NamespaceMembership(namespace="test-shared", role="admin", via="member"),
+        ],
+    )
+    assert accountcheck.publishable(dict(reply)) == ["test-herd-ns", "test-shared", "test-sheep"]
+    # A pre-0.32 answer has no `member_of`: what it owns, nothing invented.
+    assert accountcheck.publishable({"namespaces": ["test-sheep"]}) == ["test-sheep"]
 
 
 async def test_production_refuses_a_test_org_namespace_before_any_request(make_client, monkeypatch):

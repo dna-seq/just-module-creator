@@ -44,7 +44,6 @@ from just_module_creator.models import OpResult, PublishPreflight
 from just_module_creator.settings import RegistryTarget, Settings
 from just_module_creator.targets import (
     DEFAULT_WRITE_TARGET,
-    TEST_MODULE_PREFIX,
     client_for,
     describe,
     instance_note,
@@ -884,9 +883,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         module* or how they are grounded is a **major** — someone pinned to the
         old major would otherwise silently receive different content. Write the
         changelog as a continuation of the previous one, not a fresh
-        "initial release". Refused when `version` differs from the spec's
-        `module.version`, or `name` from its `module.name` by more than a
-        `test_` prefix: the spec ships as written.
+        "initial release". Refused when `version` or `name` differs from the
+        spec's `module.version` or `module.name`: the spec ships as written, and
+        the registry refuses a name mismatch, a `test_` rehearsal name included.
 
         On success, `data.page_url` is the module's page in that registry's web
         console. Hand it to the author: it is how they see what was published.
@@ -942,16 +941,16 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         # authored, so a `module_spec.yaml` naming another version reaches the next author who
         # downloads it, who then bumps from the wrong base. Which of the two is right is the
         # author's, so this refuses rather than rewriting either. After validation, so a spec
-        # that does not load gets the validator's message rather than a traceback. The name may
-        # differ by the rehearsal prefix alone: `module-publish` teaches `test_<name>` on the
-        # polygon over an unprefixed spec, so `purge-test-data` collects it.
+        # that does not load gets the validator's message rather than a traceback. The name must
+        # match exactly: the registry refuses any other (`422 name_mismatch`, F160), a `test_`
+        # rehearsal prefix included, which an allowance here once let through to the upload.
         authored = (await run_sync(lambda: compiler.load_spec(spec / "module_spec.yaml"))).module
         disagree: list[str] = []
         if authored.version is not None and str(authored.version) != version:
             disagree.append(
                 f"version: the call says {version!r}, module_spec.yaml says {authored.version!r}"
             )
-        if authored.name and name not in {authored.name, f"{TEST_MODULE_PREFIX}{authored.name}"}:
+        if authored.name and name != authored.name:
             disagree.append(
                 f"name: the call says {name!r}, module_spec.yaml says {authored.name!r}"
             )
@@ -962,8 +961,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
                     "Not published: the spec and the call name different modules ("
                     + "; ".join(disagree)
                     + "). The registry would publish under the call's identity and ship the "
-                    "spec as written, so whoever downloads it reads the other. Make "
-                    "module_spec.yaml say what you are publishing, then publish again."
+                    "spec as written, so whoever downloads it reads the other, and the "
+                    "registry refuses a name that differs. Make module_spec.yaml say what you "
+                    "are publishing (a `test_` rehearsal name included), then publish again."
                 ),
                 data={"target": target, "disagree": disagree},
             )
@@ -1521,8 +1521,8 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         )
 
     # An org is an account the caller owns; `create_org_namespace` needs one, and no other
-    # call here could make it. Registry S31: nothing lists the orgs an account belongs to, so
-    # the org's name has to come from the author or from this call's result.
+    # call here could make it. Since registry 0.32 (S31) `registry_whoami` lists the orgs an
+    # account belongs to (`orgs`) and the namespaces it reaches through them (`member_of`).
     @mcp.tool(
         tags={GATED_TAG},
         annotations=ToolAnnotations(
@@ -1567,8 +1567,8 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         )
 
     # The claim's org twin. Recorded on the saved account so the next publish to it picks
-    # this token, but `whoami` lists only namespaces an account owns itself (registry S31),
-    # so the next account refresh drops it again; the result says so rather than hiding it.
+    # this token. Since registry 0.32 `whoami` lists it under `member_of`, and the account
+    # check keeps it (`accountcheck.publishable`); before, the next refresh dropped it (S31).
     @mcp.tool(
         tags={GATED_TAG},
         annotations=ToolAnnotations(
@@ -1625,20 +1625,11 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
             lambda owner: setattr(owner, "namespaces", sorted({*owner.namespaces, namespace})),
             what=f"that it can publish to {namespace}",
         )
-        caveat = (
-            f"The registry's account listing does not name a namespace an organisation owns "
-            f"(registry S31, accepted, not yet shipped), so the check of saved accounts at the "
-            f"next server start forgets {namespace}, and a publish to it then finds no saved "
-            f"token. It works with the key given to `authenticate` or set as "
-            f"{'JMC_TEST_API_KEY' if target == 'test' else 'JMC_API_KEY'}; no tool here shows "
-            f"a saved key whole."
-        )
         return OpResult(
             success=True,
             message=(
-                f"Claimed {namespace} for {org} on {describe(target, settings)}. "
-                + (f"{note} " if note else "")
-                + caveat
+                f"Claimed {namespace} for {org} on {describe(target, settings)}."
+                + (f" {note}" if note else "")
             ),
             data={**jsonable(payload), "target": target},
         )
@@ -2080,8 +2071,8 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         `post` takes a `rating` and optionally a `verdict` and `notes`, each as the
         registry defines it; posting again replaces yours. `delete`
         removes yours. `highlight` and `unhighlight` take the `reviewer` whose review the
-        owner marks, which a card counts as curated whatever its verdict; the registry
-        accepts an owner highlighting their own review, and the card tells neither apart.
+        owner marks. Since registry 0.32 a card is curated only by a highlighted `verified`
+        review from outside the module's namespace, so an owner's own review never curates.
         A review is public and signed by your account: post one only with the person's own
         words.
         """
@@ -2160,8 +2151,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
     ) -> OpResult:
         """Read the reviews of a published module, or of one `version`, highlighted first.
 
-        A highlighted review is one the module's owner marked, and is what a card counts as
-        curated, whatever its verdict: read the verdict here. `target` is required: `prod`
+        A highlighted review is one the module's owner marked. A card counts as curated only
+        a highlighted `verified` review from outside the namespace (registry 0.32): read the
+        verdict and the reviewer here. `target` is required: `prod`
         for the catalog, `test` for the polygon.
         """
         if settings.offline:

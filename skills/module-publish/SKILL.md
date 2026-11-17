@@ -139,7 +139,10 @@ registry_delete_version("test-my-ns", "test_my_module", "1.0.0", target="test")
 **For a first module, prefix the module name as well as the namespace.** `purge-test-data` matches by
 prefix on **both** halves, so an unprefixed module name inside a prefixed namespace is litter nobody
 sweeps — and a first-time author is precisely the person who will not come back to run
-`registry_delete_module`.
+`registry_delete_module`. **The registry requires `module.name` in `module_spec.yaml` to equal the
+`name` you publish** (`422 name_mismatch` otherwise, prefix or not), and `registry_publish` refuses the
+mismatch before uploading: set `module.name: test_my_module` for the rehearsal, and back to
+`my_module` before publishing for real.
 
 **Rehearsing under the name you will actually publish** is the most faithful rehearsal there is and is
 accepted on the polygon; the consequence is that the operator's sweep will not collect it, so delete it
@@ -283,8 +286,8 @@ described as something else.
 
 **Bump `module.version` in `module_spec.yaml` to the version you publish.** The registry publishes under
 the call's `version` and ships the spec as written, so the next author who downloads it reads the spec's.
-`registry_publish` refuses when the two differ, and when the call's `name` differs from the spec's by more
-than the rehearsal's `test_` prefix. Nothing is uploaded; edit the spec and publish again.
+`registry_publish` refuses when the two differ, and when the call's `name` differs from the spec's
+`module.name` at all: the registry refuses that too, a `test_` rehearsal name included. Nothing is uploaded; edit the spec and publish again.
 
 ## What needs a pilot, and what you may simply fix
 

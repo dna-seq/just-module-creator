@@ -234,19 +234,35 @@ def claims_message(
     shown: int,
     not_projected: int,
     conflicts: dict[str, Any] | None,
+    matched: bool | None = None,
+    spellings: list[str] | None = None,
 ) -> str:
     """What one claims answer establishes, and the three readings it must not be given.
 
-    An empty answer is about the spelling asked (registry S32: the alias lookup is exact), a
-    `compared` of 0 is not agreement, and an unprojected module's silence is not agreement either.
+    An empty answer is about the spellings asked (since registry 0.32 the key is folded onto the
+    stored forms and `matched` says whether any is stored; an older instance matches exactly, and
+    says nothing), a `compared` of 0 is not agreement, and an unprojected module's silence is not
+    agreement either.
     """
     parts: list[str] = []
-    if total == 0 and asked == "variant":
+    if total == 0 and asked == "variant" and matched is False:
+        tried = ", ".join(spellings or [key])
         parts.append(
-            f"No visible module is known under the spelling {key!r}. Registry 0.31.0 matches a "
-            "spelling exactly (registry S32): `RS429358` or `chr19:44908684:T:C` answers empty "
-            "where `rs429358` or `19:44908684:T:C` does not, so this is not evidence that no "
-            "module covers the variant."
+            f"No visible module spells this variant as any of: {tried}. The registry folds case, a "
+            "leading `chr` and the separators, never the strand or the build, so this is not "
+            "evidence that no module covers the variant under another build or strand."
+        )
+    elif total == 0 and asked == "variant" and matched:
+        parts.append(
+            "Visible modules name this variant but make no claim about it here: a row that is not "
+            "a genotype claim, which is not the same as no module covering it."
+        )
+    elif total == 0 and asked == "variant":
+        parts.append(
+            f"No visible module is known under the spelling {key!r}, and this instance runs a "
+            "registry older than 0.32, which matches a spelling exactly (registry S32): "
+            "`RS429358` or `chr19:44908684:T:C` answers empty where `rs429358` or "
+            "`19:44908684:T:C` does not. Not evidence that no module covers the variant."
         )
     elif total == 0:
         parts.append(
@@ -774,10 +790,10 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
         `conflicts.compared` of 0 is not agreement (`incomparable` says why each pair was
         skipped), and a `not_projected` module is silent, not agreeing.
 
-        Registry 0.31.0 matches a spelling exactly (registry S32): `RS429358` or `chr19:…`
-        answers empty where `rs429358` or `19:44908684:T:C` finds modules, so an empty answer
-        is about the spelling. A gene answer counts authored genes only, never one
-        assigned by position.
+        Since registry 0.32 a spelling is folded onto the stored forms (case, `chr`, separators;
+        never strand or build) and `matched` says whether any is stored, so an empty answer
+        says which: no module spells it, or modules name it without a claim. A gene answer
+        counts authored genes only, never one assigned by position.
 
         `claims` is cut at `limit` (default 50, at most 1000) in a fixed order; `modules` and
         `claims_by_module` are always whole. The registry computes `conflicts` per variant
@@ -793,12 +809,10 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             raise ToolError(f"`limit` is between 1 and {CLAIMS_LIMIT_MAX}.")
         asked = "gene" if gene is not None else "variant"
         key = (gene if gene is not None else variant or "").strip()
-        if asked == "gene" and (
-            not key or any(ch in key for ch in "/?#%") or any(ch.isspace() for ch in key)
-        ):
-            # The client puts the symbol into the path unquoted (registry S32), so a `/` or `?`
-            # would address another route rather than fail.
-            raise ToolError(f"{gene!r} is not a gene symbol: no spaces, `/`, `?`, `#` or `%`.")
+        if asked == "gene" and not key:
+            # The 0.32 client quotes the symbol into the path (registry S32), so any other
+            # character reaches the registry as itself and is answered there.
+            raise ToolError("`gene` is empty: pass the symbol rows author.")
         if asked == "variant" and not 3 <= len(key) <= 500:
             raise ToolError(
                 "`variant` is 3 to 500 characters: an rsID, VRS id or chrom:start:ref:alt."
@@ -845,6 +859,8 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             asked=asked,
             key=key,
             variant_keys=[str(k) for k in payload.get("variant_keys") or []],
+            spellings=[str(k) for k in payload.get("spellings") or []],
+            matched=payload.get("matched") if asked == "variant" else None,
             modules=sorted({str(m) for m in payload.get("modules") or []} | set(by_module)),
             claims_by_module=dict(sorted(by_module.items())),
             claims_total=len(rows),
@@ -862,6 +878,8 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
                 shown=len(shown),
                 not_projected=not_projected,
                 conflicts=conflicts,
+                matched=payload.get("matched") if asked == "variant" else None,
+                spellings=[str(k) for k in payload.get("spellings") or []],
             ),
         )
 
@@ -910,6 +928,88 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             message=f"Totals over {scope} on {describe(target, settings)}: what that listing "
             "shows, never more.",
             data={**jsonable(payload), "target": target, "namespace": namespace, "group": group},
+        )
+
+    # Registry 0.32's `upgrade_status`, wrapped under the parity rule: whether the operator's
+    # upgrade sweep left an author's published version `held` or `behind` is something the
+    # author can act on (republish, or read why). The route lists the whole catalog with a
+    # `state` filter only, so a namespace or name is filtered here, over every page.
+    @mcp.tool(
+        annotations=ToolAnnotations(
+            title="Registry: which published versions the upgrade sweep left behind",
+            readOnlyHint=True,
+            idempotentHint=True,
+            openWorldHint=True,
+        )
+    )
+    async def registry_upgrade_status(
+        target: RegistryTarget,
+        namespace: str | None = None,
+        name: str | None = None,
+        state: str | None = None,
+    ) -> OpResult:
+        """Which current published versions the registry's upgrade sweep has not brought up to
+        date: per module `state` (`held`, `would_upgrade`, `behind`, `unknown`, `current`), the
+        last sweep's verdict on that exact version, and the compiler `gap`.
+
+        `namespace` and `name` narrow the answer here; `state` is the registry's own filter.
+        `counts` always covers the whole catalog. Read `swept` and `sweeps_on_record` beside
+        it: a sweep before registry 0.28.3 left no record, so its holds read `behind`. Costs
+        one request per hundred modules in the catalog. `target` is required. No token.
+        """
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        def _all() -> tuple[Any, list[dict[str, Any]]]:
+            with client_for(target, settings) as client:
+                first = client.upgrade_status(state=state, page=1, per_page=100)
+                items = [dict(i) for i in first.items]
+                pages = -(-first.total // 100)
+                for page in range(2, pages + 1):
+                    items += [
+                        dict(i)
+                        for i in client.upgrade_status(state=state, page=page, per_page=100).items
+                    ]
+                return first, items
+
+        try:
+            first, items = await run_sync(_all)
+        except RegistryError as exc:
+            note = (
+                " That route arrived in registry 0.32; `registry_health` says which release "
+                "the instance runs."
+                if exc.status_code == 404
+                else ""
+            )
+            return OpResult(
+                success=False,
+                message=f"{describe(target, settings)} refused the upgrade status: {exc}.{note}",
+                data={"target": target},
+            )
+        mine = [
+            i
+            for i in items
+            if (namespace is None or i.get("namespace") == namespace)
+            and (name is None or i.get("name") == name)
+        ]
+        behind = [i for i in mine if i.get("state") not in ("current", None)]
+        return OpResult(
+            success=True,
+            message=(
+                f"{len(mine)} current version(s) match on {describe(target, settings)}, "
+                f"{len(behind)} not current. `held` names a sweep verdict to read; `behind` "
+                "may be a hold from before sweeps were recorded. Republishing is the author's "
+                "call, and never needed for a version that reads `current`."
+            ),
+            data={
+                # `model_dump`, not `jsonable`: the report has a field named `items`, which
+                # shadows the mapping method `jsonable` would call.
+                **first.model_dump(mode="json", exclude={"items"}),
+                "items": jsonable(mine),
+                "target": target,
+                "namespace": namespace,
+                "name": name,
+            },
         )
 
     @mcp.tool(

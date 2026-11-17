@@ -75,13 +75,16 @@ def test_a_lane_nobody_holds_is_the_only_reason_auto_routes_out():
 
     # `presence` is passed explicitly so this asserts the DECISION rather than this
     # machine's install: the same logic has to hold on an unprovisioned box.
-    assert routing.route_for(
-        "lookup_variant",
-        snapshot_route="auto",
-        offline=False,
-        target="test",
-        presence=both,
-    ).answered_by == "local"
+    assert (
+        routing.route_for(
+            "lookup_variant",
+            snapshot_route="auto",
+            offline=False,
+            target="test",
+            presence=both,
+        ).answered_by
+        == "local"
+    )
     for presence in (one, neither):
         route = routing.route_for(
             "lookup_variant",
@@ -261,6 +264,45 @@ async def test_registry_caches_says_what_neither_side_holds(make_client):
     assert report.unreachable == []
 
 
+async def test_registry_caches_reports_0_32s_sizes_and_live_legs(make_client, monkeypatch):
+    """Registry 0.32's cache answer: each lane's size and what provisioning it costs, and the
+    proxy's operator-gated live legs. Built from upstream's own models, so a field rename there
+    fails here rather than reading as null."""
+    from just_dna_registry.models.api import CacheLaneStatus, CacheStatusReport, ProxyLiveLeg
+
+    lane = routing.CACHE_LANES[0].name
+    report = CacheStatusReport(
+        enricher_available=True,
+        declared_use="research",
+        lanes=[
+            CacheLaneStatus(
+                name=lane,
+                serves="test",
+                state="present",
+                route="local",
+                approx_mb=120,
+                provision_lanes=[lane],
+                provision_mb=120,
+            )
+        ],
+        proxy_live_legs=[
+            ProxyLiveLeg(upstream="gnomad", open=False, setting="REGISTRY_GNOMAD_LIVE")
+        ],
+    )
+
+    class _Status:
+        def cache_status(self):
+            return report
+
+    monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Status())
+    async with make_client(routed_settings()) as client:
+        found = (await client.call_tool("registry_caches", {"target": "test"})).data
+    row = next(r for r in found.lanes if r.lane == lane)
+    assert (row.approx_mb, row.provision_lanes, row.provision_mb) == (120, [lane], 120)
+    assert found.proxy_live_legs and found.proxy_live_legs[0]["upstream"] == "gnomad"
+    assert found.proxy_live_legs[0]["open"] is False
+
+
 # --------------------------------------------------------------------------- #
 # remote_derive: the capture, and the decision list
 # --------------------------------------------------------------------------- #
@@ -284,9 +326,7 @@ def _resolution(rows: list[tuple[str, str, str]]) -> bytes:
     out = io.StringIO()
     out.write(_RESOLUTION_HEADER)
     for key, rsid, source in rows:
-        out.write(
-            f"{key},0,{rsid},2,135851076,G,A,GRCh38,resolved,{source},2026-09-11T00:00:00Z\n"
-        )
+        out.write(f"{key},0,{rsid},2,135851076,G,A,GRCh38,resolved,{source},2026-09-11T00:00:00Z\n")
     return out.getvalue().encode()
 
 
@@ -468,9 +508,7 @@ _LICENSING_HEADER = "source,layer,license,fetched_at\n"
 
 def _licensing(rows: list[tuple[str, str]]) -> bytes:
     """A minimal real `licensing.csv` — the keyed columns are `(source, layer)`."""
-    body = "".join(
-        f"{source},{layer},CC0-1.0,2026-09-11T00:00:00Z\n" for source, layer in rows
-    )
+    body = "".join(f"{source},{layer},CC0-1.0,2026-09-11T00:00:00Z\n" for source, layer in rows)
     return (_LICENSING_HEADER + body).encode()
 
 
@@ -1109,9 +1147,7 @@ async def test_remote_draft_refuses_a_stray_parameter_rather_than_dropping_it(
     assert "refusal rather than a dropped filter" in text
 
 
-async def test_remote_draft_names_the_lane_a_deployment_lacks(
-    monkeypatch, make_client, tmp_path
-):
+async def test_remote_draft_names_the_lane_a_deployment_lacks(monkeypatch, make_client, tmp_path):
     """`503 snapshot_unavailable` naming a lane is a different failure from the tier
     being absent, and only one of the two is fixed by provisioning.
 
@@ -1239,7 +1275,7 @@ async def test_a_remote_route_without_a_token_refuses_before_uploading(
     text = " ".join(getattr(part, "text", "") for part in result.content)
     assert result.is_error
     assert "authenticate(token, target='test')" in text
-    assert 'registry_accounts(action="add", target=\'test\'' in text
+    assert "registry_accounts(action=\"add\", target='test'" in text
     assert "registry_register" in text
     assert built == [], "nothing may be uploaded without a token"
 
@@ -1481,6 +1517,29 @@ async def test_a_lane_lookup_carries_the_lanes_terms(monkeypatch, make_client):
     assert found.licence_notice == declared.terms.notice
     assert found.redistribution == declared.unpublished
     assert found.redistribution.startswith("refused:")
+    # The stub answers as a pre-0.32 registry (no `terms`), so the source is named.
+    assert found.terms_from is not None and "older than 0.32" in found.terms_from
+
+
+async def test_a_0_32_registry_states_the_terms_and_they_win(monkeypatch, make_client):
+    """S29: since registry 0.32 the answer carries the lane's `terms` and `unpublished` as the
+    deployment states them. Those are reported, not the installed catalogue's, and named so."""
+
+    class _Lane032(_LaneStub):
+        def lane_tables(self, lane):
+            answer = super().lane_tables(lane)
+            answer["terms"] = {"license": "CC-BY-4.0", "notice": "Attribute the deployment."}
+            answer["unpublished"] = None
+            return answer
+
+    monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Lane032())
+    async with make_client(routed_settings()) as client:
+        found = (
+            await client.call_tool("registry_lane_lookup", {"lane": "pubmind", "target": "test"})
+        ).data
+    # pubmind's installed catalogue says CC-BY-NC-ND-4.0 and refused: the registry's word wins.
+    assert (found.licence, found.licence_notice) == ("CC-BY-4.0", "Attribute the deployment.")
+    assert found.redistribution is None and found.terms_from == "registry"
 
 
 async def test_remote_derive_replaces_a_local_verification_json_whole_rather_than_crashing(

@@ -6,6 +6,41 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F161 — `trace_module` reads a paper found by following citations as evidence against its row
+
+**Found:** 2026-11-17 (tester, one headless Claude Code session with `--plugin-dir` on branch `rm31-build` 63fcbc8,
+unreleased; a scratch copy of `assets/fto_bmi`) · **Severity:** medium · **Status:** ours.
+
+The hook records `literature_search`, `fetch_fulltext` and `lookup_variant` only, and the join counts a PMID as
+searched only if a recorded `literature_search` returned it. Every other route to a paper is invisible:
+`paper_citations` (citation traversal, which CLAUDE.md names as normal agent work), `lookup_citation`,
+`lookup_open_access`, a drafter's rows. In the session, PMID 42968160 came from `paper_citations(26287746,
+"citing")`, was fetched, and a verbatim sentence from it was written as the quote. `trace_module` answered
+`contradicted`, "PMID 42968160 came back from no recorded search", and its next step told the author to fix the row
+or cite another paper. The ledger holds no `paper_citations` event at all. A route the ledger cannot see is an
+unknown, so this row is `not_traceable` at most; `contradicted` asserts evidence that does not exist.
+
+The rest of the run held: the ledger (5 events) carries no path; the row quoting a sentence from the fetched
+26287746 reads `traced`; a quote equal to that article's whole title reads `contradicted` as the title. Not tested,
+and worth a case: a quote that is only part of the title is verbatim in the fetched text, and the title check
+matches the whole title only, so it should read `traced`.
+
+**Resolved 2026-11-17 on branch `rm31-build` (`eef1fb4`, unmerged).** A PMID no recorded search or citation list returned now reads `not_traceable` with that reason, never `contradicted`; `paper_citations` is recorded as a route. The untested case named above is now a test: the hook keeps search titles in the session buffer and marks a quote cut from one, which reads `contradicted`, and the test fails with that check off. The small one (a rewritten row reads `written: recorded` though only one cell changed) stands: `written` is per row, and cell-level basis is part 3.
+
+## F160 — `registry_publish` lets the name differ by a `test_` prefix, and the registry refuses exactly that
+
+**Found:** 2026-11-17 (tester, over the wire on 0.48.13) · **Severity:** low · **Status:** ours.
+
+F158's fix refuses a call whose `version` or `name` differs from `module_spec.yaml`, "or `name` from its
+`module.name` by more than a `test_` prefix". The allowance is what a first rehearsal reaches for, and the polygon
+refuses it: a copy of `assets/fto_bmi` (spec name `fto_bmi`) published as `test-sheep/test_fto_bmi@1.0.0` passed the
+local check, went out, and came back `HTTP 422: name_mismatch`, "module_spec name 'fto_bmi' != path
+'test_fto_bmi'". So the one difference the description permits is one the registry never accepts, and the author
+learns it from the server after an upload. The rest of F158 holds: version `9.9.9` against the spec's `1.0.0`, and
+the name `test_other_bmi`, were both refused locally with nothing sent.
+
+**Resolved 2026-11-17 (lead).** The allowance was mine, taken from `module-publish`'s rehearsal recipe without checking it against the registry. `registry_publish` now refuses any `name` that differs from `module.name`, prefix included, and says to set `module.name` to the rehearsal name; `module-publish`'s recipe says the same. The `test_fto_bmi` case is a parametrization of `test_a_spec_naming_another_module_is_not_published`, and fails on the code that allowed it.
+
 ## F159 — the pre-publish log check read only `*.log` while compiler 0.8 ships `.jsonl`, `.json`, `.md`, `.txt` and images from `logs/`
 
 **Found:** 2026-11-16 (lead, reading `registry_publish` while fixing F158, after the RM31 rehearsal had shipped

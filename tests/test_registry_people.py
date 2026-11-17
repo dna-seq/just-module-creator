@@ -384,14 +384,21 @@ async def test_the_review_fields_are_described_by_the_registry_model(make_client
 
 
 @pytest.mark.parametrize("tool", ["registry_review", "registry_reviews"])
-async def test_curated_is_said_to_ignore_the_verdict(make_client, tool):
-    """F154: a highlighted `concerns` review turned the polygon's card `curated: true`, so a
-    description naming `curated` must not let it read as a favourable audit."""
+async def test_curated_is_said_to_need_an_outside_verified_review(make_client, tool):
+    """F154 then S33: under registry 0.31 a highlighted `concerns` review turned a card
+    `curated: true`, so the descriptions said so. Registry 0.32 counts only a highlighted
+    `verified` review from outside the namespace (upstream's own field description), and the
+    descriptions say that rather than the rule that no longer holds."""
+    from just_dna_registry.models.api import ModuleCard
+
+    rule = ModuleCard.model_fields["curated"]
+    assert rule.default is False  # the anchor: the field this pins is upstream's card flag
     async with make_client(settings=_online()) as client:
         tools = {t.name: t for t in await client.list_tools()}
     description = " ".join((tools[tool].description or "").split())
     assert "curated" in description
-    assert "whatever its verdict" in description
+    assert "verified" in description and "outside" in description
+    assert "whatever its verdict" not in description
 
 
 async def test_reading_reviews_needs_no_token_and_counts_the_highlighted(make_client, monkeypatch):

@@ -158,7 +158,7 @@ reason is one of §5's grounds or a covering tool; a row with a trigger is wrapp
 | `pubkey` | Both instances answer `None`: nothing is signed to check against. | an instance signs; then pin its key in `registry_download` |
 | `import_module` | A spec archive goes through `registry_publish`; the legacy parquet-only form carries no spec for any check here to read before a permanent publish. | |
 | `admin_rename_account`, `merge_accounts`, `runs`, `run_log` | Only a deployment calls them: site admins only (the saved polygon account answers `site_admin: false`). | |
-| `upgrade_status` (new in 0.32.0) | **Owed, undecided**: anonymous, per module, says whether the upgrade sweep left a version `held` or `behind`, which an author can act on; wrapping is the default (the lead's). | the 0.32 client is in our lock |
+| `upgrade_status` (new in 0.32.0) | **Owed; 0.32 in our lock since `7a75591`, the lead's adoption block**: anonymous, per module, says whether the upgrade sweep left a version `held` or `behind`, which an author can act on; wrapping is the default (the lead's). | the 0.32 client is in our lock |
 | `assert_compatible`, `issue_jwt_token` | Transport: the client calls the first on every connection itself; the second is a web session's token exchange, and a static token serves every call. | |
 
 `set_short_description` is not an abstention: `registry_set_subtitle` wraps it (`0395250`), closing F59 on our side.
@@ -186,7 +186,7 @@ that note comes out when the minor ships and the picker reads `member_of`. Filed
 
 ## F150 — a live pass asked of `derived` is skipped by the deployment's `enrich_offline`, and the skip says to ask live (registry `S30`)
 
-**0.32.0 (on PyPI 2026-11-16) adds the field asked for: `GET /caches`' `proxy_live_legs` says which operator-gated live legs run. The polygon will likely go from 0.30.0 straight to 0.32.x; re-run there then, and read `proxy_live_legs` in the same run.** **State: released in registry 0.30.1 (on PyPI 2026-11-13, carries `dac4ccf`); not yet deployed: at 2026-11-13 both
+**2026-11-17 02:40 CET: both instances serve registry 0.32.0 (format 0.8.6). The polygon's `proxy_live_legs` reads gnomAD closed (`REGISTRY_HINT_ALLOW_GNOMAD`; `frequencies`, `gene-metrics`) and AlphaGenome open (`alphagenome expression`), so a skip is now named before a run; the live re-run of `passes=` with `offline=false` is still owed (deferred while the account's 7-day quota is past 90%).** **0.32.0 (on PyPI 2026-11-16) adds the field asked for: `GET /caches`' `proxy_live_legs` says which operator-gated live legs run. The polygon will likely go from 0.30.0 straight to 0.32.x; re-run there then, and read `proxy_live_legs` in the same run.** **State: released in registry 0.30.1 (on PyPI 2026-11-13, carries `dac4ccf`); not yet deployed: at 2026-11-13 both
 instances still serve 0.30.0, so it reproduces until the next deploy, when the liaison re-runs it on the polygon.** The proxy now takes the caller's `offline`, and `enrich_offline` governs only the box's own
 publish, so the skip's advice is true again. Saying up front which live legs run is a new field in their roadmap,
 undecided. Our half (`_passes_from`) is fixed on main (`2a4b421`, the lead). Filed 2026-11-12 by the liaison, on the

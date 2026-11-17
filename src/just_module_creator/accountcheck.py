@@ -19,6 +19,7 @@ from datetime import UTC, datetime, timedelta
 
 import httpx
 from just_dna_registry import RegistryError
+from just_dna_registry.permissions import ROLE_CAPS, Capability
 
 from just_module_creator import localstore
 from just_module_creator.logging_setup import get_logger
@@ -60,8 +61,22 @@ def check_token(
         return "timeout", None, f"no answer within {timeout:g}s ({type(exc).__name__})", None
     except httpx.TransportError as exc:
         return "unreachable", None, f"{type(exc).__name__}: {exc}", None
-    namespaces = [str(n) for n in reply.get("namespaces") or []]
-    return "valid", namespaces, None, str(reply.get("account") or "") or None
+    return "valid", publishable(reply), None, str(reply.get("account") or "") or None
+
+
+def publishable(reply: dict) -> list[str]:
+    """The namespaces this token may publish to: those it owns, and since registry 0.32 those it
+    reaches as a member or through an org (`member_of`), wherever its role carries `publish`.
+
+    `namespaces` alone was owned only (registry S31), so a namespace an org owned dropped out of
+    the saved account at the next check and a publish to it found no saved token.
+    """
+    owned = {str(n) for n in reply.get("namespaces") or []}
+    for membership in reply.get("member_of") or []:
+        row = membership if isinstance(membership, dict) else dict(membership)
+        if Capability.PUBLISH in ROLE_CAPS.get(str(row.get("role")), frozenset()):
+            owned.add(str(row.get("namespace")))
+    return sorted(owned)
 
 
 def _fresh(saved: localstore.StoredAccount, now: datetime) -> bool:
