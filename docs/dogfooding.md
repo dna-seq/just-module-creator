@@ -14,6 +14,22 @@ is usable, and what is missing.
 
 ---
 
+## F164 — `trace_module`'s released description still promises F161's `contradicted`, and never mentions decisions
+
+**Found:** 2026-11-18 (tester, over the wire on 0.48.14) · **Severity:** low · **Status:** ours.
+
+The description shipped in 0.48.14 lists `contradicted` as "a citation no search returned, a quote that is the
+article's own title, a quote not in the text fetched for its citation". F161's fix made the first of those
+`not_traceable`: over the wire, a recorded row citing PMID 26287746 with no recorded search reads `not_traceable`, "no
+recorded search or citation list returned PMID 26287746: recalled, or found by a route the ledger does not see". So
+an agent reading the description expects evidence against such a row, and the result says the opposite.
+
+The description also covers rows only. The result's `decisions` list (`anchored` / `declared` / `recalled`, each with
+`passages`) is not mentioned, so the one rule that matters most for reading it, that `anchored` says where a passage
+sits and never that it supports the reason, reaches an agent only through `next_step` and `module-check`. A new tool,
+so this is not the host's description cache: `git show v0.48.14:src/just_module_creator/tools/authoring.py` carries the
+same text.
+
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
 
 **Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the
