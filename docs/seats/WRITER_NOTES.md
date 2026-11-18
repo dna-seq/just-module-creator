@@ -37,11 +37,12 @@ The seat's working state, rewritten to the present before each reset (docs/seats
 - **Table 3's runs found** (2026-11-19, cb8b861): `data/interim/repro-bench-3/run-sirt6-{c,d,e}`, re-scored to an
   exact match; identifiers in the record's `evaluation-corpus`. Open: archiving them somewhere that travels, and the
   caption naming the versions (RP-4), both put to the person.
-- **Asked of the lead** (2026-11-18): seats README row and `page_budget.py`'s docstring done (5f9900d). The rest
-  (wake_from, CLAUDE.md's "Manuscript writing" and reading list, §11's typesetter line, manuscript-skills in
-  tracked settings) is `blocked: desk #366` (the lead's recommendation: 1-3 yes, the plugin in personal settings;
-  default nothing changes).
-- **Asked of the pm** (same topic): PM.md's "the writing is the lead's or the person's", its wake_from.
+  Both done: archived at f778e2d (lead), caption at 9c38608; record `evaluation-corpus` resolved (6988cf3).
+- **Benchmark rounds** after round 4 are the tester's (f2a4483); its reports come to this seat. A changed number
+  for Table 3 is the person's call (keep the 0.27.0 runs, or switch).
+- **Asked of the lead**: all done (5f9900d; desk #366's four in e0801ee: wake_from, CLAUDE.md's manuscript
+  section and reading list, §11's tectonic line, manuscript-skills@dna-seq in the tracked settings).
+- **Asked of the pm** (2026-11-18; the pm seat unheld since, both still undone on 2026-11-19): PM.md's "the writing is the lead's or the person's", its wake_from.
 - **Claims to check before any edit to them** (`unattended`): the appendix counts "Tools (60)" and "Skills (20)"
   against today's surface (the command/guide split is seven plus the guides; tool count moved since August).
 
