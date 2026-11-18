@@ -81,3 +81,20 @@ cmd = "sh kit:bin/py.sh kit:classes/base/nightly.py deps"
 
 [seat.liaison.zulip]
 pool = "~/.config/agent-seat-blueprints/zulip/pool"
+
+[seat.writer]
+# Writes and revises the paper(s) under docs/manuscript/ with the person (docs/seats/WRITER.md): the kit's role
+# reviser on the manuscript plugin. What the paper claims is the pm's to steer and the person's to decide.
+roles = "reviser"
+wake_from = "just-module-creator/pm just-module-creator/lead */secretary"
+
+[seat.writer.watch.desk]
+cmd = "sh kit:bin/py.sh kit:classes/desk/watch-answers.py just-module-creator writer"
+
+# A co-author's commit to the paper on origin's trunk (a third of the manuscript's commits came from another
+# machine): read before the next edit, since a co-author's edit is input the seat reads before every write.
+[seat.writer.watch.paper]
+cmd = "sh kit:drivers/git/watch-remote.sh --path docs/manuscript"
+
+[seat.writer.zulip]
+pool = "~/.config/agent-seat-blueprints/zulip/pool"
