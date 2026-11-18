@@ -135,11 +135,13 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   the pm's. The liaison capped polars and duckdb `<2` in `pyproject.toml` (`c361614`).
 - **F121** (seats resuming together lose the plugin server): kit #300 filed; repo-side repairs wait on it.
 - **F128** (user-scope 0.47.0 skills; desk #229, the person's) remains open in `docs/dogfooding.md`. F126 and F132 shipped in 0.48.5; the 0.8-move list is done on adopt-0.8.
-- **The liaison's re-run of pending-fixes (`f032ecb`) leaves five lifts of our own code**, none urgent, each
-  unattended: F94 (`provisioning._LANE_KB`/`_DECLARED_KB` against every lane's `approx_mb`), F93
-  (`proxy._TABLE_KEY_FOR`/`_dest_for` and their probe test), F63 (our in-process enrichment claim beside
-  upstream's `spec_lock`), F67 (`compiler.load_spec` in place of `yaml.safe_load` in `compare.py`/`audit.py`,
-  and perhaps the pyyaml dependency). F59 (`set_short_description` unwrapped) is a gap whose scope is the pm's.
+- **The liaison's re-run of pending-fixes (`f032ecb`): the four lifts are done, 2026-11-18.** F93: `proxy`'s
+  spelling shim out, `sidecar_write_path` asked directly (`43a36f5`). F94: `_LANE_KB`/`_DECLARED_KB` out, every
+  lane priced from `approx_mb` (`3934432`). F67: decided to keep our own YAML parse, since `load_spec` raises on
+  an incomplete spec the audit must read; reason rewritten and pinned by a two-sided test (`e0ea8d4`). F63:
+  decided to keep the in-process claim beside upstream's `flock`, comment corrected (`18c3319`, `f974123`). The
+  pending-fixes entries are the liaison's to retire or restate; told them. F59 (`set_short_description`) stays
+  the pm's scope question.
 - Desk #255 (the `test-sheep` rename): waiting on the person. #203, #204, #205 withdrawn 2026-11-16 as no fork (base rule, kit #510).
 - The tester's probe of 0.48.1's token refusal on the polygon, asked in `#just-module-creator>releases`.
 
