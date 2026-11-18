@@ -122,7 +122,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.246 (moved on each announcement; 0.1.246 on 2026-11-18) (`move-to-tag.py`; the pin is in the untracked
+- **Kit pin**: 0.1.247 (moved on each announcement; 0.1.247 on 2026-11-18) (`move-to-tag.py`; the pin is in the untracked
   `.claude/settings.local.json`). Taking it into this session is mine: `watchdog.sh reload`, then end the turn,
   and the kit's typer types `/reload-plugins` (the "left for the person" line `move-to-tag.py` prints is wrong, kit #306).
 
@@ -143,6 +143,12 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   once its hook payload is measured. Tester probed it (interactive Claude Code holds; F166 under `claude -p`).
   Fixed: `756ee80` (only an undeclared host reads null; by='author' bypass refused), `7d2fad5` (F166: `cancel`,
   measured as print mode's answer, is no answer seen, kept null; only `decline` drops it). Re-probe asked.
+- **Registry 0.33 parity, mine, `unattended`** (the liaison, 2026-11-18, `87c49fa`): `lane_tables`/`lane_rows`
+  answers now carry `release`, `release_unreadable` and `revision` (the hub commit a remote read used), and
+  `registry_lane_lookup`'s model drops them. Neither instance serves 0.33 yet (both 0.32.1). Build after 0.48.15.
+- **Desk #255, the person answered 2026-11-18: the `winternewt` account is theirs** (relayed to the desk). Waiting on
+  them to hand over its test-registry token; then dry runs (move the empty `test-winternewt` aside, rename
+  `test-sheep` into it), shown before anything real. Fallback: a site admin's `merge_accounts sheep -> winternewt`.
 - **Lesson, 2026-11-18: a stray `git stash` in the shared tree.** I ran a bare `git stash` while reading a file; it
   took my seven uncommitted RM32 files (no other seat's work was in it, and no other stash existed). `git stash pop`
   put them back clean. Never type `git stash` in this clone; commit or leave the tree as it is.
