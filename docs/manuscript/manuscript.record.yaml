@@ -360,6 +360,17 @@ open_issues:
   status: open
   route: author-required
   output: ../../../just-dna-lite/docs/manuscript/v0.5/reviews/plugin-smoke/paper2/20261019T203243Z-ce6a0dad/manuscript-integrity-check/report.md
+  recovered: 'Found 2026-11-19 by the writer seat on the machine that ran them (site october), in the git-ignored
+    data/interim/repro-bench-3/: run 1 = run-sirt6-c (finished 2026-08-31 05:13Z, before fab4db5 "Run 1 is
+    scored"), runs 2 and 3 = run-sirt6-d and run-sirt6-e (05:48-05:55Z, before 221b95f "Runs 2 and 3 landed"); each
+    holds its spec directory and compiled build. Re-scored 2026-11-19 with `python -m just_module_creator.bench
+    --fixture assets/benchmarks/sirt6` against the committed reference: every cell of Table 3 reproduced exactly
+    (run 1: rsID 1.00, pair 0.67, decoy 0.00, citation 1.00, direction 1.00; runs 2 and 3: all 1.00 but decoy
+    0.00). Identifiers: plugin 0.27.0 (each brief told the run to stop on any other), just-dna-compiler 0.6.6 (each
+    manifest), host Claude Code 2.1.251, model claude-opus-5, prompt = assets/benchmarks/sirt6/prompt.txt with the
+    run directory filled in plus an isolation block (version check, no git, no reading other attempts). Transcripts:
+    the parent session 12f149d6 and its subagents a3d9fe02 (c), a7ffc0e7 (d), a733d11c (e) in the local Claude Code
+    project store, not committed (they carry machine paths). Not yet archived anywhere that travels.'
 - id: paper2-priorities
   summary: Author confirmed fast publication and impact factor above 3 on 19 October 2026; fee funding
     remains a separate open question.
