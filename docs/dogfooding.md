@@ -90,6 +90,9 @@ checkout reported the server `CONNECT_TIMEOUT` after 30 s and ran without its to
 the host caches a failed connect for about 15 minutes, so one slow first start costs every session on that
 configuration a quarter of an hour. Measured right after, by hand, `initialize` answered in 2.5 s and 2.9 s. Same
 shape as above: slow once, fast after, cause not established.
+A second occurrence, 2026-11-18 evening, on main 069e6a9 with no release in between: the first headless session
+since about 12:40 timed out after 30 s, and a by-hand `initialize` straight after answered in 3.8 s. So it is not
+tied to a release; the common factor so far is the first start after a long idle gap.
 
 ## F86 — LitVar2 is the rsID↔CAID bridge we lack, and it is DEFERRED to upstream's 0.7
 
