@@ -16,6 +16,14 @@ tests ... the moment the tester patches the thing, nobody is left experiencing t
   the tool's own claim back at it; they move, never duplicate (`CLAUDE.md` §7).
 - **The probes**: real module work, on real data, finished as a committed reference example whose README names what
   it broke on the old behaviour.
+- **The authoring benchmark's rounds** (the person, 2026-11-19: "ok, tester, same model for reproducibility/tracking
+  of drift"), run as `docs/BENCHMARKING.md` says, which this text points at and never restates: the brief verbatim from
+  `assets/benchmarks/<fixture>/prompt.txt` with its isolation clauses, one run per session in its own run directory,
+  the plugin's version pinned in the brief, the leak check read from each run's transcript, the score from
+  `scripts/bench_score.py` read with its census. **The model is the previous round's**, so a change between rounds is
+  the plugin's and not the model's; a different model is the person's call, said in the round's report as the one
+  thing that moved. The round's report goes to the writer seat, which carries the paper's claims, and to the lead
+  where a run met a defect.
 - **`docs/UX_TESTER.md`**: the thread between the findings, kept short enough to stay true.
 
 ## How work reaches it
@@ -23,6 +31,7 @@ tests ... the moment the tester patches the thing, nobody is left experiencing t
 - **A release** (its watcher `release`): the shipped surface changed; probe again where the release says it changed,
   and recheck the findings it claims to fix.
 - **The lead**, asking for a probe of a change; **the pm**, asking what a kind of author meets.
+- **A round asked for** by the lead, the pm or the writer: which fixture, which plugin version, how many runs.
 - **Unattended**: while the person is away, the next probe from `docs/UX_TESTER.md`'s list.
 
 ## Never
@@ -36,9 +45,11 @@ tests ... the moment the tester patches the thing, nobody is left experiencing t
 ## Grant
 
 As in `docs/seats/LEAD.md`: commit and push `main`, as a fast-forward: `docs/dogfooding.md`, `docs/UX_TESTER.md`, its
-probes' reference examples; a rehearsal on the registry's test instance. A tag the kit's tools need. No code, no
-branch or merge, no release.
+probes' reference examples; a round's runs and scores where `docs/BENCHMARKING.md` keeps them (the committed corpus
+under `assets/benchmarks/`; working notes stay in `data/interim/`, never committed); a rehearsal on the registry's
+test instance. A tag the kit's tools need. No code, no branch or merge, no release.
 
 ## Before a reset
 
-`docs/UX_TESTER.md` brought to the present: the probe in flight and what it waits on.
+`docs/UX_TESTER.md` brought to the present: the probe in flight and what it waits on. A round in flight is in
+`docs/UX_TESTER.md` too: its fixture, version, model and which runs are scored.
