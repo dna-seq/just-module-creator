@@ -794,8 +794,9 @@ def _allele_mismatch_line(mismatch: AlleleMismatch) -> str:
 #: compiled green, because every count in it was internally consistent.
 #:
 #: In-process and per-server. Upstream's `enrich()` now holds `transaction.spec_lock`, a
-#: non-blocking `flock` on the directory that refuses a second run from any process (our
-#: `S66`, their RM128, F63). This claim stays as the first refusal for the case that
+#: non-blocking `flock` on the directory that refuses a second run from any process, where
+#: the filesystem honours `flock` (it degrades with a warning where it does not; our `S66`,
+#: their RM128, F63). This claim stays as the first refusal for the case that
 #: actually happened, both calls from one session: it says when the running enrichment
 #: began and that an aborted call's worker is still writing, which the flock cannot know,
 #: as a `ToolError` raised before the enricher is called.

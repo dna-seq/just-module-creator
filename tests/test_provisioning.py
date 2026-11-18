@@ -447,19 +447,21 @@ def test_the_status_shape_this_suite_fakes_is_still_upstreams_shape():
 
 
 def test_the_size_comes_from_the_lane():
-    """Every lane prices from its own `approx_mb` (F94: our dated `du` table came out).
+    """A lane prices from its own `approx_mb` (F94: our dated `du` table came out).
 
-    Floored on the lane list, so an empty enumeration cannot pass, and anchored on ClinVar,
-    the lane every module's enrichment reads.
+    A lane declaring none legitimately reads `None`, so that is not asserted against. The
+    declaring lanes are floored, so an empty enumeration cannot pass, and ClinVar, the lane
+    every module's enrichment reads, is the anchor.
     """
-    lanes = list(routing.CACHE_LANES)
-    assert len(lanes) >= 10
-    for lane in lanes:
+    declaring = [lane for lane in routing.CACHE_LANES if lane.approx_mb is not None]
+    assert len(declaring) >= 10
+    for lane in declaring:
         kb, basis = provisioning._kb_for(lane)
-        declared = lane.approx_mb
-        assert declared is not None, f"{lane.name} declares no size"
-        assert (kb, basis) == (declared * 1024, "declared by the lane (approx_mb)")
-    clinvar = next(lane for lane in lanes if lane.name == "clinvar")
+        assert (kb, basis) == (
+            (lane.approx_mb or 0) * 1024,
+            "declared by the lane (approx_mb)",
+        )
+    clinvar = next(lane for lane in routing.CACHE_LANES if lane.name == "clinvar")
     assert (provisioning._kb_for(clinvar)[0] or 0) > 0
     # A lane with nothing declared is unanswered, never small.
     assert provisioning._kb_for(None) == (None, None)
