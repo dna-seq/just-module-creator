@@ -102,19 +102,19 @@ its history.
 | F105 | S112 | RM259 | CLOSED 2026-11-12 (wrapped, released in 0.48.8) |
 | F116 | S125 | RM337, RM338 | CLOSED 2026-11-12; desk #204 (RM31) is the lead's |
 | F85 | S85 | RM154; RM382 reverses part | CLOSED 2026-11-13 (RM382 passes on 0.8.5) |
-| F94 | S97 | RM229 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
-| F93 | S96 | RM224 | in our lock (0.7.0); reproduction passes 2026-11-07, removal is the lead's |
+| F94 | S97 | RM229 | CLOSED 2026-11-18: our lane-size table out, every lane priced from `approx_mb` (`3934432`, unreleased, next 0.48.15) |
+| F93 | S96 | RM224 | CLOSED 2026-11-18: our table-key map out, `sidecar_write_path` asked directly (`43a36f5`, unreleased, next 0.48.15) |
 | F89 | S87 | RM180 | in our lock (0.7.0); reproduction passes 2026-11-07, nothing to remove |
 | F90 | S88 | RM183 | in our lock (0.7.0); reproduction passes 2026-11-07, nothing to remove |
 | F91 | S89 | RM184 | in our lock (0.7.0); reproduction passes 2026-11-07, nothing to remove |
-| F63 | S66 | RM128 | in our lock (0.7.0); call sites verified 2026-11-07, our claim's fate is the lead's |
+| F63 | S66 | RM128 | CLOSED 2026-11-18: our in-process claim kept on purpose beside `enrich()`'s flock, as the first and clearer refusal (`18c3319`, `f974123`) |
 | F112 | S67, S68 | shipped; RM131 | in our lock (0.7.0); adopted, nothing to remove |
 | F59 | S64 | justified; RM133 | in our lock (0.7.0); closed on main: `registry_set_subtitle` wraps `set_short_description` (`0395250`, released in 0.48.11) |
 | F98 | S100 | RM234, RM235 | in our lock (0.7 line); adopted, nothing to remove |
 | F53 | S57 | RM121 | in our lock (0.6.6); passes, nothing to remove |
 | F55 | S59 | RM123 | in our lock (0.6.6); nothing of ours to lift |
 | F58 | S63 | shipped | in our lock; passes, nothing to remove |
-| F67 | S74 | shipped `load_spec` | in our lock; `load_spec` can replace our `yaml.safe_load` (lead) |
+| F67 | S74 | shipped `load_spec` | CLOSED 2026-11-18: our `yaml.safe_load` kept on purpose, since `load_spec` raises on an incomplete spec that audit and compare must read; a test pins both sides (`e0ea8d4`) |
 | F99 | S101 | doc fixed | upstream docs, nothing to install |
 | F54 | S58 | RM122 | open upstream, parked |
 
@@ -484,7 +484,7 @@ query hints, with the Atlas attributing the gene, plus a declared sidecar depend
 
 ## F94 — no lane declares its size, so an offer had to `du` a provisioned box to price one (format `S97`)
 
-**State on 2026-11-07 (the liaison): released and in our lock, reproduction passes; the code removal is the
+**CLOSED 2026-11-18: the lead removed `_LANE_KB`/`_DECLARED_KB`; every lane is priced from the registry's `approx_mb` (`3934432`, on main, unreleased; ships in 0.48.15).** **State on 2026-11-07 (the liaison): released and in our lock, reproduction passes; the code removal is the
 lead's.** On the installed enricher 0.7.3 (`.venv/.../site-packages`, the floor `>=0.7.3`), every one of the 15
 `CACHE_LANES` declares `approx_mb` and `caches.provisioning_closure` exists, so `_kb_for` already answers from
 the lane for every lane object and `_LANE_KB` / `_DECLARED_KB` answer only the by-name path (a parent named by
@@ -524,7 +524,7 @@ both sides of it.
 
 ## F93 — `sidecar_write_path` follows the file you read only if you ask by the table key (format `S96`)
 
-**Reproduced 2026-11-07 (the liaison), on the installed packages** (`.venv/.../site-packages`; format 0.7.1, compiler 0.7.2, enricher 0.7.3): `layout.sidecar_spellings` answers `('sources.csv', 'licensing.csv')` for either name, `layout.sidecar_key` exists, and in a directory holding `sources.csv`, `sidecar_write_path` returns `sources.csv` for both arguments. The fix is released and in our lock: `_TABLE_KEY_FOR`, `_dest_for` (`tools/proxy.py`) and the probe test in `tests/test_routing.py` can come out, which is the lead's.
+**CLOSED 2026-11-18: the lead removed `tools/proxy.py`'s `_TABLE_KEY_FOR`/`_dest_for`; `layout.sidecar_write_path` is asked directly (`43a36f5`, on main, unreleased; ships in 0.48.15).** **Reproduced 2026-11-07 (the liaison), on the installed packages** (`.venv/.../site-packages`; format 0.7.1, compiler 0.7.2, enricher 0.7.3): `layout.sidecar_spellings` answers `('sources.csv', 'licensing.csv')` for either name, `layout.sidecar_key` exists, and in a directory holding `sources.csv`, `sidecar_write_path` returns `sources.csv` for both arguments. The fix is released and in our lock: `_TABLE_KEY_FOR`, `_dest_for` (`tools/proxy.py`) and the probe test in `tests/test_routing.py` can come out, which is the lead's.
 
 **State: FIXED HERE; ANSWERED AND FIXED IN THE UPSTREAM TREE THE SAME HOUR — STATE 2, so the
 mitigation stays.** Accepted as their **RM224** and shipped in the uncut 0.7.0:
@@ -2354,7 +2354,7 @@ field exists with its bound *and* the registry's card reads it.
 
 ## F63 — an interrupted enrichment persists nothing, and its terminal write is unlocked (format `S66`)
 
-**Reproduced 2026-11-07 (the liaison), on the installed packages** (`.venv/.../site-packages`; format 0.7.1, compiler 0.7.2, enricher 0.7.3): `enrich()` takes `transaction.spec_lock` over the spec directory, stages answers in `ResolutionJournal` and writes through `layout.atomic_writer` (read in the installed `enrich.py`; no kill-and-resume run made). Our in-process claim (`tools/passes.py`, `_ENRICHMENTS_IN_FLIGHT`) now duplicates the flock for one process and keeps its clearer refusal; whether it stays is the lead's call.
+**CLOSED 2026-11-18, mitigation kept by decision (the lead):** our in-process claim stays beside `enrich()`'s `spec_lock` flock as the first and clearer refusal, and its comment now says so (`18c3319`, `f974123`). Upstream's fix is in our lock; nothing is owed either way. **Reproduced 2026-11-07 (the liaison), on the installed packages** (`.venv/.../site-packages`; format 0.7.1, compiler 0.7.2, enricher 0.7.3): `enrich()` takes `transaction.spec_lock` over the spec directory, stages answers in `ResolutionJournal` and writes through `layout.atomic_writer` (read in the installed `enrich.py`; no kill-and-resume run made). Our in-process claim (`tools/passes.py`, `_ENRICHMENTS_IN_FLIGHT`) now duplicates the flock for one process and keeps its clearer refusal; whether it stays is the lead's call.
 
 **Status: filed 2026-08-22 against enricher 0.6.6, open. Mitigated here, and the mitigation is
 narrower than the fix.**
@@ -2392,7 +2392,7 @@ it does not make the write atomic. Those three are upstream's and are what `S66`
 
 ## F67 — `ModuleSpecConfig` is public and nothing public produces one (format `S74`)
 
-**Reproduced 2026-11-07 (the liaison), on the installed packages** (format 0.7.1, compiler 0.7.2, enricher 0.7.3, registry client 0.27.0): **the compiler now has a public loader**, `just_dna_compiler.compiler.load_spec(path, *, authority_keys=None) -> ModuleSpecConfig`, so the mitigation (`compare.py` and `audit.py` calling `yaml.safe_load`, and the `pyyaml` dependency declared for them) can be replaced. Whether `audit.read_spec` should take a loader that may refuse a half-written spec, where it now reads three keys from anything parseable, is the lead's call; handed to the lead, 2026-11-07.
+**CLOSED 2026-11-18, mitigation kept by decision (the lead):** `compiler.load_spec` raises on an incomplete spec, and `audit_module` and `compare_modules` must read one, so our own `yaml.safe_load` stays; a test asserts both sides (`e0ea8d4`). Not a gap upstream: a loader that refuses an incomplete spec is right for a compile. **Reproduced 2026-11-07 (the liaison), on the installed packages** (format 0.7.1, compiler 0.7.2, enricher 0.7.3, registry client 0.27.0): **the compiler now has a public loader**, `just_dna_compiler.compiler.load_spec(path, *, authority_keys=None) -> ModuleSpecConfig`, so the mitigation (`compare.py` and `audit.py` calling `yaml.safe_load`, and the `pyyaml` dependency declared for them) can be replaced. Whether `audit.read_spec` should take a loader that may refuse a half-written spec, where it now reads three keys from anything parseable, is the lead's call; handed to the lead, 2026-11-07.
 
 **Status: filed 2026-08-24 against format / compiler 0.6.6, open. Mitigated here by parsing the file
 ourselves, which is not a workaround so much as the only route.**

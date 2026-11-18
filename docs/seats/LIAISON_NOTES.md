@@ -34,8 +34,8 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. `upstream-inde
 
 ## Waiting on others
 
-- The lead: five pending-fixes entries reproduced as fixed leave code of ours to lift (F94, F93, F63, F59, F67;
-  told in `#just-module-creator>0.8`, 2026-11-07).
+- Nothing from the lead's lifts: F59 closed in 0.48.11; F93 and F94 lifted on main 2026-11-18 (`43a36f5`, `3934432`,
+  ship in 0.48.15); F63 and F67 kept by the lead's decision (`18c3319`/`f974123`, `e0ea8d4`). All five closed in the ledger.
 - Format minors still open upstream: RM429 (F146, parked; our interim on main), the minor halves of RM427 (F132),
   RM426 (F135) and RM423 (F139; our audit signal removed by the lead in `c14cee2`). Registry: S29's per-answer
   terms field, undecided.
