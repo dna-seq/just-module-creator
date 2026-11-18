@@ -793,10 +793,13 @@ def _allele_mismatch_line(mismatch: AlleleMismatch) -> str:
 #: partial result over it, leaving 162 distinct rsIDs. The module validated, closed and
 #: compiled green, because every count in it was internally consistent.
 #:
-#: In-process and per-server, which is the honest limit: it cannot see an enrichment
-#: started by a different process, and there is no lockfile anywhere in this tree or
-#: upstream's. What it does stop is the sequence that actually happened, where both
-#: calls came from one session.
+#: In-process and per-server. Upstream's `enrich()` now holds `transaction.spec_lock`, a
+#: non-blocking `flock` on the directory that refuses a second run from any process (our
+#: `S66`, their RM128, F63). This claim stays as the first refusal for the case that
+#: actually happened, both calls from one session: it says when the running enrichment
+#: began and that an aborted call's worker is still writing, which the flock cannot know,
+#: and it raises a `ToolError` before any narration or progress is sent.
+#:
 #: How often the enrich heartbeat speaks. Thirty seconds is short enough that an
 #: operator watching a silent tool learns it is alive before deciding it is not, and
 #: long enough that a normal small module finishes without emitting one at all.
