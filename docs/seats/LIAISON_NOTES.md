@@ -18,7 +18,7 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. `upstream-inde
 
 ## Half read
 
-- Nothing. Main runs format/compiler 0.8.6, enricher 0.8.8 (`33d706c`, RM445) and registry client 0.32.0 (`7a75591`), both unreleased as of 2026-11-17; read to v0.8.8 and registry 0.32.0. Both instances serve registry 0.32.0 on format 0.8.6 (2026-11-17 02:40 CET). S30 re-run on the polygon 2026-11-17: the live GWAS pass ran (223 associations), F150 closed. Watch: the next plugin release carrying both, then mark F148/S29, S31, S32, S33 and `upgrade_status` released.
+- Nothing. Release 0.48.14 (2026-11-18, `7e6d673`) carries format/compiler 0.8.6, enricher 0.8.8 (RM445) and registry client 0.32.0; F148/S29, S31, S32, F153/S33 and `upgrade_status` marked released and closed the same day. Read to v0.8.8 and registry 0.32.1. Both instances serve registry 0.32.0 on format 0.8.6 (2026-11-17). Watch: registry 0.33 (S35's verdict-change rule) reaching PyPI and an instance.
 
 ## The dependency bump
 
