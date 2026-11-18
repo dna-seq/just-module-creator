@@ -798,7 +798,7 @@ def _allele_mismatch_line(mismatch: AlleleMismatch) -> str:
 #: `S66`, their RM128, F63). This claim stays as the first refusal for the case that
 #: actually happened, both calls from one session: it says when the running enrichment
 #: began and that an aborted call's worker is still writing, which the flock cannot know,
-#: and it raises a `ToolError` before any narration or progress is sent.
+#: as a `ToolError` raised before the enricher is called.
 #:
 #: How often the enrich heartbeat speaks. Thirty seconds is short enough that an
 #: operator watching a silent tool learns it is alive before deciding it is not, and
