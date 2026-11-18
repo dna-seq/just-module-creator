@@ -3424,14 +3424,12 @@ class CachePlanLane(BaseModel):
     )
     estimate_mb: float | None = Field(
         default=None,
-        description="Estimated size. The lane's own `approx_mb` where the installed enricher "
-        "declares one, else a measurement taken on a provisioned box and dated in the "
-        "source — `estimate_basis` says which. Null means nobody has answered for this "
-        "lane, which is not the same as small.",
+        description="Estimated size: the lane's own `approx_mb`, in whole megabytes. Null "
+        "means the lane declares none, which is not the same as small.",
     )
     estimate_basis: str | None = Field(
         default=None,
-        description="Where the estimate came from: measured here, or stated by the producer.",
+        description="Where the estimate came from (the lane's own declaration).",
     )
     measured_mb: float | None = Field(
         default=None,

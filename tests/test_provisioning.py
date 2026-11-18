@@ -317,18 +317,6 @@ def test_every_lane_field_this_layer_reads_is_still_a_lane_field():
         assert needed in fields, f"CacheLane.{needed} moved; provisioning.py reads it"
 
 
-def test_every_estimate_names_a_lane_that_exists():
-    """A dated constant with no live counterpart is a lane that was renamed under us.
-
-    The reverse — a lane with no estimate — is legitimate and reports `None`, so it is not
-    asserted: `alphagenome_avi` is priced from the producer's own prose because no box here
-    has ever held it.
-    """
-    live = {lane.name for lane in routing.CACHE_LANES}
-    stale = (set(provisioning._LANE_KB) | set(provisioning._DECLARED_KB)) - live
-    assert not stale, f"estimates for lanes that no longer exist: {sorted(stale)}"
-
-
 def test_a_row_carries_the_producers_own_sentence_for_a_lane_with_no_route(monkeypatch, tmp_path):
     """Ensembl is built by another repository's pipeline, and saying so beats saying nothing."""
     _empty_box(monkeypatch, tmp_path, free_mb=8_000.0)
@@ -458,24 +446,20 @@ def test_the_status_shape_this_suite_fakes_is_still_upstreams_shape():
     assert {"lane", "state", "path", "release"} <= upstream
 
 
-def test_the_size_comes_from_the_lane_when_the_install_declares_one():
-    """Ours is the fallback, and which one answered is reported rather than assumed.
+def test_the_size_comes_from_the_lane():
+    """Every lane prices from its own `approx_mb` (F94: our dated `du` table came out).
 
-    `S97` asked for an order of magnitude on the lane and upstream added `approx_mb` the
-    same afternoon — in their tree. `main` installs from PyPI, where the whole module is
-    absent, so this reads the attribute and keeps the measured table for every install
-    without it.
+    Floored on the lane list, so an empty enumeration cannot pass, and anchored on ClinVar,
+    the lane every module's enrichment reads.
     """
-    lane = next(lane for lane in routing.CACHE_LANES if lane.name == "clinvar")
-    kb, basis = provisioning._kb_for(lane)
-    assert kb and basis
-    declared = getattr(lane, "approx_mb", None)
-    if declared is not None:
-        assert basis and "approx_mb" in basis
-        assert kb == int(declared) * 1024
-    else:
-        assert basis and "measured" in basis
-    # Asked by name — all a parent lane gives us — the fallback answers and says so.
-    by_name_kb, by_name_basis = provisioning._kb_for("clinvar")
-    assert by_name_kb == provisioning._LANE_KB["clinvar"]
-    assert by_name_basis and "measured" in by_name_basis
+    lanes = list(routing.CACHE_LANES)
+    assert len(lanes) >= 10
+    for lane in lanes:
+        kb, basis = provisioning._kb_for(lane)
+        declared = lane.approx_mb
+        assert declared is not None, f"{lane.name} declares no size"
+        assert (kb, basis) == (declared * 1024, "declared by the lane (approx_mb)")
+    clinvar = next(lane for lane in lanes if lane.name == "clinvar")
+    assert (provisioning._kb_for(clinvar)[0] or 0) > 0
+    # A lane with nothing declared is unanswered, never small.
+    assert provisioning._kb_for(None) == (None, None)

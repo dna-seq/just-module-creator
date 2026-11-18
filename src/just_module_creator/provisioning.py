@@ -62,39 +62,6 @@ log = get_logger()
 #: still what says where they go — this only answers *was it configured*.
 CACHE_DIR_VAR = "JUST_DNA_PIPELINES_CACHE_DIR"
 
-#: Measured, dated, and the command that produced it, because **no lane declares a
-#: size**: `CacheLane` carries fifteen fields about whether and how, and none about how
-#: much (filed upstream as `S97`, asking for an order of magnitude on the lane).
-#:
-#:   du -sk --apparent-size /data/just-dna-cache/*/     # 2026-09-11, enricher 0.7.0
-#:
-#: Kilobytes as measured, so the small lanes keep a real number instead of rounding to
-#: zero. **A size drifts faster than a name does** — ClinVar grows every release — so
-#: this is reported as an *estimate* beside whatever a present lane actually measures,
-#: never in place of it, and a lane missing from here reports `None` rather than a guess.
-_LANE_KB: dict[str, int] = {
-    "acmg": 13,
-    "civic": 32,
-    "clinpgx": 588,
-    "clinvar": 276_528,
-    "constraint": 855,
-    "cpic": 257,
-    "drug_labels": 48,
-    "ensembl": 14_382_879,
-    "mane": 2_003,
-    "mitomap": 593,
-    "mitomap_miss": 65,
-    "pharmvar": 39,
-    "pubmind": 10_280,
-    "strchive": 494,
-}
-
-#: `alphagenome_avi` is the one lane no box here has ever held, so it is not in the table
-#: above and its number is not ours: upstream's own terms note states 88.5 GB. Kept apart
-#: rather than folded in, because "somebody else wrote this down" and "we measured it on
-#: this machine" are different claims and the caller is told which one they got.
-_DECLARED_KB: dict[str, int] = {"alphagenome_avi": 88_500 * 1024}
-
 #: Headroom, because a disk that fits a download exactly does not fit it. Twenty percent
 #: over the estimate and never less than 256 MB of slack — the estimate is stale by
 #: construction and a snapshot is unpacked beside its download.
@@ -104,7 +71,8 @@ _MIN_SLACK_MB = 256.0
 #: The size above which a lane is **reported with its cost instead of offered**, even on a
 #: volume with room for it. Twenty gigabytes, which puts Ensembl (14 GB) inside the offer —
 #: it is the lane `enrich` cannot work without, and a workstation provisioning the full
-#: surface wants it — and holds AlphaGenome's AVI artifact (88.5 GB) out of it.
+#: surface wants it — and holds AlphaGenome's AVI lane (30 GB built, by its own `approx_mb`;
+#: the source artifact an operator fetches to build it is 88.5 GB) out of it.
 #:
 #: **The reason is not the number; the number is where the reason bites.** At this size the
 #: fetch stops being a yes/no at a prompt and becomes an operator's deliberate act, and
@@ -116,33 +84,22 @@ _MIN_SLACK_MB = 256.0
 _OFFER_CEILING_MB = 20 * 1024.0
 
 
-def _kb_for(lane: Any | str) -> tuple[int | None, str | None]:
-    """The lane's own declared size when it has one, else our dated measurement.
+def _kb_for(lane: Any) -> tuple[int | None, str | None]:
+    """The lane's own declared size (`approx_mb`, upstream's answer to our `S97`).
 
-    **`approx_mb` is why the table below is a fallback rather than the answer.** `S97`
-    asked for an order of magnitude on the lane and upstream added the field the same
-    afternoon — but `main` installs from PyPI, where the whole `caches` module is absent,
-    so this reads the attribute rather than a version and keeps the measurement for every
-    install that does not have it. Deleting the table is gated on the **release**, never
-    on the symbol being in their tree.
-
-    A string is accepted for a parent named by another lane, where only the name is to
-    hand; it takes the fallback path, which is the honest limit of asking by name.
+    Every lane the floor's enricher registers declares one. A lane that one day does not
+    reports `None`, which means nobody answered for it, never that it is small. The dated
+    `du` table this used to fall back on came out with F94.
     """
     declared = getattr(lane, "approx_mb", None)
-    if declared is not None:
-        return int(declared) * 1024, "declared by the lane (approx_mb)"
-    name = lane if isinstance(lane, str) else lane.name
-    if name in _LANE_KB:
-        return _LANE_KB[name], "measured on a provisioned box, 2026-09-11"
-    if name in _DECLARED_KB:
-        return _DECLARED_KB[name], "stated by the producer, not measured here"
-    return None, None
+    if declared is None:
+        return None, None
+    return int(declared) * 1024, "declared by the lane (approx_mb)"
 
 
-#: Three decimals, not two. The smallest lane is 13 KB and rounding to two would report
-#: `0.0 MB` — a number that reads as "nothing measured this" for the lanes this whole
-#: feature is about. The estimates are held in kilobytes for the same reason.
+#: Three decimals, not two, for what a present lane measures on disk: a small lane holds a
+#: few kilobytes, and rounding to two would report `0.0 MB`, which reads as "nothing
+#: measured this". Declared estimates are whole megabytes ("at most a megabyte" is `1`).
 _MB_PLACES = 3
 
 
@@ -324,7 +281,7 @@ def plan(*, declared_use: str = "unstated", settings: Settings | None = None) ->
             if getattr(parent_status, "state", None) == "present":
                 continue
             parents_needed.append(parent)
-            parent_kb, _ = _kb_for(by_name.get(parent, parent))
+            parent_kb, _ = _kb_for(by_name.get(parent))
             parent_cost += _mb(parent_kb) or 0.0
 
         total = None if cost is None else round(cost + parent_cost, 2)
