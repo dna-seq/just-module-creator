@@ -440,6 +440,16 @@ Recheck F166's fix with one `claude -p` run (`scratchpad/rm32b/prompt.md`) and o
 
 Holds. The first headless connect timed out again (added to F121).
 
+**0.48.15 recheck, 2026-11-19, over the wire (server restarted; it announces v0.48.15).**
+- F164 holds. A fresh server's `tools/list` carries the fixed `trace_module` description. This session's host still
+  shows the old text from its cache, which a new session doesn't have.
+- F93 holds. `remote_derive(dry_run=false, target="test")` on a copy of `hfe_hemochromatosis`, which carries
+  `sources.csv` only, installed into `sources.csv`, and no `licensing.csv` appeared.
+- F94 holds. Every lane is priced from its own `approx_mb`, labelled so. New: F167, the note and the description still
+  say the sizes are not the lanes' declarations, and still count fifteen lanes where the call lists 17.
+- F165 is carried from the main check (81af555). The tag's shell route is unchanged; the hook config only adds
+  `AskUserQuestion`.
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
