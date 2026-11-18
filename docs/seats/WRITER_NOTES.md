@@ -35,9 +35,10 @@ The seat's working state, rewritten to the present before each reset (docs/seats
 
 - **People list** for the marks: who is a person, who an agent. Draft put to the person in chat 2026-11-18;
   blocked on their answer.
-- **Asked of the lead** (2026-11-18, `#just-module-creator>writer seating`): wake_from, CLAUDE.md's "Manuscript
-  writing" section, seats README row and reading list, the plugin in `.claude/settings.json`, the stale
-  `tectonic-musl` line in CLAUDE.md §11 and `scripts/page_budget.py`'s docstring.
+- **Asked of the lead** (2026-11-18): seats README row and `page_budget.py`'s docstring done (5f9900d). The rest
+  (wake_from, CLAUDE.md's "Manuscript writing" and reading list, §11's typesetter line, manuscript-skills in
+  tracked settings) is `blocked: desk #366` (the lead's recommendation: 1-3 yes, the plugin in personal settings;
+  default nothing changes).
 - **Asked of the pm** (same topic): PM.md's "the writing is the lead's or the person's", its wake_from.
 - **Claims to check before any edit to them** (`unattended`): the appendix counts "Tools (60)" and "Skills (20)"
   against today's surface (the command/guide split is seven plus the guides; tool count moved since August).
