@@ -19,9 +19,10 @@ which gap-fills rather than clobbers — so a hand-curated `source="manual"` row
 travels up and comes back. Normally is not always: a pass that could not reach its source,
 and the concordance pair, which is rewritten whole by design. (The third case used to be the
 `licensing.csv`/`sources.csv` two spellings, and that one is closed rather than surfaced —
-`_dest_for` writes to the file the author already has.) So the local bytes are
-captured and **the capture is read back and hashed** before a single file is replaced, and
-any row the incoming tree does not carry is a decision line rather than an applied edit.
+`sidecar_write_path` answers with the file the author already has, for either spelling.) So
+the local bytes are captured and **the capture is read back and hashed** before a single
+file is replaced, and any row the incoming tree does not carry is a decision line rather than
+an applied edit.
 """
 
 from __future__ import annotations
@@ -39,7 +40,6 @@ from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from just_dna_compiler import hints
 from just_dna_format.layout import (
-    SIDECAR_SPELLINGS,
     SidecarCollision,
     sidecar_write_path,
 )
@@ -151,30 +151,6 @@ def _read_local_keys(
     return keys, rows
 
 
-#: Filename back to the key `sidecar_write_path` answers about. **Asking it with the
-#: filename the archive uses does NOT follow the file you read**, which is the opposite of
-#: what its docstring promises a careless reader: `SIDECAR_SPELLINGS` is keyed on the table
-#: key `sources.csv` — the name `sources.parquet` and `manifest.sources` keep — so
-#: `sidecar_spellings("licensing.csv")` is a one-tuple with no alias in it, and a write over
-#: a spec carrying `sources.csv` creates the *second* spelling instead of following the
-#: first. Measured 2026-09-11 on format 0.7.0. Derived from their map rather than written
-#: out, so a second aliased table needs nothing here.
-_TABLE_KEY_FOR: dict[str, str] = {
-    spelling: key for key, spellings in SIDECAR_SPELLINGS.items() for spelling in spellings
-}
-
-
-def _dest_for(directory: Path, csv_name: str) -> Path:
-    """Where an incoming derived table goes — the spelling already on disk, else upstream's.
-
-    One line of translation, and it is the difference between installing over the author's
-    `sources.csv` and leaving them two copies of one table, which the next upload refuses
-    rather than merges. `SidecarCollision` propagates: a spec already carrying both is a
-    refusal, not something to pick a side in.
-    """
-    return sidecar_write_path(directory, _TABLE_KEY_FOR.get(csv_name, csv_name))
-
-
 def _displacement_lines(spec_dir: Path, incoming: dict[str, bytes]) -> tuple[list[str], list[Path]]:
     """Rows a local sidecar has and the incoming tree does not, as decision lines.
 
@@ -187,7 +163,7 @@ def _displacement_lines(spec_dir: Path, incoming: dict[str, bytes]) -> tuple[lis
     lines: list[str] = []
     displaced: list[Path] = []
     for csv_name, data in sorted(incoming.items()):
-        local_path = _dest_for(spec_dir, csv_name)
+        local_path = sidecar_write_path(spec_dir, csv_name)
         if not local_path.is_file():
             continue
         displaced.append(local_path)
@@ -725,7 +701,7 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
                 await run_sync(lambda d=directory: finalize_capture(d, stamp))
 
             for csv_name, data in sorted(tables.items()):
-                dest = _dest_for(source, csv_name)
+                dest = sidecar_write_path(source, csv_name)
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_bytes(data)
                 installed.append(dest.name)

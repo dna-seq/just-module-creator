@@ -23,6 +23,7 @@ import just_dna_registry.models.api as registry_api
 import pytest
 from conftest import offline_settings, routed_settings
 from fastmcp.exceptions import ToolError
+from just_dna_format.layout import sidecar_write_path
 from just_dna_registry.client import RegistryClient, VersionMismatchError
 from just_dna_registry.specfiles import DERIVED_FILES
 from just_dna_registry.version import VersionInfo
@@ -512,55 +513,28 @@ def _licensing(rows: list[tuple[str, str]]) -> bytes:
     return (_LICENSING_HEADER + body).encode()
 
 
-def test_an_incoming_table_lands_on_the_spelling_the_author_already_has():
+def test_an_incoming_table_lands_on_the_spelling_the_author_already_has(tmp_path: Path):
     """`sources.csv` on disk and `licensing.csv` in the archive is ONE table, not two.
 
-    **`_dest_for` is a mitigation with a deletion trigger, and the trigger is a release
-    rather than an upstream tree.** Filed as format-tree `S96` and fixed the same hour as
-    their RM224: `sidecar_spellings` now normalises through a filename → key map, published
-    as `layout.sidecar_key`, so every caller is right for either spelling and their reply
-    says outright *"delete the shim"*. It stays until that reaches PyPI, because our own
-    floor is 0.6.6 and an install from PyPI still has the defect — §8's rule, and the whole
-    reason a fix in a sibling checkout is not a fix our users have.
-
-    So the upstream half is asserted both ways round: where the alias map answers for the
-    preferred *filename*, the helper must already follow the file you read, and where it
-    does not, the answer must be the second spelling. A third behaviour fails here rather
-    than being absorbed, and either way `_dest_for` answers the same.
-
-    **The probe is the behaviour, not the symbol that arrived with it.** `sidecar_key` is
-    the published half of RM224 and the obvious thing to `hasattr`, but it is present in
-    the format *source tree* and absent from the wheels the registry pins — one release,
-    two answers — so a symbol probe reads the toolchain we happen to install rather than
-    the fact we depend on. `sidecar_spellings` carrying an alias for `licensing.csv` **is**
-    that fact.
+    The install and the displacement diff ask upstream's `sidecar_write_path` with the
+    archive's filename. Before format's RM224 (our F93, their S96) that answer did not follow
+    the file on disk when asked by `licensing.csv`, and `proxy` carried a filename-to-key shim;
+    every install our floor allows normalises both spellings, so the shim came out. This pins
+    the behaviour the install now leans on, for either name asked and either name on disk.
     """
-    import tempfile
+    for on_disk in ("sources.csv", "licensing.csv"):
+        spec_dir = tmp_path / on_disk.removesuffix(".csv")
+        spec_dir.mkdir()
+        (spec_dir / on_disk).write_bytes(_licensing([("ensembl", "resolution")]))
+        for asked in ("sources.csv", "licensing.csv"):
+            assert sidecar_write_path(spec_dir, asked).name == on_disk, (on_disk, asked)
 
-    from just_dna_format import layout
-
-    from just_module_creator.tools.proxy import _dest_for
-
-    upstream_normalises = len(layout.sidecar_spellings("licensing.csv")) > 1
-    expected_upstream = "sources.csv" if upstream_normalises else "licensing.csv"
-
-    with tempfile.TemporaryDirectory() as raw:
-        spec_dir = Path(raw)
-        (spec_dir / "sources.csv").write_bytes(_licensing([("ensembl", "resolution")]))
-
-        assert _dest_for(spec_dir, "licensing.csv").name == "sources.csv"
-        assert layout.sidecar_write_path(spec_dir, "licensing.csv").name == expected_upstream, (
-            "upstream's own answer is neither of the two recorded states — re-read "
-            "`layout.SIDECAR_SPELLINGS` and F93 before touching `_dest_for`"
-        )
-
-    with tempfile.TemporaryDirectory() as raw:
-        spec_dir = Path(raw)
-        (spec_dir / "licensing.csv").write_bytes(_licensing([("ensembl", "resolution")]))
-        assert _dest_for(spec_dir, "licensing.csv").name == "licensing.csv"
-
-    with tempfile.TemporaryDirectory() as raw:
-        assert _dest_for(Path(raw), "licensing.csv").name == "licensing.csv"
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    # The preferred spelling, whichever name is asked (positive anchor for the loop above).
+    assert {sidecar_write_path(empty, n).name for n in ("sources.csv", "licensing.csv")} == {
+        "licensing.csv"
+    }
 
 
 def test_a_displaced_deprecated_spelling_still_produces_its_decision_lines():
