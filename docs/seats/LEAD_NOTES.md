@@ -142,7 +142,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   no live run on either host. Left: a live run (needs a person at a session) and Codex's `request_user_input`
   once its hook payload is measured. Tester probed it (interactive Claude Code holds; F166 under `claude -p`).
   Fixed: `756ee80` (only an undeclared host reads null; by='author' bypass refused), `7d2fad5` (F166: `cancel`,
-  measured as print mode's answer, is no answer seen, kept null; only `decline` drops it). Re-probe asked.
+  measured as print mode's answer, is no answer seen, kept null; only `decline` drops it). Tester confirmed on 069e6a9 (046dd56).
 - **Registry 0.33 parity, mine, `unattended`** (the liaison, 2026-11-18, `87c49fa`): `lane_tables`/`lane_rows`
   answers now carry `release`, `release_unreadable` and `revision` (the hub commit a remote read used), and
   `registry_lane_lookup`'s model drops them. Neither instance serves 0.33 yet (both 0.32.1). Build after 0.48.15.
