@@ -115,10 +115,10 @@ dependencies = [
     # when it deprecated `initial=` (tests/test_net.py refuses the old spelling).
     "tenacity>=9.2.1",
     # Same reason as httpx: `compare.py` and `audit.py` both call `yaml.safe_load`
-    # on `module_spec.yaml` directly. Upstream's own loader is private
-    # (`compiler._load_yaml`), so every consumer parses that file itself — asked for
-    # as format-tree `S74`. Until then this is a direct call and a transitive pin is
-    # not a contract.
+    # on `module_spec.yaml` directly. Upstream's public `compiler.load_spec` (S74)
+    # validates and raises on an incomplete spec, and these two must read what a
+    # half-written or older spec declares (F67), so the parse stays ours and a
+    # transitive pin is not a contract.
     "pyyaml>=6",
     # The last rung of the supplementary ladder. `describe_supplementary` reads the
     # xlsx container by hand and needs nothing, but returning ROWS does: shared

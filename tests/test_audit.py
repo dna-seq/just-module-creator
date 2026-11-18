@@ -18,7 +18,7 @@ from pathlib import Path
 import just_dna_format.verification as upstream_verification
 import pytest
 from just_dna_compiler import draft
-from just_dna_compiler.compiler import authored_input_entries
+from just_dna_compiler.compiler import SpecError, authored_input_entries, load_spec
 from just_dna_format.manifest import VerificationRecord
 
 from just_module_creator import audit
@@ -161,6 +161,22 @@ def test_a_declared_weighting_block_settles_it(module: Path):
         "weighting:\n  scale: arbitrary -2..2\n  method: hand-assigned by effect direction\n"
     )
     assert audit.weight_scale(module).state == "clear"
+
+
+def test_the_audit_reads_a_spec_upstreams_loader_refuses(module: Path):
+    """Why `read_spec` parses the YAML itself now that a public loader exists (F67).
+
+    Format answered `S74` with `compiler.load_spec`, which validates and raises on anything
+    wrong. The audit's subject is the half-written or older spec, and it asks what the file
+    *declares*, so it keeps its own parse. Two producers, both sides asserted: if upstream's
+    loader ever accepts this spec, the reason above has moved and this fails.
+    """
+    (module / "variants.csv").write_text(
+        "rsid,genotype,weight,state,conclusion\nrs4988235,T/T,1.2,protective,Lactase persistent\n"
+    )
+    with pytest.raises(SpecError):
+        load_spec(module / "module_spec.yaml")
+    assert audit.weight_scale(module).state == "decide"
 
 
 def test_a_weighting_block_with_every_field_blank_does_not_count_as_declared(module: Path):

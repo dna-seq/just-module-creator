@@ -122,13 +122,13 @@ def read_rows(path: Path) -> list[dict[str, str | None]]:
 def read_spec(spec_dir: Path) -> tuple[Mapping[str, Any] | None, str | None]:
     """`module_spec.yaml` as a plain mapping, or the reason it could not be read.
 
-    Parsed here rather than through upstream's loader because
-    `compiler._load_yaml` is private and nothing public returns a
-    `ModuleSpecConfig` — asked for as format-tree `S74`, tracked here as `F67`. So
-    this reads the two or three top-level keys it needs and folds no defaults,
-    which is the honest limit
-    rather than a shortcut: anything requiring the validated shape belongs in
-    `validate_module`, which has it.
+    Parsed here, not through upstream's public `compiler.load_spec` (their answer to our
+    `S74`, F67), on purpose: that loader validates and raises on anything wrong, and an
+    audit's subject is the half-written or older spec, where it must still say what the
+    file declares. So this reads the two or three top-level keys it needs and folds no
+    defaults; anything requiring the validated shape belongs in `validate_module`, which
+    has it. `tests/test_audit.py::test_the_audit_reads_a_spec_upstreams_loader_refuses`
+    fails if the loader ever accepts such a spec.
     """
     path = spec_dir / SPEC_YAML
     if not path.is_file():

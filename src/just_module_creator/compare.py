@@ -68,7 +68,11 @@ class LoadedTable:
 
 
 def read_build(spec_dir: Path) -> tuple[str | None, dict[str, Any]]:
-    """The declared genome build, and the `module:` block, from `module_spec.yaml`."""
+    """The declared genome build, and the `module:` block, from `module_spec.yaml`.
+
+    Read as declared, not through `compiler.load_spec`, which raises on a spec it finds
+    incomplete; a comparison must still read both sides (F67, as `audit.read_spec`).
+    """
     path = spec_dir / "module_spec.yaml"
     if not path.is_file():
         return None, {}
