@@ -28,6 +28,12 @@ The seat's working state, rewritten to the present before each reset (docs/seats
 
 ## Open items
 
+- **Frontier Research Club retrofit** (the person, 2026-11-18): section 5 drafted as
+  `docs/manuscript/proposals/agentic-loop.tex` (a233cc3), facts from longevity-loci origin/main 662e366; waits on
+  the person's yes to go into the master (one `\input` before Discussion, plus the `budovsky2013longevitymap` bib
+  entry in its header). Follow-ups not yet proposed: abstract/intro framing, the club wants "accepted paper or
+  preprint" (pm asked).
+
 - **People list** for the marks: who is a person, who an agent. Draft put to the person in chat 2026-11-18;
   blocked on their answer.
 - **Asked of the lead** (2026-11-18, `#just-module-creator>writer seating`): wake_from, CLAUDE.md's "Manuscript
