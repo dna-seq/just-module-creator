@@ -1,8 +1,9 @@
 """Estimate the manuscript's body length in pages, without rendering it.
 
-This host cannot build the PDF (the bundled tectonic wants GLIBC 2.36+ and the
-box has 2.35 — see CLAUDE.md §11), so the page count that matters for a
-submission limit cannot be read directly. What this does instead is calibrate
+For a host that cannot build the PDF (the tectonic wheel wants a newer glibc than
+some boxes have; CLAUDE.md §11 names the typesetter), where the page count that
+matters for a submission limit cannot be read directly. Where a typesetter runs,
+render instead: a real page count beats this estimate. What this does is calibrate
 against a commit whose PDF *was* rendered and is committed: measure that PDF's
 real body length, count the rendered characters of the same span in its LaTeX,
 and project the current revision from the ratio.

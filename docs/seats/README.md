@@ -10,6 +10,7 @@ what every seat knows: messages, the desk, unattended runs, who speaks. Every se
 | **pm** | [PM.md](PM.md), on the kit's `pm` role | [PM_NOTES.md](PM_NOTES.md) | the person; a direction call from a seat | Who the plugin serves, what each minor holds, the manuscript's direction, the research list. Writes no code. |
 | **tester** | [TESTER.md](TESTER.md), this repository's own | [../UX_TESTER.md](../UX_TESTER.md) | a release; the lead asking for a probe | The beta tester: uses the shipped plugin for real module work and records what is missing, as `F#` findings in `docs/dogfooding.md`. Fixes nothing. |
 | **liaison** | [LIAISON.md](LIAISON.md), on the kit's `liaison` role | [LIAISON_NOTES.md](LIAISON_NOTES.md) | an upstream's release; a symptom from a seat | Tracks the compiler's packages, the registry and the two host clients; files their defects where each producer takes them; keeps `docs/just-dna-format-pending-fixes.md`. |
+| **writer** | [WRITER.md](WRITER.md), on the kit's `reviser` role | [WRITER_NOTES.md](WRITER_NOTES.md) | the person; the pm; a co-author's commit to `docs/manuscript/` | Writes and revises the paper under `docs/manuscript/` with the person, and keeps its decision record (`manuscript.record.yaml`). What the paper claims is the pm's to steer and the person's to decide. |
 
 The tester's split from the lead is this repository's oldest rule (`docs/UX_TESTER.md`, 2026-08-11: "The second agent
 will fix it, you stay in tester role"): the seat that experiences the product never patches it.
