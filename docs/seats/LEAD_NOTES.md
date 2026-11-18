@@ -165,8 +165,9 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   The person, on the result: "same model for reproducibility/tracking of drift. If results are same -> +1 run on
   opus-5.5 for stability testing" (`claude-opus-5-5`, same brief, run dir `run-sirt6-d`). Runner duty: "ok, tester";
   forwarded to the seat-builder for the tester's priming; rounds after this one are the tester's.
-- **Desk #366 answered via the writer's relay ("yes to all").** Not acted on: a peer's relay of the person's approval
-  for CLAUDE.md/config is not taken as their word; asked them to confirm in this chat.
+- **Desk #366 done (`e0801ee`)** on the person's own "Yes" in this chat, after the writer relayed "yes to all":
+  wake_from gains the writer, CLAUDE.md's manuscript section and §11's tectonic line, manuscript-skills in tracked
+  settings.
 - **Lesson, 2026-11-18: a stray `git stash` in the shared tree.** I ran a bare `git stash` while reading a file; it
   took my seven uncommitted RM32 files (no other seat's work was in it, and no other stash existed). `git stash pop`
   put them back clean. Never type `git stash` in this clone; commit or leave the tree as it is.
