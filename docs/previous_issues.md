@@ -6,6 +6,43 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F166 — on a host with nobody to ask, an author's decision is dropped and the agent is told the person refused it
+
+**Found:** 2026-11-18, probing RM32 slice 3 on main ab441e8 (unreleased) · **Severity:** high for unattended runs ·
+**Status:** fixed here, 2026-11-18 (unreleased; ships in 0.48.15)
+
+`record_decision(basis='author')` promises that *"a host that cannot ask leaves `approved: null`, kept as stated"*.
+Claude Code in print mode (`claude -p`) can't ask anyone, but it never returns the `McpError` the code waits for. It
+answers the elicitation itself, at once: its debug log reads `Elicitation request received in print mode:
+mode=form fields=[]`, and the tool completes 9 ms later. That answer is not `AcceptedElicitation`, so the tool
+returns `approved: false` with the note *"The person did not approve this wording, so nothing is recorded. Ask how
+they would put it, then call again with their wording."* The hook then drops the event.
+
+Two headless runs (`scratchpad/rm32a`, `rm32b`, Sonnet, `--plugin-dir` this checkout) show the same result:
+- The ledger holds the search and the edit, and no decision.
+- `trace_module` reports `author_decisions: 0`, with nothing to say a decision was stated and then lost.
+- The agent was told a person declined, though no person was present. Following the note, it would ask a person
+  who isn't there, or retry and be "declined" again.
+
+The same host run interactively behaves as promised (`rm32c`, driven through tmux):
+- The dialog shows the wording, with Accept and Decline.
+- Declined: `approved: false`, and the declined text is nowhere under the module or in the hook's cache.
+- Accepted: `approved: true`, and `trace_module` reads "its wording approved by them".
+- An answered `AskUserQuestion` is recorded as `asked: 1, answered: 1`. Neither the question's words nor the
+  option's words appear under the module.
+
+So the defect is narrow: a host's automatic answer reads as a person's refusal. MCP has two non-accept actions,
+`decline` (an explicit no) and `cancel` (dismissed with no choice). The log doesn't say which one print mode sends,
+and the tool treats both as a no. Untested: the Agent SDK, which runs the same CLI, and Codex.
+
+**Fixed.** Measured first: a probe server whose tool elicits and returns the raw action, run under `claude -p`,
+returned `action=cancel`. So `decline` and `cancel` are now read apart in `record_decision`: `decline` is the
+person's no (`approved: false`, nothing recorded, the note says they declined); `cancel`, whether a person closed
+the dialog or print mode answered for nobody, is no answer seen, kept as stated with `approved: null`, as on a host
+that cannot ask. A failure mid-question stays `false`. `tests/test_trace.py::test_a_dismissed_question_is_not_a_refusal`
+fails when `cancel` is read as a refusal (run against that change, restored after).
+
+
 ## F165 — a session that edits its tables through the shell leaves no ledger at all, and `trace_module` blames the era
 
 **Found:** 2026-11-18 (tester, headless sessions with `--plugin-dir` this checkout at v0.48.14+1) · **Severity:** medium ·

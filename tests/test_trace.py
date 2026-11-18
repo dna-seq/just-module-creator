@@ -561,11 +561,27 @@ async def test_wording_the_person_did_not_approve_is_never_recorded(
         return ElicitResult(action="decline")
 
     result = await state_as_author(make_client, module, decline)
-    assert result["approved"] is False and "nothing is recorded" in result["note"]
+    assert result["approved"] is False and "declined" in result["note"]
     hand_to_hook(env, module, result)
     write_study(module, env)
     assert decisions(module) == []
     assert any(e["kind"] == "edit" for e in tracehook_events(module))  # the ledger was written
+
+
+async def test_a_dismissed_question_is_not_a_refusal(module, env, make_client) -> None:
+    """F166: `claude -p` answers `cancel` at once with nobody there (measured 2026-11-18), and a
+    person closing the dialog answers the same. Kept as stated and unseen, never dropped."""
+
+    async def dismiss(message, response_type, params, context):
+        return ElicitResult(action="cancel")
+
+    result = await state_as_author(make_client, module, dismiss)
+    assert result["approved"] is None and "dismissed" in result["note"]
+    assert "declined" not in result["note"]
+    hand_to_hook(env, module, result)
+    write_study(module, env)
+    (state,) = decisions(module)
+    assert state.approved is None and "no approval" in state.because
 
 
 async def test_a_host_that_cannot_ask_keeps_the_decision_as_stated_unseen(

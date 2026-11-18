@@ -790,8 +790,8 @@ class DecisionStated(BaseModel):
     approved: bool | None = Field(
         default=None,
         description="For an `author` decision: `true` the person approved the wording when "
-        "asked, `false` they did not and nothing is recorded, `null` not asked here (another "
-        "basis, or a host that cannot ask from inside a tool).",
+        "asked, `false` they declined (or the question failed) and nothing is recorded, `null` "
+        "no answer seen (another basis, a dismissed question, or a host with nobody to ask).",
     )
     note: str = Field(description="What the record will and will not establish.")
 

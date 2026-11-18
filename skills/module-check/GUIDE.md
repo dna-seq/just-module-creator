@@ -73,8 +73,9 @@ recorded, which the result's `scope` says in its own words.
 how a weight was set. Give `basis="read"` with a `passage` copied verbatim from an article fetched this
 session, `recalled` when the reason comes from knowledge, or `author` for the person's own decision in
 an English paraphrase ("Author decided to ..."). The tool shows that wording to the person to approve;
-`approved: false` means nothing was recorded, so ask how they would put it and call again. Where the
-host cannot ask from inside a tool, `approved` is null: pass only wording they approved in the chat.
+`approved: false` means they declined it and nothing was recorded, so ask how they would put it and call
+again. `approved: null` means no answer was seen (a host that cannot ask, a dismissed question, or a run
+with nobody there): it is kept as stated, so pass only wording they approved in the chat.
 `trace_module` reads each back as `anchored`, `declared` or
 `recalled`. **`anchored` says where a passage is, never that it supports the reason:** it needs the
 passage verbatim in a fetched text and naming the variants the decision names. A passage can name the

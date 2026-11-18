@@ -14,37 +14,6 @@ is usable, and what is missing.
 
 ---
 
-## F166 — on a host with nobody to ask, an author's decision is dropped and the agent is told the person refused it
-
-**Found:** 2026-11-18, probing RM32 slice 3 on main ab441e8 (unreleased) · **Severity:** high for unattended runs ·
-**Status:** open, to the lead
-
-`record_decision(basis='author')` promises that *"a host that cannot ask leaves `approved: null`, kept as stated"*.
-Claude Code in print mode (`claude -p`) can't ask anyone, but it never returns the `McpError` the code waits for. It
-answers the elicitation itself, at once: its debug log reads `Elicitation request received in print mode:
-mode=form fields=[]`, and the tool completes 9 ms later. That answer is not `AcceptedElicitation`, so the tool
-returns `approved: false` with the note *"The person did not approve this wording, so nothing is recorded. Ask how
-they would put it, then call again with their wording."* The hook then drops the event.
-
-Two headless runs (`scratchpad/rm32a`, `rm32b`, Sonnet, `--plugin-dir` this checkout) show the same result:
-- The ledger holds the search and the edit, and no decision.
-- `trace_module` reports `author_decisions: 0`, with nothing to say a decision was stated and then lost.
-- The agent was told a person declined, though no person was present. Following the note, it would ask a person
-  who isn't there, or retry and be "declined" again.
-
-The same host run interactively behaves as promised (`rm32c`, driven through tmux):
-- The dialog shows the wording, with Accept and Decline.
-- Declined: `approved: false`, and the declined text is nowhere under the module or in the hook's cache.
-- Accepted: `approved: true`, and `trace_module` reads "its wording approved by them".
-- An answered `AskUserQuestion` is recorded as `asked: 1, answered: 1`. Neither the question's words nor the
-  option's words appear under the module.
-
-So the defect is narrow: a host's automatic answer reads as a person's refusal. MCP has two non-accept actions,
-`decline` (an explicit no) and `cancel` (dismissed with no choice). The log doesn't say which one print mode sends,
-and the tool treats both as a no. Untested: the Agent SDK, which runs the same CLI, and Codex.
-
----
-
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
 
 **Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the

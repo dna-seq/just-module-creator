@@ -23,7 +23,7 @@ from typing import get_args, get_origin
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
-from fastmcp.server.elicitation import AcceptedElicitation
+from fastmcp.server.elicitation import AcceptedElicitation, CancelledElicitation
 from just_dna_compiler import compiler, draft, hints, scaffold
 from just_dna_format import layout, reference
 from just_dna_format.integrity import IntegrityError, verify_manifest
@@ -975,10 +975,11 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     #
     # RM32 slice 3, decision 4 ("nothing about the author is written that they have not seen"):
     # an `author` decision is shown to the person through MCP elicitation before it counts, so
-    # the approval is a step inside the tool, not a reminder. Declined or dismissed, the result
-    # says `approved: false` and the hook records nothing. A host that cannot elicit leaves
-    # `approved: null`: the agent may have asked in the chat, which no tool sees, so it is kept
-    # as stated and labelled unseen, never refused (refusing would push the record into prose).
+    # the approval is a step inside the tool, not a reminder. Declined, or failed mid-question,
+    # the result says `approved: false` and the hook records nothing. A host that cannot elicit,
+    # or a question dismissed or auto-cancelled (`claude -p`, F166), leaves `approved: null`:
+    # the agent may have asked in the chat, which no tool sees, so it is kept as stated and
+    # labelled unseen, never refused (refusing would push the record into prose).
     # Reversal: drop the elicit block and the `approved` field; the hook then records every
     # author decision from its arguments, as 0.48.14 did.
     @mcp.tool(
@@ -1001,10 +1002,11 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         `basis` is `read` (give `passage`, verbatim from an article fetched this session),
         `recalled` (from knowledge, not read here) or `author` (the person decided; `why` is
         an English paraphrase of it). An `author` decision is shown to the person to approve
-        first: declined, nothing is recorded (`approved: false`); a host that cannot ask leaves
-        `approved: null`, kept as stated. `trace_module` reads it back as `anchored`
-        (the passage is in a fetched text and names the variants the decision names), else
-        `declared` or `recalled`. Anchored is never a verdict that the passage supports it.
+        first: declined, nothing is recorded (`approved: false`); dismissed, or a host that
+        cannot ask, leaves `approved: null`, kept as stated. `trace_module` reads it back as
+        `anchored` (the passage is in a fetched text and names the variants the decision
+        names), else `declared` or `recalled`. Anchored is never a verdict that the passage
+        supports it.
         """
         target = resolve_dir(spec_dir, settings)
         if not (target / "module_spec.yaml").is_file():
@@ -1053,12 +1055,22 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
                     "recorded. Ask them in the chat, then call again."
                 )
             else:
-                approved = isinstance(answer, AcceptedElicitation)
-                if not approved:
-                    note = (
-                        "The person did not approve this wording, so nothing is recorded. Ask "
-                        "how they would put it, then call again with their wording."
+                # F166: `claude -p` answers `cancel` in about a millisecond, with nobody there,
+                # and a person closing the dialog answers the same. Neither is a refusal: kept as
+                # stated and unseen, like a host that cannot ask. Only `decline` is a no.
+                if isinstance(answer, CancelledElicitation):
+                    note += (
+                        " The question was dismissed, or nobody was there to answer it, so it is "
+                        "kept as stated, `approved: null`: record only wording they approved in "
+                        "the chat."
                     )
+                else:
+                    approved = isinstance(answer, AcceptedElicitation)
+                    if not approved:
+                        note = (
+                            "The person declined this wording, so nothing is recorded. Ask how "
+                            "they would put it, then call again with their wording."
+                        )
         return DecisionStated(
             spec_dir=str(target),
             subject=subject,
