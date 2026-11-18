@@ -122,7 +122,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.237 (moved on each announcement; 0.1.237 on 2026-11-18) (`move-to-tag.py`; the pin is in the untracked
+- **Kit pin**: 0.1.238 (moved on each announcement; 0.1.238 on 2026-11-18) (`move-to-tag.py`; the pin is in the untracked
   `.claude/settings.local.json`). Taking it into this session is mine: `watchdog.sh reload`, then end the turn,
   and the kit's typer types `/reload-plugins` (the "left for the person" line `move-to-tag.py` prints is wrong, kit #306).
 
@@ -135,6 +135,15 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   the pm's. The liaison capped polars and duckdb `<2` in `pyproject.toml` (`c361614`).
 - **F121** (seats resuming together lose the plugin server): kit #300 filed; repo-side repairs wait on it.
 - **F128** (user-scope 0.47.0 skills; desk #229, the person's) remains open in `docs/dogfooding.md`. F126 and F132 shipped in 0.48.5; the 0.8-move list is done on adopt-0.8.
+- **RM32 (an author's answers reach the ledger), `unattended`.** Slice 1 and the reporting half of slice 2 are on
+  main (`7f70195`): the hook counts answered `AskUserQuestion` calls with no text, `trace_module` reports them beside
+  `basis="author"` decisions. Built and tested against the recorded result shape (`questions`, `answers`,
+  `annotations`); no live run. Next: slice 3, where the author sees the paraphrase before it is written (MCP
+  elicitation from inside `record_decision` if both hosts support it, else the agent's own question; record the
+  choice with its reversal). Codex: `request_user_input` exists in 0.169, its hook payload unmeasured.
+- **Lesson, 2026-11-18: a stray `git stash` in the shared tree.** I ran a bare `git stash` while reading a file; it
+  took my seven uncommitted RM32 files (no other seat's work was in it, and no other stash existed). `git stash pop`
+  put them back clean. Never type `git stash` in this clone; commit or leave the tree as it is.
 - **The liaison's re-run of pending-fixes (`f032ecb`): the four lifts are done, 2026-11-18.** F93: `proxy`'s
   spelling shim out, `sidecar_write_path` asked directly (`43a36f5`). F94: `_LANE_KB`/`_DECLARED_KB` out, every
   lane priced from `approx_mb` (`3934432`). F67: decided to keep our own YAML parse, since `load_spec` raises on
