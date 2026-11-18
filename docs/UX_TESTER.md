@@ -422,6 +422,16 @@ that spelling, never a second file; `provision_caches` prices each lane from its
 module or in the hook cache, the approved one `approved: true`. Holds. Print mode auto-answers the elicitation: F166.
 Recheck F166's fix with one `claude -p` run (`scratchpad/rm32b/prompt.md`) and one tmux run (`rm32c/prompt.txt`).
 
+**F166 recheck, 2026-11-18 evening, on main 069e6a9 (7d2fad5, 756ee80; unreleased).**
+- `claude -p`: `approved: null` with the "dismissed, or nobody was there" note, and the decision is in the ledger as
+  `approved: null`.
+- tmux: a decline returns `approved: false`, "The person declined this wording", and records nothing. Esc returns
+  `approved: null`, kept, and `trace_module` reads "no approval of this wording was seen by the tool". `by='author'`
+  with `basis='recalled'` is refused.
+- Neither the declined wording nor the refused wording is under the module or in the hook cache.
+
+Holds. The first headless connect timed out again (added to F121).
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
