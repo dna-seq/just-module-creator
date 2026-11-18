@@ -6,7 +6,7 @@ id = "just-module-creator"
 # The person's coding sessions here (docs/seats/LEAD.md): the plugin's code, skills and releases. The tester hands
 # it findings, the liaison an upstream release's ask, the pm a scope. A downstream's liaison (a module repository
 # filing an issue here) and the upstreams' leads (compiler, registry) may wake it.
-wake_from = "just-module-creator/tester just-module-creator/liaison just-module-creator/pm longevity-loci/liaison just-dna-compiler/lead just-dna-registry/lead */secretary"
+wake_from = "just-module-creator/tester just-module-creator/liaison just-module-creator/pm just-module-creator/writer longevity-loci/liaison just-dna-compiler/lead just-dna-registry/lead */secretary"
 
 [seat.lead.watch.desk]
 cmd = "sh kit:bin/py.sh kit:classes/desk/watch-answers.py just-module-creator lead"

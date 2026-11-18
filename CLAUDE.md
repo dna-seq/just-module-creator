@@ -34,7 +34,7 @@ summary of a rule drops the qualifier the decision turned on. Delegate finding, 
 3. **[docs/CHANGELOG.md](docs/CHANGELOG.md)** — what shipped, newest first.
 4. **[docs/dogfooding.md](docs/dogfooding.md)** — open findings from real use. Read before touching
    the tool surface.
-5. **[docs/seats/README.md](docs/seats/README.md)** — the standing roles (lead, pm, tester, liaison)
+5. **[docs/seats/README.md](docs/seats/README.md)** — the standing roles (lead, pm, tester, liaison, writer)
    a session can take here, and what each owns.
 
 No rule below requires following a link to know what you must not do; links carry positive detail.
@@ -514,11 +514,13 @@ upstream). One mitigated here but still owed upstream may appear in two. The lia
 
 ### Manuscript writing
 
-Draft in `docs/manuscript/` (EASRP 2026 `template.tex` + `easrp2026.sty`). Edit `manuscript.tex`,
-then `uv run manuscript manuscript` to rebuild `.md` + `.pdf` (`--nopdf` for Markdown only). Section
-order follows the empty template (Introduction, Related work, Method, Results, Discussion,
-Conclusion) — not the retired `paper2-dna-agents.md` outline in -lite, which is inspiration only.
-Related-work papers go in `data/cache/for_manuscript/` (gitignored). Process notes in
+The paper is the **writer seat's** (`docs/seats/WRITER.md`): a request to write or revise it goes
+there. Draft in `docs/manuscript/`. Edit `manuscript.tex`, then `uv run manuscript manuscript` to
+rebuild `.md` + `.pdf` (`--nopdf` for Markdown only). **Where it is going is in the record, not
+here:** `docs/manuscript/manuscript.record.yaml` holds the candidate journals, the venue facts and
+the author decisions still open; the EASRP 2026 template the draft started from is no longer the
+destination. The retired `paper2-dna-agents.md` outline in -lite is inspiration only. Related-work
+papers go in `data/cache/for_manuscript/` (gitignored). Process notes in
 `docs/manuscript/README.md`. Tectonic setup: §11.
 
 ### Upstream findings go to the producer, never into a workaround
@@ -835,9 +837,9 @@ answers a question over a number written here.*
   `~/.cache/just-dna-pipelines` is a deliberate read-only *file* so `mkdir` fails loudly; if a tool
   raises `NotADirectoryError`, set the variable, never delete the guard. The V2 GraphQL endpoint 404ing
   and falling back to REST is expected.
-- **Tectonic**: the wheel's build needs a newer glibc than this box; the static musl build at
-  `~/.local/bin/tectonic-musl` is named by `MANUSCRIPT_TECTONIC` in `.env`. Set `TECTONIC_CACHE_DIR`
-  too. Without it the command writes Markdown, fails, and leaves a stale `manuscript.pdf` — don't read
+- **Tectonic**: the wheel's build needs a newer glibc than this box. `~/.local/bin/tectonic` 0.17.0
+  renders the paper (checked 2026-11-19; the older `tectonic-musl` is gone) and is named by
+  `MANUSCRIPT_TECTONIC` in `.env`. Set `TECTONIC_CACHE_DIR` too. Without it the command writes Markdown, fails, and leaves a stale `manuscript.pdf` — don't read
   a page count off it. `scripts/page_budget.py` estimates length when a render is impossible.
 - **Plugin commands shadow skills**: a `commands/<name>.md` hides `skills/<name>/SKILL.md` entirely.
   A skill needs no command file to be `/`-invocable; `tests/test_plugin_manifest.py` fails on a name
