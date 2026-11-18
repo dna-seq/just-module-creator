@@ -399,6 +399,14 @@ the owner's highlight; a notes- or rating-only edit keeps it. Testable with `she
 `test-sheep/test_statin_response`: post, highlight, re-post with another verdict, read `highlighted`; then a notes-only
 re-post; clean up.
 
+**0.48.14 recheck, 2026-11-18, over the wire (server restarted by SIGKILL and `reload --mcp`; header v0.48.14).**
+F160 holds (`test_fto_bmi` over spec `fto_bmi` refused locally; publish's description is stale from the host cache only).
+F163 holds. A released-plugin session (`claude -p --plugin-dir` this checkout, `env -u JMC_TRACE`, transcript `4e010476`):
+search, citation traversal, two fetches, a decision and a `Write`; `trace_module` over the wire reads both quotes
+`traced` (one through `paper_citations`) and the decision `anchored` with its passage. New: F164 (the released
+description still promises F161's `contradicted`; fixed on main) and F165 (a shell-written edit leaves no ledger, the
+end hook drops pending events). The first headless connect timed out (added to F121).
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
