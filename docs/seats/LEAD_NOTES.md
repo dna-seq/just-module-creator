@@ -135,12 +135,12 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   the pm's. The liaison capped polars and duckdb `<2` in `pyproject.toml` (`c361614`).
 - **F121** (seats resuming together lose the plugin server): kit #300 filed; repo-side repairs wait on it.
 - **F128** (user-scope 0.47.0 skills; desk #229, the person's) remains open in `docs/dogfooding.md`. F126 and F132 shipped in 0.48.5; the 0.8-move list is done on adopt-0.8.
-- **RM32 (an author's answers reach the ledger), `unattended`.** Slice 1 and the reporting half of slice 2 are on
-  main (`7f70195`): the hook counts answered `AskUserQuestion` calls with no text, `trace_module` reports them beside
-  `basis="author"` decisions. Built and tested against the recorded result shape (`questions`, `answers`,
-  `annotations`); no live run. Next: slice 3, where the author sees the paraphrase before it is written (MCP
-  elicitation from inside `record_decision` if both hosts support it, else the agent's own question; record the
-  choice with its reversal). Codex: `request_user_input` exists in 0.169, its hook payload unmeasured.
+- **RM32 (an author's answers reach the ledger), `unattended`.** On main, unreleased: slice 1 and the report half of
+  slice 2 (`7f70195`: answered `AskUserQuestion` counted with no text, set beside `basis="author"` decisions) and
+  slice 3 (`ab441e8`: `record_decision(basis="author")` elicits approval; declined is not recorded, no elicitation
+  support is `approved: null`). Tested in memory against the recorded result shape and fastmcp's own elicitation;
+  no live run on either host. Left: a live run (needs a person at a session) and Codex's `request_user_input`
+  once its hook payload is measured. Handed to the tester to probe.
 - **Lesson, 2026-11-18: a stray `git stash` in the shared tree.** I ran a bare `git stash` while reading a file; it
   took my seven uncommitted RM32 files (no other seat's work was in it, and no other stash existed). `git stash pop`
   put them back clean. Never type `git stash` in this clone; commit or leave the tree as it is.
