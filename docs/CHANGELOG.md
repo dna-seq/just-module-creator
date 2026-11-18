@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`trace_module`'s description says what its states mean now** (F164): 0.48.14 still listed a citation no search returned under `contradicted`, which F161 had made `not_traceable`, and said nothing of decisions. It now says both, and that `anchored` is never support.
 ## [0.48.14] — 2026-11-18
 
 - **Decisions no edit shows go to the ledger** (RM31, part 3): `record_decision` states a paper set aside, a variant left out or how a weight was set, as `read` (with a verbatim passage), `recalled` or `author`. The host hook records it; `trace_module` reads each back as `anchored`, `declared` or `recalled`. `anchored` says where a passage sits (with its PMID, offset and length, to read it at), never that it supports the reason (F162): it needs the passage verbatim in a fetched text and naming the variants the decision names, and a reason naming none reads `declared`. `module-check` carries the brief for an independent reviewer, who reads each anchored passage beside its reason before seeing any label.

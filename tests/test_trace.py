@@ -445,3 +445,16 @@ def test_an_old_ledger_never_claims_a_check_it_did_not_make(module, env) -> None
     ledger_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
     (state,) = decisions(module)
     assert state.witness == "declared" and "never checked for rs1421085" in state.because
+
+
+async def test_the_description_says_what_the_states_mean_now(make_client) -> None:
+    """F164: the released description still listed 'a citation no search returned' under
+    contradicted after F161 made it not_traceable, and said nothing of decisions (F162)."""
+    async with make_client(offline_settings()) as client:
+        tools = {t.name: t for t in await client.list_tools()}
+    text = " ".join((tools["trace_module"].description or "").split())
+    assert "contradicted" in text  # the anchor: the states are described at all
+    contradicted = text.split("`contradicted`", 1)[1].split("`not_traceable`", 1)[0]
+    assert "no search" not in contradicted and "no recorded search" not in contradicted
+    assert "never evidence against the row" in text
+    assert "`anchored`" in text and "Anchored is never support" in text

@@ -1036,13 +1036,16 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         The ledger is `logs/trace/*.jsonl`, which this plugin's host hook writes while a module is
         authored. Each row comes back `written: recorded | not_recorded | unknown`, and each row of
         the quote-bearing table also gets a citation state: `traced` (the cited article came back
-        from a recorded search, was fetched, and the quote sits verbatim in that text),
-        `contradicted` (a citation no search returned, a quote that is the article's own title, a
-        quote not in the text fetched for its citation) or `not_traceable`, with the reason.
+        from a recorded search or citation list, was fetched, and the quote sits verbatim in it),
+        `contradicted` (the quote is the article's title or a piece of it, or is not in the text
+        fetched for its citation) or `not_traceable`, with the reason: a citation no recorded
+        search returned is an unknown route, never evidence against the row.
 
-        It never says a row is right, and it reads no basis for a judged cell (weight, direction,
-        conclusion): a traced citation can sit beside a weight nothing recorded. A row written
-        before the ledger existed is `not_traceable`, which is an unknown, not a failure.
+        Each `record_decision` comes back `anchored` (its passage is in a fetched text and names
+        the decision's variants, with where to read it), `declared` or `recalled`. Anchored is
+        never support: read the passage beside the reason. Nothing here says a row is right or
+        reads a basis for a judged cell (weight, direction, conclusion), and a row written before
+        the ledger existed is `not_traceable`, an unknown, not a failure.
         """
         target = resolve_dir(spec_dir, settings)
         tables, _build = await run_sync(lambda: compiler.spec_tables(target))
