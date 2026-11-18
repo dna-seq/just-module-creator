@@ -407,6 +407,11 @@ search, citation traversal, two fetches, a decision and a `Write`; `trace_module
 description still promises F161's `contradicted`; fixed on main) and F165 (a shell-written edit leaves no ledger, the
 end hook drops pending events). The first headless connect timed out (added to F121).
 
+**F165 recheck, 2026-11-18, on main 81af555 (unreleased).** A headless session told to write `studies.csv` only through
+`Bash` (a Python `csv` script): the ledger holds both searches, both fetches, the decision and an edit with route
+`Bash`; both quotes read `traced` (one via `paper_citations`), the decision `anchored`; no path in the ledger. A module
+with no ledger now names all four causes and says which is not recorded. Holds.
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
