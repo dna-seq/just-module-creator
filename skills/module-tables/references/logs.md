@@ -103,7 +103,9 @@ There are no columns, so this section names **producers** instead.
 - **drafter** — none. `clinvar_draft` / `pgx_draft` / `clinpgx_draft` write no logs.
 - **this plugin's host hook** — `logs/trace/<date>-<session>.jsonl`, the provenance ledger (RM31). One
   JSON object per line: a `search` (query, returned ids), a `fetch` (identifiers, `sha256` and `chars`
-  of the article text, never the text), a `lookup`, and an `edit` (the file, and each row `added` or
+  of the article text, never the text), a `lookup`, a `decision` (from `record_decision`; an author's
+  carries `approved`), a `question` (Claude Code only: how many questions the person was asked and
+  answered, never their words), and an `edit` (the file, and each row `added` or
   `removed` as the sha256 of its non-empty cells, with `anchors` where a long cell sits verbatim in a
   fetched text). A call whose result could not be read is kept with `result: null`. Written when a
   module's table changes: through the edit tools, or through a shell command or a writing tool in a

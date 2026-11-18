@@ -1,5 +1,5 @@
 {
-  "description": "just-module-creator: the provenance ledger (RM31). Records searches, fetched articles by hash, and module table edits into the module's logs/trace/. JMC_TRACE=0 turns it off.",
+  "description": "just-module-creator: the provenance ledger (RM31). Records searches, fetched articles by hash, stated decisions, how many questions the author answered (never their words), and module table edits into the module's logs/trace/. JMC_TRACE=0 turns it off.",
   "hooks": {
     "PreToolUse": [
       {

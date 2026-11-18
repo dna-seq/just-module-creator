@@ -490,7 +490,8 @@ async def test_answered_questions_are_set_beside_the_authors_recorded_decisions(
         report = (await client.call_tool("trace_module", {"spec_dir": str(module)})).data
     counted = (report.questions_answered, report.questions_unread, report.author_decisions)
     assert counted == (1, 1, 1)
-    assert "answered 2 question(s)" in report.next_step
+    assert "answered 1 question(s)" in report.next_step
+    assert "1 more whose answers could not be read" in report.next_step
     assert "record_decision(basis='author')" in report.next_step
     # Never evidence against a row.
     assert report.counts.get("citation:contradicted", 0) == 0
@@ -593,3 +594,33 @@ async def test_only_an_author_decision_asks_the_person(module, make_client) -> N
 def tracehook_events(module: Path) -> list[dict]:
     files = sorted((module / "logs" / "trace").glob("*.jsonl"))
     return [json.loads(line) for f in files for line in f.read_text("utf-8").splitlines() if line]
+
+
+async def test_a_question_that_fails_after_it_was_put_records_nothing(
+    module, env, make_client
+) -> None:
+    """Only a host that never declared elicitation reads `null`; a failure mid-question is not an
+    approval and must not be filed as "this host cannot ask"."""
+
+    async def crashes(message, response_type, params, context):
+        raise RuntimeError("the dialog closed with the window")
+
+    result = await state_as_author(make_client, module, crashes)
+    assert result["approved"] is False and "nothing is recorded" in result["note"]
+    hand_to_hook(env, module, result)
+    write_study(module, env)
+    assert decisions(module) == []
+
+
+async def test_by_author_cannot_skip_the_persons_approval(module, env, make_client) -> None:
+    async with make_client(offline_settings()) as client:
+        with pytest.raises(Exception, match="basis='author'"):
+            await client.call_tool(
+                "record_decision",
+                {**AUTHOR_DECISION, "spec_dir": str(module), "basis": "recalled", "by": "author"},
+            )
+    # And an author decision passed with the default `by` is still filed as the author's.
+    hand_to_hook(env, module, {"approved": True})
+    write_study(module, env)
+    (state,) = decisions(module)
+    assert state.by == "author"

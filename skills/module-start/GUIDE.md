@@ -281,7 +281,9 @@ that line as **the fix**, with the path the plan named.
 ## Tell the author what the ledger records — once
 
 This plugin keeps a **provenance ledger** for every module it edits: which searches ran, which
-articles were fetched (by hash and length, never their text), and which table rows were written.
+articles were fetched (by hash and length, never their text), which table rows were written, the
+decisions stated for it, and how many questions the author answered (never the questions or answers).
+A decision recorded as the author's is shown to them to approve first.
 It is `logs/trace/*.jsonl` inside the module and **publishes with it**, like everything in `logs/`.
 Say so once, in one plain sentence, the first time a session writes into a module, and say how to
 stop it (`JMC_TRACE=0` where the host runs). It holds no paths, no conversation and no article

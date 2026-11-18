@@ -30,7 +30,7 @@ from just_dna_format.integrity import IntegrityError, verify_manifest
 from just_dna_format.manifest import read_manifest
 from just_dna_format.spec import ModuleSpecConfig
 from mcp.shared.exceptions import McpError
-from mcp.types import ToolAnnotations
+from mcp.types import ClientCapabilities, ElicitationCapability, ToolAnnotations
 from pydantic import BaseModel
 
 from just_module_creator import audit, authored_checks, logscan, trace
@@ -1011,6 +1011,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             raise ToolError(f"{spec_dir} holds no module_spec.yaml, so no module to record for.")
         if basis not in {"read", "recalled", "author"}:
             raise ToolError("`basis` is `read`, `recalled` or `author`.")
+        if by.strip().lower() == "author" and basis != "author":
+            # The person's decision goes through their approval; `by` alone would skip it.
+            raise ToolError("A decision by the author takes `basis='author'`, which asks them.")
         if not subject.strip() or not verdict.strip() or not why.strip():
             raise ToolError("`subject`, `verdict` and `why` each need words.")
         off = os.environ.get("JMC_TRACE", "").strip().lower() in {"0", "false", "no", "off"}
@@ -1026,17 +1029,28 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             )
         )
         approved: bool | None = None
-        if basis == "author" and ctx is not None:
+        can_ask = ctx is not None and ctx.session.check_client_capability(
+            ClientCapabilities(elicitation=ElicitationCapability())
+        )
+        if basis == "author" and ctx is not None and not can_ask:
+            note += (
+                " This host cannot show the wording to the person from inside a tool, so it is "
+                "kept as stated, `approved: null`: record only wording they approved in the chat."
+            )
+        elif basis == "author" and ctx is not None:
+            # Declared support, so any failure here came after the person may have seen it, or
+            # mid-question: not an approval, and nothing is recorded (never `null`, which reads
+            # as "this host cannot ask").
             try:
                 answer = await ctx.elicit(
                     f"Record this as your decision about {subject} ({verdict})?\n\n{why}",
                     response_type=None,
                 )
-            except McpError:
-                note += (
-                    " This host cannot show the wording to the person from inside a tool, so "
-                    "it is kept as stated, `approved: null`: record only wording they approved "
-                    "in the chat."
+            except McpError as exc:
+                approved = False
+                note = (
+                    f"The question to the person failed ({exc.error.message}), so nothing is "
+                    "recorded. Ask them in the chat, then call again."
                 )
             else:
                 approved = isinstance(answer, AcceptedElicitation)
@@ -1123,11 +1137,16 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         if asked:
             # RM32: an answer is the person's decision only if it settled something about the
             # module, which the count cannot tell; so this points at the gap, never at a row.
+            unread = (
+                f", and {ledger.questions_unread} more whose answers could not be read"
+                if ledger.questions_unread
+                else ""
+            )
             next_step += (
-                f" The person answered {asked} question(s) in recorded sessions (the words are "
-                f"not kept) and {authored} decision(s) are recorded as theirs: where an answer "
-                "settled something about this module and no decision says so, record it with "
-                "record_decision(basis='author') in words they approved."
+                f" The person answered {ledger.questions_answered} question(s) in recorded "
+                f"sessions{unread} (the words are not kept), and {authored} decision(s) are "
+                "recorded as theirs: where an answer settled something about this module and no "
+                "decision says so, record it with record_decision(basis='author')."
             )
         return TraceReport(
             spec_dir=str(target),

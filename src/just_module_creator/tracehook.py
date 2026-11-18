@@ -303,7 +303,12 @@ def record_decision(session: Session, tool_input: dict[str, Any], response: Any 
         "t": _now(),
         "via": "record_decision",
         "kind": "decision",
-        "by": str(tool_input.get("by") or "agent"),
+        # The person's decision is theirs whatever `by` says (the tool asks them on `basis`).
+        "by": (
+            "author"
+            if str(tool_input.get("basis") or "") == "author"
+            else str(tool_input.get("by") or "agent")
+        ),
         "subject": str(tool_input.get("subject") or ""),
         "verdict": str(tool_input.get("verdict") or ""),
         "basis": str(tool_input.get("basis") or ""),
