@@ -13,4 +13,6 @@
 
 - ✅ Each module now keeps a record of how its rows came to be (searches, articles read, rows written, decisions no edit shows), and `trace_module` reads every row back against it; registry 0.32 adopted; publishing refuses a module name that differs from its spec (0.48.14).
 **Next**
-1. Renaming the `test-sheep` rehearsal namespace. Lead; ⏸ waits on the person (desk #255).
+1. Release 0.48.15 (on main now: the ledger survives tables written by script, the author's answered questions are counted beside the decisions recorded as theirs, two leftover upstream workarounds removed). Lead; 📅 2026-11-19.
+2. Letting the author see and approve the wording of a decision before it is recorded. Lead; 🔨 next, unattended.
+3. Renaming the `test-sheep` rehearsal namespace. Lead; ⏸ waits on the person (desk #255).
