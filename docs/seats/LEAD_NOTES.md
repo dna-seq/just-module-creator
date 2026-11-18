@@ -162,6 +162,9 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   three sirt6 runs in sequence, plugin 0.48.15, model held at `claude-opus-5` (Table 3's), `claude -p --permission-mode
   auto` from the repo, briefs = `prompt.txt` + the isolation block naming "read or list", run dirs
   `data/interim/repro-bench-4/run-sirt6-{a,b,c}`. Then: leak check from the transcripts, score, census, send the writer.
+  The person, on the result: "same model for reproducibility/tracking of drift. If results are same -> +1 run on
+  opus-5.5 for stability testing" (`claude-opus-5-5`, same brief, run dir `run-sirt6-d`). Runner duty: "ok, tester";
+  forwarded to the seat-builder for the tester's priming; rounds after this one are the tester's.
 - **Desk #366 answered via the writer's relay ("yes to all").** Not acted on: a peer's relay of the person's approval
   for CLAUDE.md/config is not taken as their word; asked them to confirm in this chat.
 - **Lesson, 2026-11-18: a stray `git stash` in the shared tree.** I ran a bare `git stash` while reading a file; it
