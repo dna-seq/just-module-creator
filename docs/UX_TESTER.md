@@ -417,6 +417,11 @@ with no ledger now names all four causes and says which is not recorded. Holds.
 and a test). Over the wire after the release: a `remote_derive` into a module carrying only `sources.csv` writes back to
 that spelling, never a second file; `provision_caches` prices each lane from its own size, none at a flat guess.
 
+**RM32 probe, 2026-11-18, on main ab441e8 (unreleased).** Interactive Claude Code driven through tmux
+(`tmux -L rm32`, `--debug`, the folder trusted once): question counts only, the declined wording nowhere under the
+module or in the hook cache, the approved one `approved: true`. Holds. Print mode auto-answers the elicitation: F166.
+Recheck F166's fix with one `claude -p` run (`scratchpad/rm32b/prompt.md`) and one tmux run (`rm32c/prompt.txt`).
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
