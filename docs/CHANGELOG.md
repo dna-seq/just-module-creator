@@ -5,6 +5,8 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+## [0.48.14] — 2026-11-18
+
 - **Decisions no edit shows go to the ledger** (RM31, part 3): `record_decision` states a paper set aside, a variant left out or how a weight was set, as `read` (with a verbatim passage), `recalled` or `author`. The host hook records it; `trace_module` reads each back as `anchored`, `declared` or `recalled`. `anchored` says where a passage sits (with its PMID, offset and length, to read it at), never that it supports the reason (F162): it needs the passage verbatim in a fetched text and naming the variants the decision names, and a reason naming none reads `declared`. `module-check` carries the brief for an independent reviewer, who reads each anchored passage beside its reason before seeing any label.
 - **The enricher floor is 0.8.8** (upstream RM445): a cache pull could label kept files with a release it never fetched, so a ClinVar cache could serve older rows under a newer release name. A machine pulled before 0.8.8 should run `just-dna-enricher cache pull` once.
 - **Registry 0.32 adopted** (both instances serve it; the registry floor is 0.32.0):
