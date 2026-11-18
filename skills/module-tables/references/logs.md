@@ -105,8 +105,11 @@ There are no columns, so this section names **producers** instead.
   JSON object per line: a `search` (query, returned ids), a `fetch` (identifiers, `sha256` and `chars`
   of the article text, never the text), a `lookup`, and an `edit` (the file, and each row `added` or
   `removed` as the sha256 of its non-empty cells, with `anchors` where a long cell sits verbatim in a
-  fetched text). A call whose result could not be read is kept with `result: null`. Written only when
-  a session edits a module's table; `JMC_TRACE=0` turns it off. `docs/DESIGN-traceability.md` §11.
+  fetched text). A call whose result could not be read is kept with `result: null`. Written when a
+  module's table changes: through the edit tools, or through a shell command or a writing tool in a
+  module the session named to one of this plugin's tools (`via` then names the shell, the tool, or
+  `unobserved` for a change found only later); the command's text is never read. `JMC_TRACE=0`
+  turns it off. `docs/DESIGN-traceability.md` §11.
 - **enricher pass** — **none, and this is the correction worth carrying.** Grepping
   `enricher/src/` for a `.log` write returns nothing: the enricher writes `resolution.csv` and the
   fact sidecars and never a log file. Annotating `logs/` as "the enricher's" is wrong in both

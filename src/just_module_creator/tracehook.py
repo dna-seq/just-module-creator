@@ -54,6 +54,10 @@ _RSID = re.compile(r"\brs\d+\b", re.IGNORECASE)
 #: The hosts' file-writing tools. Codex reports a patch as `apply_patch`, paths inside the patch.
 EDIT_TOOLS = frozenset({"Write", "Edit", "MultiEdit", "apply_patch"})
 
+#: The hosts' shell tools. Their command text is never read or recorded; after one runs, the
+#: tables of every module the session knows are compared with their last seen copy (F165).
+SHELL_TOOLS = frozenset({"Bash"})
+
 #: The file that makes a directory a module.
 SPEC_FILE = "module_spec.yaml"
 
@@ -159,6 +163,7 @@ class Session:
         self.before = self.dir / "before"
         self.pending = self.dir / "pending.jsonl"
         self.titles = self.dir / "titles.json"
+        self.modules = self.dir / "modules.json"
 
     def ensure(self) -> None:
         self.texts.mkdir(parents=True, exist_ok=True)
@@ -369,6 +374,67 @@ def record_tool(session: Session, tool: str, tool_input: dict[str, Any], respons
     session.queue(event)
 
 
+def known_modules(session: Session) -> list[Path]:
+    if not session.modules.exists():
+        return []
+    return [Path(m) for m in json.loads(session.modules.read_text("utf-8"))]
+
+
+def module_tables(module: Path) -> list[Path]:
+    return sorted(p for p in module.glob("*.csv") if p.is_file())
+
+
+def register(session: Session, module: Path) -> None:
+    """Know a module for the rest of the session: copy its tables, to diff them later (F165).
+
+    A table written by a route the hook cannot see (a shell command, a tool that writes) changes
+    on disk with no edit event. Keeping the last seen copy of every table of every module the
+    session works in lets the next shell call, our next tool call or the session's end find the
+    change and record it, so the session's searches and fetches still reach a ledger.
+    """
+    known = known_modules(session)
+    if module in known:
+        return
+    session.ensure()
+    snapshot(session, module_tables(module))
+    session.modules.write_text(json.dumps([str(m) for m in [*known, module]]), encoding="utf-8")
+
+
+def changed_tables(session: Session) -> list[Path]:
+    """Every table of a known module that differs from its last seen copy, or appeared."""
+    changed: list[Path] = []
+    for module in known_modules(session):
+        for table in module_tables(module):
+            copy = session.before_path(table)
+            if not copy.exists() or copy.read_bytes() != table.read_bytes():
+                changed.append(table)
+    return changed
+
+
+def catch_up(session: Session, via: str) -> None:
+    """Record what changed in known modules since last seen, then keep the new copies."""
+    changed = changed_tables(session)
+    if not changed:
+        return
+    for table in changed:
+        if not session.before_path(table).exists():
+            session.before_path(table).write_text("", encoding="utf-8")
+    record_edit(session, via, changed)
+    snapshot(session, changed)
+
+
+def spec_dir_of(tool_input: dict[str, Any], cwd: str) -> Path | None:
+    """The module a call of ours names by `spec_dir`, if it is one."""
+    raw = tool_input.get("spec_dir")
+    if not raw:
+        return None
+    path = Path(str(raw))
+    if not path.is_absolute():
+        path = (Path(cwd) if cwd else Path.cwd()) / path
+    path = path.resolve()
+    return path if (path / SPEC_FILE).is_file() else None
+
+
 def snapshot(session: Session, files: list[Path]) -> None:
     """Before an edit: keep each module table as it stands, to diff the after against."""
     for file in files:
@@ -431,21 +497,42 @@ def handle(phase: str, payload: dict[str, Any], env: dict[str, str]) -> None:
     root = trace_root(env)
     session = Session(root, str(payload.get("session_id") or ""))
     if phase == "end":
+        catch_up(session, "unobserved")
         shutil.rmtree(session.dir, ignore_errors=True)
         return
     name = str(payload.get("tool_name") or "")
     tool_input = payload.get("tool_input") or {}
+    cwd = str(payload.get("cwd") or "")
     if name in EDIT_TOOLS:
-        files = edited_files(name, tool_input, str(payload.get("cwd") or ""))
+        files = edited_files(name, tool_input, cwd)
         if phase == "pre":
             sweep(root, session.id)
+            catch_up(session, "unobserved")
             snapshot(session, files)
         else:
             record_edit(session, name, files)
+            for module in {m for f in files if (m := module_dir(f)) is not None}:
+                register(session, module)
+            snapshot(session, [f for f in files if module_dir(f) is not None])
+        return
+    if name in SHELL_TOOLS:
+        # Nothing of the command is read or kept: only whether a known module's tables moved.
+        if phase == "post":
+            catch_up(session, name)
         return
     tool = our_tool(name)
-    if phase == "post" and tool in RECORDED_TOOLS:
+    if tool is None:
+        return
+    if phase == "pre":
+        if (module := spec_dir_of(tool_input, cwd)) is not None:
+            register(session, module)
+        catch_up(session, "unobserved")
+        return
+    if tool in RECORDED_TOOLS:
         record_tool(session, tool, tool_input, payload.get("tool_response"))
+    if (module := spec_dir_of(tool_input, cwd)) is not None:
+        register(session, module)
+    catch_up(session, tool)
 
 
 def main(argv: list[str]) -> int:

@@ -300,17 +300,27 @@ def test_the_hook_imports_nothing_outside_the_standard_library() -> None:
 
 
 @pytest.mark.parametrize(
-    ("hooks_file", "root_var"),
-    [("hooks/hooks.json", "${CLAUDE_PLUGIN_ROOT}"), ("hooks/codex-hooks.json", "${PLUGIN_ROOT}")],
+    ("hooks_file", "root_var", "prefix", "edits"),
+    [
+        ("hooks/hooks.json", "${CLAUDE_PLUGIN_ROOT}", CLAUDE, ["Write", "Edit", "MultiEdit"]),
+        ("hooks/codex-hooks.json", "${PLUGIN_ROOT}", "mcp__just-module-creator__", ["apply_patch"]),
+    ],
 )
-def test_each_host_runs_the_hook_on_the_tools_it_records(hooks_file, root_var) -> None:
-    """The matchers name every recorded tool, and only through the host's own root variable."""
+def test_each_host_runs_the_hook_where_it_must(hooks_file, root_var, prefix, edits) -> None:
+    """Each matcher, compiled as the host compiles it, catches every recorded tool by its full name,
+    every edit tool before and after, any of our tools before (to know its module) and after, and
+    the shell after (F165). Never just-dna-lite's tools; only through the host's root variable."""
     config = json.loads((ROOT / hooks_file).read_text("utf-8"))["hooks"]
-    post = " ".join(entry["matcher"] for entry in config["PostToolUse"])
-    assert all(tool in post for tool in tracehook.RECORDED_TOOLS), post
+    pre = re.compile(config["PreToolUse"][0]["matcher"])
+    post = re.compile(config["PostToolUse"][0]["matcher"])
+    for tool in tracehook.RECORDED_TOOLS | {"prune_rows", "validate_module"}:
+        assert post.fullmatch(f"{prefix}{tool}") and pre.fullmatch(f"{prefix}{tool}"), tool
+    for tool in edits:
+        assert pre.fullmatch(tool) and post.fullmatch(tool), tool
+    assert post.fullmatch("Bash") and not pre.fullmatch("Bash")
+    assert not post.fullmatch("mcp__just-dna-lite__start_annotation")
     commands = [h["command"] for event in config.values() for e in event for h in e["hooks"]]
     assert commands and all(root_var in c and "tracehook.py" in c for c in commands)
-    assert (ROOT / "src" / "just_module_creator" / "tracehook.py").is_file()
 
 
 def test_codex_reads_its_own_hooks_file() -> None:
@@ -328,3 +338,78 @@ def test_this_repository_turns_the_hook_off() -> None:
     """Editing `assets/` here must not grow a ledger in a committed fixture."""
     settings = json.loads((ROOT / ".claude" / "settings.json").read_text("utf-8"))
     assert settings["env"]["JMC_TRACE"] == "0"
+
+
+def _append_row(module: Path) -> None:
+    """A write the hook cannot see: what a Python `csv` script run through the shell does."""
+    studies = module / "studies.csv"
+    rows = tracehook.read_rows(studies.read_text("utf-8"))
+    out = io.StringIO()
+    writer = csv.DictWriter(out, fieldnames=[*rows[0], "provenance_quote"])
+    writer.writeheader()
+    writer.writerows(rows)
+    writer.writerow(
+        {
+            "rsid": "rs17782313",
+            "pmid": "37621650",
+            "study_design": "meta-analysis",
+            "conclusion": "Higher BMI.",
+            "provenance_quote": QUOTE,
+        }
+    )
+    studies.write_text(out.getvalue(), encoding="utf-8")
+
+
+def _our(env, phase, tool, module, **extra) -> None:
+    call(
+        phase,
+        env,
+        tool_name=f"{CLAUDE}{tool}",
+        tool_input={"spec_dir": str(module), **extra},
+        tool_response=json.dumps({}),
+    )
+
+
+def test_a_table_written_through_the_shell_still_reaches_the_ledger(module, env) -> None:
+    """F165: the session's search, fetch and decision were dropped with no ledger at all, because
+    the row went in through a shell command the hook cannot see as an edit."""
+    search(env)
+    fetch(env)
+    _our(env, "pre", "record_decision", module)  # any call of ours naming the module makes it known
+    _our(env, "post", "record_decision", module)
+    _append_row(module)
+    call("post", env, tool_name="Bash", tool_input={"command": "uv run python write_rows.py"})
+    events = ledger(module)
+    assert [e["kind"] for e in events] == ["search", "fetch", "decision", "edit"]
+    edit = events[-1]
+    assert edit["via"] == "Bash" and len(edit["added"]) == 1
+    assert edit["added"][0]["anchors"][0]["column"] == "provenance_quote"
+    # Nothing of the command reaches the ledger.
+    raw = next((module / "logs" / "trace").glob("*.jsonl")).read_text("utf-8")
+    assert "write_rows.py" not in raw
+
+
+def test_a_tool_that_writes_tables_is_named_as_the_route(module, env) -> None:
+    _our(env, "pre", "prune_rows", module)
+    _append_row(module)  # stands in for what the tool itself wrote while it ran
+    _our(env, "post", "prune_rows", module)
+    (edit,) = ledger(module)
+    assert edit["via"] == "prune_rows" and len(edit["added"]) == 1
+
+
+def test_a_change_found_only_at_session_end_is_still_recorded(module, env) -> None:
+    fetch(env)
+    _our(env, "post", "validate_module", module)
+    _append_row(module)
+    call("end", env)
+    kinds = [e["kind"] for e in ledger(module)]
+    assert kinds == ["fetch", "edit"] and ledger(module)[-1]["via"] == "unobserved"
+    assert not any(Path(env["JMC_TRACE_DIR"]).iterdir())
+
+
+def test_a_shell_call_in_a_session_that_knows_no_module_writes_nothing(module, env) -> None:
+    search(env)
+    _append_row(module)
+    call("post", env, tool_name="Bash", tool_input={"command": "ls"})
+    call("end", env)
+    assert not (module / "logs" / "trace").exists()

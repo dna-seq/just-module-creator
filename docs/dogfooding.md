@@ -14,28 +14,6 @@ is usable, and what is missing.
 
 ---
 
-## F165 — a session that edits its tables through the shell leaves no ledger at all, and `trace_module` blames the era
-
-**Found:** 2026-11-18 (tester, headless sessions with `--plugin-dir` this checkout at v0.48.14+1) · **Severity:** medium ·
-**Status:** ours.
-
-The hook buffers searches, fetches and `record_decision` calls, and writes them into the module's ledger at the next
-table edit it sees. It sees `Write`, `Edit`, `MultiEdit` and `apply_patch` only, by design (no shell text in the
-matcher). One of three identical sessions (transcript `35a364a0`) ran `literature_search`, three `fetch_fulltext`,
-`paper_citations` and two `record_decision`, then wrote `studies.csv` with a Python `csv` script through `Bash`, a
-common way to add a quoted CSV cell. No edit was seen, nothing was flushed, and the `end` phase deleted the session
-buffer (`shutil.rmtree(session.dir)`), pending events included. The module was left with a new quoted row and no
-`logs/trace/` at all. The two sessions that used `Write` produced full ledgers; the debug log shows every hook firing
-with status 0.
-
-`trace_module` on such a module says "This module has no ledger, so every row reads not_traceable: it was authored
-before the ledger existed, or with JMC_TRACE=0". Neither is true here, and nothing told the session or the author that a
-recorded session's work was discarded. Two halves: the discard is silent (the end phase knows it holds pending events
-and which spec directory they were for), and the no-ledger message names only two of the causes.
-
-Harness note, not a finding: a session started from a shell inside this repository inherits `JMC_TRACE=0` from
-`.claude/settings.json` and passes it to any `claude -p` it launches, so a test session needs `env -u JMC_TRACE`.
-
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
 
 **Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the

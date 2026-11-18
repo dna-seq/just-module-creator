@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **A table written through the shell no longer drops the ledger** (F165): a session that wrote `studies.csv` with a script run in Bash left no ledger at all, its searches and fetches discarded at the session's end. The hook now knows every module the session names to one of this plugin's tools, and after each shell call, each of our tool calls and at the session's end it records what changed there, naming the route (`Bash`, the tool, or `unobserved`). The command's text is never read. `trace_module` no longer names a cause for a missing ledger that it cannot know.
 - **`trace_module`'s description says what its states mean now** (F164): 0.48.14 still listed a citation no search returned under `contradicted`, which F161 had made `not_traceable`, and said nothing of decisions. It now says both, and that `anchored` is never support.
 ## [0.48.14] — 2026-11-18
 

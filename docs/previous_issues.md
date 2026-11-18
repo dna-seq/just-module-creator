@@ -6,6 +6,30 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F165 — a session that edits its tables through the shell leaves no ledger at all, and `trace_module` blames the era
+
+**Found:** 2026-11-18 (tester, headless sessions with `--plugin-dir` this checkout at v0.48.14+1) · **Severity:** medium ·
+**Status:** ours.
+
+The hook buffers searches, fetches and `record_decision` calls, and writes them into the module's ledger at the next
+table edit it sees. It sees `Write`, `Edit`, `MultiEdit` and `apply_patch` only, by design (no shell text in the
+matcher). One of three identical sessions (transcript `35a364a0`) ran `literature_search`, three `fetch_fulltext`,
+`paper_citations` and two `record_decision`, then wrote `studies.csv` with a Python `csv` script through `Bash`, a
+common way to add a quoted CSV cell. No edit was seen, nothing was flushed, and the `end` phase deleted the session
+buffer (`shutil.rmtree(session.dir)`), pending events included. The module was left with a new quoted row and no
+`logs/trace/` at all. The two sessions that used `Write` produced full ledgers; the debug log shows every hook firing
+with status 0.
+
+`trace_module` on such a module says "This module has no ledger, so every row reads not_traceable: it was authored
+before the ledger existed, or with JMC_TRACE=0". Neither is true here, and nothing told the session or the author that a
+recorded session's work was discarded. Two halves: the discard is silent (the end phase knows it holds pending events
+and which spec directory they were for), and the no-ledger message names only two of the causes.
+
+Harness note, not a finding: a session started from a shell inside this repository inherits `JMC_TRACE=0` from
+`.claude/settings.json` and passes it to any `claude -p` it launches, so a test session needs `env -u JMC_TRACE`.
+
+**Resolved 2026-11-18 (lead).** The hook now knows every module a session names to one of this plugin's tools (by `spec_dir`) or edits, keeps the last seen copy of its tables, and after each shell call, each of our tool calls and at the session's end records what changed there with the route (`Bash`, the tool, or `unobserved`); the command's text is never read. Live: a headless session that appended a row with a Python script through Bash left a ledger of search, fetch and the edit `via: Bash`, the quote anchored at 38043/176. Three tests fail on the old hook. `trace_module` no longer names a cause for a missing ledger it cannot know. Still unseen: a shell write in a module the session never named to any tool of ours.
+
 ## F164 — `trace_module`'s released description still promises F161's `contradicted`, and never mentions decisions
 
 **Found:** 2026-11-18 (tester, over the wire on 0.48.14) · **Severity:** low · **Status:** ours.

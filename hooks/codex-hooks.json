@@ -3,14 +3,26 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "apply_patch|Edit|Write",
-        "hooks": [{"type": "command", "command": "uv run --no-project python -I \"${PLUGIN_ROOT}/src/just_module_creator/tracehook.py\" pre", "timeout": 10}]
+        "matcher": "apply_patch|Edit|Write|mcp__.*just-module-creator.*__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project python -I \"${PLUGIN_ROOT}/src/just_module_creator/tracehook.py\" pre",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "mcp__.*just-module-creator.*__(literature_search|paper_citations|fetch_fulltext|lookup_variant|record_decision)|apply_patch|Edit|Write",
-        "hooks": [{"type": "command", "command": "uv run --no-project python -I \"${PLUGIN_ROOT}/src/just_module_creator/tracehook.py\" post", "timeout": 10}]
+        "matcher": "mcp__.*just-module-creator.*__.*|apply_patch|Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project python -I \"${PLUGIN_ROOT}/src/just_module_creator/tracehook.py\" post",
+            "timeout": 10
+          }
+        ]
       }
     ]
   }

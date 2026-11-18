@@ -3,19 +3,37 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [{"type": "command", "command": "uv run --no-project python -I \"${CLAUDE_PLUGIN_ROOT}/src/just_module_creator/tracehook.py\" pre", "timeout": 10}]
+        "matcher": "Write|Edit|MultiEdit|mcp__plugin_just-module-creator_just-module-creator__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project python -I \"${CLAUDE_PLUGIN_ROOT}/src/just_module_creator/tracehook.py\" pre",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "mcp__plugin_just-module-creator_just-module-creator__(literature_search|paper_citations|fetch_fulltext|lookup_variant|record_decision)|Write|Edit|MultiEdit",
-        "hooks": [{"type": "command", "command": "uv run --no-project python -I \"${CLAUDE_PLUGIN_ROOT}/src/just_module_creator/tracehook.py\" post", "timeout": 10}]
+        "matcher": "mcp__plugin_just-module-creator_just-module-creator__.*|Write|Edit|MultiEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project python -I \"${CLAUDE_PLUGIN_ROOT}/src/just_module_creator/tracehook.py\" post",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "SessionEnd": [
       {
-        "hooks": [{"type": "command", "command": "uv run --no-project python -I \"${CLAUDE_PLUGIN_ROOT}/src/just_module_creator/tracehook.py\" end", "timeout": 10}]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project python -I \"${CLAUDE_PLUGIN_ROOT}/src/just_module_creator/tracehook.py\" end",
+            "timeout": 10
+          }
+        ]
       }
     ]
   }

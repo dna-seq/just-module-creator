@@ -1061,8 +1061,10 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         to_read = sum(1 for d in decided if d.witness == "anchored")
         if not ledger.files:
             next_step = (
-                "This module has no ledger, so every row reads not_traceable: it was authored "
-                "before the ledger existed, or with JMC_TRACE=0. That is an unknown, not a defect."
+                "This module has no ledger, so every row reads not_traceable. Its rows came before "
+                "the ledger, with JMC_TRACE=0, on a host whose hooks were not approved, or by a "
+                "route the hook did not see in a module no tool of ours was asked about. Which "
+                "one is not recorded. It is an unknown, not a defect."
             )
         elif contradicted:
             next_step = (
