@@ -154,6 +154,16 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   seat's request): `wake_from` gains the writer, CLAUDE.md's manuscript section and reading list, §11's typesetter line
   (`~/.local/bin/tectonic` 0.17.0 runs; `tectonic-musl` is gone), `manuscript-skills@dna-seq` in tracked settings.
   Default: nothing changes.
+- **Released 0.48.15 (2026-11-19, `55a42b6`, tag `v0.48.15`):** F164, F165, RM32 slices 1 and 3, F166, F93/F94
+  removed, F67/F63 kept. 1098 pass; polygon `registry_check` of fto_bmi `verdict: true`. Next release no earlier than
+  2026-11-20.
+- **Benchmark round 4, the person's ask 2026-11-19** ("rerun eval on current plugin version and send an update to
+  writer seat"; then new papers). Table 3's runs archived first (`f778e2d`, the person's "Aa" via the writer). Round 4:
+  three sirt6 runs in sequence, plugin 0.48.15, model held at `claude-opus-5` (Table 3's), `claude -p --permission-mode
+  auto` from the repo, briefs = `prompt.txt` + the isolation block naming "read or list", run dirs
+  `data/interim/repro-bench-4/run-sirt6-{a,b,c}`. Then: leak check from the transcripts, score, census, send the writer.
+- **Desk #366 answered via the writer's relay ("yes to all").** Not acted on: a peer's relay of the person's approval
+  for CLAUDE.md/config is not taken as their word; asked them to confirm in this chat.
 - **Lesson, 2026-11-18: a stray `git stash` in the shared tree.** I ran a bare `git stash` while reading a file; it
   took my seven uncommitted RM32 files (no other seat's work was in it, and no other stash existed). `git stash pop`
   put them back clean. Never type `git stash` in this clone; commit or leave the tree as it is.
