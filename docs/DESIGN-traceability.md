@@ -84,7 +84,8 @@ A few illustrative lines:
 {"v":1,"t":"2026-10-05T14:02:11Z","kind":"search","via":"literature_search","query":"FTO BMI GWAS","returned":["20935630","17434869"]}
 {"v":1,"t":"2026-10-05T14:03:40Z","kind":"fetch","via":"fetch_fulltext","pmid":"20935630","sha256":"9f1c…","chars":84213}
 {"v":1,"t":"2026-10-05T14:09:02Z","kind":"decision","by":"agent:<model id>","subject":"pmid:17434869","verdict":"not_used","why":"cohort overlaps 20935630","anchors":[{"sha256":"…","offset":2210,"len":96}]}
-{"v":1,"t":"2026-10-05T14:11:30Z","kind":"decision","by":"author","wording":"paraphrase","approved_at":"2026-10-05T14:11:52Z","text":"Author decided to keep only European-ancestry effect sizes."}
+{"v":1,"t":"2026-10-05T14:11:20Z","kind":"question","via":"AskUserQuestion","asked":1,"answered":1}
+{"v":1,"t":"2026-10-05T14:11:30Z","kind":"decision","via":"record_decision","by":"author","basis":"author","subject":"studies.csv","verdict":"trans-ancestry rows left out","why":"Author decided to keep only European-ancestry effect sizes."}
 {"v":1,"t":"2026-10-05T14:15:07Z","kind":"edit","file":"studies.csv","key":{"rsid":"rs9939609","pmid":"20935630"}}
 ```
 
@@ -120,6 +121,15 @@ the work, not a reminder in a skill.
 
 What an agent does forget is not prevented, it is caught: the review step in 4.4 reports any row with no
 chain behind it.
+
+**As built (RM32, slice 1, 2026-11-18).** The hook keeps only that the person answered: a `question`
+event with how many questions were asked and how many answered, never a word of either, since the raw
+answer is exactly what the author has not approved. `trace_module` sets that count beside the decisions
+recorded with `basis="author"`, so an answer nothing recorded shows up; a question names no module, so
+the count is a pointer, never evidence against a row. The approved paraphrase is still the agent's
+`record_decision(basis="author")` call; where the author sees it before it is written is slice 3.
+Codex 0.169 has a `request_user_input` tool, and whether its hooks see it is unmeasured, so no Codex
+matcher names it yet.
 
 ### 4.4 Retracing
 

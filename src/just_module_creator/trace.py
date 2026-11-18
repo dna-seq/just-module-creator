@@ -65,6 +65,8 @@ class Ledger:
     written: dict[str, list[dict[str, Any]]] = field(default_factory=dict)  # row sha -> anchors
     blind_files: set[str] = field(default_factory=set)  # edited with no before-copy
     decisions: list[dict[str, Any]] = field(default_factory=list)
+    questions_answered: int = 0  # how many the person answered; their words are never kept
+    questions_unread: int = 0  # question events whose answers the hook could not read
 
 
 def read_ledger(spec_dir: Path) -> Ledger:
@@ -104,6 +106,12 @@ def _take(ledger: Ledger, event: dict[str, Any]) -> None:
             ledger.fetched.setdefault(pmid, set()).add(event["sha256"])
     elif kind == "decision":
         ledger.decisions.append(event)
+    elif kind == "question":
+        answered = event.get("answered")
+        if isinstance(answered, int):
+            ledger.questions_answered += answered
+        else:
+            ledger.questions_unread += 1
     elif kind == "edit":
         if "added" not in event:
             ledger.blind_files.add(str(event.get("file")))

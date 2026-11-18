@@ -413,3 +413,72 @@ def test_a_shell_call_in_a_session_that_knows_no_module_writes_nothing(module, e
     call("post", env, tool_name="Bash", tool_input={"command": "ls"})
     call("end", env)
     assert not (module / "logs" / "trace").exists()
+
+
+#: A question and answer written for these tests, not taken from any session.
+QUESTION = "Which ancestry should the effect sizes for this module come from?"
+OPTIONS = ["European cohorts only", "Every ancestry reported"]
+ANSWER = "European cohorts only, since the trans-ancestry estimates are underpowered here"
+
+
+def ask(env: dict[str, str], response: object) -> None:
+    """The question tool as Claude Code reports it after the person answered (RM32)."""
+    call(
+        "post",
+        env,
+        tool_name="AskUserQuestion",
+        tool_input={
+            "questions": [
+                {
+                    "question": QUESTION,
+                    "header": "Ancestry",
+                    "multiSelect": False,
+                    "options": [{"label": o, "description": f"{o}."} for o in OPTIONS],
+                }
+            ]
+        },
+        tool_response=response,
+    )
+
+
+def test_an_answered_question_reaches_the_ledger_as_a_count_with_no_words(module, env) -> None:
+    """RM32, decision 4: nothing about the author is written that they have not seen, and `logs/`
+    publishes. The hook keeps that a question was answered; its words never reach the module."""
+    ask(env, {"questions": [], "answers": {QUESTION: ANSWER}, "annotations": {}})
+    add_study_row(module, env)
+    call("end", env)
+    question = next(e for e in ledger(module) if e["kind"] == "question")
+    assert (question["asked"], question["answered"], question["via"]) == (1, 1, "AskUserQuestion")
+    written = [
+        p.read_text("utf-8")
+        for p in module.rglob("*")
+        if p.is_file() and p.suffix in {".jsonl", ".csv", ".yaml", ".md", ".log", ".json"}
+    ]
+    assert any("question" in text for text in written)  # the haystack holds the ledger
+    for needle in [QUESTION, ANSWER, "Ancestry", *OPTIONS, "trans-ancestry"]:
+        assert not any(needle in text for text in written), needle
+
+
+def test_an_answer_the_hook_cannot_read_is_unknown_not_zero(module, env) -> None:
+    ask(env, "the host changed its result shape")
+    add_study_row(module, env)
+    question = next(e for e in ledger(module) if e["kind"] == "question")
+    assert question["asked"] == 1 and question["answered"] is None
+
+
+def test_only_claude_codes_question_tool_is_matched() -> None:
+    """Codex 0.169 has `request_user_input`; whether its hooks see it is unmeasured, so no Codex
+    matcher is written for it yet (RM32)."""
+    claude = re.compile(
+        json.loads((ROOT / "hooks/hooks.json").read_text("utf-8"))["hooks"]["PostToolUse"][0][
+            "matcher"
+        ]
+    )
+    codex = re.compile(
+        json.loads((ROOT / "hooks/codex-hooks.json").read_text("utf-8"))["hooks"]["PostToolUse"][0][
+            "matcher"
+        ]
+    )
+    assert claude.fullmatch("AskUserQuestion")
+    assert sorted(tracehook.QUESTION_TOOLS) == ["AskUserQuestion"]
+    assert not codex.fullmatch("request_user_input")

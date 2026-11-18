@@ -458,3 +458,48 @@ async def test_the_description_says_what_the_states_mean_now(make_client) -> Non
     assert "no search" not in contradicted and "no recorded search" not in contradicted
     assert "never evidence against the row" in text
     assert "`anchored`" in text and "Anchored is never support" in text
+
+
+def ask(env: dict[str, str], answers: object) -> None:
+    """The host's question tool, answered (RM32). Text written for this test."""
+    hook(
+        "post",
+        env,
+        tool_name="AskUserQuestion",
+        tool_input={"questions": [{"question": "Keep the trans-ancestry rows?", "options": []}]},
+        tool_response={"answers": answers} if isinstance(answers, dict) else answers,
+    )
+
+
+async def test_answered_questions_are_set_beside_the_authors_recorded_decisions(
+    module, env, make_client
+) -> None:
+    ask(env, {"Keep the trans-ancestry rows?": "No"})
+    ask(env, "unreadable")
+    decide(
+        env,
+        spec_dir=str(module),
+        subject="studies.csv",
+        verdict="trans-ancestry rows left out",
+        basis="author",
+        why="Author decided to keep only European-ancestry effect sizes.",
+    )
+    write_study(module, env)
+    async with make_client(offline_settings()) as client:
+        report = (await client.call_tool("trace_module", {"spec_dir": str(module)})).data
+    counted = (report.questions_answered, report.questions_unread, report.author_decisions)
+    assert counted == (1, 1, 1)
+    assert "answered 2 question(s)" in report.next_step
+    assert "record_decision(basis='author')" in report.next_step
+    # Never evidence against a row.
+    assert report.counts.get("citation:contradicted", 0) == 0
+
+
+async def test_no_question_asked_adds_nothing_to_the_next_step(module, env, make_client) -> None:
+    search(env, ["37621650"])
+    fetch(env)
+    write_study(module, env)
+    async with make_client(offline_settings()) as client:
+        report = (await client.call_tool("trace_module", {"spec_dir": str(module)})).data
+    assert report.ledgers and report.questions_answered == 0
+    assert "question" not in report.next_step

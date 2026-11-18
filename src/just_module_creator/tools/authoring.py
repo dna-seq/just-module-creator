@@ -1043,7 +1043,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
         Each `record_decision` comes back `anchored` (its passage is in a fetched text and names
         the decision's variants, with where to read it), `declared` or `recalled`. Anchored is
-        never support: read the passage beside the reason. Nothing here says a row is right or
+        never support: read the passage beside the reason. Questions the person answered are
+        counted (their words are never kept) beside the decisions recorded as theirs, so an
+        answer nothing recorded shows up. Nothing here says a row is right or
         reads a basis for a judged cell (weight, direction, conclusion), and a row written before
         the ledger existed is `not_traceable`, an unknown, not a failure.
         """
@@ -1081,6 +1083,17 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
                 f" {len(decided)} stated decision(s), {to_read} anchored: read each anchored "
                 "passage at `passages` beside its reason, since anchored is not support."
             )
+        authored = sum(1 for d in ledger.decisions if d.get("basis") == "author")
+        asked = ledger.questions_answered + ledger.questions_unread
+        if asked:
+            # RM32: an answer is the person's decision only if it settled something about the
+            # module, which the count cannot tell; so this points at the gap, never at a row.
+            next_step += (
+                f" The person answered {asked} question(s) in recorded sessions (the words are "
+                f"not kept) and {authored} decision(s) are recorded as theirs: where an answer "
+                "settled something about this module and no decision says so, record it with "
+                "record_decision(basis='author') in words they approved."
+            )
         return TraceReport(
             spec_dir=str(target),
             ledgers=ledger.files,
@@ -1089,6 +1102,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             rows=[TracedRow(**vars(s)) for s in states],
             decisions=[TracedDecision(**vars(d)) for d in decided],
             counts=dict(sorted(counts.items())),
+            questions_answered=ledger.questions_answered,
+            questions_unread=ledger.questions_unread,
+            author_decisions=authored,
             scope=(
                 "Whether a recorded edit wrote each row, and whether each citation in the "
                 "quote-bearing table holds together against the recorded searches and fetches. "

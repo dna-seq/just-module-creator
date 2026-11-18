@@ -57,6 +57,10 @@ EDIT_TOOLS = frozenset({"Write", "Edit", "MultiEdit", "apply_patch"})
 #: The hosts' shell tools. Their command text is never read or recorded; after one runs, the
 #: tables of every module the session knows are compared with their last seen copy (F165).
 SHELL_TOOLS = frozenset({"Bash"})
+#: The host's question tool (RM32). Only that a question was answered is kept, never its words:
+#: decision 4 writes nothing about the author they have not seen, and `logs/` publishes. Codex
+#: 0.169 has `request_user_input`; whether its hooks see it is unmeasured, so it is not listed.
+QUESTION_TOOLS = frozenset({"AskUserQuestion"})
 
 #: The file that makes a directory a module.
 SPEC_FILE = "module_spec.yaml"
@@ -308,6 +312,29 @@ def record_decision(session: Session, tool_input: dict[str, Any]) -> None:
     session.queue(event)
 
 
+def record_question(session: Session, tool_input: dict[str, Any], response: Any) -> None:
+    """Queue that the person answered: how many questions, how many answered. No words at all.
+
+    A response whose answers cannot be read leaves `answered` null, an unknown rather than zero.
+    """
+    questions = tool_input.get("questions")
+    answers = response.get("answers") if isinstance(response, dict) else None
+    session.queue(
+        {
+            "v": LEDGER_VERSION,
+            "t": _now(),
+            "via": "AskUserQuestion",
+            "kind": "question",
+            "asked": len(questions) if isinstance(questions, list) else None,
+            "answered": (
+                sum(1 for v in answers.values() if str(v).strip())
+                if isinstance(answers, dict)
+                else None
+            ),
+        }
+    )
+
+
 def record_tool(session: Session, tool: str, tool_input: dict[str, Any], response: Any) -> None:
     """Queue a search, fetch or lookup. Nothing reaches a ledger until a module is edited."""
     if tool in DECISION_TOOLS:
@@ -519,6 +546,10 @@ def handle(phase: str, payload: dict[str, Any], env: dict[str, str]) -> None:
         # Nothing of the command is read or kept: only whether a known module's tables moved.
         if phase == "post":
             catch_up(session, name)
+        return
+    if name in QUESTION_TOOLS:
+        if phase == "post":
+            record_question(session, tool_input, payload.get("tool_response"))
         return
     tool = our_tool(name)
     if tool is None:

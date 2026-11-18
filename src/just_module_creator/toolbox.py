@@ -214,7 +214,7 @@ GROUPS: tuple[Group, ...] = (
             "study_facts",
             "prune_rows",
         ),
-        6814,
+        8646,
     ),
     Group(
         "integrity",

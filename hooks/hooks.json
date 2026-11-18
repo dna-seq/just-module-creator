@@ -15,7 +15,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "mcp__plugin_just-module-creator_just-module-creator__.*|Write|Edit|MultiEdit|Bash",
+        "matcher": "mcp__plugin_just-module-creator_just-module-creator__.*|Write|Edit|MultiEdit|Bash|AskUserQuestion",
         "hooks": [
           {
             "type": "command",

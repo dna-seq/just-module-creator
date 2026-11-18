@@ -848,6 +848,17 @@ class TraceReport(BaseModel):
     counts: dict[str, int] = Field(
         description="Rows of the quote-bearing table by citation state, and all rows by `written`."
     )
+    questions_answered: int = Field(
+        default=0,
+        description="Questions the person answered through the host's question tool, as the "
+        "ledger counted them. Their words are never kept, and a question names no module.",
+    )
+    questions_unread: int = Field(
+        default=0, description="Answered questions whose answers the hook could not count."
+    )
+    author_decisions: int = Field(
+        default=0, description='Decisions recorded as the person\'s (`basis="author"`).'
+    )
     scope: str = Field(description="What this join establishes and what it does not.")
     next_step: str = Field(description="What to do with the result.")
 
