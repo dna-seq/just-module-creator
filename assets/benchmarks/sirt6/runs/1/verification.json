@@ -1,0 +1,125 @@
+{
+  "module_hash": "sha256:fb83fd97effc59355545936ad73218c0a8b3d1bedc1d82869121fcd826479c6d",
+  "signature": "sha256:1efa6ba54fc629fb435e96105a0103b110148f6dc49faa1381c30bb02a03d79f",
+  "difficulty": 20,
+  "nonce": 3307893,
+  "producer": "just-dna-enricher 0.6.6",
+  "produced_at": "2026-08-31T05:07:41Z",
+  "closure": {
+    "closed_at": "2026-08-31T05:09:04Z",
+    "closed_by": "claude-opus-5",
+    "signature": null
+  },
+  "records": [
+    {
+      "check": "citation_existence",
+      "subjects": 2,
+      "findings": 0,
+      "skipped": null,
+      "detail": null,
+      "source": "pubmed",
+      "release": null,
+      "checked_at": "2026-08-31T05:07:41Z"
+    },
+    {
+      "check": "citation_identifier",
+      "subjects": 0,
+      "findings": 0,
+      "skipped": "nothing_to_check",
+      "detail": "none of 2 citation(s) carries an authored DOI or PMC id, so there was nothing to compare against PubMed's own",
+      "source": "pubmed",
+      "release": null,
+      "checked_at": "2026-08-31T05:07:41Z"
+    },
+    {
+      "check": "clinical_significance",
+      "subjects": 0,
+      "findings": 0,
+      "skipped": null,
+      "detail": null,
+      "source": "clinvar",
+      "release": "clinvar_2026-06-27",
+      "checked_at": "2026-08-31T05:07:22Z"
+    },
+    {
+      "check": "gene_locus_agreement",
+      "subjects": 2,
+      "findings": 0,
+      "skipped": null,
+      "detail": "the gene and the chromosome agree on all 2 comparable row(s)",
+      "source": "hgnc",
+      "release": null,
+      "checked_at": "2026-08-31T05:07:33Z"
+    },
+    {
+      "check": "gene_symbol_currency",
+      "subjects": 1,
+      "findings": 0,
+      "skipped": null,
+      "detail": "every one of 1 authored gene symbol(s) is HGNC-approved",
+      "source": "hgnc",
+      "release": null,
+      "checked_at": "2026-08-31T05:07:33Z"
+    },
+    {
+      "check": "genome_build_agreement",
+      "subjects": 0,
+      "findings": 0,
+      "skipped": "nothing_to_check",
+      "detail": "no authored ref disagreed with the reference, so no row needed a build diagnosis",
+      "source": "ensembl-grch37",
+      "release": null,
+      "checked_at": "2026-08-31T05:07:22Z"
+    },
+    {
+      "check": "provenance_quote",
+      "subjects": 2,
+      "findings": 0,
+      "skipped": null,
+      "detail": null,
+      "source": "europepmc",
+      "release": null,
+      "checked_at": "2026-08-31T05:07:41Z"
+    },
+    {
+      "check": "reference_allele",
+      "subjects": 1,
+      "findings": 0,
+      "skipped": null,
+      "detail": null,
+      "source": "seqrepo",
+      "release": null,
+      "checked_at": "2026-08-31T05:07:22Z"
+    },
+    {
+      "check": "rsid_coordinate_agreement",
+      "subjects": 0,
+      "findings": 0,
+      "skipped": "nothing_to_check",
+      "detail": "no row authors both an rsID and a coordinate, so the module makes no pair claim to compare — this is not a comparison that found nothing",
+      "source": "ensembl",
+      "release": null,
+      "checked_at": "2026-08-31T05:07:22Z"
+    },
+    {
+      "check": "rsid_currency",
+      "subjects": 1,
+      "findings": 0,
+      "skipped": null,
+      "detail": null,
+      "source": "dbsnp",
+      "release": null,
+      "checked_at": "2026-08-31T05:07:22Z"
+    },
+    {
+      "check": "trait_currency",
+      "subjects": 1,
+      "findings": 0,
+      "skipped": null,
+      "detail": "every one of 1 authored trait term(s) is current in OLS4",
+      "source": "ols4",
+      "release": null,
+      "checked_at": "2026-08-31T05:07:33Z"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+schema_version: '1.0'
+module:
+  title: SIRT6 rs117385980 and Human Longevity
+  description: One SIRT6 variant weighed against two small longevity cohorts, suggestive evidence only
+  report_title: SIRT6 Longevity Variant
+  icon: hourglass half
+  icon_set: fomantic
+  color: '#6435c9'
+  name: longevity_sirt6
+defaults:
+  curator: claude-opus-5
+  method: literature-review
+genome_build: GRCh38
+license: CC-BY-NC-ND-4.0
+weighting:
+  scale: >-
+    -1 to +1, curator-set and ordinal. Positive is protective for lifespan, negative is
+    unfavourable, 0.0 means this genotype is not claimed to change anything. Only the two rows
+    of this module are comparable with each other; nothing calibrates them against another
+    module's weights.
+  method: >-
+    Literature triage of the two cohort studies that have genotyped this variant. The magnitude
+    encodes strength of evidence rather than an estimated effect: -0.15 is deliberately small
+    because both source findings fall short of conventional significance, both cohorts are small,
+    and neither has mortality follow-up. No published effect size was copied into the weight.
+  note: >-
+    These weights must not be read as an effect estimate. The Finnish study's odds ratio of 3.58
+    lives in studies.csv where its confidence interval and p-value travel with it; it was
+    deliberately not converted into a weight. A consumer summing weights across modules is
+    combining incomparable scales.
+authorship:
+  - who: claude-opus-5
+    role: created
+    kind:
+      - ai
+      - agent
+    at: '2026-08-31'

@@ -1,0 +1,19 @@
+{
+  "generator": "just-module-creator",
+  "items": [
+    {
+      "variant_key": "rs117385980",
+      "rationale": "The cited article disagrees with itself. Its abstract gives the combined-cohort odds ratio as 3.53 with p = 0.07; its Results text and Table 2 give 3.58 with p = 0.074 for the same Fisher exact test on the same 198 samples. Table 2 is the primary reporting of that analysis and carries the confidence interval, so the table values are recorded in studies.csv and the discrepancy is stated in that row's conclusion rather than silently resolved. Not a defect in the module: a reader checking the abstract will see 3.53 and should know why the module says otherwise. Source said: 3.53. [jmc field=effect_size value_sha256=0a450f2c46d7 source=pmid:28399814 abstract recorded=2026-08-31T05:44:39Z by=claude-opus-5]",
+      "human_reviewed": false,
+      "outranks": {
+        "effect_size": "The cited article disagrees with itself. Its abstract gives the combined-cohort odds ratio as 3.53 with p = 0.07; its Results text and Table 2 give 3.58 with p = 0.074 for the same Fisher exact test on the same 198 samples. Table 2 is the primary reporting of that analysis and carries the confidence interval, so the table values are recorded in studies.csv and the discrepancy is stated in that row's conclusion rather than silently resolved. Not a defect in the module: a reader checking the abstract will see 3.53 and should know why the module says otherwise. Source said: 3.53."
+      }
+    },
+    {
+      "variant_key": "rs117385980",
+      "rationale": "Edit log, not an outranking claim. The T/T genotype was added after validate reported it as a gap in a set the author had started, but its weight and direction are deliberately left empty rather than filled. Neither source study observed a single homozygote, and both analysed allele frequencies rather than genotypes, so any number here would be extrapolation the authors do not make. A weight of 0.0 was rejected too, because 0.0 asserts that the genotype changes nothing, which is a claim rather than an absence of one. The row carries state=alt, direction=unknown and stat_significance=unknown so a consumer sees an explicit not-established rather than either a fabricated effect or no row at all. [jmc field=weight value_sha256=417667625ba0 source=authored decision, no source consulted recorded=2026-08-31T05:44:45Z by=claude-opus-5]",
+      "human_reviewed": false,
+      "outranks": {}
+    }
+  ]
+}

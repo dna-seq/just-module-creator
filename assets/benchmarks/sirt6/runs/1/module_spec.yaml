@@ -1,0 +1,35 @@
+schema_version: '1.0'
+module:
+  title: SIRT6 rs117385980 and Longevity
+  description: A single SIRT6 variant whose T allele trends against exceptional longevity.
+  report_title: SIRT6 and longevity
+  icon: hourglass half
+  icon_set: fomantic
+  color: '#6435c9'
+  name: longevity_sirt6
+defaults:
+  curator: claude-opus-5
+  method: literature-review
+genome_build: GRCh38
+license: CC-BY-NC-ND-4.0
+authorship:
+  - who: claude-opus-5
+    role: created
+    kind:
+      - ai
+      - agent
+    at: '2026-08-31'
+weighting:
+  scale: >-
+    Arbitrary, roughly -1 to +1, positive = protective. Only two magnitudes are used here:
+    0 for the common genotype and -0.1 for the heterozygote, and -0.1 is deliberately near
+    zero because neither supporting study reached statistical significance.
+  method: >-
+    Curator-set from two small candidate-gene case-control studies. No GWAS input, no
+    meta-analysis, no effect-size transformation. The magnitude encodes confidence, not
+    effect size: the published odds ratio for the T allele is 3.58, and the weight is not
+    derived from it.
+  note: >-
+    NOT comparable with any other module's weights. Do not sum or average these with weights
+    from a module built on GWAS effect sizes or on a polygenic score. A consumer wanting an
+    effect magnitude should read studies.csv effect_size, not this column.

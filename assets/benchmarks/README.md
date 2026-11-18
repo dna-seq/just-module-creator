@@ -14,7 +14,7 @@ uv run python scripts/bench_score.py --census centenarian/runs/a
 
 | Fixture | Paper | Runs | Reference |
 |---|---|---|---|
-| `sirt6/` | Sheikholmolouki 2025, `10.1038/s41598-025-24018-3` | `a`, `b`, `a2` | **yes — adjudicated** |
+| `sirt6/` | Sheikholmolouki 2025, `10.1038/s41598-025-24018-3` | `a`, `b`, `a2`; `1`, `2`, `3` (Table 3, `runs/README.md`) | **yes — adjudicated** |
 | `centenarian/` | `10.1186/s40246-025-00772-3` | `a`, `b` | no |
 | `ards/` | `10.1007/s11357-025-02044-3` | `b` | no |
 

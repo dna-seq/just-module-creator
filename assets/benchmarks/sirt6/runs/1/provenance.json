@@ -1,0 +1,17 @@
+{
+  "generator": "just-module-creator",
+  "items": [
+    {
+      "variant_key": "rs117385980",
+      "rationale": "Contested call, surfaced rather than settled. Two independent cohorts show the T allele under-represented among the longest-lived in the same direction, but neither result is significant. The state vocabulary offers no suggestive value, so risk is the closest available label for the C/T row and the hedge is carried by stat_significance=suggestive and by the conclusion text; C/C is neutral. Reading C/T as neutral is equally defensible on p=0.07; a reviewer should decide. Not derived from any source that later checks it. Note this record reads as unbound in review_queue: the override key carries no genotype, so a per-genotype column cannot bind. Nobody edited the cell. [jmc field=state value_sha256=e8e2e0eb37b4 source=curator judgement over Hirvonen 2017 (PMID 28399814) and Sheikholmolouki 2025 (PMID 41249831) recorded=2026-08-31T05:11:03Z by=claude-opus-5]",
+      "human_reviewed": false,
+      "outranks": {}
+    },
+    {
+      "variant_key": "rs117385980",
+      "rationale": "No source states a weight; the column is authored by definition. Set deliberately near zero rather than proportional to the published odds ratio (3.58), because neither supporting study reached significance (p=0.074 and p=0.073) and Hirvonen report 28.4% power. The magnitude encodes confidence in the association, not its effect size. A curator who disagrees should change it; the reasoning is in weighting: in module_spec.yaml. [jmc field=weight value_sha256=e0b417cc9eb0 source=curator judgement over Hirvonen 2017 (PMID 28399814) and Sheikholmolouki 2025 (PMID 41249831) recorded=2026-08-31T05:08:14Z by=claude-opus-5]",
+      "human_reviewed": false,
+      "outranks": {}
+    }
+  ]
+}

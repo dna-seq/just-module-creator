@@ -1,0 +1,24 @@
+schema_version: '1.0'
+module:
+  title: SIRT6 and Longevity
+  description: One SIRT6 intron variant with an exploratory, non-significant longevity signal.
+  report_title: SIRT6 rs117385980 and lifespan
+  icon: hourglass half
+  icon_set: fomantic
+  color: '#6435c9'
+  name: longevity_sirt6
+  version: '0.1.0'
+defaults:
+  curator: claude-opus-5
+  method: literature-review
+genome_build: GRCh38
+license: CC-BY-NC-ND-4.0
+weighting:
+  scale: 'none - this module authors no weights'
+  method: 'Two underpowered candidate-gene studies (n=198 and n=227), neither statistically significant. No effect estimate here is stable enough to carry a weight.'
+  note: 'The weight column is deliberately empty. Do not fold this module into a polygenic score; the published odds ratios have confidence intervals crossing 1.'
+authorship:
+  - who: claude-opus-5
+    role: created
+    kind: [ai, agent]
+    at: '2026-08-31'

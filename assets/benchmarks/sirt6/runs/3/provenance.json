@@ -1,0 +1,11 @@
+{
+  "generator": "just-module-creator",
+  "items": [
+    {
+      "variant_key": "rs117385980",
+      "rationale": "Authored the DOI on the studies.csv row for PMID 41249831. This is an edit log, not an outranking claim: nothing disagrees. The DOI is normally left empty because filling it from the PubMed record that supplied the PMID would make the Crossref cross-check compare a source with itself. Here the DOI was the module owner's original input and the PMID was derived from it by lookup, so the direction is reversed and the authored value is independent of PubMed. Recording it lets the citation_identifier check actually run on this row instead of reporting nothing_to_check. The Hirvonen row's DOI is deliberately left empty, since that one would be circular. [jmc field=doi value_sha256=7654d5a62fc4 source=module owner (task input) recorded=2026-08-31T05:47:52Z by=claude-opus-5]",
+      "human_reviewed": false,
+      "outranks": {}
+    }
+  ]
+}
