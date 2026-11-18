@@ -149,6 +149,11 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
 - **Desk #255, the person answered 2026-11-18: the `winternewt` account is theirs** (relayed to the desk). Waiting on
   them to hand over its test-registry token; then dry runs (move the empty `test-winternewt` aside, rename
   `test-sheep` into it), shown before anything real. Fallback: a site admin's `merge_accounts sheep -> winternewt`.
+- **The writer seat (seated 2026-11-18, 39aa78f) asked for six changes.** Done: its README row and
+  `page_budget.py`'s docstring (`5f9900d`). On the desk as `blocked: desk #366` (CLAUDE.md or config, not changed on a
+  seat's request): `wake_from` gains the writer, CLAUDE.md's manuscript section and reading list, §11's typesetter line
+  (`~/.local/bin/tectonic` 0.17.0 runs; `tectonic-musl` is gone), `manuscript-skills@dna-seq` in tracked settings.
+  Default: nothing changes.
 - **Lesson, 2026-11-18: a stray `git stash` in the shared tree.** I ran a bare `git stash` while reading a file; it
   took my seven uncommitted RM32 files (no other seat's work was in it, and no other stash existed). `git stash pop`
   put them back clean. Never type `git stash` in this clone; commit or leave the tree as it is.
