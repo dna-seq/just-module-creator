@@ -142,7 +142,7 @@ Recall is reported at two grains, because recovering the right variant with wron
 | 2   |        1.00 |        1.00 |       0.00 |            1.00 |      1.00 |
 | 3   |        1.00 |        1.00 |       0.00 |            1.00 |      1.00 |
 
-Three runs of one prompt scored against an expert-adjudicated reference module (a merge of two earlier runs), plugin version fixed.
+Three runs of one prompt scored against an expert-adjudicated reference module (a merge of two earlier runs). Every run used plugin 0.27.0 with just-dna-compiler 0.6.6, in Claude Code 2.1.251 with Claude Opus 5.
 
 </div>
 

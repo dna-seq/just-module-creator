@@ -401,6 +401,9 @@ open_issues:
   route: author-required
 - id: scored-round-version
   summary: Table 3 does not name the plugin version, model, host or paper; the reference is an adjudicated merge of two plugin runs (now stated in the text, IC-2); naming the paper with a bibliography entry is pending (RP-4).
+  update: 'Caption names plugin 0.27.0, just-dna-compiler 0.6.6, Claude Code 2.1.251 and Claude Opus 5, from the
+    recovered runs (evaluation-corpus); the person, 2026-11-19: "By". Still open: the paper scored, as a
+    bibliography entry.'
   status: open
   route: author-required
 - id: frontier-research-club
