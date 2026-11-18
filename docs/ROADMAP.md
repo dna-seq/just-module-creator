@@ -311,3 +311,28 @@ positive, which is the calibration.
 
 **Do not generalise it into a secret scanner.** The question is narrow: *would the author be
 surprised to see this in the catalog?*
+
+## RM32 — an author's answers reach the ledger, in words they approved
+
+**State:** unattended, started 2026-11-18 · **Owner:** just-module-creator/lead · **Opened** 2026-11-18
+
+RM31 left this open (`ROADMAP_HISTORY.md`, RM31; `DESIGN-traceability.md` §4.3 and decision 4). The agent
+asks the author through the host's question tool, and nothing records that a question was answered, so
+`trace_module` cannot tell an author's decision recorded with `record_decision(basis="author")` from one
+never recorded. Decision 4 bounds it: nothing about the author is written that they have not seen, and
+`logs/` publishes, so the raw question and answer never reach the module.
+
+Slices, each safe to release on its own:
+
+1. The hook records that a question was answered, with no text in it, and the count stays with the
+   session, since a question names no module. A test proves no answer text or option label reaches
+   `logs/trace/`, run with the exclusion disabled first.
+2. `trace_module` reports answered questions beside recorded `basis="author"` decisions, as a gap to
+   look at, never as evidence against a row.
+3. The approval step: where the author sees the paraphrase before it is written. Elicitation from inside
+   a tool where both hosts support it, else the agent's own question; the choice is recorded with its
+   reversal.
+
+Codex: whether it has a question tool and what its hook calls it is measured before any matcher is written;
+none means an abstention written into the design. A live run needs a person at a session; until then the
+item reads "built and tested against a recorded payload", never done.
