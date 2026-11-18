@@ -404,7 +404,9 @@ open_issues:
   route: author-required
   source: https://frontierresearchclub.de/
   checked: '2026-11-18'
-  proposal: proposals/agentic-loop.tex (section 5, between Results and Discussion; +2 pages, 17 in all)
+  applied: 'Section 5, "Case study: an autonomous curation loop with human checkpoints" (sec:loop), between
+    Results and Discussion, 17 pages in all; framed as non-blocking asynchronous human-in-the-loop, its limits moved
+    to the Discussion''s Limitations. The person''s word, 2026-11-18: "Good otherwise", with those two changes.'
 ai_use_case:
   status: actual paper2 assistance account not confirmed
   cli_scenario: Default revision mode illustrates policy burdens; it is not an attestation of what happened
