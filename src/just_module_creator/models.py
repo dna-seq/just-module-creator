@@ -787,6 +787,12 @@ class DecisionStated(BaseModel):
         description="`hook`: the host hook records it into `logs/trace/` at the module's next "
         "edit; `off`: JMC_TRACE=0 in this server's environment, so nothing is recorded."
     )
+    approved: bool | None = Field(
+        default=None,
+        description="For an `author` decision: `true` the person approved the wording when "
+        "asked, `false` they did not and nothing is recorded, `null` not asked here (another "
+        "basis, or a host that cannot ask from inside a tool).",
+    )
     note: str = Field(description="What the record will and will not establish.")
 
 
@@ -804,6 +810,11 @@ class TracedDecision(BaseModel):
     )
     why: str = Field(description="The stated reason, verbatim.")
     because: str = Field(description="What established `witness`, or what is missing.")
+    approved: bool | None = Field(
+        default=None,
+        description="For an `author` decision: `true` the person approved this wording inside "
+        "the tool; `null` the tool did not see an approval.",
+    )
     passages: list[dict] = Field(
         default_factory=list,
         description="For an anchored decision: where each passage sits (`pmid`, `sha256`, "

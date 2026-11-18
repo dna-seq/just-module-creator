@@ -126,8 +126,16 @@ chain behind it.
 event with how many questions were asked and how many answered, never a word of either, since the raw
 answer is exactly what the author has not approved. `trace_module` sets that count beside the decisions
 recorded with `basis="author"`, so an answer nothing recorded shows up; a question names no module, so
-the count is a pointer, never evidence against a row. The approved paraphrase is still the agent's
-`record_decision(basis="author")` call; where the author sees it before it is written is slice 3.
+the count is a pointer, never evidence against a row.
+
+**As built (RM32, slice 3, 2026-11-18).** The paraphrase is the agent's `record_decision(basis="author")`
+call, and the tool shows it to the person through MCP elicitation before it counts. Approved, the ledger
+event carries `approved: true` and `trace_module` says the wording was approved; declined or dismissed,
+the tool returns `approved: false` and the hook records nothing. A host that cannot elicit leaves
+`approved: null`: the person may have approved it in the chat, which no tool sees, so it is kept as
+stated and labelled unseen rather than refused. Refusing would push the record back into prose, which
+decision 5 rules out. Reversal: drop the elicitation and the `approved` field, and every author decision
+is recorded from its arguments again. Neither host's elicitation has been run live from this repository.
 Codex 0.169 has a `request_user_input` tool, and whether its hooks see it is unmeasured, so no Codex
 matcher names it yet.
 

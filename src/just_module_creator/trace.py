@@ -219,6 +219,7 @@ class DecisionState:
     why: str
     because: str
     passages: list[dict[str, Any]] = field(default_factory=list)  # pmid, sha256, offset, len
+    approved: bool | None = None  # an author decision whose wording the person approved in-tool
 
 
 def _never_checked(event: dict[str, Any], tied: list[str]) -> list[str]:
@@ -262,8 +263,16 @@ def decision_states(ledger: Ledger) -> list[DecisionState]:
             }
         )
         passages: list[dict[str, Any]] = []
+        approved = event.get("approved") is True if basis == "author" else None
         if basis == "recalled":
             witness, because = "recalled", "stated as recalled from knowledge, not read"
+        elif basis == "author" and anchors is None:
+            witness = "declared"
+            because = (
+                "the person's decision, its wording approved by them when it was recorded"
+                if approved
+                else "stated as the person's; no approval of this wording was seen by the tool"
+            )
         elif anchors is None:
             witness, because = "declared", "no passage was given for the reason"
         elif from_title:
@@ -308,6 +317,7 @@ def decision_states(ledger: Ledger) -> list[DecisionState]:
                 why=str(event.get("why") or ""),
                 because=because,
                 passages=passages,
+                approved=approved if approved else None,
             )
         )
     return states

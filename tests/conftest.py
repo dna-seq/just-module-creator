@@ -318,9 +318,9 @@ def make_client():
     `client` to the modern default when a 4.x is re-adopted.
     """
 
-    def _make(settings: Settings | None = None):
+    def _make(settings: Settings | None = None, **client_options):
         server = build_server(settings=settings or offline_settings())
-        return Client(transport=server)
+        return Client(transport=server, **client_options)
 
     return _make
 

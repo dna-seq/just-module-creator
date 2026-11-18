@@ -23,11 +23,13 @@ from typing import get_args, get_origin
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
+from fastmcp.server.elicitation import AcceptedElicitation
 from just_dna_compiler import compiler, draft, hints, scaffold
 from just_dna_format import layout, reference
 from just_dna_format.integrity import IntegrityError, verify_manifest
 from just_dna_format.manifest import read_manifest
 from just_dna_format.spec import ModuleSpecConfig
+from mcp.shared.exceptions import McpError
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel
 
@@ -970,6 +972,15 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     # second writer here, could not anchor the passage: the fetched texts live in the hook's
     # session buffer, which this server cannot name. The cost: with the hook off, nothing is
     # kept, and the result says that rather than claiming a record.
+    #
+    # RM32 slice 3, decision 4 ("nothing about the author is written that they have not seen"):
+    # an `author` decision is shown to the person through MCP elicitation before it counts, so
+    # the approval is a step inside the tool, not a reminder. Declined or dismissed, the result
+    # says `approved: false` and the hook records nothing. A host that cannot elicit leaves
+    # `approved: null`: the agent may have asked in the chat, which no tool sees, so it is kept
+    # as stated and labelled unseen, never refused (refusing would push the record into prose).
+    # Reversal: drop the elicit block and the `approved` field; the hook then records every
+    # author decision from its arguments, as 0.48.14 did.
     @mcp.tool(
         annotations=ToolAnnotations(title="State a decision for the ledger", readOnlyHint=True)
     )
@@ -981,6 +992,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         basis: str,
         passage: str | None = None,
         by: str = "agent",
+        ctx: Context | None = None,
     ) -> DecisionStated:
         """Hand the provenance ledger a decision no edit shows: a paper read and set aside, a
         variant left out, how a weight was set. The host hook records it at the module's next
@@ -988,7 +1000,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
 
         `basis` is `read` (give `passage`, verbatim from an article fetched this session),
         `recalled` (from knowledge, not read here) or `author` (the person decided; `why` is
-        an English paraphrase they have approved). `trace_module` reads it back as `anchored`
+        an English paraphrase of it). An `author` decision is shown to the person to approve
+        first: declined, nothing is recorded (`approved: false`); a host that cannot ask leaves
+        `approved: null`, kept as stated. `trace_module` reads it back as `anchored`
         (the passage is in a fetched text and names the variants the decision names), else
         `declared` or `recalled`. Anchored is never a verdict that the passage supports it.
         """
@@ -1011,12 +1025,33 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
                 else "Kept as a stated reason and labelled so; it never counts as evidence."
             )
         )
+        approved: bool | None = None
+        if basis == "author" and ctx is not None:
+            try:
+                answer = await ctx.elicit(
+                    f"Record this as your decision about {subject} ({verdict})?\n\n{why}",
+                    response_type=None,
+                )
+            except McpError:
+                note += (
+                    " This host cannot show the wording to the person from inside a tool, so "
+                    "it is kept as stated, `approved: null`: record only wording they approved "
+                    "in the chat."
+                )
+            else:
+                approved = isinstance(answer, AcceptedElicitation)
+                if not approved:
+                    note = (
+                        "The person did not approve this wording, so nothing is recorded. Ask "
+                        "how they would put it, then call again with their wording."
+                    )
         return DecisionStated(
             spec_dir=str(target),
             subject=subject,
             verdict=verdict,
             basis=basis,
             recording="off" if off else "hook",
+            approved=approved,
             note=note,
         )
 

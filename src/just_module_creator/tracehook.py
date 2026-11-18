@@ -278,14 +278,24 @@ def anchors(
     return found
 
 
-def record_decision(session: Session, tool_input: dict[str, Any]) -> None:
-    """Queue a stated decision, from the tool's own arguments (its result adds nothing).
+def record_decision(session: Session, tool_input: dict[str, Any], response: Any = None) -> None:
+    """Queue a stated decision, from the tool's own arguments; from its result only `approved`.
+
+    An `author` decision the person did not approve (`approved: false`, RM32) is not queued at
+    all. An unreadable result leaves `approved` null, an unknown, and the decision is kept.
 
     A `passage` is anchored in the texts this session fetched, as a row's long cell is. Every rsID
     the reason names that the passage does not is listed in `unnamed`: an anchor beside a reason it
     does not witness is the title-as-quote shape one level up (the tester's read of the hand trial).
     The passage text itself is never recorded, only where it sits.
     """
+    try:
+        result = _result(response)
+    except (OSError, ValueError):
+        result = None
+    approved = result.get("approved") if isinstance(result, dict) else None
+    if approved is False:
+        return
     passage = str(tool_input.get("passage") or "").strip()
     why = str(tool_input.get("why") or "")
     event: dict[str, Any] = {
@@ -299,6 +309,8 @@ def record_decision(session: Session, tool_input: dict[str, Any]) -> None:
         "basis": str(tool_input.get("basis") or ""),
         "why": why,
     }
+    if event["basis"] == "author":
+        event["approved"] = approved if isinstance(approved, bool) else None
     if passage:
         event["anchors"] = anchors(
             {"passage": passage}, session.known_texts(), session.known_titles()
@@ -338,7 +350,7 @@ def record_question(session: Session, tool_input: dict[str, Any], response: Any)
 def record_tool(session: Session, tool: str, tool_input: dict[str, Any], response: Any) -> None:
     """Queue a search, fetch or lookup. Nothing reaches a ledger until a module is edited."""
     if tool in DECISION_TOOLS:
-        record_decision(session, tool_input)
+        record_decision(session, tool_input, response)
         return
     event: dict[str, Any] = {"v": LEDGER_VERSION, "t": _now(), "via": tool}
     # A call whose result cannot be read is still a call that happened: recorded with what was

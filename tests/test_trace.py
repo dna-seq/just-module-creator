@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pytest
 from conftest import offline_settings
+from fastmcp.client.elicitation import ElicitResult
 from just_dna_compiler import hints
 from just_dna_format.spec import StudyRow
 
@@ -503,3 +504,92 @@ async def test_no_question_asked_adds_nothing_to_the_next_step(module, env, make
         report = (await client.call_tool("trace_module", {"spec_dir": str(module)})).data
     assert report.ledgers and report.questions_answered == 0
     assert "question" not in report.next_step
+
+
+AUTHOR_DECISION = {
+    "subject": "studies.csv",
+    "verdict": "trans-ancestry rows left out",
+    "basis": "author",
+    "why": "Author decided to keep only European-ancestry effect sizes.",
+}
+
+
+async def state_as_author(make_client, module: Path, handler) -> dict:
+    """Call the tool as an agent would, with the host answering its elicitation via `handler`."""
+    options = {} if handler is None else {"elicitation_handler": handler}
+    async with make_client(offline_settings(), **options) as client:
+        result = await client.call_tool(
+            "record_decision", {"spec_dir": str(module), **AUTHOR_DECISION}
+        )
+    return result.structured_content or {}
+
+
+def hand_to_hook(env: dict[str, str], module: Path, result: dict) -> None:
+    hook(
+        "post",
+        env,
+        tool_name=f"{CLAUDE}record_decision",
+        tool_input={"spec_dir": str(module), **AUTHOR_DECISION},
+        tool_response=json.dumps(result),
+    )
+
+
+async def test_an_author_decision_is_shown_to_the_person_before_it_counts(
+    module, env, make_client
+) -> None:
+    """RM32 slice 3, decision 4: the person sees the paraphrase, and approving it is in the tool."""
+    shown: list[str] = []
+
+    async def approve(message, response_type, params, context):
+        shown.append(message)
+        return {}
+
+    result = await state_as_author(make_client, module, approve)
+    assert result["approved"] is True
+    assert shown and AUTHOR_DECISION["why"] in shown[0]
+    hand_to_hook(env, module, result)
+    write_study(module, env)
+    (state,) = decisions(module)
+    assert state.approved is True and "approved by them" in state.because
+
+
+async def test_wording_the_person_did_not_approve_is_never_recorded(
+    module, env, make_client
+) -> None:
+    async def decline(message, response_type, params, context):
+        return ElicitResult(action="decline")
+
+    result = await state_as_author(make_client, module, decline)
+    assert result["approved"] is False and "nothing is recorded" in result["note"]
+    hand_to_hook(env, module, result)
+    write_study(module, env)
+    assert decisions(module) == []
+    assert any(e["kind"] == "edit" for e in tracehook_events(module))  # the ledger was written
+
+
+async def test_a_host_that_cannot_ask_keeps_the_decision_as_stated_unseen(
+    module, env, make_client
+) -> None:
+    result = await state_as_author(make_client, module, None)
+    assert result["approved"] is None and "cannot show the wording" in result["note"]
+    hand_to_hook(env, module, result)
+    write_study(module, env)
+    (state,) = decisions(module)
+    assert state.approved is None and "no approval" in state.because
+
+
+async def test_only_an_author_decision_asks_the_person(module, make_client) -> None:
+    async def never(message, response_type, params, context):
+        raise AssertionError("asked the person about an agent's own decision")
+
+    async with make_client(offline_settings(), elicitation_handler=never) as client:
+        result = await client.call_tool(
+            "record_decision",
+            {**AUTHOR_DECISION, "spec_dir": str(module), "basis": "recalled"},
+        )
+    assert (result.structured_content or {})["approved"] is None
+
+
+def tracehook_events(module: Path) -> list[dict]:
+    files = sorted((module / "logs" / "trace").glob("*.jsonl"))
+    return [json.loads(line) for f in files for line in f.read_text("utf-8").splitlines() if line]

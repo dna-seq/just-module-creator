@@ -314,7 +314,7 @@ surprised to see this in the catalog?*
 
 ## RM32 — an author's answers reach the ledger, in words they approved
 
-**State:** unattended, started 2026-11-18 · **Owner:** just-module-creator/lead · **Opened** 2026-11-18
+**State:** unattended, slices 1 and 3 and the report half of 2 on main (2026-11-18); left: a live run on each host (needs a person at a session), and Codex's question tool once its hook payload is measured · **Owner:** just-module-creator/lead · **Opened** 2026-11-18
 
 RM31 left this open (`ROADMAP_HISTORY.md`, RM31; `DESIGN-traceability.md` §4.3 and decision 4). The agent
 asks the author through the host's question tool, and nothing records that a question was answered, so
