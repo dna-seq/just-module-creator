@@ -394,6 +394,11 @@ accepted on the polygon now (0 matches for PGS000001). The live `registry_claims
 `RS429358` empty; false on both instances now, and its rewording is in the lead's 0.32 adoption. F150 closed by the
 liaison (c577c01).
 
+**Owed when an instance serves registry 0.33 (S35, decided 2026-11-17):** a re-post that changes the verdict should clear
+the owner's highlight; a notes- or rating-only edit keeps it. Testable with `sheep`'s own review on
+`test-sheep/test_statin_response`: post, highlight, re-post with another verdict, read `highlighted`; then a notes-only
+re-post; clean up.
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
