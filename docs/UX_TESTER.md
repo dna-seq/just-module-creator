@@ -115,6 +115,14 @@ claims that were plausibly wrong, and it found more than solo probing.
 
 ## In flight
 
+**Benchmark round 4, handed over by the lead 2026-11-19 (the person's word).** Fixture `sirt6`, plugin 0.48.15, model
+`claude-opus-5`, three runs (`data/interim/repro-bench-4/run-sirt6-{a,b,c}`), `claude -p --permission-mode auto` from
+the repository, one after another in the lead's background job. Its briefs, JSON outputs (session ids), stderr and
+`round.log` are in the lead's scratchpad (`a8d51777…/scratchpad/bench4`). Scored: none yet; run a started 23:29Z. Mine
+once the job ends (the lead says): the leak check from each transcript, `bench_score.py --fixture
+assets/benchmarks/sirt6` against Table 3 (`runs/1-3`), the census, the report to the writer. If the three match
+Table 3, the person asks for one more run on `claude-opus-5-5` with the same brief; that run is the only thing that moves.
+
 **2026-11-08: recheck of 0.48.3 on the shipped plugin (v0.48.3 in the host, server started 09:24 CET).**
 
 | claim | result |
