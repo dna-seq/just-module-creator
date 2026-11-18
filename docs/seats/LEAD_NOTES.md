@@ -164,7 +164,9 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   `data/interim/repro-bench-4/run-sirt6-{a,b,c}`. Then: leak check from the transcripts, score, census, send the writer.
   The person, on the result: "same model for reproducibility/tracking of drift. If results are same -> +1 run on
   opus-5.5 for stability testing" (`claude-opus-5-5`, same brief, run dir `run-sirt6-d`). Runner duty: "ok, tester";
-  forwarded to the seat-builder for the tester's priming; rounds after this one are the tester's.
+  forwarded to the seat-builder for the tester's priming (tester's brief f2a4483). Round 4's evaluation handed to
+  the tester too (the person: "with you or tester? The bench run"); the lead only keeps the background job running
+  and tells the tester when it ends.
 - **Desk #366 done (`e0801ee`)** on the person's own "Yes" in this chat, after the writer relayed "yes to all":
   wake_from gains the writer, CLAUDE.md's manuscript section and §11's tectonic line, manuscript-skills in tracked
   settings.
