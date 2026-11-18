@@ -392,6 +392,19 @@ open_issues:
   summary: Table 3 does not name the plugin version, model, host or paper; the reference is an adjudicated merge of two plugin runs (now stated in the text, IC-2); naming the paper with a bibliography entry is pending (RP-4).
   status: open
   route: author-required
+- id: frontier-research-club
+  summary: 'The person, 2026-11-18: "retrofit paper draft to be eligible for https://frontierresearchclub.de/",
+    with a section on the longevity-loci agentic loop (autonomous loop + module creation + HITL), the orchestration
+    kit not named. The club is a talk series (Digital Schooling with Google Cloud, DACH campuses), not a journal: its
+    call invites an "accepted paper or preprint on autonomous research loops or AI for science" for 2-3 talk slots
+    (25-30 min + Q&A), by a registration form taking a link or a PDF. It states no length, template, anonymity, AI
+    rule, deadline or selection criteria beyond "technical rigor and discussion value". Remaining sessions: Berlin
+    2026-11-27, Zurich 2026-12-03. Whether "accepted paper or preprint" admits an unposted draft is not stated.'
+  status: open
+  route: author-required
+  source: https://frontierresearchclub.de/
+  checked: '2026-11-18'
+  proposal: proposals/agentic-loop.tex (section 5, between Results and Discussion; +2 pages, 17 in all)
 ai_use_case:
   status: actual paper2 assistance account not confirmed
   cli_scenario: Default revision mode illustrates policy burdens; it is not an attestation of what happened
