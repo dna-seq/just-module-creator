@@ -140,7 +140,9 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   slice 3 (`ab441e8`: `record_decision(basis="author")` elicits approval; declined is not recorded, no elicitation
   support is `approved: null`). Tested in memory against the recorded result shape and fastmcp's own elicitation;
   no live run on either host. Left: a live run (needs a person at a session) and Codex's `request_user_input`
-  once its hook payload is measured. Handed to the tester to probe.
+  once its hook payload is measured. Tester probed it (interactive Claude Code holds; F166 under `claude -p`).
+  Fixed: `756ee80` (only an undeclared host reads null; by='author' bypass refused), `7d2fad5` (F166: `cancel`,
+  measured as print mode's answer, is no answer seen, kept null; only `decline` drops it). Re-probe asked.
 - **Lesson, 2026-11-18: a stray `git stash` in the shared tree.** I ran a bare `git stash` while reading a file; it
   took my seven uncommitted RM32 files (no other seat's work was in it, and no other stash existed). `git stash pop`
   put them back clean. Never type `git stash` in this clone; commit or leave the tree as it is.
