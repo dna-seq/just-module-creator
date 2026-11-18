@@ -412,6 +412,11 @@ end hook drops pending events). The first headless connect timed out (added to F
 `Bash`; both quotes read `traced` (one via `paper_citations`), the decision `anchored`; no path in the ledger. A module
 with no ledger now names all four causes and says which is not recorded. Holds.
 
+**Owed at 0.48.15, 2026-11-18.** The lead lifted four mitigations on main (641496903): F93 (the proxy asks
+`sidecar_write_path` directly, 43a36f5), F94 (every lane priced from `approx_mb`, 3934432), F67 and F63 (kept, comments
+and a test). Over the wire after the release: a `remote_derive` into a module carrying only `sources.csv` writes back to
+that spelling, never a second file; `provision_caches` prices each lane from its own size, none at a flat guess.
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
