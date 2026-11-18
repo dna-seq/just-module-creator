@@ -33,8 +33,10 @@ The seat's working state, rewritten to the present before each reset (docs/seats
   Discussion's Limitations. Paper now 17 pages. Follow-ups not yet proposed: abstract/intro framing; the club wants
   "accepted paper or preprint" (pm asked, 2026-11-18).
 
-- **People list** for the marks: who is a person, who an agent. Draft put to the person in chat 2026-11-18;
-  blocked on their answer.
+- **People list**: done, `docs/manuscript/rev-marks.toml` (antonkulaga, winternewt; the person, 2026-11-19).
+- **Table 3's runs found** (2026-11-19, cb8b861): `data/interim/repro-bench-3/run-sirt6-{c,d,e}`, re-scored to an
+  exact match; identifiers in the record's `evaluation-corpus`. Open: archiving them somewhere that travels, and the
+  caption naming the versions (RP-4), both put to the person.
 - **Asked of the lead** (2026-11-18): seats README row and `page_budget.py`'s docstring done (5f9900d). The rest
   (wake_from, CLAUDE.md's "Manuscript writing" and reading list, §11's typesetter line, manuscript-skills in
   tracked settings) is `blocked: desk #366` (the lead's recommendation: 1-3 yes, the plugin in personal settings;
