@@ -101,6 +101,12 @@ warm. That fits the cold-cache reading above. The cause is not established: the 
 resync by `uv run`, then withdrew it, because `uv run --no-dev` syncs inexactly, left pytest and ruff installed,
 and its stderr showed no install or uninstall.
 
+**A headless session hits it too (tester, 2026-11-18, just after 0.48.14 shipped):** `claude -p --plugin-dir` this
+checkout reported the server `CONNECT_TIMEOUT` after 30 s and ran without its tools. A retry 15 s later failed at once:
+the host caches a failed connect for about 15 minutes, so one slow first start costs every session on that
+configuration a quarter of an hour. Measured right after, by hand, `initialize` answered in 2.5 s and 2.9 s. Same
+shape as above: slow once, fast after, cause not established.
+
 ## F86 — LitVar2 is the rsID↔CAID bridge we lack, and it is DEFERRED to upstream's 0.7
 
 **Not a defect. A probed capability, parked deliberately on 2026-09-01** so the notes are not
