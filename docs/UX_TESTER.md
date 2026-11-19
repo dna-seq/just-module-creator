@@ -147,6 +147,10 @@ Result:
   stock examples; a decoy there can lure a run but not leak the answer. Holds. Before each round, rerun this
   search (the script is in this session's `bench4-scoring`) as well as the new test, which reads `skills/` and
   `src/` only.
+- **Reruns asked by the lead (641757606), 2026-11-19.** e on claude-opus-5 replaces c, and f on claude-opus-5-5
+  replaces d, now that F168 is fixed. Same brief and flags. Round start: main ebfdb61, not the tag; the report says
+  so. Pre-round context search clean and `tests/test_bench_fixtures.py` green. Plugin-commit hold asked in the
+  channel. In flight: e, then f; nothing scored yet.
 
 **2026-11-08: recheck of 0.48.3 on the shipped plugin (v0.48.3 in the host, server started 09:24 CET).**
 
