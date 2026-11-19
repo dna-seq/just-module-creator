@@ -14,6 +14,26 @@ is usable, and what is missing.
 
 ---
 
+## F169 — a round's version pin can't see a commit landed between its runs, so "one build" doesn't hold
+
+**Found:** 2026-11-19, benchmark round 4 · **Severity:** medium for the benchmark · **Status:** open, to the lead
+(`docs/BENCHMARKING.md` is the runbook)
+
+`docs/BENCHMARKING.md` step 1: *"Pin the version. Every run in a table must be one build … Put the expected version
+in the prompt and have the agent stop if the MCP server reports another."* Round 4's runs ran `claude -p` from this
+shared checkout, one after another. Each session started a fresh server from the working copy, so each picked up
+whatever was on `main` when it started. Run c started at 00:09Z, nine minutes after 59e11d5 (F167's text changes in
+`provision_caches` and the `module-start` guide). It read that guide and called that tool. It still reported
+"plugin v0.48.15", as a and b did, because the version string only moves at a bump. Run d started from 5a5a031, with
+54134ca also in. The pin caught nothing because there was nothing it could catch.
+
+Pitfall 2 covers the opposite case, a fix that doesn't reach a running server. This one is a commit that does reach
+the next run while the version string stays the same. In this round the extra commits touch nothing that feeds a
+module cell, so the scores stand, but nothing in the procedure would have noticed if they had. A run that starts from
+a tree held at the tag (a worktree, or the installed release) would close it.
+
+---
+
 ## F168 — `module-curate` hands every benchmark run the sirt6 fixture's variant and the direction debate it is scored on
 
 **Found:** 2026-11-19, benchmark round 4 (run d volunteered it; confirmed from the transcripts) · **Severity:** high
