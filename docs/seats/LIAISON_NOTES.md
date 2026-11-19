@@ -18,7 +18,7 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. `upstream-inde
 
 ## Half read
 
-- Nothing. Release 0.48.14 (2026-11-18, `7e6d673`) carries format/compiler 0.8.6, enricher 0.8.8 (RM445) and registry client 0.32.0; F148/S29, S31, S32, F153/S33 and `upgrade_status` marked released and closed the same day. Read to v0.8.8 and registry 0.34.1 (2026-11-19; 0.34.1 from the wheel, untagged then). Both instances serve registry 0.32.0 on format 0.8.6 (2026-11-17). Registry 0.33.1 on PyPI 2026-11-18 carries S35; watch an instance serving it (then the tester checks and S35 closes) and the lead's passthrough of the lanes' `release`/`revision`.
+- Nothing. Release 0.48.14 (2026-11-18, `7e6d673`) carries format/compiler 0.8.6, enricher 0.8.8 (RM445) and registry client 0.32.0; F148/S29, S31, S32, F153/S33 and `upgrade_status` marked released and closed the same day. Read to v0.8.8 and registry 0.34.1 (2026-11-19; 0.34.1 from the wheel, untagged then). Both instances serve registry 0.32.0 on format 0.8.6 (2026-11-17). Registry 0.33.1 on PyPI 2026-11-18 carries S35; watch an instance serving it (then the tester checks and S35 closes); the lanes' `release`/`revision` passthrough is on main (`54134ca`), for the next release.
 
 ## The dependency bump
 
