@@ -166,7 +166,10 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   opus-5.5 for stability testing" (`claude-opus-5-5`, same brief, run dir `run-sirt6-d`). Runner duty: "ok, tester";
   forwarded to the seat-builder for the tester's priming (tester's brief f2a4483). Round 4's evaluation handed to
   the tester too (the person: "with you or tester? The bench run"); the lead only keeps the background job running
-  and tells the tester when it ends.
+  and tells the tester when it ends. Ended 2026-11-19 00:37Z, all three exit 0 on claude-opus-5; told the tester.
+- **Desk #366's CLAUDE.md hunks reverted (`8304ac2`) on the person's word** ("revernt on 3n decision, adjust sections,
+  show me the suggested changes"); wake_from and the plugin setting kept. Proposed A (reading list), B (manuscript
+  section), C (§11 tectonic) shown to the person, not applied; waiting on which to apply.
 - **Desk #366 done (`e0801ee`)** on the person's own "Yes" in this chat, after the writer relayed "yes to all":
   wake_from gains the writer, CLAUDE.md's manuscript section and §11's tectonic line, manuscript-skills in tracked
   settings.
