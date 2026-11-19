@@ -182,16 +182,22 @@ def _answer_identifiers() -> dict[str, set[str]]:
 
 
 def test_no_skill_or_tool_text_names_a_fixtures_answer():
-    """F168: skills and tool descriptions reach every benchmark run unasked, so a worked example
-    built on a fixture hands the run its answer (module-curate named the sirt6 reference's variant
-    and its odds ratio; module-start and module-curate used the centenarian paper's variants).
-    A teaching example must come from a paper no fixture uses."""
+    """F168: skills, tool descriptions, CLAUDE.md and the README reach every benchmark run unasked,
+    so a worked example built on a fixture hands the run its answer (module-curate named the sirt6
+    reference's variant and its odds ratio; module-start and module-curate used the centenarian
+    paper's variants). A teaching example must come from a paper no fixture uses. Memory files
+    reach a run too but live outside the repository; the runbook's grep covers those."""
     answers = _answer_identifiers()
     assert "rs117385980" in answers["sirt6"], "the instrument lost the reference it was built on"
     assert all(answers.values()), answers
     texts = {
         path: path.read_text("utf-8")
-        for pattern in ("skills/**/*.md", "src/just_module_creator/**/*.py")
+        for pattern in (
+            "skills/**/*.md",
+            "src/just_module_creator/**/*.py",
+            "CLAUDE.md",
+            "README.md",
+        )
         for path in ROOT.glob(pattern)
     }
     assert len(texts) > 40, "the haystack is not the skills and the source"
