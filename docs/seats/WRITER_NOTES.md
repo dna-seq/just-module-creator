@@ -38,6 +38,10 @@ The seat's working state, rewritten to the present before each reset (docs/seats
   exact match; identifiers in the record's `evaluation-corpus`. Open: archiving them somewhere that travels, and the
   caption naming the versions (RP-4), both put to the person.
   Both done: archived at f778e2d (lead), caption at 9c38608; record `evaluation-corpus` resolved (6988cf3).
+- **EASRP 2026 reviews** (7051ad1): `docs/manuscript/easrp2026-reviews/letter.md` verbatim (sender's address left
+  out, public repo) and `review-ledger.yaml`, 23 items, all `undecided`; the person's one confirmation question
+  asked 2026-11-19 in chat. The baseline comparison (same model, no plugin) is the evaluation the tester's rounds
+  could run.
 - **Benchmark rounds** after round 4 are the tester's (f2a4483); its reports come to this seat. A changed number
   for Table 3 is the person's call (keep the 0.27.0 runs, or switch).
 - **Asked of the lead**: all done (5f9900d; desk #366's four in e0801ee: wake_from, CLAUDE.md's manuscript
