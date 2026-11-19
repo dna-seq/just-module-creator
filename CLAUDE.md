@@ -514,12 +514,12 @@ upstream). One mitigated here but still owed upstream may appear in two. The lia
 
 ### Manuscript writing
 
-Draft in `docs/manuscript/` (EASRP 2026 `template.tex` + `easrp2026.sty`). Edit `manuscript.tex`,
-then `uv run manuscript manuscript` to rebuild `.md` + `.pdf` (`--nopdf` for Markdown only). Section
-order follows the empty template (Introduction, Related work, Method, Results, Discussion,
-Conclusion) — not the retired `paper2-dna-agents.md` outline in -lite, which is inspiration only.
-Related-work papers go in `data/cache/for_manuscript/` (gitignored). Process notes in
-`docs/manuscript/README.md`. Tectonic setup: §11.
+The paper is the writer seat's (`docs/seats/WRITER.md`); a request to write or revise it goes
+there. Edit `docs/manuscript/manuscript.tex`, then `uv run manuscript manuscript` to rebuild `.md` +
+`.pdf` (`--nopdf` for Markdown only). The venue is not fixed here:
+`docs/manuscript/manuscript.record.yaml` holds the candidate journals, their facts and the author
+decisions still open. Related-work papers go in `data/cache/for_manuscript/` (gitignored). Process
+notes in `docs/manuscript/README.md`. Tectonic setup: §11.
 
 ### Upstream findings go to the producer, never into a workaround
 
@@ -835,10 +835,11 @@ answers a question over a number written here.*
   `~/.cache/just-dna-pipelines` is a deliberate read-only *file* so `mkdir` fails loudly; if a tool
   raises `NotADirectoryError`, set the variable, never delete the guard. The V2 GraphQL endpoint 404ing
   and falling back to REST is expected.
-- **Tectonic**: the wheel's build needs a newer glibc than this box; the static musl build at
-  `~/.local/bin/tectonic-musl` is named by `MANUSCRIPT_TECTONIC` in `.env`. Set `TECTONIC_CACHE_DIR`
-  too. Without it the command writes Markdown, fails, and leaves a stale `manuscript.pdf` — don't read
-  a page count off it. `scripts/page_budget.py` estimates length when a render is impossible.
+- **Tectonic**: `~/.local/bin/tectonic` 0.17.0 renders the paper on this box (checked 2026-11-19)
+  and is named by `MANUSCRIPT_TECTONIC` in `.env`; the pip wheel needs a newer glibc than this box
+  has. Set `TECTONIC_CACHE_DIR` too. Without it the command writes Markdown, fails, and leaves a
+  stale `manuscript.pdf` — don't read a page count off it. `scripts/page_budget.py` estimates length
+  when a render is impossible.
 - **Plugin commands shadow skills**: a `commands/<name>.md` hides `skills/<name>/SKILL.md` entirely.
   A skill needs no command file to be `/`-invocable; `tests/test_plugin_manifest.py` fails on a name
   collision. Lesson: test what the user does (invoke the name), not what you built.
