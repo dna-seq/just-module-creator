@@ -64,9 +64,9 @@ _PLOS_INDEX = re.compile(r"\.(s\d{3})(?:\.|$)")
 #: another, and a peer-review file sits at `MOESM3` on a third.
 CANDIDATE_EXTENSIONS = ("xlsx", "pdf", "docx", "csv", "txt", "zip", "xls", "doc")
 
-#: Springer's suffix: ``s11357-025-02044-3`` → journal 11357, year 2025, article
-#: 2044. Leading zeros are stripped from the article number and the two-digit year
-#: is expanded — ``s41467-018-03242-8`` gives ``41467_2018_3242``.
+#: Springer's suffix: ``s41467-018-03242-8`` → journal 41467, year 2018, article
+#: 3242. Leading zeros are stripped from the article number and the two-digit year
+#: is expanded, giving ``41467_2018_3242``.
 _SUFFIX = re.compile(r"^s?(\d+)-(\d{2,4})-(\d+)(?:-\d+)?$")
 
 
@@ -103,7 +103,7 @@ class Inventory:
 
 
 def esm_stem(doi: str) -> str | None:
-    """``10.1007/s11357-025-02044-3`` → ``11357_2025_2044``. None when unparseable."""
+    """``10.1038/s41467-018-03242-8`` → ``41467_2018_3242``. None when unparseable."""
     _, _, suffix = doi.partition("/")
     match = _SUFFIX.match(suffix.strip())
     if not match:

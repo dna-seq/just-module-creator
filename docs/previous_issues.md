@@ -6,6 +6,46 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F168 — `module-curate` hands every benchmark run the sirt6 fixture's variant and the direction debate it is scored on
+
+**Found:** 2026-11-19, benchmark round 4 (run d volunteered it; confirmed from the transcripts) · **Severity:** high
+for the benchmark, none for authors · **Status:** fixed here, 2026-11-19 (unreleased)
+
+`skills/module-curate/GUIDE.md` ("The worked case, and it is why this paragraph exists") names SIRT6 `rs117385980`. It
+gives the two cohorts' p ≈ 0.073 and 0.074, OR 3.58 (95% CI 0.96–13.4), the 28.4% power, the `negatives` entry with
+`flags: pleiotropic`, and that two runs wrote `risk` and `unknown`. That is the answer key's hardest cell, plus the
+debate around it, for the `sirt6` fixture (`assets/benchmarks/sirt6`). It is the shape `docs/BENCHMARKING.md`
+pitfall 1 warns of: *"the skills all reach the agent unasked … Grep the injected context for the answer before each
+round, not once"*. It came in with 8f651a7 (2026-08-31 04:04Z), and every tag since v0.27.0 carries it.
+
+Who read it, from the `tool_use` blocks:
+- **Round 4:** c (`sed -n '1,200p'` of the guide) and d (`Read`, twice) read it; a and b never did.
+- **Table 3** (`runs/1-3`, 0.27.0): none of the three opened `module-curate`. Their "OR 3.58" is the number they
+  wrote into their own `studies.csv` from their sources. Table 3 is clean of this.
+- In both c and d the variant first arrived from `lookup_citation` on the DOI, before the guide was read.
+
+Run d said so unprompted: *"the benchmark is partly primed … It quotes OR 3.58 (95% CI 0.96–13.4) and 28.4% power,
+and none of those numbers appears in PMC12624115"*. I haven't verified the second half: Table 3's runs wrote 3.58
+without the guide, so some source of theirs has it.
+
+The repair pitfall 1 used was to mask the quote, since the lesson doesn't need the rsID. Here the paragraph needs a
+real case, so it needs one that no fixture uses.
+
+**Fixed, and wider than filed.** A guard over every fixture's answer found two more: `module-curate` and
+`module-start` used the centenarian paper (PMID 41057961) and two of its variants as the build-mismatch example,
+and `find-evidence`'s supplementary ladder (and `supplementary.py`'s comments) used the ARDS and centenarian papers'
+DOIs as worked examples, with measured facts about the ARDS paper's supplementary files. Each case keeps its shape
+and its measured numbers and loses the identity; the Springer stem example is now `10.1038/s41467-018-03242-8`
+alone. The tester asked for a swap to a case no fixture uses; masking was chosen instead because the lessons are
+the shape (a concordant non-significant trend; a megabase shift; a stale index flag), and a swapped case would
+need its own measurement to stay true.
+
+`tests/test_bench_fixtures.py::test_no_skill_or_tool_text_names_a_fixtures_answer` reads each fixture's DOI, every
+PMID a run cites in `studies.csv`, and every rsID and PMID in a reference, and fails on any of them in `skills/` or
+the source. Run against the old text it failed on all four; with `41057961` planted in a skill it fails naming it.
+Round 4's runs c and d stay flagged as primed (the tester's notes); a and b and Table 3 are the clean comparison.
+
+
 ## F167 — `provision_caches` says its sizes are not the lanes' declarations, while every lane's result says they are
 
 **Found:** 2026-11-19, over the wire on 0.48.15, rechecking F94 · **Severity:** low · **Status:** fixed here, 2026-11-19 (unreleased)

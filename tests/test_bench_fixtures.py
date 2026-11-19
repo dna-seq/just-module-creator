@@ -8,6 +8,7 @@ are reading a result.
 
 from __future__ import annotations
 
+import csv
 import json
 import re
 import shutil
@@ -143,3 +144,62 @@ def test_a_prompt_never_leaks_the_answer(name):
 
     assert not re.search(r"\brs\d{3,}\b", prompt), "the prompt names an rsID"
     assert not re.search(r"(?<!\d)\d{8}(?!\d)", prompt), "the prompt names a PMID"
+
+
+ROOT = BENCHMARKS.parent.parent
+
+
+def _ids(path: Path) -> set[str]:
+    """The rsIDs and PMIDs a table names, read by column."""
+    found: set[str] = set()
+    with path.open(encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle):
+            for column in ("rsid", "pmid"):
+                value = (row.get(column) or "").strip()
+                if re.fullmatch(r"rs\d+|\d{6,9}", value):
+                    found.add(value)
+    return found
+
+
+def _answer_identifiers() -> dict[str, set[str]]:
+    """Per fixture, what a run is scored on finding: its paper (the DOI in its prompt, and every
+    PMID a run cites in studies.csv), and every rsID and PMID its reference holds."""
+    out: dict[str, set[str]] = {}
+    for name in SHIPPED:
+        root = BENCHMARKS / name
+        prompt = (root / "prompt.txt").read_text("utf-8")
+        ids = set(re.findall(r"10\.\d{4,}/\S+?(?=[\s)`]|$)", prompt))
+        # Any PMID a run's studies.csv cites: the paper itself, or a source a run found from it
+        # (a run keeps its spec in a subdirectory of its own naming; one left a placeholder, so no
+        # PMID is common to every run).
+        ids |= {
+            i for table in (root / "runs").rglob("studies.csv") for i in _ids(table) if i.isdigit()
+        }
+        for table in (root / "reference").glob("*.csv") if (root / "reference").is_dir() else []:
+            ids |= _ids(table)
+        out[name] = ids
+    return out
+
+
+def test_no_skill_or_tool_text_names_a_fixtures_answer():
+    """F168: skills and tool descriptions reach every benchmark run unasked, so a worked example
+    built on a fixture hands the run its answer (module-curate named the sirt6 reference's variant
+    and its odds ratio; module-start and module-curate used the centenarian paper's variants).
+    A teaching example must come from a paper no fixture uses."""
+    answers = _answer_identifiers()
+    assert "rs117385980" in answers["sirt6"], "the instrument lost the reference it was built on"
+    assert all(answers.values()), answers
+    texts = {
+        path: path.read_text("utf-8")
+        for pattern in ("skills/**/*.md", "src/just_module_creator/**/*.py")
+        for path in ROOT.glob(pattern)
+    }
+    assert len(texts) > 40, "the haystack is not the skills and the source"
+    leaks = sorted(
+        f"{name}: {ident} in {path.relative_to(ROOT)}"
+        for name, ids in answers.items()
+        for ident in ids
+        for path, text in texts.items()
+        if re.search(rf"(?<![\w.]){re.escape(ident)}(?![\w])", text)
+    )
+    assert not leaks, "\n".join(leaks)

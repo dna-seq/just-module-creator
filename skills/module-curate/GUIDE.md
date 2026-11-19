@@ -187,11 +187,12 @@ surface-it discriminator applied to a cell where nothing surfaced anything: `dir
 does not settle the sign, and `module-weights`' "withholding is correct when the direction is unknown"
 is circular at exactly the moment you need it.
 
-**The worked case, and it is why this paragraph exists.** SIRT6 `rs117385980`: two cohorts, both
-trends in the same direction, p ≈ 0.073 and 0.074, OR 3.58 with a **95% CI of 0.96–13.4** — an
-interval containing 1 — at 28.4% power by the authors' own analysis, and a `negatives` entry recording
-that the same allele runs the *other* way among robust participants, with `flags: pleiotropic` beside
-it. Two independent runs of the same prompt over the same paper wrote `risk` and `unknown`. Neither
+**The worked case, and it is why this paragraph exists.** One variant, two cohorts, both trends in
+the same direction and neither significant; an odds ratio whose **95% CI contains 1**, at under 30%
+power by the authors' own analysis; and a `negatives` entry recording that the same allele runs the
+*other* way in a related phenotype, with `flags: pleiotropic` beside it. Two independent runs of the
+same prompt over the same paper wrote `risk` and `unknown`. (The paper is a benchmark fixture, so it is
+not named here: a skill reaches every run, and naming it would hand the run its answer, F168.) Neither
 was wrong; only the silence about which was chosen was. Filed upstream as `S83`, asking whether the
 vocabulary wants a member for a concordant trend whose sign is not established — or, more cheaply, whether the field description should simply say that a non-significant trend still has a direction.
 
@@ -241,9 +242,9 @@ An off-by-one moves a row one base. **A paper on GRCh37 moves it megabases**, an
 GRCh37 coordinates without labelling them are ordinary — the assembly is often stated once in the
 methods and nowhere near the table you are reading.
 
-Measured on PMID 41057961 (live Ensembl, both assemblies): `rs61849494` is `chr10:51613269 G/A` on
-GRCh37 and `chr10:45982565 C/T` on GRCh38 — **5.6 Mb apart and strand-flipped**, so the ref and the
-alt are wrong too. `rs11228733` shifts 232 kb.
+Measured on a 2025 longevity GWAS (live Ensembl, both assemblies; the paper is a benchmark fixture,
+so it and its variants are not named here, F168): one of its variants sits **5.6 Mb apart between the
+builds and strand-flipped**, so the ref and the alt are wrong too; another shifts 232 kb.
 
 **So make the source's build a triage question, before you author a single coordinate.** Find the
 assembly in the methods; if the paper does not say, treat that as unknown rather than as GRCh38.
@@ -257,7 +258,7 @@ catch it, and says so in three ways at once, the last of which names the repair:
 
 > Old-assembly coordinate — 1 row(s) — the authored ref is the GRCh37 base AND GRCh37 dbSNP records a
 > variant starting there — the strongest of the three, and the one that names the rs-number to author
-> instead (10:51613269 → rs61849494).
+> instead (`<chrom>:<GRCh37 position>` → `<rs-number>`).
 
 **Which gate stops it depends entirely on the mode you enriched in, and that is the thing to know:**
 

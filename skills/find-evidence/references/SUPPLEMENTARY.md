@@ -161,8 +161,6 @@ The `<stem>` is `{journal}_{year}_{article}`, **leading zeros stripped from the 
 
 | DOI | stem |
 |---|---|
-| `10.1007/s11357-025-02044-3` | `11357_2025_2044` |
-| `10.1186/s40246-025-00772-3` | `40246_2025_772` |
 | `10.1038/s41467-018-03242-8` | `41467_2018_3242` |
 
 Probe with a range request so a miss costs one byte, not a file:
@@ -195,7 +193,7 @@ Four routes look correct and are not. Each was measured.
   `curl` of the resolved DOI returns 3 KB titled *Client Challenge* with HTTP 200. An agent that
   parses that page for links finds none and concludes there is no supplementary material. The static
   host has no challenge.
-- **Do not trust `hasSuppl: N`.** For `10.1007/s11357-025-02044-3` Europe PMC reports `inEPMC: N`,
+- **Do not trust `hasSuppl: N`.** For one 2025 Springer article measured here Europe PMC reports `inEPMC: N`,
   `isOpenAccess: N`, `hasSuppl: N`, while the article is CC-BY and its two supplementary files
   download without authentication. The flag describes *Europe PMC's holdings*, not the article's.
   This is the three-valued rule at the corpus level: the index not having it is not the paper not
@@ -281,8 +279,7 @@ failure with extra steps.
 ## Licence
 
 The ESM is a separate file and its rights are not settled by the article's licence line, though they
-usually follow it. `10.1007/s11357-025-02044-3` is CC-BY 4.0 per Crossref, which covers its two ESM
-files; a paywalled article whose ESM happens to be openly served is the case to stop on.
+usually follow it. That same article is CC-BY 4.0 per Crossref, which covers its two ESM files; a paywalled article whose ESM happens to be openly served is the case to stop on.
 
 Check with `lookup_open_access`, record the finding in `licensing.csv` the same way a body quote is
 recorded, and where the rights are genuinely unclear the measured precedent is to keep the quote and

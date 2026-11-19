@@ -34,33 +34,6 @@ a tree held at the tag (a worktree, or the installed release) would close it.
 
 ---
 
-## F168 — `module-curate` hands every benchmark run the sirt6 fixture's variant and the direction debate it is scored on
-
-**Found:** 2026-11-19, benchmark round 4 (run d volunteered it; confirmed from the transcripts) · **Severity:** high
-for the benchmark, none for authors · **Status:** open, to the lead
-
-`skills/module-curate/GUIDE.md` ("The worked case, and it is why this paragraph exists") names SIRT6 `rs117385980`. It
-gives the two cohorts' p ≈ 0.073 and 0.074, OR 3.58 (95% CI 0.96–13.4), the 28.4% power, the `negatives` entry with
-`flags: pleiotropic`, and that two runs wrote `risk` and `unknown`. That is the answer key's hardest cell, plus the
-debate around it, for the `sirt6` fixture (`assets/benchmarks/sirt6`). It is the shape `docs/BENCHMARKING.md`
-pitfall 1 warns of: *"the skills all reach the agent unasked … Grep the injected context for the answer before each
-round, not once"*. It came in with 8f651a7 (2026-08-31 04:04Z), and every tag since v0.27.0 carries it.
-
-Who read it, from the `tool_use` blocks:
-- **Round 4:** c (`sed -n '1,200p'` of the guide) and d (`Read`, twice) read it; a and b never did.
-- **Table 3** (`runs/1-3`, 0.27.0): none of the three opened `module-curate`. Their "OR 3.58" is the number they
-  wrote into their own `studies.csv` from their sources. Table 3 is clean of this.
-- In both c and d the variant first arrived from `lookup_citation` on the DOI, before the guide was read.
-
-Run d said so unprompted: *"the benchmark is partly primed … It quotes OR 3.58 (95% CI 0.96–13.4) and 28.4% power,
-and none of those numbers appears in PMC12624115"*. I haven't verified the second half: Table 3's runs wrote 3.58
-without the guide, so some source of theirs has it.
-
-The repair pitfall 1 used was to mask the quote, since the lesson doesn't need the rsID. Here the paragraph needs a
-real case, so it needs one that no fixture uses.
-
----
-
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
 
 **Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the
