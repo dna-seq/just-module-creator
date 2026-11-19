@@ -173,7 +173,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   section), C (§11 tectonic) shown; the person picked B and C (`2d820e8`). What they meant by "3n decision" was the
   paper: adjust the abstract and sections to the talk's eligibility criteria, and a raw link to the built PDF for
   Anton; forwarded to the writer (the paper is its).
-- **Registry 0.34.1 `rotate_key(revoke_others=False)`, mine, `unattended`** (the liaison, e633db2): wrap it as a
+- **Registry 0.34.1 `rotate_key(revoke_others=False)`, mine, waits until an instance serves 0.34** (both served 0.32.1 at 2026-11-19 22:05 CET; a client floor two minors ahead risks the 409 skew of CLAUDE.md §11) (the liaison, e633db2): wrap it as a
   gated tool; the new key is shown once and must replace the saved token in `state.json` through the backed-up
   write, read back, or the next call meets a dead key. Needs the floor at 0.34.1; both instances serve 0.32.1, so
   the tool must refuse by name on an older server. `deploy`/`deploy_status` are site-admin only (abstained).
