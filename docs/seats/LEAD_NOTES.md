@@ -182,8 +182,8 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
 - **Round 4 reruns asked of the tester (2026-11-19):** c (claude-opus-5) and d (claude-opus-5-5) read the F168
   leak, so the person's "+1 run on opus-5.5" is not met clean; rerun both on main with step 1's check. Not a desk
   question: the person's ask decides it, and quota is no drawback (kit #510).
-  **Hold in force** (the tester, 2026-11-19): no lead commits under src/, skills/, hooks/ or the two manifests
-  until the tester says the round ended. Docs and notes are fine.
+  Done (tester 1513e9c): clean a, b, e on claude-opus-5 pair recall 1.00/1.00/0.67, f on Opus 5.5 0.67, all
+  thresholds met; hold lifted. The fixture's shape left module-curate too (`f400344`).
 - **just-dna 0.9 prep, mine, `unattended`, after the round's hold lifts** (the liaison's trial of d9c578ae, e46f560,
   `docs/UPSTREAM_COMPILER.md`): 3 of our tests fail, all ours. `cli_map._PUBLISH` needs `clinvar-gkm publish` and
   `opentargets publish`; `test_every_tool_a_mapping_names_exists` reads the new `ensembl_rsid_index` lane name as a
