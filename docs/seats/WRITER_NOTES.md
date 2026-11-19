@@ -49,6 +49,8 @@ The seat's working state, rewritten to the present before each reset (docs/seats
   the person's call (desk #369). Reruns (notes 1513e9c, from main ebfdb61, not the tag): clean set is a, b, e on
   Opus 5 (pair recall 1.00, 1.00, 0.67) and f on Opus 5.5 (0.67); every miss a whole genotype row left out, never a
   wrong one. #369 updated with this 2026-11-19.
+  If round 4 enters Table 3: runs e and f ran on main a few hours after the 0.48.15 tag (three differences, none
+  feeding a scored cell, per the lead's milestone correction); the Opus 5.5 row is a single run, one observation.
 - **Benchmark rounds** after round 4 are the tester's (f2a4483); its reports come to this seat. A changed number
   for Table 3 is the person's call (keep the 0.27.0 runs, or switch).
 - **Asked of the lead**: all done (5f9900d; desk #366's four in e0801ee: wake_from, CLAUDE.md's manuscript
