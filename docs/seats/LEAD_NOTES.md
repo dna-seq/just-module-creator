@@ -122,7 +122,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.247 (moved on each announcement; 0.1.247 on 2026-11-18) (`move-to-tag.py`; the pin is in the untracked
+- **Kit pin**: 0.1.248 (moved on each announcement; 0.1.248 on 2026-11-19) (`move-to-tag.py`; the pin is in the untracked
   `.claude/settings.local.json`). Taking it into this session is mine: `watchdog.sh reload`, then end the turn,
   and the kit's typer types `/reload-plugins` (the "left for the person" line `move-to-tag.py` prints is wrong, kit #306).
 
@@ -173,6 +173,12 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   section), C (§11 tectonic) shown; the person picked B and C (`2d820e8`). What they meant by "3n decision" was the
   paper: adjust the abstract and sections to the talk's eligibility criteria, and a raw link to the built PDF for
   Anton; forwarded to the writer (the paper is its).
+- **Registry 0.34.1 `rotate_key(revoke_others=False)`, mine, `unattended`** (the liaison, e633db2): wrap it as a
+  gated tool; the new key is shown once and must replace the saved token in `state.json` through the backed-up
+  write, read back, or the next call meets a dead key. Needs the floor at 0.34.1; both instances serve 0.32.1, so
+  the tool must refuse by name on an older server. `deploy`/`deploy_status` are site-admin only (abstained).
+- **F168 fixed (`8941717`), F169 mitigated (`e8d8461`)** from round 4. F169's isolation is open: find why
+  `--plugin-dir <worktree>` starts no plugin server. The probe worktree `.worktrees/bench-v0.48.15` is unlocked.
 - **Desk #366 done (`e0801ee`)** on the person's own "Yes" in this chat, after the writer relayed "yes to all":
   wake_from gains the writer, CLAUDE.md's manuscript section and §11's tectonic line, manuscript-skills in tracked
   settings.
