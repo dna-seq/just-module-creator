@@ -184,6 +184,12 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   question: the person's ask decides it, and quota is no drawback (kit #510).
   **Hold in force** (the tester, 2026-11-19): no lead commits under src/, skills/, hooks/ or the two manifests
   until the tester says the round ended. Docs and notes are fine.
+- **just-dna 0.9 prep, mine, `unattended`, after the round's hold lifts** (the liaison's trial of d9c578ae, e46f560,
+  `docs/UPSTREAM_COMPILER.md`): 3 of our tests fail, all ours. `cli_map._PUBLISH` needs `clinvar-gkm publish` and
+  `opentargets publish`; `test_every_tool_a_mapping_names_exists` reads the new `ensembl_rsid_index` lane name as a
+  tool (exclude lane names); the layered-header budget is 2 characters over with 0.8.10/0.9.0 in the version line.
+  Also a stale lane (new state) plans a pull or build without saying why; `LaneStatus.stale` carries the reason.
+  Each must hold on 0.8 too: the `<0.9` pin moves only on the person's word after both instances serve 0.9.
 - **Desk #366 done (`e0801ee`)** on the person's own "Yes" in this chat, after the writer relayed "yes to all":
   wake_from gains the writer, CLAUDE.md's manuscript section and §11's tectonic line, manuscript-skills in tracked
   settings.
