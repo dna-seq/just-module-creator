@@ -46,7 +46,9 @@ The seat's working state, rewritten to the present before each reset (docs/seats
   rsID/pair recall, decoy 0, citation and direction 1.00; run d on claude-opus-5-5, citation recall 0.50. Caveat
   F168: module-curate's worked case names this fixture's answer and runs c and d read it, so a and b are the clean
   comparison (Table 3's runs never opened it). F169: runs not held at the tag. Whether Table 3 moves to round 4 is
-  the person's call; not yet asked as its own item (it bears on the EASRP ledger's R1.W1/R2.W2).
+  the person's call (desk #369). Reruns (notes 1513e9c, from main ebfdb61, not the tag): clean set is a, b, e on
+  Opus 5 (pair recall 1.00, 1.00, 0.67) and f on Opus 5.5 (0.67); every miss a whole genotype row left out, never a
+  wrong one. #369 updated with this 2026-11-19.
 - **Benchmark rounds** after round 4 are the tester's (f2a4483); its reports come to this seat. A changed number
   for Table 3 is the person's call (keep the 0.27.0 runs, or switch).
 - **Asked of the lead**: all done (5f9900d; desk #366's four in e0801ee: wake_from, CLAUDE.md's manuscript
