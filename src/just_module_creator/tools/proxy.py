@@ -394,7 +394,9 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         With `table` and `keys` (e.g. `{"symbol": ["APOE"]}` on `mane`/`summary`, or
         `{"chrom": ["22"], "start": [17000001]}`), it returns the matching rows; `truncated`
         says more matched than one request returns. `served_from` says whether the
-        deployment read its own snapshot or the lane's published repository.
+        deployment read its own snapshot or the lane's published repository; from registry
+        0.33, `release` names the lane release that answered and `revision` the commit a
+        remote read was pinned to.
 
         Nothing is uploaded and no token is needed. The lane's `licence`, its notice and its
         `redistribution` status come with every answer: some lanes are NonCommercial or not
@@ -455,6 +457,9 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
             tables=answer.get("tables") if table is None else None,
             rows=answer.get("rows") if table is not None else None,
             truncated=answer.get("truncated") if table is not None else None,
+            release=answer.get("release"),
+            release_unreadable=answer.get("release_unreadable"),
+            revision=answer.get("revision"),
         )
 
     @mcp.tool(

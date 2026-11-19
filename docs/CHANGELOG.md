@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`registry_lane_lookup` says which lane release answered** (registry 0.33, our S34): `release` (the lane's label, which names a release, never the bytes), `release_unreadable`, and for a remote read the `revision` it was pinned to. Null from a registry older than 0.33; both instances serve 0.32.1 today.
 - **`provision_caches` says its sizes are the lanes' own** (F167): 0.48.15's note and description still said the sizes were measured on one machine and were not the lanes' declarations, while every lane's result said `declared by the lane (approx_mb)`. Both now say what the result says, and the description and skills stop counting lanes.
 ## [0.48.15] — 2026-11-19
 

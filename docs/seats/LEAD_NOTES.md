@@ -145,7 +145,8 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   measured as print mode's answer, is no answer seen, kept null; only `decline` drops it). Tester confirmed on 069e6a9 (046dd56).
 - **Registry 0.33 parity, mine, `unattended`** (the liaison, 2026-11-18, `87c49fa`): `lane_tables`/`lane_rows`
   answers now carry `release`, `release_unreadable` and `revision` (the hub commit a remote read used), and
-  `registry_lane_lookup`'s model drops them. Neither instance serves 0.33 yet (both 0.32.1). Build after 0.48.15.
+  `registry_lane_lookup`'s model drops them. Neither instance serves 0.33 yet (both 0.32.1). **Done** 2026-11-19:
+  passed through as stated, null from an older registry; test values real (CIViC's label, its hub head).
 - **Desk #255, the person answered 2026-11-18: the `winternewt` account is theirs** (relayed to the desk). Waiting on
   them to hand over its test-registry token; then dry runs (move the empty `test-winternewt` aside, rename
   `test-sheep` into it), shown before anything real. Fallback: a site admin's `merge_accounts sheep -> winternewt`.

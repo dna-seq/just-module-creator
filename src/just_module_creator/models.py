@@ -3305,6 +3305,22 @@ class LaneLookup(BaseModel):
         description="Who stated the licence fields: `registry` (since registry 0.32 the answer "
         "carries the lane's terms), or the installed enricher's catalogue for an older registry.",
     )
+    release: str | None = Field(
+        default=None,
+        description="Which release of the lane answered, as the registry labels it (0.33; null "
+        "from an older registry). A label names a release, never the bytes: a stale copy can "
+        "carry a newer label (RM445).",
+    )
+    release_unreadable: bool | None = Field(
+        default=None,
+        description="`true`: the lane's release record could not be read, so `release` is "
+        "null for that reason and the rows were still served. Null from an older registry.",
+    )
+    revision: str | None = Field(
+        default=None,
+        description="For a remote read (`served_from: remote:<repo>`), the hub commit every "
+        "file of this answer was read at. Null for the deployment's own copy, which keeps none.",
+    )
 
 
 class DerivedTreeReport(BaseModel):

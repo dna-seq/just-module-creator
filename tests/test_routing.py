@@ -1516,6 +1516,47 @@ async def test_a_0_32_registry_states_the_terms_and_they_win(monkeypatch, make_c
     assert found.redistribution is None and found.terms_from == "registry"
 
 
+async def test_a_0_33_registry_says_which_release_answered(monkeypatch, make_client):
+    """Registry 0.33 (our S34): both lane answers carry `release` and `release_unreadable`, and a
+    remote read the `revision` it was pinned to. Passed through as stated; absent stays null.
+
+    Values are real: CIViC's label as `release_label` reads it on a box pulled 2026-11-07, and
+    the head commit of its published repo, `just-dna-seq/civic`, that day.
+    """
+
+    class _Lane033(_LaneStub):
+        def lane_rows(self, lane, table, keys):
+            answer = super().lane_rows(lane, table, keys)
+            answer.update(
+                served_from="remote:just-dna-seq/civic",
+                release="civic_01-Nov-2026",
+                release_unreadable=False,
+                revision="55b72e2bef9d3a4e0f39552a524c73631662236b",
+            )
+            return answer
+
+    monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Lane033())
+    async with make_client(routed_settings()) as client:
+        rows = (
+            await client.call_tool(
+                "registry_lane_lookup",
+                {
+                    "lane": "civic",
+                    "target": "test",
+                    "table": "summary",
+                    "keys": {"symbol": ["APOE"]},
+                },
+            )
+        ).data
+        older = (
+            await client.call_tool("registry_lane_lookup", {"lane": "civic", "target": "test"})
+        ).data
+    assert (rows.release, rows.release_unreadable) == ("civic_01-Nov-2026", False)
+    assert rows.revision == "55b72e2bef9d3a4e0f39552a524c73631662236b"
+    # The stub's lane_tables answers as 0.32: nothing is invented for it.
+    assert (older.release, older.release_unreadable, older.revision) == (None, None, None)
+
+
 async def test_remote_derive_replaces_a_local_verification_json_whole_rather_than_crashing(
     monkeypatch, make_client, tmp_path
 ):
