@@ -179,6 +179,9 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   the tool must refuse by name on an older server. `deploy`/`deploy_status` are site-admin only (abstained).
 - **F168 fixed (`8941717`), F169 mitigated (`e8d8461`)** from round 4. F169's isolation is open: find why
   `--plugin-dir <worktree>` starts no plugin server. The probe worktree `.worktrees/bench-v0.48.15` is unlocked.
+- **Round 4 reruns asked of the tester (2026-11-19):** c (claude-opus-5) and d (claude-opus-5-5) read the F168
+  leak, so the person's "+1 run on opus-5.5" is not met clean; rerun both on main with step 1's check. Not a desk
+  question: the person's ask decides it, and quota is no drawback (kit #510).
 - **Desk #366 done (`e0801ee`)** on the person's own "Yes" in this chat, after the writer relayed "yes to all":
   wake_from gains the writer, CLAUDE.md's manuscript section and §11's tectonic line, manuscript-skills in tracked
   settings.
