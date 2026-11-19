@@ -429,6 +429,17 @@ open_issues:
     anonymous-submission banner is off and the anonymized bibliography entries are real (software under dna-seq;
     the companion paper with paper1''s own author line, which an agent last signed, unreviewed). The author block
     is empty until the person gives the list. 18 pages.'
+- id: easrp-reviews
+  from: manuscript-reviewer-response
+  summary: 'The four EASRP 2026 reviews (scores 70, 52, 48, 86) recorded verbatim in easrp2026-reviews/letter.md
+    and split into 23 items in easrp2026-reviews/review-ledger.yaml (the person, 2026-11-19: "record in full
+    somewhere and put in as todos"). Essential: a baseline comparison (the same model without the plugin; R1.W2,
+    R2.W1, R2.S1, R3.W3, R3.S2, overlapping no-baseline), a wider evaluation (R1.W1, R2.W2), a measured support or
+    hallucination rate (R2.W4, R2.S4) and how the reference was adjudicated (R2.Q1). Proposed declines: R1.S3
+    (adversarial security evaluation) and R2.S3 (downstream genome annotation, the companion paper''s).'
+  status: open
+  route: author-required
+  output: easrp2026-reviews/review-ledger.yaml
 ai_use_case:
   status: actual paper2 assistance account not confirmed
   cli_scenario: Default revision mode illustrates policy burdens; it is not an attestation of what happened

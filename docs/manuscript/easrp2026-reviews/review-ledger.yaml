@@ -1,0 +1,421 @@
+# review-ledger.yaml: the EASRP 2026 reviews as a revision plan (plan only: no letter to write).
+# Kept by the writer seat; every decision stays `undecided` until the authors confirm it.
+manuscript: ../manuscript.tex
+mode: journal
+rounds:
+- round: 1
+  decision: 'EASRP 2026: not selected for the final (contest reviews; no editor, no letter to write)'
+  reviews: letter.md
+  plan: undecided
+  labels_note: 'Reviewer 2 numbers within headings (W, S, Q + their number). Reviewers 1 and 3 number nothing: their
+    W/S labels are the authors'', one per line in the letter. Reviewer 4 gave a summary and scores only: no items.
+    R2.W3 is split at its comma (a/b).'
+  items:
+  - id: R1.W1
+    referee: Reviewer 1
+    label: null
+    comment: 'Evaluation is too narrow for central reliability claims: three runs of one prompt on one paper is
+      not sufficient.'
+    concern: Three runs on one paper cannot carry a reliability claim.
+    asks: More papers and runs, or claims narrowed to what three runs show.
+    evidence:
+    - new-analysis
+    - results-text
+    - wording
+    must_fix: true
+    proposed: address
+    decision: undecided
+    commitments:
+    - change: More papers and runs, or claims narrowed to what three runs show.
+      target: Method, Evaluation dimensions; Results, Table 3
+      landed: pending
+  - id: R1.W2
+    referee: Reviewer 1
+    label: null
+    comment: No comparative experiment quantifies improvement over raw LLM, retrieval-only, or existing curation
+      workflows.
+    concern: The improvement the paper claims is never measured against an alternative.
+    asks: A comparison with raw LLM, retrieval-only or existing curation on the same tasks.
+    evidence:
+    - new-analysis
+    - table
+    - results-text
+    must_fix: true
+    proposed: address
+    decision: undecided
+    commitments:
+    - change: A comparison with raw LLM, retrieval-only or existing curation on the same tasks.
+      target: Results, a new comparison subsection and table
+      landed: pending
+  - id: R1.W3
+    referee: Reviewer 1
+    label: null
+    comment: Runtime claim for genome annotation belongs to companion paper; this paper should avoid using it as
+      evidence for authoring-plugin performance or provide a minimal end-to-end benchmark.
+    concern: A consumer runtime figure reads as evidence for the authoring plugin.
+    asks: Drop or attribute the runtime claim to the companion paper (or add an end-to-end benchmark).
+    evidence:
+    - wording
+    must_fix: false
+    proposed: address
+    decision: undecided
+    commitments:
+    - change: Drop or attribute the runtime claim to the companion paper (or add an end-to-end benchmark).
+      target: Abstract ('applied to a genome in about a minute')
+      landed: pending
+  - id: R1.S1
+    referee: Reviewer 1
+    label: null
+    comment: Build blinded benchmark suite. publish prompts, source snapshots, gold curation, and scoring code.
+    concern: Others cannot rerun or extend the evaluation without its materials, and unblinded runs may see the
+      answer.
+    asks: Publish prompts, source snapshots, the reference curation and the scorer; make the suite blinded.
+    evidence:
+    - statement
+    - methods-text
+    must_fix: false
+    proposed: address
+    decision: undecided
+    commitments:
+    - change: Publish prompts, source snapshots, the reference curation and the scorer; make the suite blinded.
+      target: Method, Evaluation dimensions; Code and data availability (assets/benchmarks, bench.py)
+      landed: pending
+  - id: R1.S2
+    referee: Reviewer 1
+    label: null
+    comment: Compare raw LLM, retrieval-augmented LLM, tool-only workflow, and full Just-DNA workflow across multiple
+      models and hosts.
+    concern: Without arms and several models, the gain cannot be attributed to the workflow rather than the model.
+    asks: Four arms (raw, retrieval, tool-only, full) across several models and hosts.
+    evidence:
+    - new-analysis
+    - table
+    must_fix: false
+    proposed: address
+    decision: undecided
+    commitments:
+    - change: Four arms (raw, retrieval, tool-only, full) across several models and hosts.
+      target: Results, the comparison subsection (same study as R1.W2)
+      landed: pending
+  - id: R1.S3
+    referee: Reviewer 1
+    label: null
+    comment: 'Add adversarial security evaluation: malicious papers, conflicting citations, false-but-valid identifiers,
+      instruction-like source text, and attempted unauthorized registry actions.'
+    concern: An agent reading untrusted papers and writing to a registry has an attack surface the paper does not
+      test.
+    asks: An adversarial evaluation over the five named attack kinds.
+    evidence:
+    - new-analysis
+    - discussion-text
+    must_fix: false
+    proposed: decline
+    decision: undecided
+    reason: 'Scope for this version: a threat-model paragraph and limitation sentence instead; the evaluation itself
+      is a later study (proposed).'
+  - id: R2.W1
+    referee: Reviewer 2
+    label: '1'
+    comment: The central benefit is not evaluated. The motivation is that an assistant generating code is unreliable,
+      yet there is no empirical comparison against that baseline (raw LLM script generation or direct answering),
+      so the claim that the workflow improves reliability is asserted rather than shown.
+    concern: The paper's main claim (the workflow beats code generation) is asserted, not shown.
+    asks: An empirical comparison against raw script generation or direct answering.
+    evidence:
+    - new-analysis
+    - table
+    - results-text
+    must_fix: true
+    proposed: address
+    decision: undecided
+    same_as:
+    - R1.W2
+    commitments:
+    - change: An empirical comparison against raw script generation or direct answering.
+      target: Results, the comparison subsection
+      landed: pending
+  - id: R2.W2
+    referee: Reviewer 2
+    label: '2'
+    comment: The evaluation is a smoke test. The quantitative evidence is three runs of a single prompt on one paper,
+      scored near-perfectly against one expert curation, which cannot support claims about reliability or generality.
+    concern: Near-perfect scores on one paper say nothing general.
+    asks: A larger evaluation, or claims limited to a smoke test.
+    evidence:
+    - new-analysis
+    - wording
+    must_fix: true
+    proposed: address
+    decision: undecided
+    same_as:
+    - R1.W1
+    commitments:
+    - change: A larger evaluation, or claims limited to a smoke test.
+      target: Method, Evaluation dimensions; Results, Table 3
+      landed: pending
+  - id: R2.W3a
+    referee: Reviewer 2
+    label: '3'
+    comment: The catalog evidence is adoption-level. Eight modules across three namespaces, half of them from the
+      development team, is a feasibility signal rather than evidence of correctness or usefulness,
+    concern: Catalog counts are presented as more than feasibility; the reviewer also read half as the team's, the
+      text says half are outside it.
+    asks: Frame the catalog as feasibility; settle who authored which namespaces (the record's outside-namespaces,
+      IC-7).
+    evidence:
+    - wording
+    - answer
+    must_fix: false
+    proposed: address
+    decision: undecided
+    commitments:
+    - change: Frame the catalog as feasibility; settle who authored which namespaces (the record's outside-namespaces,
+        IC-7).
+      target: Results, Production catalog; Conclusion
+      landed: pending
+  - id: R2.W3b
+    referee: Reviewer 2
+    label: '3'
+    comment: and the comparison to VEP, CIViC and PubMind is qualitative.
+    concern: The related-tools comparison is a feature table, not a measurement.
+    asks: Say the comparison is of capabilities, or measure against one of them.
+    evidence:
+    - wording
+    must_fix: false
+    proposed: address
+    decision: undecided
+    commitments:
+    - change: Say the comparison is of capabilities, or measure against one of them.
+      target: Related work, the comparison table's caption and lead-in
+      landed: pending
+  - id: R2.W4
+    referee: Reviewer 2
+    label: '4'
+    comment: The validation does not measure what matters most. The provenance audit (using an article's title as
+      its quote) is interesting but is not a hallucination rate, while free-text conclusions and the assistant's
+      judgement about whether a source supports a claim are explicitly not scored.
+    concern: What users most need (does the source support the claim?) is not measured.
+    asks: A measured support or hallucination rate, or the gap stated as the main limitation.
+    evidence:
+    - new-analysis
+    - discussion-text
+    must_fix: true
+    proposed: address
+    decision: undecided
+    commitments:
+    - change: A measured support or hallucination rate, or the gap stated as the main limitation.
+      target: Results; Discussion, Limitations
+      landed: pending
+  - id: R2.S1
+    referee: Reviewer 2
+    label: '1'
+    comment: 'Evaluate against the baseline the paper argues against: compare the module-authoring workflow with
+      (a) an assistant generating analysis code and (b) an assistant answering directly, on the same tasks, scoring
+      factual correctness (variant ID, citation identity, effect direction) and the reviewer effort each requires.'
+    concern: As R2.W1, with the arms and the scores named.
+    asks: Arms (a) code generation and (b) direct answers on the same tasks, scored on correctness and reviewer
+      effort.
+    evidence:
+    - new-analysis
+    - table
+    must_fix: true
+    proposed: address
+    decision: undecided
+    same_as:
+    - R1.W2
+    commitments:
+    - change: Arms (a) code generation and (b) direct answers on the same tasks, scored on correctness and reviewer
+        effort.
+      target: Results, the comparison subsection
+      landed: pending
+  - id: R2.S2
+    referee: Reviewer 2
+    label: '2'
+    comment: 'Scale and diversify the evaluation: multiple models and hosts, many papers and traits, several expert
+      curators, with inter-rater agreement, and report per-module error rates against held-out expert-curated references.'
+    concern: One model, one paper and one curator do not generalise.
+    asks: More models, hosts, papers, curators with inter-rater agreement, and per-module error rates.
+    evidence:
+    - new-analysis
+    - table
+    must_fix: false
+    proposed: address
+    decision: undecided
+    commitments:
+    - change: More models, hosts, papers, curators with inter-rater agreement, and per-module error rates.
+      target: Results, Table 3 extended (more fixtures and runs); curators and inter-rater agreement need the authors
+      landed: pending
+  - id: R2.S3
+    referee: Reviewer 2
+    label: '3'
+    comment: 'Demonstrate downstream value: show that a module built with the pipeline yields correct genome annotations
+      (or results comparable to a manual workflow) and quantify the review effort saved.'
+    concern: Nothing shows a module annotates genomes correctly or saves effort.
+    asks: Correct annotations on a genome from a pipeline-built module, and the review effort saved.
+    evidence:
+    - new-analysis
+    - results-text
+    must_fix: false
+    proposed: decline
+    decision: undecided
+    reason: Genome annotation is the companion paper's subject (proposed); this paper cites it. Review effort is
+      taken up under R2.S1.
+  - id: R2.S4
+    referee: Reviewer 2
+    label: '4'
+    comment: Report an explicit error or hallucination rate before and after the workflow rather than only an aggregate
+      agreement score.
+    concern: Agreement scores hide the error rate users care about.
+    asks: An error or hallucination rate with and without the workflow.
+    evidence:
+    - new-analysis
+    - table
+    must_fix: true
+    proposed: address
+    decision: undecided
+    same_as:
+    - R2.W4
+    commitments:
+    - change: An error or hallucination rate with and without the workflow.
+      target: Results, the comparison subsection
+      landed: pending
+  - id: R2.Q1
+    referee: Reviewer 2
+    label: '1'
+    comment: How was the expert-curated reference module constructed, who produced it, and how were disagreements
+      between the three runs and the reference adjudicated?
+    concern: The reference's provenance decides what the scores mean.
+    asks: Who built the reference, how, and how disagreements were adjudicated.
+    evidence:
+    - answer
+    - methods-text
+    must_fix: true
+    proposed: address
+    decision: undecided
+    commitments:
+    - change: Who built the reference, how, and how disagreements were adjudicated.
+      target: Method, Evaluation dimensions (needs the authors' account of the adjudication)
+      landed: pending
+  - id: R2.Q2
+    referee: Reviewer 2
+    label: '2'
+    comment: Given that free-text conclusions and the judgement about whether a source supports a claim are not
+      scored, how is a user to know that a published module reflects the source rather than the assistant's interpretation?
+    concern: A reader cannot tell the source's claim from the agent's reading.
+    asks: Explain what a user can check (verbatim quotes, per-row curator attribution, logs, the decision record).
+    evidence:
+    - answer
+    - discussion-text
+    must_fix: false
+    proposed: address
+    decision: undecided
+    commitments:
+    - change: Explain what a user can check (verbatim quotes, per-row curator attribution, logs, the decision record).
+      target: Method, Determinism, evidence, and responsibility; Discussion
+      landed: pending
+  - id: R2.Q3
+    referee: Reviewer 2
+    label: '3'
+    comment: What fraction of the assistant's drafted rows require expert correction, and how does that compare
+      with the raw-LLM baseline the paper argues against?
+    concern: The cost of expert correction is unknown.
+    asks: The fraction of drafted rows an expert corrects, against the baseline.
+    evidence:
+    - new-analysis
+    - answer
+    must_fix: false
+    proposed: address
+    decision: undecided
+    same_as:
+    - R2.S1
+    commitments:
+    - change: The fraction of drafted rows an expert corrects, against the baseline.
+      target: Results, the comparison subsection (reviewer effort)
+      landed: pending
+  - id: R3.W1
+    referee: Reviewer 3
+    label: null
+    comment: First of all, deriving health-related conclusions from personal genomic variation using LLMs should
+      be treated with utmost care and the interpretation should be performed by experts.
+    concern: Readers may take module output as medical interpretation.
+    asks: State plainly that interpretation is for experts and the work is research-only.
+    evidence:
+    - discussion-text
+    - wording
+    must_fix: false
+    proposed: address
+    decision: undecided
+    commitments:
+    - change: State plainly that interpretation is for experts and the work is research-only.
+      target: Discussion; Appendix, Research use only
+      landed: pending
+  - id: R3.W2
+    referee: Reviewer 3
+    label: null
+    comment: The audience of the paper remains unclear. The topic is very specialized and does not nicely introduce
+      the topic, even though the bigger picture of personalized medicine, individual genetic analysis is a huge
+      research topic and future field.
+    concern: The paper does not say whom it is for, nor set the wider context.
+    asks: Name the audience and introduce the field's bigger picture.
+    evidence:
+    - wording
+    - results-text
+    must_fix: false
+    proposed: address
+    decision: undecided
+    commitments:
+    - change: Name the audience and introduce the field's bigger picture.
+      target: Introduction, first two paragraphs
+      landed: pending
+  - id: R3.W3
+    referee: Reviewer 3
+    label: null
+    comment: The paper misses a clear benchmark of the proposed tool against pure LLM output or other methods.
+    concern: As R2.W1.
+    asks: A benchmark against pure LLM output or other methods.
+    evidence:
+    - new-analysis
+    must_fix: true
+    proposed: address
+    decision: undecided
+    same_as:
+    - R1.W2
+    commitments:
+    - change: A benchmark against pure LLM output or other methods.
+      target: Results, the comparison subsection
+      landed: pending
+  - id: R3.S1
+    referee: Reviewer 3
+    label: null
+    comment: The authors should clarify the audience of the paper and rewrite accordingly. Does it adress individuals,
+      physicians or the ML community?
+    concern: As R3.W2.
+    asks: Say which audience, and rewrite for it.
+    evidence:
+    - wording
+    must_fix: false
+    proposed: address
+    decision: undecided
+    same_as:
+    - R3.W2
+    commitments:
+    - change: Say which audience, and rewrite for it.
+      target: Introduction
+      landed: pending
+  - id: R3.S2
+    referee: Reviewer 3
+    label: null
+    comment: A comparison to other tools would strengthen the claims, i.e. against the raw output of an LLM.
+    concern: As R2.W1.
+    asks: A comparison against raw LLM output.
+    evidence:
+    - new-analysis
+    must_fix: true
+    proposed: address
+    decision: undecided
+    same_as:
+    - R1.W2
+    commitments:
+    - change: A comparison against raw LLM output.
+      target: Results, the comparison subsection
+      landed: pending
