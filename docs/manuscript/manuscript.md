@@ -158,7 +158,7 @@ A module can also be read without a reference curation, by checking what its cel
 
 With the plugin active, the assistant calls typed tools (Appendix <a href="#app:tools" data-reference-type="ref" data-reference="app:tools">10</a>) instead of generating code: enrichment adds coordinates and derived sidecars, compilation validates against the live schema, and the compiled artifact can be published to the registry and immediately applied to a genome. The checks described in Section 3.3 are meant to catch citation misattributions, identifier drift, and schema violations, but an audit exposed a blind spot. The audit read working copies of four catalog modules, authored under an earlier version of the workflow and not the versions published in Table <a href="#tab:catalog" data-reference-type="ref" data-reference="tab:catalog">4</a>. In them, all 3,668 `studies.csv` rows carried the article’s title as their `provenance_quote`, a passage that always matches its own full text and evidences nothing. The quote check had never run on them.
 
-The plugin can be installed in two commands, one adding its marketplace and one installing it (`/plugin marketplace add` and `/plugin install` in Claude Code, and the matching `codex plugin` commands in Codex). It needs uv and Python 3.13 or newer. Once installed, the assistant gains access to 60 typed MCP tools (Appendix <a href="#app:tools" data-reference-type="ref" data-reference="app:tools">10</a>) and 20 skills—written workflow instructions that teach the assistant when to call which tool. In both Claude Code and Codex, skills marked as commands can be invoked directly by typing `/name` in the prompt.
+The plugin can be installed in two commands, one adding its marketplace and one installing it (`/plugin marketplace add` and `/plugin install` in Claude Code, and the matching `codex plugin` commands in Codex). It needs uv and Python 3.13 or newer. In version 0.27.0, the one Table <a href="#tab:scores" data-reference-type="ref" data-reference="tab:scores">3</a> evaluated, the assistant gains access to 60 typed MCP tools (Appendix <a href="#app:tools" data-reference-type="ref" data-reference="app:tools">10</a>) and 20 skills—written workflow instructions that teach the assistant when to call which tool. In both Claude Code and Codex, skills marked as commands can be invoked directly by typing `/name` in the prompt.
 
 ## Command menu
 
@@ -253,7 +253,7 @@ Annotation modules summarize published association findings. They are not clinic
 
 A Claude Code or Codex plugin is a bundle of two kinds of asset. **MCP tools** are typed operations the assistant can call. Each has a name, typed inputs, and a structured return value. **Skills** are written instructions loaded into the assistant’s context on demand; they teach the workflow that the tools serve, including when to call which tool and what to do with the result.
 
-## Tools (60)
+## Tools (60, version 0.27.0)
 
 The tools are organized into a core set and nine optional groups. By default all of them are listed; in an optional layered mode only the core set is listed and a session reveals the other groups through `toolbox`. Table <a href="#tab:tools-core" data-reference-type="ref" data-reference="tab:tools-core">5</a> lists the 18 core and meta tools; Tables <a href="#tab:tools-evidence" data-reference-type="ref" data-reference="tab:tools-evidence">6</a>–<a href="#tab:tools-closing" data-reference-type="ref" data-reference="tab:tools-closing">14</a> list the nine groups. Registry writes require a token obtained through `authenticate`. Requests to each outside service pass through that service’s pacing gate, and the literature search shares its NCBI gate with the enricher, so both spend one NCBI budget.
 
@@ -407,7 +407,7 @@ Closing group: finish and describe.
 
 </div>
 
-## Skills (20)
+## Skills (20, version 0.27.0)
 
 Skills are Markdown documents loaded into the assistant’s context when needed. Seven are **commands** (Table <a href="#tab:skills-commands" data-reference-type="ref" data-reference="tab:skills-commands">15</a>), which the user invokes by typing `/name` in the assistant’s prompt. The other thirteen are **guides** (Table <a href="#tab:skills-guides" data-reference-type="ref" data-reference="tab:skills-guides">16</a>), which a router loads by naming their path when the assistant reaches the corresponding stage.
 

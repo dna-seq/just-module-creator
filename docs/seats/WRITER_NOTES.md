@@ -52,8 +52,11 @@ The seat's working state, rewritten to the present before each reset (docs/seats
 - **Asked of the lead**: all done (5f9900d; desk #366's four in e0801ee: wake_from, CLAUDE.md's manuscript
   section and reading list, §11's tectonic line, manuscript-skills@dna-seq in the tracked settings).
 - **Asked of the pm** (2026-11-18; the pm seat unheld since, both still undone on 2026-11-19): PM.md's "the writing is the lead's or the person's", its wake_from.
-- **Claims to check before any edit to them** (`unattended`): the appendix counts "Tools (60)" and "Skills (20)"
-  against today's surface (the command/guide split is seven plus the guides; tool count moved since August).
+- **Appendix counts**: checked 2026-11-19. 60 tools and 20 skills (7 + 13) were true of 0.27.0 (decorators at
+  221b95f); today 100 tools and 21 skills (7 + 14). The text now pins the counts to 0.27.0. Whether the appendix
+  moves to the current surface waits on desk #369's answer (which version Table 3 reports).
+- **On the desk** (filed 2026-11-19, the person away): #367 author list (default: no authors printed), #368 the
+  EASRP reviews' plan (default: nothing changes), #369 Table 3 and round 4 (default: August runs only).
 
 ## Blind spots
 

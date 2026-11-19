@@ -567,7 +567,8 @@ evidences nothing. The quote check had never run on them.
 The plugin can be installed in two commands, one adding its marketplace and one
 installing it (\texttt{/plugin marketplace add} and \texttt{/plugin install} in
 Claude Code, and the matching \texttt{codex plugin} commands in Codex). It
-needs uv and Python 3.13 or newer. Once installed, the assistant gains access to 60 typed
+needs uv and Python 3.13 or newer. In version 0.27.0, the one Table~\ref{tab:scores}
+evaluated, the assistant gains access to 60 typed
 MCP tools (Appendix~\ref{app:tools}) and 20 skills---written workflow
 instructions that teach the assistant when to call which tool. In both
 Claude Code and Codex, skills marked as commands can be invoked directly
@@ -895,7 +896,7 @@ instructions loaded into the assistant's context on demand; they teach the
 workflow that the tools serve, including when to call which tool and what to
 do with the result.
 
-\subsection*{Tools (60)}
+\subsection*{Tools (60, version 0.27.0)}
 
 The tools are organized into a core set and nine optional groups. By
 default all of them are listed; in an optional layered mode only the core set
@@ -1097,7 +1098,7 @@ Tool & Purpose \\
 \end{tabular}
 \end{table}
 
-\subsection*{Skills (20)}
+\subsection*{Skills (20, version 0.27.0)}
 
 Skills are Markdown documents loaded into the assistant's context when
 needed. Seven are \textbf{commands} (Table~\ref{tab:skills-commands}), which the user invokes by typing \texttt{/name} in
