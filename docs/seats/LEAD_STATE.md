@@ -12,7 +12,7 @@
 - ✅ Searching trait names to pick a module's ontology id from real candidates; the check before publishing now reads every log file that ships; a publish whose files name another version is refused; comparing with the published version lists files added or removed (0.48.13).
 
 - ✅ A decision recorded as the author's is shown to them to approve first, and a record survives tables written by script (0.48.15).
-- ✅ The authoring benchmark reproduces on 0.48.15: clean runs find the SIRT6 variant with no decoys; genotype coverage matches the paper's Table 3 (three runs a row, so no difference found). The skills no longer name any benchmark answer.
+- ✅ The authoring benchmark reproduces on 0.48.15: clean runs find the SIRT6 variant with no decoys; genotype coverage on Opus 5 matches the paper's Table 3 (three runs each, no difference found); one Opus 5.5 run is a single observation. The skills no longer name any benchmark answer.
 - ✅ Each module now keeps a record of how its rows came to be (searches, articles read, rows written, decisions no edit shows), and `trace_module` reads every row back against it; registry 0.32 adopted; publishing refuses a module name that differs from its spec (0.48.14).
 **Next**
 1. Release the fixes on main (benchmark-answer guard, cache sizes stated as each lane's own, which release a lane lookup read). Lead; 📅 2026-11-20.
