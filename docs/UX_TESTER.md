@@ -150,7 +150,14 @@ Result:
 - **Reruns asked by the lead (641757606), 2026-11-19.** e on claude-opus-5 replaces c, and f on claude-opus-5-5
   replaces d, now that F168 is fixed. Same brief and flags. Round start: main ebfdb61, not the tag; the report says
   so. Pre-round context search clean and `tests/test_bench_fixtures.py` green. Plugin-commit hold asked in the
-  channel. In flight: e, then f; nothing scored yet.
+  channel. Done: e 03:34–03:56Z (Opus 5, 92 turns), f 03:56–04:08Z (Opus 5.5, 77 turns). Nothing landed under
+  the plugin paths during either (HEAD moved 6105333 to 5f2dbef, docs only).
+- Leak check clean for both; the variant first came from `literature_search` (e) or `lookup_open_access` (f) on
+  the DOI. Both read `module-curate`, whose masked worked case still describes this fixture's shape and says it
+  is a benchmark fixture. Run a, which never saw it, wrote the same cells, so no measurable effect here.
+- Scores: rsID 1.00, pair 0.67, decoy 0, precision 1.00, citation recall 1.00 (both cited 28399814 and
+  41249831), direction 1.00. e left out T/T (no row); f left out C/C and kept T/T as `unknown`.
+- Hold lifted; reported to the writer and the lead.
 
 **2026-11-08: recheck of 0.48.3 on the shipped plugin (v0.48.3 in the host, server started 09:24 CET).**
 
