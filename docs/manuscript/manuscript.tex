@@ -20,8 +20,8 @@
 \easrpauthor{Anonymous}
 \easrpaffiliation{Withheld for review}
 
-\easrptitle{Creating and Sharing Genomic Annotation Modules with AI: The
-Just-DNA Ecosystem}
+\easrptitle{Creating and Sharing Genomic Annotation Modules with AI Agents:
+From Assisted Authoring to an Autonomous Curation Loop}
 
 \begin{document}
 
@@ -46,11 +46,17 @@ authoring requires no new infrastructure. The underlying toolchain validates
 authored files against a live schema, checks identifiers against reference
 databases, and compiles modules into a portable artifact. A shared registry lets
 independent authors publish, version, and exchange modules---the package-registry
-pattern applied to genomic annotation knowledge. Once installed, a module can be
+pattern applied to genomic annotation knowledge. We also show the plugin as the
+authoring end of an autonomous research loop: over two weeks, several agent
+roles re-curated a 164-row longevity module, reading the literature, writing
+each row with verbatim evidence and rehearsing every version, while a
+non-blocking, asynchronous human-in-the-loop design confined the maintainer to
+decisions and irreversible steps. The three scored authoring runs are archived
+with their inputs and re-score exactly. Once installed, a module can be
 applied to a genome in about a minute; the annotation consumer,
 Just-DNA-Lite, is the subject of a companion
 paper~\citep{companion2026justdnalite}. The software is open-source and available at
-\url{https://anonymous.4open.science/r/just-module-creator} (anonymized for review).
+\url{https://github.com/dna-seq/just-module-creator}.
 \end{abstract}
 
 % ================================================================
@@ -96,7 +102,7 @@ edited entirely by hand.
 % Keep the lead-in with the first item; alone at a page foot it reads as a
 % dropped sentence rather than an introduction to the list.
 \needspace{5\baselineskip}
-This paper makes four contributions:
+This paper makes five contributions:
 
 \begin{enumerate}
     \item It describes the module contract shared by manual editors, AI-assisted
@@ -113,6 +119,10 @@ This paper makes four contributions:
     \item It defines an evaluation protocol for variant recall, citation
     recall, and effect-direction agreement, and reports catalog statistics
     from the first eight published modules across three independent namespaces.
+    \item It reports a case study of an autonomous curation loop in which
+    agent roles rebuild a longevity module over two weeks, coordinated through
+    version-controlled files and event wake-ups, with human checkpoints that
+    block only the work that depends on them (Section~\ref{sec:loop}).
 \end{enumerate}
 
 % ================================================================
@@ -822,7 +832,10 @@ is what a module keeps separate: authored claims stay distinct from derived
 records, a check that
 could not run says so, and each row of a published module has a place for
 the evidence behind it. Eight modules from three namespaces, half of them from authors
-outside the development team, show the path is functional today.
+outside the development team, show the path is functional today. The same
+tools carry an autonomous curation loop in which agents do the reading and the
+rebuilding and the maintainer is asked only for decisions, each rule the loop
+applied written down for review.
 
 The software is open-source and intended for research use only. It installs
 in two commands in Claude Code or Codex, and a module drafted with it can be
@@ -835,20 +848,20 @@ reviewed in a spreadsheet and published for others to install.
 
 \begin{itemize}
     \item \textbf{just-dna-format, just-dna-compiler, and just-dna-enricher}:
-    \url{https://anonymous.4open.science/r/just-dna-compiler}
+    \url{https://github.com/dna-seq/just-dna-compiler}
     (schema, reference compiler, and enricher).
     \item \textbf{just-module-creator}:
-    \url{https://anonymous.4open.science/r/just-module-creator}
+    \url{https://github.com/dna-seq/just-module-creator}
     (MCP server, Claude Code and Codex plugin manifests, skills; MIT).
     \item \textbf{just-dna-registry}:
-    \url{https://anonymous.4open.science/r/just-dna-registry}
+    \url{https://github.com/dna-seq/just-dna-registry}
     (registry service and reference client).
     \item \textbf{Just-DNA-Lite}:
-    \url{https://anonymous.4open.science/r/just-dna-lite}
+    \url{https://github.com/dna-seq/just-dna-lite}
     (local VCF processing, annotation, and reporting; described in the
     companion paper~\citep{companion2026justdnalite}).
-    \item The public catalog and the test registry are live at URLs
-    provided in the anonymized repositories.
+    \item The public catalog is live at \url{https://module-registry.just-dna.life}
+    and the test registry at \url{https://module-polygon.just-dna.life}.
 \end{itemize}
 
 % References

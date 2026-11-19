@@ -2,7 +2,7 @@
 
 Genome analysis is an iterative workflow (ask, select data, score, annotate, inspect, and revise), and it is increasingly done inside AI coding assistants rather than in fixed graphical interfaces. But general-purpose language models are unreliable when used directly for genomics: they fabricate variant identifiers, misassign effect directions, and attach real PMIDs to the wrong paper. The Just-DNA ecosystem redirects these assistants from generating disposable code to producing structured, versioned data: *genomic annotation modules* where every variant is linked to its genotype and can carry its evidence, effect size, and a verbatim passage from the source paper. The output is an editable data artifact that a domain expert can review in a spreadsheet without specialized tools.
 
-This paper presents the plugin ecosystem that makes this possible. The authoring plugin, **just-module-creator**, runs inside the AI coding assistants that bioinformaticians and developers already use daily, so module authoring requires no new infrastructure. The underlying toolchain validates authored files against a live schema, checks identifiers against reference databases, and compiles modules into a portable artifact. A shared registry lets independent authors publish, version, and exchange modules—the package-registry pattern applied to genomic annotation knowledge. Once installed, a module can be applied to a genome in about a minute; the annotation consumer, Just-DNA-Lite, is the subject of a companion paper . The software is open-source and available at <https://anonymous.4open.science/r/just-module-creator> (anonymized for review).
+This paper presents the plugin ecosystem that makes this possible. The authoring plugin, **just-module-creator**, runs inside the AI coding assistants that bioinformaticians and developers already use daily, so module authoring requires no new infrastructure. The underlying toolchain validates authored files against a live schema, checks identifiers against reference databases, and compiles modules into a portable artifact. A shared registry lets independent authors publish, version, and exchange modules—the package-registry pattern applied to genomic annotation knowledge. We also show the plugin as the authoring end of an autonomous research loop: over two weeks, several agent roles re-curated a 164-row longevity module, reading the literature, writing each row with verbatim evidence and rehearsing every version, while a non-blocking, asynchronous human-in-the-loop design confined the maintainer to decisions and irreversible steps. The three scored authoring runs are archived with their inputs and re-score exactly. Once installed, a module can be applied to a genome in about a minute; the annotation consumer, Just-DNA-Lite, is the subject of a companion paper . The software is open-source and available at <https://github.com/dna-seq/just-module-creator>.
 
 # Introduction
 
@@ -12,7 +12,7 @@ Researchers increasingly use AI coding assistants such as Claude Code and Codex 
 
 This paper presents the Just-DNA ecosystem, which gives these same assistants a different job. Instead of generating code, the assistant produces structured data: a *module* of editable CSV tables where each variant is linked to its studies, citations, effect sizes, and supporting passages. The input can be anything the assistant can read, from a single sentence describing a trait to a collection of papers or a summary from another model. When the module is enriched, and again when the registry publishes it, every variant’s rsID is resolved against Ensembl’s variation records, which carry dbSNP identifiers. Dedicated checking tools validate gene symbols against HGNC, trait identifiers against ontology services, and flag decisions that require domain expertise. Once the module is compiled to machine-readable Parquet files, Just-DNA-Lite joins it to a genome . Modules are versioned and shareable: they can be kept locally, rehearsed in a test registry, or published for others to install and use. The same files can also be written or edited entirely by hand.
 
-This paper makes four contributions:
+This paper makes five contributions:
 
 1.  It describes the module contract shared by manual editors, AI-assisted authoring tools, versioned stores, and the genome-analysis consumer.
 
@@ -21,6 +21,8 @@ This paper makes four contributions:
 3.  It defines how modules move between a local store, a test registry whose publications can be deleted, and the public catalog while preserving their provenance and the decisions that still require review.
 
 4.  It defines an evaluation protocol for variant recall, citation recall, and effect-direction agreement, and reports catalog statistics from the first eight published modules across three independent namespaces.
+
+5.  It reports a case study of an autonomous curation loop in which agent roles rebuild a longevity module over two weeks, coordinated through version-controlled files and event wake-ups, with human checkpoints that block only the work that depends on them (Section <a href="#sec:loop" data-reference-type="ref" data-reference="sec:loop">5</a>).
 
 # Related work
 
@@ -225,21 +227,21 @@ The module system launched in August 2026. We are developing mechanisms to invol
 
 # Conclusion
 
-Annotation knowledge produced in a chat session is lost when the session ends. In the Just-DNA ecosystem, an AI assistant produces a versioned, schema-validated module instead of a script, so the work survives review, correction, and reuse by someone else. What makes that more than a file format is what a module keeps separate: authored claims stay distinct from derived records, a check that could not run says so, and each row of a published module has a place for the evidence behind it. Eight modules from three namespaces, half of them from authors outside the development team, show the path is functional today.
+Annotation knowledge produced in a chat session is lost when the session ends. In the Just-DNA ecosystem, an AI assistant produces a versioned, schema-validated module instead of a script, so the work survives review, correction, and reuse by someone else. What makes that more than a file format is what a module keeps separate: authored claims stay distinct from derived records, a check that could not run says so, and each row of a published module has a place for the evidence behind it. Eight modules from three namespaces, half of them from authors outside the development team, show the path is functional today. The same tools carry an autonomous curation loop in which agents do the reading and the rebuilding and the maintainer is asked only for decisions, each rule the loop applied written down for review.
 
 The software is open-source and intended for research use only. It installs in two commands in Claude Code or Codex, and a module drafted with it can be reviewed in a spreadsheet and published for others to install.
 
 # Code and data availability
 
-- **just-dna-format, just-dna-compiler, and just-dna-enricher**: <https://anonymous.4open.science/r/just-dna-compiler> (schema, reference compiler, and enricher).
+- **just-dna-format, just-dna-compiler, and just-dna-enricher**: <https://github.com/dna-seq/just-dna-compiler> (schema, reference compiler, and enricher).
 
-- **just-module-creator**: <https://anonymous.4open.science/r/just-module-creator> (MCP server, Claude Code and Codex plugin manifests, skills; MIT).
+- **just-module-creator**: <https://github.com/dna-seq/just-module-creator> (MCP server, Claude Code and Codex plugin manifests, skills; MIT).
 
-- **just-dna-registry**: <https://anonymous.4open.science/r/just-dna-registry> (registry service and reference client).
+- **just-dna-registry**: <https://github.com/dna-seq/just-dna-registry> (registry service and reference client).
 
-- **Just-DNA-Lite**: <https://anonymous.4open.science/r/just-dna-lite> (local VCF processing, annotation, and reporting; described in the companion paper ).
+- **Just-DNA-Lite**: <https://github.com/dna-seq/just-dna-lite> (local VCF processing, annotation, and reporting; described in the companion paper ).
 
-- The public catalog and the test registry are live at URLs provided in the anonymized repositories.
+- The public catalog is live at <https://module-registry.just-dna.life> and the test registry at <https://module-polygon.just-dna.life>.
 
 # Appendix
 
