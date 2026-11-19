@@ -39,8 +39,10 @@ round's start, asks the repository's seats to hold plugin commits, and checks af
 a session started in a worktree at `v0.48.15` saw main's `provision_caches` text, because the tracked settings load
 the plugin from the main checkout; `--plugin-dir <worktree>` with `--setting-sources user`, and from a directory
 outside the repository, showed no plugin tools at all (the debug log lists the plugin's hooks but starts no server
-for it), cause not found. Next: find why the inline plugin's server does not start, then run rounds from a tag
-worktree with it.
+for it), cause not found. The tester's `--plugin-dir` sessions this week, all from outside the repository, did get a
+server every time; from inside the repository or a worktree the tracked `./` marketplace enables the same plugin
+name, which may be what blocked mine. A round's cwd must stay the repository, so that is no fix for the benchmark.
+Next: find why my outside-the-repository probe started no server where the tester's did.
 ---
 
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
