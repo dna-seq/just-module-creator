@@ -1,7 +1,7 @@
 """What provisioning the snapshot caches on THIS machine would cost, and doing it.
 
-The enricher's lookups read fifteen snapshot lanes, and five of them cannot be pulled
-from anywhere: PharmVar's bulk data is behind a personal key, PubMind's ANNOVAR table
+The enricher's lookups read the snapshot lanes `CACHE_LANES` lists, and some cannot be
+pulled from anywhere: PharmVar's bulk data is behind a personal key, PubMind's ANNOVAR table
 states no terms, `mitomap_miss` is a join nobody publishes, NCBI states a policy rather
 than a licence for MANE, and the ACMG SF list is Elsevier supplementary material. Each
 carries that sentence in `lane.unpublished`, and each has a local build route instead.
@@ -494,9 +494,8 @@ def _note(
             "multi-gigabyte pull, and one `remember_setting` call does it."
         )
     parts.append(
-        "Every size but one is an estimate measured on a provisioned box on 2026-09-11, not a "
-        "declaration by the lane (upstream S97); a present lane reports what it actually measures "
-        "beside it."
+        "Each size is the lane's own declared estimate (`approx_mb`, whole megabytes); a present "
+        "lane reports what it actually measures beside it."
     )
     return " ".join(parts)
 

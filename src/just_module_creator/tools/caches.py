@@ -54,15 +54,14 @@ def register_caches(mcp: FastMCP, settings: Settings) -> None:
         common answer — already provisioned, already answered, nothing that fits — and it
         means exactly that.
 
-        Ten of the fifteen lanes are published parquet, so a pull or a registry proxy
-        serves them. **Five are not ours to publish**: PharmVar's bulk data needs a
-        personal key, PubMind's source states no terms, NCBI states a policy rather than
-        a licence for MANE, the ACMG list is Elsevier supplementary material, and
-        `mitomap_miss` is a join nobody distributes. Each carries that sentence. For those
-        five there is no pull and no proxy — building here is the only route there will
-        ever be, and together they are about 15 MB. That is the `prewarm` offer. `full` is
-        the whole provisionable surface, Ensembl's 14 GB included, offered only once the
-        small set is done and the disk has room.
+        Most lanes are published parquet, so a pull or a registry proxy serves them.
+        **Some are not ours to publish**: PharmVar's bulk data needs a personal key,
+        PubMind's source states no terms, NCBI states a policy rather than a licence for
+        MANE, the ACMG list is Elsevier supplementary material, and `mitomap_miss` is a
+        join nobody distributes. Each carries that sentence. For those there is no pull and
+        no proxy — building here is the only route there will ever be, and they are small.
+        That is the `prewarm` offer. `full` is the whole provisionable surface, Ensembl's
+        14 GB included, offered only once the small set is done and the disk has room.
 
         `dry_run=True` (the default) measures and writes nothing. `dry_run=False`
         provisions `lanes`, or the `prewarm` set when you name none, each through the
@@ -75,9 +74,9 @@ def register_caches(mcp: FastMCP, settings: Settings) -> None:
         upstream's (`just_dna_format`'s `VALID_DECLARED_USE`, reported by
         `authoring_reference`). Four lanes forbid sale, and with nothing declared their
         download is **skipped** rather than assumed — the tool may not declare a purpose
-        on somebody's behalf. Sizes are estimates measured on a provisioned box and dated
-        in the source, not declarations by the lane; a lane already here reports what it
-        measures beside the estimate, and an unmeasured one reports null rather than a guess.
+        on somebody's behalf. Sizes are each lane's own declared estimate (`approx_mb`); a
+        lane already here reports what it measures beside it, and a lane declaring none
+        reports null rather than a guess.
         """
         if not dry_run and offline_for(settings, False):
             raise ToolError(

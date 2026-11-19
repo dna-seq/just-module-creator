@@ -169,12 +169,12 @@ class Settings(BaseSettings):
     # A hard ceiling: an `offline=False` argument cannot override it.
     offline: bool = False
 
-    # Thick or thin. The enricher's lookups read snapshot caches — fifteen lanes, the
+    # Thick or thin. The enricher's lookups read snapshot caches — a dozen and more lanes, the
     # Ensembl one about 14 GB — and `just-dna-registry` 0.25.0 will answer a cache miss
     # for a client that holds none of them.
     #
     # "auto" decides PER LANE and that is the whole point: a box holding three of
-    # fifteen must not pick one wrong answer for everything, and holding Ensembl and
+    # them must not pick one wrong answer for everything, and holding Ensembl and
     # nothing else is the common shape, since it is the one lane `enrich` cannot work
     # without. "local" never routes out; "registry" routes out even where a lane exists,
     # which is the override for a lane that resolves and then fails — `lane.resolve()`

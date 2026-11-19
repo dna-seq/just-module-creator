@@ -99,7 +99,7 @@ wraps all four as MCP tools; `references/CLI.md` names the few things it deliber
 
 ### Thick client or thin: the enricher needs *snapshots*, and you may not have them
 
-Installing the enricher gets you the code. What it reads is a different matter: fifteen **snapshot
+Installing the enricher gets you the code. What it reads is a different matter: the **snapshot
 lanes**, several multi-gigabyte, and **the Ensembl one is about 14 GB**. Without that one, nothing
 can turn an rsID into a coordinate — which for most of a decade meant the authoring half of this
 ecosystem worked only for whoever had already downloaded it.

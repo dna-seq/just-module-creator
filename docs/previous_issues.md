@@ -6,6 +6,29 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F167 — `provision_caches` says its sizes are not the lanes' declarations, while every lane's result says they are
+
+**Found:** 2026-11-19, over the wire on 0.48.15, rechecking F94 · **Severity:** low · **Status:** fixed here, 2026-11-19 (unreleased)
+
+F94's lift holds: every lane in `provision_caches()` comes back with `estimate_basis: "declared by the lane
+(approx_mb)"` beside its own `estimate_mb`, and present lanes add `measured_mb` (ensembl 15000 / 13866.44,
+opentargets 5500 / 5202.837). But two texts shipped with that result still describe the old pricing:
+- The result's `note`: *"Every size but one is an estimate measured on a provisioned box on 2026-09-11, not a
+  declaration by the lane (upstream S97)"* (`provisioning.py`).
+- The description: *"Sizes are estimates measured on a provisioned box and dated in the source, not declarations by
+  the lane"* (`tools/caches.py`).
+
+An agent that reads either one discounts a number the result labels as declared. The description also counts lanes,
+*"Ten of the fifteen lanes are published parquet … Five are not ours"*, while the same call lists 17 lanes
+(`alphagenome_avi` and `clinvar_gkm` are new). That's the counted-claim shape CLAUDE.md's prose rules warn about.
+
+**Fixed.** F94 removed the measured table and left the prose that described it: my miss, since I grepped for the
+removed names and not for the sentences about them. The `note` now says each size is the lane's own declared
+estimate; the description says the same, and it and `module-start`, `module-101`, `settings.py` and
+`provisioning.py` no longer count lanes ("most lanes", "some are not ours to publish", the five named). Checked
+2026-11-19: 17 lanes, 12 with a pull, 5 built (`acmg`, `mane`, `mitomap_miss`, `pharmvar`, `pubmind`).
+
+
 ## F166 — on a host with nobody to ask, an author's decision is dropped and the agent is told the person refused it
 
 **Found:** 2026-11-18, probing RM32 slice 3 on main ab441e8 (unreleased) · **Severity:** high for unattended runs ·

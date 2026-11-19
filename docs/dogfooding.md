@@ -14,24 +14,6 @@ is usable, and what is missing.
 
 ---
 
-## F167 — `provision_caches` says its sizes are not the lanes' declarations, while every lane's result says they are
-
-**Found:** 2026-11-19, over the wire on 0.48.15, rechecking F94 · **Severity:** low · **Status:** open, to the lead
-
-F94's lift holds: every lane in `provision_caches()` comes back with `estimate_basis: "declared by the lane
-(approx_mb)"` beside its own `estimate_mb`, and present lanes add `measured_mb` (ensembl 15000 / 13866.44,
-opentargets 5500 / 5202.837). But two texts shipped with that result still describe the old pricing:
-- The result's `note`: *"Every size but one is an estimate measured on a provisioned box on 2026-09-11, not a
-  declaration by the lane (upstream S97)"* (`provisioning.py`).
-- The description: *"Sizes are estimates measured on a provisioned box and dated in the source, not declarations by
-  the lane"* (`tools/caches.py`).
-
-An agent that reads either one discounts a number the result labels as declared. The description also counts lanes,
-*"Ten of the fifteen lanes are published parquet … Five are not ours"*, while the same call lists 17 lanes
-(`alphagenome_avi` and `clinvar_gkm` are new). That's the counted-claim shape CLAUDE.md's prose rules warn about.
-
----
-
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
 
 **Found:** 2026-11-07, loading `create-module` for the HTT probe · **Severity:** medium (low today, see the

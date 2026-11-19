@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`provision_caches` says its sizes are the lanes' own** (F167): 0.48.15's note and description still said the sizes were measured on one machine and were not the lanes' declarations, while every lane's result said `declared by the lane (approx_mb)`. Both now say what the result says, and the description and skills stop counting lanes.
 ## [0.48.15] — 2026-11-19
 
 - **An author's decision is shown to them before it counts** (RM32, slice 3): `record_decision(basis="author")` asks the person to approve the paraphrase from inside the tool. Declined, it returns `approved: false` and nothing is recorded; approved, `trace_module` says so. A host that cannot ask from inside a tool, or a dismissed question (which is what `claude -p` answers with nobody there, F166), leaves `approved: null`, kept as stated and labelled unseen. `module-check` says what to do with each.

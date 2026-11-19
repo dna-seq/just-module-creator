@@ -228,8 +228,8 @@ complete answer and the default handles it.
 answered, already on disk, nothing that fits — and there is no case where raising it anyway is
 helpful.
 
-**Why there is anything to offer.** Ten of the fifteen snapshot lanes are published parquet: a pull,
-or a registry proxy answering for a box that holds none of them. **Five are not ours to publish** —
+**Why there is anything to offer.** Most snapshot lanes are published parquet: a pull, or a registry
+proxy answering for a box that holds none of them. **Some are not ours to publish** —
 PharmVar's bulk data is behind a personal key, PubMind's ANNOVAR source states no terms, NCBI states
 a policy rather than a licence for MANE, the ACMG SF list is Elsevier supplementary material, and
 `mitomap_miss` is a join nobody distributes. Each carries that sentence in the plan. So for those
@@ -237,7 +237,7 @@ five there is no pull and no proxy: **building them here is the only route there
 they are small.
 
 **State both numbers, because the offer has two.** `prewarm_build_mb` is the disk the built lanes
-occupy — around 15 MB for all five. `prewarm_pull_mb` is what a *parent* still costs: `mitomap_miss`
+occupy — around 15 MB for all of them. `prewarm_pull_mb` is what a *parent* still costs: `mitomap_miss`
 is a megabyte built and pins ClinVar, which is 300 MB. Quote the total and the split; somebody who
 said yes to 15 MB did not say yes to a third of a gigabyte. (Neither number means "no network": four
 of the five fetch their own inputs, they just do not keep them, which is also why `dry_run=false` is
