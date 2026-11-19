@@ -44,6 +44,11 @@ need its own measurement to stay true.
 PMID a run cites in `studies.csv`, and every rsID and PMID in a reference, and fails on any of them in `skills/` or
 the source. Run against the old text it failed on all four; with `41057961` planted in a skill it fails naming it.
 Round 4's runs c and d stay flagged as primed (the tester's notes); a and b and Table 3 are the clean comparison.
+**Then the shape went too (2026-11-19, after the reruns).** The masked worked case still described the sirt6
+fixture's shape and said "the paper is a benchmark fixture", which tells a run where to look. The tester's reruns
+found no measurable effect (run a wrote the same cells without reading it), but a fixture measures how a run handles
+that case unaided, so `module-curate` now keeps the rule and the fact that two runs split, without the case's
+statistics; the build-mismatch and supplementary passages no longer say the paper is a fixture or date it.
 
 
 ## F167 — `provision_caches` says its sizes are not the lanes' declarations, while every lane's result says they are

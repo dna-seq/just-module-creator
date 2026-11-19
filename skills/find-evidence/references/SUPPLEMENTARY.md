@@ -193,7 +193,7 @@ Four routes look correct and are not. Each was measured.
   `curl` of the resolved DOI returns 3 KB titled *Client Challenge* with HTTP 200. An agent that
   parses that page for links finds none and concludes there is no supplementary material. The static
   host has no challenge.
-- **Do not trust `hasSuppl: N`.** For one 2025 Springer article measured here Europe PMC reports `inEPMC: N`,
+- **Do not trust `hasSuppl: N`.** For one Springer article measured here Europe PMC reports `inEPMC: N`,
   `isOpenAccess: N`, `hasSuppl: N`, while the article is CC-BY and its two supplementary files
   download without authentication. The flag describes *Europe PMC's holdings*, not the article's.
   This is the three-valued rule at the corpus level: the index not having it is not the paper not

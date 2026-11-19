@@ -187,14 +187,11 @@ surface-it discriminator applied to a cell where nothing surfaced anything: `dir
 does not settle the sign, and `module-weights`' "withholding is correct when the direction is unknown"
 is circular at exactly the moment you need it.
 
-**The worked case, and it is why this paragraph exists.** One variant, two cohorts, both trends in
-the same direction and neither significant; an odds ratio whose **95% CI contains 1**, at under 30%
-power by the authors' own analysis; and a `negatives` entry recording that the same allele runs the
-*other* way in a related phenotype, with `flags: pleiotropic` beside it. Two independent runs of the
-same prompt over the same paper wrote `risk` and `unknown`. (The paper is a benchmark fixture, so it is
-not named here: a skill reaches every run, and naming it would hand the run its answer, F168.) Neither
-was wrong; only the silence about which was chosen was. Filed upstream as `S83`, asking whether the
-vocabulary wants a member for a concordant trend whose sign is not established — or, more cheaply, whether the field description should simply say that a non-significant trend still has a direction.
+**Why this paragraph exists.** Two independent runs of one prompt over one paper wrote `risk` and
+`unknown` for the same such row. Neither was wrong; only the silence about which was chosen was. Filed
+upstream as `S83`, asking whether the vocabulary wants a member for a concordant trend whose sign is not
+established, or, more cheaply, whether the field description should simply say that a non-significant
+trend still has a direction.
 
 **The other direction has a decoy: VCF anchors an indel on the base before it.** An insertion a paper
 describes at position X appears in VCF at `POS` X−1, with the anchor base leading both `ref` and `alts`
@@ -242,9 +239,8 @@ An off-by-one moves a row one base. **A paper on GRCh37 moves it megabases**, an
 GRCh37 coordinates without labelling them are ordinary — the assembly is often stated once in the
 methods and nowhere near the table you are reading.
 
-Measured on a 2025 longevity GWAS (live Ensembl, both assemblies; the paper is a benchmark fixture,
-so it and its variants are not named here, F168): one of its variants sits **5.6 Mb apart between the
-builds and strand-flipped**, so the ref and the alt are wrong too; another shifts 232 kb.
+Measured on a published GWAS (live Ensembl, both assemblies): one of its variants sits **5.6 Mb apart
+between the builds and strand-flipped**, so the ref and the alt are wrong too; another shifts 232 kb.
 
 **So make the source's build a triage question, before you author a single coordinate.** Find the
 assembly in the methods; if the paper does not say, treat that as unknown rather than as GRCh38.
