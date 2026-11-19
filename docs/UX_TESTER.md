@@ -118,10 +118,21 @@ claims that were plausibly wrong, and it found more than solo probing.
 **Benchmark round 4, handed over by the lead 2026-11-19 (the person's word).** Fixture `sirt6`, plugin 0.48.15, model
 `claude-opus-5`, three runs (`data/interim/repro-bench-4/run-sirt6-{a,b,c}`), `claude -p --permission-mode auto` from
 the repository, one after another in the lead's background job. Its briefs, JSON outputs (session ids), stderr and
-`round.log` are in the lead's scratchpad (`a8d51777…/scratchpad/bench4`). Scored: none yet; run a started 23:29Z. Mine
+`round.log` are in the lead's scratchpad (`a8d51777…/scratchpad/bench4`). Scored: a, b, c (2026-11-19 ~02:40 CET). Mine
 once the job ends (the lead says): the leak check from each transcript, `bench_score.py --fixture
 assets/benchmarks/sirt6` against Table 3 (`runs/1-3`), the census, the report to the writer. If the three match
 Table 3, the person asks for one more run on `claude-opus-5-5` with the same brief; that run is the only thing that moves.
+Result:
+- Leak check clean for a, b and c. No banned path. Each prod `registry_search` returned only longevitymap and pathogenic,
+  and `registry_claims` found no module claiming rs117385980. The variant first appeared from `lookup_citation` on the
+  DOI.
+- All six runs (round 4's three and Table 3's three) meet every threshold. a, b and c have pair recall 1.00 against
+  Table 3's 0.67 / 1.00 / 1.00. Run a authored two more SIRT6 variants and three more PMIDs (precision over the
+  fixture 0.33, no decoy).
+- Build: a and b ran on the tag. c started 00:09Z, after 59e11d5 (F167's wording), read the changed `module-start`
+  and called `provision_caches`; all three still report "0.48.15". All loaded skills from the working copy.
+- Run d (claude-opus-5-5, same brief and flags) started from HEAD noted below, run dir `run-sirt6-d`, scratch in my
+  scratchpad `bench4/run-sirt6-d`.
 
 **2026-11-08: recheck of 0.48.3 on the shipped plugin (v0.48.3 in the host, server started 09:24 CET).**
 
