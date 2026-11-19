@@ -14,7 +14,7 @@ import typer
 from just_dna_compiler import cli as compiler_cli
 from just_dna_enricher import cli as enricher_cli
 
-from just_module_creator import cli_map, toolbox
+from just_module_creator import cli_map, routing, toolbox
 from just_module_creator.models import LintFinding
 
 
@@ -60,15 +60,12 @@ def test_every_tool_a_mapping_names_exists() -> None:
         for value in cli_map.MAPPED.values()
         for word in re.findall(r"\b[a-z]+(?:_[a-z]+)+\b", value)
     }
-    # Argument names and values that are not tools.
-    named -= {
-        "dry_run",
-        "gene_metrics",
-        "drug_labels",
-        "mitomap_miss",
-        "alphagenome_avi",
-        "clinvar_gkm",
-    }
+    # Argument names and values that are not tools: lane names (`provision_caches(lanes=[...])`),
+    # read from the installed lane registry so a new lane (0.9's `ensembl_rsid_index`) is not
+    # mistaken for a tool, plus two argument names.
+    lanes = {lane.name for lane in routing.CACHE_LANES}
+    assert "mitomap_miss" in lanes, "the lane enumeration lost a lane it must hold"
+    named -= lanes | {"dry_run", "gene_metrics"}
     assert "provision_caches" in named and "close_module" in named
     assert not named - ours, f"cli_map names tools that do not exist: {sorted(named - ours)}"
 

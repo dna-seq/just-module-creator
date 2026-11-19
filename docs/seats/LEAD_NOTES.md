@@ -189,7 +189,10 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   `opentargets publish`; `test_every_tool_a_mapping_names_exists` reads the new `ensembl_rsid_index` lane name as a
   tool (exclude lane names); the layered-header budget is 2 characters over with 0.8.10/0.9.0 in the version line.
   Also a stale lane (new state) plans a pull or build without saying why; `LaneStatus.stale` carries the reason.
-  Each must hold on 0.8 too: the `<0.9` pin moves only on the person's word after both instances serve 0.9.
+  Wrong of me to say each could land on 0.8: `test_cli_map` also fails on a command the installed version does not
+  register, so the two `_PUBLISH` entries, the header budget and `LaneStatus.stale` wait for the adoption, as the
+  liaison wrote. Done now: the lane-name exclusion reads `routing.CACHE_LANES` (`2026-11-19`). The `<0.9` pin moves
+  only on the person's word after both instances serve 0.9.
 - **Desk #366 done (`e0801ee`)** on the person's own "Yes" in this chat, after the writer relayed "yes to all":
   wake_from gains the writer, CLAUDE.md's manuscript section and §11's tectonic line, manuscript-skills in tracked
   settings.
