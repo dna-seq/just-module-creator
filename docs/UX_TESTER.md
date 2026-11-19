@@ -141,6 +141,12 @@ Result:
 - My own miss: the runbook says to grep the injected context for the answer before each round, and I didn't before
   launching d. F168 is what that grep would have found.
 - Round closed; reported to the writer and the lead.
+- F168 recheck, on main 8941717. I searched every fixture's DOIs, reference PMIDs and rsIDs across the injected
+  context: CLAUDE.md, README, ~/.claude and /data/sources CLAUDE.md, skills/, src/, the project memory and the
+  manifests. No answer appears. The only fixture rsIDs left are sirt6's decoys rs1421085 and rs4988235, the repo's
+  stock examples; a decoy there can lure a run but not leak the answer. Holds. Before each round, rerun this
+  search (the script is in this session's `bench4-scoring`) as well as the new test, which reads `skills/` and
+  `src/` only.
 
 **2026-11-08: recheck of 0.48.3 on the shipped plugin (v0.48.3 in the host, server started 09:24 CET).**
 
