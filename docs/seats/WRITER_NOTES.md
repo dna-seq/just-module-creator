@@ -42,6 +42,11 @@ The seat's working state, rewritten to the present before each reset (docs/seats
   out, public repo) and `review-ledger.yaml`, 23 items, all `undecided`; the person's one confirmation question
   asked 2026-11-19 in chat. The baseline comparison (same model, no plugin) is the evaluation the tester's rounds
   could run.
+- **Round 4** (the tester, 2026-11-19, notes f869fe9): sirt6 on plugin 0.48.15, claude-opus-5, runs a-c all 1.00
+  rsID/pair recall, decoy 0, citation and direction 1.00; run d on claude-opus-5-5, citation recall 0.50. Caveat
+  F168: module-curate's worked case names this fixture's answer and runs c and d read it, so a and b are the clean
+  comparison (Table 3's runs never opened it). F169: runs not held at the tag. Whether Table 3 moves to round 4 is
+  the person's call; not yet asked as its own item (it bears on the EASRP ledger's R1.W1/R2.W2).
 - **Benchmark rounds** after round 4 are the tester's (f2a4483); its reports come to this seat. A changed number
   for Table 3 is the person's call (keep the 0.27.0 runs, or switch).
 - **Asked of the lead**: all done (5f9900d; desk #366's four in e0801ee: wake_from, CLAUDE.md's manuscript
