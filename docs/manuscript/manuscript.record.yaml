@@ -425,8 +425,10 @@ open_issues:
     to the Discussion''s Limitations. The person''s word, 2026-11-18: "Good otherwise", with those two changes. 2026-11-19, on the person''s "All 5 are good": the
     abstract, a fifth contribution and the conclusion name the loop; the title becomes "Creating and Sharing Genomic
     Annotation Modules with AI Agents: From Assisted Authoring to an Autonomous Curation Loop"; repository and
-    registry links are the real ones. De-anonymizing the author block waits on the person''s author list (the
-    EASRP class still prints "Anonymous submission to EASRP 2026"). 18 pages.'
+    registry links are the real ones. EASRP has ended (the person, 2026-11-19): the
+    anonymous-submission banner is off and the anonymized bibliography entries are real (software under dna-seq;
+    the companion paper with paper1''s own author line, which an agent last signed, unreviewed). The author block
+    is empty until the person gives the list. 18 pages.'
 ai_use_case:
   status: actual paper2 assistance account not confirmed
   cli_scenario: Default revision mode illustrates policy burdens; it is not an attestation of what happened
