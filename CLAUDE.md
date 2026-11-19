@@ -34,8 +34,8 @@ summary of a rule drops the qualifier the decision turned on. Delegate finding, 
 3. **[docs/CHANGELOG.md](docs/CHANGELOG.md)** — what shipped, newest first.
 4. **[docs/dogfooding.md](docs/dogfooding.md)** — open findings from real use. Read before touching
    the tool surface.
-5. **[docs/seats/README.md](docs/seats/README.md)** — the standing roles (lead, pm, tester, liaison)
-   a session can take here, and what each owns.
+5. **[docs/seats/README.md](docs/seats/README.md)** — the standing roles (lead, pm, tester, liaison,
+   writer) a session can take here, and what each owns.
 
 No rule below requires following a link to know what you must not do; links carry positive detail.
 
