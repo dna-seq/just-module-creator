@@ -24,9 +24,24 @@ uv run python scripts/bench_score.py --census <RUN_SPEC>
 
 ## Running a round
 
-1. **Pin the version.** Every run in a table must be one build. The 2026-08-31 prep round spanned
-   three, which is the only reason its numbers could not carry a claim. Put the expected version in
-   the prompt and have the agent stop if the MCP server reports another.
+1. **Pin the version, and hold the build.** Every run in a table must be one build. The 2026-08-31
+   prep round spanned three, which is the only reason its numbers could not carry a claim. Put the
+   expected version in the prompt and have the agent stop if the MCP server reports another.
+   **The version string is not the build** (F169): it moves only at a bump, and a session in this
+   repository runs the plugin from the main checkout as it stands when the session starts, so a commit
+   landed between runs reaches the next run under the same version. Record the main checkout's
+   `git rev-parse HEAD` when the round starts, ask the other seats in the repository's channel to hold
+   commits to the plugin until it ends, and after each run check what landed:
+
+   ```bash
+   git -C <main checkout> log --oneline <round-start>..HEAD -- src skills hooks .claude-plugin .codex-plugin
+   ```
+
+   Anything listed reached every run that started after it: name those runs, and score them apart or
+   rerun them. Measured 2026-11-19, so not a fix: a worktree held at the tag does **not** isolate a run,
+   because the repository's settings load the plugin from the main checkout whatever the session's
+   directory; `--plugin-dir <worktree>` with project settings off, or from a directory outside the
+   repository, did not start the plugin's server at all in two tries, cause not found.
 2. **One run per agent, its own scratchpad, its own run directory.**
 3. **Reuse the prompt verbatim** from `assets/benchmarks/<fixture>/prompt.txt`, substituting only
    the run directory. It names no rsID and no PMID — a prompt that leaks the answer measures

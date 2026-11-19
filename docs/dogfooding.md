@@ -16,7 +16,7 @@ is usable, and what is missing.
 
 ## F169 — a round's version pin can't see a commit landed between its runs, so "one build" doesn't hold
 
-**Found:** 2026-11-19, benchmark round 4 · **Severity:** medium for the benchmark · **Status:** open, to the lead
+**Found:** 2026-11-19, benchmark round 4 · **Severity:** medium for the benchmark · **Status:** mitigated (the round now notices), isolation still open, the lead's
 (`docs/BENCHMARKING.md` is the runbook)
 
 `docs/BENCHMARKING.md` step 1: *"Pin the version. Every run in a table must be one build … Put the expected version
@@ -32,6 +32,15 @@ the next run while the version string stays the same. In this round the extra co
 module cell, so the scores stand, but nothing in the procedure would have noticed if they had. A run that starts from
 a tree held at the tag (a worktree, or the installed release) would close it.
 
+
+**Mitigated 2026-11-19, not fixed.** `docs/BENCHMARKING.md` step 1 now records the main checkout's commit at the
+round's start, asks the repository's seats to hold plugin commits, and checks after each run what landed under
+`src`, `skills`, `hooks` and both manifests, naming the runs it reached. Isolation was measured and is still open:
+a session started in a worktree at `v0.48.15` saw main's `provision_caches` text, because the tracked settings load
+the plugin from the main checkout; `--plugin-dir <worktree>` with `--setting-sources user`, and from a directory
+outside the repository, showed no plugin tools at all (the debug log lists the plugin's hooks but starts no server
+for it), cause not found. Next: find why the inline plugin's server does not start, then run rounds from a tag
+worktree with it.
 ---
 
 ## F128 — a session in this checkout runs this checkout's server with the released 0.47.0's skills
