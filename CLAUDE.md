@@ -852,9 +852,9 @@ answers a question over a number written here.*
   `claude plugin install` (which reports "not found in marketplace" until then).
   `claude plugin marketplace add ./ --scope project` writes an absolute path; never commit that.
   The tracked settings also enable `manuscript-skills@dna-seq` (the writer seat's revision tools,
-  2026-11-19). A machine or clone that has not installed it reports "1 error during load" at every
-  reload until `claude plugin install manuscript-skills@dna-seq --scope project` runs once there; the
-  install also reorders the tracked settings' keys, which is noise to restore, not a change to commit.
+  2026-11-19). A machine or clone without it reports "1 error during load" at every reload until
+  `claude plugin install manuscript-skills@dna-seq --scope project` runs once there. The install
+  reorders the tracked settings' keys: noise to restore, not a change to commit.
 - **Codex reinstall is `codex plugin remove just-module-creator@dna-seq` then `codex plugin add`
   (2026-10-22)**; the UI has no control for it. Codex installs from git into
   `~/.codex/plugins/cache/dna-seq/just-module-creator/<version>/`, drops symlinks (`AGENTS.md`
