@@ -102,8 +102,8 @@ its history.
 | F105 | S112 | RM259 | CLOSED 2026-11-12 (wrapped, released in 0.48.8) |
 | F116 | S125 | RM337, RM338 | CLOSED 2026-11-12; desk #204 (RM31) is the lead's |
 | F85 | S85 | RM154; RM382 reverses part | CLOSED 2026-11-13 (RM382 passes on 0.8.5) |
-| F94 | S97 | RM229 | CLOSED 2026-11-18: our lane-size table out, every lane priced from `approx_mb` (`3934432`, unreleased, next 0.48.15) |
-| F93 | S96 | RM224 | CLOSED 2026-11-18: our table-key map out, `sidecar_write_path` asked directly (`43a36f5`, unreleased, next 0.48.15) |
+| F94 | S97 | RM229 | CLOSED 2026-11-18: our lane-size table out, every lane priced from `approx_mb` (`3934432`, released in 0.48.15) |
+| F93 | S96 | RM224 | CLOSED 2026-11-18: our table-key map out, `sidecar_write_path` asked directly (`43a36f5`, released in 0.48.15) |
 | F89 | S87 | RM180 | in our lock (0.7.0); reproduction passes 2026-11-07, nothing to remove |
 | F90 | S88 | RM183 | in our lock (0.7.0); reproduction passes 2026-11-07, nothing to remove |
 | F91 | S89 | RM184 | in our lock (0.7.0); reproduction passes 2026-11-07, nothing to remove |
@@ -161,11 +161,12 @@ reason is one of §5's grounds or a covering tool; a row with a trigger is wrapp
 | `lookup_by_digests`, `lookup_by_signatures` | An operator's sweep: the batch forms classify a corpus. | |
 | `pubkey` | Both instances answer `None`: nothing is signed to check against. | an instance signs; then pin its key in `registry_download` |
 | `import_module` | A spec archive goes through `registry_publish`; the legacy parquet-only form carries no spec for any check here to read before a permanent publish. | |
-| `admin_rename_account`, `merge_accounts`, `runs`, `run_log` | Only a deployment calls them: site admins only (the saved polygon account answers `site_admin: false`). | |
+| `admin_rename_account`, `merge_accounts`, `runs`, `run_log`, `deploy_status`, `deploy` (0.34.0) | Only a deployment calls them: site admins only (the saved polygon account answers `site_admin: false`). | |
 | `assert_compatible`, `issue_jwt_token` | Transport: the client calls the first on every connection itself; the second is a web session's token exchange, and a static token serves every call. | |
 
 `set_short_description` is not an abstention: `registry_set_subtitle` wraps it (`0395250`), closing F59 on our side.
 `upgrade_status` (new in registry 0.32.0) is not one either: `registry_upgrade_status` wraps it, released in 0.48.14.
+`rotate_key` (new in registry 0.34.1) is owed, not abstained: an author whose token leaked needs it; wrapping is the lead's (told 2026-11-19), and it must replace the saved token in `state.json` through the backed-up write.
 
 ## Registry `S32` — the variant catalog matches a key's spelling exactly (no F#: the lead's 0.31 reads)
 
@@ -484,7 +485,7 @@ query hints, with the Atlas attributing the gene, plus a declared sidecar depend
 
 ## F94 — no lane declares its size, so an offer had to `du` a provisioned box to price one (format `S97`)
 
-**CLOSED 2026-11-18: the lead removed `_LANE_KB`/`_DECLARED_KB`; every lane is priced from the registry's `approx_mb` (`3934432`, on main, unreleased; ships in 0.48.15).** **State on 2026-11-07 (the liaison): released and in our lock, reproduction passes; the code removal is the
+**CLOSED 2026-11-18: the lead removed `_LANE_KB`/`_DECLARED_KB`; every lane is priced from the registry's `approx_mb` (`3934432`, released in 0.48.15, `55a42b6`).** **State on 2026-11-07 (the liaison): released and in our lock, reproduction passes; the code removal is the
 lead's.** On the installed enricher 0.7.3 (`.venv/.../site-packages`, the floor `>=0.7.3`), every one of the 15
 `CACHE_LANES` declares `approx_mb` and `caches.provisioning_closure` exists, so `_kb_for` already answers from
 the lane for every lane object and `_LANE_KB` / `_DECLARED_KB` answer only the by-name path (a parent named by
@@ -524,7 +525,7 @@ both sides of it.
 
 ## F93 — `sidecar_write_path` follows the file you read only if you ask by the table key (format `S96`)
 
-**CLOSED 2026-11-18: the lead removed `tools/proxy.py`'s `_TABLE_KEY_FOR`/`_dest_for`; `layout.sidecar_write_path` is asked directly (`43a36f5`, on main, unreleased; ships in 0.48.15).** **Reproduced 2026-11-07 (the liaison), on the installed packages** (`.venv/.../site-packages`; format 0.7.1, compiler 0.7.2, enricher 0.7.3): `layout.sidecar_spellings` answers `('sources.csv', 'licensing.csv')` for either name, `layout.sidecar_key` exists, and in a directory holding `sources.csv`, `sidecar_write_path` returns `sources.csv` for both arguments. The fix is released and in our lock: `_TABLE_KEY_FOR`, `_dest_for` (`tools/proxy.py`) and the probe test in `tests/test_routing.py` can come out, which is the lead's.
+**CLOSED 2026-11-18: the lead removed `tools/proxy.py`'s `_TABLE_KEY_FOR`/`_dest_for`; `layout.sidecar_write_path` is asked directly (`43a36f5`, released in 0.48.15, `55a42b6`).** **Reproduced 2026-11-07 (the liaison), on the installed packages** (`.venv/.../site-packages`; format 0.7.1, compiler 0.7.2, enricher 0.7.3): `layout.sidecar_spellings` answers `('sources.csv', 'licensing.csv')` for either name, `layout.sidecar_key` exists, and in a directory holding `sources.csv`, `sidecar_write_path` returns `sources.csv` for both arguments. The fix is released and in our lock: `_TABLE_KEY_FOR`, `_dest_for` (`tools/proxy.py`) and the probe test in `tests/test_routing.py` can come out, which is the lead's.
 
 **State: FIXED HERE; ANSWERED AND FIXED IN THE UPSTREAM TREE THE SAME HOUR — STATE 2, so the
 mitigation stays.** Accepted as their **RM224** and shipped in the uncut 0.7.0:
