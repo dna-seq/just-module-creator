@@ -131,8 +131,16 @@ Result:
   fixture 0.33, no decoy).
 - Build: a and b ran on the tag. c started 00:09Z, after 59e11d5 (F167's wording), read the changed `module-start`
   and called `provision_caches`; all three still report "0.48.15". All loaded skills from the working copy.
-- Run d (claude-opus-5-5, same brief and flags) started from HEAD noted below, run dir `run-sirt6-d`, scratch in my
-  scratchpad `bench4/run-sirt6-d`.
+- Run d (claude-opus-5-5, same brief and flags) started 01:42Z from 5a5a031 and took 10 minutes over 63 turns (a to c
+  took 18 to 28 minutes each). Leak check clean; the variant first came from `lookup_citation`. Score: rsID and pair
+  recall 1.00, decoy 0, direction 1.00, precision 1.00, citation recall 0.50 (it cited only 41249831, not the earlier
+  Finnish study 28399814).
+- Two findings from the round. F168: c and d read `module-curate`'s worked case, which names this fixture's variant
+  and its direction debate; a, b and all of Table 3 never opened it. F169: the version pin can't see a commit that
+  lands between runs.
+- My own miss: the runbook says to grep the injected context for the answer before each round, and I didn't before
+  launching d. F168 is what that grep would have found.
+- Round closed; reported to the writer and the lead.
 
 **2026-11-08: recheck of 0.48.3 on the shipped plugin (v0.48.3 in the host, server started 09:24 CET).**
 
