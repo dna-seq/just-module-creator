@@ -23,7 +23,7 @@ weekly dependency bump), `desk`, `brief`. All started 2026-11-07. `upstream-inde
 ## The dependency bump
 
 - Last run 2026-11-17, `af1f0c6` (13 packages; registry client held at 0.31.0 by `uv lock --upgrade-package just-dna-registry==0.31.0` after the upgrade, on the lead's word until an instance we read serves 0.32; pytest-asyncio 1.5's loop-scope warning settled in `pyproject.toml`). Next: the nightly watcher's Tuesday.
-- **The tree is shared: a peer's `git checkout -- uv.lock` before its merge discarded an uncommitted bump mid-run once (2026-11-17; the lead, who owned it), and a peer's `uv run` re-syncs `.venv` to the committed lock.** Commit the lock as soon as the checks pass, and read `git diff --stat uv.lock` right before committing.
+- **The tree is shared: a peer's `git checkout -- uv.lock` before its merge discarded an uncommitted bump mid-run once (2026-11-17; the lead, who owned it), and a peer's `uv run` re-syncs `.venv` to the committed lock.** Commit the lock as soon as the checks pass, and read `git diff --stat uv.lock` right before committing. **Before any `uv lock` in the main checkout, read `git status --short pyproject.toml uv.lock` first**: 2026-11-20 I upgraded the lock over the lead's uncommitted 0.48.16 bump and had to restore it (HEAD lock plus `uv lock`). Test an upgrade in my own worktree; in main, only when both files are clean.
 - 2026-11-10, `ebca264` (56 packages; tenacity `initial=` to `multiplier=`, floor 9.2.1).
 - **Run the whole `uv run pyright` and `uv run ruff check .`, not just the files you touched.** This run checked
   only `net.py` and its test; pydantic 2.14's typing of `FieldInfo.annotation` broke `tools/config.py`, and the
