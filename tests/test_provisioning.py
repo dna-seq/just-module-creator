@@ -137,6 +137,41 @@ def test_a_cache_directory_that_cannot_be_written_withholds_and_names_what_is_in
     assert provisioning.CACHE_DIR_VAR in plan.offer_withheld
 
 
+def test_an_unusable_unset_location_never_reads_as_a_fine_default(monkeypatch, tmp_path):
+    """F170: with the variable unset and a file in the way, the offer was withheld while the
+    note called the location "a default, not a problem, and the small set fits there" and
+    every lane said `fits: true`, measured on the free space of the filesystem around it."""
+    blocked = tmp_path / "in-the-way"
+    blocked.write_bytes(b"not a directory")
+    monkeypatch.setenv(provisioning.CACHE_DIR_VAR, "")
+    monkeypatch.setattr(provisioning, "cache_root", lambda: blocked)
+    monkeypatch.setattr(provisioning, "free_mb_at", lambda _path: 50_000.0)
+    monkeypatch.setattr(
+        provisioning,
+        "lane_status",
+        lambda *_a, **_k: [_Status(lane=lane, state="absent") for lane in routing.CACHE_LANES],
+    )
+    plan = provisioning.plan(settings=offline_settings())
+
+    assert plan.cache_dir_usable is False and plan.offer_withheld
+    assert not plan.cache_dir_configured
+    assert plan.lanes and all(r.fits is None for r in plan.lanes), (
+        "nothing fits where nothing can go"
+    )
+    assert "not a problem" not in plan.note and "fits there" not in plan.note
+    assert str(blocked) in plan.note and "cannot be written" in plan.note
+
+
+def test_a_usable_unset_location_is_still_called_a_default(monkeypatch, tmp_path):
+    """The other side of F170: where the default location works, saying so stays."""
+    _empty_box(monkeypatch, tmp_path)
+    monkeypatch.setenv(provisioning.CACHE_DIR_VAR, "")
+    plan = provisioning.plan(settings=offline_settings())
+    assert plan.cache_dir_usable is True and not plan.cache_dir_configured
+    assert "a default, not a problem" in plan.note
+    assert any(r.fits is True for r in plan.lanes)
+
+
 def test_usability_is_three_valued_and_a_first_run_creates_the_directory(tmp_path):
     """A directory that does not exist yet is usable — that is the ordinary first run."""
     assert provisioning.cache_dir_usable(tmp_path / "not-yet") is True

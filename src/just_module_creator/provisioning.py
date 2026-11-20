@@ -300,7 +300,9 @@ def plan(*, declared_use: str = "unstated", settings: Settings | None = None) ->
                 parents_absent=parents_needed,
                 parents_mb=round(parent_cost, 2) if parents_needed else None,
                 total_mb=total,
-                fits=_fits(total, free),
+                # F170: free space is read off the volume around the location, so an
+                # unusable location still had room; nothing fits where nothing can go.
+                fits=_fits(total, free if usable is True else None),
                 build_command=lane.build_command,
                 env_var=lane.env_var,
                 release=getattr(status, "release", None),
@@ -461,7 +463,12 @@ def _decide(
         ],
         offer_withheld=withheld,
         note=_note(
-            rows, prewarm, full, configured=configured, root_note=str(root) if root else "nowhere"
+            rows,
+            prewarm,
+            full,
+            configured=configured,
+            usable=usable,
+            root_note=str(root) if root else "nowhere",
         ),
     )
 
@@ -472,6 +479,7 @@ def _note(
     full: list[CachePlanLane],
     *,
     configured: bool,
+    usable: bool | None,
     root_note: str,
 ) -> str:
     held = sum(1 for r in rows if r.state == "present")
@@ -487,11 +495,22 @@ def _note(
             f"{', '.join(occupied)}. "
             "Move it aside or `cache prune --only <lane>`."
         )
-    if not configured:
+    if not configured and usable is True:
         parts.append(
             f"The caches resolve to {root_note} because {CACHE_DIR_VAR} is unset — which is "
             "a default, not a problem, and the small set fits there. Worth moving before a "
             "multi-gigabyte pull, and one `remember_setting` call does it."
+        )
+    elif not configured and usable is False:
+        parts.append(
+            f"The caches resolve to {root_note} because {CACHE_DIR_VAR} is unset, and that "
+            "path cannot be written, so no lane is priced against it: `offer_withheld` says "
+            "how one saved setting moves them."
+        )
+    elif not configured:
+        parts.append(
+            f"The caches resolve to {root_note} because {CACHE_DIR_VAR} is unset; whether "
+            "that path can be written could not be told."
         )
     parts.append(
         "Each size is the lane's own declared estimate (`approx_mb`, whole megabytes); a present "

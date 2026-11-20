@@ -3489,8 +3489,9 @@ class CachePlanLane(BaseModel):
     fits: bool | None = Field(
         default=None,
         description="Whether the volume holding the caches has room, with headroom. "
-        "**Null is not false**: a lane nobody could price and a disk nobody could read "
-        "both give null, and neither is a lane that failed to fit.",
+        "**Null is not false**: a lane nobody could price, a disk nobody could read and a "
+        "cache location that cannot be written (`offer_withheld` says why) all give null, "
+        "and none is a lane that failed to fit.",
     )
     build_command: str | None = Field(
         default=None,

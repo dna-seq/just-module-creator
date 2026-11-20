@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`provision_caches` no longer calls an unwritable cache location fine** (F170): with the location variable unset and something in the way there, the offer was withheld while the note said "a default, not a problem" and every lane said it fit. `fits` is now null wherever the caches cannot go, and the note names the obstruction.
 - **just-dna 0.8.9 adopted** (format, compiler and enricher floors `>=0.8.9`): upstream's RM449 fixes an rsID row whose indel sits at a mirrored insertion/deletion site, whose genotype was filled as both events with no warning. Recompile a module with such a row to pick it up. The polygon (format 0.8.6) accepts a 0.8.9 compile: `registry_check` of fto_bmi `verdict: true`.
 ## [0.48.16] — 2026-11-20
 

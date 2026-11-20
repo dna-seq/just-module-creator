@@ -6,6 +6,33 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F170 — `provision_caches` says the default cache path "is not a problem, and the small set fits there" while its own fields say nothing can be written there
+
+**Found:** 2026-11-20, over the wire on 0.48.16 (a fresh `stdio` server started from `/tmp`, so no `.env` names the
+cache), rechecking F167 · **Severity:** medium · **Status:** fixed here, 2026-11-20 (unreleased)
+
+With `JUST_DNA_PIPELINES_CACHE_DIR` unset, the caches resolve to `~/.cache/just-dna-pipelines`. On this box that path
+is a read-only file, so nothing can create a directory there. One `provision_caches()` result answers both ways:
+- **Right:** `cache_dir_usable: false`, `offer: null`, and `offer_withheld`: *"that path cannot be written: something
+  that is not a directory is in the way … nothing here is offered until they have somewhere to go."*
+- **Wrong:** `note`: *"The caches resolve to ~/.cache/just-dna-pipelines because JUST_DNA_PIPELINES_CACHE_DIR
+  is unset — which is a default, not a problem, and the small set fits there."* And every one of the 17 lanes reads
+  `fits: true`, with `prewarm_lanes` listing three lanes and `prewarm_mb: 305.0`.
+
+An agent that reads the prose (`note`), or a lane's `fits`, tells the author the default is fine. One that reads
+`offer_withheld` tells them it is blocked. `fits` appears to compare sizes with `free_mb` (28859.9, the free space of
+the volume above the path) and never asks whether the path can be written. The note's sentence is written without
+looking at `cache_dir_usable`. Here the path is unusable only because of the guard this machine sets up on purpose
+(CLAUDE.md §11). An author meets the same thing when a file sits at that path or their cache folder is read-only.
+
+**Fixed.** `fits` is measured only where the caches can go: when `cache_dir_usable` is not `true` it is null,
+which the field's description now names, so no lane claims room at a path nothing can be written to. The note
+follows the same three states: "a default, not a problem" only when the unset location is usable; when it is not,
+it names the path and points at `offer_withheld`; when usability cannot be told, it says so.
+`tests/test_provisioning.py::test_an_unusable_unset_location_never_reads_as_a_fine_default` fails with the old
+`fits` line restored; `test_a_usable_unset_location_is_still_called_a_default` holds the other side.
+
+
 ## F168 — `module-curate` hands every benchmark run the sirt6 fixture's variant and the direction debate it is scored on
 
 **Found:** 2026-11-19, benchmark round 4 (run d volunteered it; confirmed from the transcripts) · **Severity:** high
