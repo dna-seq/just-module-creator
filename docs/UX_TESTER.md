@@ -486,7 +486,7 @@ Holds. The first headless connect timed out again (added to F121).
 - F165 is carried from the main check (81af555). The tag's shell route is unchanged; the hook config only adds
   `AskUserQuestion`.
 
-**0.48.16 recheck, 2026-11-20, over the wire (a fresh `stdio` server announcing v0.48.16).**
+**0.48.16 recheck, 2026-11-20, over the wire (a fresh `stdio` server announcing v0.48.16, run from main 0091b06: the tag plus the upstream 0.8.9 floor bump, which touches no skill or tool text).**
 - F168 holds. My context search (`bench4-scoring/context_search.py`) at the tag is clean: 23 answer keys, only the
   decoys present.
 - F167 holds. The description and the note both say each size is the lane's own `approx_mb`, with no lane count, and
