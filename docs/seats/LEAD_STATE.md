@@ -1,4 +1,4 @@
-**Where it stands (2026-11-19).** 0.48.15 runs on just-dna 0.8.6 (enricher 0.8.8) and is current with the registry's 0.32 features; the 0.33 lane fields are on main. Held by the lead, acting for the pm.
+**Where it stands (2026-11-20).** 0.48.16 runs on just-dna 0.8.6 (enricher 0.8.8), is current with the registry's 0.32 features, and reads 0.33's lane fields once an instance serves them. Held by the lead, acting for the pm.
 
 **Results**
 - ✅ just-dna 0.8 shipped (0.48.7). Both registries accept it; a test-registry dry run of a real module passes.
@@ -12,10 +12,10 @@
 - ✅ Searching trait names to pick a module's ontology id from real candidates; the check before publishing now reads every log file that ships; a publish whose files name another version is refused; comparing with the published version lists files added or removed (0.48.13).
 
 - ✅ A decision recorded as the author's is shown to them to approve first, and a record survives tables written by script (0.48.15).
+- ✅ The skills no longer hand a benchmark run its answer, and a test guards it (0.48.16).
 - ✅ The authoring benchmark reproduces on 0.48.15: clean runs find the SIRT6 variant with no decoys; genotype coverage on Opus 5 matches the paper's Table 3 (three runs each, no difference found); one Opus 5.5 run is a single observation. The skills no longer name any benchmark answer.
 - ✅ Each module now keeps a record of how its rows came to be (searches, articles read, rows written, decisions no edit shows), and `trace_module` reads every row back against it; registry 0.32 adopted; publishing refuses a module name that differs from its spec (0.48.14).
 **Next**
-1. Release the fixes on main (benchmark-answer guard, cache sizes stated as each lane's own, which release a lane lookup read). Lead; 📅 2026-11-20.
-2. A tool to replace a leaked registry token (registry 0.34.1). Lead; ⏳ unattended.
-3. Adopt just-dna 0.9 once it is published and both registries serve it; three small fixes known from the liaison's trial. Lead; ⏸ waits on the release, then the person's word on the version move.
-4. Renaming the `test-sheep` rehearsals into the `winternewt` account. Lead; ⏸ waits on the person's token.
+1. A tool to replace a leaked registry token (registry 0.34.1). Lead; ⏸ waits on an instance serving 0.34.
+2. Adopt just-dna 0.9 once it is published and both registries serve it; three small fixes known from the liaison's trial. Lead; ⏸ waits on the release, then the person's word on the version move.
+3. Renaming the `test-sheep` rehearsals into the `winternewt` account. Lead; ⏸ waits on the person's token.

@@ -4,7 +4,7 @@ The lead seat's working state, rewritten to the present before a reset (`docs/se
 
 ## Now
 
-Released 0.48.14 (tag `v0.48.14`, `7e6d673`, 2026-11-18): RM31 (the provenance ledger: hook, `trace_module`, `record_decision`, reviewer brief; F161-F163 fixed before release), registry 0.32 adopted, enricher floor 0.8.8, F160. 1081 pass; polygon `registry_check` of fto_bmi on 0.32.0 `verdict: true`. Next release no earlier than 2026-11-19.
+Released 0.48.16 (tag `v0.48.16`, `a76914d`, 2026-11-20): F168 and its guard, the 0.33 lane release fields, F167. 1100 pass; polygon `registry_check` of fto_bmi `verdict: true`. Next release no earlier than 2026-11-21. Before it: 0.48.15 (`55a42b6`, 2026-11-19), 0.48.14 (`7e6d673`, 2026-11-18).
 
 Registry 0.32 adopted and the enricher floored at 0.8.8: released in 0.48.14. The RM445 cache re-pull ran on this machine 2026-11-17.
 away at 05:02Z on 2026-11-05.
