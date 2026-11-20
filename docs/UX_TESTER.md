@@ -496,6 +496,13 @@ Holds. The first headless connect timed out again (added to F121).
   can be written.
 - Not exercised: `registry_lane_lookup`'s release fields stay null until an instance serves registry 0.33.
 
+**F170 recheck, 2026-11-20, main 9a0fb69 (unreleased), over the wire from fresh `stdio` servers.**
+- F170 holds. Started from `/tmp` (cache on the guard file): all 17 lanes read `fits: null`, and the note says the
+  path cannot be written and points at `offer_withheld`, with no "not a problem" left. Started from the repo
+  (`/data/just-dna-cache`): `cache_dir_usable: true`, all 17 `fits: true`, and the usable-default note is unchanged.
+- Left as is: `free_mb` still reports the free space of the volume around the unwritable path (28 GB here). No field
+  reads it as room any more, so it misleads nobody on its own.
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
