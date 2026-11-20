@@ -486,6 +486,16 @@ Holds. The first headless connect timed out again (added to F121).
 - F165 is carried from the main check (81af555). The tag's shell route is unchanged; the hook config only adds
   `AskUserQuestion`.
 
+**0.48.16 recheck, 2026-11-20, over the wire (a fresh `stdio` server announcing v0.48.16).**
+- F168 holds. My context search (`bench4-scoring/context_search.py`) at the tag is clean: 23 answer keys, only the
+  decoys present.
+- F167 holds. The description and the note both say each size is the lane's own `approx_mb`, with no lane count, and
+  all 17 lanes read `declared by the lane`.
+- New: F170. The server started from `/tmp` (no `.env`, so the cache falls back to the guard file). There `note` and
+  every lane's `fits` say the default path is fine, while `cache_dir_usable: false` and `offer_withheld` say nothing
+  can be written.
+- Not exercised: `registry_lane_lookup`'s release fields stay null until an instance serves registry 0.33.
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
