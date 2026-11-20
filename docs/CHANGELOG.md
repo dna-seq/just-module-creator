@@ -5,6 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **just-dna 0.8.9 adopted** (format, compiler and enricher floors `>=0.8.9`): upstream's RM449 fixes an rsID row whose indel sits at a mirrored insertion/deletion site, whose genotype was filled as both events with no warning. Recompile a module with such a row to pick it up. The polygon (format 0.8.6) accepts a 0.8.9 compile: `registry_check` of fto_bmi `verdict: true`.
 ## [0.48.16] — 2026-11-20
 
 - **No skill hands a benchmark run its answer** (F168): `module-curate`'s worked cases named the sirt6 fixture's variant and odds ratio and the centenarian paper's variants, and the supplementary ladder used two fixture papers' DOIs. The lessons stay with their measured numbers and without the identities, and a test now fails if any fixture's paper or reference identifier appears in a skill or the source.
