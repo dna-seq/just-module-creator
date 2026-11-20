@@ -4,7 +4,7 @@ The lead seat's working state, rewritten to the present before a reset (`docs/se
 
 ## Now
 
-Released 0.48.16 (tag `v0.48.16`, `a76914d`, 2026-11-20): F168 and its guard, the 0.33 lane release fields, F167. 1100 pass; polygon `registry_check` of fto_bmi `verdict: true`. Next release no earlier than 2026-11-21; on main for it: just-dna 0.8.9 adopted (`0091b06`, RM449). Before it: 0.48.15 (`55a42b6`, 2026-11-19), 0.48.14 (`7e6d673`, 2026-11-18).
+Released 0.48.16 (tag `v0.48.16`, `a76914d`, 2026-11-20): F168 and its guard, the 0.33 lane release fields, F167. 1100 pass; polygon `registry_check` of fto_bmi `verdict: true`. Next release no earlier than 2026-11-21; on main for it: just-dna 0.8.9 adopted (`0091b06`, RM449), F170 (`9a0fb69`). Before it: 0.48.15 (`55a42b6`, 2026-11-19), 0.48.14 (`7e6d673`, 2026-11-18).
 
 Registry 0.32 adopted and the enricher floored at 0.8.8: released in 0.48.14. The RM445 cache re-pull ran on this machine 2026-11-17.
 away at 05:02Z on 2026-11-05.
@@ -122,7 +122,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.252 (moved on each announcement; 0.1.252 on 2026-11-19) (`move-to-tag.py`; the pin is in the untracked
+- **Kit pin**: 0.1.253 (moved on each announcement; 0.1.253 on 2026-11-20) (`move-to-tag.py`; the pin is in the untracked
   `.claude/settings.local.json`). Taking it into this session is mine: `watchdog.sh reload`, then end the turn,
   and the kit's typer types `/reload-plugins` (the "left for the person" line `move-to-tag.py` prints is wrong, kit #306).
 
