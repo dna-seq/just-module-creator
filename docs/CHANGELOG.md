@@ -3,6 +3,10 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
+## [Unreleased]
+
+- **A strict compile refused for unplaced rows says how to place them here** (F171): upstream's refusal names `ensembl_cache=`, which `compile_module` pins off, so an author had no way on. `compile_module` now returns `next_step`: `enrich_module` or `refresh_sidecar(sidecar="resolution")` with the network on. SYMPTOMS.md carries the message, and `module-compile`'s strict table now says strict refuses unresolved rows rather than counting them. 0.48.17's line under-stated 0.8.9: a mirrored indel site that an offline enrich places on neither spelling is now unplaced, and a strict compile refuses it; an online enrich places it.
+
 ## [0.48.17] — 2026-11-21
 
 - **`provision_caches` no longer calls an unwritable cache location fine** (F170): with the location variable unset and something in the way there, the offer was withheld while the note said "a default, not a problem" and every lane said it fit. `fits` is now null wherever the caches cannot go, and the note names the obstruction.

@@ -45,7 +45,7 @@ digest of whatever it is handed, so it certifies the wrong locus without hesitat
 |---|---|---|
 | genotype allele not among the locus's alleles | warning, **valid** | **error, invalid** |
 | two-allele genotype on `MT` / `Y` | warning | warning |
-| unresolved rows (no coordinate) | warning | counts against publishability |
+| unresolved rows (no coordinate) | warning | **error**: the compile refuses them all at once |
 | `effect_allele` not among the resolved alleles (RM91) | warning | **error** |
 | `p_value` and `p_value_num` disagreeing past 1% | warning | **error** |
 | a coordinate past its contig's end (RM48) | **error** | **error** |

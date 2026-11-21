@@ -990,6 +990,11 @@ class CompileReport(_NamesUpstreamCommands):
         "unmatchable-row count — that needs a number the manifest does not carry.",
     )
     files: list[str] = Field(default_factory=list, description="Artifact file names.")
+    next_step: str | None = Field(
+        default=None,
+        description="Ours, beside upstream's refusal: how to repair it with the tools here, when "
+        "the refusal names a remedy this tool does not take. null otherwise.",
+    )
 
 
 class ClosureResult(BaseModel):

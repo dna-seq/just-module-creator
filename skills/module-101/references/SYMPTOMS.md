@@ -270,6 +270,16 @@ logged edit), or `refresh_sidecar` on that table.
 
 ## Validation and compile
 
+**`strict compile: N variant(s) have unresolved genomic positions after resolution`**
+Rows the compile could not place, refused together under `strict` (a plain compile warns and ships them,
+and the registry compiles strict). The message's `ensembl_cache=` is not taken by `compile_module`, which
+pins it off ([`module-compile`](../../module-compile/GUIDE.md), "the two traps"). **What to do:** place
+the rows with the network on: `enrich_module` if there is no `resolution.csv`,
+`refresh_sidecar(sidecar="resolution")` if there is one. An offline pass can leave a row a live source
+places: on just-dna 0.8.9, an indel at a position that is both an insertion and a deletion, enriched
+offline, reads `unplaced` on both spellings. A row still unplaced online is a curation decision (its rsID,
+or the row). `compile_module` returns the same repair in `next_step`.
+
 **`validate` says `valid` and `compile` then refuses**
 **Check the modes first — that is the likely cause.** Several checks are a ladder: a warning under
 `--best-effort` (the default for both commands) and an error under `--strict`. A bare `validate` followed

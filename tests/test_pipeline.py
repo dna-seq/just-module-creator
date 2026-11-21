@@ -144,6 +144,35 @@ async def test_strict_compile_refuses_unresolved_rows(client, spec_dir, tmp_path
     assert any("unresolved" in e for e in result.data.errors)
 
 
+async def test_a_strict_unplaced_refusal_names_the_repair_this_surface_has(
+    client, spec_dir, tmp_path
+):
+    """F171: upstream's refusal says `ensembl_cache=`, which `compile_module` pins off.
+
+    The real compiler produces the refusal, so a reworded one fails here rather than
+    silently dropping our line. The repair named must be a tool that exists, and the
+    remedy we do not take must be said to be one we do not take.
+    """
+    result = await client.call_tool(
+        "compile_module",
+        {"spec_dir": str(spec_dir), "output_dir": str(tmp_path / "out"), "strict": True},
+    )
+    assert any("ensembl_cache=" in e for e in result.data.errors)
+    step = result.data.next_step
+    assert step is not None
+    assert "does not take `ensembl_cache=`" in step
+    listed = {t.name for t in await client.list_tools()}
+    assert {"enrich_module", "refresh_sidecar"} <= listed
+    assert "`enrich_module`" in step and "`refresh_sidecar(" in step
+
+    plain = await client.call_tool(
+        "compile_module",
+        {"spec_dir": str(spec_dir), "output_dir": str(tmp_path / "plain"), "strict": False},
+    )
+    assert plain.data.success
+    assert plain.data.next_step is None
+
+
 async def test_compile_surfaces_warnings_on_success(client, spec_dir, tmp_path):
     """A green compile is not a correct module — the warnings must survive."""
     result = await client.call_tool(

@@ -334,6 +334,29 @@ def _machine_kind(name: str) -> str:
     )
 
 
+# F171. Upstream's strict refusal of a row left with no position says to "inject a complete
+# Ensembl reference (ensembl_cache=) or compile without strict", and this server takes
+# neither: `compile_module` pins `ensembl_cache=None` (module-compile, "the two traps"), and a
+# plain compile ships a row the registry's strict compile refuses. The repair that exists
+# here is placing the row with the network on. Matched on the refusal's own wording because
+# upstream gives it no code; `tests/test_pipeline.py` drives the real compiler to produce it,
+# so a reworded refusal fails that test instead of silently dropping this line.
+_UNPLACED_REFUSAL = "unresolved genomic positions after resolution"
+_UNPLACED_NEXT_STEP = (
+    "This tool does not take `ensembl_cache=`, and a non-strict compile ships the rows the "
+    "registry's strict compile refuses. Place them with the network on: `enrich_module` if "
+    'the module has no `resolution.csv`, `refresh_sidecar(sidecar="resolution")` if it has '
+    "one. An offline pass can leave a row unplaced that a live source places (an indel at a "
+    "position that is both an insertion and a deletion is one). A row still unplaced online "
+    "is a curation decision: its rsID, or the row (module-curate)."
+)
+
+
+def _unplaced_next_step(errors: list[str]) -> str | None:
+    """Our repair for upstream's strict unplaced-row refusal, or None when it did not fire."""
+    return _UNPLACED_NEXT_STEP if any(_UNPLACED_REFUSAL in e for e in errors) else None
+
+
 def register_essentials(mcp: FastMCP, settings: Settings) -> None:
     """Register the always-on authoring tools, a resource, and a prompt."""
 
@@ -1348,6 +1371,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             warnings_summary=summary,
             carried=carried,
             actionable=actionable,
+            next_step=_unplaced_next_step(list(result.errors)),
             stats=jsonable(result.stats),
             artifact_digest=getattr(artifact, "digest", None),
             content_signature=getattr(manifest, "content_signature", None),
