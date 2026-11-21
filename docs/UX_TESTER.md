@@ -503,6 +503,18 @@ Holds. The first headless connect timed out again (added to F121).
 - Left as is: `free_mb` still reports the free space of the volume around the unwritable path (28 GB here). No field
   reads it as room any more, so it misleads nobody on its own.
 
+**0.48.17 recheck, 2026-11-21, over the wire (fresh `stdio` servers announcing v0.48.17; main 77f8a4b, which differs from tag 4aa5e56 only in lead notes).**
+- F170 holds. Same as at 9a0fb69, which differs from the tag only by the version bump: from `/tmp` all 17 lanes read
+  `fits: null` and the note no longer says "not a problem".
+- F168 carried. Skills, CLAUDE.md, README and the manifests' text are unchanged since 0.48.16 (version fields only),
+  so the clean context search stands.
+- New: F171. 0.8.9's new strict refusal (RM449) is reachable through our surface. `enrich_module(offline=true)` marks
+  `rs80356821` (`pathogenic_clinvar`) `unplaced` on both spellings, then `compile_module(strict=true)` refuses with
+  advice to inject `ensembl_cache=`, which our tool pins. An online `refresh_sidecar(resolution)` repairs it. Upstream's
+  0.8.10 (RM453) removes the refusal; it was not on PyPI on the day of this recheck.
+- Probe hazard: one `stdio` server runs requests concurrently. A compile sent behind an enrich in the same pipe
+  answered first and read the table mid-pass. Sequential calls each get their own server now.
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
