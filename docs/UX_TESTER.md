@@ -515,6 +515,13 @@ Holds. The first headless connect timed out again (added to F121).
 - Probe hazard: one `stdio` server runs requests concurrently. A compile sent behind an enrich in the same pipe
   answered first and read the table mid-pass. Sequential calls each get their own server now.
 
+**F171 recheck, 2026-11-21, main 2e01a08 (fix 9d19bcd, unreleased), over the wire on the rm453 case (`rs80356821`
+`unplaced` on both spellings).**
+- F171 holds. `compile_module(strict=true)` still refuses, and `next_step` now says the tool takes no `ensembl_cache=`,
+  that a non-strict compile ships what the registry refuses, and to place the rows online with `enrich_module` or
+  `refresh_sidecar(sidecar="resolution")`. A plain compile succeeds with `next_step: null`. SYMPTOMS.md carries the
+  message and the same repair.
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
