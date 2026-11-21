@@ -14,6 +14,43 @@ is usable, and what is missing.
 
 ---
 
+## F171 — 0.48.17's strict compile refuses an rsID at a mirrored indel site after an offline enrich, and says to pass a parameter our tool pins
+
+**Found:** 2026-11-21, recheck of release 0.48.17 · **Severity:** medium (a strict compile, the one the registry runs, stops, and nothing on our surface says how to continue) · **Status:** open, the lead's; upstream's RM453 (just-dna 0.8.10, not on PyPI as of 2026-11-21) removes the refusal
+
+**What happens.** just-dna 0.8.9, adopted in 0.48.17, refuses under `--strict` an rsID row at a mirrored
+insertion/deletion site when `resolution.csv` places neither spelling (RM449). Our own `enrich_module(offline=true)`
+writes exactly that. Reproduced over the wire on fresh v0.48.17 `stdio` servers with upstream's v0.8.8
+`pathogenic_clinvar` spec, its two `rs80356821` resolution rows deleted:
+
+1. `enrich_module(offline=true)` writes both spellings (`C>CAAAG`, `CAAAG>C`) as `placement_witness=clinvar`,
+   `placement_verdict=unplaced`, and reports success.
+2. `compile_module(strict=true)` fails: `strict compile: 1 variant(s) have unresolved genomic positions after
+   resolution: ['rs80356821']. A partial artifact would not be byte-reproducible; inject a complete Ensembl reference
+   (ensembl_cache=) or compile without strict.` `actionable` is null and `on_this_surface` is `[]`.
+
+**Why an author is stuck.** Both remedies in the message lead nowhere on our surface. `compile_module` pins
+`ensembl_cache=None` on purpose (module-compile, "the two traps"), so the first can't be done. A plain compile leaves
+the row unpositioned in a module the registry then compiles strict. No skill matches the message: SYMPTOMS.md has no
+entry for "unresolved genomic positions after resolution", and module-compile's strict table says unresolved rows
+"count against publishability", not that they error. The 0.48.17 changelog line says only that 0.8.9 *fixes* the
+mirrored site, not that it adds this refusal.
+
+**What does work, checked the same way:** `refresh_sidecar(sidecar="resolution")` with the network on. It writes
+`same_event` on both spellings, witnessed `clinvar+dbsnp`, and the strict compile then succeeds. A default (online)
+`enrich_module` on a table with no rows for the rsID writes the same. Upstream's v0.8.9 spec unmodified
+(`unplaced` on one spelling, `same_event` on the other) also compiles strict.
+
+**Scope, not measured:** how often an author enriches offline. The trigger needs `offline=true` or `JMC_OFFLINE`
+plus an rsID whose indel one position hosts as both an insertion and a deletion.
+
+**For the lead to decide:** route the message (a SYMPTOMS line naming the online `refresh_sidecar` repair, or our
+own `actionable`) or wait for 0.8.10, which keeps both spellings under a warning instead of refusing. Either way
+the changelog line under-states 0.8.9. Probe files are in the tester's scratchpad (`rm453/`); the case rebuilds from
+upstream's tag `v0.8.8` with the two edits above.
+
+---
+
 ## F169 — a round's version pin can't see a commit landed between its runs, so "one build" doesn't hold
 
 **Found:** 2026-11-19, benchmark round 4 · **Severity:** medium for the benchmark · **Status:** mitigated (the round now notices), isolation still open, the lead's
