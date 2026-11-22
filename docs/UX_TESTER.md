@@ -522,6 +522,10 @@ Holds. The first headless connect timed out again (added to F121).
   `refresh_sidecar(sidecar="resolution")`. A plain compile succeeds with `next_step: null`. SYMPTOMS.md carries the
   message and the same repair.
 
+**0.48.18 recheck, 2026-11-22, over the wire (a fresh `stdio` server announcing v0.48.18; tag 73e3962 differs from
+2e01a08 under src, skills and the manifests only by the version bump).** F171 holds: the strict compile of the rm453 case
+refuses with the same `next_step`. Nothing else moved on the surface.
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
