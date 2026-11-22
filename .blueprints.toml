@@ -7,6 +7,9 @@ id = "just-module-creator"
 # it findings, the liaison an upstream release's ask, the pm a scope. A downstream's liaison (a module repository
 # filing an issue here) and the upstreams' leads (compiler, registry) may wake it.
 wake_from = "just-module-creator/tester just-module-creator/liaison just-module-creator/pm just-module-creator/writer longevity-loci/liaison just-dna-compiler/lead just-dna-registry/lead */secretary"
+# The kit's pin and its automode rules (the kit's seat-builder, 2026-11-22, D148/D181): only this seat wakes on a
+# kit release; after moving the pin it runs `bin/automode.py --check`, and `--apply` on stale entries.
+duties = "pin-mover automode-rules"
 
 [seat.lead.watch.desk]
 cmd = "sh kit:bin/py.sh kit:classes/desk/watch-answers.py just-module-creator lead"
