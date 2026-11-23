@@ -366,7 +366,8 @@ def _unplaced_next_step(errors: list[str]) -> str | None:
 # F172. `record_decision`'s approval question, asked as an input request on the 2026-07-28 wire:
 # the key the host's answer comes back under, and the yes/no form fastmcp builds for `bool`.
 _APPROVAL = "approve_decision"
-_YES_NO = parse_elicit_response_type(bool).schema
+_APPROVE_TITLE = "Approve this wording"
+_YES_NO = parse_elicit_response_type(bool, response_title=_APPROVE_TITLE).schema
 
 
 def register_essentials(mcp: FastMCP, settings: Settings) -> None:
@@ -1106,7 +1107,9 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
                     failed = f"the host answered with a {type(reply).__name__}, not the question's"
             else:
                 try:
-                    answer = await ctx.elicit(question, response_type=bool)
+                    answer = await ctx.elicit(
+                        question, response_type=bool, response_title=_APPROVE_TITLE
+                    )
                 except MCPError as exc:
                     failed = exc.error.message
                 else:

@@ -696,3 +696,16 @@ async def test_by_author_cannot_skip_the_persons_approval(module, env, make_clie
     write_study(module, env)
     (state,) = decisions(module)
     assert state.by == "author"
+
+
+async def test_the_approval_box_says_what_ticking_it_means(module, make_client) -> None:
+    """The tester's look in Claude Code: a box labelled only "Value" left a no to guesswork."""
+    titles: list[str] = []
+
+    async def approve(message, response_type, params, context):
+        titles.append(params.requested_schema["properties"]["value"].get("title", ""))
+        return {"value": True}
+
+    await state_as_author(make_client, module, approve)
+    await modern_wire_answer(module, approve)
+    assert titles == ["Approve this wording", "Approve this wording"]

@@ -5,7 +5,7 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
-- **An author's decision is asked again on Claude Code** (F172): Claude Code negotiates MCP's 2026-07-28 wire with us, where a server cannot push a question, and 0.48.19 therefore read it as a host that cannot ask: `record_decision(basis="author")` returned `approved: null` and nobody saw the wording. The tool now asks the way that wire provides, by returning an input-required result the host puts to the person, and reads the answer on the host's second call. Handshake-era hosts are asked as before.
+- **An author's decision is asked again on Claude Code** (F172): Claude Code negotiates MCP's 2026-07-28 wire with us, where a server cannot push a question, and 0.48.19 therefore read it as a host that cannot ask: `record_decision(basis="author")` returned `approved: null` and nobody saw the wording. The tool now asks the way that wire provides, by returning an input-required result the host puts to the person, and reads the answer on the host's second call. Handshake-era hosts are asked as before. The box is labelled "Approve this wording" on both.
 
 ## [0.48.19] — 2026-11-23
 
