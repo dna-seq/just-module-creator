@@ -550,6 +550,7 @@ refuses with the same `next_step`. Nothing else moved on the surface.
   the decision is flushed with the session's next table edit; a session with no edit drops it at its end (by design).
 - Nit, reported, not filed: the box is labelled only "Value" and starts unset. Accept with it unticked is refused, "This
   field is required", so a "no" needs a tick and an untick, or Decline.
+  Taken in 75bbc4e: the live dialog now reads "Approve this wording" (checked 2026-11-23); still required and unset, on purpose.
 - My slip: the first run inherited `JMC_TRACE=0` from my shell (`recording: "off"`). Hook checks need `env -u JMC_TRACE`.
 
 ## Standing constraints
