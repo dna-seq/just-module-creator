@@ -540,6 +540,18 @@ refuses with the same `next_step`. Nothing else moved on the surface.
 - Not exercised: `authenticate` with a session token on the modern wire. The release says it refuses and names the
   env var; the probe needs a token I would have to mint.
 
+**F172 recheck, 2026-11-23, main 7c28c63 (fix 24169a4, unreleased), interactive Claude Code 2.1.330 through tmux
+(modern wire).**
+- F172 holds. Each `record_decision(basis="author")` shows the person a dialog ("requests your input", the question,
+  the wording, a checkbox, Accept / Decline). The pane reads "Fulfilling input required by 'tools/call' (round 1)", and
+  the debug log logs an elicitation request and its response. Tick then Accept returns `approved: true`; an explicit
+  untick then Accept returns `false`; Decline returns `false`, "The person declined this wording"; Esc returns `null`.
+- The trace hook records the two-round call once: `decision`, `by: author`, `approved: true`, then the edit. As before,
+  the decision is flushed with the session's next table edit; a session with no edit drops it at its end (by design).
+- Nit, reported, not filed: the box is labelled only "Value" and starts unset. Accept with it unticked is refused, "This
+  field is required", so a "no" needs a tick and an untick, or Decline.
+- My slip: the first run inherited `JMC_TRACE=0` from my shell (`recording: "off"`). Hook checks need `env -u JMC_TRACE`.
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
