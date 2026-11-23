@@ -4,7 +4,7 @@ The lead seat's working state, rewritten to the present before a reset (`docs/se
 
 ## Now
 
-Released 0.48.19 (tag `v0.48.19`, `c58fc0a`, 2026-11-23): fastmcp 4.2.5, the `<4` pin lifted (220747d, on the liaison's trial); F172 open (record_decision cannot ask on the 2026-07-28 wire). 1107 pass; polygon `registry_check` of fto_bmi `verdict: true`. Next release no earlier than 2026-11-24: F172 on main (24169a4, record_decision asks on the 2026-07-28 wire), waiting on the tester's look in a real Claude Code session. Before it: 0.48.18 (`73e3962`, 2026-11-22, F171), 0.48.17 (`4aa5e56`, 2026-11-21, just-dna 0.8.9, F170).
+Released 0.48.19 (tag `v0.48.19`, `c58fc0a`, 2026-11-23): fastmcp 4.2.5, the `<4` pin lifted (220747d, on the liaison's trial); F172 open (record_decision cannot ask on the 2026-07-28 wire). 1107 pass; polygon `registry_check` of fto_bmi `verdict: true`. Next release no earlier than 2026-11-24: F172 on main (24169a4, record_decision asks on the 2026-07-28 wire), confirmed in Claude Code by the tester (561d54e); the box titled in 75bbc4e. Before it: 0.48.18 (`73e3962`, 2026-11-22, F171), 0.48.17 (`4aa5e56`, 2026-11-21, just-dna 0.8.9, F170).
 
 Registry 0.32 adopted and the enricher floored at 0.8.8: released in 0.48.14. The RM445 cache re-pull ran on this machine 2026-11-17.
 away at 05:02Z on 2026-11-05.
