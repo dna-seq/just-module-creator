@@ -263,7 +263,8 @@ def schema_versions() -> SchemaVersions:
 def on_modern_wire(ctx: Context) -> bool:
     """Whether this request came over the 2026-07-28 wire, where every request is its own
     connection: session state lasts one call unless a transport session id carries it, and
-    the server cannot push a question to the person (`ctx.elicit` raises there).
+    the server cannot push a question to the person (`ctx.elicit` raises there; a tool asks
+    by returning an input-required result instead).
     """
     rc = ctx.request_context
     return rc is not None and rc.protocol_version in MODERN_PROTOCOL_VERSIONS

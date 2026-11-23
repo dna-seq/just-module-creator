@@ -567,24 +567,47 @@ async def test_a_no_in_the_form_is_a_decline(module, make_client) -> None:
     assert result["approved"] is False and "declined" in result["note"]
 
 
-async def test_a_modern_wire_connection_reads_as_a_host_that_cannot_ask(module) -> None:
-    """The 2026-07-28 wire has no back-channel for the server's question, whatever the client
-    declared: the decision is kept as stated, `approved: null`, and the handler is never
-    called, rather than the tool failing on `ctx.elicit`."""
+async def modern_wire_answer(module: Path, handler) -> dict:
+    """`record_decision` over the 2026-07-28 wire, which Claude Code 2.1.330 negotiates."""
+    server = build_server(settings=offline_settings())
+    async with Client(transport=server, elicitation_handler=handler) as client:
+        result = await client.call_tool(
+            "record_decision", {"spec_dir": str(module), **AUTHOR_DECISION}
+        )
+    return result.structured_content or {}
+
+
+async def test_the_modern_wire_asks_the_person_too(module) -> None:
+    """F172: that wire has no back-channel for a server's question, so the tool returns an
+    input-required result and the host asks and calls again. 0.48.19 read the wire as a host
+    that cannot ask, and no Claude Code author was asked."""
     asked: list[str] = []
 
     async def approve(message, response_type, params, context):
         asked.append(message)
         return {"value": True}
 
-    server = build_server(settings=offline_settings())
-    async with Client(transport=server, elicitation_handler=approve) as client:
-        result = await client.call_tool(
-            "record_decision", {"spec_dir": str(module), **AUTHOR_DECISION}
-        )
-    data = result.structured_content or {}
-    assert data["approved"] is None and "cannot show the wording" in data["note"]
-    assert asked == []
+    result = await modern_wire_answer(module, approve)
+    assert asked and AUTHOR_DECISION["why"] in asked[0]
+    assert result["approved"] is True
+
+
+@pytest.mark.parametrize(
+    ("answer", "approved", "said"),
+    [
+        (ElicitResult(action="decline"), False, "declined"),
+        ({"value": False}, False, "declined"),
+        (ElicitResult(action="cancel"), None, "dismissed"),
+    ],
+)
+async def test_the_modern_wire_reads_a_no_and_a_dismissal_as_the_handshake_does(
+    module, answer, approved, said
+) -> None:
+    async def reply(message, response_type, params, context):
+        return answer
+
+    result = await modern_wire_answer(module, reply)
+    assert result["approved"] is approved and said in result["note"]
 
 
 async def test_wording_the_person_did_not_approve_is_never_recorded(

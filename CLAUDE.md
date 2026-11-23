@@ -766,10 +766,11 @@ answers a question over a number written here.*
   fields into the skills.
 - **fastmcp is `>=4.2.5,<5`** (the `<4` pin of 2026-09-26 lifted 2026-11-23, when 4.2.5 closed
   fastmcp#4920). Clients negotiate the sessionless 2026-07-28 wire by default. There a reveal now
-  holds, and **two things still do not**, each guarded through `_shared.on_modern_wire`: `set_state`
+  holds, and **two things still do not**, each handled through `_shared.on_modern_wire`: `set_state`
   lasts one call without a transport session id (`auth.session_state_persists` refuses to store a
-  token), and the server cannot push a question (`ctx.elicit` raises; `record_decision` reads the
-  connection as a host that cannot ask). **Gate**: `tests/test_toolbox.py::test_a_reveal_reaches_a_default_mode_client`
+  token), and the server cannot push a question (`ctx.elicit` raises), so a tool that asks returns an
+  `InputRequiredResult` and reads `ctx.input_responses` when the host calls again
+  (`record_decision`, F172; Claude Code 2.1.330 negotiates this wire). **Gate**: `tests/test_toolbox.py::test_a_reveal_reaches_a_default_mode_client`
   stays, unmarked. Fixtures: `client` is the modern wire (task tools run as background tasks),
   `make_client` the handshake (`mode="legacy"`). `ToolAnnotations` kwargs are **snake_case**, SDK 2.x's field
   names (the camelCase aliases work at runtime but pyright rejects them); SDK 1.x dropped a

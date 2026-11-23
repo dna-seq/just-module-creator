@@ -23,7 +23,11 @@ from typing import get_args, get_origin
 from anyio.to_thread import run_sync
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
-from fastmcp.server.elicitation import AcceptedElicitation, CancelledElicitation
+from fastmcp.server.elicitation import (
+    AcceptedElicitation,
+    CancelledElicitation,
+    parse_elicit_response_type,
+)
 from just_dna_compiler import compiler, draft, hints, scaffold
 from just_dna_format import layout, reference
 from just_dna_format.integrity import IntegrityError, verify_manifest
@@ -31,6 +35,7 @@ from just_dna_format.manifest import read_manifest
 from just_dna_format.spec import ModuleSpecConfig
 from mcp.shared.exceptions import MCPError
 from mcp.types import ClientCapabilities, ElicitationCapability, ToolAnnotations
+from mcp_types import ElicitRequest, ElicitRequestFormParams, ElicitResult, InputRequiredResult
 from pydantic import BaseModel
 
 from just_module_creator import audit, authored_checks, logscan, trace
@@ -356,6 +361,12 @@ _UNPLACED_NEXT_STEP = (
 def _unplaced_next_step(errors: list[str]) -> str | None:
     """Our repair for upstream's strict unplaced-row refusal, or None when it did not fire."""
     return _UNPLACED_NEXT_STEP if any(_UNPLACED_REFUSAL in e for e in errors) else None
+
+
+# F172. `record_decision`'s approval question, asked as an input request on the 2026-07-28 wire:
+# the key the host's answer comes back under, and the yes/no form fastmcp builds for `bool`.
+_APPROVAL = "approve_decision"
+_YES_NO = parse_elicit_response_type(bool).schema
 
 
 def register_essentials(mcp: FastMCP, settings: Settings) -> None:
@@ -1022,7 +1033,7 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
         passage: str | None = None,
         by: str = "agent",
         ctx: Context | None = None,
-    ) -> DecisionStated:
+    ) -> DecisionStated | InputRequiredResult:
         """Hand the provenance ledger a decision no edit shows: a paper read and set aside, a
         variant left out, how a weight was set. The host hook records it at the module's next
         table edit; this tool writes nothing.
@@ -1059,55 +1070,79 @@ def register_essentials(mcp: FastMCP, settings: Settings) -> None:
             )
         )
         approved: bool | None = None
-        # The 2026-07-28 wire has no back-channel for a server's question (fastmcp 4 raises
-        # before the wire), so a modern connection reads as a host that cannot ask, whatever
-        # it declared. Asking there would take the guard/re-run shape of an input-required
-        # result, which this tool does not have yet.
-        can_ask = (
-            ctx is not None
-            and not on_modern_wire(ctx)
-            and ctx.session.check_client_capability(
-                ClientCapabilities(elicitation=ElicitationCapability())
-            )
+        can_ask = ctx is not None and ctx.session.check_client_capability(
+            ClientCapabilities(elicitation=ElicitationCapability())
         )
+        # The answer, from either wire: `accept` / `decline` / `cancel` and whether it said yes,
+        # or the reason the question failed. Declared support, so a failure came after the
+        # person may have seen it, or mid-question: not an approval, and nothing is recorded
+        # (never `null`, which reads as "this host cannot ask").
+        action: str | None = None
+        said_yes = False
+        failed: str | None = None
+        if basis == "author" and ctx is not None and can_ask:
+            question = f"Record this as your decision about {subject} ({verdict})?\n\n{why}"
+            if on_modern_wire(ctx):
+                # F172. The 2026-07-28 wire has no back-channel for a server's question
+                # (`ctx.elicit` raises there), so the tool asks the wire's own way: it returns
+                # an input-required result, the host puts the question to the person and calls
+                # again carrying the answer. Safe to run twice: this tool writes nothing.
+                responses = ctx.input_responses or {}
+                reply = responses.get(_APPROVAL)
+                if reply is None:
+                    return InputRequiredResult(
+                        input_requests={
+                            _APPROVAL: ElicitRequest(
+                                params=ElicitRequestFormParams(
+                                    message=question, requested_schema=_YES_NO
+                                )
+                            )
+                        }
+                    )
+                if isinstance(reply, ElicitResult):
+                    action = reply.action
+                    said_yes = action == "accept" and (reply.content or {}).get("value") is True
+                else:
+                    failed = f"the host answered with a {type(reply).__name__}, not the question's"
+            else:
+                try:
+                    answer = await ctx.elicit(question, response_type=bool)
+                except MCPError as exc:
+                    failed = exc.error.message
+                else:
+                    if isinstance(answer, CancelledElicitation):
+                        action = "cancel"
+                    elif isinstance(answer, AcceptedElicitation):
+                        action, said_yes = "accept", answer.data is True
+                    else:
+                        action = "decline"
         if basis == "author" and ctx is not None and not can_ask:
             note += (
                 " This host cannot show the wording to the person from inside a tool, so it is "
                 "kept as stated, `approved: null`: record only wording they approved in the chat."
             )
-        elif basis == "author" and ctx is not None:
-            # Declared support, so any failure here came after the person may have seen it, or
-            # mid-question: not an approval, and nothing is recorded (never `null`, which reads
-            # as "this host cannot ask").
-            try:
-                answer = await ctx.elicit(
-                    f"Record this as your decision about {subject} ({verdict})?\n\n{why}",
-                    response_type=bool,
-                )
-            except MCPError as exc:
-                approved = False
+        elif failed is not None:
+            approved = False
+            note = (
+                f"The question to the person failed ({failed}), so nothing is recorded. Ask them "
+                "in the chat, then call again."
+            )
+        elif action == "cancel":
+            # F166: `claude -p` answers `cancel` in about a millisecond, with nobody there, and a
+            # person closing the dialog answers the same. Neither is a refusal: kept as stated
+            # and unseen, like a host that cannot ask. Only `decline` is a no.
+            note += (
+                " The question was dismissed, or nobody was there to answer it, so it is kept as "
+                "stated, `approved: null`: record only wording they approved in the chat."
+            )
+        elif action is not None:
+            # A yes/no answer: accepting the form with a no is a decline too.
+            approved = said_yes
+            if not approved:
                 note = (
-                    f"The question to the person failed ({exc.error.message}), so nothing is "
-                    "recorded. Ask them in the chat, then call again."
+                    "The person declined this wording, so nothing is recorded. Ask how they "
+                    "would put it, then call again with their wording."
                 )
-            else:
-                # F166: `claude -p` answers `cancel` in about a millisecond, with nobody there,
-                # and a person closing the dialog answers the same. Neither is a refusal: kept as
-                # stated and unseen, like a host that cannot ask. Only `decline` is a no.
-                if isinstance(answer, CancelledElicitation):
-                    note += (
-                        " The question was dismissed, or nobody was there to answer it, so it is "
-                        "kept as stated, `approved: null`: record only wording they approved in "
-                        "the chat."
-                    )
-                else:
-                    # A yes/no answer: accepting the form with a no is a decline too.
-                    approved = isinstance(answer, AcceptedElicitation) and answer.data is True
-                    if not approved:
-                        note = (
-                            "The person declined this wording, so nothing is recorded. Ask how "
-                            "they would put it, then call again with their wording."
-                        )
         return DecisionStated(
             spec_dir=str(target),
             subject=subject,

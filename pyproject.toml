@@ -20,8 +20,8 @@ dependencies = [
     # lift gate `test_a_reveal_reaches_a_default_mode_client` passes. Still true on that
     # wire, and guarded rather than worked around: `set_state` lasts one call without a
     # transport session id (`auth.session_state_persists` refuses to store a token), and
-    # the server cannot push a question (`record_decision` reads it as a host that cannot
-    # ask). fastmcp 4 runs `task=True` tools only with `TasksExtension` registered.
+    # the server cannot push a question (`record_decision` asks through an input-required
+    # result instead, F172). fastmcp 4 runs `task=True` tools only with `TasksExtension`.
     "fastmcp[tasks]>=4.2.5,<5",
     "pydantic>=2",
     "pydantic-settings>=2",

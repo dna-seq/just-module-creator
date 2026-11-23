@@ -6,6 +6,42 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F172 — on the 2026-07-28 wire `record_decision` cannot ask the person, so an author's decision stays unseen
+
+**Found:** 2026-11-23, lifting the fastmcp `<4` pin · **Severity:** medium · **Status:** resolved in 0.48.20 (built 2026-11-23)
+
+fastmcp 4 removed the back-channel a server uses to push a question on the 2026-07-28 wire: `ctx.elicit` raises
+`ToolError` ("elicitation via server-initiated requests is unavailable on 2026-07-28 connections") before anything
+reaches the client, whatever the client declared. 0.48.15's approval step (RM32 slice 3) asks that way. Since 0.48.19
+a modern connection reads as a host that cannot ask: the decision is kept as stated, `approved: null`, and the note
+says to record only wording the person approved in the chat. A handshake-era host (the `make_client` fixture's
+`mode="legacy"`) still gets the question.
+
+What would close it: the wire's own shape for asking, a tool that returns an input-required result and re-runs with
+the person's answer (`ctx.input_responses`), which fastmcp 4 offers and this tool does not use yet. Which hosts
+negotiate the modern wire is not measured here; until one that authors modules does, the guard costs nothing.
+
+**Measured 2026-11-23 (tester, release 0.48.19): Claude Code negotiates the modern wire, so the guard costs the
+approval step in the main host.** Claude Code 2.1.330's debug log, in a `claude -p` session and in an interactive one
+(tmux), reads `"protocolEra":"modern","negotiatedProtocolVersion":"2026-07-28"` for this server. In the interactive
+session `record_decision(basis="author")` showed the person nothing and returned `approved: null`, "This host cannot
+show the wording to the person from inside a tool". On 0.48.15 through 0.48.18 the same interactive setup asked, and
+a decline came back `approved: false` (the RM32 probe and F166 recheck, 2026-11-18). Since 0.48.19, then, no Claude Code
+author is asked from inside the tool, and every author decision lands unapproved unless the agent asked in the chat
+first. Not measured: Codex, which would need its own install from git. Not regressed: a registry read through a
+saved account (`registry_whoami(target="test")` answered from the host).
+
+**Measured 2026-11-23 by the tester (5c39beb):** Claude Code 2.1.330 negotiates the 2026-07-28 wire with us, in a
+`-p` and an interactive session. So 0.48.19 asked no Claude Code author, a step that held on 0.48.15 to 0.48.18, and
+the line above that the guard "costs nothing" was wrong the day it shipped.
+
+**Resolution:** `record_decision` asks the wire's own way. On a modern connection whose client declares
+elicitation, the first call returns an `InputRequiredResult` holding the yes/no question, and the host's second
+call carries the answer in `ctx.input_responses`; both wires' answers go through one reading (accept with yes,
+accept with no, decline, dismiss, failure). The tool writes nothing, so running twice is safe.
+`tests/test_trace.py::test_the_modern_wire_asks_the_person_too` and its no/dismiss companion fail on 0.48.19's code.
+Not yet seen: a real Claude Code session putting the question to a person through this round.
+
 ## F171 — 0.48.17's strict compile refuses an rsID at a mirrored indel site after an offline enrich, and says to pass a parameter our tool pins
 
 **Found:** 2026-11-21, recheck of release 0.48.17 · **Severity:** medium (a strict compile, the one the registry runs, stops, and nothing on our surface says how to continue) · **Status:** fixed here, 2026-11-21 (unreleased); upstream's RM453 (just-dna 0.8.10, not on PyPI as of 2026-11-21) removes the refusal for this case
