@@ -29,6 +29,16 @@ What would close it: the wire's own shape for asking, a tool that returns an inp
 the person's answer (`ctx.input_responses`), which fastmcp 4 offers and this tool does not use yet. Which hosts
 negotiate the modern wire is not measured here; until one that authors modules does, the guard costs nothing.
 
+**Measured 2026-11-23 (tester, release 0.48.19): Claude Code negotiates the modern wire, so the guard costs the
+approval step in the main host.** Claude Code 2.1.330's debug log, in a `claude -p` session and in an interactive one
+(tmux), reads `"protocolEra":"modern","negotiatedProtocolVersion":"2026-07-28"` for this server. In the interactive
+session `record_decision(basis="author")` showed the person nothing and returned `approved: null`, "This host cannot
+show the wording to the person from inside a tool". On 0.48.15 through 0.48.18 the same interactive setup asked, and
+a decline came back `approved: false` (the RM32 probe and F166 recheck, 2026-11-18). Since 0.48.19, then, no Claude Code
+author is asked from inside the tool, and every author decision lands unapproved unless the agent asked in the chat
+first. Not measured: Codex, which would need its own install from git. Not regressed: a registry read through a
+saved account (`registry_whoami(target="test")` answered from the host).
+
 ---
 
 ## F169 — a round's version pin can't see a commit landed between its runs, so "one build" doesn't hold
