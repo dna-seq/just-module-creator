@@ -1,4 +1,4 @@
-**Where it stands (2026-11-22).** 0.48.18 runs on just-dna 0.8.9, is current with the registry's 0.32 features, and reads 0.33's lane fields once an instance serves them. Held by the lead, acting for the pm.
+**Where it stands (2026-11-23).** 0.48.19 runs on just-dna 0.8.9 and fastmcp 4.2.5, is current with the registry's 0.32 features, and reads 0.33's lane fields once an instance serves them. Held by the lead, acting for the pm.
 
 **Results**
 - ✅ just-dna 0.8 shipped (0.48.7). Both registries accept it; a test-registry dry run of a real module passes.
@@ -15,6 +15,7 @@
 - ✅ The skills no longer hand a benchmark run its answer, and a test guards it (0.48.16).
 - ✅ just-dna 0.8.9, which stops a silent wrong genotype on mirrored indel sites; the cache offer says plainly when its folder cannot be written (0.48.17).
 - ✅ A strict compile that refuses rows with no position says how to place them with the tools here (0.48.18).
+- ✅ fastmcp 4 adopted, the September pin lifted: revealed tool groups reach hosts on the new MCP wire. On that wire a session token is still not kept and a tool cannot ask the person mid-call; both are refused with a reason (0.48.19).
 - ✅ The authoring benchmark reproduces on 0.48.15: clean runs find the SIRT6 variant with no decoys; genotype coverage on Opus 5 matches the paper's Table 3 (three runs each, no difference found); one Opus 5.5 run is a single observation. The skills no longer name any benchmark answer.
 - ✅ Each module now keeps a record of how its rows came to be (searches, articles read, rows written, decisions no edit shows), and `trace_module` reads every row back against it; registry 0.32 adopted; publishing refuses a module name that differs from its spec (0.48.14).
 
