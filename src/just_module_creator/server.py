@@ -52,6 +52,7 @@ import sys
 
 import typer
 from fastmcp import FastMCP
+from fastmcp_tasks import TasksExtension
 
 from just_module_creator import __version__, accountcheck, userconfig
 from just_module_creator.auth import hide_gated_tools, register_auth
@@ -174,12 +175,11 @@ def build_server(
         name=f"just-module-creator v{__version__}",
         instructions=instructions_for(settings),
     )
-    # Background tasks (`@mcp.tool(task=True)`): on the <4 pin the `[tasks]` extra
-    # carries SEP-2663 tasks IN-PROCESS, so no extension has to be registered — that
-    # `mcp.add_extension(TasksExtension())` step was a fastmcp-4-only requirement and
-    # is gone with the pin (see pyproject and CLAUDE.md §11). The backend still comes
-    # from `FASTMCP_DOCKET_*` and defaults to `memory://`, which is the single-process
-    # stdio deployment a plugin is.
+    mcp.add_extension(TasksExtension())
+    # Background tasks (`@mcp.tool(task=True)`): fastmcp 4 refuses to start a server with
+    # task tools unless this extension is registered (fastmcp 3's `[tasks]` extra ran them
+    # in-process with none). The backend comes from `FASTMCP_DOCKET_*` and defaults to
+    # `memory://`, which is the single-process stdio deployment a plugin is.
 
     # One shared client set for the whole server. Lazy: constructing it opens no
     # connection, so importing this module still touches no network.

@@ -428,9 +428,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: would this spec publish (module-level)",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_validate(
@@ -491,9 +491,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: full publish dry run",
-            readOnlyHint=True,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def registry_check(
@@ -607,9 +607,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: who am I",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_whoami(
@@ -652,10 +652,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: fix a published module's readme",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
+            open_world_hint=True,
         ),
     )
     async def registry_amend_readme(
@@ -756,10 +756,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: claim a namespace",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
+            open_world_hint=True,
         ),
     )
     async def registry_claim_namespace(
@@ -847,10 +847,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: publish a module version",
-            readOnlyHint=False,
-            idempotentHint=False,
-            destructiveHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            destructive_hint=False,
+            open_world_hint=True,
         ),
     )
     async def registry_publish(
@@ -1103,9 +1103,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Yank a published version",
-            readOnlyHint=False,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_yank(
@@ -1170,9 +1170,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Un-yank a version",
-            readOnlyHint=False,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_unyank(
@@ -1248,10 +1248,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Polygon: delete a rehearsed version",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=True,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_delete_version(
@@ -1307,10 +1307,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Polygon: delete a rehearsed module",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=True,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_delete_module(
@@ -1364,10 +1364,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: rename a namespace",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
+            open_world_hint=True,
         ),
     )
     async def registry_rename_namespace(
@@ -1442,10 +1442,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: rename your account",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
+            open_world_hint=True,
         ),
     )
     async def registry_rename_account(
@@ -1527,10 +1527,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: create an organisation",
-            readOnlyHint=False,
-            idempotentHint=False,
-            destructiveHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            destructive_hint=False,
+            open_world_hint=True,
         ),
     )
     async def registry_create_org(
@@ -1573,10 +1573,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: claim a namespace for an organisation",
-            readOnlyHint=False,
-            idempotentHint=False,
-            destructiveHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            destructive_hint=False,
+            open_world_hint=True,
         ),
     )
     async def registry_create_org_namespace(
@@ -1643,10 +1643,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: members of a namespace or organisation",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=True,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_members(
@@ -1771,10 +1771,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: edit your profile or an organisation's",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
+            open_world_hint=True,
         ),
     )
     async def registry_profile(
@@ -1843,10 +1843,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: amend a version's changelog or logo",
-            readOnlyHint=False,
-            idempotentHint=False,
-            destructiveHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            destructive_hint=False,
+            open_world_hint=True,
         ),
     )
     async def registry_amend_version(
@@ -1932,10 +1932,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: set a module's subtitle",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
+            open_world_hint=True,
         ),
     )
     async def registry_set_subtitle(
@@ -1991,10 +1991,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: star or unstar a module",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
+            open_world_hint=True,
         ),
     )
     async def registry_star(
@@ -2044,10 +2044,10 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
         tags={GATED_TAG},
         annotations=ToolAnnotations(
             title="Registry: review a module version",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=True,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_review(
@@ -2141,9 +2141,9 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Registry: read a module's reviews",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         )
     )
     async def registry_reviews(

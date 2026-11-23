@@ -65,9 +65,9 @@ def register_citation_graph(mcp: FastMCP, settings: Settings, services: NetworkS
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Who cited this paper",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def paper_citations(
@@ -151,9 +151,9 @@ def register_artifact_reads(mcp: FastMCP, settings: Settings, services: NetworkS
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Reverse an artifact to a spec",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
         ),
     )
     async def reverse_module(parquet_dir: str, output_dir: str) -> OpResult:
@@ -181,9 +181,9 @@ def register_artifact_reads(mcp: FastMCP, settings: Settings, services: NetworkS
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Download a registry module",
-            readOnlyHint=False,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_download(

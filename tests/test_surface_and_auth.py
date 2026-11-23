@@ -182,7 +182,7 @@ async def test_docstrings_only_name_tools_that_exist(client):
     # tools but are not" would.
     data_words: set[str] = set()
     for tool in listed:
-        data_words |= set((tool.inputSchema or {}).get("properties", {}))
+        data_words |= set((tool.input_schema or {}).get("properties", {}))
     for obj in vars(models).values():
         if inspect.isclass(obj) and issubclass(obj, BaseModel):
             data_words |= set(obj.model_fields)
@@ -854,5 +854,21 @@ async def test_a_drafting_tool_requires_a_declared_use(make_client):
     async with make_client(offline_settings()) as client:
         tools = {tool.name: tool for tool in await client.list_tools()}
     for name in sorted(set(DRAFTER_TOOLS.values())):
-        schema = tools[name].inputSchema
+        schema = tools[name].input_schema
         assert "use" in schema.get("required", []), f"{name} does not require `use`"
+
+
+async def test_every_tool_hint_reaches_the_wire(client):
+    """Each tool says on the wire whether it only reads.
+
+    The hints are spelled in the SDK's field names (`read_only_hint=`). SDK 1.x had camelCase
+    fields and took a snake_case kwarg as an extra field, leaving the hint None with no error
+    (measured 2026-09-26); this fails if the spelling and the installed SDK ever disagree.
+    """
+    tools = await client.list_tools()
+    assert len(tools) >= 50
+    assert "compile_module" in {t.name for t in tools}
+    unhinted = [
+        t.name for t in tools if t.annotations is None or t.annotations.read_only_hint is None
+    ]
+    assert unhinted == []

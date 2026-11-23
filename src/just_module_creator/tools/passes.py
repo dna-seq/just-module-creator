@@ -445,9 +445,9 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
         task=True,
         annotations=ToolAnnotations(
             title="Draft from ClinVar",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def draft_from_clinvar(
@@ -524,9 +524,9 @@ def register_passes(mcp: FastMCP, settings: Settings, services: NetworkServices)
         task=True,
         annotations=ToolAnnotations(
             title="Enrich a spec (resolve coordinates)",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def enrich_module(
@@ -818,9 +818,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Draft from CPIC",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def draft_from_cpic(
@@ -884,9 +884,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Draft from ClinPGx",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def draft_from_clinpgx(
@@ -960,9 +960,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Fill literature.csv",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def enrich_literature_pass(
@@ -1077,9 +1077,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Run the sidecar fact passes",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def enrich_facts(
@@ -1207,9 +1207,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Fill gwas_effects.csv",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def enrich_gwas_effects(
@@ -1412,9 +1412,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Draft from CIViC",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def draft_from_civic(
@@ -1484,9 +1484,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Draft from MITOMAP",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def draft_from_mitomap(
@@ -1563,9 +1563,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Draft from PubMind",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def draft_from_pubmind(
@@ -1657,9 +1657,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Draft repeat loci from STRchive",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def draft_from_strchive(
@@ -1751,9 +1751,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
         task=True,
         annotations=ToolAnnotations(
             title="Fill expression_effects.csv from AlphaGenome",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def enrich_expression_effects(
@@ -1949,9 +1949,9 @@ def register_bulk_passes(mcp: FastMCP, settings: Settings, services: NetworkServ
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Rank expression_effects.csv",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=False,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=False,
         ),
     )
     async def top_expression_effects(

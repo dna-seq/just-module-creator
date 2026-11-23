@@ -377,9 +377,9 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Look up rows in a registry's snapshot lane",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         )
     )
     async def registry_lane_lookup(
@@ -465,9 +465,9 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Which snapshot caches exist, here and there",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         )
     )
     async def registry_caches(target: RegistryTarget) -> CacheReport:
@@ -549,9 +549,9 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         task=True,
         annotations=ToolAnnotations(
             title="Have a registry derive the tables this machine cannot",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def remote_derive(
@@ -766,9 +766,9 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
         task=True,
         annotations=ToolAnnotations(
             title="Draft rows on a registry that holds the snapshot",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def remote_draft(

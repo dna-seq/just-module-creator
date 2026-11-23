@@ -14,6 +14,23 @@ is usable, and what is missing.
 
 ---
 
+## F172 — on the 2026-07-28 wire `record_decision` cannot ask the person, so an author's decision stays unseen
+
+**Found:** 2026-11-23, lifting the fastmcp `<4` pin · **Severity:** medium · **Status:** guarded, not built; the lead's
+
+fastmcp 4 removed the back-channel a server uses to push a question on the 2026-07-28 wire: `ctx.elicit` raises
+`ToolError` ("elicitation via server-initiated requests is unavailable on 2026-07-28 connections") before anything
+reaches the client, whatever the client declared. 0.48.15's approval step (RM32 slice 3) asks that way. Since 0.48.19
+a modern connection reads as a host that cannot ask: the decision is kept as stated, `approved: null`, and the note
+says to record only wording the person approved in the chat. A handshake-era host (the `make_client` fixture's
+`mode="legacy"`) still gets the question.
+
+What would close it: the wire's own shape for asking, a tool that returns an input-required result and re-runs with
+the person's answer (`ctx.input_responses`), which fastmcp 4 offers and this tool does not use yet. Which hosts
+negotiate the modern wire is not measured here; until one that authors modules does, the guard costs nothing.
+
+---
+
 ## F169 — a round's version pin can't see a commit landed between its runs, so "one build" doesn't hold
 
 **Found:** 2026-11-19, benchmark round 4 · **Severity:** medium for the benchmark · **Status:** mitigated (the round now notices), isolation still open, the lead's

@@ -96,7 +96,7 @@ def _file_verdict(
 def register_comparison(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
-            title="Compare two spec directories", readOnlyHint=True, idempotentHint=True
+            title="Compare two spec directories", read_only_hint=True, idempotent_hint=True
         )
     )
     async def compare_modules(
@@ -150,9 +150,9 @@ def register_comparison(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Compare a spec against its published version",
-            readOnlyHint=True,
-            idempotentHint=True,
-            openWorldHint=True,
+            read_only_hint=True,
+            idempotent_hint=True,
+            open_world_hint=True,
         ),
     )
     async def compare_to_published(

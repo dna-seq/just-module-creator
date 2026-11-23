@@ -17,11 +17,13 @@ from pathlib import Path
 
 import pytest
 from conftest import offline_settings
+from fastmcp import Client
 from fastmcp.client.elicitation import ElicitResult
 from just_dna_compiler import hints
 from just_dna_format.spec import StudyRow
 
 from just_module_creator import trace, tracehook
+from just_module_creator.server import build_server
 
 ROOT = Path(__file__).parent.parent
 CLAUDE = "mcp__plugin_just-module-creator_just-module-creator__"
@@ -543,7 +545,7 @@ async def test_an_author_decision_is_shown_to_the_person_before_it_counts(
 
     async def approve(message, response_type, params, context):
         shown.append(message)
-        return {}
+        return {"value": True}
 
     result = await state_as_author(make_client, module, approve)
     assert result["approved"] is True
@@ -552,6 +554,37 @@ async def test_an_author_decision_is_shown_to_the_person_before_it_counts(
     write_study(module, env)
     (state,) = decisions(module)
     assert state.approved is True and "approved by them" in state.because
+
+
+async def test_a_no_in_the_form_is_a_decline(module, make_client) -> None:
+    """The question is a yes/no (fastmcp 4 refuses an empty form): accepting it with "no"
+    records nothing, the same as declining the dialog."""
+
+    async def say_no(message, response_type, params, context):
+        return {"value": False}
+
+    result = await state_as_author(make_client, module, say_no)
+    assert result["approved"] is False and "declined" in result["note"]
+
+
+async def test_a_modern_wire_connection_reads_as_a_host_that_cannot_ask(module) -> None:
+    """The 2026-07-28 wire has no back-channel for the server's question, whatever the client
+    declared: the decision is kept as stated, `approved: null`, and the handler is never
+    called, rather than the tool failing on `ctx.elicit`."""
+    asked: list[str] = []
+
+    async def approve(message, response_type, params, context):
+        asked.append(message)
+        return {"value": True}
+
+    server = build_server(settings=offline_settings())
+    async with Client(transport=server, elicitation_handler=approve) as client:
+        result = await client.call_tool(
+            "record_decision", {"spec_dir": str(module), **AUTHOR_DECISION}
+        )
+    data = result.structured_content or {}
+    assert data["approved"] is None and "cannot show the wording" in data["note"]
+    assert asked == []
 
 
 async def test_wording_the_person_did_not_approve_is_never_recorded(

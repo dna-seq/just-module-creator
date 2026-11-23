@@ -23,6 +23,7 @@ from typing import Any
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
 from just_dna_format.vocab import VALID_DECLARED_USE
+from mcp_types.version import MODERN_PROTOCOL_VERSIONS
 
 from just_module_creator.models import (
     UPSTREAM,
@@ -257,3 +258,12 @@ def schema_versions() -> SchemaVersions:
     ask the tool rather than trust its memory.
     """
     return _SCHEMA_VERSIONS
+
+
+def on_modern_wire(ctx: Context) -> bool:
+    """Whether this request came over the 2026-07-28 wire, where every request is its own
+    connection: session state lasts one call unless a transport session id carries it, and
+    the server cannot push a question to the person (`ctx.elicit` raises there).
+    """
+    rc = ctx.request_context
+    return rc is not None and rc.protocol_version in MODERN_PROTOCOL_VERSIONS

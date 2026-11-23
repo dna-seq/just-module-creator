@@ -206,7 +206,7 @@ async def test_re_roling_someone_who_is_not_a_member_sends_nothing(make_client, 
 async def test_the_roles_offered_are_the_registrys_own(make_client):
     async with make_client(settings=_online()) as client:
         tools = {t.name: t for t in await client.list_tools()}
-    described = tools["registry_members"].inputSchema["properties"]["role"]["description"]
+    described = tools["registry_members"].input_schema["properties"]["role"]["description"]
     assert VALID_NS_ROLES, "upstream's role set came back empty"
     for role in VALID_NS_ROLES | VALID_ORG_ROLES:
         assert role in described
@@ -376,7 +376,7 @@ async def test_the_review_fields_are_described_by_the_registry_model(make_client
     """The rating range and verdict tiers are upstream's; the listing carries their words."""
     async with make_client(settings=_online()) as client:
         tools = {t.name: t for t in await client.list_tools()}
-    properties = tools["registry_review"].inputSchema["properties"]
+    properties = tools["registry_review"].input_schema["properties"]
     for field in ("rating", "verdict"):
         expected = ReviewRequest.model_fields[field].description
         assert expected, f"upstream's {field} lost its description"

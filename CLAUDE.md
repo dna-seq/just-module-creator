@@ -408,8 +408,8 @@ operator's sweep, a build hook, or only a deployment calls it. Say which.
    HTTP needs a shared `FastMCP(session_state_store=...)`. Flatten the target out of the key and a
    second `authenticate` silently retargets the first). Call `auth.session_state_persists`
    before storing and refuse naming the env var — **never report a success the next call cannot
-   find**. Under the fastmcp `<4` pin that guard is dormant (handshake sessions persist); on a 4.x
-   re-upgrade, see §11.
+   find**. It refuses on the 2026-07-28 wire unless a transport session id carries the state
+   (stdio and in-memory have none); the handshake wire persists (§11).
 6. Add a test using the in-memory client.
 7. **Visibility is not authorization.** `mcp.enable()` / `disable()` are server-global — startup only.
    `ctx.enable_components()` is session-scoped — the only one a request may drive.
@@ -764,15 +764,17 @@ answers a question over a number written here.*
   production on the user's word (2026-11-10: "pre-build the 0.8 branch", with the polygon on 0.8). Verify capabilities by symbol with the
   `--project` recipe in §8, never from a line here. A floor bump is not adoption: sweep new authored
   fields into the skills.
-- **fastmcp is pinned `>=3.4.6,<4`.** fastmcp 4 negotiates the sessionless 2026-07-28 wire, so
-  session reveals and stored tokens evaporate (fastmcp#4920), and some clients can't connect.
-  **Gate**: `tests/test_toolbox.py::test_a_reveal_reaches_a_default_mode_client`; lift when it passes on
-  a 4.x. `ToolAnnotations` kwargs are **camelCase** on purpose (SDK 1.x silently drops snake_case) —
-  don't revert. Owed on re-upgrade: restore the `MODERN_PROTOCOL_VERSIONS` branch in
-  `session_state_persists`, re-add `mode="legacy"` in `make_client`, fix `toolbox` reporting a reveal
-  the next call can't find, and add the persistence guard to `registry_register`. Migrating via a
-  private-API session middleware (`mcp_template`'s `fastmcp4` branch) was judged not worth it. Full recipe: memory
-  `fastmcp-pinned-below-4.md`.
+- **fastmcp is `>=4.2.5,<5`** (the `<4` pin of 2026-09-26 lifted 2026-11-23, when 4.2.5 closed
+  fastmcp#4920). Clients negotiate the sessionless 2026-07-28 wire by default. There a reveal now
+  holds, and **two things still do not**, each guarded through `_shared.on_modern_wire`: `set_state`
+  lasts one call without a transport session id (`auth.session_state_persists` refuses to store a
+  token), and the server cannot push a question (`ctx.elicit` raises; `record_decision` reads the
+  connection as a host that cannot ask). **Gate**: `tests/test_toolbox.py::test_a_reveal_reaches_a_default_mode_client`
+  stays, unmarked. Fixtures: `client` is the modern wire (task tools run as background tasks),
+  `make_client` the handshake (`mode="legacy"`). `ToolAnnotations` kwargs are **snake_case**, SDK 2.x's field
+  names (the camelCase aliases work at runtime but pyright rejects them); SDK 1.x dropped a
+  snake_case hint silently, so `test_every_tool_hint_reaches_the_wire` reads them off the wire. `ctx.elicit` needs a
+  `response_type` (`bool` for a yes/no). History: memory `fastmcp-pinned-below-4.md`.
 - **Three mitigations are kept on purpose**: `ServiceGate`'s lock, `compile_module`'s
   `resolve_with_ensembl=True` pin, and `research._module_card`'s defensive projection (`get_module` is
   not version-guarded, so an older server answers unchecked).

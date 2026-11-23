@@ -847,9 +847,9 @@ def register_refresh(mcp: FastMCP, settings: Settings, services: NetworkServices
         task=True,
         annotations=ToolAnnotations(
             title="Refresh a derived sidecar",
-            readOnlyHint=False,
-            idempotentHint=False,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            open_world_hint=True,
         ),
     )
     async def refresh_sidecar(

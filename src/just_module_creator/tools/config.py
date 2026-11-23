@@ -73,10 +73,10 @@ def register_config(mcp: FastMCP, settings: Settings, services: NetworkServices)
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Remember a setting",
-            readOnlyHint=False,
-            idempotentHint=True,
-            destructiveHint=False,
-            openWorldHint=False,
+            read_only_hint=False,
+            idempotent_hint=True,
+            destructive_hint=False,
+            open_world_hint=False,
         ),
     )
     def remember_setting(

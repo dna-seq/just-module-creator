@@ -75,10 +75,10 @@ def register_memory(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Registry accounts saved on this machine",
-            readOnlyHint=False,
-            idempotentHint=False,
-            destructiveHint=True,
-            openWorldHint=True,
+            read_only_hint=False,
+            idempotent_hint=False,
+            destructive_hint=True,
+            open_world_hint=True,
         ),
     )
     async def registry_accounts(
@@ -185,10 +185,10 @@ def register_memory(mcp: FastMCP, settings: Settings) -> None:
     @mcp.tool(
         annotations=ToolAnnotations(
             title="Todo list kept on this machine",
-            readOnlyHint=False,
-            idempotentHint=False,
-            destructiveHint=False,
-            openWorldHint=False,
+            read_only_hint=False,
+            idempotent_hint=False,
+            destructive_hint=False,
+            open_world_hint=False,
         ),
     )
     def todo(
