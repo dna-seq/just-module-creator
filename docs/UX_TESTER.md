@@ -526,6 +526,20 @@ Holds. The first headless connect timed out again (added to F121).
 2e01a08 under src, skills and the manifests only by the version bump).** F171 holds: the strict compile of the rm453 case
 refuses with the same `next_step`. Nothing else moved on the surface.
 
+**0.48.19 recheck, 2026-11-23 (fastmcp 4.2.5, mcp 2.3.0; main 70bf4da), over the wire and from Claude Code 2.1.330.**
+- `stdio`: `initialize` at 2025-06-18 and at 2026-07-28 (which settles on 2025-11-25) both list 100 tools, and
+  `list_tables` answers.
+- Claude Code negotiates the modern wire with this server (`protocolEra: modern`, `2026-07-28`, in the debug log of a
+  `claude -p` session and an interactive one).
+- The toolbox reveal holds in the host: in `JMC_TOOLBOX=layered`, `lookup_open_access` was not found by ToolSearch,
+  was found after `toolbox(groups=["evidence"])`, and answered for PMID 11788828 (transcript `tool_use` blocks).
+- A saved account still serves: `registry_whoami(target="test")` from the host answered `sheep`.
+- F172 measured (5c39beb): in an interactive tmux session `record_decision(basis="author")` asked nothing and returned
+  `approved: null`. The RM32 approval step that held on 0.48.15–0.48.18 no longer reaches a Claude Code author. Codex
+  not measured.
+- Not exercised: `authenticate` with a session token on the modern wire. The release says it refuses and names the
+  env var; the probe needs a token I would have to mint.
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
