@@ -3,7 +3,7 @@
 What actually shipped, newest first. Includes cross-repo integration changes made
 on our side, so agents in sibling repos are not surprised.
 
-## [Unreleased]
+## [0.48.19] — 2026-11-23
 
 - **fastmcp 4.2.5, and the `<4` pin of 2026-09-26 is lifted**: 4.2.5 closes fastmcp#4920, so a tool group revealed with `toolbox` now reaches a client on the 2026-07-28 wire, which fastmcp 4 clients negotiate by default; the lift gate `test_a_reveal_reaches_a_default_mode_client` passes. Two things still do not hold on that wire, and both are refused rather than faked: a token given to `authenticate` or minted by `registry_register` is not stored where no transport session id carries it (stdio and in-memory have none), and the message names the environment variable and the saved account instead; and `record_decision` cannot ask the person from inside the tool there, so an author's decision is kept as stated, `approved: null` (F172). On the handshake wire nothing changed. The approval question is now a yes/no, and a "no" records nothing, as a decline does. Tool hints are spelled in the new SDK's field names, and a test reads every tool's off the wire. Lock: fastmcp 3.4.11→4.2.5, the MCP SDK 1.30.0→2.3.0, `fastmcp-tasks` and `mcp-types` added.
 
