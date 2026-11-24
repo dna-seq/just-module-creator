@@ -5,7 +5,10 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+## [0.48.20] — 2026-11-24
+
 - **An author's decision is asked again on Claude Code** (F172): Claude Code negotiates MCP's 2026-07-28 wire with us, where a server cannot push a question, and 0.48.19 therefore read it as a host that cannot ask: `record_decision(basis="author")` returned `approved: null` and nobody saw the wording. The tool now asks the way that wire provides, by returning an input-required result the host puts to the person, and reads the answer on the host's second call. Handshake-era hosts are asked as before. The box is labelled "Approve this wording" on both.
+- **Weekly dependency bump** (liaison, 2026-11-24): `uv lock --upgrade` moved 24 packages within their caps, among them pydantic 2.14.4, pydocket 0.32.1, typer 0.29.2 and filelock 4.3.1. The registry client is held at 0.32.1, what both instances serve; 0.33 and 0.34 add only `rotate_key` and a site-admin `deploy`.
 
 ## [0.48.19] — 2026-11-23
 
