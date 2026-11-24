@@ -553,6 +553,16 @@ refuses with the same `next_step`. Nothing else moved on the surface.
   Taken in 75bbc4e: the live dialog now reads "Approve this wording" (checked 2026-11-23); still required and unset, on purpose.
 - My slip: the first run inherited `JMC_TRACE=0` from my shell (`recording: "off"`). Hook checks need `env -u JMC_TRACE`.
 
+**Release 0.48.20 recheck, 2026-11-24, tag v0.48.20 (18407b6).** No source change since 75bbc4e. The release adds the
+weekly lock bump (pydantic 2.14.4, py-key-value-aio 0.5.0, pydocket 0.32.1, etc.), with the registry client held at
+0.32.1. The venv matches the lock.
+- 100 tools on both wires over raw stdio. A 2026-07-28 `initialize` still settles on 2025-11-25.
+- The F172 fix holds in interactive Claude Code 2.1.331 (tmux, `env -u JMC_TRACE`, scratchpad `r21/`). The pane shows
+  "Fulfilling input required by 'tools/call' (round 1)", then the dialog with "Approve this wording: ☐". Tick then
+  Accept returns `approved: true`, `recording: "hook"`, and the trace queue holds the session.
+- Not a probe: raw-stdio `record_decision(basis="author")` with no client answer ends "Error calling tool" on stdin
+  EOF. The host is the test.
+
 ## Standing constraints
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
