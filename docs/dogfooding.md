@@ -128,7 +128,7 @@ since about 12:40 timed out after 30 s, and a by-hand `initialize` straight afte
 tied to a release; the common factor so far is the first start after a long idle gap.
 **Lead, 2026-11-24:** the lead's session still reported `CONNECT_TIMEOUT` after each of the day's `/reload-plugins`
 (kit pins v0.1.266 to v0.1.273), so a reload brings the cached failure along rather than retrying it. By hand, straight
-after: `initialize` in 16.7 s, then 2.4 s. Kit #300 is still unanswered; the session queued `watchdog.sh reload --mcp`.
+after: `initialize` in 16.7 s, then 2.4 s. Kit #300 is still unanswered; the session queued `watchdog.sh reload --mcp`, and its `/mcp reconnect all` brought the server back (v0.48.20).
 
 ## F86 — LitVar2 is the rsID↔CAID bridge we lack, and it is DEFERRED to upstream's 0.7
 
