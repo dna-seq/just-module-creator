@@ -1,12 +1,25 @@
 # review-ledger.yaml: the EASRP 2026 reviews as a revision plan (plan only: no letter to write).
-# Kept by the writer seat; every decision stays `undecided` until the authors confirm it.
+# Kept by the writer seat. Decided 2026-11-25 by the authors' one confirmation (desk #368, option 1).
 manuscript: ../manuscript.tex
 mode: journal
 rounds:
 - round: 1
   decision: 'EASRP 2026: not selected for the final (contest reviews; no editor, no letter to write)'
   reviews: letter.md
-  plan: undecided
+  plan: decided
+  confirmation:
+    asked: >-
+      Desk #368 (https://github.com/winternewt/desk/issues/368), 2026-11-19, options 1 to 3. Option 1 read "All as
+      proposed: the writing changes, the two declines, and the new measurements", naming the declines (an
+      adversarial test with malicious papers; a check that finished modules give correct results on real genomes)
+      and the measurements (the plugin against the same model without it, more papers and models, how often the
+      AI writes a wrong variant, citation or effect direction).
+    answer: >-
+      A: 1. As 'bare llm' control runs we would need claude session provided module creator docs only + compiler
+      and a same task to create a module (no-plugin run). And another one with parquet exmples of modules and a
+      request to recreate similar module but from the paper provided. Agent is to run in some isolation with no
+      access to adjacent tools. Risk is it downloads just-dna-compiler from pypi/internet (winternewt, 2026-11-25)
+    named: [R1.S3, R2.S3, R1.W1, R1.W2, R1.S2, R2.W1, R2.W2, R2.W4, R2.S1, R2.S2, R2.S4, R2.Q3, R3.W3, R3.S2]
   labels_note: 'Reviewer 2 numbers within headings (W, S, Q + their number). Reviewers 1 and 3 number nothing: their
     W/S labels are the authors'', one per line in the letter. Reviewer 4 gave a summary and scores only: no items.
     R2.W3 is split at its comma (a/b).'
@@ -24,7 +37,8 @@ rounds:
     - wording
     must_fix: true
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     commitments:
     - change: More papers and runs, or claims narrowed to what three runs show.
       target: Method, Evaluation dimensions; Results, Table 3
@@ -42,7 +56,8 @@ rounds:
     - results-text
     must_fix: true
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     commitments:
     - change: A comparison with raw LLM, retrieval-only or existing curation on the same tasks.
       target: Results, a new comparison subsection and table
@@ -58,7 +73,8 @@ rounds:
     - wording
     must_fix: false
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     commitments:
     - change: Drop or attribute the runtime claim to the companion paper (or add an end-to-end benchmark).
       target: Abstract ('applied to a genome in about a minute')
@@ -75,7 +91,8 @@ rounds:
     - methods-text
     must_fix: false
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     commitments:
     - change: Publish prompts, source snapshots, the reference curation and the scorer; make the suite blinded.
       target: Method, Evaluation dimensions; Code and data availability (assets/benchmarks, bench.py)
@@ -92,7 +109,8 @@ rounds:
     - table
     must_fix: false
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     commitments:
     - change: Four arms (raw, retrieval, tool-only, full) across several models and hosts.
       target: Results, the comparison subsection (same study as R1.W2)
@@ -110,7 +128,8 @@ rounds:
     - discussion-text
     must_fix: false
     proposed: decline
-    decision: undecided
+    decision: decline
+    confirmed: blanket
     reason: 'Scope for this version: a threat-model paragraph and limitation sentence instead; the evaluation itself
       is a later study (proposed).'
   - id: R2.W1
@@ -127,7 +146,8 @@ rounds:
     - results-text
     must_fix: true
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     same_as:
     - R1.W2
     commitments:
@@ -146,7 +166,8 @@ rounds:
     - wording
     must_fix: true
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     same_as:
     - R1.W1
     commitments:
@@ -167,7 +188,8 @@ rounds:
     - answer
     must_fix: false
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     commitments:
     - change: Frame the catalog as feasibility; settle who authored which namespaces (the record's outside-namespaces,
         IC-7).
@@ -183,7 +205,8 @@ rounds:
     - wording
     must_fix: false
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     commitments:
     - change: Say the comparison is of capabilities, or measure against one of them.
       target: Related work, the comparison table's caption and lead-in
@@ -201,7 +224,8 @@ rounds:
     - discussion-text
     must_fix: true
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     commitments:
     - change: A measured support or hallucination rate, or the gap stated as the main limitation.
       target: Results; Discussion, Limitations
@@ -220,7 +244,8 @@ rounds:
     - table
     must_fix: true
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     same_as:
     - R1.W2
     commitments:
@@ -240,7 +265,8 @@ rounds:
     - table
     must_fix: false
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     commitments:
     - change: More models, hosts, papers, curators with inter-rater agreement, and per-module error rates.
       target: Results, Table 3 extended (more fixtures and runs); curators and inter-rater agreement need the authors
@@ -257,7 +283,8 @@ rounds:
     - results-text
     must_fix: false
     proposed: decline
-    decision: undecided
+    decision: decline
+    confirmed: blanket
     reason: Genome annotation is the companion paper's subject (proposed); this paper cites it. Review effort is
       taken up under R2.S1.
   - id: R2.S4
@@ -272,7 +299,8 @@ rounds:
     - table
     must_fix: true
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     same_as:
     - R2.W4
     commitments:
@@ -291,7 +319,8 @@ rounds:
     - methods-text
     must_fix: true
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     commitments:
     - change: Who built the reference, how, and how disagreements were adjudicated.
       target: Method, Evaluation dimensions (needs the authors' account of the adjudication)
@@ -308,7 +337,8 @@ rounds:
     - discussion-text
     must_fix: false
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     commitments:
     - change: Explain what a user can check (verbatim quotes, per-row curator attribution, logs, the decision record).
       target: Method, Determinism, evidence, and responsibility; Discussion
@@ -325,7 +355,8 @@ rounds:
     - answer
     must_fix: false
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     same_as:
     - R2.S1
     commitments:
@@ -344,7 +375,8 @@ rounds:
     - wording
     must_fix: false
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     commitments:
     - change: State plainly that interpretation is for experts and the work is research-only.
       target: Discussion; Appendix, Research use only
@@ -362,7 +394,8 @@ rounds:
     - results-text
     must_fix: false
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     commitments:
     - change: Name the audience and introduce the field's bigger picture.
       target: Introduction, first two paragraphs
@@ -377,7 +410,8 @@ rounds:
     - new-analysis
     must_fix: true
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     same_as:
     - R1.W2
     commitments:
@@ -395,7 +429,8 @@ rounds:
     - wording
     must_fix: false
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     same_as:
     - R3.W2
     commitments:
@@ -412,7 +447,8 @@ rounds:
     - new-analysis
     must_fix: true
     proposed: address
-    decision: undecided
+    decision: address
+    confirmed: blanket
     same_as:
     - R1.W2
     commitments:
