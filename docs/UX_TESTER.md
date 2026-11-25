@@ -133,7 +133,7 @@ the window allows. Results go to the writer for Table 3 and a new comparison sub
 - **Scores.** sirt6 uses `bench.py --fixture`. ards and centenarian have no adjudicated reference, and I can't
   adjudicate one as an expert. So they get cross-arm counts plus the census, and each row is checked against the
   paper: a variant not in it, a citation that isn't it, a reversed direction.
-- Built 2026-11-26 00:10Z. Everything lives in `/data/bench-iso/`: `env-b` and `env-c` (venvs), `docs-b` (`skills/`
+- Built 2026-11-25 ~23:00Z. Everything lives in `/data/bench-iso/`: `env-b` and `env-c` (venvs), `docs-b` (`skills/`
   plus README at 5b92948), `examples-c`, `papers/<fixture>`, `runs/`, `scratch/`.
   - `examples-c` is adhd_gwas_loci 1.0.1 and bodybuilding 1.0.2 from prod, parquet and README only, manifests dropped
     because they name the compiler. lactose_tolerance was dropped because it carries sirt6's decoy rs4988235;
@@ -143,8 +143,11 @@ the window allows. Results go to the writer for Table 3 and a new comparison sub
   - A probe session in `runs/` listed no MCP server, no skill and only the built-in plugins. The `--tools` list holds
     no Agent tool.
 - Runner, briefs, outputs and `round.log` are in `data/interim/repro-bench-5/`. Per fixture, p, b and c run side by
-  side. Started 00:18Z on claude-opus-5 from main c2d93ee. The commit hold was asked in #just-module-creator >
+  side. Started 2026-11-25 23:07Z on claude-opus-5 from main c2d93ee. The commit hold was asked in #just-module-creator >
   benchmarks (643719132).
+- My layout slip: `out/` (the live transcripts) and `briefs/` sit in `repro-bench-5/`, beside the p arm's run directory.
+  p-sirt6 ran `ls -la .../repro-bench-5/ | head -5` in its first call, which breaks the brief's listing ban. It saw
+  names only. The checker (scratchpad `r5/leak5.py`) flags any later read of `out/` or `briefs/`.
 - Next step: once the round ends, run the leak and isolation checks per transcript, then score.
 **Benchmark round 4, handed over by the lead 2026-11-19 (the person's word).** Fixture `sirt6`, plugin 0.48.15, model
 `claude-opus-5`, three runs (`data/interim/repro-bench-4/run-sirt6-{a,b,c}`), `claude -p --permission-mode auto` from
