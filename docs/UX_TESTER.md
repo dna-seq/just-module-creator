@@ -133,7 +133,19 @@ the window allows. Results go to the writer for Table 3 and a new comparison sub
 - **Scores.** sirt6 uses `bench.py --fixture`. ards and centenarian have no adjudicated reference, and I can't
   adjudicate one as an expert. So they get cross-arm counts plus the census, and each row is checked against the
   paper: a variant not in it, a citation that isn't it, a reversed direction.
-- Next step: build `/data/bench-iso/`, then probe that a B session lists no plugin and no MCP.
+- Built 2026-11-26 00:10Z. Everything lives in `/data/bench-iso/`: `env-b` and `env-c` (venvs), `docs-b` (`skills/`
+  plus README at 5b92948), `examples-c`, `papers/<fixture>`, `runs/`, `scratch/`.
+  - `examples-c` is adhd_gwas_loci 1.0.1 and bodybuilding 1.0.2 from prod, parquet and README only, manifests dropped
+    because they name the compiler. lactose_tolerance was dropped because it carries sirt6's decoy rs4988235;
+    fut2_secretor was dropped because its README names the tooling.
+  - `papers/` holds the main text from `fetch_fulltext` plus every supplementary file `list_supplementary` found
+    (none for sirt6).
+  - A probe session in `runs/` listed no MCP server, no skill and only the built-in plugins. The `--tools` list holds
+    no Agent tool.
+- Runner, briefs, outputs and `round.log` are in `data/interim/repro-bench-5/`. Per fixture, p, b and c run side by
+  side. Started 00:18Z on claude-opus-5 from main c2d93ee. The commit hold was asked in #just-module-creator >
+  benchmarks (643719132).
+- Next step: once the round ends, run the leak and isolation checks per transcript, then score.
 **Benchmark round 4, handed over by the lead 2026-11-19 (the person's word).** Fixture `sirt6`, plugin 0.48.15, model
 `claude-opus-5`, three runs (`data/interim/repro-bench-4/run-sirt6-{a,b,c}`), `claude -p --permission-mode auto` from
 the repository, one after another in the lead's background job. Its briefs, JSON outputs (session ids), stderr and
