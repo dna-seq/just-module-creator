@@ -115,6 +115,25 @@ claims that were plausibly wrong, and it found more than solo probing.
 
 ## In flight
 
+**Benchmark round 5, asked 2026-11-25.** The person's words came via the writer (643696214, desk #368 option 1).
+Two no-plugin control arms beside the plugin, on sirt6, centenarian and ards. claude-opus-5 first; claude-opus-5-5 if
+the window allows. Results go to the writer for Table 3 and a new comparison subsection. State: urgent, started
+2026-11-25 23:00Z.
+- **P, the plugin at 0.48.20.** The fixture prompt verbatim, run from the repository as in round 4, so every arm
+  runs on one build.
+- **B, docs plus compiler.** Run from a directory outside `/data/sources`, with no plugin and no MCP. It gets the
+  plugin's `skills/` tree as docs and a venv holding just-dna-compiler 0.8.9 (the lock's version). Web access is
+  allowed. The prompt is P's, with "the plugin" read as "the tools and docs".
+- **C, examples plus paper.** Run outside the repo, with no plugin, no MCP and no just-dna package. It gets parquet
+  files of published modules (checked: none built from a fixture's paper) and the paper's full text, and is asked
+  for a similar module. I score it after `reverse_module`.
+- **Isolation, checked from records rather than by trust.** I read the init message's tool, MCP and plugin lists.
+  Then I read the `tool_use` blocks for any pip, uv, PyPI, GitHub or registry fetch of a just-dna package or the
+  plugin.
+- **Scores.** sirt6 uses `bench.py --fixture`. ards and centenarian have no adjudicated reference, and I can't
+  adjudicate one as an expert. So they get cross-arm counts plus the census, and each row is checked against the
+  paper: a variant not in it, a citation that isn't it, a reversed direction.
+- Next step: build `/data/bench-iso/`, then probe that a B session lists no plugin and no MCP.
 **Benchmark round 4, handed over by the lead 2026-11-19 (the person's word).** Fixture `sirt6`, plugin 0.48.15, model
 `claude-opus-5`, three runs (`data/interim/repro-bench-4/run-sirt6-{a,b,c}`), `claude -p --permission-mode auto` from
 the repository, one after another in the lead's background job. Its briefs, JSON outputs (session ids), stderr and
