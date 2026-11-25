@@ -78,7 +78,7 @@ rounds:
     commitments:
     - change: Drop or attribute the runtime claim to the companion paper (or add an end-to-end benchmark).
       target: Abstract ('applied to a genome in about a minute')
-      landed: pending
+      landed: 'Abstract: the one-minute runtime sentence replaced by one attributing genome annotation to the companion paper (2026-11-25)'
   - id: R1.S1
     referee: Reviewer 1
     label: null
@@ -96,7 +96,7 @@ rounds:
     commitments:
     - change: Publish prompts, source snapshots, the reference curation and the scorer; make the suite blinded.
       target: Method, Evaluation dimensions; Code and data availability (assets/benchmarks, bench.py)
-      landed: pending
+      landed: 'Method, Evaluation dimensions (materials in the repository, the suite said not blinded) and Code and data availability, Benchmark corpus (2026-11-25); a blinded suite is not built'
   - id: R1.S2
     referee: Reviewer 1
     label: null
@@ -194,7 +194,7 @@ rounds:
     - change: Frame the catalog as feasibility; settle who authored which namespaces (the record's outside-namespaces,
         IC-7).
       target: Results, Production catalog; Conclusion
-      landed: pending
+      landed: 'Results, Production catalog (feasibility framing, 3 of 8 by the namespace split, the catalog on 2026-11-25) and Conclusion (2026-11-25); which namespaces are outside the team is still for the authors to confirm (record, outside-namespaces)'
   - id: R2.W3b
     referee: Reviewer 2
     label: '3'
@@ -210,7 +210,7 @@ rounds:
     commitments:
     - change: Say the comparison is of capabilities, or measure against one of them.
       target: Related work, the comparison table's caption and lead-in
-      landed: pending
+      landed: 'Related work, Table 1 caption: capabilities as documented, no head-to-head run (2026-11-25)'
   - id: R2.W4
     referee: Reviewer 2
     label: '4'
@@ -324,7 +324,7 @@ rounds:
     commitments:
     - change: Who built the reference, how, and how disagreements were adjudicated.
       target: Method, Evaluation dimensions (needs the authors' account of the adjudication)
-      landed: pending
+      landed: 'Method, Evaluation dimensions: who, when and how the reference was merged, and that the scored runs were not adjudicated (2026-11-25)'
   - id: R2.Q2
     referee: Reviewer 2
     label: '2'
@@ -342,7 +342,7 @@ rounds:
     commitments:
     - change: Explain what a user can check (verbatim quotes, per-row curator attribution, logs, the decision record).
       target: Method, Determinism, evidence, and responsibility; Discussion
-      landed: pending
+      landed: 'Method, Determinism, evidence, and responsibility: a paragraph on what a reader can check (2026-11-25)'
   - id: R2.Q3
     referee: Reviewer 2
     label: '3'
@@ -380,7 +380,7 @@ rounds:
     commitments:
     - change: State plainly that interpretation is for experts and the work is research-only.
       target: Discussion; Appendix, Research use only
-      landed: pending
+      landed: 'Discussion, second paragraph, and Appendix, Research use only (2026-11-25)'
   - id: R3.W2
     referee: Reviewer 3
     label: null
@@ -399,7 +399,7 @@ rounds:
     commitments:
     - change: Name the audience and introduce the field's bigger picture.
       target: Introduction, first two paragraphs
-      landed: pending
+      landed: 'Introduction, second paragraph: the wider setting and the audience (2026-11-25)'
   - id: R3.W3
     referee: Reviewer 3
     label: null
@@ -436,7 +436,7 @@ rounds:
     commitments:
     - change: Say which audience, and rewrite for it.
       target: Introduction
-      landed: pending
+      landed: 'Introduction, second paragraph: the audience named (2026-11-25)'
   - id: R3.S2
     referee: Reviewer 3
     label: null

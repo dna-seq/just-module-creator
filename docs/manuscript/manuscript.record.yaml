@@ -401,6 +401,10 @@ open_issues:
   summary: '"Four of the eight modules" from authors outside the development team fits no split of the catalog''s 5, 2 and 1 modules per namespace; the authors must say which namespaces are outside the team (IC-7).'
   status: open
   route: author-required
+  update: 'Read 2026-11-25 from the production catalog: on 31 August its eight modules sat 5 in antonkulaga, 2 in
+    ksuha-dna and 1 in eric-mods. The text now says three of the eight are from the two outside namespaces, which
+    follows the authors'' own "two of the three namespaces" (EASRP review R2.W3a, desk #368); which namespaces
+    are outside the team is still the authors'' to confirm.'
 - id: scored-round-version
   summary: Table 3 does not name the plugin version, model, host or paper; the reference is an adjudicated merge of two plugin runs (now stated in the text, IC-2); naming the paper with a bibliography entry is pending (RP-4).
   update: 'Caption names plugin 0.27.0, just-dna-compiler 0.6.6, Claude Code 2.1.251 and Claude Opus 5, from the

@@ -51,9 +51,8 @@ roles re-curated a 164-row longevity module, reading the literature, writing
 each row with verbatim evidence and rehearsing every version, while a
 non-blocking, asynchronous human-in-the-loop design confined the maintainer to
 decisions and irreversible steps. The three scored authoring runs are archived
-with their inputs and re-score exactly. Once installed, a module can be
-applied to a genome in about a minute; the annotation consumer,
-Just-DNA-Lite, is the subject of a companion
+with their inputs and re-score exactly. Applying a module to a genome is the
+work of the annotation consumer, Just-DNA-Lite, the subject of a companion
 paper~\citep{companion2026justdnalite}. The software is open-source and available at
 \url{https://github.com/dna-seq/just-module-creator}.
 \end{abstract}
@@ -69,6 +68,16 @@ and preprints, and it changes as new studies appear. Turning it into something a
 computational pipeline can use requires structured, validated records with
 unambiguous variant identifiers, genome-build coordinates, and traceable
 citations.
+
+The wider setting is personal genomics. Genotyping and sequencing now reach
+individuals directly, and research into how individual variation shapes
+traits, drug response, and ageing depends on curated knowledge that keeps pace
+with the literature. Most of that knowledge is assembled by hand, by a few
+groups, for a few domains. This paper is written for the people who build such
+resources: bioinformaticians and computational biologists who curate variant
+knowledge, and developers of AI agents for scientific work. It is not addressed
+to individuals reading their own genome or to physicians, and nothing it
+describes is a clinical tool (Appendix~\ref{app:ruo}).
 
 Researchers increasingly use AI coding assistants such as Claude Code and Codex
 for this kind of work. When asked to analyze variants, these tools
@@ -161,7 +170,9 @@ model drafting, and \texttt{just-module-creator}.
 \scriptsize
 \caption{Qualitative comparison of systems adjacent to annotation authoring.
 The rows have different primary tasks; the capability columns compare how
-their structured outputs are created, checked, and shared. Runtime annotation
+their structured outputs are created, checked, and shared, as each system
+documents them. No system was run against another on the same task, so the
+table says nothing about which produces more accurate records. Runtime annotation
 speed is outside this comparison and is covered in the companion platform
 paper~\citep{companion2026justdnalite}.}
 \label{tab:comparison}
@@ -468,6 +479,16 @@ or model identifier) so a reviewer can direct scrutiny where it is most
 needed. Attribution does not transfer responsibility: the human author holds
 accountability regardless.
 
+These records answer a reader's question of whether a published module
+reflects its source or the assistant's reading of it only partly, and the
+part they answer is where to look. Each study row can carry the passage it
+rests on, verbatim, beside the PMID it was taken from; the \texttt{curator}
+field says who located it; overrides of a reference archive are logged with
+their reason, and the log is published with every compile. A reader who opens
+the quoted passage can judge the row's claim against the source. Nothing in
+the toolchain makes that judgment, and a free-text conclusion is the
+assistant's or the author's wording, never the source's.
+
 Curation follows drafting because a drafted row may still carry decisions the
 source cannot make (genotype, weight interpretation, conclusion wording), and
 these are surfaced for domain experts rather than resolved silently.
@@ -489,11 +510,24 @@ The plugin's scorer evaluates variant recall over
 rsID--genotype pairs, citation recall (whether the run cites the papers the
 reference cites), and
 effect-direction agreement. Checking that a PMID names the intended paper is
-not yet implemented in the scorer. The reference standard is a human adjudication: a bioinformatician merged two
-earlier runs of the same prompt on the same paper and left the weights blank.
-Scoring modules against a module the same system authored would measure
+not yet implemented in the scorer. The reference standard is a human
+adjudication. On 31 August 2026 a bioinformatician read the differences
+between two earlier runs of the same prompt on the same paper, which had come
+out complementary rather than ranked: one agreed on every shared cell while
+covering a third of the variant keys, the other covered every key and agreed
+on a third of the cells. The reference takes the first run's studies and its
+heterozygous row verbatim and the second run's two homozygous rows, and leaves
+every weight blank, because no tool fills a weight and only a person settles
+it. Scoring modules against a module the same system authored would measure
 agreement with itself; the adjudication breaks that circle only in part,
-because every reference row was first drafted by the system.
+because every reference row was first drafted by the system. The scored runs
+came later and were not adjudicated: each cell is scored as the run left it,
+and no disagreement between a run and the reference was resolved after
+scoring. The prompt, the reference, the scored runs' files, and the scorer are
+in the repository (Section~\ref{sec:code}), so every number in
+Table~\ref{tab:scores} can be recomputed. The suite is not blinded in the
+strong sense: the plugin's written guidance was developed by the same team
+that built the reference.
 
 Recall is reported at two
 grains, because recovering the right variant with wrong genotypes and
@@ -520,7 +554,9 @@ Run & rsID recall & Pair recall & Decoy rate & Citation recall & Direction \\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:scores} reports three runs of one prompt on one paper. All
+Table~\ref{tab:scores} reports three runs of one prompt on one paper: a smoke
+test showing that the workflow runs end to end and what its output looks like,
+not evidence of reliability across papers, traits, or models. All
 three recovered the variant the paper supports, cited both it and the
 earlier study it replicates, agreed on effect direction, and introduced no
 decoy. Two matched the reference on every genotype row, including a
@@ -617,7 +653,10 @@ lactose\_tolerance      &  2  &   8 &   1 & 2 \\
 \end{table}
 
 Two of the three namespaces belong to authors outside the development team,
-and four of the eight modules are theirs. Module sizes range from 2 to 474
+and three of the eight modules are theirs. These counts show that the path
+from authoring to an installable module works for more than its developers;
+they are a feasibility signal, not evidence that the modules are correct or
+useful. By 25 November 2026 the catalog held 20 modules in five namespaces. Module sizes range from 2 to 474
 variants. Four versions of \texttt{big\_five\_personality\_snps} show that a
 published module can be revised and republished. Two modules on the same trait
 (\texttt{placebo\_response\_research} via Codex, \texttt{placebo\_response\_claude} via
@@ -793,7 +832,22 @@ genetic misdiagnoses that later reclassification
 exposed~\citep{manrai2016genetic}. The ecosystem is therefore explicitly
 research-only (Appendix~\ref{app:ruo}): a module that faithfully reflects a study that later fails to
 replicate is not wrong on its own terms, but a user acting on it may be harmed
-all the same.
+all the same. Deriving health conclusions from a person's genome calls for
+expert care: a module records what studies report, its conclusions are
+written for researchers, and interpreting an individual's result belongs to
+clinical geneticists and genetic counselors.
+
+The assistant reads untrusted text and can write to a registry, which gives
+the workflow an attack surface. A paper may contain instruction-like text,
+conflicting citations, or identifiers that are valid but wrong; a session may
+attempt a registry action its author did not intend. The controls in place
+are structural: registry writes require an account token, they go to the
+deletable test registry unless the production catalog is named explicitly,
+overrides of a reference archive are logged, and the registry recompiles and
+re-enriches every module it accepts. None of these has been tested
+adversarially. An evaluation with malicious papers, conflicting citations,
+false-but-valid identifiers, instruction-like source text, and unauthorized
+registry actions is future work.
 
 Through the registry, a module one author publishes can be installed by
 others. The plugin's MCP server uses the standard stdio and HTTP transports of the
@@ -805,13 +859,18 @@ a module carries no individual-level data.
 The module system launched in August 2026. We are developing mechanisms to involve genetic counselors and
 domain-expert agents in quality evaluation, and to communicate to citizen
 scientists that many modules reflect early-stage research rather than
-clinical-grade evidence. Every run scored here used one model
+clinical-grade evidence. The evaluation's main gap is what it does not
+measure: whether a cited source supports the claim a row makes. Free-text
+conclusions are not scored at all, the assistant's judgment about support
+remains a reviewer's question, and no support or hallucination rate is
+reported. The scored runs are three runs of one prompt on one paper, a smoke
+test rather than evidence of reliability, and every one used one model
 through one host, so the results say nothing about model or host sensitivity.
+Whether a module built this way yields correct annotations on real genomes is
+the companion paper's subject and is not shown here.
 The curation loop of Section~\ref{sec:loop} is a single run on one module with
 one model family; its rows have not been compared with an independent human
-curation, and production waits on the maintainer's review.
-Free-text conclusions are not scored at all, and the assistant's judgment about
-whether a source supports a claim remains a reviewer's question. Coordinates
+curation, and production waits on the maintainer's review. Coordinates
 are declared rather than translated, and the compiler is bound to GRCh38.
 The file \texttt{module\_spec.yaml} names a \texttt{genome\_build}; an omitted one is
 taken to be GRCh38, and a GRCh37 or T2T declaration is recorded while its
@@ -831,8 +890,9 @@ correction, and reuse by someone else. What makes that more than a file format
 is what a module keeps separate: authored claims stay distinct from derived
 records, a check that
 could not run says so, and each row of a published module has a place for
-the evidence behind it. Eight modules from three namespaces, half of them from authors
-outside the development team, show the path is functional today. The same
+the evidence behind it. Eight modules from three namespaces, three of them from authors
+outside the development team, show the path is functional today; whether its
+modules are correct is what the evaluation begins to measure. The same
 tools carry an autonomous curation loop in which agents do the reading and the
 rebuilding and the maintainer is asked only for decisions, each rule the loop
 applied written down for review.
@@ -860,6 +920,10 @@ reviewed in a spreadsheet and published for others to install.
     \url{https://github.com/dna-seq/just-dna-lite}
     (local VCF processing, annotation, and reporting; described in the
     companion paper~\citep{companion2026justdnalite}).
+    \item \textbf{Benchmark corpus}: \texttt{assets/benchmarks/} in the
+    just-module-creator repository holds the prompt, the adjudicated reference,
+    and the files of every run in Table~\ref{tab:scores}; the scorer is
+    \texttt{just\_module\_creator.bench}.
     \item The public catalog is live at \url{https://module-registry.just-dna.life}
     and the test registry at \url{https://module-polygon.just-dna.life}.
 \end{itemize}
@@ -882,7 +946,8 @@ predictions and does not open a genome. Just-DNA-Lite and \texttt{just-prs}
 process sample data for research and educational use; their reports and scores
 are not diagnoses or medical advice. Language that implies causation, such as
 ``causes'' or ``guarantees,'' is outside the scope of a module written with this
-plugin.
+plugin. Interpreting an individual's results for health decisions belongs to
+qualified professionals, such as clinical geneticists and genetic counselors.
 
 % ================================================================
 \section{Plugin surface: tools and skills}

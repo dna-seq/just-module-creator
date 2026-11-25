@@ -38,10 +38,15 @@ The seat's working state, rewritten to the present before each reset (docs/seats
   exact match; identifiers in the record's `evaluation-corpus`. Open: archiving them somewhere that travels, and the
   caption naming the versions (RP-4), both put to the person.
   Both done: archived at f778e2d (lead), caption at 9c38608; record `evaluation-corpus` resolved (6988cf3).
-- **EASRP 2026 reviews** (7051ad1): `docs/manuscript/easrp2026-reviews/letter.md` verbatim (sender's address left
-  out, public repo) and `review-ledger.yaml`, 23 items, all `undecided`; the person's one confirmation question
-  asked 2026-11-19 in chat. The baseline comparison (same model, no plugin) is the evaluation the tester's rounds
-  could run.
+- **EASRP 2026 reviews**: decided 2026-11-25, desk #368 option 1 (all 23 as proposed, the two declines and the
+  new measurements named); ledger ffa5f0c. The person's answer adds the control design: a no-plugin run with the
+  module-creator docs plus the compiler, and one with parquet examples plus the paper; isolated, no adjacent tools,
+  risk that it fetches just-dna-compiler from PyPI. Forwarded to the tester 2026-11-25 (#just-module-creator >
+  benchmarks, 643696214), asking a plan item and when; its results come here.
+  Text-only items landed 2026-11-25 (R1.W3, R1.S1, R2.W3a/b, R2.Q1, R2.Q2, R3.W1, R3.W2, R3.S1, the two declines'
+  paragraphs, the limits narrowed to a smoke test). Waiting on the tester's runs: R1.W1, R1.W2, R1.S2, R2.W1,
+  R2.W2, R2.W4, R2.S1, R2.S2, R2.S4, R2.Q3, R3.W3, R3.S2: a comparison subsection and table, an error rate, rows
+  needing correction. R2.S2's several curators with inter-rater agreement need the authors.
 - **Round 4** (the tester, 2026-11-19, notes f869fe9): sirt6 on plugin 0.48.15, claude-opus-5, runs a-c all 1.00
   rsID/pair recall, decoy 0, citation and direction 1.00; run d on claude-opus-5-5, citation recall 0.50. Caveat
   F168: module-curate's worked case names this fixture's answer and runs c and d read it, so a and b are the clean
@@ -59,8 +64,10 @@ The seat's working state, rewritten to the present before each reset (docs/seats
 - **Appendix counts**: checked 2026-11-19. 60 tools and 20 skills (7 + 13) were true of 0.27.0 (decorators at
   221b95f); today 100 tools and 21 skills (7 + 14). The text now pins the counts to 0.27.0. Whether the appendix
   moves to the current surface waits on desk #369's answer (which version Table 3 reports).
-- **On the desk** (filed 2026-11-19, the person away): #367 author list (default: no authors printed), #368 the
-  EASRP reviews' plan (default: nothing changes), #369 Table 3 and round 4 (default: August runs only).
+- **On the desk** (filed 2026-11-19): #367 author list (default: no authors printed), #369 Table 3 and round 4
+  (default: August runs only). #368 answered 2026-11-25.
+- **Catalog split** (2026-11-25): 31 August's eight modules were 5 antonkulaga, 2 ksuha-dna, 1 eric-mods; the text
+  says 3 of 8 from outside; the authors still confirm which namespaces are outside (record outside-namespaces).
 
 ## Blind spots
 
