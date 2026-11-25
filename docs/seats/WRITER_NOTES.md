@@ -42,7 +42,13 @@ The seat's working state, rewritten to the present before each reset (docs/seats
   new measurements named); ledger ffa5f0c. The person's answer adds the control design: a no-plugin run with the
   module-creator docs plus the compiler, and one with parquet examples plus the paper; isolated, no adjacent tools,
   risk that it fetches just-dna-compiler from PyPI. Forwarded to the tester 2026-11-25 (#just-module-creator >
-  benchmarks, 643696214), asking a plan item and when; its results come here.
+  benchmarks, 643696214). Its plan (643717646, tester notes 5b92948): arms on sirt6, centenarian, ards; P plugin
+  0.48.20 (all arms one build), B skills docs + just-dna-compiler venv, no plugin, outside /data/sources, web on;
+  C published parquets + the paper's full text, no just-dna package, scored after reverse_module; isolation read
+  from init lists and tool_use blocks. Only sirt6 has an adjudicated reference: ards and centenarian get cross-arm
+  counts and a per-row check against the paper, so the paper must not call those an expert reference.
+  claude-opus-5 first, 9 runs, results about 2026-11-26 06:00Z; opus-5-5 after if the window allows. Next: on
+  its report, the comparison subsection and table.
   Text-only items landed 2026-11-25 (R1.W3, R1.S1, R2.W3a/b, R2.Q1, R2.Q2, R3.W1, R3.W2, R3.S1, the two declines'
   paragraphs, the limits narrowed to a smoke test). Waiting on the tester's runs: R1.W1, R1.W2, R1.S2, R2.W1,
   R2.W2, R2.W4, R2.S1, R2.S2, R2.S4, R2.Q3, R3.W3, R3.S2: a comparison subsection and table, an error rate, rows
