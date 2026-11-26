@@ -62,15 +62,20 @@ dependencies = [
     # filled as both events, silently. 0.8.10 for RM453: such a site that no witness placed fills
     # both spellings again, so 0.8.9's strict refusal of it after an offline enrich goes (our
     # F171). Each tier floors the others, so the three move together.
-    "just-dna-compiler>=0.8.10,<0.9",
-    "just-dna-format>=0.8.10,<0.9",
+    #
+    # **0.9.0 adopted (branch `adopt-0.9`, 2026-11-26), the ceiling again one minor.** Nothing a
+    # compiled module carries moved (INTEGRATION_0_9 § 1.0), so no recompile is owed; what moved
+    # here is the enricher's lane vocabulary (`stale`, § 1.6), a lane built by an invocation
+    # (`cache rebuild --only ensembl_rsid_index`, § 1.5) and two publish commands (§ 1.9).
+    "just-dna-compiler>=0.9.0,<0.10",
+    "just-dna-format>=0.9.0,<0.10",
     # 0.8.7 for RM444: `lookup_old_assembly`'s trimmed `next_step` (F152) leaves the
     # `ref`/`alts` and overlap wording to upstream's own message, which 0.8.6 lacks.
     # 0.8.8 for RM445: a pull put the hub's release label over kept files it never fetched,
     # so a ClinVar cache could serve August rows labelled with a November release. A failed
     # `release.json` fetch now raises from `ensure_*_snapshot`; `prepare_lane` reports it as a
     # failed lane, which is how `provision_caches` already shows one.
-    "just-dna-enricher[atlas]>=0.8.10,<0.9",
+    "just-dna-enricher[atlas]>=0.9.0,<0.10",
     # 0.25.2 is the first PUBLISHED client carrying the whole caching-proxy surface —
     # `cache_status`, `derived`, `draft`, the six `hint_*` methods and
     # `models.api.VariantHintReport`. Verified against the wheel rather than a sibling

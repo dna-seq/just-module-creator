@@ -1,8 +1,8 @@
 # Reference examples, copied from just-dna-format
 
 `hfe_hemochromatosis/` and `cyp2c19_star_alleles/` are just-dna-format's own reference examples, copied
-unchanged from its tag `v0.8.3`; the plugin now installs 0.8.9, whose tag holds both directories byte for
-byte as `v0.8.3` did (`git diff v0.8.3 v0.8.9` over them is empty, checked 2026-11-20). The suite measures
+unchanged from its tag `v0.8.3`; the plugin now installs 0.9.0, whose tag holds both directories byte for
+byte as `v0.8.3` did (`git diff v0.8.3 v0.9.0` over them is empty, checked 2026-11-26). The suite measures
 `compare_modules`, the checks, `study_facts` and `record_override` on them.
 
 They are copied rather than read from a sibling checkout because that checkout follows upstream's trunk:

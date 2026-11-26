@@ -47,7 +47,10 @@ def test_every_upstream_command_is_mapped_or_abstained_with_a_reason() -> None:
         f"upstream ships {missing} with no entry in cli_map. Map it to the tool that does it "
         "here, or abstain with the reason no tool does."
     )
-    stale = sorted(covered - upstream)
+    # A lane's build may be an invocation, not a bare command (0.9's `ensembl_rsid_index` is
+    # `cache rebuild --only ensembl_rsid_index`): its command part must be registered, and the
+    # mapping stays whole so upstream text naming that invocation reads as the one lane.
+    stale = sorted(c for c in covered if c.split(" --", 1)[0] not in upstream)
     assert not stale, f"cli_map names {stale}, which upstream does not register"
     assert cli_map.MAPPED["just-dna-compiler close"] == "close_module"
 
@@ -68,6 +71,16 @@ def test_every_tool_a_mapping_names_exists() -> None:
     named -= lanes | {"dry_run", "gene_metrics"}
     assert "provision_caches" in named and "close_module" in named
     assert not named - ours, f"cli_map names tools that do not exist: {sorted(named - ours)}"
+
+
+def test_a_lane_built_by_an_invocation_reads_as_that_lane() -> None:
+    """`cache rebuild` is an operator's sweep; with `--only ensembl_rsid_index` it is one lane."""
+    lane = next(lane for lane in routing.CACHE_LANES if lane.name == "ensembl_rsid_index")
+    assert lane.build_command and " --" in lane.build_command
+    line = cli_map.on_this_surface(f"Run `just-dna-enricher {lane.build_command}` first.")
+    assert line is not None and 'lanes=["ensembl_rsid_index"]' in line
+    bare = cli_map.on_this_surface("Run `just-dna-enricher cache rebuild` first.")
+    assert bare is not None and "has no tool here" in bare
 
 
 def test_a_longer_command_is_not_read_as_its_prefix() -> None:

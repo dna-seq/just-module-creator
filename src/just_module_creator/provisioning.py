@@ -306,6 +306,7 @@ def plan(*, declared_use: str = "unstated", settings: Settings | None = None) ->
                 build_command=lane.build_command,
                 env_var=lane.env_var,
                 release=getattr(status, "release", None),
+                stale_reason=getattr(status, "stale", None) if state == "stale" else None,
                 occupied_path=str(path) if state == "occupied" and path else None,
             )
         )

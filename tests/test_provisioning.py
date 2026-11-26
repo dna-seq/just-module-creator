@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pytest
 from conftest import offline_settings
+from just_dna_enricher.caches import LANE_STATES
 
 from just_module_creator import provisioning, routing
 from just_module_creator.models import CachePlanLane
@@ -32,6 +33,7 @@ class _Status:
     release: str | None = None
     release_unreadable: bool = False
     looked_in: Path | None = None
+    stale: str | None = None
 
 
 def _empty_box(monkeypatch, tmp_path: Path, *, free_mb: float = 5000.0) -> None:
@@ -326,6 +328,47 @@ def test_an_occupied_directory_is_neither_present_nor_absent(monkeypatch, tmp_pa
     assert row.occupied_path == str(stray)
     assert "occupied" in plan.note.lower() and "mane" in plan.note
     assert "prune" in plan.note
+
+
+def test_a_stale_lane_is_offered_again_and_says_why(monkeypatch, tmp_path):
+    """0.9's `stale` state (INTEGRATION_0_9 § 1.6): held but out of date, so not `present`.
+
+    The enricher's reason passes through as `stale_reason`; the route is the one an absent
+    lane gets, because a stale snapshot is replaced the way a missing one is fetched.
+    """
+    lane = next(lane for lane in routing.CACHE_LANES if lane.name == "mane")
+    held = tmp_path / "mane"
+    reason = "built from a release the hub has since replaced"
+    monkeypatch.setenv(provisioning.CACHE_DIR_VAR, str(tmp_path))
+    monkeypatch.setattr(provisioning, "cache_root", lambda: tmp_path)
+    monkeypatch.setattr(provisioning, "free_mb_at", lambda _p: 5000.0)
+    monkeypatch.setattr(
+        provisioning,
+        "lane_status",
+        lambda *_a, **_k: [
+            _Status(lane=lane, state="stale", path=held, stale=reason)
+            if other.name == "mane"
+            else _Status(lane=other, state="absent")
+            for other in routing.CACHE_LANES
+        ],
+    )
+    plan = provisioning.plan(settings=offline_settings())
+
+    row = next(r for r in plan.lanes if r.lane == "mane")
+    absent = next(r for r in plan.lanes if r.lane == "acmg")
+    assert absent.state == "absent" and absent.stale_reason is None
+    assert row.state == "stale"
+    assert row.stale_reason == reason
+    assert row.route in ("pull", "build")
+    assert row.measured_mb is None
+
+
+def test_the_states_this_layer_names_are_the_enrichers_own():
+    """`CachePlanLane.state`'s description names each state; 0.9 added `stale` to the set."""
+    described = CachePlanLane.model_fields["state"].description or ""
+    assert "present" in described
+    for state in LANE_STATES:
+        assert f"`{state}`" in described, f"{state} is an enricher lane state the model omits"
 
 
 def test_every_lane_field_this_layer_reads_is_still_a_lane_field():

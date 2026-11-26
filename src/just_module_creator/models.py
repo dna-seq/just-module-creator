@@ -3438,9 +3438,16 @@ class CachePlanLane(BaseModel):
     )
     state: str | None = Field(
         default=None,
-        description="`present`, `absent`, or `occupied` — the third being a directory that "
+        description="The installed enricher's own state for the lane (`caches.LANE_STATES`): "
+        "`present`, `stale` (held but out of date; `stale_reason` says why, and it is "
+        "offered again like an absent lane), `absent`, or `occupied` (a directory that "
         "exists and holds no snapshot, which provisioning refuses to build over rather "
-        "than deleting. Null when the installed enricher cannot be asked.",
+        "than deleting). Null when the installed enricher cannot be asked.",
+    )
+    stale_reason: str | None = Field(
+        default=None,
+        description="Why the enricher reads a held lane as out of date, in its own words, "
+        "when the state is `stale`.",
     )
     route: str = Field(
         description="How it would arrive: `present` (nothing to do), `pull` (published, "

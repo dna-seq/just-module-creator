@@ -146,6 +146,8 @@ _PUBLISH = (
     "strchive publish",
     "mitomap publish",
     "alphagenome publish",
+    "clinvar-gkm publish",
+    "opentargets publish",
 )
 
 MAPPED: dict[str, str] = {**_lane_commands(), **_AUTHORING}

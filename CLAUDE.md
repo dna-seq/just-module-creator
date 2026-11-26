@@ -759,7 +759,7 @@ answers a question over a number written here.*
 
 **Versions and dependencies**
 - **Upstream floors live in `pyproject.toml`**, with the reasoning in its comments; the format pin is
-  `>=0.8.x,<0.9` deliberately (one minor, both ends; the user's decision, 2026-09-04): the next minor is
+  `>=0.9.x,<0.10` deliberately (one minor, both ends; the user's decision, 2026-09-04): the next minor is
   an explicit bump, made after reading both instances' `/api/v1/version`. 0.8 was built ahead of
   production on the user's word (2026-11-10: "pre-build the 0.8 branch", with the polygon on 0.8). Verify capabilities by symbol with the
   `--project` recipe in §8, never from a line here. A floor bump is not adoption: sweep new authored
