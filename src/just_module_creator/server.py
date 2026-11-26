@@ -101,7 +101,7 @@ _COMP = schema_versions().compiler_version
 
 # **There is no room for an eighth line and the budget is the reason, measured.** A rule 7
 # about the thick/thin split (`registry_caches`, `remote_derive`) was written and taken back
-# out: the host keeps 2048 characters and this is at 2012, so a 254-character rule pushed the
+# out: the host keeps 2048 characters and this was at 2012, so a 254-character rule pushed the
 # REGISTRY rules off the end — and those are the tail, which is exactly what gets dropped
 # without an error. The split is taught in `module-101` and `module-enrich`, and
 # `registry_caches`' own docstring opens with "ask this first". Anything added here from now
@@ -139,8 +139,8 @@ Load `create-module` to route. Rules no skill softens:
 Every registry tool takes `target`; catalog reads REQUIRE it — read back what
 you wrote to. target="test" is the polygon: a publish there is a
 REHEARSAL you can delete. target="prod" is the catalog, immutable, its data
-claimed by a hash `yank` never frees. Writes default to test. Rehearse, say so
-aloud, promote only on explicit yes — "publish it" is not that ask.
+claimed by a hash `yank` never frees. Writes default to test. Rehearse, say so,
+promote only on explicit yes — "publish it" is not that ask.
 """
 
 #: Appended only when the surface is layered, and it has to be short: the host

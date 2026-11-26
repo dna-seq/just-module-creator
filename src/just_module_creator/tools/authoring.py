@@ -352,9 +352,8 @@ _UNPLACED_NEXT_STEP = (
     "This tool does not take `ensembl_cache=`, and a non-strict compile ships the rows the "
     "registry's strict compile refuses. Place them with the network on: `enrich_module` if "
     'the module has no `resolution.csv`, `refresh_sidecar(sidecar="resolution")` if it has '
-    "one. An offline pass can leave a row unplaced that a live source places (an indel at a "
-    "position that is both an insertion and a deletion is one). A row still unplaced online "
-    "is a curation decision: its rsID, or the row (module-curate)."
+    "one. An offline pass can leave a row unplaced that a live source places. A row still "
+    "unplaced online is a curation decision: its rsID, or the row (module-curate)."
 )
 
 

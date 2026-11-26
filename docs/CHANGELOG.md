@@ -5,6 +5,10 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+## [0.48.21] — 2026-11-26
+
+- **just-dna 0.8.10** (liaison, read and tried 2026-11-26): the three floors move to `>=0.8.10`. Its RM453 fills both spellings of a mirrored indel site that no witness placed, so a strict compile after an offline enrich no longer refuses such a row, the case behind F171 (checked on the liaison's `pathogenic_clinvar` reproduction: it refused on 0.8.9 and compiles strict on 0.8.10). `compile_module`'s `next_step` for an unplaced row and its `SYMPTOMS.md` entry keep the repair and drop that example, which no longer produces the refusal. The server's instructions lost one word ("say so aloud" is now "say so") to stay under the host's 2048-character ceiling with the longer version string.
+
 ## [0.48.20] — 2026-11-24
 
 - **An author's decision is asked again on Claude Code** (F172): Claude Code negotiates MCP's 2026-07-28 wire with us, where a server cannot push a question, and 0.48.19 therefore read it as a host that cannot ask: `record_decision(basis="author")` returned `approved: null` and nobody saw the wording. The tool now asks the way that wire provides, by returning an input-required result the host puts to the person, and reads the answer on the host's second call. Handshake-era hosts are asked as before. The box is labelled "Approve this wording" on both.

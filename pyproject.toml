@@ -1,6 +1,6 @@
 [project]
 name = "just-module-creator"
-version = "0.48.20"
+version = "0.48.21"
 description = "MCP server and skills for authoring and publishing just-dna annotation modules; a Claude Code and Codex plugin"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -59,17 +59,18 @@ dependencies = [
     # exception contract and 0.6.3/0.6.4's `multi_allelic_rsids` collapse (upstream
     # S41/S45, our F36) are all below 0.7.0. `docs/CHANGELOG.md` at 0.16.0 carries it.
     # 0.8.9 for RM449: an rsID row whose indel sits at a mirrored ins/del site had its genotype
-    # filled as both events, silently. Each tier floors the others at 0.8.9, so the three move
-    # together.
-    "just-dna-compiler>=0.8.9,<0.9",
-    "just-dna-format>=0.8.9,<0.9",
+    # filled as both events, silently. 0.8.10 for RM453: such a site that no witness placed fills
+    # both spellings again, so 0.8.9's strict refusal of it after an offline enrich goes (our
+    # F171). Each tier floors the others, so the three move together.
+    "just-dna-compiler>=0.8.10,<0.9",
+    "just-dna-format>=0.8.10,<0.9",
     # 0.8.7 for RM444: `lookup_old_assembly`'s trimmed `next_step` (F152) leaves the
     # `ref`/`alts` and overlap wording to upstream's own message, which 0.8.6 lacks.
     # 0.8.8 for RM445: a pull put the hub's release label over kept files it never fetched,
     # so a ClinVar cache could serve August rows labelled with a November release. A failed
     # `release.json` fetch now raises from `ensure_*_snapshot`; `prepare_lane` reports it as a
     # failed lane, which is how `provision_caches` already shows one.
-    "just-dna-enricher[atlas]>=0.8.9,<0.9",
+    "just-dna-enricher[atlas]>=0.8.10,<0.9",
     # 0.25.2 is the first PUBLISHED client carrying the whole caching-proxy surface —
     # `cache_status`, `derived`, `draft`, the six `hint_*` methods and
     # `models.api.VariantHintReport`. Verified against the wheel rather than a sibling
