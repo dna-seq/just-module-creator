@@ -161,8 +161,12 @@ the window allows. Results go to the writer for Table 3 and a new comparison sub
 - Wave 1 archived into the corpus (202293d, `assets/benchmarks/ROUND5.md` + `runs/r5-opus5-*`) on the writer's ask
   (643748565); centenarian's stale `pre_briefed` note corrected (c4255e7). The push of main was refused by auto mode,
   filed as kit #648; the commits ride the next push.
-- Next step: when the wave ends, run the same checks and scores, add an opus-5-5 column to REPORT.md and ROUND5.md,
-  archive as `r5-opus55-*`, tell the writer, and lift the hold. Earlier plan line kept for the record: send the report to the writer, then run the claude-opus-5-5 wave on the same briefs after the 5-hour
+- opus-5-5 wave ran 04:52–05:59Z on the same build (c034eb7 differs only outside the plugin paths). Scored, archived
+  as `r5-opus55-*` with ROUND5.md updated (33f1a4d), sent to the writer, hold lifted. The ards direction check was
+  refined to the outcome each run states: ST5 (disease factor) and ST9 (longevity) disagree on 64 of 263 variants;
+  no run reverses its own outcome. My first tie handling had counted equal labels as reversals; I caught it before
+  reporting. Scripts: scratchpad `r5/score_wave.py`, `leak5.py`.
+- **Round 5: done**, 2026-11-26 06:30Z. The commits ride the next push (kit #648). Earlier plan line kept for the record: send the report to the writer, then run the claude-opus-5-5 wave on the same briefs after the 5-hour
   window resets (04:49Z). It was at 79 %, and nine Opus runs would hit the limit mid-scoring and stop other seats.
 **Benchmark round 4, handed over by the lead 2026-11-19 (the person's word).** Fixture `sirt6`, plugin 0.48.15, model
 `claude-opus-5`, three runs (`data/interim/repro-bench-4/run-sirt6-{a,b,c}`), `claude -p --permission-mode auto` from
