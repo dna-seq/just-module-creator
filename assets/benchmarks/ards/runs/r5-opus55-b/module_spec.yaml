@@ -1,0 +1,30 @@
+schema_version: '1.0'
+module:
+  title: Longevity and shared risk of common diseases of ageing
+  description: Six DNA spots linked to both common age-related diseases and reaching very old age.
+  report_title: Longevity and shared risk of diseases of ageing
+  icon: heartbeat
+  icon_set: fomantic
+  color: '#6435c9'
+  name: longevity_ards
+  version: 0.1.0
+defaults:
+  curator: claude-opus-5-5
+  method: literature-review
+genome_build: GRCh38
+license: CC-BY-4.0
+weighting:
+  scale: none — this module authors no weights; every `weight` cell is empty
+  method: >-
+    Genotype calls (risk / neutral / protective) follow the sign of the per-allele beta in the
+    extreme-longevity proxy analysis of Dinh et al. 2025 (Supplementary Table S9), under an additive
+    reading: two longevity-lowering alleles = risk, one of each = neutral, two longevity-raising
+    alleles = protective. Not a graded score.
+  note: >-
+    The published per-allele betas are carried in `effect_size` (longevity GWAS beta for
+    `effect_allele`) and in studies.csv. They are small (|beta| 0.07-0.12) and are not poolable into
+    a score with other modules' weights.
+authorship:
+  - who: claude-opus-5-5
+    role: created
+    kind: [agent, ai]

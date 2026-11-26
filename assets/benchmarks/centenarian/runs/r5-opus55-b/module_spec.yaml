@@ -1,0 +1,27 @@
+schema_version: '1.0'
+module:
+  title: Variants shared by centenarians and supercentenarians
+  description: DNA changes found in all 21 people aged 106 to 117 in one study
+  report_title: Longevity — variants seen in people who lived past 105
+  icon: hourglass half
+  icon_set: fomantic
+  color: '#6435c9'
+  name: longevity_centenarian
+  version: '0.1.0'
+defaults:
+  curator: claude-opus-5-5
+  method: literature-review
+genome_build: GRCh38
+authorship:
+  - who: claude-opus-5-5
+    role: created
+    kind: [ai, agent]
+    at: '2026-11-26'
+weighting:
+  scale: none — this module authors no weights
+  method: >-
+    The source (Raj et al. 2025, Hum Genomics, PMID 41057961) is a case-only study of 21 long-lived
+    genomes with no control group and no association test, so no row has an established direction.
+    Every row carries direction=unknown and an empty weight.
+  note: >-
+    Do not sum this module into a score. An empty weight here means "not known", not zero.

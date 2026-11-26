@@ -1,0 +1,29 @@
+{
+  "generator": "just-module-creator",
+  "items": [
+    {
+      "variant_key": "rs412051",
+      "rationale": "The first draft reused the shared sentence for common variants, which says SIFT called the change possibly harmful; rs412051 is in the all-nsSNP sheet as Tolerated, not in the deleterious sheet, so that sentence was false for this row. [jmc field=conclusion value_sha256=ecb3c393d881 source=PMID 41057961 Supplementary File 11, sheet of all nsSNPs (rs412051 SIFT score 1, Tolerated) recorded=2026-11-26T05:31:47Z by=claude-opus-5-5 (ai agent)]",
+      "human_reviewed": false,
+      "outranks": {}
+    },
+    {
+      "variant_key": "rs61849494",
+      "rationale": "The first pass named causes (immune-cell rearrangement for TRBV7-3, a gene copy for the rare variants) that no source read this session supports. The frequencies support \"likely not a real shared variant\", and resolution records the strand inversion between GRCh37 and GRCh38 at three loci, so those facts are stated and the rest is offered as a possibility. The first table-scope record on variants.csv named TRBV10-2 and PDE4DIP among complemented loci; those were complemented only in a throwaway triage copy, never in this module, and the record that replaced it says so. [jmc field=conclusion value_sha256=1ad4e40897a2 source=gnomAD v4.1 frequencies.csv and resolution.csv of this module recorded=2026-11-26T05:37:26Z by=claude-opus-5-5 (ai agent)]",
+      "human_reviewed": false,
+      "outranks": {}
+    },
+    {
+      "variant_key": "studies.csv",
+      "rationale": "Passages located by an AI agent and recorded in the curator column; each was checked to occur verbatim in the retrieved text before writing. Where the paper names a gene rather than the variant (TIMM23 R112G, NEMF, KMT2C, MAP2K3, ZNF214) the passage is the gene's own sentence in the Discussion, and the variant identity comes from Supplementary File 11. The doi cell on the 41057961 rows is the DOI the module's author supplied, not PubMed's. [jmc field=rows value_sha256=d845ea6e64c0 source=PMC12506250 and PMC6063263 fulltexts as returned by fetch_fulltext recorded=2026-11-26T05:28:59Z by=claude-opus-5-5 (ai agent)]",
+      "human_reviewed": false,
+      "outranks": {}
+    },
+    {
+      "variant_key": "variants.csv",
+      "rationale": "Kept set = variants the paper's own text makes a claim about: every rsID named in the Results (rs412051, rs9885916, rs575564328, rs75029097, rs11228733, rs61849494) and the rsID-bearing deleterious variants in the five genes its Conclusion calls notable (TIMM23, NEMF, KMT2C, MAP2K3, ZNF214). Left out: 46 deleterious rows with no rsID (GRCh37 coordinates only; nothing here lifts them), rs150316320 and rs141207681 (named in the text but absent from the supplement by rsID; the GRCh37 lookup that would pair them with a supplement row was unreachable), and the remaining rsID rows (listed in the supplement only, no claim in the text). No row has a direction because the study has no comparison group. Genotype alleles are the paper's GRCh37 alleles expressed on GRCh38's plus strand; three kept loci (rs61849494, rs61849498, rs575564328) are strand-inverted between builds and were complemented, confirmed by resolution.csv. Conclusions cite gnomAD v4.1 frequencies from this module's frequencies.csv. [jmc field=rows value_sha256=5e40f77d4228 source=PMID 41057961 (Raj et al. 2025, Human Genomics), text and Supplementary File 11 recorded=2026-11-26T05:29:13Z by=claude-opus-5-5 (ai agent)]",
+      "human_reviewed": false,
+      "outranks": {}
+    }
+  ]
+}

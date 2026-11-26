@@ -1,0 +1,37 @@
+schema_version: '1.0'
+module:
+  title: Longevity markers shared with age-related disease
+  description: Variants linked to both age-related multimorbidity and extreme longevity.
+  report_title: Longevity and shared age-related disease risk
+  icon: heartbeat
+  icon_set: fomantic
+  color: '#6435c9'
+  name: longevity_ards
+  version: '0.1.0'
+defaults:
+  curator: claude-opus-5-5
+  method: literature-review
+genome_build: GRCh38
+license: CC-BY-4.0
+weighting:
+  scale: >-
+    Curator-set, per copy of the effect allele: 0.5 where the extreme-longevity association
+    passes P < 0.05/263, 0.2 where it passes only P < 0.05; so a heterozygote carries 1x and
+    a homozygote 2x the per-copy value, and the common homozygote 0.0. Positive = higher
+    odds of extreme longevity (protective), negative = lower (risk). Range -1.0 to 1.0.
+  method: >-
+    Tier from the per-SNP longevity P value in Supplementary Table S9 of PMID 41405793;
+    sign from that table's longevity BETA, never from the mvARD beta. Where two or more kept
+    SNPs lie within 500 kb, only the one with the smallest longevity P carries a weight and
+    the others are left blank, because their independence for longevity is not established.
+  note: >-
+    Ordinal within this module only; not log-odds and not comparable with another module's
+    weights. Nominal (P < 0.05) rows carry many expected false positives: Supplementary
+    Table S9 counts 49 of 263 lead SNPs at P < 0.05 against about 22 expected under its
+    matched null, so roughly half of the 43 nominal-only rows may be chance. At P < 0.05/263
+    it counts 6 against an expected 0.
+authorship:
+  - who: claude-opus-5-5
+    role: created
+    kind: [ai, agent]
+    at: '2026-11-26'

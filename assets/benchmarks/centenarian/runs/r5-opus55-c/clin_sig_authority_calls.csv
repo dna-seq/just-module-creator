@@ -1,0 +1,35 @@
+variant_key,genotype,authority,status,clin_sig,clin_sig_raw,confidence,confidence_unit,dataset,checked_at
+rs962976,A/A,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV001247123,2026-11-26T05:30:24Z
+rs962976,A/G,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV001247123,2026-11-26T05:30:24Z
+rs4883263,C/C,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV001253566,2026-11-26T05:30:24Z
+rs4883263,C/T,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV001253566,2026-11-26T05:30:24Z
+rs9514066,C/C,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000134172,2026-11-26T05:30:24Z
+rs9514066,C/G,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000134172,2026-11-26T05:30:24Z
+rs4027402,C/T,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000130504,2026-11-26T05:30:24Z
+rs4027402,T/T,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000130504,2026-11-26T05:30:24Z
+rs8010911,C/C,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000130520,2026-11-26T05:30:24Z
+rs8010911,C/G,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000130520,2026-11-26T05:30:24Z
+rs7184427,A/G,clinvar,resolved,benign_likely_benign,Benign/Likely benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000440043,2026-11-26T05:30:24Z
+rs7184427,G/G,clinvar,resolved,benign_likely_benign,Benign/Likely benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000440043,2026-11-26T05:30:24Z
+rs2363198,A/A,clinvar,resolved,benign,Benign,"criteria provided, single submitter",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000768861,2026-11-26T05:30:24Z
+rs2363198,A/G,clinvar,resolved,benign,Benign,"criteria provided, single submitter",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000768861,2026-11-26T05:30:24Z
+rs76265595,A/A,clinvar,resolved,benign,Benign,no assertion criteria provided,clinvar_review_status,clinvar_eutils_2026-11-26:VCV003059260,2026-11-26T05:30:24Z
+rs76265595,A/G,clinvar,resolved,benign,Benign,no assertion criteria provided,clinvar_review_status,clinvar_eutils_2026-11-26:VCV003059260,2026-11-26T05:30:24Z
+rs75029097,A/A,clinvar,resolved,benign,Benign,no assertion criteria provided,clinvar_review_status,clinvar_eutils_2026-11-26:VCV003060615,2026-11-26T05:30:24Z
+rs75029097,A/G,clinvar,resolved,benign,Benign,no assertion criteria provided,clinvar_review_status,clinvar_eutils_2026-11-26:VCV003060615,2026-11-26T05:30:24Z
+rs1714864,C/T,clinvar,resolved,benign,Benign,no assertion criteria provided,clinvar_review_status,clinvar_eutils_2026-11-26:VCV003059270,2026-11-26T05:30:24Z
+rs1714864,T/T,clinvar,resolved,benign,Benign,no assertion criteria provided,clinvar_review_status,clinvar_eutils_2026-11-26:VCV003059270,2026-11-26T05:30:24Z
+rs6503018,A/A,clinvar,resolved,benign,Benign,no assertion criteria provided,clinvar_review_status,clinvar_eutils_2026-11-26:VCV003060054,2026-11-26T05:30:24Z
+rs6503018,A/G,clinvar,resolved,benign,Benign,no assertion criteria provided,clinvar_review_status,clinvar_eutils_2026-11-26:VCV003060054,2026-11-26T05:30:24Z
+rs11694988,C/T,clinvar,resolved,benign,Benign,no assertion criteria provided,clinvar_review_status,clinvar_eutils_2026-11-26:VCV003059421,2026-11-26T05:30:24Z
+rs11694988,T/T,clinvar,resolved,benign,Benign,no assertion criteria provided,clinvar_review_status,clinvar_eutils_2026-11-26:VCV003059421,2026-11-26T05:30:24Z
+rs10497520,C/C,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000046973,2026-11-26T05:30:24Z
+rs10497520,C/T,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000046973,2026-11-26T05:30:24Z
+rs1894706,A/A,clinvar,resolved,benign_likely_benign,Benign/Likely benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000163671,2026-11-26T05:30:24Z
+rs1894706,A/G,clinvar,resolved,benign_likely_benign,Benign/Likely benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000163671,2026-11-26T05:30:24Z
+rs136175,A/A,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV001170849,2026-11-26T05:30:24Z
+rs136175,A/G,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV001170849,2026-11-26T05:30:24Z
+rs9840993,A/A,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000198606,2026-11-26T05:30:24Z
+rs9840993,A/G,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000198606,2026-11-26T05:30:24Z
+rs2905608,C/C,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000260809,2026-11-26T05:30:24Z
+rs2905608,C/T,clinvar,resolved,benign,Benign,"criteria provided, multiple submitters, no conflicts",clinvar_review_status,clinvar_eutils_2026-11-26:VCV000260809,2026-11-26T05:30:24Z

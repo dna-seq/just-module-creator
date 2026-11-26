@@ -1,0 +1,3 @@
+pmid,doi,pmcid,exists,is_open_access,license,share_alike,commercial_use,redistribution,quotes_authored,quotes_found,quote_source,fulltext_status,doi_exists,doi_checked,source,status,fetched_at
+29788292,10.1093/molbev/msy105,PMC6063263,true,true,cc by-nc,false,false,true,1,1,fulltext,retrieved,true,10.1093/molbev/msy105,pubmed,resolved,2026-11-26T05:29:24Z
+41057961,10.1186/s40246-025-00772-3,PMC12506250,true,true,cc by-nc-nd,false,false,true,11,11,fulltext,retrieved,true,10.1186/s40246-025-00772-3,pubmed,resolved,2026-11-26T05:29:24Z

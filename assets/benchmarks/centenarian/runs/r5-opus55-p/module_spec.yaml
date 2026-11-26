@@ -1,0 +1,28 @@
+schema_version: '1.0'
+module:
+  title: Centenarian coding variants (Raj et al. 2025)
+  description: Coding variants shared by 21 centenarians and supercentenarians, with population context.
+  report_title: Variants shared by 21 people aged 106-117
+  icon: hourglass half
+  icon_set: fomantic
+  color: '#6435c9'
+  name: longevity_centenarian
+  version: '0.1.0'
+defaults:
+  curator: claude-opus-5-5 (ai agent)
+  method: literature-review
+genome_build: GRCh38
+weighting:
+  scale: none - this module authors no weights
+  method: >-
+    The source paper reports variants carried by all 21 long-lived people it sequenced, with no
+    comparison group and no association test, so no row states which allele helps or harms
+    longevity and none is weighted.
+  note: >-
+    A blank weight here means "no direction known", not "no effect"; do not sum or compare these
+    rows with weighted modules.
+authorship:
+  - who: claude-opus-5-5
+    role: created
+    kind: [ai, agent]
+    at: '2026-11-26'

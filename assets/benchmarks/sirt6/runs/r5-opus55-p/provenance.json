@@ -1,0 +1,31 @@
+{
+  "generator": "just-module-creator",
+  "items": [
+    {
+      "variant_key": "rs117385980",
+      "rationale": "Outrank kept (one record per cell, so this line carries both moves). Consequence: the handed paper calls the variant stop-gained in exon 2; its own cited source (PMID 28399814, direct sequencing) calls it intronic, and the ClinGen Allele Registry names NC_000019.10:g.4180588C>T as CA15948970, NM_016539.4(SIRT6):c.194+194G>A, intronic; gnomAD reports 183 homozygotes. Exon distance (23 bases per 28399814 vs +194 on NM_016539.4) unresolved, kept out of the lay text. Wording: after independent review, 'might make reaching old age slightly less likely' became 'carriers might be less likely to reach old age' because 'slightly' mislabelled weak evidence as a small effect (Finnish point estimate OR about 3.6) and 'make' implied causation nobody has shown. Source said: stop gained variant within the exon 2 of SIRT6. [jmc field=conclusion value_sha256=9deb1ee7dd25 source=PMID 41249831 recorded=2026-11-26T05:12:58Z by=claude-opus-5-5]",
+      "human_reviewed": false,
+      "outranks": {
+        "conclusion": "Outrank kept (one record per cell, so this line carries both moves). Consequence: the handed paper calls the variant stop-gained in exon 2; its own cited source (PMID 28399814, direct sequencing) calls it intronic, and the ClinGen Allele Registry names NC_000019.10:g.4180588C>T as CA15948970, NM_016539.4(SIRT6):c.194+194G>A, intronic; gnomAD reports 183 homozygotes. Exon distance (23 bases per 28399814 vs +194 on NM_016539.4) unresolved, kept out of the lay text. Wording: after independent review, 'might make reaching old age slightly less likely' became 'carriers might be less likely to reach old age' because 'slightly' mislabelled weak evidence as a small effect (Finnish point estimate OR about 3.6) and 'make' implied causation nobody has shown. Source said: stop gained variant within the exon 2 of SIRT6."
+      }
+    },
+    {
+      "variant_key": "rs117385980",
+      "rationale": "Changed from suggestive. No test in either paper reached p<0.05; PMID 41249831's p=0.073 is a three-group test, not a test of decline, and its directional comparison (60-69 vs 80-90) is p=0.37; PMID 28399814's main cohort alone gave p=0.18 and only the pooled analysis reached 0.074. direction stays risk as the sign of both point estimates, per the schema's definition of direction. [jmc field=stat_significance value_sha256=39c3e3e6ba24 source=independent AI review (scientific reviewer) recorded=2026-11-26T05:09:08Z by=claude-opus-5-5]",
+      "human_reviewed": false,
+      "outranks": {}
+    },
+    {
+      "variant_key": "studies.csv",
+      "rationale": "PMID 28399814 added beyond the paper the author handed over because 41249831's longevity claim rests on it, and its own tables give the primary numbers (41249831 misquotes its count as 1/42; the true count is 1/43). Numbers come from each paper's tables, not abstracts (28399814's abstract prints OR 3.53 against 3.58 in Table 2). Effect sizes from 41249831 (OR 3.9, 1.4) left out: both come from zero-count cells with no stated correction. The frailty null result shares the 41249831 row's conclusion because the table keys one row per variant and PMID. Quotes were read from the same Europe PMC text the literature pass checks, so quotes_found is a citation-pairing check here, not independent evidence. [jmc field=rows value_sha256=42365fa26510 source=PMID 41249831; PMID 28399814 recorded=2026-11-26T05:03:57Z by=claude-opus-5-5]",
+      "human_reviewed": false,
+      "outranks": {}
+    },
+    {
+      "variant_key": "variants.csv",
+      "rationale": "Module requested from Sheikholmolouki et al. 2025 (Sci Rep, PMID 41249831), which tests one variant. Direction taken from both papers' own statements of an inverse association between the T allele and longevity; each is a non-significant trend (p about 0.07), so the module-level verdict is suggestive and the weight is small. No T/T homozygote was observed in either study, so T/T carries the C/T weight rather than a larger one and its conclusion says the two-copy effect is unknown. Carrier frequencies in the conclusions are from gnomAD via lookup_variant. [jmc field=rows value_sha256=4cbbc087b1d0 source=PMID 41249831; PMID 28399814 recorded=2026-11-26T05:03:56Z by=claude-opus-5-5]",
+      "human_reviewed": false,
+      "outranks": {}
+    }
+  ]
+}

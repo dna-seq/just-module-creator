@@ -1,0 +1,32 @@
+schema_version: '1.0'
+module:
+  title: SIRT6 longevity variant
+  description: A SIRT6 gene version that may be rarer in long-lived people
+  report_title: Longevity and the SIRT6 gene
+  icon: heartbeat
+  icon_set: fomantic
+  color: '#6435c9'
+  name: longevity_sirt6
+  version: '0.1.0'
+defaults:
+  curator: claude-opus-5-5
+  method: literature-review
+genome_build: GRCh38
+license: CC-BY-NC-4.0
+weighting:
+  scale: '-1 to 1, curator-set, ordinal within this module; negative means the genotype was
+    seen more often in people who died earlier, 0 is the common genotype'
+  method: 'literature triage of two small candidate-gene studies (PMID 28399814, PMID 41249831),
+    each a non-significant trend (p about 0.07) in the same direction; magnitude kept small
+    on purpose. No GWAS input. T/T is given the C/T weight, not a larger one, because neither
+    study observed a T/T homozygote and no dose effect is known.'
+  note: Not comparable with any other module's weights. Not a hazard ratio or an odds ratio.
+authorship:
+  - who: claude-opus-5-5
+    role: created
+    kind: [ai, agent]
+    at: '2026-11-26'
+  - who: claude-opus-5-5 (two independent subagent reviews, lay and scientific)
+    role: reviewed
+    kind: [ai, agent]
+    at: '2026-11-26'

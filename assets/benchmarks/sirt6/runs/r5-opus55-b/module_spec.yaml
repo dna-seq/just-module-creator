@@ -1,0 +1,30 @@
+schema_version: '1.0'
+module:
+  title: SIRT6 rs117385980 and longevity
+  description: A rare SIRT6 variant tentatively linked to reaching old age.
+  report_title: SIRT6 longevity variant (rs117385980)
+  icon: database
+  icon_set: fomantic
+  color: '#6435c9'
+  name: longevity_sirt6
+  version: '0.1.0'
+defaults:
+  curator: ai-module-creator
+  method: literature-review
+genome_build: GRCh38
+weighting:
+  scale: >-
+    Curator-set, bounded in [-1, 1], positive = favourable for longevity. This module uses only
+    0.0 (no signal), -0.1 (one T allele) and -0.2 (two T alleles, extrapolated).
+  method: >-
+    Literature triage of one exploratory study (PMID 41249831). Magnitudes are deliberately small
+    because the association is not statistically significant (p = 0.073) and rests on 8 carriers;
+    the T/T value assumes an additive allele effect that was never observed.
+  note: >-
+    Not comparable with any other module's weights and not derived from a published effect size.
+    Do not sum with other modules into a longevity score.
+authorship:
+  - who: claude-opus-5-5
+    role: created
+    kind: [ai, agent]
+    at: '2026-11-26'

@@ -1,0 +1,7 @@
+variant_key,rsid,chrom,start,ref,alts,genome_build,locus_index,source,status,vrs_id,vrs_spec,authority
+rs6859,rs6859,19,44878777,A,"G,T",GRCh38,0,manual,resolved,"ga4gh:VA.bRS9Nvc7qJhOrorNAlf3W_AmzjKiJ91D,ga4gh:VA.FB459Y9_TtfCyDgopyF65nnZYLRg-lRx",2.0,ensembl
+rs4803763,rs4803763,19,44854034,G,"A,C",GRCh38,0,manual,resolved,"ga4gh:VA.NhkuPO-sCphjCFCwL4aN4gVvQyN2ooYu,ga4gh:VA.O7oAXIUhhhj172tbQlEqV6IIDbETh36T",2.0,ensembl
+rs11754167,rs11754167,6,126856330,T,"A,C",GRCh38,0,manual,resolved,"ga4gh:VA.jArMAYFgHSlN9MCe-eSKj5UnzxFAZZpc,ga4gh:VA.lMcC_AjD6Ij-6ifKGYZJQiS8uj94qfo_",2.0,ensembl
+rs10004996,rs10004996,4,38382012,T,"C,G",GRCh38,0,manual,resolved,"ga4gh:VA.1oq4xSai4hU0110taIrQiJ-8l2UhBIHT,ga4gh:VA.QFs_xPXsL8tlO8iaePVg3GLWKx54Qi_r",2.0,ensembl
+rs2927439,rs2927439,19,44739483,A,G,GRCh38,0,manual,resolved,ga4gh:VA.T0qfKaHflQxSuAUQsllooCC2RgeHkCoV,2.0,ensembl
+rs28601761,rs28601761,8,125487789,C,G,GRCh38,0,manual,resolved,ga4gh:VA.z620sf9WA9od8u4y7-0C1E67dVIunWWz,2.0,ensembl
