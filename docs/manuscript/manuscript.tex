@@ -29,8 +29,8 @@ From Assisted Authoring to an Autonomous Curation Loop}
 \begin{abstract}
 Genome analysis is an iterative workflow (ask, select data, score, annotate,
 inspect, and revise), and it is increasingly done inside AI coding assistants
-rather than in fixed graphical interfaces. But general-purpose language models are
-unreliable when used directly for genomics: they fabricate variant identifiers,
+rather than in fixed graphical interfaces. But general-purpose language models have been shown to be
+unreliable when used directly for genomics: to fabricate variant identifiers,
 misassign effect directions, and attach real PMIDs to the wrong paper. The
 Just-DNA ecosystem redirects these assistants from generating disposable code to
 producing structured, versioned data: \emph{genomic annotation modules} where
@@ -51,7 +51,11 @@ roles re-curated a 164-row longevity module, reading the literature, writing
 each row with verbatim evidence and rehearsing every version, while a
 non-blocking, asynchronous human-in-the-loop design confined the maintainer to
 decisions and irreversible steps. The three scored authoring runs are archived
-with their inputs and re-score exactly. Applying a module to a genome is the
+with their inputs and re-score exactly. Against the same model working from
+the documentation or from example modules on three papers, no arm cited a
+nonexistent paper; the plugin's three modules all compiled under the strict
+setting, while four of the six built without it would not install or placed
+no variant on the genome. Applying a module to a genome is the
 work of the annotation consumer, Just-DNA-Lite, the subject of a companion
 paper~\citep{companion2026justdnalite}. The software is open-source and available at
 \url{https://github.com/dna-seq/just-module-creator}.
@@ -125,7 +129,8 @@ This paper makes five contributions:
     preserving their provenance and the
     decisions that still require review.
     \item It defines an evaluation protocol for variant recall, citation
-    recall, and effect-direction agreement, and reports catalog statistics
+    recall, and effect-direction agreement, compares the workflow with the
+    same model working without the plugin on three papers, and reports catalog statistics
     from the first eight published modules across three independent namespaces.
     \item It reports a case study of an autonomous curation loop in which
     agent roles rebuild a longevity module over two weeks, coordinated through
@@ -610,6 +615,119 @@ instructions that teach the assistant when to call which tool. In both
 Claude Code and Codex, skills marked as commands can be invoked directly
 by typing \texttt{/name} in the prompt.
 
+\subsection{Against the same model without the plugin}
+\label{sec:baseline}
+
+The workflow rests on the premise that an assistant working without these
+tools produces less reliable records. We tested it in November 2026 by giving
+one model, Claude Opus~5, the same prompt for three papers under three
+conditions, one run each. With the \emph{plugin} (version 0.48.20), the
+assistant had the tools as an author has them. With \emph{docs and compiler},
+it had the plugin's written guidance as plain documents and the reference
+compiler, but no tools and no enricher. With \emph{examples and paper}, it had
+two published modules as Parquet files and the paper's full text, and was asked
+for a similar module. The two arms without the plugin ran outside the
+repository, with no MCP server or plugin loaded, web access allowed, and an
+instruction not to install or download code. Isolation was read from each
+session's recorded tool calls rather than from its own account. One
+examples-and-paper run (centenarian) fetched the format's documentation from
+its public repository, the leak this design was meant to exclude; its scores
+are marked. The written guidance no longer named any of the three papers.
+
+The three papers are the SIRT6 paper of Table~\ref{tab:scores}, scored against
+the adjudicated reference (Table~\ref{tab:baseline-sirt6}); a whole-genome study
+of long-lived individuals with no control group (centenarian); and a
+multivariate GWAS of age-related disease whose per-variant statistics are in a
+supplementary workbook (ARDS). The last two have no expert reference, so their
+rows were checked one by one against the paper: whether each variant appears
+in it, whether each position agrees with the one the plugin resolved through
+Ensembl or, outside that set, with a live Ensembl record, whether each risk
+allele agrees with the sign of the paper's effect, and whether each cited PMID
+names a real paper (Table~\ref{tab:baseline-census}).
+
+\begin{table}[ht]
+\centering
+\small
+\caption{One run per arm on the SIRT6 paper, scored against the adjudicated
+reference. Claude Opus~5 in Claude Code; both the plugin (0.48.20) and the
+docs-and-compiler arm used just-dna-compiler 0.8.9. Direction is agreement on the genotype rows that assert one.
+$^{a}$The run's study table fails the format's vocabularies, so the scorer
+reads none of it; read directly, it cites both expected papers.}
+\label{tab:baseline-sirt6}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrrrr@{\hspace{12pt}}l@{}}
+\toprule
+Arm & rsID recall & Pair recall & Decoy rate & Citation recall & Direction & Strict compile \\
+\midrule
+Plugin & 1.00 & 1.00 & 0.00 & 1.00 & 1.00 (2/2) & passes \\
+Docs and compiler & 1.00 & 1.00 & 0.00 & 1.00 & 0.50 (1/2) & passes \\
+Examples and paper & 1.00 & 1.00 & 0.00 & 1.00$^{a}$ & 0.50 (1/2) & 46 errors \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\small
+\caption{One run per arm on the two papers without a reference, each row
+checked against the paper. A dash marks a check that does not apply (the
+centenarian paper reports no effect direction). Reversed counts risk alleles
+opposite to the sign of the paper's effect. $^{a}$These rows compiled
+with no chromosome or position. $^{b}$The run fetched the format's
+documentation from its public repository. $^{c}$The paper gives these variants
+by GRCh37 position without an rsID; the run assigned rsIDs, each a live dbSNP
+record at the GRCh38 position it wrote, and whether that position is the
+paper's could not be checked.}
+\label{tab:baseline-census}
+\footnotesize
+\setlength{\tabcolsep}{1.9pt}
+\begin{tabular}{@{}llrrrrr@{\hspace{6pt}}l@{}}
+\toprule
+Paper & Arm & Variants (rows) & Not in paper & Wrong position & Reversed & PMIDs real & Strict \\
+\midrule
+Centenarian & Plugin & 8 (10) & 0 & 0 & -- & 2/2 & passes \\
+ & Docs + compiler & 8 (24) & 0 & 24 unplaced$^{a}$ & -- & 2/2 & refused \\
+ & Examples + paper$^{b}$ & 108 (324) & 15$^{c}$ & 0 & -- & 1/1 & 109 errors \\
+ARDS & Plugin & 263 (789) & 0 & 0 & 0 & 2/2 & passes \\
+ & Docs + compiler & 48 (144) & 0 & 0 & 0 & 2/2 & passes \\
+ & Examples + paper & 263 (789) & 0 & 0 & 0 & 6/6 & 527 errors \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+No run in any arm cited a paper that does not exist or wrote an rsID that is
+not a live record, and on ARDS none reversed a risk allele. On these three papers, the
+model without the plugin did not commit the failures the Introduction cites
+from studies of earlier models, so the comparison does not show the plugin
+preventing them. The arms differed elsewhere. On the adjudicated paper, both
+arms without the plugin labelled the common genotype protective, a claim the
+reference holds the paper does not make; the docs-and-compiler arm did so with
+the plugin's written guidance in hand, which points at the tools rather than
+the text. The examples-and-paper arm produced modules that look complete as
+Parquet and fail the format's vocabularies on all three papers (46, 109 and
+527 errors after converting them back to source files, a conversion that
+gives none on a published module), so a loader would refuse them. Without the
+enricher, the docs-and-compiler arm resolved no position for its 24
+centenarian rows, which then match no genome. Of the six modules built
+without the plugin, four would not install or would place nothing; the three
+built with it compiled under the strict setting. The arms without the plugin
+named the same gaps in their own reports: one wrote a database lookup by hand
+for every row, and the other said a specification and a validator were what
+it lacked.
+
+The arms also chose different scopes, which no score here rewards: on the
+centenarian paper the examples arm kept 108 of the 110 variants in the
+supplementary list where the other two kept the eight the main text names,
+and on ARDS the docs arm kept 48 of 263 and argued the cut. The plugin runs
+took longest on every paper, 49 to 58 minutes of wall clock against 21 to 56
+for the others (runs on one paper ran side by side), the difference
+spent in enrichment, cross-checks, and a rehearsal check against the test
+registry. Two things the reviewers of a module would most want are not
+measured: how many rows an expert would correct, which needs an expert, and
+whether each cited passage supports its row's claim. With one run per cell
+there is no spread, and one model through one host says nothing about others.
+
 \subsection{Command menu}
 
 Seven of the 20 skills are user-invocable commands (Table~\ref{tab:skills-commands}),
@@ -862,10 +980,15 @@ scientists that many modules reflect early-stage research rather than
 clinical-grade evidence. The evaluation's main gap is what it does not
 measure: whether a cited source supports the claim a row makes. Free-text
 conclusions are not scored at all, the assistant's judgment about support
-remains a reviewer's question, and no support or hallucination rate is
-reported. The scored runs are three runs of one prompt on one paper, a smoke
-test rather than evidence of reliability, and every one used one model
-through one host, so the results say nothing about model or host sensitivity.
+remains a reviewer's question, and no support rate is reported; the comparison of
+Section~\ref{sec:baseline} counts mechanical errors only (a nonexistent paper,
+a dead rsID, a wrong position, a reversed allele), and no expert counted the
+rows they would correct. The runs of Table~\ref{tab:scores} are three runs of
+one prompt on one paper, a smoke test rather than evidence of reliability; the
+comparison adds two papers but one run per arm, and every run used one model
+through one host, so the results say nothing about run-to-run spread or model
+or host sensitivity. No retrieval-augmented arm was run, and the one reference
+was adjudicated by a single curator.
 Whether a module built this way yields correct annotations on real genomes is
 the companion paper's subject and is not shown here.
 The curation loop of Section~\ref{sec:loop} is a single run on one module with
@@ -892,7 +1015,11 @@ records, a check that
 could not run says so, and each row of a published module has a place for
 the evidence behind it. Eight modules from three namespaces, three of them from authors
 outside the development team, show the path is functional today; whether its
-modules are correct is what the evaluation begins to measure. The same
+modules are correct is what the evaluation begins to measure. Against the same
+model without the plugin, on three papers, the difference was not fewer
+invented citations, since neither invented any, but modules the format accepts
+and that place their variants on a genome, and on the one paper with a
+reference, no protective claim the paper does not make. The same
 tools carry an autonomous curation loop in which agents do the reading and the
 rebuilding and the maintainer is asked only for decisions, each rule the loop
 applied written down for review.
@@ -921,8 +1048,9 @@ reviewed in a spreadsheet and published for others to install.
     (local VCF processing, annotation, and reporting; described in the
     companion paper~\citep{companion2026justdnalite}).
     \item \textbf{Benchmark corpus}: \texttt{assets/benchmarks/} in the
-    just-module-creator repository holds the prompt, the adjudicated reference,
-    and the files of every run in Table~\ref{tab:scores}; the scorer is
+    just-module-creator repository holds the prompts, the adjudicated reference,
+    and the files of every run in Tables~\ref{tab:scores},
+    \ref{tab:baseline-sirt6} and~\ref{tab:baseline-census}; the scorer is
     \texttt{just\_module\_creator.bench}.
     \item The public catalog is live at \url{https://module-registry.just-dna.life}
     and the test registry at \url{https://module-polygon.just-dna.life}.

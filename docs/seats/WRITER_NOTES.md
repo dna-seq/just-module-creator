@@ -47,12 +47,15 @@ The seat's working state, rewritten to the present before each reset (docs/seats
   C published parquets + the paper's full text, no just-dna package, scored after reverse_module; isolation read
   from init lists and tool_use blocks. Only sirt6 has an adjudicated reference: ards and centenarian get cross-arm
   counts and a per-row check against the paper, so the paper must not call those an expert reference.
-  claude-opus-5 first, 9 runs, results about 2026-11-26 06:00Z; opus-5-5 after if the window allows. Next: on
-  its report, the comparison subsection and table.
-  Text-only items landed 2026-11-25 (R1.W3, R1.S1, R2.W3a/b, R2.Q1, R2.Q2, R3.W1, R3.W2, R3.S1, the two declines'
-  paragraphs, the limits narrowed to a smoke test). Waiting on the tester's runs: R1.W1, R1.W2, R1.S2, R2.W1,
-  R2.W2, R2.W4, R2.S1, R2.S2, R2.S4, R2.Q3, R3.W3, R3.S2: a comparison subsection and table, an error rate, rows
-  needing correction. R2.S2's several curators with inter-rater agreement need the authors.
+  Opus 5 wave written 2026-11-26 (REPORT.md in data/interim/repro-bench-5): Results subsection sec:baseline,
+  Tables 4 (sirt6 vs reference) and 5 (centenarian, ards per-row), abstract, contribution 4, Limitations,
+  Conclusion, availability. Ledger: 10 measurement items landed. Still pending: R2.S2 (several curators,
+  inter-rater) and R2.Q3 (rows an expert corrects): both need people, the authors'. Next: the opus-5-5 wave
+  (about 07:30Z) into Tables 4-5 and the text; the runs archived into assets/benchmarks by the tester (asked),
+  which the availability line already claims.
+  The headline the paper now carries: no arm invented a paper or rsID; the plugin's edge on these three papers
+  is modules that compile strictly and place variants (4 of 6 no-plugin modules would not), and on sirt6 no
+  unsupported protective call. The abstract's opening now says models "have been shown" to fabricate.
 - **Round 4** (the tester, 2026-11-19, notes f869fe9): sirt6 on plugin 0.48.15, claude-opus-5, runs a-c all 1.00
   rsID/pair recall, decoy 0, citation and direction 1.00; run d on claude-opus-5-5, citation recall 0.50. Caveat
   F168: module-curate's worked case names this fixture's answer and runs c and d read it, so a and b are the clean
