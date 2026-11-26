@@ -153,7 +153,13 @@ the window allows. Results go to the writer for Table 3 and a new comparison sub
   GitHub (marked C\*), and p-ards' `registry_download` of longevitymap (no row taken from it). Directions on ards
   match ST5 in every arm. C's modules fail the format's vocabularies (46, 109 and 527 errors); B centenarian has
   24 unplaced rows (no enricher).
-- Next step: send the report to the writer, then run the claude-opus-5-5 wave on the same briefs after the 5-hour
+- Report sent to the writer (643747886); the commit hold is extended to the end of the opus-5-5 wave (643747898).
+- opus-5-5 wave queued for 04:52Z (background job): `run_round55.sh` with `briefs55/`. The transcripts go to
+  `/data/bench-out-r5/`, P runs and scratch to `data/interim/repro-bench-5b/`, and B/C to `/data/bench-iso/runs/{b,c}55-*`.
+  The opus-5 B/C copies moved to `/data/bench-out-r5/opus5-runs/`, so nothing with an answer sits beside a new run.
+  My answer-key file sat in the parent of wave 1's P scratch; no P run touched it (checked).
+- Next step: when the wave ends, run the same checks and scores, add an opus-5-5 column to REPORT.md, tell the
+  writer, and lift the hold. Earlier plan line kept for the record: send the report to the writer, then run the claude-opus-5-5 wave on the same briefs after the 5-hour
   window resets (04:49Z). It was at 79 %, and nine Opus runs would hit the limit mid-scoring and stop other seats.
 **Benchmark round 4, handed over by the lead 2026-11-19 (the person's word).** Fixture `sirt6`, plugin 0.48.15, model
 `claude-opus-5`, three runs (`data/interim/repro-bench-4/run-sirt6-{a,b,c}`), `claude -p --permission-mode auto` from
