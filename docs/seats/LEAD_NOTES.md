@@ -173,7 +173,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   section), C (§11 tectonic) shown; the person picked B and C (`2d820e8`). What they meant by "3n decision" was the
   paper: adjust the abstract and sections to the talk's eligibility criteria, and a raw link to the built PDF for
   Anton; forwarded to the writer (the paper is its).
-- **Registry 0.34.1 `rotate_key(revoke_others=False)`, mine, waits until an instance serves 0.34** (both served 0.32.1 at 2026-11-19 22:05 CET; a client floor two minors ahead risks the 409 skew of CLAUDE.md §11) (the liaison, e633db2): wrap it as a
+- **Registry 0.34.1 `rotate_key(revoke_others=False)`, mine, `urgent` now: both instances serve registry 0.34.4 (2026-11-26) and main locks client 0.34.3 (liaison f547e16)** (was: waits until an instance serves 0.34) (the liaison, e633db2): wrap it as a
   gated tool; the new key is shown once and must replace the saved token in `state.json` through the backed-up
   write, read back, or the next call meets a dead key. Needs the floor at 0.34.1; both instances serve 0.32.1, so
   the tool must refuse by name on an older server. `deploy`/`deploy_status` are site-admin only (abstained).
@@ -184,7 +184,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   question: the person's ask decides it, and quota is no drawback (kit #510).
   Done (tester 1513e9c): clean a, b, e on claude-opus-5 pair recall 1.00/1.00/0.67, f on Opus 5.5 0.67, all
   thresholds met; hold lifted. The fixture's shape left module-curate too (`f400344`).
-- **just-dna 0.9 prep, mine, `unattended`, after the round's hold lifts** (the liaison's trial of d9c578ae, e46f560,
+- **just-dna 0.9: built on `adopt-0.9` (`.worktrees/adopt-0.9`, d38c5f9 + merge of main), 1113 pass; merges to main when both instances serve format 0.9 (both 0.8.10 at 2026-11-26), the person having said 0.9 is published.** Earlier prep, kept for its reasons: **just-dna 0.9 prep, mine, `unattended`, after the round's hold lifts** (the liaison's trial of d9c578ae, e46f560,
   `docs/UPSTREAM_COMPILER.md`): 3 of our tests fail, all ours. `cli_map._PUBLISH` needs `clinvar-gkm publish` and
   `opentargets publish`; `test_every_tool_a_mapping_names_exists` reads the new `ensembl_rsid_index` lane name as a
   tool (exclude lane names); the layered-header budget is 2 characters over with 0.8.10/0.9.0 in the version line.
