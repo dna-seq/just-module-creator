@@ -148,7 +148,13 @@ the window allows. Results go to the writer for Table 3 and a new comparison sub
 - My layout slip: `out/` (the live transcripts) and `briefs/` sit in `repro-bench-5/`, beside the p arm's run directory.
   p-sirt6 ran `ls -la .../repro-bench-5/ | head -5` in its first call, which breaks the brief's listing ban. It saw
   names only. The checker (scratchpad `r5/leak5.py`) flags any later read of `out/` or `briefs/`.
-- Next step: once the round ends, run the leak and isolation checks per transcript, then score.
+- claude-opus-5 wave done 01:48Z, nothing landed under the plugin paths. Scored; the report is
+  `data/interim/repro-bench-5/REPORT.md`. Isolation held except c-centenarian, which fetched the format's docs from
+  GitHub (marked C\*), and p-ards' `registry_download` of longevitymap (no row taken from it). Directions on ards
+  match ST5 in every arm. C's modules fail the format's vocabularies (46, 109 and 527 errors); B centenarian has
+  24 unplaced rows (no enricher).
+- Next step: send the report to the writer, then run the claude-opus-5-5 wave on the same briefs after the 5-hour
+  window resets (04:49Z). It was at 79 %, and nine Opus runs would hit the limit mid-scoring and stop other seats.
 **Benchmark round 4, handed over by the lead 2026-11-19 (the person's word).** Fixture `sirt6`, plugin 0.48.15, model
 `claude-opus-5`, three runs (`data/interim/repro-bench-4/run-sirt6-{a,b,c}`), `claude -p --permission-mode auto` from
 the repository, one after another in the lead's background job. Its briefs, JSON outputs (session ids), stderr and
