@@ -22,6 +22,6 @@
 - ✅ Each module now keeps a record of how its rows came to be (searches, articles read, rows written, decisions no edit shows), and `trace_module` reads every row back against it; registry 0.32 adopted; publishing refuses a module name that differs from its spec (0.48.14).
 
 **Next**
-1. A tool to replace a leaked registry token (registry 0.34.1). Lead; ⏸ waits on an instance serving 0.34.
-2. Adopt just-dna 0.9 once it is published and both registries serve it; three small fixes known from the liaison's trial. Lead; ⏸ waits on the release, then the person's word on the version move.
+1. A tool to replace a leaked registry token (registry 0.34.1). Lead; built on main, ships in the next release, the tester rechecks it.
+2. Adopt just-dna 0.9: published 2026-11-26 and built on its own branch (all tests pass). Lead; ⏸ merges once both registries serve 0.9 (both serve 0.8.10 today).
 3. Renaming the `test-sheep` rehearsals into the `winternewt` account. Lead; ⏸ waits on the person's token.
