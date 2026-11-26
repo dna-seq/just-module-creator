@@ -623,6 +623,9 @@ weekly lock bump (pydantic 2.14.4, py-key-value-aio 0.5.0, pydocket 0.32.1, etc.
   EOF. The host is the test.
 
 ## Standing constraints
+- **`watchdog.sh nothing` with no ids counts every shown message as noise**, the release-tag watcher line
+  included. That line is what starts a recheck, so it is not noise. Pass the ids of the notices only.
+  Slipped three times: 2026-11-23, 2026-11-24, 2026-11-26.
 
 - Never commit in a sibling repo. Writing the upstream note is the whole job; leaving
   `../just-dna-format` dirty is the expected end state.
