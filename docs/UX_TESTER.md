@@ -115,6 +115,16 @@ claims that were plausibly wrong, and it found more than solo probing.
 
 ## In flight
 
+**S35 and lane release fields, 2026-11-26 21:43Z, both instances on registry 0.34.4 (client 0.32.1, main 31f1fec), over
+the wire.**
+- **S35 holds.** On the polygon, `sheep`'s own review of `test-sheep/test_statin_response@0.1.1` ran: post `verified`,
+  highlight (`highlighted: true`), re-post as `concerns` (`highlighted: false`), highlight again, then re-post with
+  rating 4→3 and new notes, verdict unchanged (`highlighted: true` kept). Deleted afterwards: 0 reviews left.
+- **`registry_lane_lookup`'s release fields now answer.** `mane`/`summary` (APOE) on both instances returns `release:
+  mane_grch38_v1.5`; `pharmvar`/`alleles` (CYP2C19*2) returns `pharmvar_snapshot_1fa9908b2626`. `revision` is null with
+  `served_from: local`, as the docstring says (it names the commit only for a remote read). `release_unreadable: false`.
+- Both owed items are closed.
+
 **Release 0.48.21 recheck, 2026-11-26, tag v0.48.21 (666518d), just-dna 0.8.10 in the venv.** F171's case holds
 over the wire (scratchpad `r21b/`): `reference_examples/pathogenic_clinvar` with both rs80356821 verdicts `unplaced`,
 an offline `enrich_module` (338 resolved), then `compile_module(strict=True)` succeeds with no errors. 0.8.9 refused the
@@ -497,7 +507,7 @@ accepted on the polygon now (0 matches for PGS000001). The live `registry_claims
 `RS429358` empty; false on both instances now, and its rewording is in the lead's 0.32 adoption. F150 closed by the
 liaison (c577c01).
 
-**Owed when an instance serves registry 0.33 (S35, decided 2026-11-17):** a re-post that changes the verdict should clear
+**Owed when an instance serves registry 0.33 (S35, decided 2026-11-17; done 2026-11-26, holds):** a re-post that changes the verdict should clear
 the owner's highlight; a notes- or rating-only edit keeps it. Testable with `sheep`'s own review on
 `test-sheep/test_statin_response`: post, highlight, re-post with another verdict, read `highlighted`; then a notes-only
 re-post; clean up.
