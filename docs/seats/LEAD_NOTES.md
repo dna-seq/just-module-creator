@@ -4,7 +4,7 @@ The lead seat's working state, rewritten to the present before a reset (`docs/se
 
 ## Now
 
-Released 0.48.20 (tag `v0.48.20`, `18407b6`, 2026-11-24): F172 resolved (record_decision asks on the 2026-07-28 wire, 24169a4, confirmed in Claude Code by the tester, 561d54e), the box titled (75bbc4e), the liaison's weekly bump with the registry client held at 0.32.1. 1111 pass; polygon `registry_check` of fto_bmi `verdict: true`. Next release no earlier than 2026-11-25, nothing queued. Before it: 0.48.19 (`c58fc0a`, 2026-11-23, fastmcp 4.2.5), 0.48.18 (`73e3962`, 2026-11-22, F171), 0.48.17 (`4aa5e56`, 2026-11-21, just-dna 0.8.9, F170).
+Released 0.48.21 (tag `v0.48.21`, `666518d`, 2026-11-26): just-dna 0.8.10 (liaison's read and trial 8e66535; RM453 ends F171's refusal), the unplaced-row advice without the mirrored-indel example, header trimmed one word to fit 2048. 1111 pass; polygon `registry_check` of fto_bmi `verdict: true`. Next release no earlier than 2026-11-27, nothing queued. Before it: 0.48.20 (`18407b6`, 2026-11-24, F172), 0.48.19 (`c58fc0a`, 2026-11-23, fastmcp 4.2.5), 0.48.18 (`73e3962`, 2026-11-22, F171).
 
 Registry 0.32 adopted and the enricher floored at 0.8.8: released in 0.48.14. The RM445 cache re-pull ran on this machine 2026-11-17.
 away at 05:02Z on 2026-11-05.

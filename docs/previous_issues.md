@@ -44,7 +44,7 @@ Not yet seen: a real Claude Code session putting the question to a person throug
 
 ## F171 — 0.48.17's strict compile refuses an rsID at a mirrored indel site after an offline enrich, and says to pass a parameter our tool pins
 
-**Found:** 2026-11-21, recheck of release 0.48.17 · **Severity:** medium (a strict compile, the one the registry runs, stops, and nothing on our surface says how to continue) · **Status:** fixed here, 2026-11-21 (unreleased); upstream's RM453 (just-dna 0.8.10, not on PyPI as of 2026-11-21) removes the refusal for this case
+**Found:** 2026-11-21, recheck of release 0.48.17 · **Severity:** medium (a strict compile, the one the registry runs, stops, and nothing on our surface says how to continue) · **Status:** fixed here, 2026-11-21 (released 0.48.18); upstream's RM453 is in just-dna 0.8.10, adopted in 0.48.21 (2026-11-26), where the case compiles strict (the liaison's trial, 8e66535); earlier note: RM453 (just-dna 0.8.10, not on PyPI as of 2026-11-21) removes the refusal for this case
 
 **What happens.** just-dna 0.8.9, adopted in 0.48.17, refuses under `--strict` an rsID row at a mirrored
 insertion/deletion site when `resolution.csv` places neither spelling (RM449). Our own `enrich_module(offline=true)`
