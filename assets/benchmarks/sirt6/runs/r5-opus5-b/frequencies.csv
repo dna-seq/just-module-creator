@@ -1,0 +1,11 @@
+variant_key,rsid,chrom,start,ref,alt,genome_build,population,allele_count,allele_number,homozygote_count,hemizygote_count,faf95,dataset,vrs_id,caid,source,status,fetched_at
+rs117385980,rs117385980,19,4180588,C,T,GRCh38,global,9786,422518,148,,,gnomad_r4_exome,ga4gh:VA.YxCS1acZj0ufkzEEd26R-KF--4hLspHR,CA15948970,gnomad,resolved,2026-11-25T23:20:29Z
+rs117385980,rs117385980,19,4180588,C,T,GRCh38,nfe,7824,292918,,,,gnomad_r4_exome,ga4gh:VA.YxCS1acZj0ufkzEEd26R-KF--4hLspHR,CA15948970,gnomad,resolved,2026-11-25T23:20:29Z
+rs117385980,rs117385980,19,4180588,C,T,GRCh38,fin,564,24170,,,,gnomad_r4_exome,ga4gh:VA.YxCS1acZj0ufkzEEd26R-KF--4hLspHR,CA15948970,gnomad,resolved,2026-11-25T23:20:29Z
+rs117385980,rs117385980,19,4180588,C,T,GRCh38,asj,385,11274,,,,gnomad_r4_exome,ga4gh:VA.YxCS1acZj0ufkzEEd26R-KF--4hLspHR,CA15948970,gnomad,resolved,2026-11-25T23:20:29Z
+rs117385980,rs117385980,19,4180588,C,T,GRCh38,mid,49,1862,,,,gnomad_r4_exome,ga4gh:VA.YxCS1acZj0ufkzEEd26R-KF--4hLspHR,CA15948970,gnomad,resolved,2026-11-25T23:20:29Z
+rs117385980,rs117385980,19,4180588,C,T,GRCh38,amr,187,11050,,,,gnomad_r4_exome,ga4gh:VA.YxCS1acZj0ufkzEEd26R-KF--4hLspHR,CA15948970,gnomad,resolved,2026-11-25T23:20:29Z
+rs117385980,rs117385980,19,4180588,C,T,GRCh38,sas,212,23252,,,,gnomad_r4_exome,ga4gh:VA.YxCS1acZj0ufkzEEd26R-KF--4hLspHR,CA15948970,gnomad,resolved,2026-11-25T23:20:29Z
+rs117385980,rs117385980,19,4180588,C,T,GRCh38,afr,52,10390,,,,gnomad_r4_exome,ga4gh:VA.YxCS1acZj0ufkzEEd26R-KF--4hLspHR,CA15948970,gnomad,resolved,2026-11-25T23:20:29Z
+rs117385980,rs117385980,19,4180588,C,T,GRCh38,eas,1,24636,,,,gnomad_r4_exome,ga4gh:VA.YxCS1acZj0ufkzEEd26R-KF--4hLspHR,CA15948970,gnomad,resolved,2026-11-25T23:20:29Z
+rs117385980,rs117385980,19,4180588,C,T,GRCh38,remaining,512,22966,,,,gnomad_r4_exome,ga4gh:VA.YxCS1acZj0ufkzEEd26R-KF--4hLspHR,CA15948970,gnomad,resolved,2026-11-25T23:20:29Z

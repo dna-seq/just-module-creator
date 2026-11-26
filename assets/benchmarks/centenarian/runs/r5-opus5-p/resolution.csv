@@ -1,0 +1,9 @@
+variant_key,rsid,chrom,start,ref,alts,genome_build,locus_index,vrs_id,vrs_spec,caid,source,authority,status,rsid_alternates,rsid_current,rsid_status,placement_witness,placement_verdict,left_aligned,authored_event,judged_coordinate,fetched_at,source_release,source_loci
+rs11228733,rs11228733,11,56700892,C,T,GRCh38,0,ga4gh:VA.o6nHlk75e_EirD8NnkrO-IZ30OM9en5Z,2.0,,cache,ensembl,resolved,,,live,clinvar,unplaced,true,,,,ensembl-variation-2026_07_13-vep116.0,
+rs141207681,rs141207681,1,12847527,C,"A,T",GRCh38,0,"ga4gh:VA.8aoK2fXwSOIRegQw7LdAfMVRD_8Ojqgm,ga4gh:VA.xh8aiIA7HZJH6cCvDDEeBOv2-bcwP0GP",2.0,,cache,ensembl,resolved,,,live,clinvar,unplaced,true,,,,ensembl-variation-2026_07_13-vep116.0,
+rs150316320,rs150316320,9,33797953,A,"C,T",GRCh38,0,"ga4gh:VA.j4UhwprzmXVjHYEACCGYk5Y2KVyU93sB,ga4gh:VA.8ls_rGEqgPTyL1NELdqOtupwzkFgGCjS",2.0,,cache,ensembl,resolved,,,live,clinvar,unplaced,true,,,,ensembl-variation-2026_07_13-vep116.0,
+rs412051,rs412051,5,138140727,T,"A,C,G",GRCh38,0,"ga4gh:VA.1xCxLX7bccFvUddhNje5JuD7AFXgwO_P,ga4gh:VA.olovwq1vtB2c7q2ZbiLpylgu_eFe_Uv-,ga4gh:VA.9UKPItYO3ZqtwEY_nrDfthQRaHVp4XXI",2.0,,cache,ensembl,resolved,,,live,clinvar,unplaced,true,,,,ensembl-variation-2026_07_13-vep116.0,
+rs575564328,rs575564328,7,142384398,G,T,GRCh38,0,ga4gh:VA.run8fOaIbwSjJswTpYGxa_i2D9uBtRUl,2.0,,cache,ensembl,resolved,,,live,clinvar,unplaced,true,,,,ensembl-variation-2026_07_13-vep116.0,
+rs61849494,rs61849494,10,45982565,C,T,GRCh38,0,ga4gh:VA.D26FiSM-4WXk2W0hiSjw57acbxfztFin,2.0,,cache,ensembl,resolved,,,live,clinvar,unplaced,true,,,,ensembl-variation-2026_07_13-vep116.0,
+rs75029097,rs75029097,17,21415775,G,A,GRCh38,0,ga4gh:VA.sRGmk7dyrT13MwnHNhoigbvpWJcrAMaV,2.0,,cache,ensembl,resolved,,,live,clinvar,same_event,true,,,,ensembl-variation-2026_07_13-vep116.0,
+rs9885916,rs9885916,6,60499346,A,G,GRCh38,0,ga4gh:VA._5XEKkIIB5nFloxuOdYjRBE8NLGhXm_F,2.0,,cache,ensembl,resolved,,,live,clinvar,unplaced,true,,,,ensembl-variation-2026_07_13-vep116.0,

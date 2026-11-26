@@ -1,0 +1,30 @@
+schema_version: '1.0'
+module:
+  title: Variants shared by 21 very long-lived people
+  description: Coding variants shared by 21 people aged 106 to 117
+  report_title: Variants shared by very long-lived people
+  icon: hourglass half
+  icon_set: fomantic
+  color: '#a5673f'
+  name: longevity_centenarian
+  version: '1.0.0'
+defaults:
+  curator: claude-opus-5
+  method: literature-review
+genome_build: GRCh38
+license: CC-BY-4.0
+authorship:
+  - who: claude-opus-5
+    role: created
+    kind: [ai, agent]
+    at: '2026-11-26'
+weighting:
+  scale: >-
+    none - this module authors no weights, and its weight column is blank on every row.
+  method: >-
+    No weights were derived. The source study reports no effect size, no odds ratio, no control
+    group and no statistical test for any variant, so there is no quantity to put on a scale.
+  note: >-
+    Do not sum, average or score these rows. Every row records one fact - that an allele was
+    present in all 21 sequenced genomes of a cohort aged 106 to 117 - and that fact carries no
+    direction, so a score built from it would assert something no source states.

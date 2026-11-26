@@ -1,0 +1,12 @@
+schema_version: '1.0'
+module:
+  name: longevity_sirt6
+  title: Longevity Sirt6
+  description: 'Annotation module: longevity_sirt6'
+  report_title: Longevity Sirt6
+  icon: database
+  color: '#6435c9'
+defaults:
+  curator: Claude Code (Opus 5)
+  method: primary-paper-review-plus-cited-primary-sources
+genome_build: GRCh38

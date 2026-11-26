@@ -14,9 +14,9 @@ uv run python scripts/bench_score.py --census centenarian/runs/a
 
 | Fixture | Paper | Runs | Reference |
 |---|---|---|---|
-| `sirt6/` | Sheikholmolouki 2025, `10.1038/s41598-025-24018-3` | `a`, `b`, `a2`; `1`, `2`, `3` (Table 3, `runs/README.md`) | **yes — adjudicated** |
-| `centenarian/` | `10.1186/s40246-025-00772-3` | `a`, `b` | no |
-| `ards/` | `10.1007/s11357-025-02044-3` | `b` | no |
+| `sirt6/` | Sheikholmolouki 2025, `10.1038/s41598-025-24018-3` | `a`, `b`, `a2`; `1`, `2`, `3` (Table 3, `runs/README.md`); `r5-*` (`ROUND5.md`) | **yes — adjudicated** |
+| `centenarian/` | `10.1186/s40246-025-00772-3` | `a`, `b`; `r5-*` (`ROUND5.md`) | no |
+| `ards/` | `10.1007/s11357-025-02044-3` | `b`; `r5-*` (`ROUND5.md`) | no |
 
 `evidence/S76-partial-resolution/` is a preserved artifact rather than a run: the short
 `resolution.csv` behind `F70`, captured and hash-verified. Its README explains what it turned out to

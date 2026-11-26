@@ -1,0 +1,12 @@
+schema_version: '1.0'
+module:
+  name: longevity_ards
+  title: Longevity Ards
+  description: 'Annotation module: longevity_ards'
+  report_title: Longevity Ards
+  icon: database
+  color: '#6435c9'
+defaults:
+  curator: ai-module-creator
+  method: primary-paper-supplementary-table-review
+genome_build: GRCh38

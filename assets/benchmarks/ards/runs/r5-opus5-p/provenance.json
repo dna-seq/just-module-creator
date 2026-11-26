@@ -1,0 +1,29 @@
+{
+  "generator": "just-module-creator",
+  "items": [
+    {
+      "variant_key": "rs62369525",
+      "rationale": "The source supplementary workbook (ESM 2, sheet ST5, column nearestGene) carries the string \"NPR 3.00\" for this locus, a spreadsheet number-format corruption of the gene symbol NPR3. The row's coordinates (chr5:32719811, GRCh37, intronic) fall inside NPR3, and another row of the same sheet spells the symbol correctly as \"NPR3:AC026703.1\". Corrected to the approved symbol. Evident and mechanical; recorded because the cell was changed rather than copied. [jmc field=gene value_sha256=a111e1519bff source=dinh2026_mvard recorded=2026-11-26T01:24:59Z by=ai-module-creator]",
+      "human_reviewed": false,
+      "outranks": {}
+    },
+    {
+      "variant_key": "rs702634",
+      "rationale": "The source supplementary workbook (ESM 2, sheet ST5, column nearestGene) carries the string \"ARL 15.00\" for this locus. That is a spreadsheet number-format corruption of the gene symbol ARL15, not an alternative name: the row's own coordinates (chr5:53271420, GRCh37, intronic) fall inside ARL15, and no gene named \"ARL 15.00\" exists. Corrected to the approved symbol. Evident and mechanical; recorded because the cell was changed rather than copied. [jmc field=gene value_sha256=afa30252dd34 source=dinh2026_mvard recorded=2026-11-26T01:24:52Z by=ai-module-creator]",
+      "human_reviewed": false,
+      "outranks": {}
+    },
+    {
+      "variant_key": "studies.csv",
+      "rationale": "Records where this table's provenance quotes come from, so a reviewer can read quotes_found correctly; this is a note about the whole table, as no column-scope record exists. The set was derived by taking every one of the 263 lead SNPs in Supplementary Tables S5 and S9 of the cited article and writing two study rows each, plus one module-level row. The 263 per-variant rows citing 41405793 quote a row of Supplementary Table S5 in supplementary file 11357_2025_2044_MOESM2_ESM.xlsx (ESM 2), extracted programmatically from the workbook rather than retyped: the cell values are verbatim and only the field=value rendering is ours. That workbook is not the article body Europe PMC indexes, so quotes_found=0 on those rows is EXPECTED and says nothing about them. The 263 rows citing 31413261 carry no quote: those numbers were read out of that study's summary statistics by the present paper and are not printed in the cited article, so no passage of it supports them. The single variant-less row quotes the article body and is the one row where quotes_found should be non-zero. Quotes located by ai-module-creator. [jmc field=rows value_sha256=fb6299b8cb5c source=dinh2026_mvard recorded=2026-11-26T01:25:22Z by=ai-module-creator]",
+      "human_reviewed": false,
+      "outranks": {}
+    },
+    {
+      "variant_key": "variants.csv",
+      "rationale": "The set was derived from check_identifiers against HGNC: each of the 11 symbols came back state=retired with exactly one named successor, which is the value written. This is a nomenclature update, not a disagreement about which gene the locus is near, and no variant was reassigned: gene_locus_conflicts was empty and remained so. The source annotation predates the renames, so the source is not wrong, only older than HGNC. Roughly 61 further symbols in this column come back unknown rather than retired: they are clone and scaffold identifiers (RP11-, AC, CTC-, Y_RNA, Metazoa_SRP) and multi-gene composites that FUMA emits as the nearest feature for intergenic and non-coding loci. Those were deliberately left exactly as the source wrote them, because no successor exists to write and replacing them would invent an assignment the source did not make. Where such an identifier would have been read aloud to a layperson, the row conclusion instead names the chromosome and says the position is not inside a named gene; the column still carries the source annotation for a professional reader. [jmc field=rows value_sha256=fee4dd229497 source=dinh2026_mvard recorded=2026-11-26T01:27:32Z by=ai-module-creator]",
+      "human_reviewed": false,
+      "outranks": {}
+    }
+  ]
+}

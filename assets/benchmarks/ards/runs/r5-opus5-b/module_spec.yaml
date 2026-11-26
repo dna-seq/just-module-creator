@@ -1,0 +1,39 @@
+schema_version: '1.0'
+module:
+  title: Longevity and shared age-related disease risk
+  description: Common variants linking multi-disease risk to the chance of very long life
+  report_title: Longevity and shared age-related disease risk
+  icon: hourglass half
+  icon_set: fomantic
+  color: '#00b5ad'
+  name: longevity_ards
+  version: 0.1.0
+genome_build: GRCh38
+defaults:
+  curator: claude-opus-5
+  method: literature-review
+license: CC-BY-4.0
+weighting:
+  scale: >-
+    Log-odds of surviving beyond the 90th percentile of one's birth cohort, summed over the
+    effect allele: weight = beta_longevity x (number of copies of the effect allele). Range
+    across this module is -0.31 to +0.31. Positive is protective, which here means higher odds
+    of extreme survival.
+  method: >-
+    Taken directly from the extreme-longevity look-up in Supplementary Table S9 of
+    doi:10.1007/s11357-025-02044-3, multiplied by allele dosage. No rescaling, no normalisation
+    and no curator judgement was applied to the magnitudes; curation decided only which variants
+    get a row at all. The effect allele is the GRCh38 reference allele for all 48 variants, so
+    the zero-weight genotype is the homozygous-alternate one, not the common one.
+  note: >-
+    These weights are NOT comparable with any other module's. They are a dosage model in one
+    unit, from one study, in one European-ancestry cohort. They must not be summed as a polygenic
+    score: 11 of the 48 variants share a genomic locus with another variant in the module (the
+    four chromosome 19 rows sit in the APOE linkage block), so a naive sum double-counts
+    correlated signal. 42 of the 48 rows rest on a nominally significant look-up only and would
+    not survive correction for the 263 variants tested.
+authorship:
+  - who: claude-opus-5
+    role: created
+    kind: [ai, agent]
+    at: '2026-11-26'

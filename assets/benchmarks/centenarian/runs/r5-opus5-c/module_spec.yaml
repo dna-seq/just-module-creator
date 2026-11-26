@@ -1,0 +1,12 @@
+schema_version: '1.0'
+module:
+  name: longevity_centenarian
+  title: Longevity Centenarian
+  description: 'Annotation module: longevity_centenarian'
+  report_title: Longevity Centenarian
+  icon: database
+  color: '#6435c9'
+defaults:
+  curator: Claude Opus 5 (ai-module-creator)
+  method: primary-paper-supplement-review
+genome_build: GRCh38

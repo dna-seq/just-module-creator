@@ -1,0 +1,44 @@
+schema_version: '1.0'
+module:
+  title: Shared risk for age-related disease
+  description: Variants linked to shared risk across five age-related diseases and longevity
+  report_title: Age-related disease and longevity
+  icon: heart-pulse
+  icon_set: fomantic
+  color: '#21ba45'
+  name: longevity_ards
+  version: '1.0.0'
+defaults:
+  curator: ai-module-creator
+  method: literature-review
+genome_build: GRCh38
+license: CC-BY-4.0
+authorship:
+  - who: ai-module-creator
+    role: created
+    kind: [ai, agent]
+    at: '2026-11-26'
+weighting:
+  scale: >-
+    -1 to +1, positive is protective. Each row's weight is the variant's mvARD effect size
+    (Dinh et al. 2026, Supplementary Table S5), re-expressed per copy of the ALTERNATE allele,
+    sign-flipped to the format's positive-is-protective convention, scaled by the largest
+    absolute effect in the module (0.0825) and multiplied by allele dosage (1 for a
+    heterozygote, 2 for an alternate homozygote). Negative is liability-raising, positive is
+    liability-lowering. The observed range is -1.0, two copies of the alternate allele of
+    rs10455872 in LPA, which is the largest single effect in the module, to +0.551, two copies
+    of the alternate allele of rs12740374 near CELSR2, the largest liability-lowering one. The
+    scale is symmetric by construction, so +1.0 is reachable in principle and simply does not
+    occur here: the biggest effect in this set raises liability rather than lowers it.
+  method: >-
+    Derived arithmetically from one published multivariate GWAS; no curator judgement was
+    applied per row and no literature triage reweighted any variant. The published betas
+    themselves are in studies.csv, not in this column.
+  note: >-
+    These weights are ordinal WITHIN this module only and are not comparable with any other
+    module's. They measure a latent factor with no natural units, so the magnitude is not an
+    odds ratio, a risk and not a quantity of anything. Every effect here is individually
+    negligible: the whole point of the source study is the behaviour of the 263 variants as a
+    set. Summing them does not produce a validated polygenic score, and no published score
+    corresponds to this column.
+authority_precedence: []

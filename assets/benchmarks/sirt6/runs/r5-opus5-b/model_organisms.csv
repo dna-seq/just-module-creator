@@ -1,0 +1,5 @@
+gene,orthologue,species,model_type,sex,diet,lifespan_effect,concordance,pmid,doi
+SIRT6,Sirt6,Mus musculus,transgenic overexpression (MOSES mice),male,,+15% median lifespan (male); no significant extension in females,concordant,22367546,10.1038/nature10815
+SIRT6,Sirt6,Mus musculus,transgenic overexpression,both,,+27% (male) and +15% (female) lifespan; frailty measures improved via restored energy homeostasis,concordant,34050173,10.1038/s41467-021-23545-7
+SIRT6,Sirt6,Mus musculus,whole-body knockout,both,,"profoundly shortened: progeroid phenotype from 2-3 weeks, death typically within 4 weeks",concordant,16439206,10.1016/j.cell.2005.11.044
+SIRT6,SIRT6,Homo sapiens,naturally occurring inactivating missense D63H (homozygous),both,,perinatal lethality in humans - the reference point for how severe true SIRT6 inactivation is,concordant,29555651,10.1101/gad.307330.117

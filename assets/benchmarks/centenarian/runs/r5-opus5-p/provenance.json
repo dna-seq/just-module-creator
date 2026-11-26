@@ -1,0 +1,11 @@
+{
+  "generator": "just-module-creator",
+  "items": [
+    {
+      "variant_key": "variants.csv",
+      "rationale": "The kept set is the source's own funnel endpoint: its two under-1-percent sheets, whose rsID-bearing rows are exactly the six its body names, plus the two it calls previously longevity-associated. The other 102 receive no statement in the paper beyond membership in a filtered list, and 46 carry no identifier while their coordinates are GRCh37 against this module's GRCh38. Homozygous genotypes were dropped at three sites because live gnomAD shows the pattern of a mapping artefact rather than a polymorphism: zero homozygotes among about 785,000 people at rs75029097 and four among about 740,000 at rs11228733, where ordinary inheritance predicts roughly a quarter of each, and no record at all at rs9885916. A row for a genotype essentially nobody has would assert a finding the data does not support. [jmc field=rows value_sha256=eda987efef9d source=Raj 2025, Hum Genomics 19:115, Additional file 12 recorded=2026-11-26T00:52:18Z by=claude-opus-5]",
+      "human_reviewed": false,
+      "outranks": {}
+    }
+  ]
+}

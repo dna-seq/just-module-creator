@@ -1,0 +1,7 @@
+pmid,doi,pmcid,exists,is_open_access,license,share_alike,commercial_use,redistribution,quotes_authored,quotes_found,quote_source,fulltext_status,doi_exists,doi_checked,source,status,fetched_at
+41405793,10.1007/s11357-025-02044-3,PMC13601487,true,true,cc by,false,true,true,1,,primary article full text (CC BY),,true,10.1007/s11357-025-02044-3,europepmc,resolved,2026-11-26T01:05:00Z
+31413261,10.1038/s41467-019-11558-2,PMC6694136,true,true,cc by,false,true,true,0,,,,true,10.1038/s41467-019-11558-2,europepmc,resolved,2026-11-26T01:05:00Z
+33959723,10.1038/s43587-021-00051-5,PMC7610725,true,false,,,,,0,,,,true,10.1038/s43587-021-00051-5,europepmc,resolved,2026-11-26T01:05:00Z
+30054458,10.1038/s41467-018-04951-w,PMC6063971,true,true,cc by,false,true,true,0,,,,true,10.1038/s41467-018-04951-w,europepmc,resolved,2026-11-26T01:05:00Z
+29531354,10.1038/s41588-018-0058-3,PMC5968830,true,false,,,,,0,,,,true,10.1038/s41588-018-0058-3,europepmc,resolved,2026-11-26T01:05:00Z
+33532862,10.1093/eurheartj/ehaa1040,PMC7936531,true,false,,,,,0,,,,true,10.1093/eurheartj/ehaa1040,europepmc,resolved,2026-11-26T01:05:00Z

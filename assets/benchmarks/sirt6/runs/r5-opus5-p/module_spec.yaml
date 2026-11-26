@@ -1,0 +1,40 @@
+schema_version: '1.0'
+module:
+  title: SIRT6 and reaching very old age
+  description: One rare SIRT6 change studied for its link to longevity
+  report_title: SIRT6 and reaching very old age
+  icon: hourglass half
+  icon_set: fomantic
+  color: '#6435c9'
+  name: longevity_sirt6
+  version: '0.1.0'
+defaults:
+  curator: claude-opus-5
+  method: literature-review
+genome_build: GRCh38
+license: CC-BY-NC-4.0
+authorship:
+  - who: claude-opus-5
+    role: created
+    kind: [ai, agent]
+    at: '2026-11-26'
+weighting:
+  scale: >-
+    Bounded [-1, 1], positive is protective, as the format's convention requires. Ordinal
+    within this module only and not comparable with any other module's weights. The
+    magnitudes here are deliberately small: -1 is reserved for a large, replicated,
+    established effect, and this module has nothing of the kind.
+  method: >-
+    Curator judgement over two located papers, with no GWAS input and no published effect
+    size reused. The heterozygote carries -0.15 because two independent cohorts agree on
+    the direction while neither reaches its own significance threshold (p = 0.074 and
+    p = 0.073), the pooled confidence interval crosses the null (0.96-13.4), one cohort's
+    stated power is 28.4%, and one of the two papers also found the same allele absent
+    from its frail group, which points the other way. The common homozygote carries 0.0,
+    which is a claim and not a blank: both papers read it as the population norm, and
+    Hirvonen et al. state explicitly that CC has no effect on lifespan while CT carries
+    the negative one.
+  note: >-
+    These weights are a curator's model of a suggestive trend, not an effect size. Do not
+    pool them with another module's weights, and do not read the sum of this module as a
+    longevity score: it has one variant.

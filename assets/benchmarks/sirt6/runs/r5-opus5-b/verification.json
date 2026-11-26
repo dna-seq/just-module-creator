@@ -1,0 +1,14 @@
+{
+  "module_hash": "sha256:afde51430da17d0eafcc7a201e48ebb2220115059c95dfa03e2be62f49d51896",
+  "signature": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "difficulty": 20,
+  "nonce": 1210527,
+  "producer": null,
+  "produced_at": null,
+  "closure": {
+    "closed_at": "2026-11-25T23:26:44Z",
+    "closed_by": "claude-opus-5",
+    "signature": null
+  },
+  "records": []
+}

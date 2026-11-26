@@ -1,0 +1,5 @@
+variant_key,rsid,chrom,start,ref,alts,genome_build,locus_index,vrs_id,vrs_spec,caid,source,authority,status,placement_witness,placement_verdict,left_aligned,authored_event,judged_coordinate,fetched_at,source_release,source_loci
+rs117385980,rs117385980,19,4180588,C,T,GRCh38,0,,,CA15948970,reversed,clingen_allele_registry+ensembl,resolved,ensembl+clingen_allele_registry,concordant,true,,19:4180588,,ensembl-rest-2026-11-26,
+rs107251,rs107251,19,4176088,T,C,GRCh38,0,,,CA14695556,reversed,clingen_allele_registry+ensembl,resolved,ensembl+clingen_allele_registry,concordant,true,,19:4176088,,ensembl-rest-2026-11-26,
+rs350846,rs350846,19,4174401,C,G,GRCh38,0,,,CA14695555,reversed,clingen_allele_registry+ensembl,resolved,ensembl+clingen_allele_registry,concordant,true,,19:4174401,,ensembl-rest-2026-11-26,
+rs117833511,rs117833511,19,4180315,C,T,GRCh38,0,,,CA15948059,reversed,clingen_allele_registry+ensembl,resolved,ensembl+clingen_allele_registry,concordant,true,,19:4180315,,ensembl-rest-2026-11-26,

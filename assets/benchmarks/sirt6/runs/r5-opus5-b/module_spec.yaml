@@ -1,0 +1,30 @@
+schema_version: '1.0'
+module:
+  title: SIRT6 rs117385980 and longevity
+  description: One SIRT6 intronic variant weighed against frailty and survival to old age
+  report_title: SIRT6 rs117385980 — frailty and longevity
+  icon: hourglass half
+  icon_set: fomantic
+  color: '#6435c9'
+  name: longevity_sirt6
+  version: '0.1.0'
+defaults:
+  curator: claude-opus-5
+  method: literature-review
+genome_build: GRCh38
+license: CC-BY-NC-ND-4.0
+authorship:
+  - who: claude-opus-5
+    role: created
+    kind:
+      - ai
+      - agent
+    at: '2026-11-26'
+weighting:
+  scale: 'none — this module deliberately ships no weights'
+  method: 'Not computed. No published estimate for rs117385980 reaches statistical significance in any cohort, and every reported confidence interval spans 1 by an order of magnitude in both directions (widest: OR 1.42, 95% CI 0.18-11.67). A weight here would assert a magnitude the evidence does not support.'
+  note: 'There is nothing to combine. A consumer that needs a numeric score must treat every genotype in this module as UNSCORED, never as zero: absent weight means no defensible magnitude, not a measured null effect.'
+tier_scale: 'longevity_sirt6-local: replicated-trend | single-cohort-trend | mechanistic-only | untested'
+authority_precedence:
+  - ensembl
+  - gnomad

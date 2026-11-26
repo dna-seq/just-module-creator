@@ -1,0 +1,10 @@
+pmid,doi,pmcid,exists,is_open_access,license,share_alike,commercial_use,redistribution,quotes_authored,quotes_found,quote_source,fulltext_status,doi_exists,doi_checked,source,status,fetched_at
+41249831,10.1038/s41598-025-24018-3,PMC12624115,true,true,cc by-nc-nd,false,false,true,0,,,supplied_by_user,true,10.1038/s41598-025-24018-3,pubmed,resolved,2026-11-26T00:00:00Z
+28399814,10.1186/s12881-017-0401-z,PMC5387321,true,true,cc by,false,true,true,2,2,europepmc_fulltext,retrieved,true,10.1186/s12881-017-0401-z,pubmed,resolved,2026-11-26T00:00:00Z
+25541994,10.1371/journal.pone.0115616,PMC4277407,true,true,cc by,false,true,true,1,1,europepmc_fulltext,retrieved,true,10.1371/journal.pone.0115616,pubmed,resolved,2026-11-26T00:00:00Z
+28032059,,PMC5182250,true,true,cc by-nc-3.0,false,false,true,0,,,retrieved,false,,pubmed,resolved_no_doi,2026-11-26T00:00:00Z
+26802595,10.1016/j.mcp.2016.01.005,,true,false,,,,,0,,,not_retrieved_closed_access,true,10.1016/j.mcp.2016.01.005,pubmed,resolved,2026-11-26T00:00:00Z
+37754211,10.1007/s12603-023-1969-y,PMC12275554,true,true,cc by-nc-nd,false,false,true,0,,,not_retrieved,true,10.1007/s12603-023-1969-y,pubmed,resolved,2026-11-26T00:00:00Z
+34050173,10.1038/s41467-021-23545-7,PMC8163764,true,true,cc by,false,true,true,0,,,not_retrieved,true,10.1038/s41467-021-23545-7,pubmed,resolved,2026-11-26T00:00:00Z
+29555651,10.1101/gad.307330.117,,true,false,,,,,0,,,not_retrieved_closed_access,true,10.1101/gad.307330.117,pubmed,resolved,2026-11-26T00:00:00Z
+32550207,10.1007/s40200-020-00504-5,PMC7271344,true,false,,,,,0,,,not_retrieved,true,10.1007/s40200-020-00504-5,pubmed,resolved,2026-11-26T00:00:00Z

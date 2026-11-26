@@ -1,0 +1,33 @@
+schema_version: '1.0'
+module:
+  title: Longevity candidate variants from centenarians
+  description: Candidate longevity variants reported in a 21-person centenarian and supercentenarian cohort
+  report_title: Longevity candidate variants
+  icon: database
+  icon_set: fomantic
+  color: '#6435c9'
+  name: longevity_centenarian
+defaults:
+  curator: claude-opus-5
+  method: literature-review
+genome_build: GRCh38
+license: CC-BY-NC-ND-4.0
+weighting:
+  scale: >-
+    none - this module authors no weights. The weight column is empty on every row
+    and must not be read as zero-meaning-neutral.
+  method: >-
+    No weighting was attempted. The single source performed no association test and
+    had no control group, so there is no effect estimate from which a weight could be
+    derived, and inventing one would assert a direction the evidence does not carry.
+  note: >-
+    Do not combine these rows into a score. Every row carries direction=unknown and
+    stat_significance=unknown deliberately: the module records what was observed in a
+    21-person cohort, not an effect on lifespan.
+authorship:
+  - who: claude-opus-5
+    role: created
+    kind:
+      - ai
+      - agent
+    at: '2026-11-26'
