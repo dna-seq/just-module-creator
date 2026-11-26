@@ -115,6 +115,12 @@ claims that were plausibly wrong, and it found more than solo probing.
 
 ## In flight
 
+**Release 0.48.21 recheck, 2026-11-26, tag v0.48.21 (666518d), just-dna 0.8.10 in the venv.** F171's case holds
+over the wire (scratchpad `r21b/`): `reference_examples/pathogenic_clinvar` with both rs80356821 verdicts `unplaced`,
+an offline `enrich_module` (338 resolved), then `compile_module(strict=True)` succeeds with no errors. 0.8.9 refused the
+same input. rs80356821 now arrives as a warning naming RM453 and its repair (author the event's coordinate, re-run
+the enricher). The unplaced-row advice dropped its 0.8.9 example and keeps the repair, in skills and `next_step` alike.
+
 **Benchmark round 5, asked 2026-11-25.** The person's words came via the writer (643696214, desk #368 option 1).
 Two no-plugin control arms beside the plugin, on sirt6, centenarian and ards. claude-opus-5 first; claude-opus-5-5 if
 the window allows. Results go to the writer for Table 3 and a new comparison subsection. State: urgent, started
