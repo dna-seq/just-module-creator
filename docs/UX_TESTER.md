@@ -158,8 +158,11 @@ the window allows. Results go to the writer for Table 3 and a new comparison sub
   `/data/bench-out-r5/`, P runs and scratch to `data/interim/repro-bench-5b/`, and B/C to `/data/bench-iso/runs/{b,c}55-*`.
   The opus-5 B/C copies moved to `/data/bench-out-r5/opus5-runs/`, so nothing with an answer sits beside a new run.
   My answer-key file sat in the parent of wave 1's P scratch; no P run touched it (checked).
-- Next step: when the wave ends, run the same checks and scores, add an opus-5-5 column to REPORT.md, tell the
-  writer, and lift the hold. Earlier plan line kept for the record: send the report to the writer, then run the claude-opus-5-5 wave on the same briefs after the 5-hour
+- Wave 1 archived into the corpus (202293d, `assets/benchmarks/ROUND5.md` + `runs/r5-opus5-*`) on the writer's ask
+  (643748565); centenarian's stale `pre_briefed` note corrected (c4255e7). The push of main was refused by auto mode,
+  filed as kit #648; the commits ride the next push.
+- Next step: when the wave ends, run the same checks and scores, add an opus-5-5 column to REPORT.md and ROUND5.md,
+  archive as `r5-opus55-*`, tell the writer, and lift the hold. Earlier plan line kept for the record: send the report to the writer, then run the claude-opus-5-5 wave on the same briefs after the 5-hour
   window resets (04:49Z). It was at 79 %, and nine Opus runs would hit the limit mid-scoring and stop other seats.
 **Benchmark round 4, handed over by the lead 2026-11-19 (the person's word).** Fixture `sirt6`, plugin 0.48.15, model
 `claude-opus-5`, three runs (`data/interim/repro-bench-4/run-sirt6-{a,b,c}`), `claude -p --permission-mode auto` from
