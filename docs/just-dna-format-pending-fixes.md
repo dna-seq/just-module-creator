@@ -166,7 +166,7 @@ reason is one of §5's grounds or a covering tool; a row with a trigger is wrapp
 
 `set_short_description` is not an abstention: `registry_set_subtitle` wraps it (`0395250`), closing F59 on our side.
 `upgrade_status` (new in registry 0.32.0) is not one either: `registry_upgrade_status` wraps it, released in 0.48.14.
-`rotate_key` (new in registry 0.34.1) is not one either: `registry_rotate_key` wraps it (the lead's `b862f69`, 2026-11-26, unreleased), refusing unsent below registry 0.34.1 and swapping the new key into the saved account through the backed-up write, read back; both instances serve 0.34.4.
+`rotate_key` (new in registry 0.34.1) is not one either: `registry_rotate_key` wraps it (the lead's `b862f69`, 2026-11-26, released in 0.48.22, `v0.48.22` `8b2f724`), refusing unsent below registry 0.34.1 and swapping the new key into the saved account through the backed-up write, read back; both instances serve 0.34.4.
 
 ## Registry `S32` — the variant catalog matches a key's spelling exactly (no F#: the lead's 0.31 reads)
 
