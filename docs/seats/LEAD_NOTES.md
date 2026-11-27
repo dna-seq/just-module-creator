@@ -4,7 +4,7 @@ The lead seat's working state, rewritten to the present before a reset (`docs/se
 
 ## Now
 
-Released 0.48.22 (tag `v0.48.22`, `8b2f724`, 2026-11-27): `registry_rotate_key` (b862f69), registry client floor >=0.34.1 (0.34.3 locked by the liaison, f547e16). 1115 pass; polygon `registry_check` of fto_bmi `verdict: true`. Tester's recheck on a throwaway polygon account pending (kit #676's rule is in v0.1.287). Next release no earlier than 2026-11-28, nothing queued. Before it: 0.48.21 (`666518d`, 2026-11-26, just-dna 0.8.10), 0.48.20 (`18407b6`, 2026-11-24, F172), 0.48.19 (`c58fc0a`, 2026-11-23, fastmcp 4.2.5).
+Released 0.48.22 (tag `v0.48.22`, `8b2f724`, 2026-11-27): `registry_rotate_key` (b862f69), registry client floor >=0.34.1 (0.34.3 locked by the liaison, f547e16). 1115 pass; polygon `registry_check` of fto_bmi `verdict: true`. Tester rechecked it at the tag on a throwaway polygon account (c115c33): new key saved and read back, none in the reply, the old key refused with 401. Next release no earlier than 2026-11-28, nothing queued. Before it: 0.48.21 (`666518d`, 2026-11-26, just-dna 0.8.10), 0.48.20 (`18407b6`, 2026-11-24, F172), 0.48.19 (`c58fc0a`, 2026-11-23, fastmcp 4.2.5).
 
 Registry 0.32 adopted and the enricher floored at 0.8.8: released in 0.48.14. The RM445 cache re-pull ran on this machine 2026-11-17.
 away at 05:02Z on 2026-11-05.
