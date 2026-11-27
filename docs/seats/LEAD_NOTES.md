@@ -4,7 +4,7 @@ The lead seat's working state, rewritten to the present before a reset (`docs/se
 
 ## Now
 
-Released 0.48.21 (tag `v0.48.21`, `666518d`, 2026-11-26): just-dna 0.8.10 (liaison's read and trial 8e66535; RM453 ends F171's refusal), the unplaced-row advice without the mirrored-indel example, header trimmed one word to fit 2048. 1111 pass; polygon `registry_check` of fto_bmi `verdict: true`. Next release no earlier than 2026-11-27, nothing queued. Before it: 0.48.20 (`18407b6`, 2026-11-24, F172), 0.48.19 (`c58fc0a`, 2026-11-23, fastmcp 4.2.5), 0.48.18 (`73e3962`, 2026-11-22, F171).
+Released 0.48.22 (tag `v0.48.22`, `8b2f724`, 2026-11-27): `registry_rotate_key` (b862f69), registry client floor >=0.34.1 (0.34.3 locked by the liaison, f547e16). 1115 pass; polygon `registry_check` of fto_bmi `verdict: true`. Tester's recheck on a throwaway polygon account pending (kit #676's rule is in v0.1.287). Next release no earlier than 2026-11-28, nothing queued. Before it: 0.48.21 (`666518d`, 2026-11-26, just-dna 0.8.10), 0.48.20 (`18407b6`, 2026-11-24, F172), 0.48.19 (`c58fc0a`, 2026-11-23, fastmcp 4.2.5).
 
 Registry 0.32 adopted and the enricher floored at 0.8.8: released in 0.48.14. The RM445 cache re-pull ran on this machine 2026-11-17.
 away at 05:02Z on 2026-11-05.
@@ -173,7 +173,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   section), C (§11 tectonic) shown; the person picked B and C (`2d820e8`). What they meant by "3n decision" was the
   paper: adjust the abstract and sections to the talk's eligibility criteria, and a raw link to the built PDF for
   Anton; forwarded to the writer (the paper is its).
-- **Registry 0.34.1 `rotate_key`: `registry_rotate_key` on main (b862f69, 1114 pass), unreleased; ships in the next release (no earlier than 2026-11-27); the tester asked to recheck it on a throwaway polygon account.** (was: waits until an instance serves 0.34) (the liaison, e633db2): wrap it as a
+- **Registry 0.34.1 `rotate_key`: `registry_rotate_key` released in 0.48.22 (2026-11-27); the tester rechecks it at the tag on a throwaway polygon account.** (was: waits until an instance serves 0.34) (the liaison, e633db2): wrap it as a
   gated tool; the new key is shown once and must replace the saved token in `state.json` through the backed-up
   write, read back, or the next call meets a dead key. Needs the floor at 0.34.1; both instances serve 0.32.1, so
   the tool must refuse by name on an older server. `deploy`/`deploy_status` are site-admin only (abstained).

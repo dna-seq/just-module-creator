@@ -1,4 +1,4 @@
-**Where it stands (2026-11-26).** 0.48.21 runs on just-dna 0.8.10 and fastmcp 4.2.5, is current with the registry's 0.32 features, and reads 0.33's lane fields once an instance serves them. Held by the lead, acting for the pm.
+**Where it stands (2026-11-27).** 0.48.22 runs on just-dna 0.8.10 and fastmcp 4.2.5, is current with the registry's 0.32 features, and reads 0.33's lane fields once an instance serves them. Held by the lead, acting for the pm.
 
 **Results**
 - ✅ just-dna 0.8 shipped (0.48.7). Both registries accept it; a test-registry dry run of a real module passes.
@@ -18,10 +18,10 @@
 - ✅ fastmcp 4 adopted, the September pin lifted: revealed tool groups reach hosts on the new MCP wire. On that wire a session token is still not kept and a tool cannot ask the person mid-call; both are refused with a reason (0.48.19).
 - ✅ An author's decision is put to them for approval again in Claude Code, which speaks the new wire: the box reads "Approve this wording" (0.48.20).
 - ✅ just-dna 0.8.10: a module with an indel where an insertion and a deletion share a position compiles strict after an offline enrichment, where 0.48.20 refused it (0.48.21).
+- ✅ An author whose registry key leaked can replace it in one call; the saved account takes the new key, and the old one stops working (0.48.22).
 - ✅ The authoring benchmark reproduces on 0.48.15: clean runs find the SIRT6 variant with no decoys; genotype coverage on Opus 5 matches the paper's Table 3 (three runs each, no difference found); one Opus 5.5 run is a single observation. The skills no longer name any benchmark answer.
 - ✅ Each module now keeps a record of how its rows came to be (searches, articles read, rows written, decisions no edit shows), and `trace_module` reads every row back against it; registry 0.32 adopted; publishing refuses a module name that differs from its spec (0.48.14).
 
 **Next**
-1. A tool to replace a leaked registry token (registry 0.34.1). Lead; built on main, ships in the next release, the tester rechecks it.
-2. Adopt just-dna 0.9: published 2026-11-26 and built on its own branch (all tests pass). Lead; ⏸ merges once both registries serve 0.9 (both serve 0.8.10 today).
-3. Renaming the `test-sheep` rehearsals into the `winternewt` account. Lead; ⏸ waits on the person's token.
+1. Adopt just-dna 0.9: published 2026-11-26 and built on its own branch (all tests pass). Lead; ⏸ merges once both registries serve 0.9 (both serve 0.8.10 today).
+2. Renaming the `test-sheep` rehearsals into the `winternewt` account. Lead; ⏸ waits on the person's token.
