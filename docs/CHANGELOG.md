@@ -5,7 +5,10 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+## [0.48.22] — 2026-11-27
+
 - **`registry_rotate_key`** (registry 0.34.1): replaces the API key a call uses with a new one, for a key that leaked. The new key replaces the old in the saved account (backed-up write, read back) and in this session; it is returned in the reply only when it could not be saved, since the registry shows it once. `revoke_others=true` revokes the account's other keys and marks this machine's other saved keys for it invalid. Refused, with nothing sent, on an instance older than registry 0.34.1; both instances serve 0.34.4 (2026-11-26), and the client is 0.34.3 (the liaison, f547e16). `module-publish` says when to reach for it.
+- **Registry client 0.34.3** (liaison, f547e16): the hold at 0.32.1 ended when both instances began serving registry 0.34.4; the floor is now `>=0.34.1`, the first client with `rotate_key`.
 
 ## [0.48.21] — 2026-11-26
 

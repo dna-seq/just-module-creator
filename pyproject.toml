@@ -1,6 +1,6 @@
 [project]
 name = "just-module-creator"
-version = "0.48.21"
+version = "0.48.22"
 description = "MCP server and skills for authoring and publishing just-dna annotation modules; a Claude Code and Codex plugin"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -107,7 +107,9 @@ dependencies = [
     # 0.32.0 (2026-11-17, both instances serving it): `gene_claims` quotes the symbol, so the
     # path guard came out; `upgrade_status` is wrapped; `/variants` folds spellings and says
     # `matched`; lane answers carry `terms`/`unpublished`; `whoami` lists `member_of`/`orgs`.
-    "just-dna-registry>=0.32.0",
+    # 0.34.1 (both instances serve 0.34.4 from 2026-11-26) adds `rotate_key`, which
+    # `registry_rotate_key` wraps; the tool still asks `/version` and refuses below 0.34.1.
+    "just-dna-registry>=0.34.1",
     "python-dotenv>=1.2.2",
     # Declared, not leaned on transitively: net.py calls httpx directly for the
     # literature sources, and a transitive pin is not a contract.
