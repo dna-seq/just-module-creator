@@ -115,6 +115,12 @@ claims that were plausibly wrong, and it found more than solo probing.
 
 ## In flight
 
+**`registry_rotate_key` recheck, asked by the lead 2026-11-26 (643992770), main b862f69 (unreleased): blocked.**
+The plan was a throwaway polygon account in isolated state (scratchpad `rot/`: `JMC_CONFIG_FILE` there, install-id
+unset, so neither `sheep`'s install-id nor its key is touched). Then register, whoami, rotate, whoami on the new key,
+and the old key refused through the upstream client. Auto mode refused the register call, so nothing was created.
+Filed as kit #676. Next: rerun once the rule allows it, or the person runs it; the driver is `rot/call.py`.
+
 **S35 and lane release fields, 2026-11-26 21:43Z, both instances on registry 0.34.4 (client 0.32.1, main 31f1fec), over
 the wire.**
 - **S35 holds.** On the polygon, `sheep`'s own review of `test-sheep/test_statin_response@0.1.1` ran: post `verified`,

@@ -116,6 +116,11 @@ choice.
   every time — the last one you saved is the one that works.
 - **Never paste either into a module, a fixture, a commit or a note.** The saved state is outside the
   tree, owner-only, and backed up before every change; everything else here is not.
+- **A token that leaked is replaced, not kept.** `registry_rotate_key(target=…)` trades the key in use
+  for a new one: the old key stops working at once, and the saved account takes the new one. Add
+  `revoke_others=true` when you cannot tell where else the account's keys went; it revokes every other
+  key of the account, other machines' included, so each of those needs a fresh one. A key held only in
+  the environment cannot be updated there: the reply hands over the new one, once, to put back.
 - **`forget` deletes a saved account.** Ask first. The backup keeps it, but an author who does not know
   that has lost the install-id as far as they can tell.
 

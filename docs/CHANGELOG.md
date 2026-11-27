@@ -5,6 +5,11 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+## [0.48.22] — 2026-11-27
+
+- **`registry_rotate_key`** (registry 0.34.1): replaces the API key a call uses with a new one, for a key that leaked. The new key replaces the old in the saved account (backed-up write, read back) and in this session; it is returned in the reply only when it could not be saved, since the registry shows it once. `revoke_others=true` revokes the account's other keys and marks this machine's other saved keys for it invalid. Refused, with nothing sent, on an instance older than registry 0.34.1; both instances serve 0.34.4 (2026-11-26), and the client is 0.34.3 (the liaison, f547e16). `module-publish` says when to reach for it.
+- **Registry client 0.34.3** (liaison, f547e16): the hold at 0.32.1 ended when both instances began serving registry 0.34.4; the floor is now `>=0.34.1`, the first client with `rotate_key`.
+
 ## [0.48.21] — 2026-11-26
 
 - **just-dna 0.8.10** (liaison, read and tried 2026-11-26): the three floors move to `>=0.8.10`. Its RM453 fills both spellings of a mirrored indel site that no witness placed, so a strict compile after an offline enrich no longer refuses such a row, the case behind F171 (checked on the liaison's `pathogenic_clinvar` reproduction: it refused on 0.8.9 and compiles strict on 0.8.10). `compile_module`'s `next_step` for an unplaced row and its `SYMPTOMS.md` entry keep the repair and drop that example, which no longer produces the refusal. The server's instructions lost one word ("say so aloud" is now "say so") to stay under the host's 2048-character ceiling with the longer version string.

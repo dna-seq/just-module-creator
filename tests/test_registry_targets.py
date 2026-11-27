@@ -58,6 +58,7 @@ REGISTRY_TOOL_DEFAULTS = {
     "registry_delete_module": "test",
     "registry_rename_namespace": "test",
     "registry_rename_account": "test",
+    "registry_rotate_key": "test",
     "registry_create_org": "test",
     "registry_create_org_namespace": "test",
     "registry_members": "test",

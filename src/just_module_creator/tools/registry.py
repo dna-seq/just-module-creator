@@ -37,6 +37,8 @@ from just_module_creator import localstore, logscan
 from just_module_creator.auth import (
     GATED_TAG,
     resolve_api_key,
+    session_state_persists,
+    state_key,
     unauthenticated_result,
 )
 from just_module_creator.logging_setup import get_logger
@@ -416,6 +418,58 @@ def _amend_saved_account(
         f"No saved account holds this token, so nothing here knows {what}: "
         f'`registry_accounts(action="add")` saves it.'
     )
+
+
+#: The registry release that answers `POST /auth/rotate` (client `rotate_key`, 0.34.1).
+ROTATE_RELEASE = (0, 34, 1)
+
+
+def serves_rotation(release: str | None) -> bool | None:
+    """Whether a `/version` registry release answers a key rotation; `None` when unreadable."""
+    if not release:
+        return None
+    parts = str(release).split(".")[:3]
+    if not all(p.isdigit() for p in parts) or len(parts) < 2:
+        return None
+    return tuple(int(p) for p in parts) >= ROTATE_RELEASE
+
+
+def _swap_saved_token(
+    target: RegistryTarget, old: str, new: str, *, account: str | None, revoked_others: bool
+) -> str | None:
+    """Put `new` where `old` was saved, read it back, and say what happened.
+
+    Returns ``None`` when `new` is saved and read back; otherwise the reason it is not, which
+    the caller turns into "keep this token, it is shown once". With `revoked_others`, the
+    account's other saved keys on this instance are marked `invalid`, since the registry has
+    just revoked them and selection should stop offering them.
+    """
+
+    def _apply(state: localstore.State) -> bool:
+        owner = localstore.account_for_token(state, target, old)
+        if owner is None:
+            return False
+        owner.token = new
+        owner.status = "valid"
+        owner.status_at = localstore.now()
+        owner.status_detail = "rotated by registry_rotate_key"
+        if revoked_others:
+            for other in localstore.accounts_for(state, target):
+                if other is not owner and other.account == (account or owner.account):
+                    other.status = "invalid"
+                    other.status_at = localstore.now()
+                    other.status_detail = "revoked by registry_rotate_key(revoke_others=true)"
+        return True
+
+    try:
+        saved = localstore.update(_apply)
+    except OSError as exc:
+        return f"saving it on this machine failed ({exc})"
+    if not saved:
+        return "no saved account held the old token"
+    if localstore.account_for_token(localstore.load(), target, new) is None:
+        return "the saved account did not read back with the new token"
+    return None
 
 
 def register_registry(mcp: FastMCP, settings: Settings) -> None:
@@ -1519,6 +1573,106 @@ def register_registry(mcp: FastMCP, settings: Settings) -> None:
             ),
             data={"target": target, "dry_run": dry_run, "report": jsonable(report)},
         )
+
+    # Registry 0.34.1. The old key is dead the moment the server answers, and the new one is
+    # shown once, so the order is: refuse on an instance that cannot rotate (asked first, as
+    # an older server would 404 only after nothing changed), rotate, then put the new token
+    # everywhere this server holds the old one — the saved account (backed-up write, read
+    # back) and this session's slot. The token goes into the reply only when it could not be
+    # saved: echoing a saved secret writes it into the transcript for nothing (F126's reason),
+    # while withholding an unsaved one loses the account's only working key.
+    @mcp.tool(
+        tags={GATED_TAG},
+        annotations=ToolAnnotations(
+            title="Registry: replace your API key",
+            read_only_hint=False,
+            idempotent_hint=False,
+            destructive_hint=True,
+            open_world_hint=True,
+        ),
+    )
+    async def registry_rotate_key(
+        ctx: Context,
+        revoke_others: bool = False,
+        namespace: str | None = None,
+        target: RegistryTarget = "test",
+    ) -> OpResult:
+        """Replace the registry API key this call uses with a new one, for a key that leaked.
+
+        The old key stops working at once. The new key replaces it in the saved account
+        and in this session; it is returned in the reply only when it could not be saved,
+        since the registry shows it once. `revoke_others=true` also revokes every other key
+        of the account (other machines' included), and marks this machine's other saved
+        keys for it invalid. `namespace` picks among saved accounts by one it owns.
+        Refused on an instance older than registry 0.34.1.
+        """
+        token = await resolve_api_key(ctx, settings, target, namespace)
+        if token is None:
+            return unauthenticated_result(settings, target, namespace)
+        if settings.offline:
+            raise ToolError("The server is configured offline (JMC_OFFLINE).")
+
+        def _rotate() -> tuple[str | None, dict | None]:
+            with _client(token, target) as client:
+                info = client.server_version()
+                release = getattr(info, "registry", None) if info is not None else None
+                if serves_rotation(release) is not True:
+                    return release, None
+                return release, client.rotate_key(revoke_others=revoke_others)
+
+        try:
+            release, rotated = await run_sync(_rotate)
+        except RegistryError as exc:
+            return OpResult(
+                success=False,
+                message=(
+                    f"{describe(target, settings)} refused the rotation: {exc}"
+                    f"{instance_note(exc)} The key in use is unchanged unless the registry "
+                    f"says otherwise; `registry_whoami` tells whether it still works."
+                ),
+                data={"target": target},
+            )
+        if rotated is None:
+            said = f"runs registry {release}" if release else "did not say which registry it runs"
+            return OpResult(
+                success=False,
+                message=(
+                    f"{describe(target, settings)} {said}, and replacing a key is registry "
+                    f"0.34.1. Nothing was sent; the key in use is unchanged."
+                ),
+                data={"target": target, "registry": release},
+            )
+
+        new = str(rotated["token"])
+        account = rotated.get("account")
+        revoked = rotated.get("revoked")
+        log.info("Rotated the API key of %s on %s (revoked: %s)", account, target, revoked)
+        unsaved = _swap_saved_token(
+            target, token, new, account=account, revoked_others=revoke_others
+        )
+        session_note = ""
+        if await ctx.get_state(state_key(target)) == token:
+            if session_state_persists(ctx):
+                await ctx.set_state(state_key(target), new)
+            else:
+                session_note = " This session held the old key and cannot store the new one."
+        data: dict = {"target": target, "account": account, "revoked": jsonable(revoked)}
+        if unsaved is None:
+            message = (
+                f"Replaced the API key of {account} on {describe(target, settings)}; the saved "
+                f"account now holds the new key (read back), and the old one is dead."
+            )
+        else:
+            data["token"] = new
+            message = (
+                f"Replaced the API key of {account} on {describe(target, settings)}; the old one "
+                f"is dead. The new key is in `data.token` and is shown this once: "
+                f"{unsaved}, so save it now with `registry_accounts(action=\"add\")`, or put it "
+                f"where the old one came from (an environment variable or a header)."
+            )
+        if revoke_others:
+            message += f" Other keys revoked: {revoked}."
+        return OpResult(success=True, message=message + session_note, data=data)
 
     # An org is an account the caller owns; `create_org_namespace` needs one, and no other
     # call here could make it. Since registry 0.32 (S31) `registry_whoami` lists the orgs an

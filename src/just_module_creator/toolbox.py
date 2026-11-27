@@ -263,6 +263,7 @@ GROUPS: tuple[Group, ...] = (
             "registry_delete_module",
             "registry_rename_namespace",
             "registry_rename_account",
+            "registry_rotate_key",
             "registry_create_org",
             "registry_create_org_namespace",
         ),

@@ -4,7 +4,7 @@ The lead seat's working state, rewritten to the present before a reset (`docs/se
 
 ## Now
 
-Released 0.48.21 (tag `v0.48.21`, `666518d`, 2026-11-26): just-dna 0.8.10 (liaison's read and trial 8e66535; RM453 ends F171's refusal), the unplaced-row advice without the mirrored-indel example, header trimmed one word to fit 2048. 1111 pass; polygon `registry_check` of fto_bmi `verdict: true`. Next release no earlier than 2026-11-27, nothing queued. Before it: 0.48.20 (`18407b6`, 2026-11-24, F172), 0.48.19 (`c58fc0a`, 2026-11-23, fastmcp 4.2.5), 0.48.18 (`73e3962`, 2026-11-22, F171).
+Released 0.48.22 (tag `v0.48.22`, `8b2f724`, 2026-11-27): `registry_rotate_key` (b862f69), registry client floor >=0.34.1 (0.34.3 locked by the liaison, f547e16). 1115 pass; polygon `registry_check` of fto_bmi `verdict: true`. Tester's recheck on a throwaway polygon account pending (kit #676's rule is in v0.1.287). Next release no earlier than 2026-11-28, nothing queued. Before it: 0.48.21 (`666518d`, 2026-11-26, just-dna 0.8.10), 0.48.20 (`18407b6`, 2026-11-24, F172), 0.48.19 (`c58fc0a`, 2026-11-23, fastmcp 4.2.5).
 
 Registry 0.32 adopted and the enricher floored at 0.8.8: released in 0.48.14. The RM445 cache re-pull ran on this machine 2026-11-17.
 away at 05:02Z on 2026-11-05.
@@ -122,7 +122,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.284 (moved on each announcement; 0.1.284 on 2026-11-26) (`move-to-tag.py`; the pin is in the untracked
+- **Kit pin**: 0.1.287 (moved on each announcement; 0.1.287 on 2026-11-27) (`move-to-tag.py`; the pin is in the untracked
   `.claude/settings.local.json`). Taking it into this session is mine: `watchdog.sh reload`, then end the turn,
   and the kit's typer types `/reload-plugins` (the "left for the person" line `move-to-tag.py` prints is wrong, kit #306).
 
@@ -173,7 +173,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   section), C (§11 tectonic) shown; the person picked B and C (`2d820e8`). What they meant by "3n decision" was the
   paper: adjust the abstract and sections to the talk's eligibility criteria, and a raw link to the built PDF for
   Anton; forwarded to the writer (the paper is its).
-- **Registry 0.34.1 `rotate_key(revoke_others=False)`, mine, waits until an instance serves 0.34** (both served 0.32.1 at 2026-11-19 22:05 CET; a client floor two minors ahead risks the 409 skew of CLAUDE.md §11) (the liaison, e633db2): wrap it as a
+- **Registry 0.34.1 `rotate_key`: `registry_rotate_key` released in 0.48.22 (2026-11-27); the tester rechecks it at the tag on a throwaway polygon account.** (was: waits until an instance serves 0.34) (the liaison, e633db2): wrap it as a
   gated tool; the new key is shown once and must replace the saved token in `state.json` through the backed-up
   write, read back, or the next call meets a dead key. Needs the floor at 0.34.1; both instances serve 0.32.1, so
   the tool must refuse by name on an older server. `deploy`/`deploy_status` are site-admin only (abstained).
@@ -184,7 +184,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   question: the person's ask decides it, and quota is no drawback (kit #510).
   Done (tester 1513e9c): clean a, b, e on claude-opus-5 pair recall 1.00/1.00/0.67, f on Opus 5.5 0.67, all
   thresholds met; hold lifted. The fixture's shape left module-curate too (`f400344`).
-- **just-dna 0.9 prep, mine, `unattended`, after the round's hold lifts** (the liaison's trial of d9c578ae, e46f560,
+- **just-dna 0.9: built on `adopt-0.9` (`.worktrees/adopt-0.9`, d38c5f9 + merge of main), 1113 pass; merges to main when both instances serve format 0.9 (both 0.8.10 at 2026-11-26), the person having said 0.9 is published.** Earlier prep, kept for its reasons: **just-dna 0.9 prep, mine, `unattended`, after the round's hold lifts** (the liaison's trial of d9c578ae, e46f560,
   `docs/UPSTREAM_COMPILER.md`): 3 of our tests fail, all ours. `cli_map._PUBLISH` needs `clinvar-gkm publish` and
   `opentargets publish`; `test_every_tool_a_mapping_names_exists` reads the new `ensembl_rsid_index` lane name as a
   tool (exclude lane names); the layered-header budget is 2 characters over with 0.8.10/0.9.0 in the version line.

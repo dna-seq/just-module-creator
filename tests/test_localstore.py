@@ -192,6 +192,14 @@ class _RegistryStub:
         self.calls.append(("create_org_namespace", org, namespace))
         return {"namespace": namespace, "org": org}
 
+    def server_version(self):
+        release = self.replies.get("registry_release", "0.34.4")
+        return None if release is None else type("VersionInfo", (), {"registry": release})()
+
+    def rotate_key(self, *, revoke_others=False):
+        self.calls.append(("rotate_key", revoke_others))
+        return {"token": "mk_sheep_new0", "account": "sheep", "revoked": 1 if revoke_others else 0}
+
     def whoami(self):
         reply = self.replies["whoami"]
         if isinstance(reply, BaseException):
@@ -620,3 +628,94 @@ def test_start_skips_a_token_answered_valid_within_the_hour(monkeypatch):
     assert [c.status for c in accountcheck.validate_saved(_online())] == ["valid"], (
         "refresh never skips"
     )
+
+
+# --------------------------------------------------------------------------- #
+# Key rotation (registry 0.34.1): the new key replaces the old wherever it was held
+# --------------------------------------------------------------------------- #
+async def test_a_rotated_key_replaces_the_saved_one_and_is_not_echoed(make_client, monkeypatch):
+    """The old key is dead once the registry answers; a saved account left holding it would
+    make every next call say "rejected your token"."""
+    _seed(("test", "sheep", "mk_sheep_aaaa", ["test-sheep"]))
+    stub = _RegistryStub()
+    monkeypatch.setattr(registry_tools, "client_for", stub)
+    async with make_client(settings=_online()) as client:
+        payload = (await client.call_tool("registry_rotate_key", {})).structured_content
+
+    assert stub.tokens == ["mk_sheep_aaaa"] and stub.calls == [("rotate_key", False)]
+    assert payload["success"] is True and "read back" in payload["message"]
+    assert "token" not in payload["data"], "a saved secret is not written into the transcript"
+    assert "mk_sheep_new0" not in payload["message"]
+    state = localstore.load()
+    assert localstore.pick_token(state, "test", "test-sheep") == "mk_sheep_new0"
+    assert localstore.account_for_token(state, "test", "mk_sheep_aaaa") is None
+    backups = localstore.state_file().parent / userconfig.BACKUP_DIR
+    assert any(backups.glob("state.json.*")), "the write took a backup first"
+
+
+async def test_rotation_is_refused_unsent_on_an_instance_older_than_0_34_1(
+    make_client, monkeypatch
+):
+    _seed(("test", "sheep", "mk_sheep_aaaa", ["test-sheep"]))
+    for release in ("0.32.1", "0.34.0", None):
+        stub = _RegistryStub(registry_release=release)
+        monkeypatch.setattr(registry_tools, "client_for", stub)
+        async with make_client(settings=_online()) as client:
+            payload = (await client.call_tool("registry_rotate_key", {})).structured_content
+
+        assert stub.calls == [], f"a rotation was sent to registry {release}"
+        assert payload["success"] is False and "0.34.1" in payload["message"]
+        assert "unchanged" in payload["message"]
+    assert localstore.pick_token(localstore.load(), "test", "test-sheep") == "mk_sheep_aaaa"
+
+
+async def test_a_rotated_key_saved_nowhere_is_handed_over_once(make_client, monkeypatch):
+    """A key from the environment has no record to update; withholding the new one would leave
+    the account with no working key anyone holds."""
+    monkeypatch.setenv("JMC_TEST_API_KEY", "mk_from_env1")
+    stub = _RegistryStub()
+    monkeypatch.setattr(registry_tools, "client_for", stub)
+    async with make_client(settings=_online()) as client:
+        payload = (await client.call_tool("registry_rotate_key", {})).structured_content
+
+    assert stub.tokens == ["mk_from_env1"]
+    assert payload["success"] is True
+    assert payload["data"]["token"] == "mk_sheep_new0"
+    assert "shown this once" in payload["message"] and "no saved account" in payload["message"]
+    assert localstore.load().accounts == []
+
+
+async def test_revoking_the_others_marks_this_machines_other_keys_invalid(
+    make_client, monkeypatch
+):
+    _seed(
+        ("test", "sheep", "mk_sheep_aaaa", ["test-sheep"]),
+        ("test", "goat", "mk_goat_cccc", ["test-goat"]),
+    )
+
+    def _second_key(state: localstore.State) -> None:
+        # A second machine's key for the same account, saved here too: `save_account` keeps one
+        # record per (target, account), so it is added as the record it would be.
+        state.accounts.append(
+            localstore.StoredAccount(
+                target="test", account="sheep", token="mk_sheep_bbbb", saved_at=localstore.now()
+            )
+        )
+
+    localstore.update(_second_key)
+    goat_before = localstore.account_for_token(localstore.load(), "test", "mk_goat_cccc")
+    stub = _RegistryStub()
+    monkeypatch.setattr(registry_tools, "client_for", stub)
+    async with make_client(settings=_online()) as client:
+        payload = (
+            await client.call_tool(
+                "registry_rotate_key", {"revoke_others": True, "namespace": "test-sheep"}
+            )
+        ).structured_content
+
+    assert payload["success"] is True and "Other keys revoked: 1" in payload["message"]
+    assert stub.tokens == ["mk_sheep_aaaa"], "the default owner of test-sheep made the call"
+    by_token = {a.token: a for a in localstore.load().accounts}
+    assert by_token["mk_sheep_new0"].status == "valid"
+    assert by_token["mk_sheep_bbbb"].status == "invalid"
+    assert by_token["mk_goat_cccc"] == goat_before, "another account is not touched"

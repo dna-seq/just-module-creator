@@ -1037,7 +1037,7 @@ wheels = [
 
 [[package]]
 name = "just-module-creator"
-version = "0.48.21"
+version = "0.48.22"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
@@ -1078,7 +1078,7 @@ requires-dist = [
     { name = "just-dna-compiler", specifier = ">=0.9.0,<0.10" },
     { name = "just-dna-enricher", extras = ["atlas"], specifier = ">=0.9.0,<0.10" },
     { name = "just-dna-format", specifier = ">=0.9.0,<0.10" },
-    { name = "just-dna-registry", specifier = ">=0.32.0" },
+    { name = "just-dna-registry", specifier = ">=0.34.1" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "platformdirs", specifier = ">=4.12.0" },
     { name = "pydantic", specifier = ">=2" },
