@@ -115,6 +115,21 @@ claims that were plausibly wrong, and it found more than solo probing.
 
 ## In flight
 
+**Release 0.48.23 (tag v0.48.23, 82b0a63; just-dna 0.9.0, registry client 0.35.0), 2026-11-28 ~06:10Z, over the wire
+and in a fresh Claude Code session: holds.** Both instances serve registry 0.35.0 on format 0.9.0; the polygon's
+`registry_health` says `contract_compatible: true`.
+- `registry_lane_lookup` (mane/summary, `symbol: apoe`) finds APOE and says `compares: {"symbol": "by gene_key"}`, so a
+  case fold reads as the lane's fold. Same answer from `claude -p` in this repo (instructions say v0.48.23).
+- `lookup_variant rs4988235`: `routes: null` locally (`answered_by: local`), and null again with an empty cache dir
+  (`answered_by: registry`, polygon), consistent with the polygon reading its own snapshots. The non-null branch (a
+  lane read from the hub) was not reached; nothing here forces it.
+- `provision_caches`: every lane row carries `stale_reason`; no lane on this machine is stale, so the re-offer of a
+  stale lane is unexercised.
+- Polygon `registry_check` on `assets/fto_bmi` (`test-sheep/fto_bmi`): verdict true, nothing blocking or unchecked.
+  My first call named it `test_fto_bmi` and got the right refusal (`module.name` does not match).
+- This seat's own MCP server stayed on 0.48.21 through four `/reload-plugins` (its `registry_lane_lookup` answer has no
+  `compares` key), the stale-server case already filed with the kit. Probes ran on fresh servers.
+
 **`registry_rotate_key` at release 0.48.22, 2026-11-27 ~05:00Z, tag v0.48.22 (8b2f724), registry client 0.34.3, over
 the wire: holds.** The kit's rule 23 (v0.1.287) cleared kit #676. A throwaway `test-tester-rot1` account was registered
 on the polygon in isolated state (scratchpad `rot/cfg/`, freshly ground install-id; `sheep` untouched).
