@@ -637,7 +637,8 @@ centenarian paper fetched the format's documentation from its public
 repository, the leak this design was meant to exclude, and its scores are
 marked; one plugin run listed the names in the round's working directory
 without reading a file; and another downloaded a published module to look at
-its genotype layout, taking no row from it. No Opus~5.5 run strayed. The
+its genotype layout, taking no row from it. No Opus~5.5 run read outside its permitted directories, and none without the
+plugin fetched the format's code or documentation. The
 written guidance no longer named any of the three papers.
 
 The three papers are the SIRT6 paper of Table~\ref{tab:scores}, scored against
@@ -727,15 +728,16 @@ ARDS & Plugin & 49 (147) & 0 & -- & 0 & 1/1 & passes \\
 No run in any arm, with either model, cited a paper that does not exist or
 wrote an rsID that is not a live record, and on ARDS every run's risk alleles
 agree with the paper for the outcome it scores. On these three papers, the
-models without the plugin did not commit the failures the Introduction cites
+arms without the plugin did not commit the failures the Introduction cites
 from studies of earlier models, so the comparison does not show the plugin
-preventing them.
+preventing them. Those arms were not the bare model the Introduction
+describes, though: each was asked for a module, could search the web, and one
+held the plugin's written guidance.
 
 The arms differed in whether the format accepts what they built. The
 examples-and-paper arm produced modules that look complete as Parquet and fail
 the format's vocabularies on all three papers with both models (46, 109 and
-527 errors with Opus~5; 10, 255 and 263 with Opus~5.5), so a loader would
-refuse their tables. Without the enricher, the docs-and-compiler arm resolved
+527 errors with Opus~5; 10, 255 and 263 with Opus~5.5). Without the enricher, the docs-and-compiler arm resolved
 no position for its centenarian rows with either model, and those rows match
 no genome. Of the twelve modules built without the plugin, eight failed
 validation or carried no position; the six built with it passed strict
@@ -751,7 +753,10 @@ Opus~5.5 all three arms, the plugin's included, agreed with the reference on
 every scored row, and all three labelled the homozygous minor-allele genotype
 a risk, though neither cohort observed it and the reference withholds a
 direction there. The direction score does not see that call, because it
-scores only rows on which the reference asserts one. The docs-and-compiler arm
+scores only rows on which the reference asserts one. Nor does it see weights:
+the reference leaves every weight blank, since only a person settles one, yet
+the plugin's runs wrote a weight on each genotype they gave a direction with
+both models, and so did the docs-and-compiler arm with Opus~5.5. The docs-and-compiler arm
 with Opus~5.5 cited only the paper itself and not the earlier study it
 replicates.
 
@@ -1034,7 +1039,8 @@ rows they would correct. The runs of Table~\ref{tab:scores} are three runs of
 one prompt on one paper, a smoke test rather than evidence of reliability; the
 comparison adds two papers and a second model but one run per arm and model,
 all through one host, so the results say nothing about run-to-run spread or
-host sensitivity, and two models of one family are not a survey of models. No retrieval-augmented arm was run, and the one reference
+host sensitivity, and two models of one family are not a survey of models. No arm generated analysis code or answered directly, the baselines the
+Introduction argues against, and no retrieval-augmented arm was run, and the one reference
 was adjudicated by a single curator.
 Whether a module built this way yields correct annotations on real genomes is
 the companion paper's subject and is not shown here.

@@ -61,7 +61,7 @@ rounds:
     commitments:
     - change: A comparison with raw LLM, retrieval-only or existing curation on the same tasks.
       target: Results, a new comparison subsection and table
-      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26)'
+      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26); the no-plugin arms were asked for a module, not a script or a direct answer, and that baseline is not run (Limitations)'
   - id: R1.W3
     referee: Reviewer 1
     label: null
@@ -153,7 +153,7 @@ rounds:
     commitments:
     - change: An empirical comparison against raw script generation or direct answering.
       target: Results, the comparison subsection
-      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26)'
+      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26); the no-plugin arms were asked for a module, not a script or a direct answer, and that baseline is not run (Limitations)'
   - id: R2.W2
     referee: Reviewer 2
     label: '2'
@@ -417,7 +417,7 @@ rounds:
     commitments:
     - change: A benchmark against pure LLM output or other methods.
       target: Results, the comparison subsection
-      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26)'
+      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26); the no-plugin arms were asked for a module, not a script or a direct answer, and that baseline is not run (Limitations)'
   - id: R3.S1
     referee: Reviewer 3
     label: null
@@ -454,4 +454,4 @@ rounds:
     commitments:
     - change: A comparison against raw LLM output.
       target: Results, the comparison subsection
-      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26)'
+      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26); the no-plugin arms were asked for a module, not a script or a direct answer, and that baseline is not run (Limitations)'
