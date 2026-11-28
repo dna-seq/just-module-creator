@@ -115,6 +115,16 @@ claims that were plausibly wrong, and it found more than solo probing.
 
 ## In flight
 
+**F173 to F176, found and rechecked 2026-11-28 at main (F176 at d8398b2), on fresh servers and fresh copies of the two
+reference examples: all hold.** F173 (six dossiers) was the lead's ask; F174 and F175 were a drafting agent's
+candidates the lead relayed, reproduced at v0.48.23 before the fix; F176 came out of the F174 recheck.
+- F174: the CYP2C19 copy (no `variants.csv`) checks CYP2C19 clean from three tables; a directory with no id-bearing
+  table is still not applicable.
+- F175: two `studies.csv`/`rows` records stay two, each with its counts; a reason containing "Moved:" reads back intact.
+- F176: on the CYP2C19 copy, `next_step` is now null beside the skip reason. The case that should still get the step
+  (rsID-only rows that cannot be placed) was not reached: an HFE copy with `resolution.csv` removed was placed by
+  upstream itself (`gene_loci_compared: 2`), so the leg ran and no step was due.
+
 **Release 0.48.23 (tag v0.48.23, 82b0a63; just-dna 0.9.0, registry client 0.35.0), 2026-11-28 ~06:10Z, over the wire
 and in a fresh Claude Code session: holds.** Both instances serve registry 0.35.0 on format 0.9.0; the polygon's
 `registry_health` says `contract_compatible: true`.
