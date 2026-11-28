@@ -42,7 +42,7 @@ rounds:
     commitments:
     - change: More papers and runs, or claims narrowed to what three runs show.
       target: Method, Evaluation dimensions; Results, Table 3
-      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5, one run per arm on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26); still one run per cell and one model'
+      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26, the second model 2026-11-28); still one run per cell, two models, one host'
   - id: R1.W2
     referee: Reviewer 1
     label: null
@@ -61,7 +61,7 @@ rounds:
     commitments:
     - change: A comparison with raw LLM, retrieval-only or existing curation on the same tasks.
       target: Results, a new comparison subsection and table
-      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5, one run per arm on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26)'
+      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26)'
   - id: R1.W3
     referee: Reviewer 1
     label: null
@@ -114,7 +114,7 @@ rounds:
     commitments:
     - change: Four arms (raw, retrieval, tool-only, full) across several models and hosts.
       target: Results, the comparison subsection (same study as R1.W2)
-      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5, one run per arm on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26); docs-and-compiler and examples-and-paper arms only, no retrieval-augmented arm, one host (said in Limitations)'
+      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26); docs-and-compiler and examples-and-paper arms only, no retrieval-augmented arm, one host (said in Limitations)'
   - id: R1.S3
     referee: Reviewer 1
     label: null
@@ -153,7 +153,7 @@ rounds:
     commitments:
     - change: An empirical comparison against raw script generation or direct answering.
       target: Results, the comparison subsection
-      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5, one run per arm on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26)'
+      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26)'
   - id: R2.W2
     referee: Reviewer 2
     label: '2'
@@ -173,7 +173,7 @@ rounds:
     commitments:
     - change: A larger evaluation, or claims limited to a smoke test.
       target: Method, Evaluation dimensions; Results, Table 3
-      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5, one run per arm on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26); still one run per cell, said in Limitations'
+      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26); still one run per cell, said in Limitations'
   - id: R2.W3a
     referee: Reviewer 2
     label: '3'
@@ -229,7 +229,7 @@ rounds:
     commitments:
     - change: A measured support or hallucination rate, or the gap stated as the main limitation.
       target: Results; Discussion, Limitations
-      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5, one run per arm on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26); mechanical errors counted per row, support of a claim still not measured (Limitations)'
+      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26); mechanical errors counted per row, support of a claim still not measured (Limitations)'
   - id: R2.S1
     referee: Reviewer 2
     label: '1'
@@ -252,7 +252,7 @@ rounds:
     - change: Arms (a) code generation and (b) direct answers on the same tasks, scored on correctness and reviewer
         effort.
       target: Results, the comparison subsection
-      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5, one run per arm on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26); scored on variant, citation and direction; reviewer effort not measured, agent wall clock reported'
+      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26); scored on variant, citation and direction; reviewer effort not measured, agent wall clock reported'
   - id: R2.S2
     referee: Reviewer 2
     label: '2'
@@ -306,7 +306,7 @@ rounds:
     commitments:
     - change: An error or hallucination rate with and without the workflow.
       target: Results, the comparison subsection
-      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5, one run per arm on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26); mechanical error counts for every arm, no support or hallucination rate (Limitations)'
+      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26); mechanical error counts for every arm, no support or hallucination rate (Limitations)'
   - id: R2.Q1
     referee: Reviewer 2
     label: '1'
@@ -417,7 +417,7 @@ rounds:
     commitments:
     - change: A benchmark against pure LLM output or other methods.
       target: Results, the comparison subsection
-      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5, one run per arm on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26)'
+      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26)'
   - id: R3.S1
     referee: Reviewer 3
     label: null
@@ -454,4 +454,4 @@ rounds:
     commitments:
     - change: A comparison against raw LLM output.
       target: Results, the comparison subsection
-      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5, one run per arm on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26)'
+      landed: 'Results, Against the same model without the plugin (Tables 4 and 5, round 5, claude-opus-5 and claude-opus-5-5, one run per arm and model on three papers), with the abstract, contribution 4, Limitations and Conclusion (2026-11-26)'
