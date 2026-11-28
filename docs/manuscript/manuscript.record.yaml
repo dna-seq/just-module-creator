@@ -397,6 +397,10 @@ open_issues:
   status: open
   route: author-required
   output: reviews/20261026T154912Z-1fd1e924/manuscript-improve/report.md
+  update: 'Answered in part 2026-11-28: benchmark round 5 (assets/benchmarks/ROUND5.md) ran the same model without the
+    plugin in two arms (docs and compiler; published examples and the paper), on three papers with claude-opus-5 and
+    claude-opus-5-5, one run per arm and model; Results, "Against the same model without the plugin". Not run: an
+    arm generating code or answering directly, a retrieval-augmented arm, a second host, repeat runs.'
 - id: outside-namespaces
   summary: '"Four of the eight modules" from authors outside the development team fits no split of the catalog''s 5, 2 and 1 modules per namespace; the authors must say which namespaces are outside the team (IC-7).'
   status: open

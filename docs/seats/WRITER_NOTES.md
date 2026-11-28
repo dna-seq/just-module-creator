@@ -47,15 +47,16 @@ The seat's working state, rewritten to the present before each reset (docs/seats
   C published parquets + the paper's full text, no just-dna package, scored after reverse_module; isolation read
   from init lists and tool_use blocks. Only sirt6 has an adjudicated reference: ards and centenarian get cross-arm
   counts and a per-row check against the paper, so the paper must not call those an expert reference.
-  Opus 5 wave written 2026-11-26 (REPORT.md in data/interim/repro-bench-5): Results subsection sec:baseline,
-  Tables 4 (sirt6 vs reference) and 5 (centenarian, ards per-row), abstract, contribution 4, Limitations,
+  Both waves written (Opus 5 on 2026-11-26, Opus 5.5 on 2026-11-28; assets/benchmarks/ROUND5.md, runs r5-opus5-*
+  and r5-opus55-*): Results sec:baseline, Tables 4-5 stacked by model, abstract, contribution 4, Limitations,
   Conclusion, availability. Ledger: 10 measurement items landed. Still pending: R2.S2 (several curators,
-  inter-rater) and R2.Q3 (rows an expert corrects): both need people, the authors'. Next: the opus-5-5 wave
-  (about 07:30Z) into Tables 4-5 and the text; the runs archived into assets/benchmarks by the tester (asked),
-  which the availability line already claims.
-  The headline the paper now carries: no arm invented a paper or rsID; the plugin's edge on these three papers
-  is modules that compile strictly and place variants (4 of 6 no-plugin modules would not), and on sirt6 no
-  unsupported protective call. The abstract's opening now says models "have been shown" to fabricate.
+  inter-rater) and R2.Q3 (rows an expert corrects), both needing people (asked of the person).
+  What the paper now says: no run invented a paper or rsID; all 6 plugin modules pass strict validation, 8 of 12
+  without it fail validation or carry no position (a validation count, not an install test); direction on sirt6
+  does not separate the arms consistently (Opus 5: both no-plugin arms call C/C protective; Opus 5.5: all three
+  arms call T/T risk where the reference is blank, unscored); ARDS has two outcomes (ST5, ST9) and each run
+  matches the one it states. The plugin arm's own slips (a directory listing, a longevitymap download) are
+  disclosed beside the examples arm's doc fetch.
 - **Round 4** (the tester, 2026-11-19, notes f869fe9): sirt6 on plugin 0.48.15, claude-opus-5, runs a-c all 1.00
   rsID/pair recall, decoy 0, citation and direction 1.00; run d on claude-opus-5-5, citation recall 0.50. Caveat
   F168: module-curate's worked case names this fixture's answer and runs c and d read it, so a and b are the clean
@@ -73,8 +74,10 @@ The seat's working state, rewritten to the present before each reset (docs/seats
 - **Appendix counts**: checked 2026-11-19. 60 tools and 20 skills (7 + 13) were true of 0.27.0 (decorators at
   221b95f); today 100 tools and 21 skills (7 + 14). The text now pins the counts to 0.27.0. Whether the appendix
   moves to the current surface waits on desk #369's answer (which version Table 3 reports).
-- **On the desk** (filed 2026-11-19): #367 author list (default: no authors printed), #369 Table 3 and round 4
-  (default: August runs only). #368 answered 2026-11-25.
+- **On the desk**: #369 Table 3 and round 4 (default: August runs only; updated 2026-11-28 with Table 4 on
+  0.48.20); #484 curators for R2.S2/R2.Q3 (default: stated as not done); #485 outside namespaces (default:
+  ksuha-dna and eric-mods, three of eight). Filed 2026-11-28. #367 closed on its
+  default 2026-11-27 (no authors printed; the title block was already empty). #368 answered 2026-11-25.
 - **Catalog split** (2026-11-25): 31 August's eight modules were 5 antonkulaga, 2 ksuha-dna, 1 eric-mods; the text
   says 3 of 8 from outside; the authors still confirm which namespaces are outside (record outside-namespaces).
 

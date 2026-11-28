@@ -115,7 +115,17 @@ claims that were plausibly wrong, and it found more than solo probing.
 
 ## In flight
 
-**`registry_rotate_key` recheck, asked by the lead 2026-11-26 (643992770), main b862f69 (unreleased): blocked.**
+**`registry_rotate_key` at release 0.48.22, 2026-11-27 ~05:00Z, tag v0.48.22 (8b2f724), registry client 0.34.3, over
+the wire: holds.** The kit's rule 23 (v0.1.287) cleared kit #676. A throwaway `test-tester-rot1` account was registered
+on the polygon in isolated state (scratchpad `rot/cfg/`, freshly ground install-id; `sheep` untouched).
+- `registry_whoami` accepted the key. `registry_rotate_key` answered "the saved account now holds the new key (read
+  back), and the old one is dead", `revoked: 1`, with no key in the reply.
+- The saved token's hash changed, and a backup was written. `registry_whoami` from a fresh server process accepts the
+  new key.
+- The pre-rotation key, sent through the upstream client, gets `HTTP 401: invalid_token`.
+- The account stays on the polygon (`test-` prefix).
+
+Earlier, blocked: **`registry_rotate_key` recheck, asked by the lead 2026-11-26 (643992770), main b862f69 (unreleased): blocked.**
 The plan was a throwaway polygon account in isolated state (scratchpad `rot/`: `JMC_CONFIG_FILE` there, install-id
 unset, so neither `sheep`'s install-id nor its key is touched). Then register, whoami, rotate, whoami on the new key,
 and the old key refused through the upstream client. Auto mode refused the register call, so nothing was created.

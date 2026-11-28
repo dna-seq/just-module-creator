@@ -4,7 +4,7 @@ The lead seat's working state, rewritten to the present before a reset (`docs/se
 
 ## Now
 
-Released 0.48.22 (tag `v0.48.22`, `8b2f724`, 2026-11-27): `registry_rotate_key` (b862f69), registry client floor >=0.34.1 (0.34.3 locked by the liaison, f547e16). 1115 pass; polygon `registry_check` of fto_bmi `verdict: true`. Tester's recheck on a throwaway polygon account pending (kit #676's rule is in v0.1.287). Next release no earlier than 2026-11-28, nothing queued. Before it: 0.48.21 (`666518d`, 2026-11-26, just-dna 0.8.10), 0.48.20 (`18407b6`, 2026-11-24, F172), 0.48.19 (`c58fc0a`, 2026-11-23, fastmcp 4.2.5).
+Released 0.48.22 (tag `v0.48.22`, `8b2f724`, 2026-11-27): `registry_rotate_key` (b862f69), registry client floor >=0.34.1 (0.34.3 locked by the liaison, f547e16). 1115 pass; polygon `registry_check` of fto_bmi `verdict: true`. Tester rechecked it at the tag on a throwaway polygon account (c115c33): new key saved and read back, none in the reply, the old key refused with 401. Next release no earlier than 2026-11-28, nothing queued. Before it: 0.48.21 (`666518d`, 2026-11-26, just-dna 0.8.10), 0.48.20 (`18407b6`, 2026-11-24, F172), 0.48.19 (`c58fc0a`, 2026-11-23, fastmcp 4.2.5).
 
 Registry 0.32 adopted and the enricher floored at 0.8.8: released in 0.48.14. The RM445 cache re-pull ran on this machine 2026-11-17.
 away at 05:02Z on 2026-11-05.
@@ -122,7 +122,7 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   unless something changes what the plugin can reach.
 - **Downward wake**: asked `longevity-loci/lead` in `#agent-chat>wake_from` to add `just-module-creator/lead`
   to its lead's and liaison's `wake_from`; done there in their cdd95d3.
-- **Kit pin**: 0.1.287 (moved on each announcement; 0.1.287 on 2026-11-27) (`move-to-tag.py`; the pin is in the untracked
+- **Kit pin**: 0.1.292 (moved on each announcement; 0.1.292 on 2026-11-27) (`move-to-tag.py`; the pin is in the untracked
   `.claude/settings.local.json`). Taking it into this session is mine: `watchdog.sh reload`, then end the turn,
   and the kit's typer types `/reload-plugins` (the "left for the person" line `move-to-tag.py` prints is wrong, kit #306).
 
@@ -184,6 +184,8 @@ The pm seat is free, so the lead holds it (`classes/pm/PM.md`, `## Duty: milesto
   question: the person's ask decides it, and quota is no drawback (kit #510).
   Done (tester 1513e9c): clean a, b, e on claude-opus-5 pair recall 1.00/1.00/0.67, f on Opus 5.5 0.67, all
   thresholds met; hold lifted. The fixture's shape left module-curate too (`f400344`).
+- **just-dna 0.10 adoption, mine, waits until 0.10 is on PyPI** (the liaison's preview trial of branch 0.10 at 992e85b1 on adopt-0.9, #just-module-creator>upstream 2026-11-27): 1) conftest's `_hermetic_configuration` must blank `locations.ANSWER_STORE_VAR` (RM468's answer store is on by default; fixes `test_the_rs_number_at_an_hg19_position_comes_back_without_the_hgmd_record`); 2) attribution: `enrich_module` drops `EnrichResult.answer_usage` (stored vs live), and `build_services`' EutilsClient gets a store too, so `check_identifiers`' dbSNP answers can come from disk unsaid (RouteInfo must say it); 3) RM435 `StudyRow.effect_direction` into the studies dossier and module-curate, and `describe_table`'s docstring line 'never increase/decrease' rewritten; 4) RM460 `rsid_genotype_reads_as_two_events` needs a SYMPTOMS entry, and the format floor moves with 0.10 (old-reader break); 5) parity calls on `needs_rederive` (refresh_sidecar/module-refresh) and SequenceProxy fasta+file (enrich_module's sequence_uri).
+- **Tests at nice 18: done 2026-11-27.** The person asked for it (relayed by agents-kit/lead in #agent-chat>tooling); october's guard accepts nice 15 to 19 since october-mx 979707d (D14 amended). This repo's suites run at `nice -n 18` from now; no tracked file here named the level.
 - **just-dna 0.9: built on `adopt-0.9` (`.worktrees/adopt-0.9`, d38c5f9 + merge of main), 1113 pass; merges to main when both instances serve format 0.9 (both 0.8.10 at 2026-11-26), the person having said 0.9 is published.** Earlier prep, kept for its reasons: **just-dna 0.9 prep, mine, `unattended`, after the round's hold lifts** (the liaison's trial of d9c578ae, e46f560,
   `docs/UPSTREAM_COMPILER.md`): 3 of our tests fail, all ours. `cli_map._PUBLISH` needs `clinvar-gkm publish` and
   `opentargets publish`; `test_every_tool_a_mapping_names_exists` reads the new `ensembl_rsid_index` lane name as a
