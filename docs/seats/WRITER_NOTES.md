@@ -74,7 +74,9 @@ The seat's working state, rewritten to the present before each reset (docs/seats
 - **Appendix counts**: checked 2026-11-19. 60 tools and 20 skills (7 + 13) were true of 0.27.0 (decorators at
   221b95f); today 100 tools and 21 skills (7 + 14). The text now pins the counts to 0.27.0. Whether the appendix
   moves to the current surface waits on desk #369's answer (which version Table 3 reports).
-- **On the desk** (filed 2026-11-19): #369 Table 3 and round 4 (default: August runs only). #367 closed on its
+- **On the desk**: #369 Table 3 and round 4 (default: August runs only; updated 2026-11-28 with Table 4 on
+  0.48.20); #484 curators for R2.S2/R2.Q3 (default: stated as not done); #485 outside namespaces (default:
+  ksuha-dna and eric-mods, three of eight). Filed 2026-11-28. #367 closed on its
   default 2026-11-27 (no authors printed; the title block was already empty). #368 answered 2026-11-25.
 - **Catalog split** (2026-11-25): 31 August's eight modules were 5 antonkulaga, 2 ksuha-dna, 1 eric-mods; the text
   says 3 of 8 from outside; the authors still confirm which namespaces are outside (record outside-namespaces).
