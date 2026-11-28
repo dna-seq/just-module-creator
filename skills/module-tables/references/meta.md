@@ -51,8 +51,8 @@ sex- or drug-scoped fact. It is never a lead table: a directory holding `module_
   (`LiteratureRow.exists`), so take it from a `literature_search` result. Nothing compares `doi`
   against a source; `lint_rows` says so in an `info` line.
 - **`trait_efo_id`** is put to OLS4 by `check_identifiers`, together with every other authored
-  table's traits, but only in a module that has a `variants.csv`: without one, the tool here answers
-  *not applicable* and asks nothing. Find a term with `search_trait_terms`.
+  table's traits; `meta.csv` in its `tables_read` says it was. Find a term with
+  `search_trait_terms`.
 - **The compiler** stamps `members_key` (the member set, normalized) and writes everything in
   `meta.parquet` and `meta_resolved.parquet` beyond the authored cells: the matches, `replaces`,
   `withheld`, the resolved facts and `tradeoff`. None of it is authored.

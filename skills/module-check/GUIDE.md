@@ -130,11 +130,12 @@ living here — [`module-enrich`](../module-enrich/GUIDE.md) owns them, because 
 name with a real-but-unrelated rsID: both halves pass their own check, and only the *relationship* is
 false. If `gene_locus_check_skipped` is non-null the comparison never ran, which is not a pass.
 
-⚠️ **CHECK — a check is only as wide as the table it reads.** `check_identifiers` reads
-`variants.csv`, so a binning row's `gene` or `trait_efo_id` is **never checked for currency**. The
-shape recurs across the toolchain, and two instances of it are closed — `stats.genes` reads
-every gene-bearing table, and a redundancy advisory says when its checker cannot see your table —
-while `enrich-pgx` still never opens `diplotypes.csv`. **Naming a check without naming its scope is how
+⚠️ **CHECK — a check is only as wide as the table it reads.** `check_identifiers` reads every
+authored table that carries a `gene`, `trait_efo_id` or `pgs_id` column, and its `tables_read` says
+which it actually read; a table present but unparseable is in `tables_unreadable`, and its ids went
+unchecked. The shape recurs across the toolchain, and three instances of it are closed — this one,
+`stats.genes` reading every gene-bearing table, and a redundancy advisory saying when its checker
+cannot see your table — while `enrich-pgx` still never opens `diplotypes.csv`. **Naming a check without naming its scope is how
 a reader over-trusts it**, and the fix for the reader is the same either way: ask what the checker
 loads before reading a green run as agreement.
 

@@ -6,6 +6,27 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F174 — `check_identifiers` checks nothing on a module with no `variants.csv`, while upstream checks every gene table
+
+**Found:** 2026-11-28, a drafting agent's candidate relayed by the lead, reproduced by the tester at v0.48.23 · **Severity:** medium · **Status:** resolved in the release after 0.48.23 (built 2026-11-28)
+
+Our `check_identifiers` returns early when `variants.csv` is absent (`tools/checks.py`, the `NOT_APPLICABLE` branch):
+`attested: false`, every tally null, note *"no variants.csv — the check does not apply"*. The comment above it says
+upstream raises on a missing file. That stopped being true with upstream's S86: `just_dna_enricher.identifiers.check_identifiers`
+now reads nine authored tables for genes and traits and treats an absent `variants.csv` as a module shape.
+
+Reproduced on a scratch copy of `assets/reference_examples/cyp2c19_star_alleles`, a real PGx module with no `variants.csv`:
+
+- Ours, over the wire: not applicable, `genes: []`, no `verification.json`.
+- Upstream on the same copy (`spec_dir=`, `write=False`): reads `allele_function.csv`, `diplotypes.csv` and
+  `haplotypes.csv`, returns CYP2C19 `approved` (HGNC:2621), and says only the gene-to-locus leg could not run.
+
+So every PGx-only module, and any whose genes or traits sit in `model_organisms.csv`, `meta.csv`, `pgs.csv` and the
+other tables upstream lists, gets no HGNC or OLS4 check from us. The answer it gives is the "convincing-looking" kind:
+"does not apply" reads as considered, and nothing says a check that would have run was skipped.
+
+**Resolution (2026-11-28):** the early return now asks upstream's own rosters (`identifiers.authored_identifiers` over `gene`, `trait_efo_id` and `pgs_id`) whether any id-bearing table is present, and only a module with none is *not applicable*. Otherwise upstream's check runs on the directory as it is. The answer now carries `tables_read` (the union of the three rosters' tables) and `tables_unreadable`, so the check names its own scope. `tests/test_checks.py::test_a_pgx_module_with_no_variants_table_is_checked_from_its_own_tables` runs on a copy of `cyp2c19_star_alleles`. `module-check`'s scope paragraph, the `meta.md` and `model_organisms.md` lines, and CLAUDE.md's example were rewritten to match.
+
 ## F173 — six tables upstream names have no module-tables dossier, and no test holds the coverage rule
 
 **Found:** 2026-11-28, on the lead's ask (from the liaison's 0.10 preview) · **Severity:** low · **Status:** resolved in the release after 0.48.23 (built 2026-11-28)

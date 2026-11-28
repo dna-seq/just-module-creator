@@ -14,25 +14,6 @@ is usable, and what is missing.
 
 ---
 
-## F174 — `check_identifiers` checks nothing on a module with no `variants.csv`, while upstream checks every gene table
-
-**Found:** 2026-11-28, a drafting agent's candidate relayed by the lead, reproduced by the tester at v0.48.23 · **Severity:** medium · **Status:** open, the lead's
-
-Our `check_identifiers` returns early when `variants.csv` is absent (`tools/checks.py`, the `NOT_APPLICABLE` branch):
-`attested: false`, every tally null, note *"no variants.csv — the check does not apply"*. The comment above it says
-upstream raises on a missing file. That stopped being true with upstream's S86: `just_dna_enricher.identifiers.check_identifiers`
-now reads nine authored tables for genes and traits and treats an absent `variants.csv` as a module shape.
-
-Reproduced on a scratch copy of `assets/reference_examples/cyp2c19_star_alleles`, a real PGx module with no `variants.csv`:
-
-- Ours, over the wire: not applicable, `genes: []`, no `verification.json`.
-- Upstream on the same copy (`spec_dir=`, `write=False`): reads `allele_function.csv`, `diplotypes.csv` and
-  `haplotypes.csv`, returns CYP2C19 `approved` (HGNC:2621), and says only the gene-to-locus leg could not run.
-
-So every PGx-only module, and any whose genes or traits sit in `model_organisms.csv`, `meta.csv`, `pgs.csv` and the
-other tables upstream lists, gets no HGNC or OLS4 check from us. The answer it gives is the "convincing-looking" kind:
-"does not apply" reads as considered, and nothing says a check that would have run was skipped.
-
 ## F175 — a table-scope `record_override` keeps neither its counts nor its history outside the log
 
 **Found:** 2026-11-28, a drafting agent's candidate relayed by the lead, reproduced by the tester at v0.48.23 · **Severity:** low · **Status:** open, the lead's

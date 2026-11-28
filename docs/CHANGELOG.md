@@ -5,6 +5,8 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **`check_identifiers` checks a module with no `variants.csv`** (F174): a PGx-only module, or one whose genes and traits sit in `model_organisms.csv`, `meta.csv` or `studies.csv`, was answered *not applicable* while upstream's check reads every authored table carrying a gene, trait or PGS id. Only a module with no such table is now not applicable. The answer says which tables were read (`tables_read`) and which were present but unreadable (`tables_unreadable`).
+
 - **Six table dossiers** (F173): `module-tables` now has a page for `locus_to_gene.csv`, `colocalisations.csv` and `consequences.csv` (the Open Targets pass), `ld_pairs.csv` (how well a study's proxy rsID stands in for its variant), `meta.csv` (statements about other rows) and `model_organisms.csv` (animal lifespan evidence on a human gene), each saying who decides which cell and what a re-run moves. A test now holds the rule that every table upstream names has one. `refresh_sidecar`'s refusal for the four machine tables names `remote_derive` as the registry route.
 
 ## [0.48.23] — 2026-11-28

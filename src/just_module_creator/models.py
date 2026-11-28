@@ -1488,6 +1488,16 @@ class IdentifierReport(BaseModel):
             "it reads. Null when the comparison ran."
         ),
     )
+    tables_read: list[str] = Field(
+        default_factory=list,
+        description="The authored tables the gene, trait and pgs_id rosters were read from. "
+        "The check is only as wide as this list.",
+    )
+    tables_unreadable: dict[str, str] = Field(
+        default_factory=dict,
+        description="Tables present but unparseable, with the reason: ids they carry went "
+        "unchecked. Empty when every present table was read.",
+    )
 
 
 # --------------------------------------------------------------------------- #

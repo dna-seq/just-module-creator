@@ -40,9 +40,10 @@ async def test_a_module_with_no_variants_gets_an_answer_not_a_traceback(
 ) -> None:
     """The check does not APPLY, which is not the same as a check that was skipped.
 
-    A module with no `variants.csv` has no gene or trait for this to have an
-    opinion about. The regression: the underlying call raises `ValueError` on the
-    missing file, so this has to return **before** reaching it, not after.
+    A module with no table carrying a gene, trait or pgs_id has nothing for this to
+    have an opinion about. The regression this was written for: the underlying call
+    once raised `ValueError` on a missing `variants.csv`, and returning after it
+    produced a traceback instead of an answer.
     """
     bare = tmp_path / "bare"
     bare.mkdir()
@@ -368,7 +369,7 @@ async def test_a_half_that_was_not_asked_counts_null_rather_than_zero(checked, s
 
 
 async def test_a_check_that_did_not_apply_counts_nothing_at_all(make_client, tmp_path):
-    """No `variants.csv`: every count null, because nothing was established.
+    """No id-bearing table: every count null, because nothing was established.
 
     `0` here would say the module carries no genes and no traits, which is a claim
     about the module rather than about the check.
@@ -731,3 +732,38 @@ async def test_a_commercial_use_is_refused_by_both_pgx_checks(make_client, pgx_s
             with pytest.raises(ToolError) as excinfo:
                 await client.call_tool(tool, {"spec_dir": str(pgx_spec), "use": "commercial"})
             assert "could not run" in str(excinfo.value)
+
+
+async def test_a_pgx_module_with_no_variants_table_is_checked_from_its_own_tables(
+    checked, tmp_path, monkeypatch
+):
+    """F174: since upstream's S86 the rosters read every authored table carrying `gene` or
+    `trait_efo_id`, and an absent `variants.csv` is a module shape. A PGx module keeps its
+    genes in `haplotypes.csv` and `diplotypes.csv`; it used to be told "not applicable" here
+    while upstream, on the same copy, checked CYP2C19 (the tester's reproduction)."""
+    target = tmp_path / "cyp2c19"
+    shutil.copytree(REFERENCE_EXAMPLES / "cyp2c19_star_alleles", target)
+    assert not (target / "variants.csv").exists(), "the fixture grew a variants.csv"
+    present = checks._id_tables_present(target)
+    assert "haplotypes.csv" in present and "variants.csv" not in present
+
+    open_client, calls = checked
+    report = _upstream_report()
+    report.gene_tables_read = ["diplotypes.csv", "haplotypes.csv"]
+    report.trait_tables_read = ["haplotypes.csv"]
+
+    def _answer(**kwargs):
+        calls.append(kwargs)
+        return report
+
+    monkeypatch.setattr(checks, "_check_identifiers", _answer)
+    async with open_client() as client:
+        data = (
+            await client.call_tool("check_identifiers", {"spec_dir": str(target)})
+        ).data
+
+    assert len(calls) == 1 and str(target) in str(calls[0]["spec_dir"]), "upstream was not asked"
+    # The scope travels: the check is only as wide as the tables it read.
+    assert data.tables_read == ["diplotypes.csv", "haplotypes.csv"]
+    assert data.attestation_note != NOT_APPLICABLE
+    assert data.gene_tally.checked == len(_upstream_report().genes)

@@ -42,8 +42,7 @@ written at [`module-curate`](../../module-curate/GUIDE.md), from papers actually
   stub row puts the placeholder in `gene` alone, the one required cell.
 - **`gene` is the human HGNC symbol, never the orthologue's.** The orthologue goes in its own column,
   verbatim in that organism's nomenclature. `check_identifiers` puts `gene` to HGNC with every other
-  authored table's genes, but only in a module that has a `variants.csv`: without one, the tool here
-  answers *not applicable* and asks nothing.
+  authored table's genes; `model_organisms.csv` in its `tables_read` says it was.
 - **`concordance` is a judgement, and empty is an answer.** Empty means unstated: the curator could
   not tell. The vocabulary has no "unclear" member on purpose, so never fill the cell to make the
   column look complete. Comparing the model's direction with the human allele's needs both papers in

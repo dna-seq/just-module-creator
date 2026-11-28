@@ -574,7 +574,8 @@ index. So:
 **Three claim-shapes rot silently. Check anything you write against them:**
 
 1. **A check is only as wide as the table it reads.** Name its scope, or readers over-trust it (e.g.
-   `check_identifiers` reads `variants.csv` only).
+   `check_identifiers` once read `variants.csv` only, and now says which tables it read in
+   `tables_read`).
 2. **A counted claim in prose rots like a hand-kept list.** State the rule and let the reader run the
    call; if a number must appear, say what was counted and when.
 3. **An enforcement claim needs its surface named.** *Mandatory*, *refused*, *checked* and *warned*

@@ -51,7 +51,9 @@ from just_dna_enricher.acmg import (
 from just_dna_enricher.acmg import verification_record as acmg_record
 from just_dna_enricher.clinpgx import ClinPgxEnrichmentError, enrich_clinpgx
 from just_dna_enricher.identifiers import (
+    NOT_PRESENT,
     IdentifierUnavailable,
+    authored_identifiers,
     unreachable_records,
     verification_records,
 )
@@ -103,9 +105,27 @@ log = get_logger()
 #: `attested=false` is owed the reason in the same breath, because "did not apply"
 #: and "the write failed" are different facts about the module.
 NOT_APPLICABLE = (
-    "no variants.csv — the check does not apply, which is not a skip, so no "
-    "verification.json was created"
+    "no authored table carries a gene, trait_efo_id or pgs_id column — the check does not "
+    "apply, which is not a skip, so no verification.json was created"
 )
+
+#: The columns upstream's rosters read (S86 widened them past `variants.csv`).
+_ID_COLUMNS = ("gene", "trait_efo_id", "pgs_id")
+
+
+def _id_tables_present(spec_dir: Path) -> set[str]:
+    """Authored tables present that carry an id column, read or not.
+
+    Upstream's own rosters, so the set of tables that count is theirs. A table that is there
+    but would not parse (or collides with its other spelling) counts: the check applies, and
+    upstream reports it as unread. Only `NOT_PRESENT` means absent.
+    """
+    present: set[str] = set()
+    for column in _ID_COLUMNS:
+        roster = authored_identifiers(spec_dir, column)
+        present.update(roster.read)
+        present.update(name for name, why in roster.not_read.items() if why != NOT_PRESENT)
+    return present
 
 #: F135: what unblocks a skipped gene/chromosome comparison. Upstream reads a row's
 #: chromosome from an authored `chrom` or from `resolution.csv` and fetches none itself,
@@ -388,18 +408,17 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
                 "assert nothing."
             )
 
-        # The enricher's own rule, and it is a decision rather than a guard: a module
-        # with no `variants.csv` has no gene or trait for this to have an opinion
-        # about, so the check does not apply. Writing a record would create a
-        # `verification.json` on a module that never asked for one.
+        # Does not apply when no authored table that carries one of the three id columns
+        # is present: nothing to have an opinion about, and writing a record would create
+        # a `verification.json` on a module that never asked for one.
         #
-        # **Returned early rather than checked after the call**, which is what the
-        # first version got wrong: `check_identifiers` raises `ValueError` on a
-        # missing file, so computing this and calling anyway produced a raw
-        # traceback instead of the considered answer. Found by running the tool on
-        # a module with no `variants.csv`; the enricher's own CLI returns early here
-        # for the same reason.
-        if not (target / "variants.csv").exists():
+        # F174: this used to key on `variants.csv` alone, from when upstream raised on a
+        # missing one. Since S86 upstream reads every authored table carrying `gene` or
+        # `trait_efo_id` and treats an absent `variants.csv` as a module shape, so a PGx-only
+        # module (genes in `haplotypes.csv`, `diplotypes.csv`) was told "not applicable"
+        # here while upstream checked it. The rosters below are upstream's own, read
+        # locally and offline, so the two cannot disagree about which tables count.
+        if not _id_tables_present(target):
             return IdentifierReport(
                 spec_dir=str(target),
                 # Every count null rather than zero: the check did not apply, so
@@ -503,6 +522,14 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
             attestation_note=note,
             detail=detail,
             next_step=_GENE_LOCUS_UNBLOCK if skipped and check_genes else None,
+            tables_read=sorted(
+                {
+                    *getattr(report, "gene_tables_read", []),
+                    *getattr(report, "trait_tables_read", []),
+                    *getattr(report, "pgs_tables_read", []),
+                }
+            ),
+            tables_unreadable=dict(getattr(report, "unreadable_tables", {}) or {}),
         )
 
     # ----------------------------------------------------------------------- #
