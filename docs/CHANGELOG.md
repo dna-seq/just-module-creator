@@ -5,6 +5,8 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **No loop on a module without `variants.csv`** (F176): `check_identifiers` told the agent to run `enrich_module` and call again whenever the gene/chromosome comparison was skipped, even where resolution could not help (no `variants.csv` rows, no gene, no chromosome from HGNC). It now offers that step only when a variant's chromosome is what is missing.
+
 - **A table-level edit record keeps its counts and its history** (F175): `record_override` on a whole table (`variant_key` a file name, `field` `rows` or `file`) kept one record per table in `provenance.json`, so a second trim replaced the first, and `review_queue` showed its counts empty. Each such move is now its own record, and its counts come back in `review_queue`.
 
 - **`check_identifiers` checks a module with no `variants.csv`** (F174): a PGx-only module, or one whose genes and traits sit in `model_organisms.csv`, `meta.csv` or `studies.csv`, was answered *not applicable* while upstream's check reads every authored table carrying a gene, trait or PGS id. Only a module with no such table is now not applicable. The answer says which tables were read (`tables_read`) and which were present but unreadable (`tables_unreadable`).

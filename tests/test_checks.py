@@ -310,6 +310,7 @@ async def test_a_skipped_gene_locus_comparison_names_what_gives_it_a_chromosome(
     report = _upstream_report()
     reason = "no coordinates authored and no resolution.csv beside the spec"
     report.gene_loci_not_checked = reason
+    report.gene_tables_read = ["variants.csv"]
     monkeypatch.setattr(checks, "_check_identifiers", lambda **_: report)
     async with open_client() as client:
         data = (await client.call_tool("check_identifiers", {"spec_dir": str(spec_dir)})).data
@@ -319,6 +320,41 @@ async def test_a_skipped_gene_locus_comparison_names_what_gives_it_a_chromosome(
     assert data.next_step is not None
     assert "run enrich_module, which writes resolution.csv" in data.next_step
     assert "refresh_sidecar('resolution.csv')" in data.next_step
+
+
+@pytest.mark.parametrize(
+    ("reason", "tables", "placed"),
+    [
+        # upstream's three reasons resolution cannot cure: no rows, no gene, no HGNC chromosome
+        (
+            "the module carries no variants.csv rows, so no gene symbol could be placed",
+            ["haplotypes.csv"],
+            True,
+        ),
+        ("no row names a gene, so there was nothing to place on a chromosome", [], False),
+        ("HGNC returned no usable chromosome for any authored gene", ["variants.csv"], False),
+    ],
+)
+async def test_a_skip_resolution_cannot_cure_offers_no_loop(
+    checked, spec_dir, monkeypatch, reason, tables, placed
+):
+    """F176: `next_step` said run enrich_module and call again on a PGx module with no
+    `variants.csv`, where resolution places nothing, so the agent looped (the tester's
+    reproduction on a copy of `cyp2c19_star_alleles`). The step is offered only when a
+    variant's chromosome is what is missing."""
+    open_client, _ = checked
+    report = _upstream_report()
+    report.gene_loci_not_checked = reason
+    report.gene_tables_read = tables
+    if not placed:
+        for gene in report.genes:
+            gene.location = None
+    monkeypatch.setattr(checks, "_check_identifiers", lambda **_: report)
+    async with open_client() as client:
+        data = (await client.call_tool("check_identifiers", {"spec_dir": str(spec_dir)})).data
+
+    assert data.gene_locus_check_skipped == reason, "the skip itself is still reported"
+    assert data.next_step is None
 
 
 async def test_a_comparison_that_ran_has_no_unblocking_step(checked, spec_dir):

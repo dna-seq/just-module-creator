@@ -141,6 +141,21 @@ _GENE_LOCUS_UNBLOCK = (
 )
 
 
+def _resolution_would_unblock(report: object) -> bool:
+    """Whether running enrich_module could let the skipped gene/chromosome comparison run.
+
+    Only when the skip is about a variant's chromosome: `variants.csv` rows were read and HGNC
+    placed at least one authored gene. With no `variants.csv` rows, no gene, or no chromosome
+    from HGNC, resolution changes nothing, and offering it sends the agent round a loop
+    (F176). Read off the report's structure, never the skip's wording, which is upstream's.
+    """
+    if not getattr(report, "gene_loci_not_checked", None):
+        return False
+    if "variants.csv" not in (getattr(report, "gene_tables_read", None) or []):
+        return False
+    return any(getattr(g, "chromosome", None) for g in getattr(report, "genes", None) or [])
+
+
 #: The states that mean "this identifier is current". Everything else is flagged —
 #: including `unchecked`, a trait whose prefix this check cannot resolve, because a
 #: check that could not run is not a check that passed.
@@ -521,7 +536,9 @@ def register_checks(mcp: FastMCP, settings: Settings) -> None:
             attested=attested,
             attestation_note=note,
             detail=detail,
-            next_step=_GENE_LOCUS_UNBLOCK if skipped and check_genes else None,
+            next_step=(
+                _GENE_LOCUS_UNBLOCK if check_genes and _resolution_would_unblock(report) else None
+            ),
             tables_read=sorted(
                 {
                     *getattr(report, "gene_tables_read", []),

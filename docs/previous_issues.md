@@ -6,6 +6,22 @@ are not copied.
 
 **Check here before re-investigating a finding that looks fixed.**
 
+## F176 — `check_identifiers` on a module with no `variants.csv` sends the author round a loop that cannot close
+
+**Found:** 2026-11-28, rechecking F174 at main c55fd05 · **Severity:** low · **Status:** resolved in the release after 0.48.23 (built 2026-11-28)
+
+After F174 the check runs on a PGx-only module, which is right. On a fresh copy of
+`assets/reference_examples/cyp2c19_star_alleles` it checks CYP2C19 clean and says the gene-to-chromosome leg did not
+run: *"the module carries no variants.csv rows"*. Its `next_step` then says an rsID-only row has no chromosome
+until resolved: *"run enrich_module, which writes resolution.csv from the rsIDs, then call check_identifiers again"*.
+
+That cannot help this module. It has no `variants.csv`, so it has no row for that leg to place, and it already ships a
+`resolution.csv`. An agent that follows the step enriches, calls again, and gets the same skip and the same advice.
+The skip reason is right; `next_step` was written for an unresolved `variants.csv`, and the no-`variants.csv` case
+reaches it too. That case wants no step at all, or one saying this leg has nothing to compare here.
+
+**Resolution (2026-11-28):** `next_step` is offered only when resolution can let the comparison run: `variants.csv` was among the gene tables read and HGNC placed at least one authored gene (`checks._resolution_would_unblock`, read off the report's structure, not the skip's wording). Upstream's three other reasons (no `variants.csv` rows, no gene, no HGNC chromosome) still show in `gene_locus_check_skipped`, with no step. `tests/test_checks.py::test_a_skip_resolution_cannot_cure_offers_no_loop`.
+
 ## F175 — a table-scope `record_override` keeps neither its counts nor its history outside the log
 
 **Found:** 2026-11-28, a drafting agent's candidate relayed by the lead, reproduced by the tester at v0.48.23 · **Severity:** low · **Status:** resolved in the release after 0.48.23 (built 2026-11-28)
