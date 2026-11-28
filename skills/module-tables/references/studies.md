@@ -375,8 +375,10 @@ Ordered by how likely a first-timer is to hit them.
   Catalog's representation and a catalogue-of-millions problem, and two columns plus a
   both-or-neither rule is a cost every author pays. A value below ~1e-308 now reads as *indefinite*,
   not as zero (`docs/SCHEMAS.md:425-431`).
-- **No `sample_size`, `standard_error`, `confidence_interval`, `ancestry`, `effect_unit`,
-  `study_accession`.** Those live on `just_dna_format.gwas.GwasEffectRow` → `gwas_effects.csv`, the
+- **No `standard_error`, `confidence_interval` or `study_accession`.** `sample_size`, `ancestry`,
+  `effect_unit` and `proxy_rsid` are columns here now (`describe_table("studies.csv")` says what
+  each means; [`ld_pairs.md`](ld_pairs.md) says what `proxy_rsid` and `ancestry` feed). The measured
+  effect itself lives on `just_dna_format.gwas.GwasEffectRow` → `gwas_effects.csv`, the
   0.6 derived-fact table filled by `just-dna-enricher gwas`. If you want machine-transcribed
   published effect sizes, that is the table — not this one.
 - **Nothing here can key a binning bound.** A study row identifies a *variant* or nothing; it can

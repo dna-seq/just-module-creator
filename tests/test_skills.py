@@ -686,3 +686,31 @@ def test_the_wrapped_table_never_says_a_wrapped_tool_is_cli_only() -> None:
         "CLI.md's wrapped/not-wrapped table claims a gap that has closed:\n  "
         + "\n  ".join(offenders)
     )
+
+
+# A table one dossier covers inside another's, named there by its file name.
+_COVERED_INSIDE = {
+    "clin_sig_authority_calls": "clin_sig_concordance",  # a parent and its detail, one page
+    "sources": "licensing",  # licensing.csv's deprecated spelling, one table
+}
+
+
+def test_every_table_upstream_names_has_a_dossier():
+    """F173: CLAUDE.md says the dossiers cover `DERIVED_TABLE_MODELS ∪ DRAFTABLE`, and no test
+    held it, so six tables arrived upstream with no page saying who fills which cell.
+
+    Both sets are upstream's, read live, so a table added in a release fails here naming it.
+    """
+    from just_dna_compiler import draft, hints
+
+    tables = {Path(n).stem for n in (*hints.DERIVED_TABLE_MODELS, *draft.DRAFTABLE)}
+    assert {"resolution", "variants"} <= tables, "the upstream sets moved; read them again"
+    references = SKILLS / "module-tables" / "references"
+    own = {p.stem for p in references.glob("*.md")}
+
+    missing = sorted(t for t in tables if t not in own and t not in _COVERED_INSIDE)
+    assert not missing, f"no dossier in {references} for: {missing}"
+    for table, host in _COVERED_INSIDE.items():
+        assert table in tables, f"{table} left upstream's sets; drop it from _COVERED_INSIDE"
+        text = (references / f"{host}.md").read_text(encoding="utf-8")
+        assert f"{table}.csv" in text, f"{host}.md no longer names {table}.csv"

@@ -5,6 +5,8 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **Six table dossiers** (F173): `module-tables` now has a page for `locus_to_gene.csv`, `colocalisations.csv` and `consequences.csv` (the Open Targets pass), `ld_pairs.csv` (how well a study's proxy rsID stands in for its variant), `meta.csv` (statements about other rows) and `model_organisms.csv` (animal lifespan evidence on a human gene), each saying who decides which cell and what a re-run moves. A test now holds the rule that every table upstream names has one. `refresh_sidecar`'s refusal for the four machine tables names `remote_derive` as the registry route.
+
 ## [0.48.23] — 2026-11-28
 
 - **just-dna 0.9.0**, now that both registry instances serve it (registry 0.35.0, format and compiler 0.9.0, 2026-11-28): the three floors move to `>=0.9.0,<0.10`. Nothing a compiled module carries moved. What moved here: a snapshot lane can now be `stale` as well as present, absent or occupied, and `provision_caches` offers a stale lane again like an absent one, with the enricher's reason in `stale_reason`; `clinvar-gkm publish` and `opentargets publish` join the operator commands this server does not wrap. The reference examples are byte-identical at v0.9.0.

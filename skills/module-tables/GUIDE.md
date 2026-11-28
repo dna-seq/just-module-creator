@@ -68,6 +68,8 @@ here would be the hand-kept list this whole file argues against.
 | [`repeat_alleles.md`](references/repeat_alleles.md) | a repeat-count range → a phenotype | binning family; a locus with **no coordinate** |
 | [`heteroplasmy.md`](references/heteroplasmy.md) | an mtDNA fraction range, in one tissue | binning family; `tissue` is in the key |
 | [`pgs.md`](references/pgs.md) | a published polygenic score you point at | plus the envelope it is valid in |
+| [`meta.md`](references/meta.md) | a statement **about other rows**: a combination, a per-trait judgement, a tier | never a lead table; members name rows by a selector |
+| [`model_organisms.md`](references/model_organisms.md) | one animal lifespan experiment on a human gene's orthologue | annotation only: scores nothing, joins no other table |
 | [`licensing.md`](references/licensing.md) | what one source is, and on what terms | **author or enricher** — see *three levels*, below |
 | [`overrides.md`](references/overrides.md) | a **correction** laid over one derived row, and why | Authored input, and the only way to overrule a machine-written table |
 
@@ -84,6 +86,10 @@ here would be the hand-kept list this whole file argues against.
 | [`gwas_effects.md`](references/gwas_effects.md) | what a study measured, **and on what scale** | enricher (GWAS Catalog) |
 | [`clin_sig_concordance.md`](references/clin_sig_concordance.md) | where the authorities disagree with **you**, and with each other | enricher's clin_sig leg. **Two tables, one dossier** — a parent and its detail |
 | [`expression_effects.md`](references/expression_effects.md) | which way a variant is **predicted** to move one gene's expression | enricher (AlphaGenome Atlas). New in 0.7. The one **prediction** table, and it makes the module non-commercial |
+| [`locus_to_gene.md`](references/locus_to_gene.md) | which genes a GWAS locus most likely acts through, scored | enricher (Open Targets); owns the pass the next two share |
+| [`colocalisations.md`](references/colocalisations.md) | two study loci that may share one causal signal | enricher (Open Targets) |
+| [`consequences.md`](references/consequences.md) | a variant's predicted effect on each transcript | enricher (Open Targets) |
+| [`ld_pairs.md`](references/ld_pairs.md) | how tightly a study's proxy rsID tracks the variant it stands for | enricher (`ld-pairs`, Ensembl); no `overrides.csv` correction |
 | [`verification.md`](references/verification.md) | whether anything was ever *checked*, and the closure | enricher + `close` |
 
 **Ask `describe_machine_table` for these — a different tool, and the split is the point.**
@@ -103,7 +109,8 @@ reason — the missing piece was the map, not the presentation.)*
 **Four properties of that derived family**, each of which has cost somebody a day. [`module-refresh`](../module-refresh/GUIDE.md)
 owns the procedure; these are the properties that make it necessary.
 
-- **Merge, never clobber.** A re-run *adds* to a sidecar and refreshes nothing already recorded, because
+- **Merge, never clobber** (most of them; the Open Targets and `ld-pairs` passes differ, and their
+  dossiers say how). A re-run *adds* to a sidecar and refreshes nothing already recorded, because
   these tables are human-overridable by design. To re-derive one you **delete it first**, and deleting
   discards every hand-curated row along with the stale ones.
 - **Write to the file you read.** Two copies of one sidecar is a refusal naming both paths — never a

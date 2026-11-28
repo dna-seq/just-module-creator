@@ -515,9 +515,10 @@ UNREFRESHABLE["expression_effects.csv"] = (
 #: re-run, so these are refused with the CLI named, and the entry comes out when the
 #: producer is wrapped and joins `ROSTER`.
 _UNWRAPPED_PRODUCER = (
-    "no tool here produces this table yet: it is written by `just-dna-enricher {command}`, "
-    "which this server does not wrap (a parity gap, not a decision). Re-derive it with that "
-    "command, then validate_module and compile_module."
+    "no tool here produces this table locally: it is written by `just-dna-enricher {command}`, "
+    "which this server does not wrap as a local pass (a parity gap, not a decision). Re-derive "
+    "it with that command, or on a registry with remote_derive(passes=[...]), which uploads the "
+    "spec; then validate_module and compile_module."
 )
 for _name, _command in (
     ("locus_to_gene.csv", "opentargets enrich"),
