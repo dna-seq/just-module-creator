@@ -14,6 +14,20 @@ is usable, and what is missing.
 
 ---
 
+## F176 — `check_identifiers` on a module with no `variants.csv` sends the author round a loop that cannot close
+
+**Found:** 2026-11-28, rechecking F174 at main c55fd05 · **Severity:** low · **Status:** open, the lead's
+
+After F174 the check runs on a PGx-only module, which is right. On a fresh copy of
+`assets/reference_examples/cyp2c19_star_alleles` it checks CYP2C19 clean and says the gene-to-chromosome leg did not
+run: *"the module carries no variants.csv rows"*. Its `next_step` then says an rsID-only row has no chromosome
+until resolved: *"run enrich_module, which writes resolution.csv from the rsIDs, then call check_identifiers again"*.
+
+That cannot help this module. It has no `variants.csv`, so it has no row for that leg to place, and it already ships a
+`resolution.csv`. An agent that follows the step enriches, calls again, and gets the same skip and the same advice.
+The skip reason is right; `next_step` was written for an unresolved `variants.csv`, and the no-`variants.csv` case
+reaches it too. That case wants no step at all, or one saying this leg has nothing to compare here.
+
 ## F169 — a round's version pin can't see a commit landed between its runs, so "one build" doesn't hold
 
 **Found:** 2026-11-19, benchmark round 4 · **Severity:** medium for the benchmark · **Status:** mitigated (the round now notices), isolation still open, the lead's
