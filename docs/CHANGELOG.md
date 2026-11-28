@@ -5,6 +5,8 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **The `gwas_effects.csv` dossier names its second writer**: the Open Targets pass fills `posterior_probability` and `fine_mapping_method` on rows the GWAS pass wrote. The page now says when it leaves them empty, that filling them moves the table's fact signature, and that deleting and re-deriving the table drops every posterior until that pass runs again.
+
 - **No loop on a module without `variants.csv`** (F176): `check_identifiers` told the agent to run `enrich_module` and call again whenever the gene/chromosome comparison was skipped, even where resolution could not help (no `variants.csv` rows, no gene, no chromosome from HGNC). It now offers that step only when a variant's chromosome is what is missing.
 
 - **A table-level edit record keeps its counts and its history** (F175): `record_override` on a whole table (`variant_key` a file name, `field` `rows` or `file`) kept one record per table in `provenance.json`, so a second trim replaced the first, and `review_queue` showed its counts empty. Each such move is now its own record, and its counts come back in `review_queue`.

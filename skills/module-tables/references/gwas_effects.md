@@ -7,6 +7,9 @@
 > symbol names held, so anchor on the symbol — and the counted rosters were re-measured against the
 > installed packages.
 >
+> **2026-11-28, against 0.9.0:** the fine-mapping posterior pair (0.8) and its second writer added;
+> the field counts replaced by the rule they counted.
+>
 > **Upstream generates the schema half now, so do not read it here.** Every column, type,
 > requiredness, vocabulary and identity-card fact for this table is generated from the row model on
 > each docs build, at <https://just-dna.life/just-dna-compiler/tables/gwas_effects/>. Upstream's hand-written
@@ -50,18 +53,32 @@ No annotation table joins to it; the compiler only cross-checks it (`compiler.py
 | Natural / dedup key | **the enricher's merge key only** — `association_id` alone (`gwas.py:_merge_key`). There is no compiler-side duplicate-row key for this table: it has no `_TABLE_DUPE_KEYS` entry, so a duplicated `association_id` compiles green. Per record, **not** per variant: a coarse per-rsID skip pins a module to whatever the Catalog held the first time |
 | Authored or machine-produced | **machine-produced**, human-writable. Not an `AuthoredModel`; `extra="forbid"` |
 | Who writes it | `just_dna_enricher.gwas.enrich_gwas` — via our `enrich_gwas_effects`, or `just-dna-enricher gwas <spec-dir>` |
-| Fact signature | `integrity.gwas_effect_signature` over `gwas.GWAS_FACT_FIELDS` (18 of 22 fields, `gwas.py`) → `manifest.gwas_effects.signature` |
+| Fact signature | `integrity.gwas_effect_signature` over `gwas.GWAS_FACT_FIELDS` (every field but `source`, `status`, `fetched_at` and `trait`; `gwas.py`) → `manifest.gwas_effects.signature` |
 | In `content_signature`? | **No.** `_INPUT_FILES` (`compiler.py`) is `module_spec.yaml`, `variants.csv`, `studies.csv` and the authored table kinds — this is a `_FACT_TABLES` member (`compiler.py`) |
 | In `artifact.digest`? | **Yes**, via its parquet. Also byte-hashed into `manifest.derived[]` — transport only (`compiler.py`) |
 | Location | root or `derived/gwas_effects.csv`. One spelling only; the `licensing.csv`/`sources.csv` two-name rule does **not** apply here |
 
 ## Who populates what
 
-- **enricher pass — every column.** `enrich_gwas` (`just-dna-enricher gwas <dir>`, also reachable as
-  `just-dna-pipelines enrich gwas <dir>`, `just-dna-lite/just-dna-pipelines/.../cli.py`) fills all
-  22. Subjects come from `variants.csv` — `(rsid, variant_key)` for **every row that has an rsID**,
+- **enricher pass — every column but two.** `enrich_gwas` (`just-dna-enricher gwas <dir>`, also reachable as
+  `just-dna-pipelines enrich gwas <dir>`, `just-dna-lite/just-dna-pipelines/.../cli.py`) fills
+  every column but the posterior pair below. Subjects come from `variants.csv` — `(rsid, variant_key)` for **every row that has an rsID**,
   `gwas.py:_module_subjects`. A coordinate-only variant row has no subject and is silently absent
   from the table; on `hfe_hemochromatosis` that is 2 of its 13 variant rows.
+- **A second writer: the fine-mapping posterior.** `posterior_probability` and `fine_mapping_method`
+  are filled by `just-dna-enricher opentargets enrich` (`opentargets.enrich_opentargets`), on rows
+  `enrich_gwas` already wrote; it adds no row. Nothing here runs it locally: the route is
+  [`locus_to_gene.md`](locus_to_gene.md)'s *Running it*. The two cells are filled together or left
+  empty together (`GwasEffectRow` refuses half a pair). **Empty is never zero**: the pass leaves both
+  empty when the study has no credible set in the release, the variant is not in the study's 95% set,
+  the variant sits in several of its sets with different posteriors, or the release names no method,
+  and its log line counts each case. It leaves a row untouched when the row names no study, the
+  variant was not looked up, or the snapshot was not read whole, so a posterior an earlier run wrote
+  stays. The release it came from is the `opentargets` row of `sources.csv`, never this row's
+  `dataset`. Both cells are in `GWAS_FACT_FIELDS`, so filling them moves `gwas_effects.signature`
+  and `manifest.gwas_effects.with_posterior` counts the rows that carry one. A re-run of
+  `enrich_gwas` keeps existing rows whole, posterior included; **deleting and re-deriving this table
+  drops every posterior** until the Open Targets pass runs again.
 - **author — permitted, and the model says so.** `source` is documented
   `gwas_catalog|manual|reversed (open)`, and the fact hash ignores `source`/`status`/`fetched_at`, so
   a hand-transcribed row hashes equal to a Catalog-fetched one carrying the same facts. **Measured:**
@@ -73,7 +90,7 @@ No annotation table joins to it; the compiler only cross-checks it (`compiler.py
 - **drafter — none.** No `clinvar_draft` / `pgx_draft` / `clinpgx_draft` touches this table and there
   is no `<<REPLACE>>` stub for it. It is not in `draft.DRAFTABLE`.
 - **compiler-stamped — one column, parquet-only.** `_build_table(rows, GwasEffectRow, module_name)`
-  adds `module`; the parquet has 23 columns to the model's 22 (measured with polars). It is not a CSV
+  adds `module`; the parquet has one column more than the model (measured with polars). It is not a CSV
   column and `extra="forbid"` refuses it there.
 - **registry-stamped — nothing.** `normalize.IDENTITY_AUTHORITY_KEYS` is
   `{namespace, owner, canonical_id}` and lives on the manifest identity, not on any sidecar row.
@@ -120,7 +137,7 @@ byte-identical digest (`sha256:6c6e103d…`), so every "MOVED" below is the edit
 | recompile under a newer toolchain | unmoved | unmoved | may move (polars / compiler version) | unmoved |
 
 1. **Inside `content_signature`? No.** `content_signature` covers the authored rows only. This
-   table's identity is its fact hash over `GWAS_FACT_FIELDS` — 18 fields. Left **out**: `source`,
+   table's identity is its fact hash over `GWAS_FACT_FIELDS`. Left **out**: `source`,
    `status`, `fetched_at` (provenance, so hand-filled and Catalog-filled hash equal) and **`trait`**,
    because the Catalog re-words a reported trait between releases for an unchanged ontology term. In,
    and each for a stated reason: `effect_unit` (a magnitude in `umol/l` and the same magnitude in
@@ -393,7 +410,7 @@ What does not exist). Two routes that do work:
 
 ```bash
 # The plugin's own tool — GwasEffectRow IS in the reference, keyed by MODEL name, not CSV name.
-authoring_reference()  ->  ["models"]["GwasEffectRow"]   # 22 column dicts, live descriptions
+authoring_reference()  ->  ["models"]["GwasEffectRow"]   # one column dict per field, live descriptions
                        ->  ["vocabularies"]["effect_direction"]      # closed
                        ->  ["open_recommended"]["effect_measure"]    # open, seed values only
 ```
