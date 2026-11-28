@@ -14,6 +14,37 @@ is usable, and what is missing.
 
 ---
 
+## F173 — six tables upstream names have no module-tables dossier, and no test holds the coverage rule
+
+**Found:** 2026-11-28, on the lead's ask (from the liaison's 0.10 preview) · **Severity:** low · **Status:** open, the lead's
+
+`CLAUDE.md` says the dossiers under `skills/module-tables/references/` *"must cover
+`hints.DERIVED_TABLE_MODELS ∪ draft.DRAFTABLE`"*. No test checks it; `tests/test_skills.py` never reads either set.
+Read at v0.48.23 (just-dna-compiler 0.9.0), the union has 30 names. 24 are covered: 22 by a dossier of their own,
+`clin_sig_authority_calls.csv` inside `clin_sig_concordance.md`, and `sources.csv` as `licensing.csv`'s old spelling.
+Six have nothing:
+
+| Table | Set | Model | Where the skills name it at all |
+|---|---|---|---|
+| `locus_to_gene.csv` | derived | `locus_genes.LocusToGeneRow` | `module-101/references/CLI.md`, as `opentargets enrich` output |
+| `colocalisations.csv` | derived | `locus_genes.ColocalisationRow` | the same CLI.md lines |
+| `consequences.csv` | derived | `consequences.ConsequenceRow` | the same CLI.md lines |
+| `ld_pairs.csv` | derived | `ld_pairs.LdPairRow` | CLI.md, as `ld-pairs <dir>` output |
+| `meta.csv` | draftable | `meta.MetaRow` | one `SYMPTOMS.md` entry on its members |
+| `model_organisms.csv` | draftable | `model_organisms.ModelOrganismRow` | nowhere |
+
+Re-derive: `uv run python -c "from just_dna_compiler import hints, draft; print(sorted(set(hints.DERIVED_TABLE_MODELS) | set(draft.DRAFTABLE)))"`,
+then compare with the stems in `skills/module-tables/references/`.
+
+What it costs: an agent at stage 4 or 5 that meets one of these tables (an inherited module, a `remote_derive`
+output) has no page saying who fills which cell or what an edit moves; `model_organisms.csv` an author may write
+and nothing tells them it exists. The rule in `CLAUDE.md` claims a coverage the tree does not have, which is the
+"enforcement claim needs its surface named" shape: it reads as checked and is not.
+
+Not mine to settle: whether a test should hold the rule (with the two aliases above as named exceptions, so a
+combined dossier counts), or whether the rule should name the exceptions in prose. Either way the six pages are the
+lead's.
+
 ## F169 — a round's version pin can't see a commit landed between its runs, so "one build" doesn't hold
 
 **Found:** 2026-11-19, benchmark round 4 · **Severity:** medium for the benchmark · **Status:** mitigated (the round now notices), isolation still open, the lead's
