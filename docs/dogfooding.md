@@ -14,6 +14,47 @@ is usable, and what is missing.
 
 ---
 
+## F174 — `check_identifiers` checks nothing on a module with no `variants.csv`, while upstream checks every gene table
+
+**Found:** 2026-11-28, a drafting agent's candidate relayed by the lead, reproduced by the tester at v0.48.23 · **Severity:** medium · **Status:** open, the lead's
+
+Our `check_identifiers` returns early when `variants.csv` is absent (`tools/checks.py`, the `NOT_APPLICABLE` branch):
+`attested: false`, every tally null, note *"no variants.csv — the check does not apply"*. The comment above it says
+upstream raises on a missing file. That stopped being true with upstream's S86: `just_dna_enricher.identifiers.check_identifiers`
+now reads nine authored tables for genes and traits and treats an absent `variants.csv` as a module shape.
+
+Reproduced on a scratch copy of `assets/reference_examples/cyp2c19_star_alleles`, a real PGx module with no `variants.csv`:
+
+- Ours, over the wire: not applicable, `genes: []`, no `verification.json`.
+- Upstream on the same copy (`spec_dir=`, `write=False`): reads `allele_function.csv`, `diplotypes.csv` and
+  `haplotypes.csv`, returns CYP2C19 `approved` (HGNC:2621), and says only the gene-to-locus leg could not run.
+
+So every PGx-only module, and any whose genes or traits sit in `model_organisms.csv`, `meta.csv`, `pgs.csv` and the
+other tables upstream lists, gets no HGNC or OLS4 check from us. The answer it gives is the "convincing-looking" kind:
+"does not apply" reads as considered, and nothing says a check that would have run was skipped.
+
+## F175 — a table-scope `record_override` keeps neither its counts nor its history outside the log
+
+**Found:** 2026-11-28, a drafting agent's candidate relayed by the lead, reproduced by the tester at v0.48.23 · **Severity:** low · **Status:** open, the lead's
+
+`record_override`'s docstring says a table-scope move (`variant_key` = a table's file name, `field` = `rows`) is one
+record with "the counts and the derivation" as the record, and that `review_queue` lists it. Reproduced on a scratch
+copy of `assets/reference_examples/hfe_hemochromatosis`, two calls on `studies.csv`/`rows` six seconds apart, each with
+its own counts:
+
+1. **The counts don't come back.** `review_queue` lists the record with `authored_value: ""`, `current_value: null`,
+   `still_bound: null`. For a cell record the empty value is documented (upstream's `ProvenanceItem` has no slot; ask
+   `current_value`), and `current_value` recovers it. A table record has no cell, so nothing recovers the counts:
+   the queue shows only the reason.
+2. **The second move replaces the first.** The second call returns `replaced_existing: true`. `provenance.json` holds
+   one item for `studies.csv`, the second reason. `logs/authoring.log` keeps both lines, the second marked
+   `[replaced an earlier record]`. One record per `(variant_key, field)` is right for a cell, which holds one value;
+   two trims of one table are two moves, and the first now survives only in the log.
+
+Both come from one shape: `provenance.json` keys on `(variant_key, field)` and stores no value, and a table move is
+fitted into that key. The log, which publishes, is complete; the queue and the ledger, which a reviewer reads first,
+are not.
+
 ## F169 — a round's version pin can't see a commit landed between its runs, so "one build" doesn't hold
 
 **Found:** 2026-11-19, benchmark round 4 · **Severity:** medium for the benchmark · **Status:** mitigated (the round now notices), isolation still open, the lead's
