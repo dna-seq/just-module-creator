@@ -32,6 +32,7 @@ default `via` to `"auto"`; nothing in here has to change.
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import Any, Literal
 
 #: The enricher's own lane registry. Unconditional since 0.35.0: the floor is
@@ -410,6 +411,7 @@ def variant_fields(hint: Any, *, proxied: bool) -> dict[str, Any]:
             "checked": _labels_only(
                 getattr(getattr(hint, "cost", None), "served_from", []) or []
             ),
+            "routes": _remote_routes(getattr(hint, "routes", None)),
         }
 
     status = getattr(hint, "rsid_status", None)
@@ -427,4 +429,21 @@ def variant_fields(hint: Any, *, proxied: bool) -> dict[str, Any]:
         "checked": _labels_only(
             getattr(hint, "checked", ()), snapshots=getattr(hint, "snapshots", None)
         ),
+        "routes": _remote_routes(getattr(hint, "routes", None)),
+    }
+
+
+def _remote_routes(routes: Any) -> dict[str, dict] | None:
+    """Lane -> where a remotely read lane came from, from either side of the seam (0.9, RM430).
+
+    Attribution, so never dropped: a lane the answering host does not hold may be read from
+    the Hugging Face hub, and its release and revision are then the only record of which
+    bytes answered. The enricher hands `RemoteRoute` dataclasses, the registry's `/hint`
+    plain dicts; both become dicts. `None` stays `None`: no lane was read remotely.
+    """
+    if routes is None:
+        return None
+    return {
+        str(lane): dict(how) if isinstance(how, dict) else asdict(how)
+        for lane, how in sorted(routes.items())
     }

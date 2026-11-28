@@ -5,6 +5,9 @@ on our side, so agents in sibling repos are not surprised.
 
 ## [Unreleased]
 
+- **just-dna 0.9.0**, now that both registry instances serve it (registry 0.35.0, format and compiler 0.9.0, 2026-11-28): the three floors move to `>=0.9.0,<0.10`. Nothing a compiled module carries moved. What moved here: a snapshot lane can now be `stale` as well as present, absent or occupied, and `provision_caches` offers a stale lane again like an absent one, with the enricher's reason in `stale_reason`; `clinvar-gkm publish` and `opentargets publish` join the operator commands this server does not wrap. The reference examples are byte-identical at v0.9.0.
+- **Registry client 0.35.0** (liaison, 493715e), which moves with the trio. Two answers it adds are carried rather than dropped: `registry_lane_lookup`'s rows say per key column how it was compared (`compares`: `exactly`, or the lane's own fold, so `apoe` finding `APOE` reads as a fold and not a guess), and `lookup_variant` says which lanes were read from the Hugging Face hub rather than a snapshot on the answering host, with the release and commit read (`routes`), on both the local and the proxied path.
+
 ## [0.48.22] — 2026-11-27
 
 - **`registry_rotate_key`** (registry 0.34.1): replaces the API key a call uses with a new one, for a key that leaked. The new key replaces the old in the saved account (backed-up write, read back) and in this session; it is returned in the reply only when it could not be saved, since the registry shows it once. `revoke_others=true` revokes the account's other keys and marks this machine's other saved keys for it invalid. Refused, with nothing sent, on an instance older than registry 0.34.1; both instances serve 0.34.4 (2026-11-26), and the client is 0.34.3 (the liaison, f547e16). `module-publish` says when to reach for it.

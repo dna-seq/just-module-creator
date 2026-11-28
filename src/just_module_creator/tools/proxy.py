@@ -460,6 +460,7 @@ def register_proxy(mcp: FastMCP, settings: Settings) -> None:
             release=answer.get("release"),
             release_unreadable=answer.get("release_unreadable"),
             revision=answer.get("revision"),
+            compares=answer.get("compares") if table is not None else None,
         )
 
     @mcp.tool(

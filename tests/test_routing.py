@@ -23,6 +23,8 @@ import just_dna_registry.models.api as registry_api
 import pytest
 from conftest import offline_settings, routed_settings
 from fastmcp.exceptions import ToolError
+from just_dna_enricher.key_compare import lane_compare
+from just_dna_enricher.remote import RemoteRoute
 from just_dna_format.layout import sidecar_write_path
 from just_dna_registry.client import RegistryClient, VersionMismatchError
 from just_dna_registry.specfiles import DERIVED_FILES
@@ -743,6 +745,7 @@ def test_every_upstream_field_this_layer_reads_by_name_still_exists():
                 "vrs_id",
                 "checked",
                 "snapshots",
+                "routes",
                 "findings",
                 "alterations",
             },
@@ -798,6 +801,7 @@ def test_every_upstream_field_this_layer_reads_by_name_still_exists():
                 "vrs_id",
                 "ambiguous",
                 "cost",
+                "routes",
                 "findings",
                 "alterations",
             },
@@ -934,6 +938,37 @@ def test_the_local_translation_flattens_the_enrichers_own_status_object():
     # `ambiguous` is a @property here, and reading it is legitimate in-process — it is
     # only serialization that drops it, which is why the far side promoted it.
     assert fields["ambiguous"] in (True, False)
+
+
+def test_a_lane_read_from_the_hub_says_so_on_both_sides_of_the_seam():
+    """Enricher/registry 0.9 (RM430): a lane the answering host lacks may be read from the
+    Hugging Face hub, and `routes` is then the only record of which release and commit
+    answered. Attribution, so it crosses the seam from either side; none read stays null.
+
+    The release and commit are CIViC's as the 0.33 lane test records them (2026-11-07).
+    """
+    from just_dna_enricher.lookup import VariantHint
+    from just_dna_registry.models.api import VariantHintReport
+
+    from just_module_creator import routing as r
+
+    commit = "55b72e2bef9d3a4e0f39552a524c73631662236b"
+    local = VariantHint(rsid="rs4988235")
+    local.routes = {
+        "civic": RemoteRoute(route="hf", release="civic_01-Nov-2026", revision=commit)
+    }
+    proxied = VariantHintReport(
+        rsid="rs4988235",
+        routes={"civic": {"route": "hf", "release": "civic_01-Nov-2026", "revision": commit}},
+    )
+
+    here = r.variant_fields(local, proxied=False)["routes"]
+    there = r.variant_fields(proxied, proxied=True)["routes"]
+    assert here is not None and here["civic"]["revision"] == commit
+    assert here["civic"]["route"] == "hf" and here["civic"]["served_from"] is None
+    assert there == {"civic": {"route": "hf", "release": "civic_01-Nov-2026", "revision": commit}}
+    assert r.variant_fields(VariantHint(rsid="rs4988235"), proxied=False)["routes"] is None
+    assert r.variant_fields(VariantHintReport(rsid="rs4988235"), proxied=True)["routes"] is None
 
 
 def test_what_was_consulted_is_labels_on_both_sides_and_never_a_path():
@@ -1555,6 +1590,39 @@ async def test_a_0_33_registry_says_which_release_answered(monkeypatch, make_cli
     assert rows.revision == "55b72e2bef9d3a4e0f39552a524c73631662236b"
     # The stub's lane_tables answers as 0.32: nothing is invented for it.
     assert (older.release, older.release_unreadable, older.revision) == (None, None, None)
+
+
+async def test_a_0_35_registry_says_how_each_key_was_compared(monkeypatch, make_client):
+    """Registry 0.35 (S36): lane rows say per key column how it was compared, so a short
+    answer reads apart from an absent one (`apoe` finds `APOE` under a gene fold). The words
+    are upstream's own, read from the compare the lane declares; absent stays null."""
+    described = lane_compare("mane", "summary", "symbol").described
+    assert described != "exactly", "mane's symbol lost its declared fold; pick another column"
+
+    class _Lane035(_LaneStub):
+        def lane_rows(self, lane, table, keys):
+            answer = super().lane_rows(lane, table, keys)
+            answer["compares"] = {"symbol": described}
+            return answer
+
+    monkeypatch.setattr(proxy, "client_for", lambda *_a, **_k: _Lane035())
+    async with make_client(routed_settings()) as client:
+        rows = (
+            await client.call_tool(
+                "registry_lane_lookup",
+                {
+                    "lane": "mane",
+                    "target": "test",
+                    "table": "summary",
+                    "keys": {"symbol": ["apoe"]},
+                },
+            )
+        ).data
+        tables = (
+            await client.call_tool("registry_lane_lookup", {"lane": "mane", "target": "test"})
+        ).data
+    assert rows.compares == {"symbol": described}
+    assert tables.compares is None, "a tables answer compares nothing"
 
 
 async def test_remote_derive_replaces_a_local_verification_json_whole_rather_than_crashing(

@@ -528,6 +528,7 @@ def register_research(mcp: FastMCP, settings: Settings, services: NetworkService
             offline=eff_offline,
             route=RouteInfo(**route.as_dict()),
             cost=ProxyCost(**cost) if cost else None,
+            routes=fields["routes"],
         )
 
     @mcp.tool(

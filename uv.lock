@@ -1022,7 +1022,7 @@ wheels = [
 
 [[package]]
 name = "just-dna-registry"
-version = "0.34.3"
+version = "0.35.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -1030,9 +1030,9 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/45/04/44fd83dd5282b654a50a02284e009ebb1e8d37ddc84b9bea192a1737086b/just_dna_registry-0.34.3.tar.gz", hash = "sha256:3d4cf816b7c92870abc9559f698898ee60024433455ef6dad6d07ce6e9045b91", size = 575289, upload-time = "2026-11-26T19:31:16.14Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/38/ef/2d21d485e0d21c61a53616e83db7ac8d59588915ae72327e61c910d5315a/just_dna_registry-0.35.0.tar.gz", hash = "sha256:275713dfdede736e777c51855643827bf2ea6cdda838f29cb1bb648cee4d4dd6", size = 578475, upload-time = "2026-11-28T00:46:16.833Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d9/5c/23958fa0f93ebe1b82d409f82c9ad40a15f164b1189d756169147e7f45bf/just_dna_registry-0.34.3-py3-none-any.whl", hash = "sha256:75e5d0e50f7800c178f30c9d3e5118c196c6dfa2747d8995897ea0657667fb17", size = 551207, upload-time = "2026-11-26T19:31:13.611Z" },
+    { url = "https://files.pythonhosted.org/packages/20/86/11dfa5b5173d5675dc90bbe2a7a3d81cff8fbfdcec4bc30677b44a99f085/just_dna_registry-0.35.0-py3-none-any.whl", hash = "sha256:fb799657c2fd37357e3574d464147c0ee2c6634cb154d85529994725d6c3c9a9", size = 552943, upload-time = "2026-11-28T00:46:15.644Z" },
 ]
 
 [[package]]
@@ -1078,7 +1078,7 @@ requires-dist = [
     { name = "just-dna-compiler", specifier = ">=0.9.0,<0.10" },
     { name = "just-dna-enricher", extras = ["atlas"], specifier = ">=0.9.0,<0.10" },
     { name = "just-dna-format", specifier = ">=0.9.0,<0.10" },
-    { name = "just-dna-registry", specifier = ">=0.34.1" },
+    { name = "just-dna-registry", specifier = ">=0.35.0" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "platformdirs", specifier = ">=4.12.0" },
     { name = "pydantic", specifier = ">=2" },

@@ -1190,6 +1190,12 @@ class VariantLookup(BaseModel):
         "was answered locally, and an **empty `charged` inside it means free** — those "
         "are different facts.",
     )
+    routes: dict[str, dict] | None = Field(
+        default=None,
+        description="Per lane read remotely rather than from a snapshot on the answering "
+        "host: `route` (`hf`, `proxy`), `release`, `revision` (the hub commit), "
+        "`served_from`. Null when no lane was read remotely.",
+    )
 
 
 class CitationLookup(BaseModel):
@@ -3325,6 +3331,12 @@ class LaneLookup(BaseModel):
         default=None,
         description="For a remote read (`served_from: remote:<repo>`), the hub commit every "
         "file of this answer was read at. Null for the deployment's own copy, which keeps none.",
+    )
+    compares: dict[str, str] | None = Field(
+        default=None,
+        description="With `table`: per key column, how it was compared with the cells, in "
+        "words (`exactly`, or the lane's own fold). Read it to tell a short answer from an "
+        "absent one. Null from a registry older than 0.35.",
     )
 
 

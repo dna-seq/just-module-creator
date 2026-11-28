@@ -114,7 +114,10 @@ dependencies = [
     # `matched`; lane answers carry `terms`/`unpublished`; `whoami` lists `member_of`/`orgs`.
     # 0.34.1 (both instances serve 0.34.4 from 2026-11-26) adds `rotate_key`, which
     # `registry_rotate_key` wraps; the tool still asks `/version` and refuses below 0.34.1.
-    "just-dna-registry>=0.34.1",
+    # 0.35.0 (both instances serve it from 2026-11-28) floors format/compiler/enricher
+    # `>=0.9.0`, so it moves with the trio; lane rows say which key `compares` ran, and
+    # `/hint` says which lane was read remotely (`routes`), both carried through.
+    "just-dna-registry>=0.35.0",
     "python-dotenv>=1.2.2",
     # Declared, not leaned on transitively: net.py calls httpx directly for the
     # literature sources, and a transitive pin is not a contract.
