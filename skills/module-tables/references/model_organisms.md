@@ -56,9 +56,9 @@ written at [`module-curate`](../../module-curate/GUIDE.md), from papers actually
 
 **Logging an agent's write.** `record_override` keys on a `variant_key`, and this table has none, so
 use the table-scope form: `variant_key="model_organisms.csv"`, `field="rows"`, the row's gene,
-species and model in `authored_value`, how you got there in `reason`. Measured on `meta.csv`, which
-takes the same form: `provenance.json` keeps only the latest record for that pair, while
-`logs/authoring.log` keeps every call and publishes with the module.
+species and model in `authored_value`, how you got there in `reason`. Each call is its own record in
+`provenance.json`, with that `authored_value` kept, and `review_queue` lists them all;
+`logs/authoring.log` keeps every call too and publishes with the module.
 
 ## How it relates to variants.csv and studies.csv
 

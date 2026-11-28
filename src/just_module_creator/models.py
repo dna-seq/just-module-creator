@@ -2876,7 +2876,8 @@ class OverrideResult(BaseModel):
     replaced_existing: bool = Field(
         description="Whether a record for this (variant_key, field) was already on file. "
         "Replacing one is legitimate — a judgement can be revised — and it is reported "
-        "rather than silent, because the previous reason is gone."
+        "rather than silent, because the previous reason is gone. Always false for a "
+        "table-scope move: each one is its own record."
     )
     record: OverrideRecord = Field(description="Exactly what was written.")
     note: str = Field(description="What this does and does not do.")

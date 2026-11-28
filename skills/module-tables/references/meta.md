@@ -59,9 +59,9 @@ sex- or drug-scoped fact. It is never a lead table: a directory holding `module_
 
 **Logging an agent's write.** `record_override` keys on a `variant_key`, and a meta row has none, so
 use the table-scope form: `variant_key="meta.csv"`, `field="rows"`, the row's `members` cell and what
-changed in `authored_value`, and how you got there in `reason`. Measured: `provenance.json` keeps only
-the latest record for that pair, while `logs/authoring.log` keeps every call and publishes with the
-module.
+changed in `authored_value`, and how you got there in `reason`. Each call is its own record in
+`provenance.json`, with that `authored_value` kept, and `review_queue` lists them all;
+`logs/authoring.log` keeps every call too and publishes with the module.
 
 ## How it relates to variants.csv and studies.csv
 

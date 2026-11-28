@@ -40,8 +40,9 @@ tool, or a person reading the file.
 The marker stays, and it is not a second copy of the column. It carries what `outranks`
 has no room for and what makes a record *checkable* — the digest binding it to the cell,
 which source was disagreed with, when, and by whom — none of which upstream's schema
-holds. One item per `(variant_key, field)`, since their `items` list has no uniqueness
-rule.
+holds. One item per `(variant_key, field)` for a cell, since their `items` list has no
+uniqueness rule; a table-scope move is an event, so each one is its own item, and its counts
+travel in `rationale` (F175).
 
 **Whether a check downgrades a mismatch on the strength of one of these is still open
 upstream (their RM117), and nothing here assumes it will.** A record downgrades nothing,
@@ -108,7 +109,9 @@ class OverrideRecord(BaseModel):
             "`value_sha256` survives the round trip and the digest is what binds the "
             "record to the cell. On a record read from disk, ask `current_value` what "
             "the row says now and `still_bound` whether it is still the value that was "
-            "recorded — an empty `authored_value` there means unstored, never blank."
+            "recorded — an empty `authored_value` there means unstored, never blank. "
+            "A table-scope record (a `.csv` name with `rows` or `file`) is the exception: "
+            "its counts are kept and read back, since there is no cell to ask."
         )
     )
     source_name: str = Field(description="Which source disagrees — `clinvar`, `clingen`, `gwas`.")
@@ -169,8 +172,16 @@ class OverrideRecord(BaseModel):
         bound = self.value_sha256 or value_digest(self.authored_value)
         return value_digest(current_value) == bound
 
-    def subject(self) -> tuple[str, str]:
+    def subject(self) -> tuple[str, ...]:
+        """What a newer record replaces. A cell holds one value, so one record per cell;
+        a table move is an event, so two trims of one table are two records (F175)."""
+        if is_table_scope(self):
+            return (self.variant_key, self.field, self.recorded_at, self.value_sha256 or "")
         return (self.variant_key, self.field)
+
+
+#: Where a table move's counts sit in `rationale`, between the reason and the source's answer.
+_MOVED = " Moved: "
 
 
 def _marker(record: OverrideRecord) -> str:
@@ -188,10 +199,18 @@ def to_items(records: Iterable[OverrideRecord]) -> list[ProvenanceItem]:
     items: list[ProvenanceItem] = []
     for record in records:
         said = f" Source said: {record.source_value}." if record.source_value else ""
+        # F175: a table move has no cell for the digest to bind to, so its counts would
+        # otherwise survive nowhere but the log. Upstream's item has no value slot, so they
+        # travel in `rationale`, the free-text field, the way the source's answer does.
+        moved = (
+            f"{_MOVED}{record.authored_value}."
+            if is_table_scope(record) and record.authored_value
+            else ""
+        )
         items.append(
             ProvenanceItem(
                 variant_key=record.variant_key,
-                rationale=f"{record.reason.rstrip()}{said}{_marker(record)}",
+                rationale=f"{record.reason.rstrip()}{moved}{said}{_marker(record)}",
                 human_reviewed=record.human_reviewed,
                 # Upstream's own per-column slot (0.6.5), and it is narrower than we
                 # were treating it: its field description reads "per-column
@@ -238,11 +257,22 @@ def from_items(items: Sequence[ProvenanceItem]) -> tuple[list[OverrideRecord], l
             # split at its own prose and the tail read back as what the archive said.
             reason, _, tail = reason.rpartition(" Source said: ")
             source_value = tail.rstrip(".") or None
+        moved = ""
+        if (
+            item.variant_key.endswith(".csv")
+            and match["field"] in TABLE_SCOPE_FIELDS
+            and _MOVED in reason
+        ):
+            # Appended before the source's answer by `to_items`, so the last one is ours.
+            reason, _, tail = reason.rpartition(_MOVED)
+            moved = tail.removesuffix(".")
         records.append(
             OverrideRecord(
                 variant_key=item.variant_key,
                 field=match["field"],
-                authored_value="",  # not stored; the digest is what binds
+                # A cell's value is not stored; its digest is what binds. A table move's
+                # counts are, because nothing else can recover them (F175).
+                authored_value=moved,
                 source_name=match["source"],
                 source_value=source_value,
                 reason=reason,
@@ -290,7 +320,10 @@ def write_records(
 def upsert(
     spec_dir: Path, record: OverrideRecord, model: str | None = None
 ) -> tuple[Path, bool]:
-    """Add or replace the record for one (variant_key, field). Returns (path, replaced)."""
+    """Add a record, replacing the one for the same cell. Returns (path, replaced).
+
+    A table-scope record never replaces another: two trims of one table are two moves.
+    """
     doc = read_doc(spec_dir)
     existing, _ = from_items(doc.items) if doc else ([], [])
     keep_foreign = [
@@ -299,7 +332,7 @@ def upsert(
     replaced = any(r.subject() == record.subject() for r in existing)
     merged = [r for r in existing if r.subject() != record.subject()]
     merged.append(record)
-    merged.sort(key=lambda r: (r.variant_key, r.field))
+    merged.sort(key=lambda r: (r.variant_key, r.field, r.recorded_at))
     inherited = model or (doc.model if doc else None)
     return write_records(spec_dir, merged, keep_foreign, model=inherited), replaced
 

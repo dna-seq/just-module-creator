@@ -549,6 +549,43 @@ async def test_a_table_trim_is_one_record_with_its_own_verb(client, module: Path
     assert queue.entries[0].still_bound is None
 
 
+async def test_two_table_moves_are_two_records_and_each_keeps_its_counts(client, module: Path):
+    """F175: a table move is an event, not a cell. Two trims of one table were one record in
+    `provenance.json` (the second replaced the first), and the queue showed each with an empty
+    `authored_value` and nothing to recover it from, since a table has no cell to ask."""
+    moves = [
+        ("kept 30 rows at rs3918290; dropped 203 drafted rows", "scope trim to the panel"),
+        # A reason quoting the separator must not be split at its own prose.
+        ("kept 12 rows; dropped 18", "second trim. Moved: nothing else changed"),
+    ]
+    replaced = []
+    for counts, reason in moves:
+        out = await client.call_tool(
+            "record_override",
+            {
+                "spec_dir": str(module),
+                "variant_key": "pharm_variants.csv",
+                "field": "rows",
+                "authored_value": counts,
+                "source_name": "clinpgx",
+                "reason": reason,
+                "recorded_by": "ai-module-creator",
+            },
+        )
+        replaced.append(out.data.replaced_existing)
+    assert replaced == [False, False], "a second table move replaced the first"
+
+    queue = (await client.call_tool("review_queue", {"spec_dir": str(module)})).data
+    assert queue.table_scope == 2
+    got = sorted((e.record.authored_value, e.record.reason) for e in queue.entries)
+    assert got == sorted(moves)
+
+    # A cell still holds one record: a second write to the same cell replaces the first.
+    overrides.upsert(module, _record(field="genotype", authored_value="C/T"))
+    _, again = overrides.upsert(module, _record(field="genotype", authored_value="T/T"))
+    assert again is True
+
+
 async def test_a_table_in_the_row_slot_with_a_cell_field_is_refused(client, module: Path):
     from fastmcp.exceptions import ToolError
 
